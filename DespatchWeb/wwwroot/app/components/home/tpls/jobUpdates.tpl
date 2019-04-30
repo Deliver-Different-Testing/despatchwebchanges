@@ -1,0 +1,53 @@
+<div class="table-headings">
+    <table>
+        <thead class="thead-dark no select">
+            <th scope="col" ng-click="orderList('jobUpdates', 'event')">Event <i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'event'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-event'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'courier')">Courier <i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'courier'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-courier'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'client')">Client <i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-client'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'from')">From <i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-from'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'to')">To<i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-to'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'address')">Address<i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'address'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-address'"></i></th>
+            <th scope="col" ng-click="orderList('jobUpdates', 'operator')">Operator<i class="fa fa-caret-down" ng-show="sort.jobUpdates == 'operator'"></i><i class="fa fa-caret-up" ng-show="sort.jobUpdates == 'd-operator'"></i></th>
+        </thead>
+    </table>
+</div>
+
+
+<table class="table table-striped table-responsive table-rows" id="jobUpdates" data-group="jobUpdates">
+    <tbody>
+    <tr class="clickable-row" ng-repeat="update in jobUpdates | filter: box.searchBox" ng-click="" context-menu="jobUpdatesMenu">
+        <td>{{update.event}}</td>
+        <td>{{update.courier}}</td>
+        <td>{{update.client}}</td>
+        <td>{{update.from}}</td>
+        <td>{{update.to}}</td>
+        <td>{{update.address}}</td>
+        <td>{{update.operator}}</td>
+    </tr>
+    <tr>
+        <td><div style="width:30px;"></div></td>
+        <td><div style="width:40px;"></div></td>
+        <td><div style="width:40px;"></div></td>
+        <td><div style="width:40px;"></div></td>
+        <td><div style="width:40px;"></div></td>
+        <td><div style="width:40px;"></div></td>
+        <td><div style="width:40px;"></div></td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="loading" style="display:block">
+    <div class="text">
+        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+
+<script>
+
+    $(".box-content").on("scroll", function() {
+        var newTop = $(this).scrollTop();
+        $(this).find(".table-headings").css({"top":newTop});
+    });
+
+</script>
