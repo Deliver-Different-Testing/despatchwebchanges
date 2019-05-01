@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -47,6 +48,15 @@ namespace DespatchWeb
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
+
+            // Add new mappings
+            var provider = new FileExtensionContentTypeProvider {Mappings = {[".tpl"] = "text/plain"}};
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+
+                ContentTypeProvider = provider
+            });
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();

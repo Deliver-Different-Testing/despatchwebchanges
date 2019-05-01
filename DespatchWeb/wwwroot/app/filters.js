@@ -1,6 +1,6 @@
 angular
-.module('udispatch')
-.filter('unique', function() {
+.module("uDispatch")
+.filter("unique", function() {
    return function(collection, keyname) {
       var output = [], 
           keys = [];
