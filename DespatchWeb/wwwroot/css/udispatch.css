@@ -129,6 +129,9 @@ body {
   top: 5px;
   left: 12px;
 }
+.top-bar .box-search {
+  color: #FFF;
+}
 .top-bar .btn-group {
   position: relative;
   top: 5px;

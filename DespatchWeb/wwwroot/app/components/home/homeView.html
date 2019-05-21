@@ -3,21 +3,28 @@
 
     <div class="btn-group" role="group">
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'new'})">New</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'dna'})">DNA</button>
+        <button type="button" class="btn btn-sm btn-secondary topBarActive" ng-click="setFilters({'status':'nda'})">NDA</button>
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'active'})">Active</button>
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'done'})">Done</button>
-        <button type="button" class="btn btn-sm btn-secondary topBarActive" ng-click="setFilters({'status':'all'})">All</button>
+        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'all'})">All</button>
     </div>
 
     <div class="btn-group" role="group" aria-label="Basic example">
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'city'})">City</button>
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'truck'})">Truck</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'main1'})">Main1</button>
+        <button type="button" class="btn btn-sm btn-secondary topBarActive" ng-click="setFilters({'area':'main1'})">Main1</button>
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'main2'})">Main2</button>
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'central'})">Central</button>
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'shore'})">Shore</button>
         <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'west'})">West</button>
-        <button type="button" class="btn btn-sm btn-secondary topBarActive" ng-click="setFilters({'area':'all'})">All</button>
+        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'all'})">All</button>
+    </div>
+    
+    <div class="btn-group box-search">
+        <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i> 
+        <input type="text" style="color: black;" placeholder="gps courier (enter code)..." ng-model="courier.gpsCourier" id="gps"/>
+        <i class="fa fa-remove" ng-click="courier.gpsCourier = ''" title="Clear"></i>
+        <!--<div class="multi-element btn" ng-dropdown-multiselect="" options="pickCouriers" extra-settings="{enableSearch:true, selectionLimit:1, closeOnBlur: true, closeOnSelect: true}" selected-model="gpsCourier"></div>-->
     </div>
 
     <div class="topbar-buttons">
@@ -43,7 +50,13 @@
             <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
                 <div class="box" ng-repeat="(boxName,box) in column.boxes" id="box-{{box.name}}" resizablelayout r-directions="['bottom']" r-flex="true" style="flex-basis: {{box.height}}">
                     <div class="box-bar">
-                        <div class="box-bar-title">{{boxes[box.name].title}} <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span> <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span> <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span> <span ng-show="box.name == 'currentWork'">{{currentWorkSelection}}</span> </div>
+                        <div class="box-bar-title">
+                            {{boxes[box.name].title}}
+                            <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
+                            <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
+                            <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
+                            <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
+                        </div>
                         <div class="box-buttons">
                             <div class="box-details" ng-show="boxes[box.name].showDetailButtons" ng-if="currentJob">
 
@@ -56,7 +69,13 @@
                                 </div>
 
                             </div>
-                            <div class="box-search" ng-show="boxes[box.name].showSearch"><i class="fa fa-search" ng-click="openSearch(box.name)"></i> <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}"></div>
+                            <div class="box-search" ng-show="boxes[box.name].showSearch">
+                                <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
+                                <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
+                                <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}">
+
+                            </div>
+                            
                             <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
                         </div>
                     </div>

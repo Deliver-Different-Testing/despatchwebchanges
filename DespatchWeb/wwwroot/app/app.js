@@ -7,7 +7,8 @@ angular
 		"ui.bootstrap.contextMenu", 
 		"cfp.hotkeys",
 		"ui.timepicker",
-		"ngMapAutocomplete"
+        "ngMapAutocomplete",
+		'angularjs-dropdown-multiselect'
 	])
 	.config(["$urlRouterProvider", "$stateProvider", function($urlRouterProvider, $stateProvider) {
 		$urlRouterProvider.otherwise("/");

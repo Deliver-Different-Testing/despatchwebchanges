@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -31,9 +33,18 @@ namespace DespatchWeb
                 options.CheckConsentNeeded = context => true;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
+            services.AddDbContext<DespatchWebDataContext>(c =>
+            {
+                //// Test
+                //c.UseSqlServer(Configuration.GetConnectionString("ConnectionTest"));
 
+                // Live 
+                c.UseSqlServer(Configuration.GetConnectionString("Connection"));
+            });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddScoped<JobRepository, JobRepository>();
+            services.AddScoped<CourierRepository, CourierRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

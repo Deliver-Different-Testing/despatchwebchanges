@@ -46,12 +46,12 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.4",
                 "showSearch": 1
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.5",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -67,7 +67,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.5",
                 "showSearch": 1
             },
             "couriersMoveThrough": {
@@ -107,12 +107,12 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/home/tpls/map.tpl",
+                "tpl": "app/components/home/tpls/map.tpl?v=1.1",
                 "showSearch": 0
             },
             "clearLists": {
                 "title": "Clear Lists",
-                "tpl": "app/components/home/tpls/clearLists.tpl",
+                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.5",
                 "showSearch": 0
             }
         };
@@ -130,17 +130,14 @@ angular
                             "width": "700px",
                             "boxes": [
                                 {
-                                    "name": "jobsList",
-                                    "height": "500px"
-                                },
-                                {
-                                    "name": "jobDetail"
+                                    "name": "jobsList"
                                 }
+
                             ]
                         },
                         {
                             "id": "col2",
-                            "width": "400px",
+                            "width": "900px",
                             "boxes": [
                                 //{
                                 //    "name": "jobGroups",
@@ -152,7 +149,15 @@ angular
                                 //},
 
                                 {
-                                    "name": "currentWork"
+                                    "name": "currentWork",
+                                    "height": "300px"
+                                },
+                                {
+                                    "name": "jobDetail",
+                                    "height": "300px"
+                                },
+                                {
+                                    "name": "map"
                                 }
                             ]
                         },
@@ -322,13 +327,25 @@ angular
         //Column Sorting
         $scope.sort = [];
         $scope.orderList = function (list, prop) {
-
+            var serverOrder = list === "jobList";
             if ($scope.sort[list] !== prop) {
                 $scope.sort[list] = prop;
-                $scope[list] = $filter("orderBy")($scope[list], prop);
+                $scope.jobFilters.asc = "asc";
+                if (!serverOrder) {
+                    $scope[list] = $filter("orderBy")($scope[list], prop);
+                }
+
             } else {
                 $scope.sort[list] = "d-" + prop;
-                $scope[list] = $filter("orderBy")($scope[list], "-" + prop);
+                $scope.jobFilters.asc = "desc";
+                if (!serverOrder) {
+                    $scope[list] = $filter("orderBy")($scope[list], "-" + prop);
+                }
+
+            }
+
+            if (serverOrder) {
+                $scope.setFilters({ "order": prop });
             }
 
         };
@@ -362,9 +379,12 @@ angular
             combo: "enter",
             description: "Submit gather form",
             allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-            callback: function () {
+            callback: function (event, hk) {
                 if ($(".gatherForm").is(":visible") === true) {
                     setTimeout($scope.gather.submit(), 0);
+                }
+                if (event.srcElement.id === "gps") {
+	                $scope.searchCourier(event.srcElement.value);
                 }
             }
         });
@@ -818,20 +838,49 @@ angular
 
         };
 
-        // Select the courier
+       
 
+        // Search Courier GPS
+        $scope.searchCourier = function () {
+            $("#box-currentWork").find(".loading").show();
+            $("#box-map").find(".loading").show();
+            var ac = $scope.pickCouriers.find(c => c.id === $scope.gpsCourier);
+            console.log(ac);
+            if (ac === undefined) {
+                $("#box-currentWork").find(".loading").fadeOut();
+                $("#box-map").find(".loading").show();
+                alert("courier not found");
+                return;
+            }
+            DispatchData.getJobsCurrent(ac.courierID, false).then(function (data) {
+                $("#box-currentWork").find(".loading").fadeOut();
+                $scope.jobsCurrentList = data;
+                if (data.length > 0) {
+                    displayCourierPositionOnly(data[0].courierLatitude, data[0].courierLongitude);
+                } else {
+                    DispatchData.getCourierPosition(ac.id).then(function (posData) {
+                        displayCourierPositionOnly(posData.latitude, posData.longitude);
+                    });
+                }
+                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
+                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
+            });
+        };
+
+        // Select the courier
         $scope.selectCourier = function (courier) {
 
 
             $("#box-jobDetail").find(".loading").show();
+            $("#box-map").find(".loading").show();
 
-            $scope.getGroupedJobs(courier);
-            $scope.groupJobsSelection = " for Courier " + courier.courier;
-            $scope.getCurrentJobs(courier);
+            //$scope.getGroupedJobs(courier);
+            //$scope.groupJobsSelection = " for Courier " + courier.courier;
+            $scope.getCurrentJobs(courier.courierID);
             $scope.currentWorkSelection = " for Courier " + courier.courier;
 
             //SHOW MAP
-            $scope.currentJob = null;
+            //$scope.currentJob = null;
             $scope.currentCourier = courier;
 
             $scope.currentSelection = " for Courier " + courier.courier;
@@ -839,6 +888,7 @@ angular
             setTimeout(function () {
                 $(document).ready(function (event) {
                     $("#box-jobDetail").find(".loading").fadeOut();
+                    $("#box-map").find(".loading").fadeOut();
                 });
             },
                 100);
@@ -871,19 +921,24 @@ angular
         // CURRENT JOBS
         ////////////////////////////
 
-        $scope.getCurrentJobs = function (courier) {
+        $scope.getCurrentJobs = function (courierId) {
 
             $("#box-currentWork").find(".loading").show();
-            DispatchData.getJobsCurrent().then(function (data) {
+            DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
                 $("#box-currentWork").find(".loading").fadeOut();
                 $scope.jobsCurrentList = data;
+                if (data.length > 0) {
+                    displayRoutePoints(data);
+                }
+
                 setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
                 setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
             });
 
         };
 
-        $scope.jobFilters = { "status": "all", "area": "all" };
+        $scope.jobFilters = { "status": "nda", "area": "main1", "order": "remain", "asc": "asc" };
+        $scope.sort["jobList"] = "remain";
         $scope.setFilters = function (data) {
 
             if (data.status) {
@@ -895,8 +950,16 @@ angular
                 $scope.jobFilters.area = data.area;
             }
 
+            if (data.order) {
+                $scope.jobFilters.order = data.order;
+            }
+
             $scope.getData();
 
+        };
+
+        $scope.selectJobDetail = function (job) {
+            $scope.currentJob = job;
         };
 
         //Select Job
@@ -932,6 +995,9 @@ angular
                 }
                 $scope.currentCourier = null;
                 $scope.currentSelection = " for Job " + job.JobNo;
+                if (job.courier !== null) {
+                    $scope.selectCourier(job.courierData);
+                }
 
             },
                 0);
@@ -997,8 +1063,11 @@ angular
 
             DispatchData.getJobsFilter($scope.jobFilters).then(function (data) {
                 $scope.jobList = data;
-                $("#box-jobsList .loading").fadeOut();
-                setTimeout(function () { sizeHeadings($("#jobList").parents(".column")); }, 100);
+
+                setTimeout(function () {
+                    $("#box-jobsList .loading").fadeOut();
+                    sizeHeadings($("#jobList").parents(".column"));
+                }, 100);
 
             });
 
@@ -1014,7 +1083,9 @@ angular
             $scope.getClearListsData();
 
 
-           
+            DispatchData.getActiveCouriers().then(function (data) {
+                $scope.pickCouriers = data;
+            });
 
             ////////////////////////////
             // COURIER MOVEMENTS THROUGH

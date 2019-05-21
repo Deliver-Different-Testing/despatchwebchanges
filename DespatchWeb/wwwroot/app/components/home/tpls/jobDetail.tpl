@@ -6,28 +6,28 @@
 					<div class="col-md-6">
 						<div class="field">
 							<label>Client</label>
-							<div class="value"><a class="uline" src="#" ng-click="">{{currentJob.Client}}</a></div>
+							<div class="value"><a class="uline" src="#" ng-click="">{{currentJob.client}}</a></div>
 						</div>
-						<div class="field" ng-class="currentJob.PickUpLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="FromAddress" ng-click="editDetailField('FromAddress','From Address',currentJob.FromAddress,currentJob.ID,'textarea')">
-							<label>From: {{currentJob.From}}</label>
-							<div class="value">{{currentJob.FromAddress}}</div>
+						<div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="FromAddress" ng-click="editDetailField('FromAddress','From Address',currentJob.fromAddress,currentJob.id,'textarea')">
+							<label>From: {{currentJob.from}}</label>
+							<div class="value">{{currentJob.fromAddress}}</div>
 						</div>
 					</div>
 					<div class="col-md-6">
 						<div class="field contact">
 							<label>Contact</label>
-							<div class="value">{{currentJob.ContactName}}</div>
+							<div class="value">{{currentJob.contactName}}</div>
 						</div>
-						<div class="field" ng-class="currentJob.DeliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="ToAddress" ng-click="editDetailField('ToAddress','To Address',currentJob.ToAddress,currentJob.ID,'textarea')">
-							<label>To: {{currentJob.To}}</label>
-							<div class="value">{{currentJob.ToAddress}}</div>
+						<div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="ToAddress" ng-click="editDetailField('ToAddress','To Address',currentJob.toAddress,currentJob.id,'textarea')">
+							<label>To: {{currentJob.to}}</label>
+							<div class="value">{{currentJob.toAddress}}</div>
 						</div>
 					</div>
 				</div>
 				<div class="notes-add"></div>
-				<div class="notes field" ng-click="editDetailField('InternalNotes','Notes',currentJob.InternalNotes,currentJob.ID,'textarea')">
+				<div class="notes field" ng-click="editDetailField('InternalNotes','Notes',currentJob.internalNotes,currentJob.id,'textarea')">
 					<label>Notes</label>
-					<div class="value"><pre>{{currentJob.InternalNotes}}</pre></div>
+					<div class="value"><pre>{{currentJob.internalNotes}}</pre></div>
 				</div>
 
 			</div>
@@ -35,105 +35,105 @@
 				<div class="row row-no-padding">
 					<div class="col-md-4">
 
-						<div class="field" ng-click="editDetailField('Phone','Phone Number',currentJob.Phone,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('Phone','Phone Number',currentJob.phone,currentJob.id)">
 							<label>Phone</label>
-							<div class="value">{{currentJob.Phone}}</div>
+							<div class="value">{{currentJob.phone}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Size','Size',currentJob.Size,currentJob.ID, 'select', options.detail.size)">
+						<div class="field" ng-click="editDetailField('Size','Size',currentJob.size,currentJob.id, 'select', options.detail.size)">
 							<label>Size</label>
-							<div class="value">{{currentJob.Size.label}}</div>
+							<div class="value">{{currentJob.size.label}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Items','Items',currentJob.Items,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('Items','Items',currentJob.items,currentJob.id)">
 							<label>Items</label>
-							<div class="value">{{currentJob.Items}}</div>
+							<div class="value">{{currentJob.items}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Weight','Weight',currentJob.Weight,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('Weight','Weight',currentJob.weight,currentJob.id)">
 							<label>Weight</label>
-							<div class="value">{{currentJob.Weight}}</div>
+							<div class="value">{{currentJob.weight}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('RefA','Ref A',currentJob.RefA,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('RefA','Ref A',currentJob.refA,currentJob.id)">
 							<label>Ref A</label>
-							<div class="value">{{currentJob.RefA}}</div>
+							<div class="value">{{currentJob.refA}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('RefB','Ref B',currentJob.RefB,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('RefB','Ref B',currentJob.refB,currentJob.id)">
 							<label>Ref B</label>
-							<div class="value">{{currentJob.RefB}}</div>
+							<div class="value">{{currentJob.refB}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('OurRef','Our Ref',currentJob.OurRef,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('OurRef','Our Ref',currentJob.ourRef,currentJob.id)">
 							<label>Our Ref</label>
-							<div class="value">{{currentJob.OurRef}}</div>
+							<div class="value">{{currentJob.ourRef}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Event','Event',currentJob.Event,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('Event','Event',currentJob.event,currentJob.id)">
 							<label>Event</label>
-							<div class="value">{{currentJob.Event}}</div>
+							<div class="value">{{currentJob.event}}</div>
 						</div>
 					</div>
 					<div class="col-md-4">
-						<div class="field" ng-click="editDetailField('PodName','POD Name',currentJob.PodName,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('PodName','POD Name',currentJob.podName,currentJob.id)">
 							<label>POD Name</label>
-							<div class="value">{{currentJob.PodName}}</div>
+							<div class="value">{{currentJob.podName}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('SpeedAccepted','Speed Accepted',currentJob.SpeedAccepted,currentJob.ID)">
+						<div class="field" >
 							<label>Speed Accepted</label>
-							<div class="value">{{currentJob.SpeedAccepted}}</div>
+							<div class="value">{{currentJob.speedAccepted}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('SpeedNofitied','Speed Nofitied',currentJob.SpeedNofitied,currentJob.ID)">
+						<div class="field" >
 							<label>Speed Notified</label>
-							<div class="value">{{currentJob.SpeedNofitied}}</div>
+							<div class="value">{{currentJob.speedNofitied}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Direct','Direct',currentJob.Direct,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('Direct','Direct',currentJob.direct,currentJob.id)">
 							<label>Direct</label>
-							<div class="value">{{currentJob.Direct}}</div>
+							<div class="value">{{currentJob.direct}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('SigNotRequired','Signature Not Required',currentJob.SigNotRequired,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('SigNotRequired','Signature Not Required',currentJob.sigNotRequired,currentJob.id)">
 							<label>Sig not req</label>
-							<div class="value">{{currentJob.SigNotRequired}}</div>
+							<div class="value">{{currentJob.sigNotRequired}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('UDStatus','UD Status',currentJob.UDStatus,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('UDStatus','UD Status',currentJob.UDStatus,currentJob.id)">
 							<label>UD status</label>
 							<div class="value">{{currentJob.UDStatus}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('DGClass','DG Class',currentJob.DGClass,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('DGClass','DG Class',currentJob.DGClass,currentJob.id)">
 							<label>DG #         Docs</label>
 							<div class="value">{{currentJob.DGClass}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Courier','Courier',currentJob.Courier,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('Courier','Courier',currentJob.courier,currentJob.id)">
 							<label>Courier</label>
-							<div class="value">{{currentJob.Courier}}</div>
+							<div class="value">{{currentJob.courier}}</div>
 						</div>
 					</div>
 					<div class="col-md-4">
-						<div class="field" ng-click="editDetailField('PodTime','POD Time',currentJob.PodTime,currentJob.ID,'time')">
+						<div class="field" ng-click="editDetailField('PodTime','POD Time',currentJob.podTime,currentJob.id,'time')">
 							<label>POD Time</label>
-							<div class="value">{{currentJob.PodTime | date : "h:mm a"}}</div>
+							<div class="value">{{currentJob.podTime | date : "h:mm a"}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('JobNo','Job Number',currentJob.JobNo,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('JobNo','Job Number',currentJob.jobNo,currentJob.id)">
 							<label>Job #</label>
-							<div class="value">{{currentJob.JobNo}}</div>
+							<div class="value">{{currentJob.jobNo}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Date','Date',currentJob.Date,currentJob.ID, 'date')">
+						<div class="field" ng-click="editDetailField('Date','Date',currentJob.date,currentJob.id, 'date')">
 							<label>Date</label>
-							<div class="value">{{currentJob.Date | date : "dd/MM/yyyy"}}</div>
+							<div class="value">{{currentJob.date | date : "dd/MM/yyyy"}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Time','Time',currentJob.Time,currentJob.ID,'time')">
+						<div class="field" ng-click="editDetailField('Time','Time',currentJob.time,currentJob.id,'time')">
 							<label>Log time</label>
-							<div class="value">{{currentJob.Time | date : "h:mm a"}}</div>
+							<div class="value">{{currentJob.time | date : "h:mm a"}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('DispatchTime','Dispatch Time',currentJob.DispatchTime,currentJob.ID,'time')">
+						<div class="field" ng-click="editDetailField('DispatchTime','Dispatch Time',currentJob.dispatchTime,currentJob.id,'time')">
 							<label>Dispatch time</label>
-							<div class="value">{{currentJob.DispatchTime | date : "h:mm a"}}</div>
+							<div class="value">{{currentJob.dispatchTime | date : "h:mm a"}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('PU','PU',currentJob.PU,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('PU','PU',currentJob.pu,currentJob.id)">
 							<label>PU time</label>
-							<div class="value">{{currentJob.PU}}</div>
+							<div class="value">{{currentJob.pu}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('Charge','Charge',currentJob.Charge,currentJob.ID)">
+						<div class="field" ng-click="editDetailField('Charge','Charge',currentJob.charge,currentJob.id)">
 							<label>Charge</label>
-							<div class="value">{{currentJob.Charge}}</div>
+							<div class="value">{{currentJob.charge}}</div>
 						</div>
-						<div class="field" ng-click="editDetailField('ClientNotes','Client Notes',currentJob.ClientNotes,currentJob.ID, 'textarea')">
+						<div class="field" ng-click="editDetailField('ClientNotes','Client Notes',currentJob.clientNotes,currentJob.id, 'textarea')">
 							<label>Client notes</label>
-							<div class="value">{{currentJob.ClientNotes}}</div>
+							<div class="value">{{currentJob.clientNotes}}</div>
 						</div>
 					</div>
 				</div>
@@ -162,16 +162,16 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr ng-repeat="pallet in currentJob.PalletInfo" context-menu="palletMenu" ng-click="editPallet(pallet)">
-									<td>{{pallet.Quantity}}</td>
-									<td>{{pallet.Weight}}</td>
-									<td>{{pallet.Length}}</td>
-									<td>{{pallet.Depth}}</td>
-									<td>{{pallet.Height}}</td>
-									<td>{{pallet.PU}}</td>
-									<td>{{pallet.DO}}</td>
+								<tr ng-repeat="pallet in currentJob.palletInfo" context-menu="palletMenu" ng-click="editPallet(pallet)">
+									<td>{{pallet.quantity}}</td>
+									<td>{{pallet.weight}}</td>
+									<td>{{pallet.length}}</td>
+									<td>{{pallet.depth}}</td>
+									<td>{{pallet.height}}</td>
+									<td>{{pallet.pu}}</td>
+									<td>{{pallet.do}}</td>
 									<td>{{pallet.DGClass}}</td>
-									<td>{{pallet.Notes}}</td>
+									<td>{{pallet.notes}}</td>
 								</tr>
 							</tbody>
 						</table>
@@ -184,12 +184,14 @@
 	</div>
 </div>
 
-<div ng-if="currentCourier" style="height: 100%;">
+<!--<div ng-if="currentCourier" style="height: 100%;">
 	<div class="overlay-map-fix"></div>
-	<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d18042.219705093252!2d174.80882121707236!3d-36.92755660674388!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x88d0fdf8f51b1d11!2sUrgent+Couriers!5e0!3m2!1sen!2snz!4v1523407620949" width="100%" height="100%" frameborder="0" style="border:0" allowfullscreen></iframe>
+	<div id="map_canvas" style="width:100%;height:100%;"></div>
+
+	<script src="app/components/home/map.js?v=1.3"></script>
 
 </div>
-
+-->
 <div class="no-data" ng-if="!currentJob && !currentCourier">
     <div class="text">Please select a job or courier</div>
 </div>

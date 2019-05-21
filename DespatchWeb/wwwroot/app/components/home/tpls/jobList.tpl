@@ -4,17 +4,17 @@
         <table>
             <thead class="thead-dark no select">
             <tr>
-                <th scope="col" ng-click="orderList('jobList','Status')">S <i class="fa fa-caret-down" ng-show="sort.jobList == 'Status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-Status'"></i></th>
-                <th scope="col" ng-click="orderList('jobList', 'Speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobList == 'Speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-Speed'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','Notify')">N <i class="fa fa-caret-down" ng-show="sort.jobList == 'Notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-Notify'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','JobNo')">Job <i class="fa fa-caret-down" ng-show="sort.jobList == 'JobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-JobNo'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','Client')">Client <i class="fa fa-caret-down" ng-show="sort.jobList == 'Client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-Client'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','From')">From <i class="fa fa-caret-down" ng-show="sort.jobList == 'From'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-From'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','To')">To <i class="fa fa-caret-down" ng-show="sort.jobList == 'To'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-To'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','Vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobList == 'Vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-Vehicle'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','Remain')">R <i class="fa fa-caret-down" ng-show="sort.jobList == 'Remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-Remain'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','LP')">LP <i class="fa fa-caret-down" ng-show="sort.jobList == 'LP'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-LP'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','LD')">LD <i class="fa fa-caret-down" ng-show="sort.jobList == 'LD'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-LD'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','status')">S <i class="fa fa-caret-down" ng-show="sort.jobList == 'status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i></th>
+                <th scope="col" ng-click="orderList('jobList', 'speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobList == 'speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-speed'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','notify')">N <i class="fa fa-caret-down" ng-show="sort.jobList == 'notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-notify'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','jobNo')">Job <i class="fa fa-caret-down" ng-show="sort.jobList == 'jobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-jobNo'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','client')">Client <i class="fa fa-caret-down" ng-show="sort.jobList == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-client'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','from')">From <i class="fa fa-caret-down" ng-show="sort.jobList == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','to')">To <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobList == 'vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-vehicle'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','remain')">R <i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','lp')">LP <i class="fa fa-caret-down" ng-show="sort.jobList == 'lp'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-lp'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','ld')">LD <i class="fa fa-caret-down" ng-show="sort.jobList == 'ld'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-ld'"></i></th>
                 <th></th>
                 <th></th>
             </tr>
@@ -26,21 +26,21 @@
 
     <table class="table table-striped table-responsive table-rows" id="jobList" data-group="jobsGroup">
         <tbody>
-        <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobList | filter: box.searchBox" context-menu="jobsMenu" data-jobid="{{job.ID}}" data-jobno="{{job.JobNo}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
-            <td class="status" ng-class="job.Status">{{job.Status}}</td>
-            <td>{{job.Speed}}</td>
-            <td>{{job.Notify}}</td>
-            <td>{{job.JobNo}}</td>
-            <td>{{job.Client}}</td>
-            <td>{{job.From}} <i ng-if="!job.PickUpLongitude" class="fa fa-exclamation"></i></td>
-            <td>{{job.To}} <i ng-if="!job.DeliveryLongitude" class="fa fa-exclamation"></i></td>
-            <td>{{job.Vehicle.label}}</td>
-            <td>{{job.Remain}}</td>
-            <td>{{job.LP}}</td>
-            <td>{{job.LD}}</td>
-            <td><input type="text" class="dispatchField" ng-model="job.courierNumber" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courierNumber)" placeholder="D" /></td>
-            <td><input type="text" class="lateCallField" ng-model="job.latePickup" ng-keydown="$event.keyCode === 13 && lateCall(job.latePickup)"  placeholder="LP" /></td>
-            <td><input type="text" class="lateCallField" ng-model="job.lateDelivery" ng-keydown="$event.keyCode === 13 && lateCall(job.lateDelivery)"  placeholder="LD" /></td>
+        <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobList | filter: box.searchBox" context-menu="jobsMenu" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
+            <td class="status" ng-class="job.status">{{job.status}}</td>
+            <td>{{job.speed}}</td>
+            <td>{{job.notify}}</td>
+            <td>{{job.jobNo}}</td>
+            <td>{{job.client}}</td>
+            <td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
+            <td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
+            <td>{{job.vehicle.label}}</td>
+            <td>{{job.remain}}</td>
+            <td>{{job.lp}}</td>
+            <td>{{job.ld}}</td>
+            <td><input type="text" class="dispatchField" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="D" /></td>
+            <td><input type="text" class="lateCallField" ng-model="job.lp" ng-keydown="$event.keyCode === 13 && lateCall(job.lp)"  placeholder="LP" /></td>
+            <td><input type="text" class="lateCallField" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateCall(job.ld)"  placeholder="LD" /></td>
             <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>
         </tr>
         <tr>

@@ -1,0 +1,57 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace DespatchWeb.Models
+{
+
+    public class ClearListViewModel
+    {
+        public AreaClearList Central { get; set; }
+        public AreaClearList Other { get; set; }
+        public AreaClearList WestMid { get; set; }
+        public AreaClearList EastMid { get; set; }
+        public AreaClearList ShallowWest { get; set; }
+        public AreaClearList DeepWest { get; set; }
+        public AreaClearList ShallowShore { get; set; }
+        public AreaClearList DeepShore { get; set; }
+        public AreaClearList Mangere { get; set; }
+        public AreaClearList DeepSouth { get; set; }
+        public AreaClearList DeepEast { get; set; }
+    }
+
+    public class AreaClearList
+    {
+        public int PercentHeight { get; set; }
+        public List<ClearListSection> Top { get; set; }
+        public List<ClearListSection> Middle { get; set; }
+        public List<ClearListSection> Bottom { get; set; }
+    }
+
+    public class ClearListSection
+    {
+        public string CourierNumber { get; set; }
+        public CourierData CourierData { get; set; }
+        public List<Destination> Destinations { get; set; }
+    }
+
+    public class CourierData
+    {
+        public string Courier { get; set; }
+        public string Location { get; set; }
+        public string Pu { get; set; }
+        public string Del { get; set; }
+        public string Lrm { get; set; }
+        public string Eta2lrm { get; set; }
+        public int? CourierID { get; set; }
+    }
+
+    public class Destination
+    {
+        public int Id { get; set; }
+        public string Label { get; set; }
+    }
+
+}

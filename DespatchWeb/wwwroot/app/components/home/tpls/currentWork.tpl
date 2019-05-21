@@ -4,17 +4,18 @@
     <table>
         <thead class="thead-dark no select">
         <tr>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'Status')">S <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='Status'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-Status'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'Speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='Speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-Speed'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'Notify')">N <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='Notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-Notify'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'JobNo')">Job <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='JobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-JobNo'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'Client')">Client <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='Client'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-Client'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'From')">From <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='From'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-From'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'To')">To <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='To'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-To'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'Vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='Vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-Vehicle'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'Remain')">R <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='Remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-Remain'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'LP')">LP <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='LP'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-LP'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'LD')">LD <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='LD'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-LD'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'status')">S <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='status'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-status'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-speed'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'notify')">N <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-notify'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'jobNo')">Job <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='jobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-jobNo'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'client')">Client <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='client'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-client'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'from')">From <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='from'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-from'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'to')">To <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='to'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-to'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-vehicle'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'remain')">R <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-remain'"></i></th>
+		<th scope="col" ng-click="orderList('jobsCurrentList', 'runOrder')">RO <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='runOrder'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-runOrder'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'lp')">LP <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='lp'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-lp'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'ld')">LD <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='ld'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-ld'"></i></th>
         </tr>
         </thead>
     </table>
@@ -28,18 +29,19 @@
     </tr>
     </thead>
     <tbody>
-    <tr class="clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox" ng-click="selectJob(job)" data-jobid="{{job.ID}}" data-jobNo="{{job.JobNo}}">
-            <td class="status" ng-class="job.Status">{{job.Status}}</td>
-            <td>{{job.Speed}}</td>
-            <td>{{job.Notify}}</td>
-            <td>{{job.JobNo}}</td>
-            <td>{{job.Client}}</td>
-            <td>{{job.From}} <i ng-if="!job.PickUpLongitude" class="fa fa-exclamation"></i></td>
-            <td>{{job.To}} <i ng-if="!job.DeliveryLongitude" class="fa fa-exclamation"></i></td>
-            <td>{{job.Vehicle.label}}</td>
-            <td>{{job.Remain}}</td>
-            <td>{{job.LP}}</td>
-            <td>{{job.LD}}</td>
+    <tr class="clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox" ng-click="selectJobDetail(job);" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
+            <td class="status" ng-class="job.status">{{job.status}}</td>
+            <td>{{job.speed}}</td>
+            <td>{{job.notify}}</td>
+            <td>{{job.jobNo}}</td>
+            <td>{{job.client}}</td>
+            <td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
+            <td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
+            <td>{{job.vehicle.label}}</td>
+            <td>{{job.remain}}</td>
+			<td>{{job.runOrder}}</td>
+            <td>{{job.lp}}</td>
+            <td>{{job.ld}}</td>
             <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>
         </tr>
         <tr>
