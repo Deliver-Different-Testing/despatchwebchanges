@@ -7,6 +7,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Models;
 using System.Linq.Dynamic.Core;
 using Microsoft.EntityFrameworkCore;
+using DespatchWebContextExtensions;
 using Remotion.Linq.Clauses;
 
 namespace DespatchWeb.Repositories
@@ -80,7 +81,9 @@ namespace DespatchWeb.Repositories
                         {
                             Courier = j.CourierCode + " " + j.CourierName,
                             CourierID = j.UcjbCourierId
-                        }
+                        },
+                        AllowDispatch = j.AllowDespatch,
+                        DGClass = j.Dgclass
 
                     }).ToList();
             return list;
@@ -247,12 +250,33 @@ namespace DespatchWeb.Repositories
                     {
                         Courier = j.CourierCode + " " + j.CourierName,
                         CourierID = j.UcjbCourierId
-                    }
+                    },
+                    AllowDispatch = j.AllowDespatch,
+                    DGClass = j.Dgclass
 
 
                 }).ToList();
 
             return list;
+
+        }
+
+        public async Task DispatchSelectedJobs(int courierId, int dispId, string jobIds)
+        {
+            await _context.LoadStoredProc("DESWEB_stpJob_AutoDespatchSelectedJobs")
+              .WithSqlParam("@JobIDs", jobIds)
+              .WithSqlParam("@CourierID", courierId)
+              .WithSqlParam("@DispID", dispId)
+              .ExecuteStoredNonQueryAsync();
+            
+            foreach (var jid in jobIds.Split(",").ToList().Where(x=>!string.IsNullOrWhiteSpace(x)))
+            {
+
+                await _context.LoadStoredProc("DES_stpJob_AutoDespatchChildJobs")
+                .WithSqlParam("@JobID", int.Parse(jid))
+                .ExecuteStoredNonQueryAsync();
+
+            }
 
         }
     }

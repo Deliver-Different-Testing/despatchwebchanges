@@ -5,21 +5,112 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using DespatchWeb.Models;
+using System.Security.Cryptography;
+using System.IO;
+using Microsoft.Extensions.Configuration;
+using DespatchWeb.Repositories;
+using Microsoft.AspNetCore.Hosting;
 
 namespace DespatchWeb.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private IConfiguration _configuration;
+        private readonly ClientRepository _clientRepository;
+        private readonly IHostingEnvironment _hostingEnvironment;
+
+        public HomeController(ClientRepository clientRepository, IConfiguration configuration, IHostingEnvironment hostingEnvironment)
         {
-            return View();
+            _clientRepository = clientRepository;
+            _configuration = configuration;
+            _hostingEnvironment = hostingEnvironment;
+        }
+
+        public async Task<IActionResult> Index([FromQuery] string login)
+        {
+            if (_hostingEnvironment.IsDevelopment())
+            {
+                login = "WZKzmEeKz1c3/qetjbb48HcCr2UGhQ6wz8NRwSoxxOU="; //uclgf
+            }
+            if (!string.IsNullOrEmpty(login))
+            {
+                var key = Convert.FromBase64String("8wzkFlOvNB8+7UgmX0bSyFPHxjLNjmaGhlUoSKkJ2Kc=");
+                var iv = Convert.FromBase64String("iE1+VfQbXWBkCalh+iV85Q==");
+
+
+                var loginString = DecryptStringFromBytes_Aes(Convert.FromBase64String(login), key, iv);
+
+                if (loginString == null || loginString.LastIndexOf("|") <= 0) return Redirect(_configuration["PublicPath"]);
+
+
+                var contactId = loginString.Substring(0, loginString.LastIndexOf("|"));
+
+                if (string.IsNullOrEmpty(contactId)) return View();
+
+                var clientDetail = await _clientRepository.ValidateClientAsync(Convert.ToInt32(contactId));
+                ViewBag.FirstName = clientDetail.FirstName;
+                ViewBag.FullName = clientDetail.FullName;
+                ViewBag.Email = clientDetail.Email;
+                ViewBag.ClientInternal = clientDetail.Internal;
+                ViewBag.ContactID = int.Parse(contactId);
+
+                return View();
+            }
+            else
+            {
+                return Redirect(_configuration["PublicPath"]);
+            }
+        }
+
+        private string DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
+        {
+            // Check arguments.
+            if (cipherText == null || cipherText.Length <= 0)
+                throw new ArgumentNullException("cipherText");
+            if (Key == null || Key.Length <= 0)
+                throw new ArgumentNullException("Key");
+            if (IV == null || IV.Length <= 0)
+                throw new ArgumentNullException("IV");
+
+            // Declare the string used to hold
+            // the decrypted text.
+            string plaintext = null;
+
+            // Create an Aes object
+            // with the specified key and IV.
+            using (var aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Key;
+                aesAlg.IV = IV;
+
+                // Create a decrytor to perform the stream transform.
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                // Create the streams used for decryption.
+                using (var msDecrypt = new MemoryStream(cipherText))
+                {
+                    using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (var srDecrypt = new StreamReader(csDecrypt))
+                        {
+
+                            // Read the decrypted bytes from the decrypting stream and place them in a string.
+                            plaintext = srDecrypt.ReadToEnd();
+                        }
+                    }
+                }
+
+            }
+
+            return plaintext;
+
         }
 
         public IActionResult About()
         {
             ViewData["Message"] = "Your application description page.";
             var x = "test";
-            
+
 
             return View();
         }

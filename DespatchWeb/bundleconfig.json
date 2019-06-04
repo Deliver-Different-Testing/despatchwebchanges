@@ -14,6 +14,7 @@
   {
     "outputFileName": "wwwroot/js/site.min.js",
     "inputFiles": [
+      "wwwroot/lib/moment.js",
       "wwwroot/lib/sortable.js",
       "wwwroot/lib/contextMenu.js",
       "wwwroot/lib/autocomplete/angular-auto-complete.js",

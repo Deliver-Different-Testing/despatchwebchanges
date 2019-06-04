@@ -18,6 +18,10 @@ namespace DespatchWeb.Models
 
         public string Name { get; set; }
 
+        public byte DangerousGoods { get; set; }
+
+        public DateTime DGLicenseExpiry { get; set; }
+
         public string Label
         {
             get => $"{Code} {Name}";

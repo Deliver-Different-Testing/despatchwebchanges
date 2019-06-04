@@ -46,7 +46,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.4",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.11",
                 "showSearch": 1
             },
             "jobDetail": {
@@ -428,6 +428,11 @@ angular
         // DISPATCH THE JOBS
         ///////////////////////////////////////
         $scope.dispatchJobs = function (courier) {
+            var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
+            if (foundCourier === undefined) {
+                alert("Invalid Courier");
+                return;
+            }
 
             var callData = {
                 "call": "dispatchJobs",
@@ -435,55 +440,115 @@ angular
                 "jobs": []
             };
 
+            var reset = function () {
+                $(".activeTable .active").each(function () {
+                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                    j.courier = null;
+                });
+            };
+
             $(".activeTable .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                var jn = j.jobNo;
+                if (j.courierData.courierID !== null) {
+                    alert("restore " + jn + " prior to despatching to another courier");
+                    reset();
+                    return;
+                }
+                if (!j.allowDispatch) {
+                    alert("Can not despatch " + jn + " until all other child jobs have been despatched.");
+                    reset();
+                    return;
+                }
+                if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
+                    alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+                    reset();
+                    return;
+                }
+                if (j.dgClass !== null && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days')))
+                {
+                    reset();
+                    alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+                    return;
+                }
+
+                if (j.dgClass !== null && dgClass > 0) {
+                    DispatchData.addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName);
+                }
+
                 callData.jobs.push($(this).attr("data-jobid"));
             });
+            
+            DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+            $scope.getJobList().then(function () {
+                //$("#box-jobDetail").find(".loading").show();
+                $("#box-map").find(".loading").show();
 
-            //DO THE API CALL
-            DispatchData.doAPI(callData).then(function (data) {
+                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.searchCourier();
+                //$scope.getCurrentJobs(foundCourier.courierID);
+                //$scope.currentWorkSelection = " for Courier " + foundCourier.id;
 
-                console.log(data);
+                ////SHOW MAP
+                ////$scope.currentJob = null;
+                //$scope.currentCourier = foundCourier;
 
+                //$scope.currentSelection = " for Courier " + courier.courier + " " + courier.name;
 
-                if (data.response === "Success") {
-
-                    var list = $(".activeTable").attr("id");
-
-                    setTimeout(function () {
-
-                        $(".activeTable .active").each(function () {
-
-                            //$(this).hide();
-                            $(this).find(".selectjob").click();
-
-                            var index = $scope[list].indexOf($scope.jobForDispatch);
-                            console.log(index);
-                            $scope[list].splice(index, 1);
-                            $scope.$apply();
-
-                        });
-
-
-                    },
-                        0);
-
-                    if ($(".activeTable").attr("data-group") !== "jobsGrouped") {
-
-                        $scope.currentJob = false;
-                        $scope.currentCourier = false;
-                        $scope.potentialCouriers = false;
-                        $scope.jobGroups = false;
-                        $scope.jobsCurrentList = false;
-                    }
-
-                }
-                else {
-
-                    alert("Critical Error");
-
-                }
+                //setTimeout(function () {
+                //    $(document).ready(function (event) {
+                //        $("#box-jobDetail").find(".loading").fadeOut();
+                //        $("#box-map").find(".loading").fadeOut();
+                //    });
+                //},
+                //    100);
 
             });
+            //DispatchData.doAPI(callData).then(function (data) {
+
+            //    console.log(data);
+
+
+            //    if (data.response === "Success") {
+
+            //        var list = $(".activeTable").attr("id");
+
+            //        setTimeout(function () {
+
+            //            $(".activeTable .active").each(function () {
+
+            //                //$(this).hide();
+            //                $(this).find(".selectjob").click();
+
+            //                var index = $scope[list].indexOf($scope.jobForDispatch);
+            //                console.log(index);
+            //                $scope[list].splice(index, 1);
+            //                $scope.$apply();
+
+            //            });
+
+
+            //        },
+            //            0);
+
+            //        if ($(".activeTable").attr("data-group") !== "jobsGrouped") {
+
+            //            $scope.currentJob = false;
+            //            $scope.currentCourier = false;
+            //            $scope.potentialCouriers = false;
+            //            $scope.jobGroups = false;
+            //            $scope.jobsCurrentList = false;
+            //        }
+
+            //    }
+            //    else {
+
+            //        alert("Critical Error");
+
+            //    }
+
+            //    $scope.getData();
+            //});
 
 
         };
@@ -844,7 +909,7 @@ angular
         $scope.searchCourier = function () {
             $("#box-currentWork").find(".loading").show();
             $("#box-map").find(".loading").show();
-            var ac = $scope.pickCouriers.find(c => c.id === $scope.gpsCourier);
+            var ac = $scope.pickCouriers.find(c => c.id === $scope.courier.gpsCourier);
             console.log(ac);
             if (ac === undefined) {
                 $("#box-currentWork").find(".loading").fadeOut();
@@ -1045,6 +1110,18 @@ angular
             }
         ];
 
+        $scope.getJobList = function () {
+            return DispatchData.getJobsFilter($scope.jobFilters).then(function (data) {
+                $scope.jobList = data;
+
+                setTimeout(function () {
+                    $("#box-jobsList .loading").fadeOut();
+                    sizeHeadings($("#jobList").parents(".column"));
+                }, 100);
+
+            });
+        };
+
         $scope.getData = function () {
 
             ///////////////////////////////
@@ -1061,15 +1138,7 @@ angular
             $scope.jobsCurrentList = false;
             $scope.currentCourier = false;
 
-            DispatchData.getJobsFilter($scope.jobFilters).then(function (data) {
-                $scope.jobList = data;
-
-                setTimeout(function () {
-                    $("#box-jobsList .loading").fadeOut();
-                    sizeHeadings($("#jobList").parents(".column"));
-                }, 100);
-
-            });
+            $scope.getJobList();
 
             $scope.getClearListsData = function () {
                 DispatchData.getClearLists().then(function (data) {

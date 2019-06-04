@@ -27,5 +27,12 @@ namespace DespatchWeb.Controllers
             var result = _jobRepo.CurrentJobList(courierId, done);
             return Json(result);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> Allocate(int courierId, int dispId, string jobIds)
+        {
+            await _jobRepo.DispatchSelectedJobs(courierId, dispId, jobIds);
+            return Json("OK");
+        }
     }
 }

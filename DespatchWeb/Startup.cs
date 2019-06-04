@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Mindscape.Raygun4Net.AspNetCore;
 
 namespace DespatchWeb
 {
@@ -43,8 +44,10 @@ namespace DespatchWeb
             });
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddRaygun(Configuration);
             services.AddScoped<JobRepository, JobRepository>();
             services.AddScoped<CourierRepository, CourierRepository>();
+            services.AddScoped<ClientRepository, ClientRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -70,6 +73,7 @@ namespace DespatchWeb
             });
 
             app.UseHttpsRedirection();
+            app.UseRaygun();
             app.UseStaticFiles();
             app.UseCookiePolicy();
 

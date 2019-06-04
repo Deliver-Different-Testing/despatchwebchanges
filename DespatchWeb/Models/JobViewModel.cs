@@ -51,6 +51,8 @@ namespace DespatchWeb.Models
         public decimal? CourierLongitude { get; set; }
         public int? RunOrder { get; set; }
         public CourierData CourierData { get; set; }
+        public bool? AllowDispatch { get; set; }
+        public int? DGClass { get; set; }
     }
 
     public class Vehicle

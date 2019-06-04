@@ -26,7 +26,7 @@
 
     <table class="table table-striped table-responsive table-rows" id="jobList" data-group="jobsGroup">
         <tbody>
-        <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobList | filter: box.searchBox" context-menu="jobsMenu" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
+        <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobList | filter: box.searchBox" context-menu="jobsMenu" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
             <td class="status" ng-class="job.status">{{job.status}}</td>
             <td>{{job.speed}}</td>
             <td>{{job.notify}}</td>
@@ -38,7 +38,7 @@
             <td>{{job.remain}}</td>
             <td>{{job.lp}}</td>
             <td>{{job.ld}}</td>
-            <td><input type="text" class="dispatchField" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="D" /></td>
+            <td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="D" /></td>
             <td><input type="text" class="lateCallField" ng-model="job.lp" ng-keydown="$event.keyCode === 13 && lateCall(job.lp)"  placeholder="LP" /></td>
             <td><input type="text" class="lateCallField" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateCall(job.ld)"  placeholder="LD" /></td>
             <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>

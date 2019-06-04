@@ -4,6 +4,16 @@ angular
         [
             "$http", function ($http) {
                 return {
+                    addFollowupEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+                        return $http.post('courier/AddFollowupEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    allocateJobs: function (courierId, dispId, jobIds) {
+                        return $http.post("job/Allocate?courierId=" + courierId + '&dispId=' + dispId + '&jobIds=' + jobIds).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getJobs: function () {
                         return $http.get("app/components/home/api/jobsList.php").then(function (response) {
                             return response.data;

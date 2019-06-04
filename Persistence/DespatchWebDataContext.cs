@@ -12,11 +12,7 @@ namespace DespatchWeb
 	/// <summary>Class which represents the DataContext for the project / group 'DespatchWeb'</summary>
 	public partial class DespatchWebDataContext : DbContext
 	{
-        public DespatchWebDataContext(DbContextOptions<DespatchWebDataContext> options)
-            : base(options)
-        {
-        }
-        partial void OnModelCreatingComplete();
+		partial void OnModelCreatingComplete();
 	
 		/// <summary>Saves all changes made in this context to the database.</summary>
 		/// <returns>The number of state entries written to the database.</returns>
@@ -50,8 +46,12 @@ namespace DespatchWeb
 
 		/// <summary>Gets an object query for the entity set 'DeswebQryDespatch', containing entity type 'DeswebQryDespatch'</summary>
 		public DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TblClient', containing entity type 'TblClient'</summary>
+		public DbSet<TblClient> TblClients { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TblDespatchView', containing entity type 'TblDespatchView'</summary>
 		public DbSet<TblDespatchView> TblDespatchViews { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TucClientContact', containing entity type 'TucClientContact'</summary>
+		public DbSet<TucClientContact> TucClientContacts { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucJobItem', containing entity type 'TucJobItem'</summary>
 		public DbSet<TucJobItem> TucJobItems { get; set; } 
 }

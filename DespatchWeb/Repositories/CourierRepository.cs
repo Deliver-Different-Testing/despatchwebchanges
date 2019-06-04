@@ -22,6 +22,47 @@ namespace DespatchWeb.Repositories
             _context = context;
         }
 
+        public async Task AddFollowUpEventAsync(string jobNo, int clientId, string contact, int staffId, int courierId, int jobId, int jobType, string despatcherName )
+        {
+            var eventType = 69;
+            DateTime? lateTime = null;
+            DateTime? etaTime = null;
+            int? staffOut = null;
+            DateTime? responseTime = null;
+            var notes = "Follow up dangerous goods license with courier";
+            var pageCourier = false;
+            var closed = false;
+            string description = null;
+            var date = DateTime.Now;
+            var time = DateTime.Now;
+
+
+            await _context.LoadStoredProc("DES_qdfEvent_Insert")
+                .WithSqlParam("@JobNo", jobNo)
+                .WithSqlParam("@ClientID", clientId)
+                .WithSqlParam("@Contact", contact)
+                .WithSqlParam("@Date", date.Date)
+                .WithSqlParam("@Time", time)
+                .WithSqlParam("@Type", eventType)
+                .WithSqlParam("@LateTime", lateTime)
+                .WithSqlParam("@ETATime", etaTime)
+                .WithSqlParam("@StaffIDIn", staffId)
+                .WithSqlParam("@StaffIDOut", staffOut)
+                .WithSqlParam("@ResponseTime", responseTime)
+                .WithSqlParam("@Notes", notes)
+                .WithSqlParam("@PageCourier", pageCourier)
+                .WithSqlParam("@Closed", closed)
+                .WithSqlParam("@Originator", staffId)
+                .WithSqlParam("@Description", description)
+                .WithSqlParam("@CourierID", courierId)
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@Despatcher", despatcherName)
+                .ExecuteNonQueryAsync();
+
+
+
+        }
+
         public List<ActiveCouriersViewModel> ActiveCouriers()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();

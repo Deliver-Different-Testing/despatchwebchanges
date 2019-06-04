@@ -33,5 +33,13 @@ namespace DespatchWeb.Controllers
             var result = _courierRepo.Location(code);
             return Json(result);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> AddFollowupEvent(string jobNo, int clientId, string contact, int staffId, int courierId, int jobId, int jobType, string despatcherName)
+        {
+            await _courierRepo.AddFollowUpEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName);
+            return Json("OK");
+        }
+        
     }
 }

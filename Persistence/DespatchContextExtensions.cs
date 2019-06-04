@@ -1,36 +1,43 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using DespatchWeb.EntityClasses;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Storage;
-//using Newtonsoft.Json;
 
 namespace DespatchWebContextExtensions
 {
-    /// <summary>
-    /// Use EFextension for EXEC Custom Stored Procedure 
-    /// See: https://github.com/snickler/EFCore-FluentStoredProcedure for more detail
-    /// </summary>
-    public static class GetDbContext
+    public static class EFExtensions
     {
         /// <summary>
         /// Creates an initial DbCommand object based on a stored procedure name
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="storedProcName"></param>
+        /// <param name="context">target database context</param>
+        /// <param name="storedProcName">target procedure name</param>
+        /// <param name="prependDefaultSchema">Prepend the default schema name to <paramref name="storedProcName"/> if explicitly defined in <paramref name="context"/></param>
+        /// <param name="commandTimeout">Command timeout in seconds. Default is 30.</param>
         /// <returns></returns>
-        public static DbCommand LoadStoredProc(this DbContext context, string storedProcName)
+        public static DbCommand LoadStoredProc(this DbContext context, string storedProcName, bool prependDefaultSchema = true, short commandTimeout = 30)
         {
             var cmd = context.Database.GetDbConnection().CreateCommand();
+
+            cmd.CommandTimeout = commandTimeout;
+
+            if (prependDefaultSchema)
+            {
+                var schemaName = context.Model.Relational().DefaultSchema;
+                if (schemaName != null)
+                {
+                    storedProcName = $"{schemaName}.{storedProcName}";
+                }
+            }
+
             cmd.CommandText = storedProcName;
             cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
             return cmd;
         }
 
@@ -48,12 +55,19 @@ namespace DespatchWebContextExtensions
 
             var param = cmd.CreateParameter();
             param.ParameterName = paramName;
-            param.Value = paramValue;
+            param.Value = (paramValue != null ? paramValue : DBNull.Value);
             configureParam?.Invoke(param);
             cmd.Parameters.Add(param);
             return cmd;
         }
 
+        /// <summary>
+        /// Creates a DbParameter object and adds it to a DbCommand
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="paramName"></param>
+        /// <param name="paramValue"></param>
+        /// <returns></returns>
         public static DbCommand WithSqlParam(this DbCommand cmd, string paramName, Action<DbParameter> configureParam = null)
         {
             if (string.IsNullOrEmpty(cmd.CommandText) && cmd.CommandType != System.Data.CommandType.StoredProcedure)
@@ -63,6 +77,27 @@ namespace DespatchWebContextExtensions
             param.ParameterName = paramName;
             configureParam?.Invoke(param);
             cmd.Parameters.Add(param);
+            return cmd;
+        }
+
+        /// <summary>
+        /// Creates a DbParameter object based on the SqlParameter and adds it to a DbCommand.
+        /// This enabled the ability to provide custom types for SQL-parameters.
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="paramName"></param>
+        /// <param name="paramValue"></param>
+        /// <returns></returns>
+        public static DbCommand WithSqlParam(this DbCommand cmd, string paramName, SqlParameter parameter)
+        {
+            if (string.IsNullOrEmpty(cmd.CommandText) && cmd.CommandType != System.Data.CommandType.StoredProcedure)
+                throw new InvalidOperationException("Call LoadStoredProc before using this method");
+
+            //var param = cmd.CreateParameter();
+            //param.ParameterName = paramName;
+            //configureParam?.Invoke(param);
+            cmd.Parameters.Add(parameter);
+
             return cmd;
         }
 
@@ -83,27 +118,9 @@ namespace DespatchWebContextExtensions
                 return MapToList<T>(_reader);
             }
 
-            public List<Dictionary<string, string>> GetDataReader()
+            public T? ReadToValue<T>() where T : struct
             {
-                var objList = new List<Dictionary<string, string>>();
-
-                if (_reader.HasRows)
-                {
-                    var colMapping = _reader.GetColumnSchema()
-                        .ToDictionary(key => key.ColumnName.ToLower());
-
-                    while (_reader.Read())
-                    {
-                        foreach (KeyValuePair<string, DbColumn> item in colMapping)
-                        {
-                            objList.Add(new Dictionary<string, string>()
-                                {
-                                    {item.Key, item.Value.ToString()}
-                                });
-                        }
-                    }
-                }
-                return objList;
+                return MapToValue<T>(_reader);
             }
 
             public Task<bool> NextResultAsync()
@@ -121,22 +138,6 @@ namespace DespatchWebContextExtensions
                 return _reader.NextResult();
             }
 
-            public string PropName(PropertyInfo prop)
-            {
-                var returnData = "";
-                if (prop.GetCustomAttributes().Any())
-                {
-                    var p = prop.GetCustomAttributes().FirstOrDefault();
-                    if (p?.GetType() == typeof(DespatchWeb.EntityClasses.PropName))
-                    {
-                        returnData = ((DespatchWeb.EntityClasses.PropName)p)?.GetName();
-                    }
-                    
-                }
-
-                return returnData;
-            }
-
             /// <summary>
             /// Retrieves the column values from the stored procedure and maps them to <typeparamref name="T"/>'s properties
             /// </summary>
@@ -146,10 +147,10 @@ namespace DespatchWebContextExtensions
             private IList<T> MapToList<T>(DbDataReader dr)
             {
                 var objList = new List<T>();
-                var props = typeof(T).GetRuntimeProperties();
+                var props = typeof(T).GetRuntimeProperties().ToList();
 
                 var colMapping = dr.GetColumnSchema()
-                    .Where(x => props.Any(y => y.Name.ToLower() == x.ColumnName.ToLower() || x.ColumnName.ToLower() == PropName(y)))
+                    .Where(x => props.Any(y => y.Name.ToLower() == x.ColumnName.ToLower()))
                     .ToDictionary(key => key.ColumnName.ToLower());
 
                 if (dr.HasRows)
@@ -159,18 +160,17 @@ namespace DespatchWebContextExtensions
                         T obj = Activator.CreateInstance<T>();
                         foreach (var prop in props)
                         {
-                            object val = null;
                             if (colMapping.ContainsKey(prop.Name.ToLower()))
                             {
-                                val = dr.GetValue(colMapping[prop.Name.ToLower()].ColumnOrdinal.Value);
-                            }
+                                var column = colMapping[prop.Name.ToLower()];
 
-                            if (colMapping.ContainsKey(PropName(prop)))
-                            {
-                                val = dr.GetValue(colMapping[PropName(prop)].ColumnOrdinal.Value);
-                            }
+                                if (column?.ColumnOrdinal != null)
+                                {
+                                    var val = dr.GetValue(column.ColumnOrdinal.Value);
+                                    prop.SetValue(obj, val == DBNull.Value ? null : val);
+                                }
 
-                            prop.SetValue(obj, val == DBNull.Value ? null : val);
+                            }
                         }
                         objList.Add(obj);
                     }
@@ -178,7 +178,20 @@ namespace DespatchWebContextExtensions
                 return objList;
             }
 
-
+            /// <summary>
+            ///Attempts to read the first value of the first row of the resultset.
+            /// </summary>
+            private T? MapToValue<T>(DbDataReader dr) where T : struct
+            {
+                if (dr.HasRows)
+                {
+                    if (dr.Read())
+                    {
+                        return dr.IsDBNull(0) ? new T?() : new T?(dr.GetFieldValue<T>(0));
+                    }
+                }
+                return new T?();
+            }
         }
 
         /// <summary>
@@ -187,7 +200,7 @@ namespace DespatchWebContextExtensions
         /// <typeparam name="T"></typeparam>
         /// <param name="command"></param>
         /// <returns></returns>
-        public static void ExecuteStoredProc(this DbCommand command, Action<SprocResults> handleResults, System.Data.CommandBehavior commandBehaviour = System.Data.CommandBehavior.Default)
+        public static void ExecuteStoredProc(this DbCommand command, Action<SprocResults> handleResults, System.Data.CommandBehavior commandBehaviour = System.Data.CommandBehavior.Default, bool manageConnection = true)
         {
             if (handleResults == null)
             {
@@ -196,11 +209,11 @@ namespace DespatchWebContextExtensions
 
             using (command)
             {
-                if (command.Connection.State == System.Data.ConnectionState.Closed)
+                if (manageConnection && command.Connection.State == System.Data.ConnectionState.Closed)
                     command.Connection.Open();
                 try
                 {
-                    using (var reader = command.ExecuteReader())
+                    using (var reader = command.ExecuteReader(commandBehaviour))
                     {
                         var sprocResults = new SprocResults(reader);
                         // return new SprocResults();
@@ -209,89 +222,116 @@ namespace DespatchWebContextExtensions
                 }
                 finally
                 {
-                    command.Connection.Close();
+                    if (manageConnection)
+                    {
+                        command.Connection.Close();
+                    }
                 }
             }
         }
 
         /// <summary>
-        /// Executes a sql query without creating a model in EF core
-        /// <example>
-        /// using(var dr = await db.Database.ExecuteSqlQueryAsync("SELECT ID, Credits, LoginDate FROM ///SamplePlayer WHERE " +
-        ///"Name IN ('Electro', 'Nitro')"))
-        ///{
-        /// // Output rows.
-        ///var reader = dr.DbDataReader;
-        ///while (reader.Read())
-        ///{
-        ///Console.Write("{0}\t{1}\t{2} \n", reader[0], reader[1], reader[2]);
-        ///}
-        ///}
-        /// </example>
+        /// Executes a DbDataReader asynchronously and returns a list of mapped column values to the properties of <typeparamref name="T"/>.
         /// </summary>
-        /// <param name="databaseFacade"></param>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="command"></param>
         /// <returns></returns>
-        public static RelationalDataReader ExecuteSqlQuery(this DatabaseFacade databaseFacade, string sql, params object[] parameters)
+        public async static Task ExecuteStoredProcAsync(this DbCommand command, Action<SprocResults> handleResults, System.Data.CommandBehavior commandBehaviour = System.Data.CommandBehavior.Default, CancellationToken ct = default(CancellationToken), bool manageConnection = true)
         {
-            var concurrencyDetector = databaseFacade.GetService<IConcurrencyDetector>();
-
-            using (concurrencyDetector.EnterCriticalSection())
+            if (handleResults == null)
             {
-                var rawSqlCommand = databaseFacade
-                    .GetService<IRawSqlCommandBuilder>()
-                    .Build(sql, parameters);
+                throw new ArgumentNullException(nameof(handleResults));
+            }
 
-                return rawSqlCommand
-                    .RelationalCommand
-                    .ExecuteReader(
-                        databaseFacade.GetService<IRelationalConnection>(),
-                        parameterValues: rawSqlCommand.ParameterValues);
+            using (command)
+            {
+                if (manageConnection && command.Connection.State == System.Data.ConnectionState.Closed)
+                    await command.Connection.OpenAsync(ct).ConfigureAwait(false);
+                try
+                {
+                    using (var reader = await command.ExecuteReaderAsync(commandBehaviour, ct).ConfigureAwait(false))
+                    {
+                        var sprocResults = new SprocResults(reader);
+                        handleResults(sprocResults);
+                    }
+                }
+                finally
+                {
+                    if (manageConnection)
+                    {
+                        command.Connection.Close();
+                    }
+                }
             }
         }
 
         /// <summary>
-        /// Executes a sql query without creating a model in EF core
-        /// <example>
-        /// using(var dr = await db.Database.ExecuteSqlQueryAsync("SELECT ID, Credits, LoginDate FROM ///SamplePlayer WHERE " +
-        ///"Name IN ('Electro', 'Nitro')"))
-        ///{
-        /// // Output rows.
-        ///var reader = dr.DbDataReader;
-        ///while (reader.Read())
-        ///{
-        ///Console.Write("{0}\t{1}\t{2} \n", reader[0], reader[1], reader[2]);
-        ///}
-        ///}
-        /// </example>
+        /// Executes a non-query.
         /// </summary>
-        /// <param name="databaseFacade"></param>
-        /// <param name="sql"></param>
-        /// <param name="cancellationToken"></param>
-        /// <param name="parameters"></param>
+        /// <param name="command"></param>
+        /// <param name="commandBehaviour"></param>
+        /// <param name="manageConnection"></param>
         /// <returns></returns>
-        public static async Task<RelationalDataReader> ExecuteSqlQueryAsync(this DatabaseFacade databaseFacade, 
-            string sql, 
-            CancellationToken cancellationToken = default(CancellationToken),
-            params object[] parameters)
+        public static int ExecuteStoredNonQuery(this DbCommand command, System.Data.CommandBehavior commandBehaviour = System.Data.CommandBehavior.Default, bool manageConnection = true)
         {
+            int numberOfRecordsAffected = -1;
 
-            var concurrencyDetector = databaseFacade.GetService<IConcurrencyDetector>();
-
-            using (concurrencyDetector.EnterCriticalSection())
+            using (command)
             {
-                var rawSqlCommand = databaseFacade
-                    .GetService<IRawSqlCommandBuilder>()
-                    .Build(sql, parameters);
+                if (command.Connection.State == System.Data.ConnectionState.Closed)
+                {
+                    command.Connection.Open();
+                }
 
-                return await rawSqlCommand
-                    .RelationalCommand
-                    .ExecuteReaderAsync(
-                        databaseFacade.GetService<IRelationalConnection>(),
-                        parameterValues: rawSqlCommand.ParameterValues,
-                        cancellationToken: cancellationToken);
+                try
+                {
+                    numberOfRecordsAffected = command.ExecuteNonQuery();
+                }
+                finally
+                {
+                    if (manageConnection)
+                    {
+                        command.Connection.Close();
+                    }
+                }
             }
+
+            return numberOfRecordsAffected;
+        }
+
+        /// <summary>
+        /// Executes a non-query asynchronously.
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="commandBehaviour"></param>
+        /// <param name="ct"></param>
+        /// <param name="manageConnection"></param>
+        /// <returns></returns>
+        public async static Task<int> ExecuteStoredNonQueryAsync(this DbCommand command, System.Data.CommandBehavior commandBehaviour = System.Data.CommandBehavior.Default, CancellationToken ct = default(CancellationToken), bool manageConnection = true)
+        {
+            int numberOfRecordsAffected = -1;
+
+            using (command)
+            {
+                if (command.Connection.State == System.Data.ConnectionState.Closed)
+                {
+                    await command.Connection.OpenAsync(ct).ConfigureAwait(false);
+                }
+
+                try
+                {
+                    numberOfRecordsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    if (manageConnection)
+                    {
+                        command.Connection.Close();
+                    }
+                }
+            }
+
+            return numberOfRecordsAffected;
         }
 
     }
