@@ -2,22 +2,22 @@
     <img src="/images/menu-urgent.png" class="logo" />
 
     <div class="btn-group" role="group">
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'new'})">New</button>
-        <button type="button" class="btn btn-sm btn-secondary topBarActive" ng-click="setFilters({'status':'nda'})">NDA</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'active'})">Active</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'done'})">Done</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'status':'all'})">All</button>
+        <button type="button" class="btn new btn-sm btn-secondary" ng-click="setFilters({'status':'new'})">New</button>
+        <button type="button" class="btn nda btn-sm btn-secondary" ng-click="setFilters({'status':'nda'})">NDA</button>
+        <button type="button" class="btn active btn-sm btn-secondary" ng-click="setFilters({'status':'active'})">Active</button>
+        <button type="button" class="btn done btn-sm btn-secondary" ng-click="setFilters({'status':'done'})">Done</button>
+        <button type="button" class="btn all btn-sm btn-secondary" ng-click="setFilters({'status':'all'})">All</button>
     </div>
 
     <div class="btn-group" role="group" aria-label="Basic example">
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'city'})">City</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'truck'})">Truck</button>
-        <button type="button" class="btn btn-sm btn-secondary topBarActive" ng-click="setFilters({'area':'main1'})">Main1</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'main2'})">Main2</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'central'})">Central</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'shore'})">Shore</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'west'})">West</button>
-        <button type="button" class="btn btn-sm btn-secondary" ng-click="setFilters({'area':'all'})">All</button>
+        <button type="button" class="btn city btn-sm btn-secondary" ng-click="setFilters({'area':'city'})">City</button>
+        <button type="button" class="btn truck btn-sm btn-secondary" ng-click="setFilters({'area':'truck'})">Truck</button>
+        <button type="button" class="btn main1 btn-sm btn-secondary" ng-click="setFilters({'area':'main1'})">Main1</button>
+        <button type="button" class="btn main2 btn-sm btn-secondary" ng-click="setFilters({'area':'main2'})">Main2</button>
+        <button type="button" class="btn central btn-sm btn-secondary" ng-click="setFilters({'area':'central'})">Central</button>
+        <button type="button" class="btn shore btn-sm btn-secondary" ng-click="setFilters({'area':'shore'})">Shore</button>
+        <button type="button" class="btn west btn-sm btn-secondary" ng-click="setFilters({'area':'west'})">West</button>
+        <button type="button" class="btn all btn-sm btn-secondary" ng-click="setFilters({'area':'all'})">All</button>
     </div>
     
     <div class="btn-group box-search">
@@ -92,11 +92,11 @@
 
 <div ng-include="'app/components/home/tpls/eventForm.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/gatherForm.tpl'"></div>
+<div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.1'"></div>
 
 <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/gpsForm.tpl'"></div>
+<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.7'"></div>
 
 <div id='draggingItems'></div>
 

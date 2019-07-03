@@ -258,6 +258,9 @@ body {
   padding: 20px;
   display: none;
 }
+.gpsForm .fa-exclamation {
+  color: red;
+}
 .gpsForm .gps-box {
   background: #FFF;
   width: 900px;

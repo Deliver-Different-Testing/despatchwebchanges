@@ -22,14 +22,12 @@ namespace DespatchWeb.Repositories
             _context = context;
         }
 
-        public async Task AddFollowUpEventAsync(string jobNo, int clientId, string contact, int staffId, int courierId, int jobId, int jobType, string despatcherName )
+        public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType )
         {
-            var eventType = 69;
             DateTime? lateTime = null;
             DateTime? etaTime = null;
             int? staffOut = null;
             DateTime? responseTime = null;
-            var notes = "Follow up dangerous goods license with courier";
             var pageCourier = false;
             var closed = false;
             string description = null;
@@ -57,7 +55,8 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@CourierID", courierId)
                 .WithSqlParam("@JobID", jobId)
                 .WithSqlParam("@Despatcher", despatcherName)
-                .ExecuteNonQueryAsync();
+                .WithSqlParam("@JobType", jobType)
+                .ExecuteStoredNonQueryAsync();
 
 
 

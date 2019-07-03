@@ -23,7 +23,7 @@
 
 <table class="table table-striped table-responsive table-rows" id="jobGroups" data-group="jobsGrouped">
     <tbody>
-        <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobGroups | filter: box.searchBox" ng-click="selectJob(job)" context-menu="jobsMenu" data-jobid="{{job.ID}}" data-jobno="{{job.JobNo}}" data-index="{{$index}}">
+        <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobGroups | filter: box.searchBox" ng-click="selectJob(job)" context-menu="setJobsMenu" data-jobid="{{job.ID}}" data-jobno="{{job.JobNo}}" data-index="{{$index}}">
             <td class="status" ng-class="job.Status">{{job.Status}}</td>
             <td>{{job.Speed}}</td>
             <td>{{job.Notify}}</td>

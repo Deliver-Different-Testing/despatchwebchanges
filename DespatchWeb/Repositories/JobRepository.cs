@@ -9,6 +9,7 @@ using System.Linq.Dynamic.Core;
 using Microsoft.EntityFrameworkCore;
 using DespatchWebContextExtensions;
 using Remotion.Linq.Clauses;
+using System.Data.Common;
 
 namespace DespatchWeb.Repositories
 {
@@ -31,18 +32,26 @@ namespace DespatchWeb.Repositories
                         ID = j.UcjbId,
                         Time = j.UcjbTime,
                         Direct = j.Direct,
+                        Van = j.UcjbVan,
+                        Return = j.UcjbReturn,
                         JobNo = j.UcjbNumber,
                         Speed = j.SpeedShortName,
+                        SpeedID = j.UcjbSpeed,
                         Notify = j.NotifiedSpeed,
+                        AcceptedJobTypeID = j.AcceptedJobTypeId,
                         Vehicle = new Vehicle()
                         {
                             id = j.UcjbSize,
                             label = Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
                         },
                         Client = j.UcclCode,
+                        ClientID = j.UcjbClientId,
+                        JobType = (int)j.UcjbType,
                         From = j.SuburbFrom,
+                        FromSuburbID = j.FromSuburbId,
                         FromAddress = j.UcjbFromAddr,
                         To = j.SuburbTo,
+                        ToSuburbID = j.ToSuburbId,
                         ToAddress = j.UcjbToAddr,
                         Courier = j.CourierCode,
                         Remain = j.RemainTime,
@@ -66,6 +75,7 @@ namespace DespatchWeb.Repositories
                         SigNotRequired = j.SigNotRequired,
                         Charge = $"{j.UcjbAmount:C}",
                         Date = j.UcjbDate.ToString("dd/MM/yyyy"),
+                        Booked = DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
                         DispatchTime = j.UcjbDispTime,
                         PUTime = j.Putime,
                         ClientNotes = j.ClientNotes,
@@ -83,7 +93,12 @@ namespace DespatchWeb.Repositories
                             CourierID = j.UcjbCourierId
                         },
                         AllowDispatch = j.AllowDespatch,
-                        DGClass = j.Dgclass
+                        DGClass = j.Dgclass,
+                        DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
+                        TruckWeightLimit = j.TruckWeightLimit,
+                        TruckStartTime = j.TruckStartTime,
+                        TruckHours = j.TruckHours,
+                        PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1)
 
                     }).ToList();
             return list;
@@ -187,18 +202,26 @@ namespace DespatchWeb.Repositories
                     ID = j.UcjbId,
                     Time = j.UcjbTime,
                     Direct = j.Direct,
+                    Van = j.UcjbVan,
+                    Return = j.UcjbReturn,
                     JobNo = j.UcjbNumber,
                     Speed = j.SpeedShortName,
+                    SpeedID = j.UcjbSpeed,
                     Notify = j.NotifiedSpeed,
+                    AcceptedJobTypeID = j.AcceptedJobTypeId,
                     Vehicle = new Vehicle()
                     {
                         id = j.UcjbSize,
                         label = Enum.GetName(typeof(Enums.Vehicle), (int) (j.UcjbSize ?? 2))
                     },
                     Client = j.UcclCode,
+                    ClientID = j.UcjbClientId,
+                    JobType = (int)j.UcjbType,
                     From = j.SuburbFrom,
+                    FromSuburbID = j.FromSuburbId,
                     FromAddress = j.UcjbFromAddr,
                     To = j.SuburbTo,
+                    ToSuburbID = j.ToSuburbId,
                     ToAddress = j.UcjbToAddr,
                     Courier = j.CourierCode,
                     Remain = j.RemainTime,
@@ -221,6 +244,7 @@ namespace DespatchWeb.Repositories
                     OurRef = j.UcjbOurRef,
                     SigNotRequired = j.SigNotRequired,
                     Charge = $"{j.UcjbAmount:C}",
+                    Booked = DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
                     Date = j.UcjbDate.ToString("dd/MM/yyyy"),
                     DispatchTime =j.UcjbDispTime, 
                     PUTime = j.Putime,
@@ -252,7 +276,12 @@ namespace DespatchWeb.Repositories
                         CourierID = j.UcjbCourierId
                     },
                     AllowDispatch = j.AllowDespatch,
-                    DGClass = j.Dgclass
+                    DGClass = j.Dgclass,
+                    DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
+                    TruckWeightLimit = j.TruckWeightLimit,
+                    TruckStartTime = j.TruckStartTime,
+                    TruckHours = j.TruckHours,
+                    PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1)
 
 
                 }).ToList();
@@ -278,6 +307,141 @@ namespace DespatchWeb.Repositories
 
             }
 
+        }
+
+        public async Task RestoreSplitJobs(string jobIds)
+        {
+            foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+            {
+                await _context.LoadStoredProc("DES_stpJob_SplitJobRestore")
+                .WithSqlParam("@JobID", int.Parse(jid))
+                .ExecuteStoredNonQueryAsync();
+            }
+        }
+
+        public async Task RestoreJobs(string jobIds)
+        {
+            foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+            {
+                await _context.LoadStoredProc("uspRestoreJob")
+                .WithSqlParam("@intJobID", int.Parse(jid))
+                .ExecuteStoredNonQueryAsync();
+            }
+        }
+
+        public List<SuburbLookup> Suburbs() {
+            var data = (from s in _context.TucSuburbs
+                              select s).Select(x => new SuburbLookup() { ID = x.UcsuId, Text = x.UcsuName, Alias = x.GoogleSuburbAlias });
+            return data.ToList();
+        }
+
+        public async Task<decimal> RateTruckJob (int clientId, int fromId, int toId, double weight, int size, int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems, 
+                                                int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)
+        {
+            DbParameter outputDescriptionParam = null;
+            DbParameter outputRateParam = null;
+
+            await _context.LoadStoredProc("DES_stpJob_Truck_Rate_Described")
+               .WithSqlParam("@ClientID", clientId)
+               .WithSqlParam("@FromSuburbID", fromId)
+               .WithSqlParam("@ToSuburbID", toId)
+               .WithSqlParam("@AverageWeight", weight)
+               .WithSqlParam("@Size", size)
+               .WithSqlParam("@Speed", speed)
+               .WithSqlParam("@Quantity", qty)
+               .WithSqlParam("@Booked", bookedDate)
+               .WithSqlParam("@Pickup", pickUp)
+               .WithSqlParam("@Dropoff", dropOff)
+               .WithSqlParam("@PrivateRes", privateRes)
+               .WithSqlParam("@OversizeItems", oversizeItems)
+               .WithSqlParam("@OverWeightItems", overWeightItems)
+               .WithSqlParam("@DangerousGoods", dGClass)
+               .WithSqlParam("@TruckStartTime", truckStartTime)
+               .WithSqlParam("@TruckHours", truckHours)
+               .WithSqlParam("@Description", (dbParam) =>
+               {
+                   dbParam.Direction = System.Data.ParameterDirection.Output;
+                   dbParam.DbType = System.Data.DbType.String;
+                   dbParam.Size = 1000;
+                   outputDescriptionParam = dbParam;
+               })
+               .WithSqlParam("@Rate", (dbParam) =>
+               {
+                   dbParam.Direction = System.Data.ParameterDirection.Output;
+                   dbParam.DbType = System.Data.DbType.Decimal;
+                   outputRateParam = dbParam;
+               })
+               .ExecuteStoredNonQueryAsync();
+
+            return (decimal)outputRateParam.Value;
+                
+        }
+
+        public async Task<decimal> RateJob (int clientId, int fromId, int toId, int speed, bool pedal, bool van, bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId, 
+                                            string ourRef, string refA, string refB, int quantity, DateTime booked)
+        {
+            DbParameter outputRateParam = null;
+
+            await _context.LoadStoredProc("sp_RateJob2")
+               .WithSqlParam("@intClientID", clientId)
+               .WithSqlParam("@intFromID", fromId)
+               .WithSqlParam("@intToID", toId)
+               .WithSqlParam("@intSpeed", speed)
+               .WithSqlParam("@bolPedal", pedal)
+               .WithSqlParam("@bolVan", van)
+               .WithSqlParam("@bolReturn", returnJob)
+               .WithSqlParam("@intWeight", weight)
+               .WithSqlParam("@curAmount", (dbParam) =>
+               {
+                   dbParam.Direction = System.Data.ParameterDirection.Output;
+                   dbParam.DbType = System.Data.DbType.Decimal;
+                   outputRateParam = dbParam;
+               })
+               .WithSqlParam("@Size", size)
+               .WithSqlParam("@IncludeFuelSurcharge", includeFuelSurcharge)
+               .WithSqlParam("@OurRef", ourRef)
+               .WithSqlParam("@ClientRefA", refA)
+               .WithSqlParam("@ClientRefB", refB)
+               .WithSqlParam("@Quantity", quantity)
+               .WithSqlParam("@Booked", booked)
+
+               .ExecuteStoredNonQueryAsync();
+
+            return (decimal)outputRateParam.Value;
+        }
+
+        public async Task<TruckItemsSummary> TruckJobItems (int jobId, int truckWeightLimit)
+        {
+            var result = new List<TruckItemsSummary>();
+            await _context.LoadStoredProc("qry_tucJobItems")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@TruckWeightLimit", truckWeightLimit)
+                .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<TruckItemsSummary>().ToList(); });
+            return result.FirstOrDefault();
+        }
+
+        public async Task UpdateDeliveryAddress (int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryAddress")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@ToSuburb", toSuburbId)
+                .WithSqlParam("@Address", address)
+                .WithSqlParam("@DeliveryLatitude", deliveryLat)
+                .WithSqlParam("@DeliveryLongitude", deliveryLng)
+                .WithSqlParam("@CBD", cbd)
+                .WithSqlParam("@Rate", rate)
+                .ExecuteStoredNonQueryAsync();
+
+        }
+
+        public async Task UpdateJob (int jobId, string field, string value, decimal rate )
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJob")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@PropertyName", field)
+                .WithSqlParam("@Value", value)
+                .WithSqlParam("@Rate", rate)
+                .ExecuteStoredNonQueryAsync();
         }
     }
 }

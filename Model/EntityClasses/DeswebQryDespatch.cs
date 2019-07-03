@@ -18,6 +18,8 @@ namespace DespatchWeb.EntityClasses
 			OnCreated();
 		}
 
+		/// <summary>Gets or sets the AcceptedJobTypeId field. </summary>
+		public Nullable<System.Int32> AcceptedJobTypeId { get; set;}
 		/// <summary>Gets or sets the AlertLateDelivery field. </summary>
 		public System.Int32 AlertLateDelivery { get; set;}
 		/// <summary>Gets or sets the AlertLatePickUp field. </summary>
@@ -148,6 +150,12 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> ToSuburbId { get; set;}
 		/// <summary>Gets or sets the Truck field. </summary>
 		public Nullable<System.Boolean> Truck { get; set;}
+		/// <summary>Gets or sets the TruckHours field. </summary>
+		public Nullable<System.Double> TruckHours { get; set;}
+		/// <summary>Gets or sets the TruckStartTime field. </summary>
+		public Nullable<System.DateTime> TruckStartTime { get; set;}
+		/// <summary>Gets or sets the TruckWeightLimit field. </summary>
+		public Nullable<System.Int32> TruckWeightLimit { get; set;}
 		/// <summary>Gets or sets the UcclAccountStatus field. </summary>
 		public Nullable<System.Int32> UcclAccountStatus { get; set;}
 		/// <summary>Gets or sets the UcclCode field. </summary>

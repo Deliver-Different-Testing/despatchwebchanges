@@ -8,7 +8,8 @@
   {
     "outputFileName": "wwwroot/css/udispatch.min.css",
     "inputFiles": [
-      "wwwroot/css/udispatch.css"
+      "wwwroot/css/udispatch.css",
+      "wwwroot/css/promiseButton.css"
     ]
   },
   {
@@ -17,8 +18,10 @@
       "wwwroot/lib/moment.js",
       "wwwroot/lib/sortable.js",
       "wwwroot/lib/contextMenu.js",
+      "wwwroot/lib/ModernizerLocalStorage.js",
       "wwwroot/lib/autocomplete/angular-auto-complete.js",
       "wwwroot/lib/ng-map-autocomplete.js",
+      "wwwroot/lib/angular-promise-buttons.js",
       "wwwroot/app/app.js",
       "wwwroot/app/filters.js",
       "wwwroot/js/site.js",

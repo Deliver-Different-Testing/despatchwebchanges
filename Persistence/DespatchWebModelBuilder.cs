@@ -22,6 +22,7 @@ namespace DespatchWeb
 			MapTblDespatchView(modelBuilder.Entity<TblDespatchView>());
 			MapTucClientContact(modelBuilder.Entity<TucClientContact>());
 			MapTucJobItem(modelBuilder.Entity<TucJobItem>());
+			MapTucSuburb(modelBuilder.Entity<TucSuburb>());
 		}
 
 		/// <summary>Defines the mapping information for the entity 'DeswebQryDespatch'</summary>
@@ -100,6 +101,7 @@ namespace DespatchWeb
 			config.Property(t => t.Direct);
 			config.Property(t => t.FirstJob);
 			config.Property(t => t.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
+			config.Property(t => t.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
 			config.Property(t => t.IsParentJob);
 			config.Property(t => t.RootParentId).HasColumnName("RootParentID");
 			config.Property(t => t.DisplaySplitJobDetail);
@@ -137,6 +139,9 @@ namespace DespatchWeb
 			config.Property(t => t.FdcourierId).HasColumnName("FDCourierID");
 			config.Property(t => t.FdcourierCode).HasColumnName("FDCourierCode").HasMaxLength(50);
 			config.Property(t => t.HasGeoLocation);
+			config.Property(t => t.TruckWeightLimit);
+			config.Property(t => t.TruckStartTime);
+			config.Property(t => t.TruckHours);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TblClient'</summary>
@@ -531,6 +536,42 @@ namespace DespatchWeb
 			config.Property(t => t.Do).HasColumnName("DO");
 			config.Property(t => t.Dgclass).HasColumnName("DGClass");
 			config.Property(t => t.Notes).HasMaxLength(4000);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TucSuburb'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTucSuburb(EntityTypeBuilder<TucSuburb> config)
+		{
+			config.ToTable("tucSuburb");
+			config.HasKey(t => t.UcsuId);
+			config.Property(t => t.UcsuId).HasColumnName("ucsuID").ValueGeneratedOnAdd();
+			config.Property(t => t.UcsuArea).HasColumnName("ucsuArea");
+			config.Property(t => t.UcsuName).HasColumnName("ucsuName").HasMaxLength(30).IsRequired();
+			config.Property(t => t.UcsuRegion).HasColumnName("ucsuRegion");
+			config.Property(t => t.UcsuBaseRegion).HasColumnName("ucsuBaseRegion");
+			config.Property(t => t.UcsuKm).HasColumnName("ucsuKM");
+			config.Property(t => t.SiteId).HasColumnName("SiteID");
+			config.Property(t => t.DeliveryStandardId).HasColumnName("DeliveryStandardID");
+			config.Property(t => t.SamedayRegion);
+			config.Property(t => t.Smsname).HasColumnName("SMSName").HasMaxLength(50).IsRequired();
+			config.Property(t => t.Priority);
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.LastModified);
+			config.Property(t => t.LastModifiedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Alias).HasMaxLength(500);
+			config.Property(t => t.OurRefCode).HasMaxLength(50);
+			config.Property(t => t.BaggageArea);
+			config.Property(t => t.FreightForwardAmount);
+			config.Property(t => t.Sdamount).HasColumnName("SDAmount");
+			config.Property(t => t.City).HasMaxLength(50);
+			config.Property(t => t.AirportId).HasColumnName("AirportID");
+			config.Property(t => t.Gsssuburb).HasColumnName("GSSSuburb").HasMaxLength(50);
+			config.Property(t => t.SdrawAmount).HasColumnName("SDRawAmount");
+			config.Property(t => t.AirportKm).HasColumnName("AirportKM");
+			config.Property(t => t.GoogleSuburbAlias).HasMaxLength(500);
+			config.Property(t => t.PostCode).HasMaxLength(200);
+			config.Property(t => t.PrefixRunName).HasMaxLength(50);
 		}
 	}
 

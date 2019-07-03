@@ -6,9 +6,13 @@ angular
 		"ui.sortable",
 		"ui.bootstrap.contextMenu", 
 		"cfp.hotkeys",
-		"ui.timepicker",
+        "ui.timepicker",
+        "ngMap",
         "ngMapAutocomplete",
-		'angularjs-dropdown-multiselect'
+        'angularjs-dropdown-multiselect',
+        'heremaps',
+        'ngAnimate',
+        'angularPromiseButtons'
 	])
 	.config(["$urlRouterProvider", "$stateProvider", function($urlRouterProvider, $stateProvider) {
 		$urlRouterProvider.otherwise("/");

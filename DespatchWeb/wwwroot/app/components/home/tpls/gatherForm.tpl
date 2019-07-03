@@ -24,7 +24,7 @@
           </div>
 
         </div>
-        <div class="gatherSubmit btn btn-primary" ng-click="gather.submit()">{{gather.form.submitValue}}</div>
+        <div class="gatherSubmit btn btn-primary promise-btn" ng-click="gather.submit()">{{gather.form.submitValue}}</div>
     </div>
 
 

@@ -1,12 +1,51 @@
+
+
 angular
     .module("uDispatch")
-    .controller("HomeControl", ["$scope", "DispatchData", "$state", "$filter", "$parse", "hotkeys", function ($scope, DispatchData, $state, $filter, $parse, hotkeys) {
+    .config(["HereMapsConfigProvider", function (HereMapsConfigProvider) {
+        HereMapsConfigProvider.setOptions({
+            'app_id': 'bBPfh2x8Cauun3ygLMAx',
+            'app_code': 'yjfwTdkin_R2rGXYTrwWVg',
+            'useHTTPS': true,
+            'useCIT': true,
+            'mapTileConfig': {
+                metadataQueryParams: {
+                    'lg2': 'ara'
+                }
+            }
+        });
+    }])
+    .controller("HomeControl", ["$scope", "DispatchData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout",  function ($scope, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout) {
 
         $scope.gather = {
             submit: function () {
-                $scope.gather.form.onSubmit();
-                $(".gatherForm").hide();
+                return $scope.gather.form.onSubmit().then(function (response) {
+                    if (response.data === "OK") {
+                        $(".gatherForm").hide();
+                        var j = $scope.currentJob;
+                        $scope.getData().then(function () {
+                            var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                            $scope.selectJob(refreshedJob);
+                            $timeout(function () {
+                                $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+                                
+                                var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                                var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
 
+
+                                try {
+                                    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                    $parentDiv.scrollTop(goTop);
+                                    
+                                } catch (e) {
+                                    //ignore
+                                }
+                            }, 1000);
+                            
+                        });
+                    }
+                });
+                
             },
             cancel: function () {
                 $(".gatherForm").hide();
@@ -25,33 +64,38 @@ angular
                 "size": [
                     {
                         "id": 1,
-                        "label": "Car"
-                    },
-                    {
-                        "id": 2,
                         "label": "Bike"
                     },
                     {
+                        "id": 2,
+                        "label": "Car"
+                    },
+                    {
                         "id": 3,
-                        "label": "Truck"
+                        "label": "Van"
                     },
                     {
                         "id": 4,
-                        "label": "Van"
+                        "label": "Truck"
+                    },
+                    {
+                        "id": 5,
+                        "label": "Scooter"
                     }
                 ]
             }
         };
+        $scope.markers = [];
 
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.11",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.13",
                 "showSearch": 1
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.5",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.11",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -155,9 +199,6 @@ angular
                                 {
                                     "name": "jobDetail",
                                     "height": "300px"
-                                },
-                                {
-                                    "name": "map"
                                 }
                             ]
                         },
@@ -168,25 +209,28 @@ angular
                                 {
                                     "name": "clearLists",
                                     "height": "600px"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "col4",
-                            "boxes": [
-                                {
-                                    "name": "jobUpdates",
-                                    "height": "300px"
                                 },
                                 {
-                                    "name": "supports",
-                                    "height": "300px"
-                                },
-                                {
-                                    "name": "lateCalls"
+                                    "name": "map"
                                 }
                             ]
-                        }
+                        }//,
+                        //{
+                        //    "id": "col4",
+                        //    "boxes": [
+                        //        {
+                        //            "name": "jobUpdates",
+                        //            "height": "300px"
+                        //        },
+                        //        {
+                        //            "name": "supports",
+                        //            "height": "300px"
+                        //        },
+                        //        {
+                        //            "name": "lateCalls"
+                        //        }
+                        //    ]
+                        //}
                     ]
                 }
             }
@@ -384,7 +428,7 @@ angular
                     setTimeout($scope.gather.submit(), 0);
                 }
                 if (event.srcElement.id === "gps") {
-	                $scope.searchCourier(event.srcElement.value);
+                    $scope.searchCourier(event.srcElement.value);
                 }
             }
         });
@@ -465,20 +509,19 @@ angular
                     reset();
                     return;
                 }
-                if (j.dgClass !== null && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days')))
-                {
+                if (j.dgClass !== null && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
                     reset();
                     alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
                     return;
                 }
 
-                if (j.dgClass !== null && dgClass > 0) {
-                    DispatchData.addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName);
+                if (j.dgClass !== null && j.dgClass > 0) {
+                    DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
                 }
 
                 callData.jobs.push($(this).attr("data-jobid"));
             });
-            
+
             DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
             $scope.getJobList().then(function () {
                 //$("#box-jobDetail").find(".loading").show();
@@ -486,70 +529,69 @@ angular
 
                 $scope.courier = { gpsCourier: foundCourier.id };
                 $scope.searchCourier();
-                //$scope.getCurrentJobs(foundCourier.courierID);
-                //$scope.currentWorkSelection = " for Courier " + foundCourier.id;
-
-                ////SHOW MAP
-                ////$scope.currentJob = null;
-                //$scope.currentCourier = foundCourier;
-
-                //$scope.currentSelection = " for Courier " + courier.courier + " " + courier.name;
-
-                //setTimeout(function () {
-                //    $(document).ready(function (event) {
-                //        $("#box-jobDetail").find(".loading").fadeOut();
-                //        $("#box-map").find(".loading").fadeOut();
-                //    });
-                //},
-                //    100);
+               
 
             });
-            //DispatchData.doAPI(callData).then(function (data) {
+            
 
-            //    console.log(data);
-
-
-            //    if (data.response === "Success") {
-
-            //        var list = $(".activeTable").attr("id");
-
-            //        setTimeout(function () {
-
-            //            $(".activeTable .active").each(function () {
-
-            //                //$(this).hide();
-            //                $(this).find(".selectjob").click();
-
-            //                var index = $scope[list].indexOf($scope.jobForDispatch);
-            //                console.log(index);
-            //                $scope[list].splice(index, 1);
-            //                $scope.$apply();
-
-            //            });
+        };
 
 
-            //        },
-            //            0);
+        ////////////////////////////////////////
+        // RESTORE JOB
+        ///////////////////////////////////////
+        $scope.restoreJobs = function () {
 
-            //        if ($(".activeTable").attr("data-group") !== "jobsGrouped") {
+            var callData = {
+                "call": "restoreJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": null
+            };
 
-            //            $scope.currentJob = false;
-            //            $scope.currentCourier = false;
-            //            $scope.potentialCouriers = false;
-            //            $scope.jobGroups = false;
-            //            $scope.jobsCurrentList = false;
-            //        }
+            var reset = function () {
+                $(".activeTable .active").each(function () {
+                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                    j.courier = null;
+                });
+            };
+            var foundCourier = null;
 
-            //    }
-            //    else {
+            $(".activeTable .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                var jn = j.jobNo;
+                DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                if (callData.courierID === null) {
+                    callData.courierID = j.courierData.courierID;
+                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                }
+                if (j.displaySplitJobDetail) {
+                    callData.splitJobs.push($(this).data("jobid"));
+                } else {
+                    callData.jobs.push($(this).attr("data-jobid"));
+                }
+            });
 
-            //        alert("Critical Error");
+            if (callData.splitJobs.length > 0) {
+                DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
+            }
+            if (callData.jobs.length > 0) {
+                DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+            }
 
-            //    }
+            
 
-            //    $scope.getData();
-            //});
+            $scope.getJobList().then(function () {
+                //$("#box-jobDetail").find(".loading").show();
+                $("#box-map").find(".loading").show();
 
+                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.searchCourier();
+                
+
+            });
+            
 
         };
 
@@ -903,7 +945,7 @@ angular
 
         };
 
-       
+
 
         // Search Courier GPS
         $scope.searchCourier = function () {
@@ -1001,8 +1043,15 @@ angular
             });
 
         };
-
-        $scope.jobFilters = { "status": "nda", "area": "main1", "order": "remain", "asc": "asc" };
+        var filtersObject = null;
+        if (Modernizr.localstorage) {
+            filtersObject = JSON.parse(localStorage.getItem("disp-filters-" + ContactID));
+        }
+        $scope.jobFilters = filtersObject || { "status": "nda", "area": "main1", "order": "remain", "asc": "asc" };
+        var f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
+        $(f).addClass("topBarActive");
+        f = ".top-bar .btn-group .btn." + $scope.jobFilters.area;
+        $(f).addClass("topBarActive");
         $scope.sort["jobList"] = "remain";
         $scope.setFilters = function (data) {
 
@@ -1070,33 +1119,95 @@ angular
 
         };
 
-        $scope.jobsMenu = [
-            // NEW IMPLEMENTATION
-            {
-                text: "Dispatch Selected",
-                click: function ($itemScope, $event, modelValue, text, $li) {
-                    $scope.dispatchJobsForm();
+        $scope.setJobsMenu = function () {
+            var multiple = $(".activeTable .active").length > 1;
+            var lastCourier = null;
+            var sameCourier = true;
+            $(".activeTable .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                if (lastCourier !== null && lastCourier !== j.courier) {
+                    sameCourier = false;
+                    return false;
                 }
-            },
-            {
-                text: "Restore",
-                click: function ($itemScope, $event, modelValue, text, $li) {
-                    //$scope.selected = $itemScope.item.name;
-                }
-            },
-            {
-                text: "Re-dispatch",
-                click: function ($itemScope, $event, modelValue, text, $li) {
-                    //$scope.items.splice($itemScope.$index, 1);
-                }
-            },
-            {
-                text: "Split Job",
-                click: function ($itemScope, $event, modelValue, text, $li) {
-                    //$scope.items.splice($itemScope.$index, 1);
-                }
+                lastCourier = j.courier;
+
+            });
+            console.log("same courier =" + sameCourier + " last courier =" + lastCourier);
+            if (!sameCourier) {
+                return [];
             }
-        ];
+            var multipleMenu = [
+                {
+                    text: "Dispatch Selected",
+                    click: function ($itemScope, $event, modelValue, text, $li) {
+                        $scope.dispatchJobsForm();
+                    }
+                },
+                {
+                    text: "Re-dispatch Selected",
+                    click: function ($itemScope, $event, modelValue, text, $li) {
+                        //$scope.items.splice($itemScope.$index, 1);
+                    }
+                }
+            ];
+            if (sameCourier) {
+                multipleMenu.push(
+                    {
+                        text: "Restore Selected",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.restoreJobs();
+                        }
+                    }
+                );
+            }
+
+            if ((sameCourier && lastCourier === null)) {
+
+                multipleMenu =
+                    [
+                        {
+                            text: "Dispatch Selected",
+                            click: function ($itemScope, $event, modelValue, text, $li) {
+                                $scope.dispatchJobsForm();
+                            }
+
+                        }
+                    ];
+            }
+
+
+            var fullMenu =
+                [
+                    {
+                        text: "Dispatch",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.dispatchJobsForm();
+                        }
+                    },
+                    
+                    {
+                        text: "Split Job",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            //$scope.items.splice($itemScope.$index, 1);
+                        }
+                    }
+                ];
+
+            if (lastCourier !== null) {
+                multipleMenu.shift();
+                multipleMenu.shift();
+                fullMenu.shift();
+                fullMenu.push(
+                    {
+                        text: "Restore",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.restoreJobs();
+                        }
+                    }
+                );
+            }
+            return multiple ? multipleMenu : fullMenu;
+        };
 
 
         $scope.courierMenu = [
@@ -1111,6 +1222,9 @@ angular
         ];
 
         $scope.getJobList = function () {
+            if (Modernizr.localstorage) {
+                localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.jobFilters));
+            }
             return DispatchData.getJobsFilter($scope.jobFilters).then(function (data) {
                 $scope.jobList = data;
 
@@ -1138,7 +1252,7 @@ angular
             $scope.jobsCurrentList = false;
             $scope.currentCourier = false;
 
-            $scope.getJobList();
+            
 
             $scope.getClearListsData = function () {
                 DispatchData.getClearLists().then(function (data) {
@@ -1154,6 +1268,10 @@ angular
 
             DispatchData.getActiveCouriers().then(function (data) {
                 $scope.pickCouriers = data;
+            });
+
+            DispatchData.getSuburbList().then(function (data) {
+                $scope.pickSuburbs = data;
             });
 
             ////////////////////////////
@@ -1412,8 +1530,8 @@ angular
             // JobUpdates
             ////////////////////////////
 
-            $("#box-jobUpdates").find(".loading").show();
-            DispatchData.getJobUpdates().then(function (data) {
+           // $("#box-jobUpdates").find(".loading").show();
+           /* DispatchData.getJobUpdates().then(function (data) {
                 $scope.jobUpdates = data;
 
                 $scope.jobUpdatesMenu = [
@@ -1475,7 +1593,7 @@ angular
             // SUPPORTS
             ////////////////////////////
 
-            $("#box-supports").find(".loading").show();
+           // $("#box-supports").find(".loading").show();
             DispatchData.getSupports().then(function (data) {
                 $scope.supports = data;
 
@@ -1533,7 +1651,7 @@ angular
                 setTimeout(function () { sizeHeadings($("#getSupports").parents(".column")); }, 1000);
                 setTimeout(function () { sizeHeadings($("#getSupports").parents(".column")); }, 2000);
             });
-
+            */
 
             ////////////////////////////
             // LATE CALLS
@@ -1605,8 +1723,11 @@ angular
                 //console.log(dateString);
                 //return new Date("1988/08/21" + dateString);
             };
+
+            return $scope.getJobList();
         };
 
+        
         $scope.getData();
 
         /////////////////////////
@@ -1629,39 +1750,116 @@ angular
             }
         ];
 
+        NgMap.getMap().then(function (map) {
+            $scope.map = map;
+            $scope.marker = map.markers[0];
+        });
+
+        $scope.onMapReady = function () {
+            //$scope.heremaps = heremaps;
+            
+            var options = {
+                minimumInputLength: 1,
+                ajax: {
+                    url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
+                    delay: 250,
+                    dataType: "json",
+                    data: function (params) {
+                        return {
+                            query: params.term,
+                            app_id: "bBPfh2x8Cauun3ygLMAx",
+                            app_code: "yjfwTdkin_R2rGXYTrwWVg",
+                            beginHighlight: "<b>",
+                            endHighlight: "</b>",
+                            country: "NZL"
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: $.map(data.suggestions, function (obj) {
+                                return { id: obj.locationId, text: obj.label.split(", ").reverse().join(", ") };
+                            })
+                        };
+                    }
+                },
+                escapeMarkup: function (markup) { return markup; }
+            };
+
+            $("#location").select2(options).on("select2:select", function (e) {
+                $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json", {
+                    app_id: "bBPfh2x8Cauun3ygLMAx",
+                    app_code: "yjfwTdkin_R2rGXYTrwWVg",
+                    locationId: e.params.data.id
+                }).done(function (data) {
+                    var locn = data.Response.View[0].Result[0].Location;
+                    console.log("Suburb = " + locn.Address.District);
+                    console.log("PostCode = " + locn.Address.PostalCode);
+                    $("#suburb").val(locn.Address.District);
+                    var mappedSub = $scope.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
+                    if (mappedSub !== undefined) {
+                        console.log(mappedSub);
+                        $('#our_suburb').val(mappedSub.id).trigger('change');
+                    }
+                    else {
+                        $('#our_suburb').val(null).trigger('change');
+                    }
+
+                    
+                    $scope.gpsForm.data.lat = locn.DisplayPosition.Latitude;
+                    $scope.gpsForm.data.long = locn.DisplayPosition.Longitude;
+                    $scope.gpsForm.data.address = locn.Address.HouseNumber + " " + locn.Address.Street;
+                    var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
+                    $scope.map.setCenter(ll);
+                    $scope.marker.setPosition(ll);
+
+                });
+            });
+
+            var suburbOptions = {
+                minimumInputLength: 1,
+                data: $scope.pickSuburbs
+            };
+
+            $("#our_suburb").select2(suburbOptions);
+
+        };
+
+        //$scope.onMapReady();
+
+      
 
         $scope.updateGPS = function (field) {
 
             var lat;
             var long;
             var q;
-            if (field === "ToAddress") {
+            if (field === "toAddress") {
 
 
-                if ($scope.currentJob.DeliveryLongitude) {
+                if ($scope.currentJob.deliveryLongitude) {
 
-                    lat = $scope.currentJob.DeliveryLatitude;
-                    long = $scope.currentJob.DeliveryLongitude;
+                    lat = $scope.currentJob.deliveryLatitude;
+                    long = $scope.currentJob.deliveryLongitude;
                     q = $("#gpsMap").attr("data-src") + lat + "," + long;
                 } else {
                     lat = "";
                     long = "";
-                    q = $("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentJob[field]);
+                    q = $("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentJob.toAddress);
                 }
             } else {
 
                 if ($scope.currentJob.PickUpLongitude) {
-                    lat = $scope.currentJob.PickUpLatitude;
-                    long = $scope.currentJob.PickUpLongitude;
+                    lat = $scope.currentJob.pickUpLatitude;
+                    long = $scope.currentJob.pickUpLongitude;
                     q = $("#gpsMap").attr("data-src") + lat + "," + long;
                 } else {
                     lat = "";
                     long = "";
-                    q = $("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentJob[field]);
+                    q = $("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentJob.fromAddress);
                 }
             }
 
-            console.log($scope.currentJob.PickupLatitude);
+            console.log($scope.currentJob.pickupLatitude);
             console.log(q);
             $("#gpsMap").attr("src", q);
 
@@ -1672,69 +1870,236 @@ angular
                     "long": long
                 },
                 submit: function (location) {
-
-                    var callData = {
-                        "call": "updateGeo",
-                        "address": field,
-                        "lat": location.lat(),
-                        "long": location.lng(),
-                        "jobID": $scope.currentJob.ID
-                    };
-
-                    DispatchData.doAPI(callData).then(function (data) {
-                        console.log(data);
-                        if (data.response === "Success") {
-
-                            if (field === "ToAddress") {
-                                $scope.currentJob.DeliveryLongitude = location.lng();
-                                $scope.currentJob.DeliveryLatitude = location.lat();
-                            } else {
-                                $scope.currentJob.PickUpLongitude = location.lng();
-                                $scope.currentJob.PickUpLatitude = location.lat();
-                            }
-
-                        } else {
-
-                            alert("Critical Error");
-
+                   
+                    var job = $scope.currentJob;
+                    if ($scope.gpsForm.data.our_suburb === undefined) {
+                        alert("You must pick one of our suburbs to map this address to");
+                        return $scope.gpsFormPromise;
+                    }
+                    
+                    if (field === "toAddress") {
+                        job.toAddress = $scope.gpsForm.data.address;
+                        if (job.toSuburbID.toString() !== $scope.gpsForm.data.our_suburb) {
+                            //ToDo create change event
+                            DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
                         }
+                        job.toSuburbID = parseInt($scope.gpsForm.data.our_suburb);
+                    }
+                    else {
+                        job.fromAddress = $scope.gpsForm.data.address;
+                        if (job.fromSuburbID.toString() !== $scope.gpsForm.data.our_suburb) {
+                            //ToDo create change event
+                            DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                        }
+                        job.fromSuburbID = parseInt($scope.gpsForm.data.our_suburb);
+                    }
+                    var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
 
-                        $(".gpsForm").hide(0);
 
-                    });
+                    //ToDo - set ucjbCBD true??
+                    if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
+                        //Truck Job
+                        return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
+                            DispatchData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff,
+                                job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2).then(function (truckRate) {
+                                console.log(truckRate);
+                                if (truckRate !== job.charge) {
+                                    DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                                }
+
+                                var callData = {
+                                    "call": "updateJobData",
+                                    "addressField": field,
+                                    "lat": $scope.gpsForm.data.lat,
+                                    "long": $scope.gpsForm.data.long,
+                                    "fromSuburbId": job.fromSuburbID,
+                                    "toSuburbId": job.toSuburbID,
+                                    "fromAddress": job.fromAddress,
+                                    "toAddress": job.toAddress,
+                                    "rate": truckRate,
+                                    "jobID": $scope.currentJob.id,
+                                    "CBD": pedal
+                                };
+                                console.log(callData);
+                                if (field === "toAddress") {
+                                    return DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, ""))).then(function () {
+                                        $(".gpsForm").hide(0);
+                                        var j = $scope.currentJob;
+                                        $scope.getData().then(function () {
+                                            var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                                            $scope.selectJob(refreshedJob);
+                                            $timeout(function () {
+                                                $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+
+                                                var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                                                var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                                                try {
+                                                    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                                    $parentDiv.scrollTop(goTop);
+
+                                                } catch (e) {
+                                                    //ignore
+                                                }
+                                            }, 1000);
+                                        });
+
+                                    });
+                                }
+                            });
+                        });
+                        
+                        
+                    }
+                    else {
+                        return DispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID,
+                            job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked).then(function (rate) {
+                                console.log(rate);
+                                if (rate !== job.charge) {
+                                    DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                                }
+
+                                var callData = {
+                                    "call": "updateJobData",
+                                    "addressField": field,
+                                    "lat": $scope.gpsForm.data.lat,
+                                    "long": $scope.gpsForm.data.long,
+                                    "fromSuburbId": job.fromSuburbID,
+                                    "toSuburbId": job.toSuburbID,
+                                    "fromAddress": job.fromAddress,
+                                    "toAddress": job.toAddress,
+                                    "rate": rate,
+                                    "jobID": $scope.currentJob.id,
+                                    "CBD": pedal
+                                };
+                                console.log(callData);
+                                if (field === "toAddress") {
+                                    return DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, ""))).then(function () {
+                                        $(".gpsForm").hide(0);
+                                        var j = $scope.currentJob;
+                                        $scope.getData().then(function () {
+                                            var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                                            $scope.selectJob(refreshedJob);
+                                            $timeout(function () {
+                                                $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+
+                                                var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                                                var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                                                try {
+                                                    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                                    $parentDiv.scrollTop(goTop);
+
+                                                } catch (e) {
+                                                    //ignore
+                                                }
+                                            }, 1000);
+                                        });
+                                    });
+                                }
+                                
+                            });
+                        
+                    }
+
+
 
 
                 },
                 cancel: function () {
                     $(".gpsForm").hide(0);
+                },
+                placeChanged: function (place) {
+                    if (place !== null) {
+                        $scope.place = place;
+                    } else {
+                        $scope.place = this.getPlace();
+                    }
+
+                    $scope.gpsForm.address = $scope.place.formatted_address;
+                    $scope.gpsForm.data.lat = $scope.place.geometry.location.lat();
+                    $scope.gpsForm.data.long = $scope.place.geometry.location.lng();
+                    if ($scope.place.address_components.find(x => x.types[0] === "postal_code")) {
+                        $scope.gpsForm.data.postCode = $scope.place.address_components
+                            .find(x => x.types[0] === "postal_code").long_name;
+                    }
+                    $scope.map.setCenter($scope.place.geometry.location);
+                },
+                moveMarker: function (event) {
+                    var latlng = event.latLng;
+                    //GeoCoder.geocode({ location: latlng })
+                    //    .then(function (result) {
+                    //        $scope.marker.setPosition(latlng);
+                    //        $scope.gpsForm.placeChanged(result[0]);
+                    //    });
+                },
+                markerDragend: function () {
+                    //Geo coder for drag marker
+                    var location = $scope.marker.getPosition();
+                    $.getJSON("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
+                        app_id: "bBPfh2x8Cauun3ygLMAx",
+                        app_code: "yjfwTdkin_R2rGXYTrwWVg",
+                        mode: "retrieveAddresses",
+                        prox: location.lat().toString() + "," + location.lng().toString() + "," + "250"
+                    }).done(function (data) {
+                        var locn = data.Response.View[0].Result[0].Location;
+                        $scope.gpsForm.data.address = locn.Address.Label;
+                        console.log("Suburb = " + locn.Address.District);
+                        console.log("PostCode = " + locn.Address.PostalCode);
+                        $("#suburb").val(locn.Address.District);
+                        var mappedSub = $scope.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
+                        if (mappedSub !== undefined) {
+                            console.log(mappedSub);
+                            $('#our_suburb').val(mappedSub.id).trigger('change');
+                        }
+                        else {
+                            $('#our_suburb').val(null).trigger('change');
+                        }
+
+
+                        $scope.gpsForm.data.lat = locn.DisplayPosition.Latitude;
+                        $scope.gpsForm.data.long = locn.DisplayPosition.Longitude;
+                    });
+                    
                 }
             };
 
 
 
-            $(".gpsForm").show(0);
-
-            $scope.$watch("gpsForm.details", function (newValue, oldValue, scope) {
+            $(".gpsForm").show(0, function () {
+                $scope.onMapReady();
+                //var auckland = { lat: -36.8804466, lng: 174.6117981 };
+                //$scope.heremaps.setCenter(auckland);
+                $scope.markers = [];
+                //$scope.heremaps.updateMarkers($scope.markers, true);
+                //$scope.heremaps.refresh();
+                //$scope.heremaps.setZoom(10);
                 setTimeout(function () {
-                    if ($scope.gpsForm.search) {
-
-                        $("#gpsMap").attr("src", $("#gpsMap").attr("data-src") + encodeURIComponent($scope.gpsForm.search));
-                        if ($scope.gpsForm.details.geometry.location) {
-                            $scope.gpsForm.data.lat = $scope.gpsForm.details.geometry.location.lat();
-                            $scope.gpsForm.data.long = $scope.gpsForm.details.geometry.location.lng();
-                        }
-
+                    $('#location').select2('open');
+                    var search = $('#location').data('select2').dropdown.$search;
+                    if ($scope.gpsForm.data.address.indexOf(',') > 0) {
+                        search.val($scope.gpsForm.data.address.split(',')[1].split());
                     } else {
-                        if (!$scope.gpsForm.data.long) {
-                            $("#gpsMap").attr("src", $("#gpsMap").attr("data-src") + "Auckland");
-                        }
+                        search.val($scope.gpsForm.data.address);
                     }
-                }, 1000);
+                    search.trigger("input");
+                }, 200);
+                
             });
 
+           
+
             $scope.copyGpsAddress = function () {
-                $scope.gpsForm.search = angular.copy($scope.gpsForm.data.address);
-                $("#gpsSearch").focus();
+                $('#location').select2('open');
+                var search = $('#location').data('select2').dropdown.$search;
+                if ($scope.gpsForm.data.address.indexOf(',') > 0) {
+                    search.val($scope.gpsForm.data.address.split(',')[1].split());
+                } else {
+                    search.val($scope.gpsForm.data.address);
+                }
+                search.trigger("input");
             };
 
 
@@ -1767,10 +2132,71 @@ angular
                     }
                 ],
                 onSubmit: function () {
+                    var job = $scope.currentJob;
+                    var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
+                    var callData = {
+                        "call": "updateDetailField",
+                        "field": $scope.gather.form.fields[0].name,
+                        "value": $scope.gather.form.fields[0].value,
+                        "jobID": $scope.gather.form.fields[0].jobID
+                    };
 
-                    $scope.updateDetailField($scope.gather.form.fields[0].name,
-                        $scope.gather.form.fields[0].value,
-                        $scope.gather.form.fields[0].jobID);
+                    if (fieldName === "Size") {
+                        callData.value = $scope.gather.form.fields[0].value.id;
+                    }
+                    if (fieldName === "Size") {
+                        job[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
+                    } else {
+                        job[callData.field.toLowerCase()] = callData.value;
+                    }
+                    if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
+                        //Truck Job
+                        return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
+                            DispatchData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff,
+                                job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2).then(function (truckRate) {
+                                    console.log(truckRate);
+                                    if (truckRate !== job.charge) {
+                                        DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                                    }
+                                    return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(truckRate.replace(/[^0-9.-]+/g, ""))).then(function (response) {
+                                        if (response.data === "OK") {
+                                            if (fieldName === "Size") {
+                                                $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
+                                            } else {
+                                                $scope.currentJob[callData.field.toLowerCase()] = callData.value;
+                                            }
+
+
+                                        }
+                                        return response;
+                                    });
+                                });
+                        });
+                    }
+                    else {
+                        return DispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID,
+                            job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked).then(function (rate) {
+                                console.log(rate);
+                                if (rate !== job.charge) {
+                                    DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                                }
+                                return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, ""))).then(function (response) {
+                                    if (response.data === "OK") {
+                                        if (fieldName === "Size") {
+                                            $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
+                                        } else {
+                                            $scope.currentJob[callData.field.toLowerCase()] = callData.value;
+                                        }
+
+
+                                    }
+                                    return response;
+                                });
+                            });
+                    }
+
+                   
+                    //$scope.updateDetailField($scope.gather.form.fields[0].jobID, $scope.gather.form.fields[0].name, $scope.gather.form.fields[0].value);
 
                 },
                 submitValue: "Update Field"
@@ -1779,30 +2205,6 @@ angular
 
         };
 
-        $scope.updateDetailField = function (field, value, jobID) {
-
-            var callData = {
-                "call": "updateDetailField",
-                "field": field,
-                "value": value,
-                "jobID": jobID
-            };
-
-            DispatchData.doAPI(callData).then(function (data) {
-
-                if (data.response === "Success") {
-
-                    $scope.currentJob[field] = value;
-
-                } else {
-
-                    alert("Critical Error");
-
-                }
-
-            });
-
-        };
 
         $scope.addEvent = function () {
 

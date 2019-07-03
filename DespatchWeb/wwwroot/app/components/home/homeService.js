@@ -5,12 +5,32 @@ angular
             "$http", function ($http) {
                 return {
                     addFollowupEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-                        return $http.post('courier/AddFollowupEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName).then(function (response) {
+                        return $http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    addRestoreEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+                        return $http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    addPriceSuburbChangeEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+                        return $http.post("job/addPriceSuburbChangeEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(function (response) {
                             return response.data;
                         });
                     },
                     allocateJobs: function (courierId, dispId, jobIds) {
-                        return $http.post("job/Allocate?courierId=" + courierId + '&dispId=' + dispId + '&jobIds=' + jobIds).then(function (response) {
+                        return $http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    restoreJobs: function (courierId, dispId, jobIds) {
+                        return $http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    restoreSplitJobs: function (courierId, dispId, jobIds) {
+                        return $http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
                             return response.data;
                         });
                     },
@@ -27,7 +47,7 @@ angular
 
                     },
                     getJobsCurrent: function (courierId, done) {
-                        return $http.get("job/current?courierId=" + courierId + '&done=' + done).then(function (response) {
+                        return $http.get("job/current?courierId=" + courierId + "&done=" + done).then(function (response) {
                             return response.data;
                         });
 
@@ -96,6 +116,45 @@ angular
                             return response.data;
                         });
 
+                    },
+                    getSuburbList: function () {
+                        return $http.get("job/SuburbList").then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    getTruckItemsSummary: function (jobId, truckWeightLimit) {
+                        return $http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    rateTruckJob: function (cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
+                        return $http.get("job/RateTruckJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate +
+                            "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass +
+                            "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours).then(function (response) {
+                                return response.data;
+                            });
+                    },
+                    rateJob: function (cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
+                        ourRef, refA, refB, quantity, booked) {
+                        return $http.get("job/RateJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van +
+                            "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct +
+                            "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity +
+                            "&booked=" + booked).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    updateDeliveryAddress: function (jobId, toSuburbId, address, lat, lng, cbd, rate) {
+                        return $http.post("job/UpdateDeliveryAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate).then(function (response) {
+                            return response;
+                        });
+                    },
+                    updateJobDetail: function (jobId, field, value, rate) {
+                        if (field === "Time") {
+                            value = value.toISOString();
+                        }
+                        return $http.post("job/UpdateJob?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate).then(function (response) {
+                            return response;
+                        });
                     },
                     doAPI: function (data) {
                         return $http.post("app/components/home/api/api.php", data).then(function (response) {

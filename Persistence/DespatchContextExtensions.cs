@@ -138,6 +138,22 @@ namespace DespatchWebContextExtensions
                 return _reader.NextResult();
             }
 
+            public string PropName(PropertyInfo prop)
+            {
+                var returnData = "";
+                if (prop.GetCustomAttributes().Any())
+                {
+                    var p = prop.GetCustomAttributes().FirstOrDefault();
+                    if (p?.GetType() == typeof(DespatchWeb.EntityClasses.PropName))
+                    {
+                        returnData = ((DespatchWeb.EntityClasses.PropName)p)?.GetName();
+                    }
+
+                }
+
+                return returnData;
+            }
+
             /// <summary>
             /// Retrieves the column values from the stored procedure and maps them to <typeparamref name="T"/>'s properties
             /// </summary>
@@ -147,10 +163,10 @@ namespace DespatchWebContextExtensions
             private IList<T> MapToList<T>(DbDataReader dr)
             {
                 var objList = new List<T>();
-                var props = typeof(T).GetRuntimeProperties().ToList();
+                var props = typeof(T).GetRuntimeProperties();
 
                 var colMapping = dr.GetColumnSchema()
-                    .Where(x => props.Any(y => y.Name.ToLower() == x.ColumnName.ToLower()))
+                    .Where(x => props.Any(y => y.Name.ToLower() == x.ColumnName.ToLower() || x.ColumnName.ToLower() == PropName(y)))
                     .ToDictionary(key => key.ColumnName.ToLower());
 
                 if (dr.HasRows)
@@ -160,17 +176,18 @@ namespace DespatchWebContextExtensions
                         T obj = Activator.CreateInstance<T>();
                         foreach (var prop in props)
                         {
+                            object val = null;
                             if (colMapping.ContainsKey(prop.Name.ToLower()))
                             {
-                                var column = colMapping[prop.Name.ToLower()];
-
-                                if (column?.ColumnOrdinal != null)
-                                {
-                                    var val = dr.GetValue(column.ColumnOrdinal.Value);
-                                    prop.SetValue(obj, val == DBNull.Value ? null : val);
-                                }
-
+                                val = dr.GetValue(colMapping[prop.Name.ToLower()].ColumnOrdinal.Value);
                             }
+
+                            if (colMapping.ContainsKey(PropName(prop)))
+                            {
+                                val = dr.GetValue(colMapping[PropName(prop)].ColumnOrdinal.Value);
+                            }
+
+                            prop.SetValue(obj, val == DBNull.Value ? null : val);
                         }
                         objList.Add(obj);
                     }
@@ -193,6 +210,8 @@ namespace DespatchWebContextExtensions
                 return new T?();
             }
         }
+
+       
 
         /// <summary>
         /// Executes a DbDataReader and returns a list of mapped column values to the properties of <typeparamref name="T"/>

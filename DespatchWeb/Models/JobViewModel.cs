@@ -11,14 +11,21 @@ namespace DespatchWeb.Models
         public int ID { get; set; }
         public DateTime? Time { get; set; }
         public bool Direct { get; set; }
+        public bool Van { get; set; }
+        public bool Return { get; set; }
         public string JobNo { get; set; }
         public string Speed { get; set; }
+        public int? SpeedID { get; set; }
         public string Notify { get; set; }
         public Vehicle Vehicle { get; set; }
+        public int? ClientID { get; set; }
+        public int JobType { get; set; }
         public string Client { get; set; }
         public string From { get; set; }
+        public int? FromSuburbID { get; set; }
         public string FromAddress { get; set; }
         public string To { get; set; }
+        public int? ToSuburbID { get; set; }
         public string ToAddress { get; set; }
         public string Courier { get; set; }
         public int? Remain { get; set; }
@@ -29,6 +36,7 @@ namespace DespatchWeb.Models
         public string ContactName { get; set; }
         public string Phone { get; set; }
         public string SpeedAccepted { get; set; }
+        public int? AcceptedJobTypeID { get; set; }
         public Vehicle Size { get; set; }
         public double? Weight { get; set; }
         public short? Items { get; set; }
@@ -39,6 +47,7 @@ namespace DespatchWeb.Models
         public string Charge { get; set; }
         public string Date { get; set; }
         public DateTime? DispatchTime { get; set; }
+        public DateTime Booked { get; set; }
         public DateTime? PUTime { get; set; }
         public string ClientNotes { get; set; }
         public string InternalNotes { get; set; }
@@ -53,6 +62,11 @@ namespace DespatchWeb.Models
         public CourierData CourierData { get; set; }
         public bool? AllowDispatch { get; set; }
         public int? DGClass { get; set; }
+        public bool? DisplaySplitJobDetail { get; set; }
+        public int? TruckWeightLimit { get; set; }
+        public DateTime? TruckStartTime { get; set; }
+        public double? TruckHours { get; set; }
+        public bool PrivateRes { get; set; }
     }
 
     public class Vehicle
