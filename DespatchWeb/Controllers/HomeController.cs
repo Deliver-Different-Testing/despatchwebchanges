@@ -10,6 +10,7 @@ using System.IO;
 using Microsoft.Extensions.Configuration;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Hosting;
+using System.Security.Claims;
 
 namespace DespatchWeb.Controllers
 {
@@ -28,6 +29,16 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> Index([FromQuery] string login)
         {
+
+            var disp = await _clientRepository.ValidateDispatcherLogin(User.Identity.Name.Substring(User.Identity.Name.IndexOf('\\') + 1));
+            if (disp != null)
+            {
+                ViewBag.FirstName = disp.FirstName;
+                ViewBag.FullName = disp.FirstName + " " + disp.LastName;
+                ViewBag.ContactID = disp.StaffID;
+
+                return View();
+            }
             if (_hostingEnvironment.IsDevelopment())
             {
                 login = "WZKzmEeKz1c3/qetjbb48HcCr2UGhQ6wz8NRwSoxxOU="; //uclgf

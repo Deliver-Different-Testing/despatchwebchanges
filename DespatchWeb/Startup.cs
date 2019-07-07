@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.IISIntegration;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -42,7 +43,7 @@ namespace DespatchWeb
                 // Live 
                 c.UseSqlServer(Configuration.GetConnectionString("Connection"));
             });
-
+            services.AddAuthentication(IISDefaults.AuthenticationScheme);
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddRaygun(Configuration);
             services.AddScoped<JobRepository, JobRepository>();

@@ -93,6 +93,7 @@ namespace DespatchWeb.Repositories
                             CourierID = j.UcjbCourierId
                         },
                         AllowDispatch = j.AllowDespatch,
+                        AllowSplit = j.AllowSplit,
                         DGClass = j.Dgclass,
                         DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
                         TruckWeightLimit = j.TruckWeightLimit,
@@ -276,6 +277,7 @@ namespace DespatchWeb.Repositories
                         CourierID = j.UcjbCourierId
                     },
                     AllowDispatch = j.AllowDespatch,
+                    AllowSplit = j.AllowSplit,
                     DGClass = j.Dgclass,
                     DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
                     TruckWeightLimit = j.TruckWeightLimit,
@@ -327,6 +329,15 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@intJobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
             }
+        }
+
+        public async Task SplitJob(int jobId, string user)
+        {
+            await _context.LoadStoredProc("DES_stpJob_SplitJob")
+               .WithSqlParam("@JobID", jobId)
+               .WithSqlParam("@PreBookJob", false)
+               .WithSqlParam("@UserName", user)
+               .ExecuteStoredNonQueryAsync();
         }
 
         public List<SuburbLookup> Suburbs() {

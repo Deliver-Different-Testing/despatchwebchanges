@@ -595,6 +595,43 @@ angular
 
         };
 
+        //////////////////////////////
+        //  SPLIT JOB //
+        /////////////////////////////
+        $scope.splitJob = function () {
+            var jid;
+            jid = $(".activeTable .active").first().data("jobid");
+            var j = $scope.jobList.find(jo => jo.id === jid);
+            if (!j.allowSplit) {
+                alert("Can not split " + j.JobNo + ".");
+                return;
+            }
+
+            DispatchData.splitJob(j.id, FirstName);
+            $scope.getJobList().then(function () {
+                var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                $scope.selectJob(refreshedJob);
+                $timeout(function () {
+                    $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+
+                    var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                    var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                    try {
+                        goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                        $parentDiv.scrollTop(goTop);
+
+                    } catch (e) {
+                        //ignore
+                    }
+                }, 1000);
+
+
+            });
+
+
+        };
 
         //////////////////////////////
         //  PALLET CONTROLS //
@@ -1183,14 +1220,15 @@ angular
                         click: function ($itemScope, $event, modelValue, text, $li) {
                             $scope.dispatchJobsForm();
                         }
-                    },
-                    
-                    {
-                        text: "Split Job",
-                        click: function ($itemScope, $event, modelValue, text, $li) {
-                            //$scope.items.splice($itemScope.$index, 1);
-                        }
                     }
+                    
+                    //{
+                    //    text: "Split Job",
+                    //    click: function ($itemScope, $event, modelValue, text, $li) {
+                    //        //$scope.items.splice($itemScope.$index, 1);
+                    //        $scope.splitJob();
+                    //    }
+                    //}
                 ];
 
             if (lastCourier !== null) {

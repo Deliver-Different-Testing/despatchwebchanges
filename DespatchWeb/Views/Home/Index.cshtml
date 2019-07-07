@@ -7,7 +7,7 @@
          var clientInternal = ViewBag.ClientInternal;
          var firstName = ViewBag.FirstName;
          var fullName = ViewBag.FullName;
-         var email = ViewBag.Email;
+         //var email = ViewBag.Email;
 
 
       }
@@ -15,12 +15,11 @@
     var ClientInternal = '@clientInternal';
     var FirstName = '@firstName';
     var FullName = '@fullName';
-    var Email = '@email';
+    
 
     rg4js('setUser', {
         identifier: ContactID,
         isAnonymous: false,
-        email: Email,
         firstName: FirstName,
         fullName: FullName
     });

@@ -52,6 +52,13 @@ namespace DespatchWeb.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> SplitJob(int jobId, string despatcherName)
+        {
+            await _jobRepo.SplitJob(jobId, despatcherName);
+            return Json("OK");
+        }
+
+        [HttpPost]
         public async Task<IActionResult> AddRestoreEvent(string jobNo, int clientId, string contact, int staffId, int courierId, int jobId, int jobType, string despatcherName)
         {
 

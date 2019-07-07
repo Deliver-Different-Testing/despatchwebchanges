@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWebContextExtensions;
 
 namespace DespatchWeb.Repositories
 {
@@ -37,6 +38,16 @@ namespace DespatchWeb.Repositories
                 //ToDo get staffId once Kevin has updated mapping in Mercury
             };
             
+        }
+
+        public async Task<DispatcherViewModel> ValidateDispatcherLogin(string name)
+        {
+            var result = new List<DispatcherViewModel>();
+            await _context.LoadStoredProc("INT_stpIsValidLogin_Despatch")
+                .WithSqlParam("@WindowsLogonUserName", name)
+                .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DispatcherViewModel>().ToList(); });
+            return result.FirstOrDefault();
+
         }
     }
 }

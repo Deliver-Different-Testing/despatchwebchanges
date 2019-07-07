@@ -67,6 +67,7 @@ namespace DespatchWeb.Models
         public DateTime? TruckStartTime { get; set; }
         public double? TruckHours { get; set; }
         public bool PrivateRes { get; set; }
+        public bool? AllowSplit { get; internal set; }
     }
 
     public class Vehicle
