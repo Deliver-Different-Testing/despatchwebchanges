@@ -21,7 +21,7 @@ angular
                     },
                     allocateJobs: function (courierId, dispId, jobIds) {
                         return $http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
-                            return response.data;
+                            return response;
                         });
                     },
                     restoreJobs: function (courierId, dispId, jobIds) {

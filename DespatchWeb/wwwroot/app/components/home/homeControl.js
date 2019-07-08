@@ -20,6 +20,10 @@ angular
         $scope.gather = {
             submit: function () {
                 return $scope.gather.form.onSubmit().then(function (response) {
+                    console.log("pointer 3");
+                    if (response === undefined) {
+                        return;
+                    }
                     if (response.data === "OK") {
                         $(".gatherForm").hide();
                         var j = $scope.currentJob;
@@ -453,7 +457,7 @@ angular
                     }
                 ],
                 onSubmit: function () {
-                    $scope.dispatchJobs($("#gather-courierNumber").val());
+                    return $scope.dispatchJobs($("#gather-courierNumber").val());
                 },
                 submitValue: "Dispatch"
             };
@@ -522,16 +526,19 @@ angular
                 callData.jobs.push($(this).attr("data-jobid"));
             });
 
-            DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
-            $scope.getJobList().then(function () {
-                //$("#box-jobDetail").find(".loading").show();
-                $("#box-map").find(".loading").show();
+            return DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
+                $scope.getJobList().then(function () {
+                    //$("#box-jobDetail").find(".loading").show();
+                    $("#box-map").find(".loading").show();
 
-                $scope.courier = { gpsCourier: foundCourier.id };
-                $scope.searchCourier();
-               
+                    $scope.courier = { gpsCourier: foundCourier.id };
+                    $scope.searchCourier();
 
+
+                });
+                return response;
             });
+            
             
 
         };
