@@ -340,6 +340,25 @@ namespace DespatchWeb.Repositories
                .ExecuteStoredNonQueryAsync();
         }
 
+        public async Task UpdateSplitJobAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateSplitJobMeetingAddress")
+               .WithSqlParam("@JobID", jobId)
+               .WithSqlParam("@Suburb", toSuburbId)
+               .WithSqlParam("@Address", address)
+               .WithSqlParam("@DeliveryLatitude", deliveryLat)
+               .WithSqlParam("@DeliveryLongitude", deliveryLng)
+               .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task ReRateSplitJob(int jobId)
+        {
+            await _context.LoadStoredProc("DES_stpJob_SplitJob_ReRate")
+               .WithSqlParam("@ParentJobID", jobId)
+               .WithSqlParam("@PreBookJob", false)
+               .ExecuteStoredNonQueryAsync();
+        }
+
         public List<SuburbLookup> Suburbs() {
             var data = (from s in _context.TucSuburbs
                               select s).Select(x => new SuburbLookup() { ID = x.UcsuId, Text = x.UcsuName, Alias = x.GoogleSuburbAlias });

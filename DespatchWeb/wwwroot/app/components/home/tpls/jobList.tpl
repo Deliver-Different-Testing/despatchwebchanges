@@ -11,6 +11,7 @@
                 <th scope="col" ng-click="orderList('jobList','client')">Client <i class="fa fa-caret-down" ng-show="sort.jobList == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-client'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','from')">From <i class="fa fa-caret-down" ng-show="sort.jobList == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','to')">To <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
+				<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobList == 'vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-vehicle'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','remain')">R <i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','lp')">LP <i class="fa fa-caret-down" ng-show="sort.jobList == 'lp'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-lp'"></i></th>
@@ -34,6 +35,7 @@
             <td>{{job.client}}</td>
             <td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
             <td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
+			<td>{{job.from}}&nbsp;{{job.toAddress}}&nbsp;</td>
             <td>{{job.vehicle.label}}</td>
             <td>{{job.remain}}</td>
             <td>{{job.lp}}</td>
@@ -52,6 +54,7 @@
             <td><div></div></td>
             <td><div></div></td>
             <td><div></div></td>
+			<td><div></div></td>
             <td><div></div></td>
             <td><div style="width:12px;"></div></td>
             <td><div style="width:12px;"></div></td>

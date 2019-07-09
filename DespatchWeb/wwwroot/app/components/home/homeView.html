@@ -69,13 +69,14 @@
                                 </div>
 
                             </div>
+                            <div class="btn btn-sm btn-primary box-refresh"  ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
                             <div class="box-search" ng-show="boxes[box.name].showSearch">
                                 <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
                                 <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
                                 <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}">
 
                             </div>
-                            
+
                             <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
                         </div>
                     </div>

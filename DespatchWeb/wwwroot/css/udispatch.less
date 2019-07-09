@@ -409,73 +409,94 @@ body {
     flex-flow: row nowrap;
     justify-content: space-around;
     align-content: space-around;
+
     .column {
         box-sizing: border-box;
         flex: 0;
-        display:flex;
+        display: flex;
         flex-direction: column;
-        height:100vh;
+        height: 100vh;
         border: 7px solid #fff;
-        padding-top:40px;
-        min-width:5  0;
+        padding-top: 40px;
+        min-width: 5 0;
+
         &:last-child {
-            flex:1;
+            flex: 1;
+
             .rg-right {
-                display:none;
+                display: none;
             }
         }
+
         .column-sortable {
-            display:flex;
+            display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            height:100%;    
+            height: 100%;
             background: #f1f1f1;
             border-radius: 10px;
-            min-width:50px;
+            min-width: 50px;
+
             .box {
                 min-height: 50px;
-                margin-bottom:15px;
+                margin-bottom: 15px;
                 background-color: #CCC;
-                border:1px solid  #5d5d5d;
-                margin-top:40px;
+                border: 1px solid #5d5d5d;
+                margin-top: 40px;
+
                 &:nth-last-child(2) {
-                    flex:0;
-                    margin-bottom:15px;
+                    flex: 0;
+                    margin-bottom: 15px;
+
                     .rg-bottom {
-                        display:block;
+                        display: block;
                     }
                 }
+
                 &:last-child {
-                    flex:1;
-                    margin-bottom:0;
+                    flex: 1;
+                    margin-bottom: 0;
+
                     .rg-bottom {
-                        display:none;
+                        display: none;
                     }
                 }
+
                 .box-bar {
                     background: #5d5d5d;
                     color: #FFF;
                     padding: 10px;
-                    position:relative;
+                    position: relative;
                     z-index: 2;
-                    top:-40px;
+                    top: -40px;
                     white-space: nowrap;
+
                     .box-bar-title {
                         span {
                             font-size: 10px;
                         }
                     }
+
                     .box-buttons {
                         position: absolute;
-                        right:0;
-                        top:0;
+                        right: 0;
+                        top: 0;
+
                         .box-handle {
-                            padding:10px;
+                            padding: 10px;
                             background-color: #000;
                             cursor: move;
                             display: inline-block;
                             vertical-align: top;
                         }
+
+                        .box-refresh {
+                            display: inline-block;
+                            top: 5px;
+                            position: absolute;
+                            left: -39px
+                        }
+
                         .box-search {
                             padding: 4px;
                             background-color: #000;
@@ -483,11 +504,13 @@ body {
                             display: inline-block;
                             vertical-align: top;
                             height: 40px;
+
                             .fa {
                                 padding: 8px 5px;
                             }
+
                             input {
-                                display:none;
+                                display: none;
                                 width: 161px;
                                 margin-left: 2px;
                                 height: 29px;
@@ -497,21 +520,24 @@ body {
                                 padding-left: 4px;
                             }
                         }
+
                         .box-details {
                             display: inline-block;
                             position: relative;
                             top: 5px;
+
                             .btn {
                                 background-color: #000;
-                                &:hover {
-                                    color:#FFF;
 
+                                &:hover {
+                                    color: #FFF;
                                     background-color: #222;
                                 }
                             }
                         }
                     }
                 }
+
                 .box-content {
                     position: absolute;
                     top: 0;
@@ -519,18 +545,17 @@ body {
                     height: 100%;
                     z-index: 1;
                     overflow: auto;
-                    background-color:#FFF;
+                    background-color: #FFF;
                     font-size: 9px;
                 }
             }
-
-            
         }
     }
+
     .placeholder {
-        height:200px;
-        background:#000;
-        margin-bottom:15px;
+        height: 200px;
+        background: #000;
+        margin-bottom: 15px;
     }
 }
 

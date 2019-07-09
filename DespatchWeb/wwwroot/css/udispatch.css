@@ -394,7 +394,7 @@ body {
   height: 100vh;
   border: 7px solid #fff;
   padding-top: 40px;
-  min-width: 5  0;
+  min-width: 5 0;
 }
 .columns .column:last-child {
   flex: 1;
@@ -415,7 +415,7 @@ body {
   min-height: 50px;
   margin-bottom: 15px;
   background-color: #CCC;
-  border: 1px solid  #5d5d5d;
+  border: 1px solid #5d5d5d;
   margin-top: 40px;
 }
 .columns .column .column-sortable .box:nth-last-child(2) {
@@ -455,6 +455,12 @@ body {
   cursor: move;
   display: inline-block;
   vertical-align: top;
+}
+.columns .column .column-sortable .box .box-bar .box-buttons .box-refresh {
+  display: inline-block;
+  top: 5px;
+  position: absolute;
+  left: -39px;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-search {
   padding: 4px;

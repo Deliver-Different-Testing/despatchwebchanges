@@ -58,6 +58,19 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        public async Task<IActionResult> ReRateSplitJob(int jobId)
+        {
+            await _jobRepo.ReRateSplitJob(jobId);
+            return Json("OK");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateSplitJobAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng)
+        {
+            await _jobRepo.UpdateSplitJobAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng);
+            return Json("OK");
+        }
+
         [HttpPost]
         public async Task<IActionResult> AddRestoreEvent(string jobNo, int clientId, string contact, int staffId, int courierId, int jobId, int jobType, string despatcherName)
         {

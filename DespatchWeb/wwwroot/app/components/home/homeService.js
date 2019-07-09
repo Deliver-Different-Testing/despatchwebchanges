@@ -145,11 +145,21 @@ angular
                     },
                     splitJob: function (jobId, despatcherName) {
                         return $http.post("job/splitJob?jobId=" + jobId+ "&despatcherName=" + despatcherName).then(function (response) {
-                            return response.data;
+                            return response;
+                        });
+                    },
+                    reRateSplitJob: function (jobId) {
+                        return $http.post("job/ReRateSplitJob?jobId=" + jobId).then(function (response) {
+                            return response;
                         });
                     },
                     updateDeliveryAddress: function (jobId, toSuburbId, address, lat, lng, cbd, rate) {
                         return $http.post("job/UpdateDeliveryAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate).then(function (response) {
+                            return response;
+                        });
+                    },
+                    updateSplitJobAddress: function (jobId, toSuburbId, address, lat, lng) {
+                        return $http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng).then(function (response) {
                             return response;
                         });
                     },
