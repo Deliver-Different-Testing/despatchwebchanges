@@ -503,7 +503,7 @@ body {
   z-index: 1;
   overflow: auto;
   background-color: #FFF;
-  font-size: 9px;
+  font-size: 10px;
 }
 .columns .placeholder {
   height: 200px;
@@ -515,6 +515,9 @@ body {
   height: 16px;
   margin-bottom: -16px;
   border-top: 1px solid #5d5d5d;
+}
+.table-striped > tbody > tr:nth-child(2n+1) {
+  background-color: #d9d9d9;
 }
 table.table {
   margin-top: 28px;
@@ -584,7 +587,7 @@ table.table tr .status.ASC {
   border-bottom: 1px solid #CCC;
 }
 .table-headings tr th {
-  padding: 8px;
+  padding: 5px;
   white-space: nowrap;
   cursor: pointer;
   position: relative;
@@ -592,6 +595,12 @@ table.table tr .status.ASC {
 .table-headings tr th .fa {
   position: absolute;
   right: 1px;
+}
+.table > tbody > tr > td,
+.table > tbody > tr > th,
+.table > thead > tr > td,
+.table > thead > tr > th {
+  padding: 5px;
 }
 #jobList th {
   white-space: nowrap;
@@ -601,7 +610,7 @@ table.table tr .status.ASC {
   background-color: #d7f3ce !important;
 }
 #jobList input.dispatchField {
-  width: 19px;
+  width: 29px;
   text-align: center;
 }
 #jobList input.lateCallField {

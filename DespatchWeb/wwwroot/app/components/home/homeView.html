@@ -21,9 +21,9 @@
     </div>
     
     <div class="btn-group box-search">
-        <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i> 
+        <!--<i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i> 
         <input type="text" style="color: black;" placeholder="gps courier (enter code)..." ng-model="courier.gpsCourier" id="gps"/>
-        <i class="fa fa-remove" ng-click="courier.gpsCourier = ''" title="Clear"></i>
+        <i class="fa fa-remove" ng-click="courier.gpsCourier = ''" title="Clear"></i>-->
         <!--<div class="multi-element btn" ng-dropdown-multiselect="" options="pickCouriers" extra-settings="{enableSearch:true, selectionLimit:1, closeOnBlur: true, closeOnSelect: true}" selected-model="gpsCourier"></div>-->
     </div>
 
@@ -69,7 +69,14 @@
                                 </div>
 
                             </div>
-                            <div class="btn btn-sm btn-primary box-refresh"  ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
+                            <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
+                                <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
+                                <input type="text" style="color: black;display:inline-block!important;" placeholder="gps courier (enter code)..." ng-model="$parent.$parent.courier.gpsCourier" id="gps" />
+                                <i class="fa fa-remove" ng-click="courier.gpsCourier = ''" title="Clear"></i>
+                            </div>
+                            <div class="btn btn-sm btn-primary box-refresh" ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
+                            <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity"><i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
+                            
                             <div class="box-search" ng-show="boxes[box.name].showSearch">
                                 <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
                                 <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>

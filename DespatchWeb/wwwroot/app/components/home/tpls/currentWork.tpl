@@ -11,6 +11,7 @@
         <th scope="col" ng-click="orderList('jobsCurrentList', 'client')">Client <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='client'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-client'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'from')">From <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='from'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-from'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'to')">To <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='to'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-to'"></i></th>
+		<th scope="col" ng-click="orderList('jobsCurrentList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList == 'd-to'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-vehicle'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'remain')">R <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-remain'"></i></th>
 		<th scope="col" ng-click="orderList('jobsCurrentList', 'runOrder')">RO <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='runOrder'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-runOrder'"></i></th>
@@ -29,7 +30,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr class="clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox" ng-click="selectJobDetail(job);" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
+    <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox" ng-click="selectJobDetail(job);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
             <td class="status" ng-class="job.status">{{job.status}}</td>
             <td>{{job.speed}}</td>
             <td>{{job.notify}}</td>
@@ -37,6 +38,7 @@
             <td>{{job.client}}</td>
             <td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
             <td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
+			<td>{{job.toAddress}}</td>
             <td>{{job.vehicle.label}}</td>
             <td>{{job.remain}}</td>
 			<td>{{job.runOrder}}</td>
@@ -53,6 +55,7 @@
             <td><div></div></td>
             <td><div></div></td>
             <td><div></div></td>
+			<td><div></div></td>
             <td><div></div></td>
             <td><div style="width:12px;"></div></td>
             <td><div style="width:12px;"></div></td>

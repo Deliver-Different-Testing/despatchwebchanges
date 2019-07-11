@@ -21,11 +21,14 @@ namespace DespatchWeb.Models
         public int? ClientID { get; set; }
         public int JobType { get; set; }
         public string Client { get; set; }
+        public string ClientName { get; set; }
         public string From { get; set; }
         public int? FromSuburbID { get; set; }
+        public string fromSuburbName { get; set; }
         public string FromAddress { get; set; }
         public string To { get; set; }
         public int? ToSuburbID { get; set; }
+        public string ToSuburbName { get; set;  }
         public string ToAddress { get; set; }
         public string Courier { get; set; }
         public int? Remain { get; set; }

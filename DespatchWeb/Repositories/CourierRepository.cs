@@ -77,6 +77,7 @@ namespace DespatchWeb.Repositories
         {
             var currentLocation = new CourierLocation();
             _context.LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
+                .WithSqlParam("@CourierCode", code)
                 .ExecuteStoredProc(handle =>
                     {
                         currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
@@ -95,6 +96,11 @@ namespace DespatchWeb.Repositories
             var data = new ClearListViewModel
             {
                 Central = BuildClearListViewModel(activeCouriers, 1, 70),
+                City = BuildClearListViewModel(activeCouriers, 2, 33),
+                Parnell = BuildClearListViewModel(activeCouriers, 12, 33),
+                Ponsonby = BuildClearListViewModel(activeCouriers, 15, 33),
+                NewMarket = BuildClearListViewModel(activeCouriers, 13, 33),
+                Eden = BuildClearListViewModel(activeCouriers, 14, 33),
                 Other = BuildClearListViewModel(activeCouriers, 8, 30),
                 WestMid = BuildClearListViewModel(activeCouriers, 6, 33),
                 EastMid = BuildClearListViewModel(activeCouriers, 16, 33),
@@ -152,7 +158,8 @@ namespace DespatchWeb.Repositories
                         Pu = "Central 1",
                         Del = "Shallow Shore 3 | Deep Shore 2",
                         Lrm = "36 Min",
-                        Eta2lrm = "25 Min"
+                        Eta2lrm = "25 Min",
+                        CourierID = x.CourierID
                     },
                     Destinations = x.Deliver.Split(",").Select(d => new Destination()
                     {
@@ -171,7 +178,8 @@ namespace DespatchWeb.Repositories
                         Pu = "Central 1",
                         Del = "Shallow Shore 3 | Deep Shore 2",
                         Lrm = "36 Min",
-                        Eta2lrm = "25 Min"
+                        Eta2lrm = "25 Min",
+                        CourierID = x.CourierID
                     },
                     Destinations = x.Deliver.Split(",").Select(d => new Destination()
                     {

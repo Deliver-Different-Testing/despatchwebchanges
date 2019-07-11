@@ -10,23 +10,23 @@ namespace DespatchWeb.Models
 
     public  class CourierLocation
     {
-        [JsonProperty("Longitude")] public double Longitude { get; set; }
+        public decimal Longitude { get; set; }
 
-        [JsonProperty("Latitude")] public double Latitude { get; set; }
+        public decimal Latitude { get; set; }
 
-        [JsonProperty("Time")] public DateTime Time { get; set; }
+        public string Time { get; set; }
 
-        [JsonProperty("Status")] public string Status { get; set; }
+        public string Status { get; set; }
 
-        [JsonProperty("JobID")] public string JobId { get; set; }
+        public int JobId { get; set; }
 
-        [JsonProperty("GPSWasEstimated")] public string GpsWasEstimated { get; set; }
+        public bool GpsWasEstimated { get; set; }
 
-        [JsonProperty("RawData")] public string RawData { get; set; }
+        public string RawData { get; set; }
 
-        [JsonProperty("CourierName")] public string CourierName { get; set; }
+        public string CourierName { get; set; }
 
-        [JsonProperty("FirstName")] public string FirstName { get; set; }
+        public string FirstName { get; set; }
     }
 }
 

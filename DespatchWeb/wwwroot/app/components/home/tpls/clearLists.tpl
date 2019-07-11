@@ -1,5 +1,5 @@
 <div id="clearLists">
-<div class="container-fluid ">
+<div ng-show="!areaListCity" class="container-fluid ">
     <div class="row">
         <div class="col-xs-3">
             <div class="clearLists-list" height="{{clearLists.central.percentHeight}}%" >
@@ -288,6 +288,153 @@
                     </table>
                 </div>
             </div>
+
+        </div>
+    </div>
+</div>
+
+<div ng-show="areaListCity" class="container-fluid ">
+    <div class="row">
+        <div class="col-xs-3">
+            <div class="clearLists-list" height="{{clearLists.city.percentHeight}}%" >
+                <div class="clearLists-list-title">City</div>
+                <div class="clearLists-list-items">
+                    <table>
+                        <tr class="clearLists-list-items-item clearLists-list-items-top droppable-row draggable-row" ng-repeat="courier in clearLists.city.top" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-middle droppable-row draggable-row" ng-repeat="courier in clearLists.city.middle" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-bottom droppable-row draggable-row" ng-repeat="courier in clearLists.city.bottom" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+           
+        </div>
+        <div class="col-xs-3">
+            <div class="clearLists-list" height="{{clearLists.parnell.percentHeight}}%">
+                <div class="clearLists-list-title">Parnell</div>
+                <div class="clearLists-list-items">
+                    <table>
+                        <tr class="clearLists-list-items-item clearLists-list-items-top droppable-row draggable-row" ng-repeat="courier in clearLists.parnell.top" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-middle droppable-row draggable-row" ng-repeat="courier in clearLists.parnell.middle" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-bottom droppable-row draggable-row" ng-repeat="courier in clearLists.parnell.bottom" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+           
+        </div>
+        <div class="col-xs-3">
+            <div class="clearLists-list" height="{{clearLists.newMarket.percentHeight}}%">
+                <div class="clearLists-list-title">NewMarket</div>
+                <div class="clearLists-list-items">
+                    <table data-group="clear">
+                        <tr class="clearLists-list-items-item clearLists-list-items-top droppable-row draggable-row" ng-repeat="courier in clearLists.newMarket.top" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-middle droppable-row draggable-row" ng-repeat="courier in clearLists.newMarket.middle" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-bottom droppable-row draggable-row" ng-repeat="courier in clearLists.newMarket.bottom" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+           
+            
+        </div>
+        <div class="col-xs-3">
+            <div class="clearLists-list" height="{{clearLists.ponsonby.percentHeight}}%">
+                <div class="clearLists-list-title">Ponsonby</div>
+                <div class="clearLists-list-items">
+                    <table>
+                        <tr class="clearLists-list-items-item clearLists-list-items-top droppable-row draggable-row" ng-repeat="courier in clearLists.ponsonby.top" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-middle droppable-row draggable-row" ng-repeat="courier in clearLists.ponsonby.middle" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-bottom droppable-row draggable-row" ng-repeat="courier in clearLists.ponsonby.bottom" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="clearLists-list" height="{{clearLists.eden.percentHeight}}%">
+                <div class="clearLists-list-title">Eden Terrace</div>
+                <div class="clearLists-list-items">
+                    <table>
+                        <tr class="clearLists-list-items-item clearLists-list-items-top droppable-row draggable-row" ng-repeat="courier in clearLists.eden.top" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-middle droppable-row draggable-row" ng-repeat="courier in clearLists.eden.middle" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                        <tr class="clearLists-list-items-item clearLists-list-items-bottom droppable-row draggable-row" ng-repeat="courier in clearLists.eden.bottom" data-courier="{{courier.courierNumber}}" ng-click="selectCourier(courier.courierData)">
+                            <td class="clearLists-list-items-item-number">{{courier.courierNumber}}</td>
+                            <td>
+                                <div class="clearLists-list-items-item-dest" ng-repeat="destination in courier.destinations">{{destination.label}}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+          
 
         </div>
     </div>

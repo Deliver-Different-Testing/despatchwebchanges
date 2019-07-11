@@ -34,6 +34,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> Cdt { get; set;}
 		/// <summary>Gets or sets the ChildNotes field. </summary>
 		public System.String ChildNotes { get; set;}
+		/// <summary>Gets or sets the ClientName field. </summary>
+		public System.String ClientName { get; set;}
 		/// <summary>Gets or sets the ClientNotes field. </summary>
 		public System.String ClientNotes { get; set;}
 		/// <summary>Gets or sets the ClosestCourierId field. </summary>
@@ -80,6 +82,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> FromArea { get; set;}
 		/// <summary>Gets or sets the FromSuburbId field. </summary>
 		public Nullable<System.Int32> FromSuburbId { get; set;}
+		/// <summary>Gets or sets the FromSuburbName field. </summary>
+		public System.String FromSuburbName { get; set;}
 		/// <summary>Gets or sets the HasGeoLocation field. </summary>
 		public System.Int32 HasGeoLocation { get; set;}
 		/// <summary>Gets or sets the InternalAccount field. </summary>
@@ -148,6 +152,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> ToArea { get; set;}
 		/// <summary>Gets or sets the ToSuburbId field. </summary>
 		public Nullable<System.Int32> ToSuburbId { get; set;}
+		/// <summary>Gets or sets the ToSuburbName field. </summary>
+		public System.String ToSuburbName { get; set;}
 		/// <summary>Gets or sets the Truck field. </summary>
 		public Nullable<System.Boolean> Truck { get; set;}
 		/// <summary>Gets or sets the TruckHours field. </summary>

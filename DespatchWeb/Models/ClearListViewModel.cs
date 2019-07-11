@@ -10,6 +10,11 @@ namespace DespatchWeb.Models
     public class ClearListViewModel
     {
         public AreaClearList Central { get; set; }
+        public AreaClearList City { get; set; }
+        public AreaClearList Parnell { get; set; }
+        public AreaClearList NewMarket { get; set; }
+        public AreaClearList Ponsonby { get; set; }
+        public AreaClearList Eden { get; set; }
         public AreaClearList Other { get; set; }
         public AreaClearList WestMid { get; set; }
         public AreaClearList EastMid { get; set; }

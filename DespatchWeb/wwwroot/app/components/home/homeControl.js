@@ -90,11 +90,29 @@ angular
             }
         };
         $scope.markers = [];
+        $scope.getJobStyle = function (assigned) {
+            var normal =
+            {
+                "font-weight": "normal"
 
+            };
+            var bold =
+            {
+                "font-weight": "bold"
+
+            };
+            if (assigned) {
+                return bold;
+            }
+            else {
+                return normal;
+            }
+        };
+        $scope.normalStyle = "{'font-weight:normal'}";
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.14",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.24",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -117,7 +135,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.5",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.9",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -171,7 +189,7 @@ angular
             },
             "clearLists": {
                 "title": "Clear Lists",
-                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.5",
+                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.6",
                 "showSearch": 0,
                 "showRefresh": 0
             }
@@ -187,7 +205,7 @@ angular
                     "columns": [
                         {
                             "id": "col1",
-                            "width": "1100px",
+                            "width": "1400px",
                             "boxes": [
                                 {
                                     "name": "jobsList"
@@ -968,7 +986,7 @@ angular
                                     function () {
                                         $(this).removeAttr("style");
                                     });
-                                $scope.dispatchJobs($(this).attr("data-courier"));
+                                $scope.dispatchJobs($(this).attr("data-courier").replace(/[^\d.-]/g, ''));
                                 $scope.getClearListsData();
 
                             }
@@ -1017,19 +1035,24 @@ angular
                 alert("courier not found");
                 return;
             }
-            DispatchData.getJobsCurrent(ac.courierID, false).then(function (data) {
-                $("#box-currentWork").find(".loading").fadeOut();
-                $scope.jobsCurrentList = data;
-                if (data.length > 0) {
-                    displayCourierPositionOnly(data[0].courierLatitude, data[0].courierLongitude);
-                } else {
-                    DispatchData.getCourierPosition(ac.id).then(function (posData) {
-                        displayCourierPositionOnly(posData.latitude, posData.longitude);
-                    });
-                }
-                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
-            });
+            $scope.currentWorkSelection = " for Courier " + ac.id + " " + ac.name;
+            //$scope.currentCourier = courier;
+
+            $scope.currentSelection = " for Courier " + ac.id + " " + ac.name;
+            $scope.getCurrentJobs(ac.courierID);
+            //DispatchData.getJobsCurrent(ac.courierID, false).then(function (data) {
+            //    $("#box-currentWork").find(".loading").fadeOut();
+            //    $scope.jobsCurrentList = data;
+            //    if (data.length > 0) {
+            //        displayRoutePoints(data);
+            //    } else {
+            //        DispatchData.getCourierPosition(ac.id).then(function (posData) {
+            //            displayCourierPositionOnly(posData.latitude, posData.longitude);
+            //        });
+            //    }
+            //    setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
+            //    setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
+            //});
         };
 
         // Select the courier
@@ -1089,18 +1112,27 @@ angular
         $scope.getCurrentJobs = function (courierId) {
 
             $("#box-currentWork").find(".loading").show();
+            var code = $scope.pickCouriers.find(x => x.courierID === courierId).id;
             DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
                 $("#box-currentWork").find(".loading").fadeOut();
+                if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
+                    $scope.currentJob = null;
+                }
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
                     displayRoutePoints(data);
+                } else {
+                    DispatchData.getCourierPosition(code).then(function (posData) {
+                        displayCourierPositionOnly(posData.latitude, posData.longitude);
+                    });
                 }
-
+                $scope.activateDrop();
                 setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
                 setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
             });
 
         };
+
         var filtersObject = null;
         if (Modernizr.localstorage) {
             filtersObject = JSON.parse(localStorage.getItem("disp-filters-" + ContactID));

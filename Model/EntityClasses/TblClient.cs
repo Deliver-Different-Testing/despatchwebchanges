@@ -294,6 +294,8 @@ namespace DespatchWeb.EntityClasses
 		public System.String Notes { get; set;}
 		/// <summary>Gets or sets the NoUtpickUp field. </summary>
 		public System.Boolean NoUtpickUp { get; set;}
+		/// <summary>Gets or sets the NzPostSiteCode field. </summary>
+		public System.String NzPostSiteCode { get; set;}
 		/// <summary>Gets or sets the OtherKgrateCodeId field. </summary>
 		public Nullable<System.Int32> OtherKgrateCodeId { get; set;}
 		/// <summary>Gets or sets the OtherRateCodeId field. </summary>

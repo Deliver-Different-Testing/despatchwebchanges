@@ -85,6 +85,9 @@ namespace DespatchWeb
 			config.Property(t => t.UcjsCode).HasColumnName("ucjsCode").HasMaxLength(10);
 			config.Property(t => t.SaturdayDelivery);
 			config.Property(t => t.EmailForJobFu).HasColumnName("EmailForJobFU");
+			config.Property(t => t.FromSuburbName).HasMaxLength(30);
+			config.Property(t => t.ToSuburbName).HasMaxLength(30);
+			config.Property(t => t.ClientName).HasMaxLength(75).IsRequired();
 			config.Property(t => t.PickupRemain).HasMaxLength(50);
 			config.Property(t => t.Remain).HasMaxLength(50);
 			config.Property(t => t.RemainTime);
@@ -387,6 +390,7 @@ namespace DespatchWeb
 			config.Property(t => t.Discount);
 			config.Property(t => t.NoUtpickUp).HasColumnName("NoUTPickUp");
 			config.Property(t => t.MaxJobsPerRun);
+			config.Property(t => t.NzPostSiteCode).HasMaxLength(50);
 			config.Property(t => t.ClientId).HasColumnName("ClientID");
 			config.Property(t => t.Name).HasMaxLength(75).IsRequired();
 			config.Property(t => t.LegalName).HasMaxLength(150).IsRequired();

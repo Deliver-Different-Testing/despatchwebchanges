@@ -241,7 +241,10 @@ function displayCourierPositionOnly(lat, lng) {
         icon: "/images/car3.png"
     });
 
-    setMapBounds();
+    //setMapBounds();
+
+    map.setCenter(gl1);
+    map.setZoom(13);
 }
 
 function displayRoutePoints(courierJobs) {
@@ -300,7 +303,8 @@ function displayRoutePoints(courierJobs) {
 
     }
 
-    setMapBounds();
+    //setMapBounds();
+
 
     var gl1 = new google.maps.LatLng(courierJobs[0].courierLatitude, courierJobs[0].courierLongitude);
     carPos = gl1;
@@ -314,7 +318,8 @@ function displayRoutePoints(courierJobs) {
         icon: "/images/car3.png"
     });
 
-
+    map.setCenter(gl1);
+    map.setZoom(13);
 
 
 }

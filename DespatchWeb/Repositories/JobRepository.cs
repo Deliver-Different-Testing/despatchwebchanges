@@ -46,12 +46,15 @@ namespace DespatchWeb.Repositories
                         },
                         Client = j.UcclCode,
                         ClientID = j.UcjbClientId,
+                        ClientName = j.ClientName,
                         JobType = (int)j.UcjbType,
                         From = j.SuburbFrom,
                         FromSuburbID = j.FromSuburbId,
+                        fromSuburbName = j.FromSuburbName,
                         FromAddress = j.UcjbFromAddr,
                         To = j.SuburbTo,
                         ToSuburbID = j.ToSuburbId,
+                        ToSuburbName = j.ToSuburbName,
                         ToAddress = j.UcjbToAddr,
                         Courier = j.CourierCode,
                         Remain = j.RemainTime,
@@ -132,7 +135,7 @@ namespace DespatchWeb.Repositories
                     orderToUse = $"SpeedShortName {ascending}";
                     break;
                 case "notify":
-                    orderToUse = $"NotifySpeed {ascending}";
+                    orderToUse = $"NotifiedSpeed {ascending}";
                     break;
                 case "lp":
                     orderToUse = $"ucjbLatePick {ascending}";
@@ -140,7 +143,9 @@ namespace DespatchWeb.Repositories
                 case "ld":
                     orderToUse = $"ucjbLateDel {ascending}";
                     break;
-
+                case "time":
+                    orderToUse = $"ucjbTime {ascending}";
+                    break;
                 default:
                     orderToUse = $"RemainTime {ascending}";
                     break;
@@ -217,12 +222,15 @@ namespace DespatchWeb.Repositories
                     },
                     Client = j.UcclCode,
                     ClientID = j.UcjbClientId,
+                    ClientName = j.ClientName,
                     JobType = (int)j.UcjbType,
                     From = j.SuburbFrom,
                     FromSuburbID = j.FromSuburbId,
+                    fromSuburbName = j.FromSuburbName,
                     FromAddress = j.UcjbFromAddr,
                     To = j.SuburbTo,
                     ToSuburbID = j.ToSuburbId,
+                    ToSuburbName = j.ToSuburbName,
                     ToAddress = j.UcjbToAddr,
                     Courier = j.CourierCode,
                     Remain = j.RemainTime,

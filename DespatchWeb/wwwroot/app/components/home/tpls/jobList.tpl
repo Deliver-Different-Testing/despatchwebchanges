@@ -5,6 +5,7 @@
             <thead class="thead-dark no select">
             <tr>
                 <th scope="col" ng-click="orderList('jobList','status')">S <i class="fa fa-caret-down" ng-show="sort.jobList == 'status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i></th>
+				<th scope="col" ng-click="orderList('jobList','time')">T <i class="fa fa-caret-down" ng-show="sort.jobList == 'time'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-time'"></i></th>
                 <th scope="col" ng-click="orderList('jobList', 'speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobList == 'speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-speed'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','notify')">N <i class="fa fa-caret-down" ng-show="sort.jobList == 'notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-notify'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','jobNo')">Job <i class="fa fa-caret-down" ng-show="sort.jobList == 'jobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-jobNo'"></i></th>
@@ -28,26 +29,29 @@
     <table class="table table-striped table-responsive table-rows" id="jobList" data-group="jobsGroup">
         <tbody>
         <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobList | filter: box.searchBox" context-menu="setJobsMenu" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
-            <td class="status" ng-class="job.status">{{job.status}}</td>
-            <td>{{job.speed}}</td>
-            <td>{{job.notify}}</td>
-            <td>{{job.jobNo}}</td>
-            <td>{{job.client}}</td>
-            <td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-            <td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
-			<td>{{job.from}}&nbsp;{{job.toAddress}}&nbsp;</td>
-            <td>{{job.vehicle.label}}</td>
-            <td>{{job.remain}}</td>
-            <td>{{job.lp}}</td>
-            <td>{{job.ld}}</td>
-            <td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="D" /></td>
-            <td><input type="text" class="lateCallField" ng-model="job.lp" ng-keydown="$event.keyCode === 13 && lateCall(job.lp)"  placeholder="LP" /></td>
-            <td><input type="text" class="lateCallField" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateCall(job.ld)"  placeholder="LD" /></td>
-            <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>
+			<td class="status" ng-class="job.status">{{job.status}}</td>
+			<td>{{job.time | date : "HH:mm"}}</td>
+			<td>{{job.speed}}</td>
+			<td>{{job.notify}}</td>
+			<td>{{job.jobNo}}</td>
+			<td>{{job.client}}</td>
+			<td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
+			<td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
+			<td>{{job.toAddress}}</td>
+			<td>{{job.vehicle.label}}</td>
+			<td>{{job.remain}}</td>
+			<td>{{job.lp}}</td>
+			<td>{{job.ld}}</td>
+			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="D" /></td>
+			<td><input type="text" class="lateCallField" ng-model="job.lp" ng-keydown="$event.keyCode === 13 && lateCall(job.lp)"  placeholder="LP" /></td>
+			<td><input type="text" class="lateCallField" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateCall(job.ld)"  placeholder="LD" /></td>
+			<td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>
+
         </tr>
         <tr>
             <td><div></div></td>
             <td><div></div></td>
+			<td><div></div></td>
             <td><div style="width:12px;"></div></td>
             <td><div></div></td>
             <td><div></div></td>

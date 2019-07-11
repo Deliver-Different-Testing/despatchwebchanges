@@ -546,7 +546,7 @@ body {
                     z-index: 1;
                     overflow: auto;
                     background-color: #FFF;
-                    font-size: 9px;
+                    font-size: 10px;
                 }
             }
         }
@@ -574,65 +574,88 @@ body {
 @s-red: #ffb3ba;
 @s-grey: #DDD;
 @s-purple: #f1cbff;
+.table-striped > tbody > tr:nth-child(2n+1) {
 
+    background-color: #d9d9d9;
+   
+}
 table.table {
-    margin-top:28px;
+    margin-top: 28px;
+
     tr {
+
+       
+
         &.late {
             background-color: #ffecec;
         }
+
         &:hover {
             background-color: #fffaf5;
         }
+
         &.active {
             background: #ffefe0;
+
             td {
                 background-color: transparent;
             }
         }
+
         .fa-exclamation {
-            color:red;
+            color: red;
         }
+
         .status {
             font-weight: 600;
             border-bottom: 1px solid #CCC;
-            text-align:center;
-            background-color:@s-white;
+            text-align: center;
+            background-color: @s-white;
+
             &.D {
-                background-color:@s-green;
+                background-color: @s-green;
             }
+
             &.A {
-                background-color:@s-blue;
+                background-color: @s-blue;
             }
+
             &.R {
-                background-color:@s-white;
+                background-color: @s-white;
             }
+
             &.LP {
-                background-color:@s-orange;
+                background-color: @s-orange;
             }
+
             &.P {
-                background-color:@s-red;
+                background-color: @s-red;
             }
+
             &.C {
-                background-color:@s-grey;
+                background-color: @s-grey;
             }
+
             &.LD {
-                background-color:@s-purple;
+                background-color: @s-purple;
             }
+
             &.AW {
-                background-color:@s-grey;
+                background-color: @s-grey;
             }
+
             &.UD {
-                background-color:@s-grey;
+                background-color: @s-grey;
             }
+
             &.IT {
-                background-color:@s-grey;
+                background-color: @s-grey;
             }
+
             &.ASC {
-                background-color:@s-grey;
+                background-color: @s-grey;
             }
         }
-
     }
 }
 .table-headings {
@@ -646,7 +669,7 @@ table.table {
     }
     tr {
         th {
-            padding:8px;
+            padding:5px;
             white-space: nowrap;
             cursor:pointer;
             position: relative;
@@ -657,184 +680,220 @@ table.table {
         }
     }
 }
-
-#jobList {
-    th {
-        white-space: nowrap;
-        cursor:pointer;
+.table > tbody > tr > td, .table > tbody > tr > th, .table > thead > tr > td, .table > thead > tr > th {
+    padding: 5px;
     }
-    .doing {
-        background-color: #d7f3ce !important;
-    }
-    input.dispatchField {
-        width: 19px;
-        text-align: center;
-    }
-    input.lateCallField {
-        width: 19px;
-        text-align: center;
-    }
-}
 
-#map_canvas_container {position: relative;}
+    #jobList {
+        th {
+            white-space: nowrap;
+            cursor: pointer;
+        }
 
-#map_canvas {position: absolute; top: 0; right: 0; bottom: 0; left: 0;}
+        .doing {
+            background-color: #d7f3ce !important;
+        }
 
-.noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
-}
-.overlay-map-fix {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    /* background: #000; */
-    left: 0;
-    right: 0;
-    display:none;
-}
+        input.dispatchField {
+            width: 29px;
+            text-align: center;
+        }
 
-
-#lateCalls {
-    
-  //  table-layout: fixed;
- //   tbody {
-        //min-width:500px;
- //   }
-}
-
-#supports {
- //   table-layout: fixed;
-  //  tbody {
-        //min-width:500px;
- //   }
-}
-a.uline {
-    color:#000;
-    text-decoration: underline;
-    cursor:pointer;
-}
-#jobDetail {
-    .addresses {
-        .address {
-            background-color: #f3f2f2;
-            margin-left: 2px;
-            margin-bottom: 3px;
-            border-top: 3px solid #c7c7c7;
-            padding:3px;
-            min-height: 100px;
-            .client {
-                min-height: 15px;
-                font-size: 11px;
-                margin-bottom: 10px;
-            }
-            .contact {
-                min-height: 15px;
-                font-size: 11px;
-                margin-bottom: 10px;
-            }
-            label {
-                height: 8px;
-                color: #929191;
-            }
-            .value {
-                min-height: 15px;
-                font-size: 11px;
-                pre {
-                    white-space: pre-wrap;
-                    font-family: sans-serif;
-                    padding: 0;
-                    border: 0;
-                    background: transparent;
-                    font-size: 11px;
-                }
-            }
+        input.lateCallField {
+            width: 19px;
+            text-align: center;
         }
     }
-    .row-out {
-        min-width:420px;
-    }
-    .fields {
-        padding:3px;
-        .field {
-            background-color: #f3f2f2;
-            margin-left: 2px;
-            margin-bottom: 3px;
-            border-top: 3px solid #c7c7c7;
-            padding:3px;
-            &.red {
-                border-top: 3px solid @s-red;
-            }
-            label {
-                height: 6px;
-                color: #9c9c9c;
-                text-transform: uppercase;
-                font-size: 8px;
-            }
-            .value {
-                min-height: 15px;
-                font-size: 11px;
-                pre {
-                    border: 0;
-                    font-family: sans-serif;
-                    font-size: 11px;
-                    padding: 0;
-                    margin: 0;
-                    background: transparent;
-                }
-            }
-            &:hover {  
-                border-top: 3px solid #5d5d5d;
-                background-color: #e8e8e8;
-                cursor:pointer;
-                label { 
-                    color:#5d5d5d;
-                }
-            }
-        }
-    }
-    .contact {
-        min-height:51px;
-    }
-    .notes {
-        min-height:100px;
-    }
-    .palletInfo {
+
+    #map_canvas_container {
         position: relative;
-        label {
-            font-size:13px;
-            position: absolute;
-            top: -18px;
+    }
+
+    #map_canvas {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+
+    .noselect {
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+        user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+    }
+
+    .overlay-map-fix {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        /* background: #000; */
+        left: 0;
+        right: 0;
+        display: none;
+    }
+
+
+    #lateCalls {
+        //  table-layout: fixed;
+        //   tbody {
+        //min-width:500px;
+        //   }
+    }
+
+    #supports {
+        //   table-layout: fixed;
+        //  tbody {
+        //min-width:500px;
+        //   }
+    }
+
+    a.uline {
+        color: #000;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    #jobDetail {
+        .addresses {
+            .address {
+                background-color: #f3f2f2;
+                margin-left: 2px;
+                margin-bottom: 3px;
+                border-top: 3px solid #c7c7c7;
+                padding: 3px;
+                min-height: 100px;
+
+                .client {
+                    min-height: 15px;
+                    font-size: 11px;
+                    margin-bottom: 10px;
+                }
+
+                .contact {
+                    min-height: 15px;
+                    font-size: 11px;
+                    margin-bottom: 10px;
+                }
+
+                label {
+                    height: 8px;
+                    color: #929191;
+                }
+
+                .value {
+                    min-height: 15px;
+                    font-size: 11px;
+
+                    pre {
+                        white-space: pre-wrap;
+                        font-family: sans-serif;
+                        padding: 0;
+                        border: 0;
+                        background: transparent;
+                        font-size: 11px;
+                    }
+                }
+            }
         }
-        .addPallet {      
-            position: absolute;
-            right: 0;
-            top: -20px;
-            background: #000;
-            color: #FFF;
-            padding: 3px 7px;
-            border: 0;
-            font-size: 10px;
+
+        .row-out {
+            min-width: 420px;
         }
-        .pallet-table-head {
-            &:hover {
-                background-color: #FFF;
+
+        .fields {
+            padding: 3px;
+
+            .field {
+                background-color: #f3f2f2;
+                margin-left: 2px;
+                margin-bottom: 3px;
+                border-top: 3px solid #c7c7c7;
+                padding: 3px;
+
+                &.red {
+                    border-top: 3px solid @s-red;
+                }
+
+                label {
+                    height: 6px;
+                    color: #9c9c9c;
+                    text-transform: uppercase;
+                    font-size: 8px;
+                }
+
+                .value {
+                    min-height: 15px;
+                    font-size: 11px;
+
+                    pre {
+                        border: 0;
+                        font-family: sans-serif;
+                        font-size: 11px;
+                        padding: 0;
+                        margin: 0;
+                        background: transparent;
+                    }
+                }
+
+                &:hover {
+                    border-top: 3px solid #5d5d5d;
+                    background-color: #e8e8e8;
+                    cursor: pointer;
+
+                    label {
+                        color: #5d5d5d;
+                    }
+                }
+            }
+        }
+
+        .contact {
+            min-height: 51px;
+        }
+
+        .notes {
+            min-height: 100px;
+        }
+
+        .palletInfo {
+            position: relative;
+
+            label {
+                font-size: 13px;
+                position: absolute;
+                top: -18px;
+            }
+
+            .addPallet {
+                position: absolute;
+                right: 0;
+                top: -20px;
+                background: #000;
+                color: #FFF;
+                padding: 3px 7px;
+                border: 0;
+                font-size: 10px;
+            }
+
+            .pallet-table-head {
+                &:hover {
+                    background-color: #FFF;
+                }
             }
         }
     }
 
+    .row-no-padding {
+        margin-left: 0;
+        margin-right: 0;
 
-}
-.row-no-padding {
-  margin-left: 0;
-  margin-right: 0;
-  [class*="col-"] {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-}
+        [class*="col-"] {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+    }
