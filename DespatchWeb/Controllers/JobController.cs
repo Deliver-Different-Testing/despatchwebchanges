@@ -31,6 +31,89 @@ namespace DespatchWeb.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> LateCall(int lateType, int lateTime, int minutes, int pickupTime, int alertLatePickup, int deliveryTime, int alertLateDelivery, string jobNo, int clientId, string contact, int staffId, DateTime jobTime, int jobId, int jobType, string bookedSpeed, string notifiedSpeed, string despatcherName)
+        {
+            var intLate = lateTime;
+            var createEvent = false;
+            var jobStatus = 0;
+
+
+            if (lateType == 1 || lateType == 2)
+            {
+                switch (lateType)
+                {
+                    case 1:
+                        jobStatus = 4;
+                        if (alertLatePickup >= 0)
+                        {
+                            var maxAutoLate = await _jobRepo.MaxAutoLatePickupAlert();
+                            if (minutes < maxAutoLate)
+                            {
+                                if (lateTime > pickupTime)
+                                {
+                                    createEvent = true;
+                                }
+                            }
+                            else
+                            {
+                                if ((lateTime - pickupTime) > alertLatePickup)
+                                {
+                                    createEvent = true;
+                                }
+                            }
+                        }
+                        break;
+                    case 2:
+                        jobStatus = 8;
+                        intLate = lateTime + deliveryTime;
+                        if (alertLateDelivery >= 0)
+                        {
+                            var maxAutoLateDelAlert = await _jobRepo.MaxAutoLateDeliveryAlert();
+                            if (minutes < maxAutoLateDelAlert)
+                            {
+                                createEvent = true;
+                            }
+                            else
+                            {
+                                if (intLate > alertLateDelivery)
+                                {
+                                    createEvent = true;
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            else
+            {
+                createEvent = true;
+            }
+
+            if (createEvent)
+            {
+                //Event_Insert Me.ucjbNumber, Me.ucjbClientID, Me.ucjbContact, intLateType, intLateTime, DateAdd("n", intLate, Me.ucjbTime), _
+                //    lngUserID, 0, Null, "Late Call from Despatch", False, False, 2, Null, Null, Me.ucjbID, Null, Me.ucjbType, Date, Now
+                await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, null, jobId, jobType, null, "Late Call from Despatch", lateType, lateTime, jobTime.AddMinutes(intLate));
+            }
+
+            await _jobRepo.ResetLateEvent(jobId, lateType);
+
+            if (lateType == 1)
+            {
+                await _jobRepo.LatePickup(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName);
+            }
+            else
+            {
+                await _jobRepo.LateDelivery(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName);
+            }
+
+            return Json("OK");
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Allocate(int courierId, int dispId, string jobIds)
         {
             await _jobRepo.DispatchSelectedJobs(courierId, dispId, jobIds);
@@ -103,7 +186,7 @@ namespace DespatchWeb.Controllers
             return Json($"{rate:C}");
         }
 
-        public async Task<IActionResult> RateJob ( int clientId, int fromId, int toId, int speed, bool pedal, bool van, bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
+        public async Task<IActionResult> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van, bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
                                             string ourRef, string refA, string refB, int quantity, DateTime booked)
         {
             var rate = await _jobRepo.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
@@ -123,7 +206,7 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-        public async Task<IActionResult> UpdateJob (int jobId, string field, string value, decimal rate)
+        public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal rate)
         {
             await _jobRepo.UpdateJob(jobId, field, value, rate);
             return Json("OK");

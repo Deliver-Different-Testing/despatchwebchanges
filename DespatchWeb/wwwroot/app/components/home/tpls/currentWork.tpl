@@ -30,7 +30,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox" ng-click="selectJobDetail(job);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
+    <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox" context-menu="setCurrentWorkMenu" ng-click="selectJobDetail(job);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
             <td class="status" ng-class="job.status">{{job.status}}</td>
             <td>{{job.speed}}</td>
             <td>{{job.notify}}</td>
@@ -57,6 +57,7 @@
             <td><div></div></td>
 			<td><div></div></td>
             <td><div></div></td>
+			<td><div></div></td>
             <td><div style="width:12px;"></div></td>
             <td><div style="width:12px;"></div></td>
         </tr>

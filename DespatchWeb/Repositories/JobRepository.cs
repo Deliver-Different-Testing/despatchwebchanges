@@ -82,7 +82,7 @@ namespace DespatchWeb.Repositories
                         DispatchTime = j.UcjbDispTime,
                         PUTime = j.Putime,
                         ClientNotes = j.ClientNotes,
-                        InternalNotes = j.InternalNotes,
+                        InternalNotes = j.JobNotes,
                         PickUpLatitude = j.PickUpLatitude,
                         PickUpLongitude = j.PickUpLongitude,
                         DeliveryLatitude = j.DeliveryLatitude,
@@ -102,7 +102,12 @@ namespace DespatchWeb.Repositories
                         TruckWeightLimit = j.TruckWeightLimit,
                         TruckStartTime = j.TruckStartTime,
                         TruckHours = j.TruckHours,
-                        PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1)
+                        PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
+                        PickupTime = j.PickupTime,
+                        DeliveryTime = j.DeliveryTime,
+                        AlertLatePickup = j.AlertLatePickUp,
+                        AlertLateDelivery = j.AlertLateDelivery,
+                        Minutes = j.Minutes
 
                     }).ToList();
             return list;
@@ -258,7 +263,7 @@ namespace DespatchWeb.Repositories
                     DispatchTime =j.UcjbDispTime, 
                     PUTime = j.Putime,
                     ClientNotes = j.ClientNotes,
-                    InternalNotes = j.InternalNotes,
+                    InternalNotes = j.JobNotes,
                     PickUpLatitude = j.PickUpLatitude,
                     PickUpLongitude = j.PickUpLongitude,
                     DeliveryLatitude = j.DeliveryLatitude,
@@ -291,7 +296,13 @@ namespace DespatchWeb.Repositories
                     TruckWeightLimit = j.TruckWeightLimit,
                     TruckStartTime = j.TruckStartTime,
                     TruckHours = j.TruckHours,
-                    PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1)
+                    PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
+                    PickupTime = j.PickupTime,
+                    DeliveryTime = j.DeliveryTime,
+                    AlertLatePickup = j.AlertLatePickUp,
+                    AlertLateDelivery = j.AlertLateDelivery,
+                    Minutes = j.Minutes
+
 
 
                 }).ToList();
@@ -317,6 +328,68 @@ namespace DespatchWeb.Repositories
 
             }
 
+        }
+
+        public async Task<int> MaxAutoLatePickupAlert()
+        {
+            DbParameter outputMaxParam = null;
+            await _context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLatePickupAlert")
+             .WithSqlParam("@MaxAutoLatePickupAlert", (dbParam) =>
+             {
+                 dbParam.Direction = System.Data.ParameterDirection.Output;
+                 dbParam.DbType = System.Data.DbType.Int32;
+                 outputMaxParam = dbParam;
+             })
+
+             .ExecuteStoredNonQueryAsync();
+
+            return (Int32)outputMaxParam.Value;
+        }
+
+        public async Task<int> MaxAutoLateDeliveryAlert()
+        {
+            DbParameter outputMaxParam = null;
+            await _context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLateDeliveryAlert")
+             .WithSqlParam("@MaxAutoLateDeliveryAlert", (dbParam) =>
+             {
+                 dbParam.Direction = System.Data.ParameterDirection.Output;
+                 dbParam.DbType = System.Data.DbType.Int32;
+                 outputMaxParam = dbParam;
+             })
+
+             .ExecuteStoredNonQueryAsync();
+
+            return (Int32)outputMaxParam.Value;
+        }
+
+        public async Task ResetLateEvent(int jobId, int eventType)
+        {
+            await _context.LoadStoredProc("DES_qdfLateCall_Reset")
+              .WithSqlParam("@JobID", jobId)
+              .WithSqlParam("@Type", eventType)
+              .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task LatePickup(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJobPickupLateCall")
+              .WithSqlParam("@JobID", jobId)
+              .WithSqlParam("@BookedSpeed", bookedSpeed)
+              .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
+              .WithSqlParam("@Late", late)
+              .WithSqlParam("@Despatcher", despatcher)
+              .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task LateDelivery(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryLateCall")
+              .WithSqlParam("@JobID", jobId)
+              .WithSqlParam("@BookedSpeed", bookedSpeed)
+              .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
+              .WithSqlParam("@Late", late)
+              .WithSqlParam("@Despatcher", despatcher)
+              .ExecuteStoredNonQueryAsync();
         }
 
         public async Task RestoreSplitJobs(string jobIds)

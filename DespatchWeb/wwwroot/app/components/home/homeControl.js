@@ -112,7 +112,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.24",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.29",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -135,7 +135,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.9",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.11",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -205,7 +205,7 @@ angular
                     "columns": [
                         {
                             "id": "col1",
-                            "width": "1400px",
+                            "width": "700px",
                             "boxes": [
                                 {
                                     "name": "jobsList"
@@ -215,7 +215,7 @@ angular
                         },
                         {
                             "id": "col2",
-                            "width": "900px",
+                            "width": "300px",
                             "boxes": [
                                 //{
                                 //    "name": "jobGroups",
@@ -238,7 +238,7 @@ angular
                         },
                         {
                             "id": "col3",
-                            "width": "600px",
+                            "width": "300px",
                             "boxes": [
                                 {
                                     "name": "clearLists",
@@ -447,9 +447,12 @@ angular
             combo: "esc",
             description: "Close gather screen",
             allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-            callback: function () {
+            callback: function (event, hk) {
                 $(".gatherForm").hide();
                 $(".eventForm").hide();
+                if (event.srcElement.classList.contains("dispatchField")) {
+                    event.srcElement.value = "";
+                }
             }
         });
 
@@ -498,8 +501,15 @@ angular
         /////////////////////////////////////
         // LATE CALLS
         /////////////////////////////////////
-        $scope.lateCall = function (courier) {
-            $scope.dispatchJobs(courier);
+        $scope.lateCall = function (lateTime, lateType, j) {
+            return DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName).then(function (response) {
+                $scope.getJobList().then(function () {
+                    
+
+
+                });
+                return response;
+            });
         };
 
         ////////////////////////////////////////
@@ -629,6 +639,53 @@ angular
 
             });
             
+
+        };
+
+        $scope.restoreJobsFromCurrentWindow = function () {
+
+            var callData = {
+                "call": "restoreJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": null
+            };
+
+            var reset = function () {
+                $(".activeTable .active").each(function () {
+                    var j = $scope.jobsCurrentList.find(jo => jo.id === $(this).data("jobid"));
+                    j.courier = null;
+                });
+            };
+            var foundCourier = null;
+
+            $("#currentWork .active").each(function () {
+                var j = $scope.jobsCurrentList.find(jo => jo.id === $(this).data("jobid"));
+                var jn = j.jobNo;
+                DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                if (callData.courierID === null) {
+                    callData.courierID = j.courierData.courierID;
+                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                }
+                if (j.displaySplitJobDetail) {
+                    callData.splitJobs.push($(this).data("jobid"));
+                } else {
+                    callData.jobs.push($(this).attr("data-jobid"));
+                }
+            });
+
+            if (callData.splitJobs.length > 0) {
+                DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
+            }
+            if (callData.jobs.length > 0) {
+                DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+            }
+
+
+
+            $scope.getCurrentJobs(foundCourier.courierID);
+            $scope.getData();
 
         };
 
@@ -1210,6 +1267,21 @@ angular
                 0);
 
 
+        };
+
+        $scope.setCurrentWorkMenu = function () {
+            var multiple = $(".activeTable .active").length > 1;
+           
+            var menu = [
+                {
+                    text: "Restore",
+                    click: function ($itemScope, $event, modelValue, text, $li) {
+                        $scope.restoreJobsFromCurrentWindow();
+                    }
+                }
+            ];
+
+            return menu;
         };
 
         $scope.setJobsMenu = function () {

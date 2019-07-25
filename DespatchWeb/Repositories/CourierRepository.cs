@@ -22,10 +22,8 @@ namespace DespatchWeb.Repositories
             _context = context;
         }
 
-        public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType )
+        public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null)
         {
-            DateTime? lateTime = null;
-            DateTime? etaTime = null;
             int? staffOut = null;
             DateTime? responseTime = null;
             var pageCourier = false;
@@ -109,7 +107,7 @@ namespace DespatchWeb.Repositories
                 ShallowShore = BuildClearListViewModel(activeCouriers, 7, 33),
                 DeepShore = BuildClearListViewModel(activeCouriers, 18, 33),
                 Mangere = BuildClearListViewModel(activeCouriers, 17, 33),
-                DeepSouth = BuildClearListViewModel(activeCouriers, 17, 33),
+                DeepSouth = BuildClearListViewModel(activeCouriers, 4, 33),
                 DeepEast = BuildClearListViewModel(activeCouriers, 3, 33)
             };
 

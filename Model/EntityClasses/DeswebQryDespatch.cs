@@ -96,6 +96,8 @@ namespace DespatchWeb.EntityClasses
 		public System.Int32 IsChildJob { get; set;}
 		/// <summary>Gets or sets the IsParentJob field. </summary>
 		public System.Int32 IsParentJob { get; set;}
+		/// <summary>Gets or sets the JobNotes field. </summary>
+		public System.String JobNotes { get; set;}
 		/// <summary>Gets or sets the JobRelationshipTypeId field. </summary>
 		public Nullable<System.Int32> JobRelationshipTypeId { get; set;}
 		/// <summary>Gets or sets the Minutes field. </summary>

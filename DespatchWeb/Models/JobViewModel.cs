@@ -32,6 +32,11 @@ namespace DespatchWeb.Models
         public string ToAddress { get; set; }
         public string Courier { get; set; }
         public int? Remain { get; set; }
+        public int? PickupTime { get; set; }
+        public int? DeliveryTime { get; set; }
+        public int AlertLatePickup { get; set; }
+        public int AlertLateDelivery { get; set; }
+        public int? Minutes { get; set; }
         public int? StatusID { get; set; }
         public string Status { get; set; }
         public int? LP { get; set; }

@@ -70,6 +70,7 @@ namespace DespatchWeb
 			config.Property(t => t.SigNotRequired).HasMaxLength(100);
 			config.Property(t => t.ClientNotes).HasMaxLength(4000);
 			config.Property(t => t.InternalNotes).HasMaxLength(4000);
+			config.Property(t => t.JobNotes).HasMaxLength(4000);
 			config.Property(t => t.PickUpLatitude);
 			config.Property(t => t.PickUpLongitude);
 			config.Property(t => t.DeliveryLatitude);

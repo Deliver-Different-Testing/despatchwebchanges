@@ -127,6 +127,15 @@ angular
                             return response.data;
                         });
                     },
+                    lateCall: function (lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact,  staffId, jobTime,  jobId,  jobType,  bookedSpeed, notifiedSpeed, despatcherName) {
+                        return $http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup +
+                            "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact +
+                            "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed +
+                            "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName).then(function (response) {
+                            return response.data;
+                        });
+                    },
+
                     rateTruckJob: function (cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
                         return $http.get("job/RateTruckJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate +
                             "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass +

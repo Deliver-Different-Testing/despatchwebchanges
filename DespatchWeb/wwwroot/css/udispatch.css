@@ -503,7 +503,7 @@ body {
   z-index: 1;
   overflow: auto;
   background-color: #FFF;
-  font-size: 10px;
+  font-size: 11px;
 }
 .columns .placeholder {
   height: 200px;
@@ -612,10 +612,12 @@ table.table tr .status.ASC {
 #jobList input.dispatchField {
   width: 29px;
   text-align: center;
+  height: 15px;
 }
 #jobList input.lateCallField {
   width: 19px;
   text-align: center;
+  height: 15px;
 }
 #map_canvas_container {
   position: relative;
