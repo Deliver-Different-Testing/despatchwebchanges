@@ -21,7 +21,7 @@ angular
 			.state("home",
 				{
 					url: "/",
-					templateUrl: "app/components/home/homeView.html?v=1.2",
+					templateUrl: "app/components/home/homeView.html?v=1.3",
 					controller: "HomeControl"
 				});
 		

@@ -38,7 +38,7 @@
             <td>{{job.client}}</td>
             <td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
             <td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
-			<td>{{job.toAddress}}</td>
+			<td><div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>
             <td>{{job.vehicle.label}}</td>
             <td>{{job.remain}}</td>
 			<td>{{job.runOrder}}</td>

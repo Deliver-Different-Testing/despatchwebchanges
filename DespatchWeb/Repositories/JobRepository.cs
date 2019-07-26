@@ -554,5 +554,14 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@Rate", rate)
                 .ExecuteStoredNonQueryAsync();
         }
+
+        public async Task AddNote(int jobId, string note, string despatcher)
+        {
+            await _context.LoadStoredProc("DES_stpJob_AddNotes")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@Notes", note)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+        }
     }
 }

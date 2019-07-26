@@ -211,5 +211,12 @@ namespace DespatchWeb.Controllers
             await _jobRepo.UpdateJob(jobId, field, value, rate);
             return Json("OK");
         }
+
+        [HttpPost]
+        public async Task<IActionResult> AddNote(int jobId, string note, string despatcher)
+        {
+            await _jobRepo.AddNote(jobId, note, despatcher);
+            return Json("OK");
+        }
     }
 }

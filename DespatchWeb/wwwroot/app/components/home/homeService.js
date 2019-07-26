@@ -4,6 +4,11 @@ angular
         [
             "$http", function ($http) {
                 return {
+                    addNote: function (jobId, note, despatcherName) {
+                        return $http.post("job/AddNote?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName).then(function (response) {
+                            return response;
+                        });
+                    },
                     addFollowupEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
                         return $http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(function (response) {
                             return response.data;

@@ -118,7 +118,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.11",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.14",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -135,7 +135,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.11",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.12",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -553,7 +553,7 @@ angular
                     reset();
                     return;
                 }
-                if (j.dgClass !== null && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
+                if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
                     reset();
                     alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
                     return;
@@ -2442,7 +2442,7 @@ angular
 
             $scope.gather.form = {
                 id: "editField",
-                title: "Edit " + label,
+                title: (fieldName === "Notes" ? "Add " : "Edit ") + label,
                 fields: [
                     {
                         "name": fieldName,
@@ -2462,6 +2462,10 @@ angular
                         "value": $scope.gather.form.fields[0].value,
                         "jobID": $scope.gather.form.fields[0].jobID
                     };
+
+                    if (callData.field === "Notes") {
+                        return DispatchData.addNote(job.id, callData.value, FirstName);
+                    }
 
                     if (fieldName === "Size") {
                         callData.value = $scope.gather.form.fields[0].value.id;

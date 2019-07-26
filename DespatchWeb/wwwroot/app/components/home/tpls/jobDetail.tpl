@@ -25,7 +25,7 @@
 					</div>
 				</div>
 				<div class="notes-add"></div>
-				<div class="notes field" >
+				<div class="notes field"  ng-click="editDetailField('Notes','Note','',currentJob.id, 'textarea')">
 					<label>Notes</label>
 					<div class="value"><pre>{{currentJob.internalNotes}}</pre></div>
 				</div>
