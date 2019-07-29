@@ -15,7 +15,7 @@ angular
             }
         });
     }])
-    .controller("HomeControl", ["$scope", "DispatchData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout",  function ($scope, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout) {
+    .controller("HomeControl", ["$scope", "DispatchData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", function ($scope, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout) {
 
         $scope.gather = {
             submit: function () {
@@ -32,7 +32,7 @@ angular
                             $scope.selectJob(refreshedJob);
                             $timeout(function () {
                                 $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
-                                
+
                                 var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
                                 var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
 
@@ -40,16 +40,16 @@ angular
                                 try {
                                     goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
                                     $parentDiv.scrollTop(goTop);
-                                    
+
                                 } catch (e) {
                                     //ignore
                                 }
                             }, 1000);
-                            
+
                         });
                     }
                 });
-                
+
             },
             cancel: function () {
                 $(".gatherForm").hide();
@@ -183,7 +183,7 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/home/tpls/map.tpl?v=1.1",
+                "tpl": "app/components/home/tpls/map.tpl?v=1.4",
                 "showSearch": 0,
                 "showRefresh": 0
             },
@@ -198,7 +198,11 @@ angular
         ///////////////////////////////
         // LAYOUT 
         ///////////////////////////////
-        $scope.layouts = [
+        var layoutsObject = null;
+        if (Modernizr.localstorage) {
+            layoutsObject = JSON.parse(localStorage.getItem("layouts-" + ContactID));
+        }
+        var defaultLayout =[
             {
                 name: "Default",
                 layout: {
@@ -269,7 +273,13 @@ angular
                 }
             }
         ];
+        if (layoutsObject !== null) {
+            layoutsObject[0] = defaultLayout[0];
+        }
 
+        $scope.layouts = layoutsObject || defaultLayout;
+        $scope.userName = FirstName;
+        $scope.currentLayoutName = "default";
 
         $scope.groupJobsSelection = "";
         $scope.currentWorkSelection = "";
@@ -279,11 +289,9 @@ angular
 
 
         $scope.loadLayout = function (i) {
-            $scope.layout = angular.copy($scope.layouts[i].layout,
-                function () {
-                    setTimeout(sizeHeadings(), 1000);
-
-                });
+            $scope.currentLayoutName = $scope.layouts[i].name;
+            $scope.layout = angular.copy($scope.layouts[i].layout);
+            setTimeout($scope.getData, 1000);
         };
 
         $scope.saveLayout = function () {
@@ -319,27 +327,42 @@ angular
                         "layout": $scope.layout
                     };
 
-                    //DO THE API CALL
-                    DispatchData.doAPI(callData).then(function (data) {
 
-                        console.log(data);
+                    if (Modernizr.localstorage) {
+                        $scope.layouts = $scope.layouts.concat(
+                            {
+                                name: layoutName,
+                                layout: angular.copy($scope.layout)
+                            });
+                        localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
+                    }
 
-                        if (data.response === "Success") {
-
-                            $scope.layouts = $scope.layouts.concat(
-                                {
-                                    name: layoutName,
-                                    layout: angular.copy($scope.layout)
-                                }
-                            );
-
-                        } else {
-
-                            alert("Critical Error");
-
-                        }
-
+                    var deferred = $q.defer();
+                    deferred.resolve({
+                        data: "OK"
                     });
+                    return deferred.promise;
+                    //DO THE API CALL
+                    //DispatchData.doAPI(callData).then(function (data) {
+
+                    //    console.log(data);
+
+                    //    if (data.response === "Success") {
+
+                    //        $scope.layouts = $scope.layouts.concat(
+                    //            {
+                    //                name: layoutName,
+                    //                layout: angular.copy($scope.layout)
+                    //            }
+                    //        );
+
+                    //    } else {
+
+                    //        alert("Critical Error");
+
+                    //    }
+
+                    //});
 
 
                 },
@@ -504,7 +527,7 @@ angular
         $scope.lateCall = function (lateTime, lateType, j) {
             return DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName).then(function (response) {
                 $scope.getJobList().then(function () {
-                    
+
 
 
                 });
@@ -578,8 +601,8 @@ angular
                 });
                 return response;
             });
-            
-            
+
+
 
         };
 
@@ -627,7 +650,7 @@ angular
                 DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
 
-            
+
 
             $scope.getJobList().then(function () {
                 //$("#box-jobDetail").find(".loading").show();
@@ -635,10 +658,10 @@ angular
 
                 $scope.courier = { gpsCourier: foundCourier.id };
                 $scope.searchCourier();
-                
+
 
             });
-            
+
 
         };
 
@@ -724,7 +747,7 @@ angular
 
                 });
             });
-            
+
 
 
         };
@@ -1197,26 +1220,37 @@ angular
         $scope.jobFilters = filtersObject || { "status": "nda", "area": "main1", "order": "remain", "asc": "asc" };
         var f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
         $(f).addClass("topBarActive");
-        f = ".top-bar .btn-group .btn." + $scope.jobFilters.area;
-        $(f).addClass("topBarActive");
+        var areas = $scope.jobFilters.area.split(',');
+        for (var i = 0; i < areas.length; i++) {
+            f = ".top-bar .btn-group .btn." + areas[i];
+            $(f).addClass("topBarActive");
+        }
+
         $scope.sort["jobList"] = "remain";
         $scope.setFilters = function (data) {
+            setTimeout(function () {
+                if (data.status) {
+                    $scope.jobFilters.status = data.status;
+                }
 
-            if (data.status) {
-                $scope.jobFilters.status = data.status;
-            }
 
+                if (data.area) {
+                    var selected = $("#area-group > .btn.topBarActive").length;
+                    if (selected > 1) {
+                        $scope.jobFilters.area += "," + data.area;
+                    }
+                    else {
+                        $scope.jobFilters.area = data.area;
+                    }
 
-            if (data.area) {
-                $scope.jobFilters.area = data.area;
-            }
+                }
 
-            if (data.order) {
-                $scope.jobFilters.order = data.order;
-            }
+                if (data.order) {
+                    $scope.jobFilters.order = data.order;
+                }
 
-            $scope.getData();
-
+                $scope.getData();
+            }, 300);
         };
 
         $scope.selectJobDetail = function (job) {
@@ -1261,6 +1295,9 @@ angular
                 $scope.currentSelection = " for Job " + job.JobNo;
                 if (job.courier !== null) {
                     $scope.selectCourier(job.courierData);
+                } else {
+                    var jobs = [job];
+                    displayRoutePoints(jobs);
                 }
 
             },
@@ -1271,7 +1308,7 @@ angular
 
         $scope.setCurrentWorkMenu = function () {
             var multiple = $(".activeTable .active").length > 1;
-           
+
             var menu = [
                 {
                     text: "Restore",
@@ -1349,7 +1386,7 @@ angular
                             $scope.dispatchJobsForm();
                         }
                     }
-                    
+
                     //{
                     //    text: "Split Job",
                     //    click: function ($itemScope, $event, modelValue, text, $li) {
@@ -1418,7 +1455,7 @@ angular
             $scope.jobsCurrentList = false;
             $scope.currentCourier = false;
 
-            
+
 
             $scope.getClearListsData = function () {
                 DispatchData.getClearLists().then(function (data) {
@@ -1696,128 +1733,128 @@ angular
             // JobUpdates
             ////////////////////////////
 
-           // $("#box-jobUpdates").find(".loading").show();
-           /* DispatchData.getJobUpdates().then(function (data) {
-                $scope.jobUpdates = data;
-
-                $scope.jobUpdatesMenu = [
-                    // NEW IMPLEMENTATION
-                    {
-                        text: "Dismiss",
-                        click: function ($itemScope, $event, modelValue, text, $li) {
-
-                            var callData = {
-                                "call": "dismissSupport",
-                                "support": $itemScope.support
-                            };
-
-                            DispatchData.doAPI(callData).then(function (data) {
-                                console.log(data);
-
-                                if (data.response === "Success") {
-
-                                    $(".rightActiveTable .active").fadeOut();
-
-                                } else {
-
-                                    console.log("Critical Error");
-
-                                }
-
-                            });
-
-                        }
-                    },
-                    {
-                        text: "Support",
-                        click: function ($itemScope, $event, modelValue, text, $li) {
-                            //$scope.items.splice($itemScope.$index, 1);
-
-
-                            //BRING UP CURRENT EVENT FORM TO ENTER A SUPPORT
-
-                        }
-                    }
-                ];
-
-
-                setTimeout(function () {
-                    $(document).ready(function (event) {
-                        $("#box-jobUpdates").find(".loading").fadeOut();
-                    });
-                },
-                    100);
-
-
-                setTimeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 2000);
-
-
-            });
-
-            ////////////////////////////
-            // SUPPORTS
-            ////////////////////////////
-
-           // $("#box-supports").find(".loading").show();
-            DispatchData.getSupports().then(function (data) {
-                $scope.supports = data;
-
-
-                $scope.supportMenu = [
-                    // NEW IMPLEMENTATION
-                    {
-                        text: "Complete",
-                        click: function ($itemScope, $event, modelValue, text, $li) {
-
-                            var callData = {
-                                "call": "dismissSupport",
-                                "support": $itemScope.support
-                            };
-
-                            DispatchData.doAPI(callData).then(function (data) {
-
-                                console.log(data);
-
-                                if (data.response === "Success") {
-
-                                    $(".rightActiveTable .active").fadeOut();
-
-                                } else {
-
-                                    console.log("Critical Error");
-
-                                }
-
-                            });
-
-                        }
-                    },
-                    {
-                        text: "Lock",
-                        click: function ($itemScope, $event, modelValue, text, $li) {
-                            //$scope.items.splice($itemScope.$index, 1);
-
-
-                            //LOCK WITH CURRENT USER
-
-                        }
-                    }
-                ];
-
-
-                setTimeout(function () {
-                    $(document).ready(function (event) {
-                        $("#box-supports").find(".loading").fadeOut();
-                    });
-                },
-                    100);
-
-
-                setTimeout(function () { sizeHeadings($("#getSupports").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#getSupports").parents(".column")); }, 2000);
-            });
-            */
+            // $("#box-jobUpdates").find(".loading").show();
+            /* DispatchData.getJobUpdates().then(function (data) {
+                 $scope.jobUpdates = data;
+ 
+                 $scope.jobUpdatesMenu = [
+                     // NEW IMPLEMENTATION
+                     {
+                         text: "Dismiss",
+                         click: function ($itemScope, $event, modelValue, text, $li) {
+ 
+                             var callData = {
+                                 "call": "dismissSupport",
+                                 "support": $itemScope.support
+                             };
+ 
+                             DispatchData.doAPI(callData).then(function (data) {
+                                 console.log(data);
+ 
+                                 if (data.response === "Success") {
+ 
+                                     $(".rightActiveTable .active").fadeOut();
+ 
+                                 } else {
+ 
+                                     console.log("Critical Error");
+ 
+                                 }
+ 
+                             });
+ 
+                         }
+                     },
+                     {
+                         text: "Support",
+                         click: function ($itemScope, $event, modelValue, text, $li) {
+                             //$scope.items.splice($itemScope.$index, 1);
+ 
+ 
+                             //BRING UP CURRENT EVENT FORM TO ENTER A SUPPORT
+ 
+                         }
+                     }
+                 ];
+ 
+ 
+                 setTimeout(function () {
+                     $(document).ready(function (event) {
+                         $("#box-jobUpdates").find(".loading").fadeOut();
+                     });
+                 },
+                     100);
+ 
+ 
+                 setTimeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 1000);
+                 setTimeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 2000);
+ 
+ 
+             });
+ 
+             ////////////////////////////
+             // SUPPORTS
+             ////////////////////////////
+ 
+            // $("#box-supports").find(".loading").show();
+             DispatchData.getSupports().then(function (data) {
+                 $scope.supports = data;
+ 
+ 
+                 $scope.supportMenu = [
+                     // NEW IMPLEMENTATION
+                     {
+                         text: "Complete",
+                         click: function ($itemScope, $event, modelValue, text, $li) {
+ 
+                             var callData = {
+                                 "call": "dismissSupport",
+                                 "support": $itemScope.support
+                             };
+ 
+                             DispatchData.doAPI(callData).then(function (data) {
+ 
+                                 console.log(data);
+ 
+                                 if (data.response === "Success") {
+ 
+                                     $(".rightActiveTable .active").fadeOut();
+ 
+                                 } else {
+ 
+                                     console.log("Critical Error");
+ 
+                                 }
+ 
+                             });
+ 
+                         }
+                     },
+                     {
+                         text: "Lock",
+                         click: function ($itemScope, $event, modelValue, text, $li) {
+                             //$scope.items.splice($itemScope.$index, 1);
+ 
+ 
+                             //LOCK WITH CURRENT USER
+ 
+                         }
+                     }
+                 ];
+ 
+ 
+                 setTimeout(function () {
+                     $(document).ready(function (event) {
+                         $("#box-supports").find(".loading").fadeOut();
+                     });
+                 },
+                     100);
+ 
+ 
+                 setTimeout(function () { sizeHeadings($("#getSupports").parents(".column")); }, 1000);
+                 setTimeout(function () { sizeHeadings($("#getSupports").parents(".column")); }, 2000);
+             });
+             */
 
             ////////////////////////////
             // LATE CALLS
@@ -1893,7 +1930,7 @@ angular
             return $scope.getJobList();
         };
 
-        
+
         $scope.getData();
 
         /////////////////////////
@@ -1923,7 +1960,7 @@ angular
 
         $scope.onMapReady = function () {
             //$scope.heremaps = heremaps;
-            
+
             var options = {
                 minimumInputLength: 1,
                 ajax: {
@@ -1970,7 +2007,7 @@ angular
                         $('#our_suburb').val(null).trigger('change');
                     }
 
-                    
+
                     $scope.gpsForm.data.lat = locn.DisplayPosition.Latitude;
                     $scope.gpsForm.data.long = locn.DisplayPosition.Longitude;
                     $scope.gpsForm.data.address = locn.Address.HouseNumber + " " + locn.Address.Street;
@@ -2008,7 +2045,7 @@ angular
                 long = "";
                 q = $("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentJob.toAddress);
             }
-            
+
             console.log($scope.currentJob.pickupLatitude);
             console.log(q);
             $("#gpsMap").attr("src", q);
@@ -2192,13 +2229,13 @@ angular
                     "long": long
                 },
                 submit: function (location) {
-                   
+
                     var job = $scope.currentJob;
                     if ($scope.gpsForm.data.our_suburb === undefined) {
                         alert("You must pick one of our suburbs to map this address to");
                         return $scope.gpsFormPromise;
                     }
-                    
+
                     if (field === "toAddress") {
                         job.toAddress = $scope.gpsForm.data.address;
                         if (job.toSuburbID.toString() !== $scope.gpsForm.data.our_suburb) {
@@ -2224,55 +2261,55 @@ angular
                         return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
                             DispatchData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff,
                                 job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2).then(function (truckRate) {
-                                console.log(truckRate);
-                                if (truckRate !== job.charge) {
-                                    DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
-                                }
+                                    console.log(truckRate);
+                                    if (truckRate !== job.charge) {
+                                        DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                                    }
 
-                                var callData = {
-                                    "call": "updateJobData",
-                                    "addressField": field,
-                                    "lat": $scope.gpsForm.data.lat,
-                                    "long": $scope.gpsForm.data.long,
-                                    "fromSuburbId": job.fromSuburbID,
-                                    "toSuburbId": job.toSuburbID,
-                                    "fromAddress": job.fromAddress,
-                                    "toAddress": job.toAddress,
-                                    "rate": truckRate,
-                                    "jobID": $scope.currentJob.id,
-                                    "CBD": pedal
-                                };
-                                console.log(callData);
-                                if (field === "toAddress") {
-                                    return DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, ""))).then(function () {
-                                        $(".gpsForm").hide(0);
-                                        var j = $scope.currentJob;
-                                        $scope.getData().then(function () {
-                                            var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
-                                            $scope.selectJob(refreshedJob);
-                                            $timeout(function () {
-                                                $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+                                    var callData = {
+                                        "call": "updateJobData",
+                                        "addressField": field,
+                                        "lat": $scope.gpsForm.data.lat,
+                                        "long": $scope.gpsForm.data.long,
+                                        "fromSuburbId": job.fromSuburbID,
+                                        "toSuburbId": job.toSuburbID,
+                                        "fromAddress": job.fromAddress,
+                                        "toAddress": job.toAddress,
+                                        "rate": truckRate,
+                                        "jobID": $scope.currentJob.id,
+                                        "CBD": pedal
+                                    };
+                                    console.log(callData);
+                                    if (field === "toAddress") {
+                                        return DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, ""))).then(function () {
+                                            $(".gpsForm").hide(0);
+                                            var j = $scope.currentJob;
+                                            $scope.getData().then(function () {
+                                                var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                                                $scope.selectJob(refreshedJob);
+                                                $timeout(function () {
+                                                    $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
 
-                                                var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                                                var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+                                                    var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                                                    var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
 
 
-                                                try {
-                                                    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                                                    $parentDiv.scrollTop(goTop);
+                                                    try {
+                                                        goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                                        $parentDiv.scrollTop(goTop);
 
-                                                } catch (e) {
-                                                    //ignore
-                                                }
-                                            }, 1000);
+                                                    } catch (e) {
+                                                        //ignore
+                                                    }
+                                                }, 1000);
+                                            });
+
                                         });
-
-                                    });
-                                }
-                            });
+                                    }
+                                });
                         });
-                        
-                        
+
+
                     }
                     else {
                         return DispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID,
@@ -2321,9 +2358,9 @@ angular
                                         });
                                     });
                                 }
-                                
+
                             });
-                        
+
                     }
 
 
@@ -2384,7 +2421,7 @@ angular
                         $scope.gpsForm.data.lat = locn.DisplayPosition.Latitude;
                         $scope.gpsForm.data.long = locn.DisplayPosition.Longitude;
                     });
-                    
+
                 }
             };
 
@@ -2408,10 +2445,10 @@ angular
                     }
                     search.trigger("input");
                 }, 200);
-                
+
             });
 
-           
+
 
             $scope.copyGpsAddress = function () {
                 $('#location').select2('open');
@@ -2521,7 +2558,7 @@ angular
                             });
                     }
 
-                   
+
                     //$scope.updateDetailField($scope.gather.form.fields[0].jobID, $scope.gather.form.fields[0].name, $scope.gather.form.fields[0].value);
 
                 },

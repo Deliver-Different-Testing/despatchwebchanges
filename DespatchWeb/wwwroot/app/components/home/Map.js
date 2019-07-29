@@ -279,8 +279,8 @@ function displayRoutePoints(courierJobs) {
             new google.maps.Size(131, 154),
             new google.maps.Point(0, 0),
             new google.maps.Point(10, 34));
-        var marker = new google.maps.Marker({
-            position: courierJobs[i].statusID < 5 ? new google.maps.LatLng(courierJobs[i].pickUpLatitude, courierJobs[i].pickUpLongitude) : new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
+        var pickupMarker = new google.maps.Marker({
+            position: new google.maps.LatLng(courierJobs[i].pickUpLatitude, courierJobs[i].pickUpLongitude),
             map: map,
             icon: pinImage
         });
@@ -289,6 +289,7 @@ function displayRoutePoints(courierJobs) {
         var contentString = '<div id="content">' +
             '<div id="bodyContent">' +
             "<p><b>" + courierJobs[i].jobNo + '</b></p>' +
+            "<p><b>Pickup</b></p>" +
             "</div>" +
             "</div>";
 
@@ -298,13 +299,37 @@ function displayRoutePoints(courierJobs) {
         });
 
 
-        addClickHandler(marker, infoWindow);
+        addClickHandler(pickupMarker, infoWindow);
+
+        var deliveryMarker = new google.maps.Marker({
+            position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
+            map: map,
+            icon: pinImage
+        });
+
+
+        var deliveryContentString = '<div id="content">' +
+            '<div id="bodyContent">' +
+            "<p><b>" + courierJobs[i].jobNo + '</b></p>' +
+            "<p><b>Delivery</b></p>" +
+            "</div>" +
+            "</div>";
+
+        var deliveryInfoWindow = new google.maps.InfoWindow({
+            content: deliveryContentString,
+            pixelOffset: new google.maps.Size(-55, 0)
+        });
+
+
+        addClickHandler(deliveryMarker, deliveryInfoWindow);
 
 
     }
 
     //setMapBounds();
-
+    if (courierJobs[0].courierLatitude === null) {
+        return;
+    }
 
     var gl1 = new google.maps.LatLng(courierJobs[0].courierLatitude, courierJobs[0].courierLongitude);
     carPos = gl1;

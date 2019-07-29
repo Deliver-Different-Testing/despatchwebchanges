@@ -41,8 +41,8 @@ namespace DespatchWeb.Repositories
                         AcceptedJobTypeID = j.AcceptedJobTypeId,
                         Vehicle = new Vehicle()
                         {
-                            id = j.UcjbSize,
-                            label = Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                            id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                            label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
                         },
                         Client = j.UcclCode,
                         ClientID = j.UcjbClientId,
@@ -67,8 +67,8 @@ namespace DespatchWeb.Repositories
                         SpeedAccepted = j.OriginalSpeed,
                         Size = new Vehicle()
                         {
-                            id = j.UcjbSize,
-                            label = Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                            id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                            label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
                         },
                         Weight = j.UcjbWeight,
                         Items = j.UcjbQty,
@@ -157,10 +157,11 @@ namespace DespatchWeb.Repositories
             }
 
             var areas = new List<string>() {"city", "truck", "main1", "main2", "central", "shore", "west"};
+            var selectedAreas = area.Split(',').ToList();
 
             var filter = 
                 _context.TblDespatchViews.Where(v =>
-                    (v.ShowOnAssistDespatch ?? false) == true && (area != "all" && v.Name == area) || ( area == "all" && areas.Contains(v.Name))).ToList();
+                    (v.ShowOnAssistDespatch ?? false) == true && (area != "all" && selectedAreas.Contains(v.Name)) || ( area == "all" && areas.Contains(v.Name))).ToList();
             var whereToUse = "";
             foreach (var w in filter)
             {
@@ -170,7 +171,9 @@ namespace DespatchWeb.Repositories
                 }
                 whereToUse += $" ({w.WhereCondition}) ";
             }
-            
+
+            whereToUse = $"({whereToUse})";
+
             if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status) && status != "all")
             {
                 whereToUse += " AND";
@@ -222,8 +225,8 @@ namespace DespatchWeb.Repositories
                     AcceptedJobTypeID = j.AcceptedJobTypeId,
                     Vehicle = new Vehicle()
                     {
-                        id = j.UcjbSize,
-                        label = Enum.GetName(typeof(Enums.Vehicle), (int) (j.UcjbSize ?? 2))
+                        id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                        label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int) (j.UcjbSize ?? 2))
                     },
                     Client = j.UcclCode,
                     ClientID = j.UcjbClientId,
@@ -248,8 +251,8 @@ namespace DespatchWeb.Repositories
                     SpeedAccepted = j.OriginalSpeed,
                     Size = new Vehicle()
                     {
-                        id = j.UcjbSize,
-                        label = Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                        id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                        label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
                     },
                     Weight = j.UcjbWeight,
                     Items = j.UcjbQty,
