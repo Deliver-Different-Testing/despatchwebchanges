@@ -327,7 +327,7 @@ function displayRoutePoints(courierJobs) {
     }
 
     //setMapBounds();
-    if (courierJobs[0].courierLatitude === null) {
+    if (courierJobs[0].courierLatitude === null || courierJobs[0].courierLatitude === 0) {
         return;
     }
 

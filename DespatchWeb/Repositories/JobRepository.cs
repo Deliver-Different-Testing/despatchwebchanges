@@ -482,7 +482,7 @@ namespace DespatchWeb.Repositories
                .WithSqlParam("@Rate", (dbParam) =>
                {
                    dbParam.Direction = System.Data.ParameterDirection.Output;
-                   dbParam.DbType = System.Data.DbType.Decimal;
+                   dbParam.DbType = System.Data.DbType.Currency;
                    outputRateParam = dbParam;
                })
                .ExecuteStoredNonQueryAsync();
@@ -508,7 +508,7 @@ namespace DespatchWeb.Repositories
                .WithSqlParam("@curAmount", (dbParam) =>
                {
                    dbParam.Direction = System.Data.ParameterDirection.Output;
-                   dbParam.DbType = System.Data.DbType.Decimal;
+                   dbParam.DbType = System.Data.DbType.Currency;
                    outputRateParam = dbParam;
                })
                .WithSqlParam("@Size", size)

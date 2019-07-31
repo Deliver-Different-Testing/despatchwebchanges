@@ -167,7 +167,7 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> AddPriceSuburbChangeEvent(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName)
         {
 
-            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, "Changed Price or Suburb", 35);
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null, "Changed Price or Suburb", 35);
 
             return Json("OK");
         }
