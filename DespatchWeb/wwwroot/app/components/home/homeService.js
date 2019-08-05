@@ -122,6 +122,11 @@ angular
                         });
 
                     },
+                    getAvailableCourierLocation: function (minLng, minLat, maxLng, maxLat) {
+                        return $http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getSuburbList: function () {
                         return $http.get("job/SuburbList").then(function (response) {
                             return response.data;

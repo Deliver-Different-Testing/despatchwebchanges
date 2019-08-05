@@ -13,8 +13,8 @@
                 <th scope="col" ng-click="orderList('jobList','from')">From <i class="fa fa-caret-down" ng-show="sort.jobList == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','to')">To <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
 				<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
+				<th scope="col" ng-click="orderList('jobList','remain')">R <i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobList == 'vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-vehicle'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','remain')">R <i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','lp')">LP <i class="fa fa-caret-down" ng-show="sort.jobList == 'lp'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-lp'"></i></th>
                 <th scope="col" ng-click="orderList('jobList','ld')">LD <i class="fa fa-caret-down" ng-show="sort.jobList == 'ld'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-ld'"></i></th>
                 <th></th>
@@ -38,8 +38,8 @@
 			<td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
 			<td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
 			<td><div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>
-			<td>{{job.vehicle.label}}</td>
 			<td>{{job.remain}}</td>
+			<td>{{job.vehicle.label}}</td>
 			<td>{{job.lp}}</td>
 			<td>{{job.ld}}</td>
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>

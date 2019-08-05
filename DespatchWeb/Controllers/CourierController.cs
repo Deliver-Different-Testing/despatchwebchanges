@@ -28,6 +28,13 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
+        [HttpGet]
+        public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
+        {
+            var result = _courierRepo.GetAvailableCouriers(minLng, minLat, maxLng, maxLat);
+            return Json(result);
+        }
+
         public IActionResult Location(string code)
         {
             var result = _courierRepo.Location(code);

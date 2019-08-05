@@ -63,6 +63,8 @@ angular
             submitValue: "Save"
         };
 
+        $scope.allCouriers = { display: false };
+
         $scope.options = {
             "detail": {
                 "size": [
@@ -112,13 +114,13 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.29",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.30",
                 "showSearch": 1,
                 "showRefresh": 1
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.14",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.16",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -183,7 +185,7 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/home/tpls/map.tpl?v=1.5",
+                "tpl": "app/components/home/tpls/map.tpl?v=1.6",
                 "showSearch": 0,
                 "showRefresh": 0
             },
@@ -1412,6 +1414,44 @@ angular
             return multiple ? multipleMenu : fullMenu;
         };
 
+        $scope.getAvailableCourierLocation = function () {
+            if (!$scope.allCouriers.display) {
+                map.clearLabels();
+                map.clearFlags();
+                return;
+            }
+            var areas = $scope.jobFilters.area.split(",");
+            var channels = [];
+            var trucks = false;
+            for (var i = 0; i < areas.length; i++) {
+                switch (areas[i]) {
+                    case "main1":
+                        if (!channels.includes(1)) {
+                            channels.push(1);
+                        }
+                        break;
+                    case "main2":
+                        if (!channels.includes(1)) {
+                            channels.push(1);
+                        }
+                        break;
+                    case "city":
+                        if (!channels.includes(2)) {
+                            channels.push(2);
+                        }
+                        break;
+                    case "truck":
+                        trucks = true;
+                        break;
+                    default:
+                    // code block
+                }
+            }
+            DispatchData.getAvailableCourierLocation(map.getBounds().getSouthWest().lng(), map.getBounds().getSouthWest().lat(), map.getBounds().getNorthEast().lng(), map.getBounds().getNorthEast().lat())
+                .then(function (returnData) {
+                    displayAvailableCouriers(returnData, $scope.currentCourier === false ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks);
+                });
+        };
 
         $scope.courierMenu = [
             // NEW IMPLEMENTATION
@@ -1434,6 +1474,7 @@ angular
                 setTimeout(function () {
                     $("#box-jobsList .loading").fadeOut();
                     sizeHeadings($("#jobList").parents(".column"));
+                    $scope.getAvailableCourierLocation();
                 }, 100);
 
             });

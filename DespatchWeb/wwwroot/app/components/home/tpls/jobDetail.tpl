@@ -125,7 +125,7 @@
 						</div>
 						<div class="field">
 							<label>PU time</label>
-							<div class="value">{{currentJob.pu}}</div>
+							<div class="value">{{currentJob.puTime | date : "h:mm a"}}</div>
 						</div>
 						<div class="field">
 							<label>Charge</label>

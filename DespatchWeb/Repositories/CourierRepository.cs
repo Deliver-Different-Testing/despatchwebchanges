@@ -60,6 +60,21 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
+        {
+            var result = new List<AvailableCourierPosition>();
+            _context.LoadStoredProc("MAP_stpEnvelope")
+                .WithSqlParam("@MinimumLongitude", minLng)
+                .WithSqlParam("@MinimumLatitude", minLat)
+                .WithSqlParam("@MaximumLongitude", maxLng)
+                .WithSqlParam("@MaximumLatitude", maxLat)
+                .ExecuteStoredProc(handle =>
+                {
+                    result = handle.ReadToList<AvailableCourierPosition>().ToList();
+                });
+            return result;
+        }
+
         public List<ActiveCouriersViewModel> ActiveCouriers()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();

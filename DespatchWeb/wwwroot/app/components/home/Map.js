@@ -247,6 +247,19 @@ function displayCourierPositionOnly(lat, lng) {
     map.setZoom(13);
 }
 
+function displayAvailableCouriers(ac, courierCode, channels, trucks) {
+    map.clearLabels();
+    map.clearFlags();
+    $.each(ac, function (i, c) {
+        var col = '#003CA1'; //courier
+        var ll = new google.maps.LatLng(c.latitude, c.longitude);
+        if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (trucks === false || c.vehicleType === "T"))
+            drawItem(col, ll, pad(c.code + '-' + c.vehicleType, 5, '_', 2));
+    });
+
+
+}
+
 function displayRoutePoints(courierJobs) {
     if (map.markers.length) {
         map.clearMarkers();
@@ -397,18 +410,6 @@ function pad(str, len, pad, dir) {
 
 }
 
-function displayAvailableCouriers(ac, courierCode, courierFilter) {
-    map.clearLabels();
-    map.clearFlags();
-    $.each(ac, function (i, c) {
-        var col = '#003CA1'; //courier
-        var ll = new google.maps.LatLng(c.latitude, c.longitude);
-        if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && courierFilter.includes(c.code))
-            drawItem(col, ll, pad(c.code + '-' + c.vehicleType, 5, '_', 2));
-    });
-
-
-}
 
 function refreshCourierLocation(returnData) {
     if (returnData !== null && !renderingPoints) {
