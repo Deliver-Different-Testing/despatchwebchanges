@@ -185,7 +185,7 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/home/tpls/map.tpl?v=1.6",
+                "tpl": "app/components/home/tpls/map.tpl?v=1.12",
                 "showSearch": 0,
                 "showRefresh": 0
             },

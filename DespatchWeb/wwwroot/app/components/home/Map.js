@@ -1,4 +1,5 @@
 ﻿var map;
+var oms;
 var renderingPoints = false;
 var infoWindow = new google.maps.InfoWindow();
 
@@ -83,6 +84,11 @@ function initialize() {
         center: auckland
     };
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+    oms = new OverlappingMarkerSpiderfier(map, {
+        markersWontMove: true,   // we promise not to move any markers, allowing optimizations
+        markersWontHide: true,   // we promise not to change visibility of any markers, allowing optimizations
+        basicFormatEvents: true  // allow the library to skip calculating advanced formatting information
+    });
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
@@ -98,12 +104,16 @@ window.onkeyup = function (e) {
 
 function addClickHandler(m, iw) {
 
-    map.addMarker(m);
+    //map.addMarker(m);
     if (iw !== null) {
-        google.maps.event.addListener(m, 'click', function () {
-            //angular.element(".columns").scope().selectJobFromMap(this.position.lat(), this.position.lng());
+        //google.maps.event.addListener(m, 'click', function () {
+        //    //angular.element(".columns").scope().selectJobFromMap(this.position.lat(), this.position.lng());
+        //    iw.open(map, m);
+        //});
+        google.maps.event.addListener(m, 'spider_click', function (e) {  // 'spider_click', not plain 'click'
             iw.open(map, m);
         });
+        oms.addMarker(m);
 
     }
     else {
@@ -260,11 +270,14 @@ function displayAvailableCouriers(ac, courierCode, channels, trucks) {
 
 }
 
+
+
 function displayRoutePoints(courierJobs) {
     if (map.markers.length) {
         map.clearMarkers();
+        
     }
-
+    oms.removeAllMarkers();
 
     for (var i = 0; i < courierJobs.length; i++) {
         var pinColor = "purple";
@@ -287,32 +300,37 @@ function displayRoutePoints(courierJobs) {
         if (courierJobs[i].status === "V") {
             pinColor = "yellow";
         }
-
+        
+        
         var pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (courierJobs[i].runOrder || "").toString() + ".png",
             new google.maps.Size(131, 154),
             new google.maps.Point(0, 0),
             new google.maps.Point(10, 34));
-        var pickupMarker = new google.maps.Marker({
-            position: new google.maps.LatLng(courierJobs[i].pickUpLatitude, courierJobs[i].pickUpLongitude),
-            map: map,
-            icon: pinImage
-        });
+
+        if (courierJobs[i].statusID < 5) {
+            var pickupMarker = new google.maps.Marker({
+                position: new google.maps.LatLng(courierJobs[i].pickUpLatitude, courierJobs[i].pickUpLongitude),
+                map: map,
+                icon: pinImage
+            });
 
 
-        var contentString = '<div id="content">' +
-            '<div id="bodyContent">' +
-            "<p><b>" + courierJobs[i].jobNo + '</b></p>' +
-            "<p><b>Pickup</b></p>" +
-            "</div>" +
-            "</div>";
+            var contentString = '<div id="content">' +
+                '<div id="bodyContent">' +
+                "<p><b>" + courierJobs[i].jobNo + '</b></p>' +
+                "<p><b>Pickup</b></p>" +
+                "</div>" +
+                "</div>";
 
-        var infoWindow = new google.maps.InfoWindow({
-            content: contentString,
-            pixelOffset: new google.maps.Size(-55, 0)
-        });
+            var infoWindow = new google.maps.InfoWindow({
+                content: contentString,
+                pixelOffset: new google.maps.Size(-55, 0)
+            });
 
 
-        addClickHandler(pickupMarker, infoWindow);
+            addClickHandler(pickupMarker, infoWindow);
+        }
+        
 
         var deliveryMarker = new google.maps.Marker({
             position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
