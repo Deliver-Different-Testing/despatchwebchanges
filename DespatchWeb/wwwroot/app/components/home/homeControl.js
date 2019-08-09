@@ -114,7 +114,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.30",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.38",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -375,6 +375,52 @@ angular
 
         };
 
+        $scope.attention = function (job) {
+
+            var temp = "";
+
+            if (job.direct) {
+                temp += "DIRECT ";
+            }
+            else {
+                if (job.speedID !== job.notifiedJobTypeID && job.notifiedJobTypeID != -1) {
+                    temp += "ASAP ";
+                }
+            }
+            if (job.van) {
+                temp += "VAN ";
+            }
+            if (job.truck || job.speedID === 45) {
+                temp += "TRUCK ";
+            }
+            if (job.return) {
+                temp += "RTN ";
+            }
+            if (job.size.id === 2 && !job.van && !job.truck && job.speedID !== 45) {
+                temp = "CAR " + temp;
+            }
+            if (job.size.id === 5) {
+                temp = "Scoot " + temp;
+            }
+
+            if (job.childNotes.length > 0) {
+                temp += job.childNotes;
+            }
+            if (job.pickupFrom === 1) {
+                temp += "R ";
+            } else {
+                if (job.pickupFrom === 2) {
+                    temp += "D ";
+                }
+            }
+
+            if (job.saturdayDelivery) {
+                temp += "Sat Del";
+            }
+
+            return temp.trim();
+        };
+
         $scope.sortableOptions = {
             connectWith: ".column-sortable",
             items: ".box",
@@ -528,7 +574,7 @@ angular
         /////////////////////////////////////
         $scope.lateCall = function (lateTime, lateType, j) {
             return DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName).then(function (response) {
-                $scope.getJobList().then(function () {
+                $scope.getData().then(function () {
 
 
 
@@ -592,7 +638,7 @@ angular
             });
 
             return DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
-                $scope.getJobList().then(function () {
+                $scope.getData().then(function () {
                     //$("#box-jobDetail").find(".loading").show();
                     $("#box-map").find(".loading").show();
 
@@ -654,7 +700,7 @@ angular
 
 
 
-            $scope.getJobList().then(function () {
+            $scope.getData().then(function () {
                 //$("#box-jobDetail").find(".loading").show();
                 $("#box-map").find(".loading").show();
 
@@ -727,7 +773,7 @@ angular
             }
 
             DispatchData.splitJob(j.id, FirstName).then(function (response) {
-                $scope.getJobList().then(function () {
+                $scope.getData().then(function () {
                     var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
                     $scope.selectJob(refreshedJob);
                     $timeout(function () {
@@ -1279,10 +1325,13 @@ angular
                 $scope.$apply();
 
                 console.log(job);
-                if (clear === true) {
-                    DispatchData.getActiveCouriers().then(function (data) {
-                        $scope.pickCouriers = data;
-                    });
+
+                DispatchData.getActiveCouriers().then(function (data) {
+                    $scope.pickCouriers = data;
+                });
+
+                if (clear === true && job.courier !== null) {
+                    
                     $scope.jobGroups = false;
                     $scope.jobsCurrentList = false;
                     $scope.getPotentialCouriers();
@@ -2051,7 +2100,7 @@ angular
 
                     $scope.gpsForm.data.lat = locn.DisplayPosition.Latitude;
                     $scope.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                    $scope.gpsForm.data.address = locn.Address.HouseNumber + " " + locn.Address.Street;
+                    //$scope.gpsForm.data.address = locn.Address.HouseNumber + " " + locn.Address.Street;
                     var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
                     $scope.map.setCenter(ll);
                     $scope.marker.setPosition(ll);
@@ -2141,7 +2190,7 @@ angular
                         $scope.place = this.getPlace();
                     }
 
-                    $scope.gpsForm.address = $scope.place.formatted_address;
+                    //$scope.gpsForm.address = $scope.place.formatted_address;
                     $scope.gpsForm.data.lat = $scope.place.geometry.location.lat();
                     $scope.gpsForm.data.long = $scope.place.geometry.location.lng();
                     if ($scope.place.address_components.find(x => x.types[0] === "postal_code")) {
@@ -2168,7 +2217,7 @@ angular
                         prox: location.lat().toString() + "," + location.lng().toString() + "," + "250"
                     }).done(function (data) {
                         var locn = data.Response.View[0].Result[0].Location;
-                        $scope.gpsForm.data.address = locn.Address.Label;
+                        //$scope.gpsForm.data.address = locn.Address.Label;
                         console.log("Suburb = " + locn.Address.District);
                         console.log("PostCode = " + locn.Address.PostalCode);
                         $("#suburb").val(locn.Address.District);
@@ -2398,6 +2447,30 @@ angular
                                             }, 1000);
                                         });
                                     });
+                                } else {
+                                    return DispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, ""))).then(function () {
+                                        $(".gpsForm").hide(0);
+                                        var j = $scope.currentJob;
+                                        $scope.getData().then(function () {
+                                            var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                                            $scope.selectJob(refreshedJob);
+                                            $timeout(function () {
+                                                $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+
+                                                var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                                                var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                                                try {
+                                                    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                                    $parentDiv.scrollTop(goTop);
+
+                                                } catch (e) {
+                                                    //ignore
+                                                }
+                                            }, 1000);
+                                        });
+                                    });
                                 }
 
                             });
@@ -2418,7 +2491,7 @@ angular
                         $scope.place = this.getPlace();
                     }
 
-                    $scope.gpsForm.address = $scope.place.formatted_address;
+                    //$scope.gpsForm.address = $scope.place.formatted_address;
                     $scope.gpsForm.data.lat = $scope.place.geometry.location.lat();
                     $scope.gpsForm.data.long = $scope.place.geometry.location.lng();
                     if ($scope.place.address_components.find(x => x.types[0] === "postal_code")) {

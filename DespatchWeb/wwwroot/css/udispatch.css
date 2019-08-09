@@ -502,7 +502,7 @@ body {
   height: 100%;
   z-index: 1;
   overflow: auto;
-  background-color: #FFF;
+  background-color: #F0F0F0;
   font-size: 11px;
 }
 .columns .placeholder {
@@ -594,7 +594,7 @@ table.table tr .status.ASC {
 }
 .table-headings tr th .fa {
   position: absolute;
-  right: 1px;
+  left: -2px;
 }
 .table > tbody > tr > td,
 .table > tbody > tr > th,

@@ -33,12 +33,16 @@ namespace DespatchWeb.Repositories
                         Time = j.UcjbTime,
                         Direct = j.Direct,
                         Van = j.UcjbVan,
+                        Truck = j.Truck,
+                        SaturdayDelivery = j.SaturdayDelivery,
                         Return = j.UcjbReturn,
+                        PickupFrom = j.UcjbPickUpFrom,
                         JobNo = j.UcjbNumber,
                         Speed = j.SpeedShortName,
                         SpeedID = j.UcjbSpeed,
                         Notify = j.NotifiedSpeed,
                         AcceptedJobTypeID = j.AcceptedJobTypeId,
+                        NotifiedJobTypeID = j.NotifiedJobTypeId,
                         Vehicle = new Vehicle()
                         {
                             id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
@@ -83,6 +87,7 @@ namespace DespatchWeb.Repositories
                         PUTime = j.Putime,
                         ClientNotes = j.ClientNotes,
                         InternalNotes = j.JobNotes,
+                        ChildNotes = j.ChildNotes,
                         PickUpLatitude = j.PickUpLatitude,
                         PickUpLongitude = j.PickUpLongitude,
                         DeliveryLatitude = j.DeliveryLatitude,
@@ -217,12 +222,16 @@ namespace DespatchWeb.Repositories
                     Time = j.UcjbTime,
                     Direct = j.Direct,
                     Van = j.UcjbVan,
+                    Truck = j.Truck,
                     Return = j.UcjbReturn,
+                    PickupFrom = j.UcjbPickUpFrom,
+                    SaturdayDelivery = j.SaturdayDelivery,
                     JobNo = j.UcjbNumber,
                     Speed = j.SpeedShortName,
                     SpeedID = j.UcjbSpeed,
                     Notify = j.NotifiedSpeed,
                     AcceptedJobTypeID = j.AcceptedJobTypeId,
+                    NotifiedJobTypeID = j.NotifiedJobTypeId,
                     Vehicle = new Vehicle()
                     {
                         id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
@@ -267,6 +276,7 @@ namespace DespatchWeb.Repositories
                     PUTime = j.Putime,
                     ClientNotes = j.ClientNotes,
                     InternalNotes = j.JobNotes,
+                    ChildNotes = j.ChildNotes,
                     PickUpLatitude = j.PickUpLatitude,
                     PickUpLongitude = j.PickUpLongitude,
                     DeliveryLatitude = j.DeliveryLatitude,
@@ -542,6 +552,20 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@Address", address)
                 .WithSqlParam("@DeliveryLatitude", deliveryLat)
                 .WithSqlParam("@DeliveryLongitude", deliveryLng)
+                .WithSqlParam("@CBD", cbd)
+                .WithSqlParam("@Rate", rate)
+                .ExecuteStoredNonQueryAsync();
+
+        }
+
+        public async Task UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat, decimal pickupLng, bool cbd, decimal rate)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJobPickupAddress")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@FromSuburb", fromSuburbId)
+                .WithSqlParam("@Address", address)
+                .WithSqlParam("@PickupLatitude", pickupLat)
+                .WithSqlParam("@PickupLongitude", pickupLng)
                 .WithSqlParam("@CBD", cbd)
                 .WithSqlParam("@Rate", rate)
                 .ExecuteStoredNonQueryAsync();

@@ -4,19 +4,17 @@
         <table>
             <thead class="thead-dark no select">
             <tr>
-                <th scope="col" ng-click="orderList('jobList','status')">S <i class="fa fa-caret-down" ng-show="sort.jobList == 'status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i></th>
-				<th scope="col" ng-click="orderList('jobList','time')">T <i class="fa fa-caret-down" ng-show="sort.jobList == 'time'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-time'"></i></th>
-                <th scope="col" ng-click="orderList('jobList', 'speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobList == 'speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-speed'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','notify')">N <i class="fa fa-caret-down" ng-show="sort.jobList == 'notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-notify'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','jobNo')">Job <i class="fa fa-caret-down" ng-show="sort.jobList == 'jobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-jobNo'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','client')">Client <i class="fa fa-caret-down" ng-show="sort.jobList == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-client'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','from')">From <i class="fa fa-caret-down" ng-show="sort.jobList == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','to')">To <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
-				<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
-				<th scope="col" ng-click="orderList('jobList','remain')">R <i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobList == 'vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-vehicle'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','lp')">LP <i class="fa fa-caret-down" ng-show="sort.jobList == 'lp'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-lp'"></i></th>
-                <th scope="col" ng-click="orderList('jobList','ld')">LD <i class="fa fa-caret-down" ng-show="sort.jobList == 'ld'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-ld'"></i></th>
+                <th scope="col" ng-click="orderList('jobList','status')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i>S </th>
+				<th scope="col" ng-click="orderList('jobList','time')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'time'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-time'"></i>T </th>
+                <th scope="col" ng-click="orderList('jobList', 'speed')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-speed'"></i>Speed </th>
+                <th scope="col" ng-click="orderList('jobList','notify')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-notify'"></i>N </th>
+                <th scope="col" ng-click="orderList('jobList','jobNo')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'jobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-jobNo'"></i>Job </th>
+                <th scope="col" ng-click="orderList('jobList','client')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-client'"></i>Client </th>
+                <th scope="col" ng-click="orderList('jobList','from')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i>From </th>
+				<th scope="col" ng-click="orderList('jobList','to')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i>To/Street </th>
+				<th scope="col" ng-click="orderList('jobList','remain')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i>R </th>
+                <th scope="col" ng-click="orderList('jobList','vehicle')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-vehicle'"></i>V </th>
+                
                 <th></th>
                 <th></th>
             </tr>
@@ -36,12 +34,9 @@
 			<td>{{job.jobNo}}</td>
 			<td>{{job.client}}</td>
 			<td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-			<td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
-			<td><div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>
-			<td>{{job.remain}}</td>
-			<td>{{job.vehicle.label}}</td>
-			<td>{{job.lp}}</td>
-			<td>{{job.ld}}</td>
+			<td><div style="width:220px; white-space:nowrap; overflow-x:hidden;" title="{{job.to}} &nbsp;  {{job.toAddress}}">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i>&nbsp; {{job.toAddress}}</div></td>
+			<td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
+			<td>{{attention(job)}}</td>
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>
 			<td><input type="text" class="lateCallField" ng-model="job.lp" ng-keydown="$event.keyCode === 13 && lateCall(job.lp, 1, job)"  placeholder="LP" /></td>
 			<td><input type="text" class="lateCallField" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateCall(job.ld, 2, job)"  placeholder="LD" /></td>
@@ -53,8 +48,6 @@
             <td><div></div></td>
 			<td><div></div></td>
             <td><div style="width:12px;"></div></td>
-            <td><div></div></td>
-            <td><div></div></td>
             <td><div></div></td>
             <td><div></div></td>
             <td><div></div></td>

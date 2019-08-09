@@ -12,7 +12,10 @@ namespace DespatchWeb.Models
         public DateTime? Time { get; set; }
         public bool Direct { get; set; }
         public bool Van { get; set; }
+        public bool? Truck { get; set; }
+        public bool SaturdayDelivery { get; set; }
         public bool Return { get; set; }
+        public short? PickupFrom { get; set; }
         public string JobNo { get; set; }
         public string Speed { get; set; }
         public int? SpeedID { get; set; }
@@ -45,6 +48,7 @@ namespace DespatchWeb.Models
         public string Phone { get; set; }
         public string SpeedAccepted { get; set; }
         public int? AcceptedJobTypeID { get; set; }
+        public int? NotifiedJobTypeID { get; set; }
         public Vehicle Size { get; set; }
         public double? Weight { get; set; }
         public short? Items { get; set; }
@@ -59,6 +63,7 @@ namespace DespatchWeb.Models
         public DateTime? PUTime { get; set; }
         public string ClientNotes { get; set; }
         public string InternalNotes { get; set; }
+        public string ChildNotes { get; set; }
         public decimal? PickUpLongitude { get; set; }
         public decimal? PickUpLatitude { get; set; }
         public decimal? DeliveryLongitude { get; set; }

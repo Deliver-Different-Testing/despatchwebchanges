@@ -177,6 +177,11 @@ angular
                             return response;
                         });
                     },
+                    updatePickupAddress: function (jobId, fromSuburbId, address, lat, lng, cbd, rate) {
+                        return $http.post("job/UpdatePickupAddress?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate).then(function (response) {
+                            return response;
+                        });
+                    },
                     updateSplitJobAddress: function (jobId, toSuburbId, address, lat, lng) {
                         return $http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng).then(function (response) {
                             return response;
