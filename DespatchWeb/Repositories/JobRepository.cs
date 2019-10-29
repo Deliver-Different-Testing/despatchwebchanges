@@ -343,6 +343,20 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public async Task ReDispatchSelectedJobs(int courierId, int dispId, string jobIds)
+        {
+
+            foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+            {
+
+                await _context.LoadStoredProc("uspRestoreJob")
+                .WithSqlParam("@JobID", int.Parse(jid))
+                .ExecuteStoredNonQueryAsync();
+
+            }
+
+        }
+
         public async Task<int> MaxAutoLatePickupAlert()
         {
             DbParameter outputMaxParam = null;

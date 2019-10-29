@@ -40,7 +40,7 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu1">
                 <li><a class="dropdown-item" href="#" ng-click="saveLayout()"><b>Save Layout</b></a></li>
-                <li><a class="dropdown-item" href="#" ng-click="loadLayout($index)" ng-repeat="lo in layouts">{{lo.name}}</a></li>
+                <li><a class="dropdown-item" href="#" ng-click="loadLayout($index)"  ng-repeat="lo in layouts track by $index">{{lo.name}}</a></li>
             </ul>
         </div>
     </div>

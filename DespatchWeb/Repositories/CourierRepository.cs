@@ -75,6 +75,19 @@ namespace DespatchWeb.Repositories
             return result;
         }
 
+        public List<PotentialCouriersViewModel> GetPotentialCouriers(int jobId)
+        {
+            var result = new List<PotentialCouriersViewModel>();
+            _context.LoadStoredProc("DESWEB_qryPotentialCouriers")
+                .WithSqlParam("@JobID", jobId)
+
+                .ExecuteStoredProc(handle =>
+                {
+                    result = handle.ReadToList<PotentialCouriersViewModel>().ToList();
+                });
+            return result;
+        }
+
         public List<ActiveCouriersViewModel> ActiveCouriers()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();

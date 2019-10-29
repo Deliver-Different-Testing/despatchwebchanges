@@ -35,6 +35,13 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
+        [HttpGet]
+        public IActionResult PotentialCouriers(int jobId)
+        {
+            var result = _courierRepo.GetPotentialCouriers(jobId);
+            return Json(result);
+        }
+
         public IActionResult Location(string code)
         {
             var result = _courierRepo.Location(code);

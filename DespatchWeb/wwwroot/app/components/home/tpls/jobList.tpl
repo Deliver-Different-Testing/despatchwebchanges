@@ -34,7 +34,7 @@
 			<td>{{job.jobNo}}</td>
 			<td>{{job.client}}</td>
 			<td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-			<td><div style="width:220px; white-space:nowrap; overflow-x:hidden;" title="{{job.to}} &nbsp;  {{job.toAddress}}">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i>&nbsp; {{job.toAddress}}</div></td>
+			<td><div style="width:260px; white-space:nowrap; overflow-x:hidden;" title="{{job.to}} &nbsp;  {{job.toAddress}}">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i>&nbsp; {{job.toAddress}}</div></td>
 			<td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
 			<td>{{attention(job)}}</td>
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>

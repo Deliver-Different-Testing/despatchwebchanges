@@ -114,7 +114,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.38",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.39",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -125,11 +125,11 @@ angular
                 "showRefresh": 0,
                 "showDetailButtons": 1
             },
-            //"potentialCouriers": {
-            //	"title": "Potential Couriers",
-            //	"tpl": "app/components/home/tpls/potentialCouriers.tpl",
-            //	"showSearch": 1
-            //},
+            "potentialCouriers": {
+                "title": "Potential Couriers",
+                "tpl": "app/components/home/tpls/potentialCouriers.tpl?v=1.0",
+                "showSearch": 1
+            },
             //"jobGroups": {
             //	"title": "Grouped Jobs",
             //	"tpl": "app/components/home/tpls/jobGroups.tpl",
@@ -137,7 +137,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.12",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.13",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -204,7 +204,7 @@ angular
         if (Modernizr.localstorage) {
             layoutsObject = JSON.parse(localStorage.getItem("layouts-" + ContactID));
         }
-        var defaultLayout =[
+        var defaultLayout = [
             {
                 name: "Default",
                 layout: {
@@ -235,6 +235,10 @@ angular
                                 {
                                     "name": "currentWork",
                                     "height": "300px"
+                                },
+                                {
+                                    "name": "potentialCouriers",
+                                    "height": "200px"
                                 },
                                 {
                                     "name": "jobDetail",
@@ -383,7 +387,7 @@ angular
                 temp += "DIRECT ";
             }
             else {
-                if (job.speedID !== job.notifiedJobTypeID && job.notifiedJobTypeID != -1) {
+                if (job.speedID !== job.notifiedJobTypeID && job.notifiedJobTypeID !== -1) {
                     temp += "ASAP ";
                 }
             }
@@ -403,7 +407,7 @@ angular
                 temp = "Scoot " + temp;
             }
 
-            if (job.childNotes.length > 0) {
+            if (job.childNotes !== null && job.childNotes.length > 0) {
                 temp += job.childNotes;
             }
             if (job.pickupFrom === 1) {
@@ -654,6 +658,70 @@ angular
 
         };
 
+        $scope.dispatchJobsFromPotentialCouriers = function (courier) {
+            var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
+            if (foundCourier === undefined) {
+                alert("Invalid Courier");
+                return;
+            }
+
+            var callData = {
+                "call": "dispatchJobs",
+                "courier": courier,
+                "jobs": []
+            };
+
+            var reset = function () {
+                $("#jobList .active").each(function () {
+                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                    j.courier = null;
+                });
+            };
+
+            $("#jobList .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                var jn = j.jobNo;
+                if (j.courierData.courierID !== null) {
+                    alert("restore " + jn + " prior to despatching to another courier");
+                    reset();
+                    return;
+                }
+                if (!j.allowDispatch) {
+                    alert("Can not despatch " + jn + " until all other child jobs have been despatched.");
+                    reset();
+                    return;
+                }
+                if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
+                    alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+                    reset();
+                    return;
+                }
+                if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
+                    reset();
+                    alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+                    return;
+                }
+
+                if (j.dgClass !== null && j.dgClass > 0) {
+                    DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
+                }
+
+                callData.jobs.push($(this).attr("data-jobid"));
+            });
+
+            return DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
+                $scope.getData().then(function () {
+                    //$("#box-jobDetail").find(".loading").show();
+                    $("#box-map").find(".loading").show();
+
+                    $scope.courier = { gpsCourier: foundCourier.id };
+                    $scope.searchCourier();
+
+
+                });
+                return response;
+            });
+        };
 
         ////////////////////////////////////////
         // RESTORE JOB
@@ -702,6 +770,49 @@ angular
 
             $scope.getData().then(function () {
                 //$("#box-jobDetail").find(".loading").show();
+                $("#box-map").find(".loading").show();
+
+                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.searchCourier();
+
+
+            });
+
+
+        };
+
+        ////////////////////////////////////////
+        // REDESPATCHED JOB
+        ///////////////////////////////////////
+        $scope.redespatchJobs = function () {
+
+            var callData = {
+                "call": "redespatchJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": null
+            };
+
+            var reset = function () {
+                $(".activeTable .active").each(function () {
+                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                    j.courier = null;
+                });
+            };
+            var foundCourier = null;
+
+            $(".activeTable .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                var jn = j.jobNo;
+                callData.jobs.push($(this).attr("data-jobid"));
+            });
+
+            if (callData.jobs.length > 0) {
+                DispatchData.reAllocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+            }
+
+            $scope.getData().then(function () {
                 $("#box-map").find(".loading").show();
 
                 $scope.courier = { gpsCourier: foundCourier.id };
@@ -1131,10 +1242,10 @@ angular
         // POTENTIAL COURIERS
         ////////////////////////////
 
-        $scope.getPotentialCouriers = function () {
+        $scope.getPotentialCouriers = function (jobId) {
 
             $("#box-potentialCouriers .loading").show();
-            DispatchData.getPotentialCouriers($scope.selectedJobs).then(function (data) {
+            DispatchData.getPotentialCouriers(jobId).then(function (data) {
                 $scope.potentialCouriers = data;
 
                 //Set headings
@@ -1189,6 +1300,9 @@ angular
 
             $("#box-jobDetail").find(".loading").show();
             $("#box-map").find(".loading").show();
+            if (courier.courier === undefined) {
+                courier.courier = courier.code + ' ' + courier.firstName;
+            }
 
             //$scope.getGroupedJobs(courier);
             //$scope.groupJobsSelection = " for Courier " + courier.courier;
@@ -1199,7 +1313,7 @@ angular
             //$scope.currentJob = null;
             $scope.currentCourier = courier;
 
-            $scope.currentSelection = " for Courier " + courier.courier;
+            $scope.currentSelection = " for Courier " + + courier.courier;
 
             setTimeout(function () {
                 $(document).ready(function (event) {
@@ -1208,6 +1322,34 @@ angular
                 });
             },
                 100);
+
+
+        };
+
+        $scope.selectPotentialCourier = function (courier) {
+            $("#box-jobDetail").find(".loading").show();
+            $("#box-map").find(".loading").show();
+            if (courier.courier === undefined) {
+                courier.courier = courier.code + ' ' + courier.firstName;
+            }
+
+            $scope.getCurrentJobs(courier.courierID);
+            $scope.currentWorkSelection = " for Courier " + courier.courier;
+
+            $scope.currentCourier = courier;
+
+            $scope.currentSelection = " for Courier " + + courier.courier;
+
+            setTimeout(function () {
+                $(document).ready(function (event) {
+                    $("#box-jobDetail").find(".loading").fadeOut();
+                    $("#box-map").find(".loading").fadeOut();
+                    var jid = $("#jobList .active").last().data("jobid");
+                    var job = $scope.jobList.find(jo => jo.id === jid);
+                    var jobs = [job];
+                    displayRoutePoints(jobs, false);
+                });
+            }, 100);
 
 
         };
@@ -1248,7 +1390,7 @@ angular
                 }
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
-                    displayRoutePoints(data);
+                    displayRoutePoints(data, true);
                 } else {
                     DispatchData.getCourierPosition(code).then(function (posData) {
                         displayCourierPositionOnly(posData.latitude, posData.longitude);
@@ -1303,6 +1445,8 @@ angular
 
         $scope.selectJobDetail = function (job) {
             $scope.currentJob = job;
+            $scope.potentialCouriers = false;
+            $scope.potentialCouriersSelection = " for Job " + job.jobNo;
         };
 
         //Select Job
@@ -1330,25 +1474,27 @@ angular
                     $scope.pickCouriers = data;
                 });
 
-                if (clear === true && job.courier !== null) {
-                    
+                if (clear === true && job.courier === null) {
+
                     $scope.jobGroups = false;
                     $scope.jobsCurrentList = false;
-                    $scope.getPotentialCouriers();
-                    $scope.potentialCouriersSelection = " for Job " + job.JobNo;
+                    $scope.getPotentialCouriers(job.id);
+                    $scope.potentialCouriersSelection = " for Job " + job.jobNo;
                     $scope.getGroupedJobs();
-                    $scope.groupJobsSelection = " for Job " + job.JobNo;
+                    $scope.groupJobsSelection = " for Job " + job.jobNo;
                     $scope.currentWorkSelection = "";
 
 
+                } else {
+                    $scope.potentialCouriers = false;
                 }
                 $scope.currentCourier = null;
-                $scope.currentSelection = " for Job " + job.JobNo;
+                $scope.currentSelection = " for Job " + job.jobNo;
                 if (job.courier !== null) {
                     $scope.selectCourier(job.courierData);
                 } else {
                     var jobs = [job];
-                    displayRoutePoints(jobs);
+                    displayRoutePoints(jobs, true);
                 }
 
             },
@@ -1410,6 +1556,12 @@ angular
                         click: function ($itemScope, $event, modelValue, text, $li) {
                             $scope.restoreJobs();
                         }
+                    },
+                    {
+                        text: "ReDespatch Selected",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.reAllocateJobs();
+                        }
                     }
                 );
             }
@@ -1456,6 +1608,12 @@ angular
                         text: "Restore",
                         click: function ($itemScope, $event, modelValue, text, $li) {
                             $scope.restoreJobs();
+                        }
+                    },
+                    {
+                        text: "ReDespatch",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.reAllocateJobs();
                         }
                     }
                 );
@@ -1508,7 +1666,17 @@ angular
                 text: "Dispatch Selected",
                 click: function ($itemScope, $event, modelValue, text, $li) {
                     //$scope.selected = $itemScope.item.name;
-                    $scope.dispatchJobs($itemScope.courier.courier);
+                    $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
+                }
+            }
+        ];
+
+        $scope.potentialCourierMenu = [
+            {
+                text: "Dispatch Selected",
+                click: function ($itemScope, $event, modelValue, text, $li) {
+                    //$scope.selected = $itemScope.item.name;
+                    $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
                 }
             }
         ];

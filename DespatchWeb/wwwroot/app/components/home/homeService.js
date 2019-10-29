@@ -29,6 +29,11 @@ angular
                             return response;
                         });
                     },
+                    reAllocateJobs: function (courierId, dispId, jobIds) {
+                        return $http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
+                            return response;
+                        });
+                    },
                     restoreJobs: function (courierId, dispId, jobIds) {
                         return $http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
                             return response.data;
@@ -53,12 +58,6 @@ angular
                     },
                     getJobsCurrent: function (courierId, done) {
                         return $http.get("job/current?courierId=" + courierId + "&done=" + done).then(function (response) {
-                            return response.data;
-                        });
-
-                    },
-                    getPotentialCouriers: function () {
-                        return $http.get("app/components/home/api/potentialCouriers.json").then(function (response) {
                             return response.data;
                         });
 
@@ -113,6 +112,11 @@ angular
                     },
                     getActiveCouriers: function () {
                         return $http.get("courier/active").then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    getPotentialCouriers: function (jobId) {
+                        return $http.get("courier/PotentialCouriers?jobId=" + jobId).then(function (response) {
                             return response.data;
                         });
                     },

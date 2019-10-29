@@ -5,7 +5,8 @@
         <thead class="thead-dark no select">
         <tr>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'status')">S <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='status'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-status'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-speed'"></i></th>
+        <th scope="col" ng-click="orderList('jobsCurrentList', 'remain')">R <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-remain'"></i></th>
+		<th scope="col" ng-click="orderList('jobsCurrentList', 'speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-speed'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'notify')">N <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-notify'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'jobNo')">Job <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='jobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-jobNo'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'client')">Client <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='client'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-client'"></i></th>
@@ -13,7 +14,6 @@
         <th scope="col" ng-click="orderList('jobsCurrentList', 'to')">To <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='to'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-to'"></i></th>
 		<th scope="col" ng-click="orderList('jobsCurrentList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList == 'd-to'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'vehicle')">V <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='vehicle'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-vehicle'"></i></th>
-        <th scope="col" ng-click="orderList('jobsCurrentList', 'remain')">R <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-remain'"></i></th>
 		<th scope="col" ng-click="orderList('jobsCurrentList', 'runOrder')">RO <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='runOrder'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-runOrder'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'lp')">LP <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='lp'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-lp'"></i></th>
         <th scope="col" ng-click="orderList('jobsCurrentList', 'ld')">LD <i class="fa fa-caret-down" ng-show="sort.jobsCurrentList =='ld'"></i><i class="fa fa-caret-up" ng-show="sort.jobsCurrentList =='d-ld'"></i></th>
@@ -32,6 +32,7 @@
     <tbody>
     <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox" context-menu="setCurrentWorkMenu" ng-click="selectJobDetail(job);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
             <td class="status" ng-class="job.status">{{job.status}}</td>
+			<td>{{job.remain}}</td>
             <td>{{job.speed}}</td>
             <td>{{job.notify}}</td>
             <td>{{job.jobNo}}</td>
@@ -40,7 +41,6 @@
             <td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
 			<td><div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>
             <td>{{job.vehicle.label}}</td>
-            <td>{{job.remain}}</td>
 			<td>{{job.runOrder}}</td>
             <td>{{job.lp}}</td>
             <td>{{job.ld}}</td>

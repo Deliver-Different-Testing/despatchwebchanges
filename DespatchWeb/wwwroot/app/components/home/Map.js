@@ -270,14 +270,15 @@ function displayAvailableCouriers(ac, courierCode, channels, trucks) {
 
 }
 
+function displayRoutePoints(courierJobs, clear) {
+    if (clear === true) {
+        if (map.markers.length) {
+            map.clearMarkers();
 
-
-function displayRoutePoints(courierJobs) {
-    if (map.markers.length) {
-        map.clearMarkers();
-        
+        }
+        oms.removeAllMarkers();
     }
-    oms.removeAllMarkers();
+    
 
     for (var i = 0; i < courierJobs.length; i++) {
         var pinColor = "purple";
