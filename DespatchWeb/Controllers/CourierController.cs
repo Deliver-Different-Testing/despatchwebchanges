@@ -22,6 +22,12 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
+        public IActionResult ClearListEnvelope(int clearListId)
+        {
+            var result = _courierRepo.ClearListEnvelope(clearListId);
+            return Json(result);
+        }
+
         public IActionResult Active()
         {
             var result = _courierRepo.ActiveCouriers();

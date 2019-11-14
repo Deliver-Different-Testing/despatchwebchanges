@@ -142,6 +142,16 @@ namespace DespatchWeb.Repositories
             return data;
         }
 
+        public ClearListEnvelopeViewModel ClearListEnvelope(int id)
+        {
+            var envelope = new ClearListEnvelopeViewModel();
+            _context.LoadStoredProc("MAP_stpClearListArea_Envelope")
+                .WithSqlParam("@ClearListAreaID", id)
+                .WithSqlParam("@IncludeCouriers", false)
+                .ExecuteStoredProc(handle => { envelope = handle.ReadToList<ClearListEnvelopeViewModel>().FirstOrDefault(); });
+            return envelope;
+        }
+
         private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers, int clearListId, int percentHeight)
         {
             var result = new List<CourierClearListViewModel>();

@@ -110,6 +110,11 @@ angular
                         });
 
                     },
+                    getClearListEnvelope: function (id) {
+                        return $http.get("courier/ClearListEnvelope?clearListId=" + id).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getActiveCouriers: function () {
                         return $http.get("courier/active").then(function (response) {
                             return response.data;

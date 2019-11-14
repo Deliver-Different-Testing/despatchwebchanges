@@ -15,7 +15,7 @@ angular
             }
         });
     }])
-    .controller("HomeControl", ["$scope", "DispatchData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", function ($scope, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout) {
+    .controller("HomeControl", ["$scope", "DispatchData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "$ngConfirm", function ($scope, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm) {
 
         $scope.gather = {
             submit: function () {
@@ -155,7 +155,7 @@ angular
             },
             "courierMoveClear": {
                 "title": "Couriers Movement Clear List",
-                "tpl": "app/components/home/tpls/couriersMovementClearList.tpl",
+                "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?1.1",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -187,7 +187,7 @@ angular
                 "title": "Google Map",
                 "tpl": "app/components/home/tpls/map.tpl?v=1.12",
                 "showSearch": 0,
-                "showRefresh": 0
+                "showRefresh": 1
             },
             "clearLists": {
                 "title": "Clear Lists",
@@ -476,7 +476,7 @@ angular
 
         };
 
-
+        $scope.allCouriers.display = true;
         //Column Sorting
         $scope.sort = [];
         $scope.orderList = function (list, prop) {
@@ -546,6 +546,7 @@ angular
         });
 
         $scope.selectForDispatch = function (job) {
+            console.log("In SelectForDispatch");
             $scope.jobForDispatch = job;
         };
 
@@ -570,6 +571,116 @@ angular
                 submitValue: "Dispatch"
             };
             $scope.gather.showForm();
+
+        };
+
+        $scope.dispatchDroppedMarkerToClosestCourier = function (lat, lng, flags, carMarker, jobNumber) {
+            if (flags.length === 0 && carMarker === null) {
+                $ngConfirm({
+                    title: 'Dispatch Invalid',
+                    content: 'Could not find courier for Dispatch',
+                    scope: $scope,
+                    buttons: {
+                       
+                        Close: {
+                            btnClass: 'btn-red',
+                            action: function (scope, button) {
+                                var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                                displayPickupPoints(undespatchedData, true, null);
+                                $scope.getAvailableCourierLocation();
+                            }
+                        }
+
+                    }
+                });
+                return;
+            }
+            console.log(jobNumber);
+
+            var toCompare = [];
+
+            angular.forEach(flags, function (f, key) {
+                toCompare.push([key, f.position.lat(), f.position.lng()]);
+            });
+
+            if (carMarker !== null) {
+                toCompare.push([9999, carMarker.position.lat(), carMarker.position.lng()]);
+            }
+
+            var closestIndex = closestLocation(lat, lng, toCompare);
+            var closestCourier = closestIndex[0] === 9999 ? carMarker : flags[closestIndex[0]];
+            var foundCourier = $scope.pickCouriers.find(c => c.courierID === closestCourier.courierId);
+
+            var dispTo = closestCourier.code;
+            if (closestIndex[0] !== 9999) {
+                if (foundCourier !== undefined) {
+                    if (foundCourier.code === undefined) {
+                        dispTo = foundCourier.label;
+                    } else {
+                        dispTo = dispTo + ' ' + foundCourier.code;
+                    }
+                    
+                }
+            }
+
+            $ngConfirm({
+                title: 'Dispatch Job ' + jobNumber,
+                content: 'Dispatch to <strong>' + dispTo +'</strong>?',
+                scope: $scope,
+                buttons: {
+                    Yes: {
+                        btnClass: 'btn-green',
+                        action: function (scope, button) {
+                            var j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
+                            var jn = j.jobNo;
+                            
+                            if (!j.allowDispatch) {
+                                $ngConfirm("Can not despatch " + jn + " until all other child jobs have been despatched.");
+                                return;
+                            }
+                            if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
+                                $ngConfirm("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+                                return;
+                            }
+                            if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
+                                $ngConfirm("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+                                return;
+                            }
+
+                            if (j.dgClass !== null && j.dgClass > 0) {
+                                DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
+                            }
+                            var jobs = [];
+                            jobs.push(j.id);
+                            return DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(function (response) {
+                                $scope.getData().then(function () {
+                                    //$("#box-jobDetail").find(".loading").show();
+                                    $("#box-map").find(".loading").show();
+
+                                    $scope.courier = { gpsCourier: foundCourier.id };
+                                    $scope.searchCourier();
+
+
+                                });
+                            });
+
+            
+
+                        }
+                    },
+                    No: {
+                        btnClass: 'btn-red',
+                        action: function (scope, button) {
+                            //$ngConfirm('You clicked on something else');
+                            var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                            displayPickupPoints(undespatchedData, true, null);
+                            $scope.getAvailableCourierLocation();
+                        }
+                    }
+                
+                }
+            });
+            //return closestJob;
 
         };
 
@@ -784,7 +895,7 @@ angular
         ////////////////////////////////////////
         // REDESPATCHED JOB
         ///////////////////////////////////////
-        $scope.redespatchJobs = function () {
+        $scope.reAllocateJobs = function () {
 
             var callData = {
                 "call": "redespatchJobs",
@@ -810,6 +921,49 @@ angular
 
             if (callData.jobs.length > 0) {
                 DispatchData.reAllocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+            }
+
+            $scope.getData().then(function () {
+                $("#box-map").find(".loading").show();
+
+                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.searchCourier();
+
+
+            });
+
+
+        };
+
+        $scope.reAllocateJobsFromCurrentWindow = function () {
+
+            var callData = {
+                "call": "redespatchJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": null
+            };
+
+            var reset = function () {
+                $(".activeTable .active").each(function () {
+                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                    j.courier = null;
+                });
+            };
+            
+            var foundCourier = null;
+            $("#currentWork .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                var jn = j.jobNo;
+                callData.jobs.push($(this).attr("data-jobid"));
+                callData.courierID = j.courierData.courierID;
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+            });
+            
+
+            if (callData.jobs.length > 0) {
+                DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
             }
 
             $scope.getData().then(function () {
@@ -1326,6 +1480,41 @@ angular
 
         };
 
+        $scope.selectMapCourier = function (courier) {
+            $("#box-jobDetail").find(".loading").show();
+            $("#box-map").find(".loading").show();
+
+            $("#box-currentWork").find(".loading").show();
+            var code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
+            DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(function (data) {
+                $("#box-currentWork").find(".loading").fadeOut();
+                //if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
+                //    $scope.currentJob = null;
+                //}
+                $scope.jobsCurrentList = data;
+                if (data.length > 0) {
+                    displayRoutePointsOnly(data, false);
+                } 
+                $scope.activateDrop();
+                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
+                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
+                //$scope.getAvailableCourierLocation();
+            });
+            $scope.currentWorkSelection = " for Courier " + courier.label;
+
+
+            $scope.currentSelection = " for Courier " + + courier.label;
+
+            setTimeout(function () {
+                $(document).ready(function (event) {
+                    $("#box-jobDetail").find(".loading").fadeOut();
+                    $("#box-map").find(".loading").fadeOut();
+                });
+            }, 100);
+
+
+        };
+
         $scope.selectPotentialCourier = function (courier) {
             $("#box-jobDetail").find(".loading").show();
             $("#box-map").find(".loading").show();
@@ -1333,7 +1522,33 @@ angular
                 courier.courier = courier.code + ' ' + courier.firstName;
             }
 
-            $scope.getCurrentJobs(courier.courierID);
+            if ($scope.jobList.length > 0) {
+                var jid = $("#jobList .active").last().data("jobid");
+                var currentJob = $scope.jobList.find(jo => jo.id === jid);
+                var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                displayPickupPoints(undespatchedData, true, currentJob);
+            }
+
+            $("#box-currentWork").find(".loading").show();
+            var code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
+            DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(function (data) {
+                $("#box-currentWork").find(".loading").fadeOut();
+                if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
+                    $scope.currentJob = null;
+                }
+                $scope.jobsCurrentList = data;
+                if (data.length > 0) {
+                    displayRoutePoints(data, false);
+                } else {
+                    DispatchData.getCourierPosition(code).then(function (posData) {
+                        displayCourierPositionOnly(posData.latitude, posData.longitude);
+                    });
+                }
+                $scope.activateDrop();
+                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
+                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
+                $scope.getAvailableCourierLocation();
+            });
             $scope.currentWorkSelection = " for Courier " + courier.courier;
 
             $scope.currentCourier = courier;
@@ -1344,10 +1559,10 @@ angular
                 $(document).ready(function (event) {
                     $("#box-jobDetail").find(".loading").fadeOut();
                     $("#box-map").find(".loading").fadeOut();
-                    var jid = $("#jobList .active").last().data("jobid");
-                    var job = $scope.jobList.find(jo => jo.id === jid);
-                    var jobs = [job];
-                    displayRoutePoints(jobs, false);
+            //        var jid = $("#jobList .active").last().data("jobid");
+            //        var job = $scope.jobList.find(jo => jo.id === jid);
+            //        var jobs = [job];
+            //        displayRoutePoints(jobs, false);
                 });
             }, 100);
 
@@ -1490,11 +1705,16 @@ angular
                 }
                 $scope.currentCourier = null;
                 $scope.currentSelection = " for Job " + job.jobNo;
+
+                var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                displayPickupPoints(undespatchedData, true, job);
+
                 if (job.courier !== null) {
                     $scope.selectCourier(job.courierData);
                 } else {
                     var jobs = [job];
-                    displayRoutePoints(jobs, true);
+                    
+                    highlightJobPoints(jobs);
                 }
 
             },
@@ -1512,7 +1732,14 @@ angular
                     click: function ($itemScope, $event, modelValue, text, $li) {
                         $scope.restoreJobsFromCurrentWindow();
                     }
+                },
+                {
+                    text: "ReDespatch",
+                    click: function ($itemScope, $event, modelValue, text, $li) {
+                        $scope.reAllocateJobsFromCurrentWindow();
+                    }
                 }
+
             ];
 
             return menu;
@@ -1687,10 +1914,14 @@ angular
             }
             return DispatchData.getJobsFilter($scope.jobFilters).then(function (data) {
                 $scope.jobList = data;
-
+                
                 setTimeout(function () {
                     $("#box-jobsList .loading").fadeOut();
                     sizeHeadings($("#jobList").parents(".column"));
+                    if (data.length > 0) {
+                        var undespatchedData = data.filter(x => x.courierData.courierID === null);
+                        displayPickupPoints(undespatchedData, true, null);
+                    }
                     $scope.getAvailableCourierLocation();
                 }, 100);
 
@@ -1713,7 +1944,15 @@ angular
             $scope.jobsCurrentList = false;
             $scope.currentCourier = false;
 
-
+            $scope.getClearListEnvelope = function (id) {
+                DispatchData.getClearListEnvelope(id).then(function (data) {
+                    var swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
+                    var nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
+                    map.fitBounds(new google.maps.LatLngBounds(swll, nell));
+                    map.setZoom(14);
+                    $scope.getAvailableCourierLocation();
+                });
+            };
 
             $scope.getClearListsData = function () {
                 DispatchData.getClearLists().then(function (data) {
@@ -2879,4 +3118,36 @@ angular
 
     }]);
 
+function Deg2Rad(deg) {
+    return deg * Math.PI / 180;
+}
+
+function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
+    lat1 = Deg2Rad(lat1);
+    lat2 = Deg2Rad(lat2);
+    lon1 = Deg2Rad(lon1);
+    lon2 = Deg2Rad(lon2);
+    var R = 6371; // km
+    var x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
+    var y = (lat2 - lat1);
+    var d = Math.sqrt(x * x + y * y) * R;
+    return d;
+}
+
+function closestLocation(latitude, longitude, locations) {
+    var mindif = 99999;
+    var closest;
+
+    for (index = 0; index < locations.length; ++index) {
+        var dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
+        if (dif < mindif) {
+            closest = index;
+            mindif = dif;
+        }
+    }
+
+    // return the nearest location
+    var closestLocation = (locations[closest]);
+    return closestLocation;
+}
 

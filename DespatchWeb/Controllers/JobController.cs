@@ -215,7 +215,7 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat, decimal pickupLng, bool cbd, decimal rate)
         {
-            await _jobRepo.UpdateDeliveryAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate);
+            await _jobRepo.UpdatePickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate);
             return Json("OK");
         }
 

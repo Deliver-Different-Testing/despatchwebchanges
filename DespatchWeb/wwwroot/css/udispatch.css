@@ -27,6 +27,7 @@ body {
   padding: 5px;
   position: relative;
   z-index: 7;
+  cursor: pointer;
 }
 #clearLists .clearLists-list table {
   width: 100%;
@@ -461,6 +462,12 @@ body {
   top: 5px;
   position: absolute;
   left: -59px;
+}
+.columns .column .column-sortable .box .box-bar .box-buttons .box-toggle {
+  display: inline-block;
+  top: 5px;
+  position: absolute;
+  left: -130px;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-search {
   padding: 4px;

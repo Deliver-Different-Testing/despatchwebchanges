@@ -12,7 +12,8 @@ angular
         'angularjs-dropdown-multiselect',
         'heremaps',
         'ngAnimate',
-        'angularPromiseButtons'
+        'angularPromiseButtons',
+        'cp.ngConfirm'
 	])
 	.config(["$urlRouterProvider", "$stateProvider", function($urlRouterProvider, $stateProvider) {
 		$urlRouterProvider.otherwise("/");

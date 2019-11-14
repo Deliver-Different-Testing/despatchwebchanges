@@ -4,6 +4,9 @@ var renderingPoints = false;
 var infoWindow = new google.maps.InfoWindow();
 
 (function () {
+    google.maps.Marker.prototype.jobNumber = "";
+    google.maps.Marker.prototype.courierId = 0;
+    google.maps.Marker.prototype.code = "";
     google.maps.Map.prototype.labels = new Array();
     google.maps.Map.prototype.flags = new Array();
     google.maps.Map.prototype.flightPaths = new Array();
@@ -89,10 +92,15 @@ function initialize() {
         markersWontHide: true,   // we promise not to change visibility of any markers, allowing optimizations
         basicFormatEvents: true  // allow the library to skip calculating advanced formatting information
     });
+    google.maps.event.addListener(map, "rightclick", function (e) {
+        console.log(e);
+    });    
+    
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
 
+var currentDrag = null;
 
 var isCtrl = false;
 window.onkeydown = function (e) {
@@ -110,14 +118,65 @@ function addClickHandler(m, iw) {
         //    //angular.element(".columns").scope().selectJobFromMap(this.position.lat(), this.position.lng());
         //    iw.open(map, m);
         //});
+
         google.maps.event.addListener(m, 'spider_click', function (e) {  // 'spider_click', not plain 'click'
             iw.open(map, m);
+            console.log(m.jobNumber || '');
+            var sel = angular.element(".columns").scope().jobList.filter(x => x.jobNo === m.jobNumber);
+            if (sel.length > 0) {
+                $("#jobList tr").removeClass("active");
+                $("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
+                angular.element(".columns").scope().selectForDispatch(sel[0]);
+                angular.element(".columns").scope().selectJob(sel[0], true);
+                
+            }
+            
         });
+        //google.maps.event.addListener(m, 'rightclick', function (mouseEvent) {
+        //    event.cancelBubble = true;
+        //    event.bubbles = false;
+        //    if (event.stopPropagation) {
+        //        event.stopPropagation();
+        //    }
+        //    console.log(event);    
+        //    var sel = angular.element(".columns").scope().jobList.filter(x => x.jobNo === m.jobNumber);
+        //    if (sel.length > 0) {
+        //        $("#jobList tr").removeClass("active");
+        //        $("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
+        //        angular.element(".columns").scope().selectForDispatch(sel[0]);
+        //        angular.element(".columns").scope().selectJob(sel[0], true);
+        //        angular.element(".columns").scope().dispatchJobsForm();
+        //    }
+        //    return false;
+            
+        //});
+
+        google.maps.event.addListener(m, 'dragstart', function (marker) {
+            var latLng = marker.latLng;
+            console.log("marker drag start");
+            console.log(marker);
+            console.log(latLng);
+            currentDrag = oms.getMarkers().find(obj => {
+                return obj.position.lat() === latLng.lat() && obj.position.lng() === latLng.lng();
+            });
+            console.log("drag marker = ");
+            console.log(currentDrag);
+            //angular.element(".columns").scope().dispatchDroppedMarkerToClosestCourier(latLng.lat(), latLng.lng(), map.flags, carMarker, marker.jobNumber);
+        });
+        google.maps.event.addListener(m, 'dragend', function (marker) {
+            var latLng = marker.latLng;
+            console.log("marker moved");
+            console.log(marker);
+            console.log(latLng);
+            angular.element(".columns").scope().dispatchDroppedMarkerToClosestCourier(latLng.lat(), latLng.lng(), map.flags, carMarker, currentDrag.jobNumber);
+        });
+
         oms.addMarker(m);
 
     }
     else {
         google.maps.event.addListener(m, 'click', function () {
+            console.log(m.jobNumber || '');
             //angular.element(".columns").scope().selectJobFromMap(this.position.lat(), this.position.lng());
         });
 
@@ -153,6 +212,11 @@ function highlightPin(job) {
             obj.position.lng().toString().substr(0, 9) === job.toLng.toString().substr(0, 9);
     });
     if (marker === undefined) return;
+    var pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_black.png",
+        new google.maps.Size(131, 154),
+        new google.maps.Point(0, 0),
+        new google.maps.Point(10, 34));
+    marker.icon = pinImage;
     marker.setAnimation(google.maps.Animation.BOUNCE);
     window.setTimeout(function () {
         if (marker.getAnimation() !== null) {
@@ -206,6 +270,7 @@ function displayAllRoutePoints() {
             position: run[i],
             map: map,
             icon: pinImage
+            //draggable: true
             //label: (run[i].ro || '').toString()
         });
 
@@ -264,8 +329,202 @@ function displayAvailableCouriers(ac, courierCode, channels, trucks) {
         var col = '#003CA1'; //courier
         var ll = new google.maps.LatLng(c.latitude, c.longitude);
         if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (trucks === false || c.vehicleType === "T"))
-            drawItem(col, ll, pad(c.code + '-' + c.vehicleType, 5, '_', 2));
+            drawItem(col, ll, pad(c.code + '-' + c.vehicleType, 5, '_', 2), c.courierID, c.code);
     });
+
+
+}
+
+function displayPickupPoints(jobs, clear, currentJob) {
+    if (clear === true) {
+        if (map.markers.length) {
+            map.clearMarkers();
+
+        }
+        oms.removeAllMarkers();
+        if (carMarker !== null) {
+            carMarker.setMap(null);
+        }
+    }
+
+
+    for (var i = 0; i < jobs.length; i++) {
+        var pinColor = "purple";
+
+        if (jobs[i].status === "C") {
+            pinColor = "grey";
+        }
+        if (jobs[i].status === "N") {
+            pinColor = "grey";
+        }
+        if (jobs[i].status === "D") {
+            pinColor = "green";
+        }
+        if (jobs[i].status === "P") {
+            pinColor = "red";
+        }
+        if (jobs[i].status === "A") {
+            pinColor = "blue";
+        }
+        if (jobs[i].status === "V") {
+            pinColor = "yellow";
+        }
+        if ((currentJob !== null) && (jobs[i].jobNo === currentJob.jobNo)) {
+            pinColor = "black";
+        }
+
+
+        var pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (jobs[i].runOrder || "").toString() + ".png",
+            new google.maps.Size(131, 154),
+            new google.maps.Point(0, 0),
+            new google.maps.Point(10, 34));
+
+        if (jobs[i].statusID < 5) {
+            var pickupMarker = new google.maps.Marker({
+                position: new google.maps.LatLng(jobs[i].pickUpLatitude, jobs[i].pickUpLongitude),
+                draggable: true,
+                map: map,
+                icon: pinImage,
+                jobNumber: jobs[i].jobNo
+            });
+
+
+            var contentString = '<div id="content">' +
+                '<div id="bodyContent">' +
+                "<p><b>" + jobs[i].jobNo + '</b></p>' +
+                "<p><b>Pickup</b></p>" +
+                "</div>" +
+                "</div>";
+
+            var infoWindow = new google.maps.InfoWindow({
+                content: contentString,
+                pixelOffset: new google.maps.Size(-55, 0)
+            });
+
+
+            addClickHandler(pickupMarker, infoWindow);
+        }
+
+
+    }
+
+
+}
+
+function highlightJobPoints(courierJobs) {
+    for (var i = 0; i < courierJobs.length; i++) {
+        var job = courierJobs[i];
+        console.log('finding ' + job.jobNo);
+
+        var marker = oms.getMarkers().find(obj => {
+            return obj.jobNumber === job.jobNo;
+        });
+        if (marker === undefined) return;
+        
+        marker.setAnimation(google.maps.Animation.BOUNCE);
+        window.setTimeout(function () {
+            if (marker.getAnimation() !== null) {
+                marker.setAnimation(null);
+            }
+        }, 2000);
+    }
+    
+}
+
+function displayRoutePointsOnly(courierJobs, clear) {
+    if (clear === true) {
+        if (map.markers.length) {
+            map.clearMarkers();
+
+        }
+        oms.removeAllMarkers();
+        if (carMarker !== null) {
+            carMarker.setMap(null);
+        }
+    }
+
+
+    for (var i = 0; i < courierJobs.length; i++) {
+        var pinColor = "purple";
+
+        if (courierJobs[i].status === "C") {
+            pinColor = "grey";
+        }
+        if (courierJobs[i].status === "N") {
+            pinColor = "grey";
+        }
+        if (courierJobs[i].status === "D") {
+            pinColor = "green";
+        }
+        if (courierJobs[i].status === "P") {
+            pinColor = "red";
+        }
+        if (courierJobs[i].status === "A") {
+            pinColor = "blue";
+        }
+        if (courierJobs[i].status === "V") {
+            pinColor = "yellow";
+        }
+
+
+        var pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (courierJobs[i].runOrder || "").toString() + ".png",
+            new google.maps.Size(131, 154),
+            new google.maps.Point(0, 0),
+            new google.maps.Point(10, 34));
+
+        if (courierJobs[i].statusID < 5) {
+            var pickupMarker = new google.maps.Marker({
+                position: new google.maps.LatLng(courierJobs[i].pickUpLatitude, courierJobs[i].pickUpLongitude),
+                map: map,
+                icon: pinImage,
+                jobNumber: courierJobs[i].jobNo
+            });
+
+
+            var contentString = '<div id="content">' +
+                '<div id="bodyContent">' +
+                "<p><b>" + courierJobs[i].jobNo + '</b></p>' +
+                "<p><b>Pickup</b></p>" +
+                "</div>" +
+                "</div>";
+
+            var infoWindow = new google.maps.InfoWindow({
+                content: contentString,
+                pixelOffset: new google.maps.Size(-55, 0)
+            });
+
+
+            addClickHandler(pickupMarker, infoWindow);
+        }
+
+
+        var deliveryMarker = new google.maps.Marker({
+            position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
+            map: map,
+            icon: pinImage,
+            jobNumber: courierJobs[i].jobNo
+        });
+
+
+        var deliveryContentString = '<div id="content">' +
+            '<div id="bodyContent">' +
+            "<p><b>" + courierJobs[i].jobNo + '</b></p>' +
+            "<p><b>Delivery</b></p>" +
+            "</div>" +
+            "</div>";
+
+        var deliveryInfoWindow = new google.maps.InfoWindow({
+            content: deliveryContentString,
+            pixelOffset: new google.maps.Size(-55, 0)
+        });
+
+
+        addClickHandler(deliveryMarker, deliveryInfoWindow);
+
+
+    }
+
+    
 
 
 }
@@ -277,6 +536,9 @@ function displayRoutePoints(courierJobs, clear) {
 
         }
         oms.removeAllMarkers();
+        if (carMarker !== null) {
+            carMarker.setMap(null);
+        }
     }
     
 
@@ -312,7 +574,8 @@ function displayRoutePoints(courierJobs, clear) {
             var pickupMarker = new google.maps.Marker({
                 position: new google.maps.LatLng(courierJobs[i].pickUpLatitude, courierJobs[i].pickUpLongitude),
                 map: map,
-                icon: pinImage
+                icon: pinImage,
+                jobNumber: courierJobs[i].jobNo
             });
 
 
@@ -336,7 +599,8 @@ function displayRoutePoints(courierJobs, clear) {
         var deliveryMarker = new google.maps.Marker({
             position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
             map: map,
-            icon: pinImage
+            icon: pinImage,
+            jobNumber: courierJobs[i].jobNo
         });
 
 
@@ -358,7 +622,8 @@ function displayRoutePoints(courierJobs, clear) {
 
     }
 
-    //setMapBounds();
+    if (courierJobs.length === 0) return;
+
     if (courierJobs[0].courierLatitude === null || courierJobs[0].courierLatitude === 0) {
         return;
     }
@@ -372,7 +637,9 @@ function displayRoutePoints(courierJobs, clear) {
     carMarker = new google.maps.Marker({
         position: gl1,
         map: map,
-        icon: "/images/car3.png"
+        icon: "/images/car3.png",
+        code: courierJobs[0].courierData.courier,
+        courierId: courierJobs[0].courierData.courierID
     });
 
     map.setCenter(gl1);
@@ -381,7 +648,7 @@ function displayRoutePoints(courierJobs, clear) {
 
 }
 
-function drawItem(col, ll, code) {
+function drawItem(col, ll, code, id, originalCode) {
     var classname = 'courier courierMarker';
 
     var label = new Label({
@@ -398,7 +665,9 @@ function drawItem(col, ll, code) {
         map: map,
         title: code,
         visible: true,
-        display: code
+        display: code,
+        courierId: id,
+        code: originalCode
     });
 
     var iconFile = '/images/flagpole.png';
@@ -409,6 +678,11 @@ function drawItem(col, ll, code) {
 
     map.addFlag(marker);
     map.addLabel(label);
+
+    google.maps.event.addListener(marker, 'click', function () {
+        var courier = angular.element(".columns").scope().pickCouriers.find(x => x.courierID === this.courierId);
+        angular.element(".columns").scope().selectMapCourier(courier);
+    });
 
 
 

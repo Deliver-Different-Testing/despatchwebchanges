@@ -350,11 +350,12 @@ namespace DespatchWeb.Repositories
             {
 
                 await _context.LoadStoredProc("uspRestoreJob")
-                .WithSqlParam("@JobID", int.Parse(jid))
+                .WithSqlParam("@intJobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
 
             }
 
+            await DispatchSelectedJobs(courierId, dispId, jobIds);
         }
 
         public async Task<int> MaxAutoLatePickupAlert()
