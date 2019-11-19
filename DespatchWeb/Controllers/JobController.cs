@@ -128,6 +128,20 @@ namespace DespatchWeb.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> ReSendSelected(string jobIds)
+        {
+            await _jobRepo.ReSendSelectedJobs(jobIds);
+            return Json("OK");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReSendAll(int courierId)
+        {
+            await _jobRepo.ReSendAllJobs(courierId);
+            return Json("OK");
+        }
+
+        [HttpPost]
         public async Task<IActionResult> RestoreSplitJobs(int courierId, int dispId, string jobIds)
         {
             await _jobRepo.RestoreSplitJobs(jobIds);

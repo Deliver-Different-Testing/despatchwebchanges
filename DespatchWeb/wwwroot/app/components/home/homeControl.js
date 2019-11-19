@@ -28,6 +28,10 @@ angular
                         $(".gatherForm").hide();
                         var j = $scope.currentJob;
                         $scope.getData().then(function () {
+                            if (j === null || j === undefined || j===false) {
+                                return;
+                            }
+                            
                             var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
                             $scope.selectJob(refreshedJob);
                             $timeout(function () {
@@ -721,7 +725,7 @@ angular
                 });
             };
 
-            $(".activeTable .active").each(function () {
+            $("#jobList .active").each(function () {
                 var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
                 var jn = j.jobNo;
                 if (j.courierData.courierID !== null) {
@@ -847,15 +851,9 @@ angular
                 "courierID": null
             };
 
-            var reset = function () {
-                $(".activeTable .active").each(function () {
-                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
-                    j.courier = null;
-                });
-            };
             var foundCourier = null;
 
-            $(".activeTable .active").each(function () {
+            $("#jobList .active").each(function () {
                 var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
                 var jn = j.jobNo;
                 DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
@@ -905,17 +903,13 @@ angular
                 "courierID": null
             };
 
-            var reset = function () {
-                $(".activeTable .active").each(function () {
-                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
-                    j.courier = null;
-                });
-            };
+            
             var foundCourier = null;
 
-            $(".activeTable .active").each(function () {
+            $("#jobList .active").each(function () {
                 var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
                 var jn = j.jobNo;
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
                 callData.jobs.push($(this).attr("data-jobid"));
             });
 
@@ -935,7 +929,7 @@ angular
 
         };
 
-        $scope.reAllocateJobsFromCurrentWindow = function () {
+        $scope.resendJobs = function () {
 
             var callData = {
                 "call": "redespatchJobs",
@@ -945,25 +939,244 @@ angular
                 "courierID": null
             };
 
-            var reset = function () {
-                $(".activeTable .active").each(function () {
-                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
-                    j.courier = null;
-                });
-            };
             
+
+            $("#jobList .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                callData.jobs.push($(this).attr("data-jobid"));
+            });
+
+            if (callData.jobs.length > 0) {
+                DispatchData.resendJobs(callData.jobs);
+            }
+
+            $scope.getData().then(function () {
+                $("#box-map").find(".loading").show();
+
+                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.searchCourier();
+
+
+            });
+
+
+        };
+
+        $scope.restoreAll = function () {
+            $ngConfirm({
+                title: 'Restore All Jobs',
+                content: 'Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier,
+                scope: $scope,
+                buttons: {
+
+                    Yes: {
+                        btnClass: 'btn-green',
+                        action: function (scope, button) {
+                            var callData = {
+                                "call": "restoreJobs",
+                                "jobs": [],
+                                "splitJobs": [],
+                                "jobNos": [],
+                                "courierID": null
+                            };
+
+                            var foundCourier = null;
+
+                            $("#currentWork tr.droppable-row").each(function () {
+                                var j = $scope.jobsCurrentList.find(jo => jo.id === $(this).data("jobid"));
+                                var jn = j.jobNo;
+                                DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                                if (callData.courierID === null) {
+                                    callData.courierID = j.courierData.courierID;
+                                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                                }
+                                if (j.displaySplitJobDetail) {
+                                    callData.splitJobs.push($(this).data("jobid"));
+                                } else {
+                                    callData.jobs.push($(this).attr("data-jobid"));
+                                }
+                            });
+
+                            if (callData.splitJobs.length > 0) {
+                                DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
+                            }
+                            if (callData.jobs.length > 0) {
+                                DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+                            }
+
+
+                            $timeout(function () {
+                                $scope.getCurrentJobs(foundCourier.courierID);
+                                $scope.getData();
+                            }, 1000);
+
+                        }
+                    },
+                    No: {
+                        btnClass: 'btn-red',
+                        action: function (scope, button) {
+                            
+                        }
+                    }
+
+                }
+            });
+            
+        };
+
+        $scope.redispatchAll = function () {
+            $ngConfirm({
+                title: 'Restore All Jobs',
+                content: 'Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier,
+                scope: $scope,
+                buttons: {
+
+                    Yes: {
+                        btnClass: 'btn-green',
+                        action: function (scope, button) {
+                            var callData = {
+                                "call": "redespatchJobs",
+                                "jobs": [],
+                                "splitJobs": [],
+                                "jobNos": [],
+                                "courierID": $scope.currentCourier.courierID
+                            };
+
+                            var foundCourier = null;
+                            $("#currentWork tr.droppable-row").each(function () {
+                                callData.jobs.push($(this).attr("data-jobid"));
+                                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+                            });
+
+
+                            if (callData.jobs.length > 0) {
+                                DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
+                            }
+
+                            $scope.getData().then(function () {
+                                $("#box-map").find(".loading").show();
+
+                                $scope.courier = { gpsCourier: foundCourier.id };
+                                $scope.searchCourier();
+
+
+                            });
+                        }
+                    },
+                    No: {
+                        btnClass: 'btn-red',
+                        action: function (scope, button) {
+
+                        }
+                    }
+
+                }
+            });
+        };
+
+        $scope.resendAll = function () {
+            $ngConfirm({
+                title: 'Resend All Jobs',
+                content: 'Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier,
+                scope: $scope,
+                buttons: {
+
+                    Yes: {
+                        btnClass: 'btn-green',
+                        action: function (scope, button) {
+                            var callData = {
+                                "call": "resendJobs",
+                                "jobs": [],
+                                "splitJobs": [],
+                                "jobNos": [],
+                                "courierID": $scope.currentCourier.courierID
+                            };
+
+                            var foundCourier = null;
+                            $("#currentWork tr.droppable-row").each(function () {
+                                callData.jobs.push($(this).attr("data-jobid"));
+                                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+                            });
+
+
+                            if (callData.jobs.length > 0) {
+                                DispatchData.resendAllJobs(callData.courierID);
+                            }
+
+                            $scope.getData().then(function () {
+                                $("#box-map").find(".loading").show();
+
+                                $scope.courier = { gpsCourier: foundCourier.id };
+                                $scope.searchCourier();
+
+
+                            });
+                        }
+                    },
+                    No: {
+                        btnClass: 'btn-red',
+                        action: function (scope, button) {
+
+                        }
+                    }
+
+                }
+            });
+        };
+
+        $scope.reAllocateJobsFromCurrentWindow = function () {
+
+            var callData = {
+                "call": "redespatchJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": $scope.currentCourier.courierID
+            };
+
             var foundCourier = null;
             $("#currentWork .active").each(function () {
-                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
-                var jn = j.jobNo;
                 callData.jobs.push($(this).attr("data-jobid"));
-                callData.courierID = j.courierData.courierID;
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
             });
             
 
             if (callData.jobs.length > 0) {
                 DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
+            }
+
+            $scope.getData().then(function () {
+                $("#box-map").find(".loading").show();
+
+                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.searchCourier();
+
+
+            });
+
+
+        };
+
+        $scope.resendJobsFromCurrentWindow = function () {
+
+            var callData = {
+                "call": "resendJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": $scope.currentCourier.courierID
+            };
+
+            var foundCourier = null;
+            $("#currentWork .active").each(function () {
+                callData.jobs.push($(this).attr("data-jobid"));
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+            });
+
+
+            if (callData.jobs.length > 0) {
+                DispatchData.resendJobs(callData.jobs);
             }
 
             $scope.getData().then(function () {
@@ -988,12 +1201,7 @@ angular
                 "courierID": null
             };
 
-            var reset = function () {
-                $(".activeTable .active").each(function () {
-                    var j = $scope.jobsCurrentList.find(jo => jo.id === $(this).data("jobid"));
-                    j.courier = null;
-                });
-            };
+           
             var foundCourier = null;
 
             $("#currentWork .active").each(function () {
@@ -1018,10 +1226,12 @@ angular
                 DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
 
+            $timeout(function () {
+                $scope.getCurrentJobs(foundCourier.courierID);
+                $scope.getData();
+            }, 1000);
 
-
-            $scope.getCurrentJobs(foundCourier.courierID);
-            $scope.getData();
+            
 
         };
 
@@ -1429,7 +1639,10 @@ angular
                 return;
             }
             $scope.currentWorkSelection = " for Courier " + ac.id + " " + ac.name;
-            //$scope.currentCourier = courier;
+            $scope.currentCourier = {
+                courierID: ac.courierID,
+                courier: ac.label
+            };
 
             $scope.currentSelection = " for Courier " + ac.id + " " + ac.name;
             $scope.getCurrentJobs(ac.courierID);
@@ -1485,7 +1698,11 @@ angular
             $("#box-map").find(".loading").show();
 
             $("#box-currentWork").find(".loading").show();
-            var code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
+            var foundCourier = $scope.pickCouriers.find(x => x.courierID === courier.courierID);
+            $scope.currentCourier = {
+                courierID: foundCourier.courierID,
+                courier: foundCourier.label
+            };
             DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(function (data) {
                 $("#box-currentWork").find(".loading").fadeOut();
                 //if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
@@ -1600,7 +1817,7 @@ angular
             var code = $scope.pickCouriers.find(x => x.courierID === courierId).id;
             DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
                 $("#box-currentWork").find(".loading").fadeOut();
-                if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
+                if ($scope.currentJob !== undefined && $scope.currentJob !== null && $scope.currentJob.courier !== code) {
                     $scope.currentJob = null;
                 }
                 $scope.jobsCurrentList = data;
@@ -1734,9 +1951,15 @@ angular
                     }
                 },
                 {
-                    text: "ReDespatch",
+                    text: "Redispatch",
                     click: function ($itemScope, $event, modelValue, text, $li) {
                         $scope.reAllocateJobsFromCurrentWindow();
+                    }
+                },
+                {
+                    text: "Resend",
+                    click: function ($itemScope, $event, modelValue, text, $li) {
+                        $scope.resendJobsFromCurrentWindow();
                     }
                 }
 
@@ -1785,9 +2008,15 @@ angular
                         }
                     },
                     {
-                        text: "ReDespatch Selected",
+                        text: "Redispatch Selected",
                         click: function ($itemScope, $event, modelValue, text, $li) {
                             $scope.reAllocateJobs();
+                        }
+                    },
+                    {
+                        text: "Resend Selected",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.resendJobs();
                         }
                     }
                 );
@@ -1838,9 +2067,15 @@ angular
                         }
                     },
                     {
-                        text: "ReDespatch",
+                        text: "Redispatch",
                         click: function ($itemScope, $event, modelValue, text, $li) {
                             $scope.reAllocateJobs();
+                        }
+                    },
+                    {
+                        text: "Resend",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.resendJobs();
                         }
                     }
                 );
@@ -1883,7 +2118,7 @@ angular
             }
             DispatchData.getAvailableCourierLocation(map.getBounds().getSouthWest().lng(), map.getBounds().getSouthWest().lat(), map.getBounds().getNorthEast().lng(), map.getBounds().getNorthEast().lat())
                 .then(function (returnData) {
-                    displayAvailableCouriers(returnData, $scope.currentCourier === false ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks);
+                    displayAvailableCouriers(returnData, $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks);
                 });
         };
 

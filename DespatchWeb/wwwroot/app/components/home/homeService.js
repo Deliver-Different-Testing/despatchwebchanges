@@ -44,6 +44,16 @@ angular
                             return response.data;
                         });
                     },
+                    resendJobs: function (jobIds) {
+                        return $http.post("job/ResendSelected?jobIds=" + jobIds).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    resendAllJobs: function (courierId) {
+                        return $http.post("job/ResendAll?courierId=" + courierId).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getJobs: function () {
                         return $http.get("app/components/home/api/jobsList.php").then(function (response) {
                             return response.data;
