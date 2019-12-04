@@ -29,6 +29,18 @@ body {
   z-index: 7;
   cursor: pointer;
 }
+#clearLists .clearLists-list .listActive {
+  background-color: #fddd00;
+  color: #000;
+}
+#clearLists .clearLists-list .listActive:hover {
+  background-color: #fddd00;
+  color: #000;
+}
+#clearLists .clearLists-list .listActive:active {
+  box-shadow: none;
+  outline: none;
+}
 #clearLists .clearLists-list table {
   width: 100%;
 }

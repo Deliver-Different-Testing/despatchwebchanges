@@ -161,7 +161,7 @@ namespace DespatchWeb.Repositories
                     break;
             }
 
-            var areas = new List<string>() {"city", "truck", "main1", "main2", "central", "shore", "west"};
+            var areas = new List<string>() {"city", "truck", "main1", "main2", "central", "shore", "west", "deep shore", "shallow shore", "east mid", "deep west", "shallow west", "west mid", "other", "mangere", "deep south", "deep east", "parnell", "eden terrace"};
             var selectedAreas = area.Split(',').ToList();
 
             var filter = 

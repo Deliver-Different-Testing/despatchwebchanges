@@ -195,7 +195,7 @@ angular
             },
             "clearLists": {
                 "title": "Clear Lists",
-                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.6",
+                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.7",
                 "showSearch": 0,
                 "showRefresh": 0
             }
@@ -548,6 +548,13 @@ angular
                 }
             }
         });
+
+        $scope.selectClearList = function (id, event, area) {
+            $(".clearLists-list-title").removeClass("listActive");
+            $(event.currentTarget).addClass("listActive");
+            $scope.getClearListEnvelope(id);
+            $scope.setFilters({ 'area': area });
+        };
 
         $scope.selectForDispatch = function (job) {
             console.log("In SelectForDispatch");

@@ -27,87 +27,117 @@ body {
     }
 
     .clearLists-list {
-        margin-bottom:10px;
+        margin-bottom: 10px;
         background: #bfbfbf;
+
         .clearLists-list-title {
             background: #5d5d5d;
             color: #FFF;
             padding: 5px;
-            position:relative;
+            position: relative;
             z-index: 7;
-            cursor:pointer;
+            cursor: pointer;
         }
+
+        .listActive {
+            background-color: @yellow;
+            color: #000;
+
+            &:hover {
+                background-color: @yellow;
+                color: #000;
+            }
+
+            &:active {
+                box-shadow: none;
+                outline: none;
+            }
+        }
+
         table {
-            width:100%;
+            width: 100%;
         }
-        .clearLists-list-items {    
+
+        .clearLists-list-items {
             z-index: 6;
-            position:relative;
+            position: relative;
             overflow: auto;
             height: 100%;
             margin-top: -22px;
             padding-top: 22px;
             -ms-overflow-style: none;
             scrollbar-width: none;
-            &::-webkit-scrollbar { 
-                display: none;  // Safari and Chrome
+
+            &::-webkit-scrollbar {
+                display: none; // Safari and Chrome
             }
+
             .clearLists-list-items-top {
-                background-color:#bae1ff;
+                background-color: #bae1ff;
                 border-bottom: 1px solid #a4d2f5;
+
                 .clearLists-list-items-item-number {
                     padding: 2px;
                     background: #94c5ea;
                     text-align: center;
                     font-weight: 700;
                 }
-                &.active {
-                    background-color:lighten(#bae1ff, 10);
-                        .clearLists-list-items-item-number {
-                            background-color:lighten(#94c5ea, 10);
 
-                        }
+                &.active {
+                    background-color: lighten(#bae1ff, 10);
+
+                    .clearLists-list-items-item-number {
+                        background-color: lighten(#94c5ea, 10);
+                    }
                 }
             }
+
             .clearLists-list-items-middle {
                 background-color: #d4c7ff;
                 border-bottom: 1px solid #c6b6fd;
+
                 .clearLists-list-items-item-number {
                     padding: 2px;
                     background: #bdaeef;
                     text-align: center;
                     font-weight: 700;
                 }
-                &.active {
-                    background-color:lighten(#d4c7ff, 10);
-                        .clearLists-list-items-item-number {
-                            background-color:lighten(#bdaeef, 10);
 
-                        }
+                &.active {
+                    background-color: lighten(#d4c7ff, 10);
+
+                    .clearLists-list-items-item-number {
+                        background-color: lighten(#bdaeef, 10);
+                    }
                 }
             }
+
             .clearLists-list-items-bottom {
                 background-color: #ffdfba;
                 border-bottom: 1px solid #efcea9;
+
                 .clearLists-list-items-item-number {
                     padding: 2px;
                     background: #ffc888;
                     text-align: center;
                     font-weight: 700;
                 }
-                &.active {
-                    background-color:lighten(#ffdfba, 10);
-                        .clearLists-list-items-item-number {
-                            background-color:lighten(#ffc888, 10);
 
-                        }
+                &.active {
+                    background-color: lighten(#ffdfba, 10);
+
+                    .clearLists-list-items-item-number {
+                        background-color: lighten(#ffc888, 10);
+                    }
                 }
             }
+
             .clearLists-list-items-item {
                 .clearLists-list-items-item-number {
-                    padding:2px;
+                    padding: 2px;
                     width: 33px;
                 }
+
                 .clearLists-list-items-item-dest {
                     padding: 1px;
                     display: inline-block;
