@@ -145,6 +145,16 @@ body {
 .top-bar .box-search {
   color: #FFF;
 }
+.top-bar .box-search input {
+  display: none;
+  width: 161px;
+  margin-left: 2px;
+  height: 29px;
+  border: 0;
+  color: #656565;
+  font-size: 11px;
+  padding-left: 4px;
+}
 .top-bar .btn-group {
   position: relative;
   top: 5px;
@@ -481,6 +491,12 @@ body {
   position: absolute;
   left: -130px;
 }
+.columns .column .column-sortable .box .box-bar .box-buttons .box-trucks {
+  display: inline-block;
+  top: 5px;
+  position: absolute;
+  left: -150px;
+}
 .columns .column .column-sortable .box .box-bar .box-buttons .box-search {
   padding: 4px;
   background-color: #000;
@@ -625,6 +641,12 @@ table.table tr .status.ASC {
 #jobList th {
   white-space: nowrap;
   cursor: pointer;
+}
+#jobList tr {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobList td {
+  border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobList .doing {
   background-color: #d7f3ce !important;

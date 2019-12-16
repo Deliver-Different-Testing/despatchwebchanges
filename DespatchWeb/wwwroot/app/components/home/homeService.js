@@ -130,6 +130,11 @@ angular
                             return response.data;
                         });
                     },
+                    getActiveClients: function () {
+                        return $http.get("client/ActiveClients").then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getPotentialCouriers: function (jobId) {
                         return $http.get("courier/PotentialCouriers?jobId=" + jobId).then(function (response) {
                             return response.data;

@@ -88,7 +88,7 @@ function initialize() {
     };
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
     oms = new OverlappingMarkerSpiderfier(map, {
-        markersWontMove: true,   // we promise not to move any markers, allowing optimizations
+        markersWontMove: false,   // we promise not to move any markers, allowing optimizations
         markersWontHide: true,   // we promise not to change visibility of any markers, allowing optimizations
         basicFormatEvents: true  // allow the library to skip calculating advanced formatting information
     });
@@ -132,44 +132,26 @@ function addClickHandler(m, iw) {
             }
             
         });
-        //google.maps.event.addListener(m, 'rightclick', function (mouseEvent) {
-        //    event.cancelBubble = true;
-        //    event.bubbles = false;
-        //    if (event.stopPropagation) {
-        //        event.stopPropagation();
-        //    }
-        //    console.log(event);    
-        //    var sel = angular.element(".columns").scope().jobList.filter(x => x.jobNo === m.jobNumber);
-        //    if (sel.length > 0) {
-        //        $("#jobList tr").removeClass("active");
-        //        $("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
-        //        angular.element(".columns").scope().selectForDispatch(sel[0]);
-        //        angular.element(".columns").scope().selectJob(sel[0], true);
-        //        angular.element(".columns").scope().dispatchJobsForm();
-        //    }
-        //    return false;
-            
+        
+        //google.maps.event.addListener(m, 'dragstart', function (marker) {
+        //    var latLng = marker.latLng;
+        //    console.log("marker drag start");
+        //    console.log(marker);
+        //    console.log(latLng);
+        //    currentDrag = oms.getMarkers().find(obj => {
+        //        return obj.position.lat() === latLng.lat() && obj.position.lng() === latLng.lng();
+        //    });
+        //    console.log("drag marker = ");
+        //    console.log(currentDrag);
+        //    //angular.element(".columns").scope().dispatchDroppedMarkerToClosestCourier(latLng.lat(), latLng.lng(), map.flags, carMarker, marker.jobNumber);
         //});
-
-        google.maps.event.addListener(m, 'dragstart', function (marker) {
-            var latLng = marker.latLng;
-            console.log("marker drag start");
-            console.log(marker);
-            console.log(latLng);
-            currentDrag = oms.getMarkers().find(obj => {
-                return obj.position.lat() === latLng.lat() && obj.position.lng() === latLng.lng();
-            });
-            console.log("drag marker = ");
-            console.log(currentDrag);
-            //angular.element(".columns").scope().dispatchDroppedMarkerToClosestCourier(latLng.lat(), latLng.lng(), map.flags, carMarker, marker.jobNumber);
-        });
-        google.maps.event.addListener(m, 'dragend', function (marker) {
-            var latLng = marker.latLng;
-            console.log("marker moved");
-            console.log(marker);
-            console.log(latLng);
-            angular.element(".columns").scope().dispatchDroppedMarkerToClosestCourier(latLng.lat(), latLng.lng(), map.flags, carMarker, currentDrag.jobNumber);
-        });
+        //google.maps.event.addListener(m, 'dragend', function (marker) {
+        //    var latLng = marker.latLng;
+        //    console.log("marker moved");
+        //    console.log(marker);
+        //    console.log(latLng);
+        //    angular.element(".columns").scope().dispatchDroppedMarkerToClosestCourier(latLng.lat(), latLng.lng(), map.flags, carMarker, currentDrag.jobNumber);
+        //});
 
         oms.addMarker(m);
 
@@ -194,8 +176,8 @@ var carMarker = null;
 function setMapBounds() {
     boundsSet = true;
     var bounds = new google.maps.LatLngBounds();
-    for (var i = 0; i < map.markers.length; i++) {
-        bounds.extend(map.markers[i].getPosition());
+    for (var i = 0; i < oms.getMarkers().length; i++) {
+        bounds.extend(oms.getMarkers()[i].getPosition());
     }
     if (carPos !== null) {
         bounds.extend(carPos);
@@ -322,14 +304,21 @@ function displayCourierPositionOnly(lat, lng) {
     map.setZoom(13);
 }
 
-function displayAvailableCouriers(ac, courierCode, channels, trucks) {
+function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truckMode) {
     map.clearLabels();
     map.clearFlags();
     $.each(ac, function (i, c) {
         var col = '#003CA1'; //courier
         var ll = new google.maps.LatLng(c.latitude, c.longitude);
-        if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (trucks === false || c.vehicleType === "T"))
-            drawItem(col, ll, pad(c.code + '-' + c.vehicleType, 5, '_', 2), c.courierID, c.code);
+        if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (truckChannel === false || c.vehicleType === "T")) {
+            if ((truckChannel === false && truckMode === "Off" && c.vehicleType === "T") || (truckChannel === false && truckMode === "Only" && c.vehicleType !== "T"))
+            {
+                return true;
+                
+            } else {
+                drawItem(col, ll, pad(c.code + '-' + c.vehicleType, 5, '_', 2), c.courierID, c.code);
+            }
+        }
     });
 
 
@@ -382,10 +371,12 @@ function displayPickupPoints(jobs, clear, currentJob) {
         if (jobs[i].statusID < 5) {
             var pickupMarker = new google.maps.Marker({
                 position: new google.maps.LatLng(jobs[i].pickUpLatitude, jobs[i].pickUpLongitude),
-                draggable: true,
+                draggable: false,
                 map: map,
                 icon: pinImage,
-                jobNumber: jobs[i].jobNo
+                jobNumber: jobs[i].jobNo,
+                optimized: true
+
             });
 
 
@@ -540,7 +531,8 @@ function displayRoutePoints(courierJobs, clear) {
             carMarker.setMap(null);
         }
     }
-    
+
+    var zoomMarkers = [];
 
     for (var i = 0; i < courierJobs.length; i++) {
         var pinColor = "purple";
@@ -569,6 +561,10 @@ function displayRoutePoints(courierJobs, clear) {
             new google.maps.Size(131, 154),
             new google.maps.Point(0, 0),
             new google.maps.Point(10, 34));
+        var deliveryPinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_red"  + (courierJobs[i].runOrder || "").toString() + ".png",
+            new google.maps.Size(131, 154),
+            new google.maps.Point(0, 0),
+            new google.maps.Point(10, 34));
 
         if (courierJobs[i].statusID < 5) {
             var pickupMarker = new google.maps.Marker({
@@ -593,13 +589,14 @@ function displayRoutePoints(courierJobs, clear) {
 
 
             addClickHandler(pickupMarker, infoWindow);
+            zoomMarkers.push(pickupMarker);
         }
         
 
         var deliveryMarker = new google.maps.Marker({
             position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
             map: map,
-            icon: pinImage,
+            icon: deliveryPinImage,
             jobNumber: courierJobs[i].jobNo
         });
 
@@ -619,8 +616,34 @@ function displayRoutePoints(courierJobs, clear) {
 
         addClickHandler(deliveryMarker, deliveryInfoWindow);
 
+        zoomMarkers.push(deliveryMarker);
 
     }
+
+    //zoom out - set bounds
+    var bounds = new google.maps.LatLngBounds();
+    for (var x = 0; x < zoomMarkers.length; x++) {
+        bounds.extend(zoomMarkers[x].getPosition());
+    }
+
+    map.fitBounds(bounds);
+
+    for (var y = 0; y < zoomMarkers.length; y++) {
+        var thisMarker = zoomMarkers[y];
+        thisMarker.setAnimation(google.maps.Animation.BOUNCE);
+
+    }
+
+    window.setTimeout(function () {
+        for (var y = 0; y < zoomMarkers.length; y++) {
+            var bounceMarker = zoomMarkers[y];
+            if (bounceMarker.getAnimation() !== null) {
+                bounceMarker.setAnimation(null);
+            }
+        }
+        
+    }, 2000);
+    
 
     if (courierJobs.length === 0) return;
 

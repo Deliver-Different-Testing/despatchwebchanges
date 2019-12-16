@@ -49,5 +49,16 @@ namespace DespatchWeb.Repositories
             return result.FirstOrDefault();
 
         }
+
+        public async Task<List<ClientActiveViewModel>> ActiveClients()
+        {
+            var activeCouriers = new List<ClientActiveViewModel>();
+            await _context.LoadStoredProc("DESWEB_qryClientsActive")
+                .ExecuteStoredProcAsync(handle =>
+                {
+                    activeCouriers = handle.ReadToList<ClientActiveViewModel>().ToList();
+                });
+            return activeCouriers;
+        }
     }
 }

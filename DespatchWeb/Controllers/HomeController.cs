@@ -73,6 +73,12 @@ namespace DespatchWeb.Controllers
             }
         }
 
+        public async Task<IActionResult> ActiveClients()
+        {
+            var result = await _clientRepository.ActiveClients();
+            return Json(result);
+        }
+
         private string DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
         {
             // Check arguments.

@@ -115,10 +115,12 @@ angular
             }
         };
         $scope.normalStyle = "{'font-weight:normal'}";
+        $scope.showChat = false;
+        $scope.chatBox = "";
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.39",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.40",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -290,6 +292,7 @@ angular
         $scope.layouts = layoutsObject || defaultLayout;
         $scope.userName = FirstName;
         $scope.currentLayoutName = "default";
+        $scope.truckMode = "On";
 
         $scope.groupJobsSelection = "";
         $scope.currentWorkSelection = "";
@@ -480,6 +483,20 @@ angular
 
         };
 
+        $scope.openChat = function () {
+            if ($(".chat").hasClass("open")) {
+                $(".chat input").fadeOut(function () {
+                    $(".chat").removeClass("open");
+                    $(".chat").animate({ "width": "31px" }, 500);
+                });
+            } else {
+                $(".chat").animate({ "width": "250px" }, 500, function () {
+                    $(".chat").addClass("open");
+                    $(".chat").find("input").fadeIn();
+                });
+            }
+        };
+
         $scope.allCouriers.display = true;
         //Column Sorting
         $scope.sort = [];
@@ -550,6 +567,7 @@ angular
         });
 
         $scope.selectClearList = function (id, event, area) {
+            $("#area-group .btn").removeClass("topBarActive");
             $(".clearLists-list-title").removeClass("listActive");
             $(event.currentTarget).addClass("listActive");
             $scope.getClearListEnvelope(id);
@@ -770,7 +788,9 @@ angular
 
                     $scope.courier = { gpsCourier: foundCourier.id };
                     $scope.searchCourier();
-
+                    setTimeout(function () {
+                        $("#jobList tr").first().find(".dispatchField").focus()
+                    }, 200);
 
                 });
                 return response;
@@ -1856,6 +1876,12 @@ angular
         }
 
         $scope.sort["jobList"] = "remain";
+
+        $scope.setFiltersFromTopBar = function (data) {
+            $('.clearLists-list-title').removeClass('listActive');
+            $scope.setFilters(data);
+        };
+
         $scope.setFilters = function (data) {
             setTimeout(function () {
                 if (data.status) {
@@ -1892,7 +1918,7 @@ angular
         $scope.selectJob = function (job, clear) {
 
             setTimeout(function () {
-
+                var jobRow = null;
                 $scope.selectedJobs = [];
 
                 $(".activeTable .active").each(function () {
@@ -1901,7 +1927,7 @@ angular
                     $(this).find(".selectjob").click();
 
                     $scope.selectedJobs.push($scope.jobForDispatch.ID);
-
+                    jobRow = $(this);
                 });
 
                 $scope.currentJob = job;
@@ -1938,8 +1964,10 @@ angular
                 } else {
                     var jobs = [job];
                     
-                    highlightJobPoints(jobs);
+                    //highlightJobPoints(jobs);
+                    displayRoutePoints(jobs, false);
                 }
+                $(jobRow).find(".dispatchField").focus();
 
             },
                 0);
@@ -2090,6 +2118,11 @@ angular
             return multiple ? multipleMenu : fullMenu;
         };
 
+        $scope.setTruckMode = function (mode) {
+            $scope.truckMode = mode;
+            $scope.getData();
+        };
+
         $scope.getAvailableCourierLocation = function () {
             if (!$scope.allCouriers.display) {
                 map.clearLabels();
@@ -2125,7 +2158,7 @@ angular
             }
             DispatchData.getAvailableCourierLocation(map.getBounds().getSouthWest().lng(), map.getBounds().getSouthWest().lat(), map.getBounds().getNorthEast().lng(), map.getBounds().getNorthEast().lat())
                 .then(function (returnData) {
-                    displayAvailableCouriers(returnData, $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks);
+                    displayAvailableCouriers(returnData, $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks, $scope.truckMode);
                 });
         };
 
@@ -2156,16 +2189,16 @@ angular
             }
             return DispatchData.getJobsFilter($scope.jobFilters).then(function (data) {
                 $scope.jobList = data;
-                
+                $("#box-jobsList .loading").fadeOut();
                 setTimeout(function () {
-                    $("#box-jobsList .loading").fadeOut();
+                    
                     sizeHeadings($("#jobList").parents(".column"));
                     if (data.length > 0) {
                         var undespatchedData = data.filter(x => x.courierData.courierID === null);
                         displayPickupPoints(undespatchedData, true, null);
                     }
                     $scope.getAvailableCourierLocation();
-                }, 100);
+                }, 200);
 
             });
         };
@@ -2191,7 +2224,7 @@ angular
                     var swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
                     var nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
                     map.fitBounds(new google.maps.LatLngBounds(swll, nell));
-                    map.setZoom(14);
+                    map.setZoom(13);
                     $scope.getAvailableCourierLocation();
                 });
             };
@@ -2699,7 +2732,7 @@ angular
 
         $scope.onMapReady = function () {
             //$scope.heremaps = heremaps;
-
+            
             var options = {
                 minimumInputLength: 1,
                 ajax: {
@@ -2764,6 +2797,7 @@ angular
 
             $("#our_suburb").select2(suburbOptions);
 
+            waitingDialog.hide();
         };
 
         //$scope.onMapReady();
@@ -3189,17 +3223,17 @@ angular
             };
 
 
-
+            waitingDialog.show();
             $(".gpsForm").show(0, function () {
-                $scope.onMapReady();
-                //var auckland = { lat: -36.8804466, lng: 174.6117981 };
-                //$scope.heremaps.setCenter(auckland);
-                $scope.markers = [];
+                setTimeout(function () {
+                    $scope.onMapReady();
+                    $scope.markers = [];
+                }, 200);
                 //$scope.heremaps.updateMarkers($scope.markers, true);
                 //$scope.heremaps.refresh();
                 //$scope.heremaps.setZoom(10);
                 setTimeout(function () {
-                    $('#location').select2('open');
+                    $('#location').select2('open').val(null).trigger('change');
                     var search = $('#location').data('select2').dropdown.$search;
                     if ($scope.gpsForm.data.address.indexOf(',') > 0) {
                         search.val($scope.gpsForm.data.address.split(',')[1].split());
@@ -3227,6 +3261,96 @@ angular
 
         };
 
+        //$scope.changeClient = function(value, jobID) {
+        //    $scope.gather.form = {
+        //        id: "editClient",
+        //        title: "Change Client",
+        //        fields: [
+        //            {
+        //                "name": "current",
+        //                "label": "Current Client",
+        //                "value": value,
+        //                "jobID": jobID,
+        //                "type": type,
+        //                "options": options
+        //            }
+        //        ],
+        //        onSubmit: function () {
+        //            var job = $scope.currentJob;
+        //            var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
+        //            var callData = {
+        //                "call": "updateDetailField",
+        //                "field": $scope.gather.form.fields[0].name,
+        //                "value": $scope.gather.form.fields[0].value,
+        //                "jobID": $scope.gather.form.fields[0].jobID
+        //            };
+
+        //            if (callData.field === "Notes") {
+        //                return DispatchData.addNote(job.id, callData.value, FirstName);
+        //            }
+
+        //            if (fieldName === "Size") {
+        //                callData.value = $scope.gather.form.fields[0].value.id;
+        //            }
+        //            if (fieldName === "Size") {
+        //                job[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
+        //            } else {
+        //                job[callData.field.toLowerCase()] = callData.value;
+        //            }
+        //            if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
+        //                //Truck Job
+        //                return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
+        //                    DispatchData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff,
+        //                        job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2).then(function (truckRate) {
+        //                            console.log(truckRate);
+        //                            if (truckRate !== job.charge) {
+        //                                DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+        //                            }
+        //                            return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(truckRate.replace(/[^0-9.-]+/g, ""))).then(function (response) {
+        //                                if (response.data === "OK") {
+        //                                    if (fieldName === "Size") {
+        //                                        $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
+        //                                    } else {
+        //                                        $scope.currentJob[callData.field.toLowerCase()] = callData.value;
+        //                                    }
+
+
+        //                                }
+        //                                return response;
+        //                            });
+        //                        });
+        //                });
+        //            }
+        //            else {
+        //                return DispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID,
+        //                    job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked).then(function (rate) {
+        //                        console.log(rate);
+        //                        if (rate !== job.charge) {
+        //                            DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+        //                        }
+        //                        return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, ""))).then(function (response) {
+        //                            if (response.data === "OK") {
+        //                                if (fieldName === "Size") {
+        //                                    $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
+        //                                } else {
+        //                                    $scope.currentJob[callData.field.toLowerCase()] = callData.value;
+        //                                }
+
+
+        //                            }
+        //                            return response;
+        //                        });
+        //                    });
+        //            }
+
+
+        //            //$scope.updateDetailField($scope.gather.form.fields[0].jobID, $scope.gather.form.fields[0].name, $scope.gather.form.fields[0].value);
+
+        //        },
+        //        submitValue: "Update Field"
+        //    };
+        //    $scope.gather.showForm();
+        //};
 
         $scope.editDetailField = function (fieldName, label, value, jobID, type, options) {
 
