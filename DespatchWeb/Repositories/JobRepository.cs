@@ -161,7 +161,7 @@ namespace DespatchWeb.Repositories
                     break;
             }
 
-            var areas = new List<string>() {"city", "truck", "main1", "main2", "central", "shore", "west", "deep shore", "shallow shore", "east mid", "deep west", "shallow west", "west mid", "other", "mangere", "deep south", "deep east", "parnell", "eden terrace"};
+            var areas = new List<string>() {"city", "truck", "main1", "main2", "central", "shore", "west", "deep shore", "shallow shore", "east mid", "deep west", "shallow west", "west mid", "other", "mangere", "deep south", "deep east", "parnell", "eden terrace", "regional"};
             var selectedAreas = area.Split(',').ToList();
 
             var filter = 
@@ -373,6 +373,16 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public async Task TransferJob(int jobId, int courierId, int dispId)
+        {
+            await _context.LoadStoredProc("DESWEB_stpJob_TransferJob")
+                    .WithSqlParam("@JobID", jobId)
+                    .WithSqlParam("@CourierID", courierId)
+                    .WithSqlParam("@DispID", dispId)
+                    .ExecuteStoredNonQueryAsync();
+            
+        }
+            
         public async Task ReSendAllJobs(int courierId)
         {
             await _context.LoadStoredProc("uspReDespatchJobByCourierID")

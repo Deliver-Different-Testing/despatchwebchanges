@@ -1866,7 +1866,7 @@ angular
         if (Modernizr.localstorage) {
             filtersObject = JSON.parse(localStorage.getItem("disp-filters-" + ContactID));
         }
-        $scope.jobFilters = filtersObject || { "status": "nda", "area": "main1", "order": "remain", "asc": "asc" };
+        $scope.jobFilters = filtersObject || { "status": "nda", "area": "main1",  "order": "remain", "asc": "asc" };
         var f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
         $(f).addClass("topBarActive");
         var areas = $scope.jobFilters.area.split(',');

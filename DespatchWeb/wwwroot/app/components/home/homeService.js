@@ -34,6 +34,11 @@ angular
                             return response;
                         });
                     },
+                    transferJob: function (courierId, dispId, jobId) {
+                        return $http.post("job/Transfer?jobId=" + jobId + "&courierId=" + courierId + "&dispId=" + dispId).then(function (response) {
+                            return response;
+                        });
+                    },
                     restoreJobs: function (courierId, dispId, jobIds) {
                         return $http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
                             return response.data;

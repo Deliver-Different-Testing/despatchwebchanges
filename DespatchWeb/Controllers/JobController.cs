@@ -135,6 +135,14 @@ namespace DespatchWeb.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> Transfer(int jobId, int courierId, int dispId)
+        {
+            await _jobRepo.TransferJob(jobId, courierId, dispId);
+            return Json("OK");
+        }
+
+
+        [HttpPost]
         public async Task<IActionResult> ReSendAll(int courierId)
         {
             await _jobRepo.ReSendAllJobs(courierId);
