@@ -27,16 +27,17 @@
 
     <table class="table  table-responsive table-rows" id="jobList" data-group="jobsGroup">
         <tbody>
-        <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobList | filter: box.searchBox" context-menu="setJobsMenu" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
+        <tr class="clickable-row draggable-row noselect" ng-repeat="job in jobList | filter: box.searchBox"  data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
 			<td class="status" ng-class="job.status">{{job.status}}</td>
 			<td>{{job.time | date : "HH:mm"}}</td>
-			<td>{{job.speed}}</td>
-			<td>{{job.notify}}</td>
+			<td right-click action="speedColumnClick(event)">{{job.speed}}</td>
+			<td ng-if="job.courierData.courierID === null" right-click action="notifyColumnClick(event)">{{job.notify}}</td>
+            <td ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
 			<td>{{job.jobNo}}</td>
 			<td>{{job.client}}</td>
-			<td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-			<td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
-			<td><div style="width:600px;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>	
+			<td right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
+			<td right-click action="toColumnClick(event)">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
+			<td><div title="{{job.toAddress}}">{{job.toAddress}}</div></td>	
 			<td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
 			<td>{{attention(job)}}</td>
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>

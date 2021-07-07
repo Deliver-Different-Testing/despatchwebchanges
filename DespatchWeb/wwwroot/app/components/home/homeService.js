@@ -161,6 +161,11 @@ angular
                             return response.data;
                         });
                     },
+                    getSpeedList: function () {
+                        return $http.get("job/SpeedList").then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getTruckItemsSummary: function (jobId, truckWeightLimit) {
                         return $http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit).then(function (response) {
                             return response.data;
@@ -216,11 +221,11 @@ angular
                             return response;
                         });
                     },
-                    updateJobDetail: function (jobId, field, value, rate) {
+                    updateJobDetail: function (jobId, field, value, rate, despatcherName, staffId) {
                         if (field === "Time") {
                             value = value.toISOString();
                         }
-                        return $http.post("job/UpdateJob?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate).then(function (response) {
+                        return $http.post("job/UpdateJob?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
                             return response;
                         });
                     },

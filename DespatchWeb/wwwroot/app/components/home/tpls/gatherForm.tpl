@@ -21,6 +21,12 @@
                </select>
 
             </div>
+            <div ng-switch-when="select2">
+
+               <select name="{{field.name}}" id="gather-{{field.name}}" placeholder="{{field.label}}"  ng-model="field.value" class="form-control focusMe">
+               </select>
+
+            </div>
           </div>
 
         </div>

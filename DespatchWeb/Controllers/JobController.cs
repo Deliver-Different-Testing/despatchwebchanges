@@ -33,7 +33,7 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> LateCall(int lateType, int lateTime, int minutes, int pickupTime, int alertLatePickup, int deliveryTime, int alertLateDelivery, string jobNo, int clientId, string contact, int staffId, DateTime jobTime, int jobId, int jobType, string bookedSpeed, string notifiedSpeed, string despatcherName)
         {
-            var intLate = lateTime;
+            var late = lateTime;
             var createEvent = false;
             var jobStatus = 0;
 
@@ -65,7 +65,7 @@ namespace DespatchWeb.Controllers
                         break;
                     case 2:
                         jobStatus = 8;
-                        intLate = lateTime + deliveryTime;
+                        late = lateTime + deliveryTime;
                         if (alertLateDelivery >= 0)
                         {
                             var maxAutoLateDelAlert = await _jobRepo.MaxAutoLateDeliveryAlert();
@@ -75,7 +75,7 @@ namespace DespatchWeb.Controllers
                             }
                             else
                             {
-                                if (intLate > alertLateDelivery)
+                                if (late > alertLateDelivery)
                                 {
                                     createEvent = true;
                                 }
@@ -96,7 +96,7 @@ namespace DespatchWeb.Controllers
             {
                 //Event_Insert Me.ucjbNumber, Me.ucjbClientID, Me.ucjbContact, intLateType, intLateTime, DateAdd("n", intLate, Me.ucjbTime), _
                 //    lngUserID, 0, Null, "Late Call from Despatch", False, False, 2, Null, Null, Me.ucjbID, Null, Me.ucjbType, Date, Now
-                await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, null, jobId, jobType, null, "Late Call from Despatch", lateType, lateTime, jobTime.AddMinutes(intLate));
+                await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, null, jobId, jobType, null, "Late Call from Despatch", lateType, lateTime, jobTime.AddMinutes(late));
             }
 
             await _jobRepo.ResetLateEvent(jobId, lateType);
@@ -208,6 +208,12 @@ namespace DespatchWeb.Controllers
             return Json(data);
         }
 
+        public IActionResult SpeedList()
+        {
+            var data = _jobRepo.Speeds();
+            return Json(data);
+        }
+
         public async Task<IActionResult> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
                                           int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)
         {
@@ -241,9 +247,9 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-        public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal rate)
+        public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal rate, string despatcherName, int staffId)
         {
-            await _jobRepo.UpdateJob(jobId, field, value, rate);
+            await _jobRepo.UpdateJob(jobId, field, value, rate, despatcherName, staffId);
             return Json("OK");
         }
 

@@ -44,12 +44,16 @@ namespace DespatchWeb.EntityClasses
 		public System.String CourierCode { get; set;}
 		/// <summary>Gets or sets the CourierName field. </summary>
 		public System.String CourierName { get; set;}
+		/// <summary>Gets or sets the DeliverToContact field. </summary>
+		public System.String DeliverToContact { get; set;}
 		/// <summary>Gets or sets the DeliverToPrivateBusiness field. </summary>
 		public Nullable<System.Int32> DeliverToPrivateBusiness { get; set;}
 		/// <summary>Gets or sets the DeliveryLatitude field. </summary>
 		public Nullable<System.Decimal> DeliveryLatitude { get; set;}
 		/// <summary>Gets or sets the DeliveryLongitude field. </summary>
 		public Nullable<System.Decimal> DeliveryLongitude { get; set;}
+		/// <summary>Gets or sets the DeliveryPhoto field. </summary>
+		public System.Byte[] DeliveryPhoto { get; set;}
 		/// <summary>Gets or sets the DeliveryTime field. </summary>
 		public Nullable<System.Int32> DeliveryTime { get; set;}
 		/// <summary>Gets or sets the DesCheck field. </summary>
@@ -152,6 +156,8 @@ namespace DespatchWeb.EntityClasses
 		public System.String SuburbTo { get; set;}
 		/// <summary>Gets or sets the ToArea field. </summary>
 		public Nullable<System.Int32> ToArea { get; set;}
+		/// <summary>Gets or sets the ToSiteId field. </summary>
+		public Nullable<System.Int32> ToSiteId { get; set;}
 		/// <summary>Gets or sets the ToSuburbId field. </summary>
 		public Nullable<System.Int32> ToSuburbId { get; set;}
 		/// <summary>Gets or sets the ToSuburbName field. </summary>

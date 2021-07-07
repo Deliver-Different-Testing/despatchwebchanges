@@ -24,7 +24,7 @@ namespace DespatchWeb.Repositories
 
         public List<JobViewModel> CurrentJobList(Int32 courierId, bool done)
         {
-            var jobs = _context.DeswebQryDespatches.FromSql($"exec [DESWeb_qryCourierJobs] {courierId}, {done}").ToList();
+            var jobs= _context.DeswebQryDespatches.FromSql($"exec [DESWeb_qryCourierJobs] {courierId}, {done}").ToList();
             var list = 
                 (from j in jobs
                     select new JobViewModel()
@@ -112,7 +112,9 @@ namespace DespatchWeb.Repositories
                         DeliveryTime = j.DeliveryTime,
                         AlertLatePickup = j.AlertLatePickUp,
                         AlertLateDelivery = j.AlertLateDelivery,
-                        Minutes = j.Minutes
+                        Minutes = j.Minutes,
+                        DeliverToContact = j.DeliverToContact,
+                        PODPhoto = j.DeliveryPhoto
 
                     }).ToList();
             return list;
@@ -314,7 +316,9 @@ namespace DespatchWeb.Repositories
                     DeliveryTime = j.DeliveryTime,
                     AlertLatePickup = j.AlertLatePickUp,
                     AlertLateDelivery = j.AlertLateDelivery,
-                    Minutes = j.Minutes
+                    Minutes = j.Minutes,
+                    DeliverToContact= j.DeliverToContact,
+                    PODPhoto = j.DeliveryPhoto
 
 
 
@@ -508,6 +512,13 @@ namespace DespatchWeb.Repositories
             return data.ToList();
         }
 
+        public List<Speed> Speeds()
+        {
+            var data = (from s in _context.DesQryAllJobTypes
+                        select s).Select(x => new Speed() { ID = x.JobTypeId, Text = x.Name });
+            return data.ToList();
+        }
+
         public async Task<decimal> RateTruckJob (int clientId, int fromId, int toId, double weight, int size, int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems, 
                                                 int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)
         {
@@ -621,13 +632,15 @@ namespace DespatchWeb.Repositories
 
         }
 
-        public async Task UpdateJob (int jobId, string field, string value, decimal rate )
+        public async Task UpdateJob (int jobId, string field, string value, decimal rate, string despatcher, int staffId )
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJob")
                 .WithSqlParam("@JobID", jobId)
                 .WithSqlParam("@PropertyName", field)
                 .WithSqlParam("@Value", value)
                 .WithSqlParam("@Rate", rate)
+                .WithSqlParam("@Username", despatcher)
+                .WithSqlParam("@StaffID", staffId)
                 .ExecuteStoredNonQueryAsync();
         }
 

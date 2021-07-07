@@ -17,12 +17,24 @@ namespace DespatchWeb
 		public virtual void BuildModel(ModelBuilder modelBuilder)
 		{
 			modelBuilder.HasDefaultSchema("dbo");
+			MapDesQryAllJobType(modelBuilder.Entity<DesQryAllJobType>());
 			MapDeswebQryDespatch(modelBuilder.Entity<DeswebQryDespatch>());
 			MapTblClient(modelBuilder.Entity<TblClient>());
 			MapTblDespatchView(modelBuilder.Entity<TblDespatchView>());
 			MapTucClientContact(modelBuilder.Entity<TucClientContact>());
 			MapTucJobItem(modelBuilder.Entity<TucJobItem>());
 			MapTucSuburb(modelBuilder.Entity<TucSuburb>());
+		}
+
+		/// <summary>Defines the mapping information for the entity 'DesQryAllJobType'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapDesQryAllJobType(EntityTypeBuilder<DesQryAllJobType> config)
+		{
+			config.ToTable("DES_qryAllJobTypes");
+			config.IsReadOnly();
+			config.HasKey(t => t.JobTypeId);
+			config.Property(t => t.JobTypeId).HasColumnName("JobTypeID");
+			config.Property(t => t.Name).HasMaxLength(50).IsRequired();
 		}
 
 		/// <summary>Defines the mapping information for the entity 'DeswebQryDespatch'</summary>
@@ -129,6 +141,7 @@ namespace DespatchWeb
 			config.Property(t => t.FollowupTime);
 			config.Property(t => t.Reprice);
 			config.Property(t => t.SiteId).HasColumnName("SiteID");
+			config.Property(t => t.ToSiteId).HasColumnName("ToSiteID");
 			config.Property(t => t.PickupAmount);
 			config.Property(t => t.DropoffAmount);
 			config.Property(t => t.BulletFreight);
@@ -146,6 +159,8 @@ namespace DespatchWeb
 			config.Property(t => t.TruckWeightLimit);
 			config.Property(t => t.TruckStartTime);
 			config.Property(t => t.TruckHours);
+			config.Property(t => t.DeliverToContact).HasMaxLength(100);
+			config.Property(t => t.DeliveryPhoto);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TblClient'</summary>
@@ -392,6 +407,10 @@ namespace DespatchWeb
 			config.Property(t => t.NoUtpickUp).HasColumnName("NoUTPickUp");
 			config.Property(t => t.MaxJobsPerRun);
 			config.Property(t => t.NzPostSiteCode).HasMaxLength(50);
+			config.Property(t => t.JobPrefix).HasMaxLength(3);
+			config.Property(t => t.AddonPercentage);
+			config.Property(t => t.XeroId).HasMaxLength(50);
+			config.Property(t => t.IsDirectDebit);
 			config.Property(t => t.ClientId).HasColumnName("ClientID");
 			config.Property(t => t.Name).HasMaxLength(75).IsRequired();
 			config.Property(t => t.LegalName).HasMaxLength(150).IsRequired();
@@ -522,6 +541,7 @@ namespace DespatchWeb
 			config.Property(t => t.ResetKey).HasMaxLength(50);
 			config.Property(t => t.Password2).HasMaxLength(200);
 			config.Property(t => t.Salt).HasMaxLength(64);
+			config.Property(t => t.StaffId).HasColumnName("StaffID");
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TucJobItem'</summary>
@@ -577,6 +597,7 @@ namespace DespatchWeb
 			config.Property(t => t.GoogleSuburbAlias).HasMaxLength(500);
 			config.Property(t => t.PostCode).HasMaxLength(200);
 			config.Property(t => t.PrefixRunName).HasMaxLength(50);
+			config.Property(t => t.Gsscity).HasColumnName("GSSCity").HasMaxLength(50);
 		}
 	}
 

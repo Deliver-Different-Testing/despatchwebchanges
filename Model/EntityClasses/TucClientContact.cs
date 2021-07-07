@@ -62,6 +62,8 @@ namespace DespatchWeb.EntityClasses
 		public System.Boolean SendAdhocEmail { get; set;}
 		/// <summary>Gets or sets the SharedComputer field. </summary>
 		public System.Boolean SharedComputer { get; set;}
+		/// <summary>Gets or sets the StaffId field. </summary>
+		public Nullable<System.Int32> StaffId { get; set;}
 		/// <summary>Gets or sets the UcctClientId field. </summary>
 		public Nullable<System.Int32> UcctClientId { get; set;}
 		/// <summary>Gets or sets the UcctDirectDial field. </summary>

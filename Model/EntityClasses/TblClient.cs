@@ -24,6 +24,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> AccountStatusId { get; set;}
 		/// <summary>Gets or sets the Active field. </summary>
 		public System.Boolean Active { get; set;}
+		/// <summary>Gets or sets the AddonPercentage field. </summary>
+		public Nullable<System.Decimal> AddonPercentage { get; set;}
 		/// <summary>Gets or sets the Address field. </summary>
 		public System.String Address { get; set;}
 		/// <summary>Gets or sets the AddressExtras field. </summary>
@@ -232,8 +234,12 @@ namespace DespatchWeb.EntityClasses
 		public System.String InvoiceGroupBy { get; set;}
 		/// <summary>Gets or sets the InvoiceMethod field. </summary>
 		public System.String InvoiceMethod { get; set;}
+		/// <summary>Gets or sets the IsDirectDebit field. </summary>
+		public Nullable<System.Boolean> IsDirectDebit { get; set;}
 		/// <summary>Gets or sets the IsFeaturedClient field. </summary>
 		public System.Boolean IsFeaturedClient { get; set;}
+		/// <summary>Gets or sets the JobPrefix field. </summary>
+		public System.String JobPrefix { get; set;}
 		/// <summary>Gets or sets the LastModified field. </summary>
 		public System.DateTime LastModified { get; set;}
 		/// <summary>Gets or sets the LastModifiedBy field. </summary>
@@ -624,5 +630,7 @@ namespace DespatchWeb.EntityClasses
 		public System.String WebServicePassword { get; set;}
 		/// <summary>Gets or sets the WhenBookingJobDisplayFullName field. </summary>
 		public System.Boolean WhenBookingJobDisplayFullName { get; set;}
+		/// <summary>Gets or sets the XeroId field. </summary>
+		public System.String XeroId { get; set;}
 	}
 }

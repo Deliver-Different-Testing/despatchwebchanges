@@ -15,6 +15,25 @@ angular
         'angularPromiseButtons',
         'cp.ngConfirm'
 	])
+	.directive('rightClick', function () {
+
+		document.oncontextmenu = function (e) {
+			if (e.target.hasAttribute('right-click')) {
+				return false;
+			}
+		};
+		return function (scope, el, attrs) {
+			el.bind('contextmenu', function (e) {
+				scope.$apply(
+					scope.$eval(attrs.action, {
+						'event': e
+					})
+				);
+				//alert(attrs.alert);
+
+			});
+		}
+	})
 	.config(["$urlRouterProvider", "$stateProvider", function($urlRouterProvider, $stateProvider) {
 		$urlRouterProvider.otherwise("/");
 

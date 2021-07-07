@@ -120,13 +120,13 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.40",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.43",
                 "showSearch": 1,
                 "showRefresh": 1
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.16",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.17",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -1841,12 +1841,15 @@ angular
         $scope.getCurrentJobs = function (courierId) {
 
             $("#box-currentWork").find(".loading").show();
-            var code = $scope.pickCouriers.find(x => x.courierID === courierId).id;
+            var foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
+            var code = foundCourier != undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
             DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
                 $("#box-currentWork").find(".loading").fadeOut();
+                /*
                 if ($scope.currentJob !== undefined && $scope.currentJob !== null && $scope.currentJob.courier !== code) {
                     $scope.currentJob = null;
                 }
+                */
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
                     displayRoutePoints(data, true);
@@ -2001,6 +2004,119 @@ angular
             ];
 
             return menu;
+        };
+
+
+        $scope.fromColumnClick = function (evt) {
+            switch (evt.which) {
+                case 1:
+                    // this is left click
+                    break;
+                case 2:
+                    // in case you need some middle click things
+                    break;
+                case 3:
+                    // this is right click
+                    setTimeout(function () {
+                        $scope.updateGPS('fromAddress');
+                    }, 200);
+                    
+                    break;
+                default:
+                    console.log("you have a strange mouse!");
+                    break;
+
+            }
+            return false;
+        };
+
+        $scope.toColumnClick = function (evt) {
+            switch (evt.which) {
+                case 1:
+                    // this is left click
+                    break;
+                case 2:
+                    // in case you need some middle click things
+                    break;
+                case 3:
+                    // this is right click
+                    setTimeout(function () {
+                        $scope.updateGPS('toAddress');
+                    }, 200);
+
+                    break;
+                default:
+                    console.log("you have a strange mouse!");
+                    break;
+
+            }
+            return false;
+        };
+
+        $scope.speedColumnClick = function (evt) {
+            switch (evt.which) {
+                case 1:
+                    // this is left click
+                    break;
+                case 2:
+                    // in case you need some middle click things
+                    break;
+                case 3:
+                    // this is right click
+                    setTimeout(function () {
+                        $scope.editDetailField('SpeedID', 'Speed', '', $scope.currentJob.id, 'select2')
+                        setTimeout(function () {
+                            var speedOptions = {
+                                minimumInputLength: 1,
+                                data: $scope.pickSpeeds,
+                                placeholder: "Start typing to enter new speed..."
+                            };
+
+                            $("#gather-SpeedID").select2(speedOptions);
+                            
+                        }, 200);
+                    }, 400);
+
+                    break;
+                default:
+                    console.log("you have a strange mouse!");
+                    break;
+
+            }
+            return false;
+        };
+
+        $scope.notifyColumnClick = function (evt) {
+            switch (evt.which) {
+            case 1:
+                // this is left click
+                break;
+            case 2:
+                // in case you need some middle click things
+                break;
+            case 3:
+                // this is right click
+                    setTimeout(function () {
+                        $scope.editDetailField('NotifiedJobTypeID', 'Notified', '', $scope.currentJob.id, 'select2');
+                        setTimeout(function () {
+                            var speedOptions = {
+                                minimumInputLength: 1,
+                                data: $scope.pickSpeeds,
+                                placeholder: "Start typing to enter new speed..."
+                            };
+
+                            $("#gather-NotifiedJobTypeID").select2(speedOptions);
+
+                        }, 400);
+                }, 400);
+
+                break;
+            default:
+                console.log("you have a strange mouse!");
+                break;
+
+            }
+            return false;
         };
 
         $scope.setJobsMenu = function () {
@@ -2247,6 +2363,10 @@ angular
 
             DispatchData.getSuburbList().then(function (data) {
                 $scope.pickSuburbs = data;
+            });
+
+            DispatchData.getSpeedList().then(function (data) {
+                $scope.pickSpeeds = data;
             });
 
             ////////////////////////////
@@ -2782,7 +2902,7 @@ angular
 
                     $scope.gpsForm.data.lat = locn.DisplayPosition.Latitude;
                     $scope.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                    //$scope.gpsForm.data.address = locn.Address.HouseNumber + " " + locn.Address.Street;
+                    $scope.gpsForm.data.address = locn.Address.Label;
                     var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
                     $scope.map.setCenter(ll);
                     $scope.marker.setPosition(ll);
@@ -3010,7 +3130,7 @@ angular
                     }
 
                     if (field === "toAddress") {
-                        job.toAddress = $scope.gpsForm.data.address;
+                        job.toAddress = job.deliverToContact + ',' + $scope.gpsForm.data.address;
                         if (job.toSuburbID.toString() !== $scope.gpsForm.data.our_suburb) {
                             //ToDo create change event
                             DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
@@ -3343,7 +3463,7 @@ angular
         //                    });
         //            }
 
-
+        
         //            //$scope.updateDetailField($scope.gather.form.fields[0].jobID, $scope.gather.form.fields[0].name, $scope.gather.form.fields[0].value);
 
         //        },
@@ -3399,6 +3519,17 @@ angular
                     } else {
                         job[callData.field.toLowerCase()] = callData.value;
                     }
+
+                    if (fieldName === "SpeedID") {
+                        callData.value = $scope.gather.form.fields[0].value;
+                        job.speedID = $scope.gather.form.fields[0].value;
+                        job.speed = $("#gather-SpeedID").find(':selected').text();
+                    }
+                    if (fieldName === "NotifiedJobTypeID") {
+                        callData.value = $scope.gather.form.fields[0].value;
+                        job.notifiedJobTypeID = $scope.gather.form.fields[0].value;
+                        job.notify = $("#gather-NotifiedJobTypeID").find(':selected').text();
+                    }
                     if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
                         //Truck Job
                         return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
@@ -3408,7 +3539,7 @@ angular
                                     if (truckRate !== job.charge) {
                                         DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
                                     }
-                                    return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(truckRate.replace(/[^0-9.-]+/g, ""))).then(function (response) {
+                                    return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(truckRate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID).then(function (response) {
                                         if (response.data === "OK") {
                                             if (fieldName === "Size") {
                                                 $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
@@ -3430,7 +3561,7 @@ angular
                                 if (rate !== job.charge) {
                                     DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
                                 }
-                                return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, ""))).then(function (response) {
+                                return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID).then(function (response) {
                                     if (response.data === "OK") {
                                         if (fieldName === "Size") {
                                             $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
@@ -3451,7 +3582,13 @@ angular
                 },
                 submitValue: "Update Field"
             };
-            $scope.gather.showForm();
+
+            setTimeout(function () {
+                console.log($scope.gather);
+                $scope.$apply();
+                $scope.gather.showForm();
+            }, 200);
+            
 
         };
 

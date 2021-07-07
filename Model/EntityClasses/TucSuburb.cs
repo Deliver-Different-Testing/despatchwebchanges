@@ -38,6 +38,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Decimal> FreightForwardAmount { get; set;}
 		/// <summary>Gets or sets the GoogleSuburbAlias field. </summary>
 		public System.String GoogleSuburbAlias { get; set;}
+		/// <summary>Gets or sets the Gsscity field. </summary>
+		public System.String Gsscity { get; set;}
 		/// <summary>Gets or sets the Gsssuburb field. </summary>
 		public System.String Gsssuburb { get; set;}
 		/// <summary>Gets or sets the LastModified field. </summary>

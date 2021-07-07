@@ -44,6 +44,8 @@ namespace DespatchWeb
 
 
 
+		/// <summary>Gets an object query for the entity set 'DesQryAllJobType', containing entity type 'DesQryAllJobType'</summary>
+		public DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; } 
 		/// <summary>Gets an object query for the entity set 'DeswebQryDespatch', containing entity type 'DeswebQryDespatch'</summary>
 		public DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TblClient', containing entity type 'TblClient'</summary>

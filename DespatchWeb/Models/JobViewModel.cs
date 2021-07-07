@@ -45,6 +45,8 @@ namespace DespatchWeb.Models
         public int? LP { get; set; }
         public int? LD { get; set; }
         public string ContactName { get; set; }
+        public string DeliverToContact { get; set; }
+        public byte[] PODPhoto { get; set; }
         public string Phone { get; set; }
         public string SpeedAccepted { get; set; }
         public int? AcceptedJobTypeID { get; set; }

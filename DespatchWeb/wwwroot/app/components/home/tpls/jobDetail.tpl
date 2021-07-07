@@ -140,7 +140,9 @@
 			</div>
 
 		</div>
-
+		<div class="row row-no-padding row-out">
+			<img ng-src="{{'data:image/png;base64,'+currentJob.podPhoto}}" />
+		</div>
 			<div>
 				<div class="palletInfo">
 					
