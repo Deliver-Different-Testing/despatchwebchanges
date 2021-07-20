@@ -50,10 +50,11 @@ namespace DespatchWeb.Repositories
 
         }
 
-        public async Task<List<ClientActiveViewModel>> ActiveClients()
+        public async Task<List<ClientActiveViewModel>> ActiveClients(string searchTerm)
         {
             var activeCouriers = new List<ClientActiveViewModel>();
             await _context.LoadStoredProc("DESWEB_qryClientsActive")
+                .WithSqlParam("@SearchTerm", searchTerm)
                 .ExecuteStoredProcAsync(handle =>
                 {
                     activeCouriers = handle.ReadToList<ClientActiveViewModel>().ToList();

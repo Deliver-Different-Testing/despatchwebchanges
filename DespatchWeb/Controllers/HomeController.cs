@@ -73,9 +73,9 @@ namespace DespatchWeb.Controllers
             }
         }
 
-        public async Task<IActionResult> ActiveClients()
+        public async Task<IActionResult> ActiveClients(string searchTerm)
         {
-            var result = await _clientRepository.ActiveClients();
+            var result = await _clientRepository.ActiveClients(searchTerm);
             return Json(result);
         }
 

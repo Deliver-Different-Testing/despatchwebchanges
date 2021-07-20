@@ -136,7 +136,7 @@ angular
                         });
                     },
                     getActiveClients: function () {
-                        return $http.get("client/ActiveClients").then(function (response) {
+                        return $http.get("home/ActiveClients").then(function (response) {
                             return response.data;
                         });
                     },

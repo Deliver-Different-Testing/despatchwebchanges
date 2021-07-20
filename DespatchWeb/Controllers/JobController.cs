@@ -247,7 +247,7 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-        public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal rate, string despatcherName, int staffId)
+        public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal? rate, string despatcherName, int staffId)
         {
             await _jobRepo.UpdateJob(jobId, field, value, rate, despatcherName, staffId);
             return Json("OK");

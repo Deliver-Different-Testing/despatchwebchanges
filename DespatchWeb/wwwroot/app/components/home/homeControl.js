@@ -28,10 +28,10 @@ angular
                         $(".gatherForm").hide();
                         var j = $scope.currentJob;
                         $scope.getData().then(function () {
-                            if (j === null || j === undefined || j===false) {
+                            if (j === null || j === undefined || j === false) {
                                 return;
                             }
-                            
+
                             var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
                             $scope.selectJob(refreshedJob);
                             $timeout(function () {
@@ -120,7 +120,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.43",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.44",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -610,7 +610,7 @@ angular
                     content: 'Could not find courier for Dispatch',
                     scope: $scope,
                     buttons: {
-                       
+
                         Close: {
                             btnClass: 'btn-red',
                             action: function (scope, button) {
@@ -648,13 +648,13 @@ angular
                     } else {
                         dispTo = dispTo + ' ' + foundCourier.code;
                     }
-                    
+
                 }
             }
 
             $ngConfirm({
                 title: 'Dispatch Job ' + jobNumber,
-                content: 'Dispatch to <strong>' + dispTo +'</strong>?',
+                content: 'Dispatch to <strong>' + dispTo + '</strong>?',
                 scope: $scope,
                 buttons: {
                     Yes: {
@@ -662,7 +662,7 @@ angular
                         action: function (scope, button) {
                             var j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
                             var jn = j.jobNo;
-                            
+
                             if (!j.allowDispatch) {
                                 $ngConfirm("Can not despatch " + jn + " until all other child jobs have been despatched.");
                                 return;
@@ -693,7 +693,7 @@ angular
                                 });
                             });
 
-            
+
 
                         }
                     },
@@ -706,7 +706,7 @@ angular
                             $scope.getAvailableCourierLocation();
                         }
                     }
-                
+
                 }
             });
             //return closestJob;
@@ -930,7 +930,7 @@ angular
                 "courierID": null
             };
 
-            
+
             var foundCourier = null;
 
             $("#jobList .active").each(function () {
@@ -966,7 +966,7 @@ angular
                 "courierID": null
             };
 
-            
+
 
             $("#jobList .active").each(function () {
                 var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
@@ -1043,13 +1043,13 @@ angular
                     No: {
                         btnClass: 'btn-red',
                         action: function (scope, button) {
-                            
+
                         }
                     }
 
                 }
             });
-            
+
         };
 
         $scope.redispatchAll = function () {
@@ -1167,7 +1167,7 @@ angular
                 callData.jobs.push($(this).attr("data-jobid"));
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
             });
-            
+
 
             if (callData.jobs.length > 0) {
                 DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
@@ -1228,7 +1228,7 @@ angular
                 "courierID": null
             };
 
-           
+
             var foundCourier = null;
 
             $("#currentWork .active").each(function () {
@@ -1258,7 +1258,7 @@ angular
                 $scope.getData();
             }, 1000);
 
-            
+
 
         };
 
@@ -1738,7 +1738,7 @@ angular
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
                     displayRoutePointsOnly(data, false);
-                } 
+                }
                 $scope.activateDrop();
                 setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
                 setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
@@ -1803,10 +1803,10 @@ angular
                 $(document).ready(function (event) {
                     $("#box-jobDetail").find(".loading").fadeOut();
                     $("#box-map").find(".loading").fadeOut();
-            //        var jid = $("#jobList .active").last().data("jobid");
-            //        var job = $scope.jobList.find(jo => jo.id === jid);
-            //        var jobs = [job];
-            //        displayRoutePoints(jobs, false);
+                    //        var jid = $("#jobList .active").last().data("jobid");
+                    //        var job = $scope.jobList.find(jo => jo.id === jid);
+                    //        var jobs = [job];
+                    //        displayRoutePoints(jobs, false);
                 });
             }, 100);
 
@@ -1869,7 +1869,7 @@ angular
         if (Modernizr.localstorage) {
             filtersObject = JSON.parse(localStorage.getItem("disp-filters-" + ContactID));
         }
-        $scope.jobFilters = filtersObject || { "status": "nda", "area": "main1",  "order": "remain", "asc": "asc" };
+        $scope.jobFilters = filtersObject || { "status": "nda", "area": "main1", "order": "remain", "asc": "asc" };
         var f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
         $(f).addClass("topBarActive");
         var areas = $scope.jobFilters.area.split(',');
@@ -1966,7 +1966,7 @@ angular
                     $scope.selectCourier(job.courierData);
                 } else {
                     var jobs = [job];
-                    
+
                     //highlightJobPoints(jobs);
                     displayRoutePoints(jobs, false);
                 }
@@ -2020,7 +2020,7 @@ angular
                     setTimeout(function () {
                         $scope.updateGPS('fromAddress');
                     }, 200);
-                    
+
                     break;
                 default:
                     console.log("you have a strange mouse!");
@@ -2073,7 +2073,54 @@ angular
                             };
 
                             $("#gather-SpeedID").select2(speedOptions);
-                            
+
+                        }, 200);
+                    }, 400);
+
+                    break;
+                default:
+                    console.log("you have a strange mouse!");
+                    break;
+
+            }
+            return false;
+        };
+
+        $scope.clientColumnClick = function (evt) {
+            switch (evt.which) {
+                case 1:
+                    // this is left click
+                    break;
+                case 2:
+                    // in case you need some middle click things
+                    break;
+                case 3:
+                    // this is right click
+                    setTimeout(function () {
+                        $scope.editDetailField('ClientID', 'Client', '', $scope.currentJob.id, 'select2')
+                        setTimeout(function () {
+                            $("#gather-ClientID").select2({
+                                ajax: {
+                                    url: "/home/ActiveClients",
+                                    dataType: 'json',
+                                    delay: 250,
+                                    data: function (params) {
+                                        return {
+                                            searchTerm: params.term
+                                        };
+                                    },
+                                    processResults: function (data) {
+                                        // parse the results into the format expected by Select2
+                                        return {
+                                            results: data
+                                        };
+                                    },
+                                    cache: true
+                                },
+                                placeholder: "Start typing to enter new client...",
+                                minimumInputLength: 3
+                            });
+
                         }, 200);
                     }, 400);
 
@@ -2088,14 +2135,14 @@ angular
 
         $scope.notifyColumnClick = function (evt) {
             switch (evt.which) {
-            case 1:
-                // this is left click
-                break;
-            case 2:
-                // in case you need some middle click things
-                break;
-            case 3:
-                // this is right click
+                case 1:
+                    // this is left click
+                    break;
+                case 2:
+                    // in case you need some middle click things
+                    break;
+                case 3:
+                    // this is right click
                     setTimeout(function () {
                         $scope.editDetailField('NotifiedJobTypeID', 'Notified', '', $scope.currentJob.id, 'select2');
                         setTimeout(function () {
@@ -2108,12 +2155,12 @@ angular
                             $("#gather-NotifiedJobTypeID").select2(speedOptions);
 
                         }, 400);
-                }, 400);
+                    }, 400);
 
-                break;
-            default:
-                console.log("you have a strange mouse!");
-                break;
+                    break;
+                default:
+                    console.log("you have a strange mouse!");
+                    break;
 
             }
             return false;
@@ -2307,7 +2354,7 @@ angular
                 $scope.jobList = data;
                 $("#box-jobsList .loading").fadeOut();
                 setTimeout(function () {
-                    
+
                     sizeHeadings($("#jobList").parents(".column"));
                     if (data.length > 0) {
                         var undespatchedData = data.filter(x => x.courierData.courierID === null);
@@ -2368,6 +2415,10 @@ angular
             DispatchData.getSpeedList().then(function (data) {
                 $scope.pickSpeeds = data;
             });
+
+            //DispatchData.getActiveClients().then(function (data) {
+            //    $scope.pickClients = data;
+            //});
 
             ////////////////////////////
             // COURIER MOVEMENTS THROUGH
@@ -3487,7 +3538,24 @@ angular
             $scope.gather.form = {
                 id: "editField",
                 title: (fieldName === "Notes" ? "Add " : "Edit ") + label,
-                fields: [
+                fields: fieldName === "ClientID" ? [
+                    {
+                        "name": fieldName,
+                        "label": label + "...",
+                        "value": value,
+                        "jobID": jobID,
+                        "type": type,
+                        "options": options
+                    },
+                    {
+                        "name": "Rate",
+                        "label": "Re-Rate?",
+                        "value": false,
+                        "jobID": jobID,
+                        "type": "checkbox",
+                        "options": options
+                    }
+                ] : [
                     {
                         "name": fieldName,
                         "label": label + "...",
@@ -3499,6 +3567,7 @@ angular
                 ],
                 onSubmit: function () {
                     var job = $scope.currentJob;
+                    var rerate = true;
                     var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
                     var callData = {
                         "call": "updateDetailField",
@@ -3530,6 +3599,11 @@ angular
                         job.notifiedJobTypeID = $scope.gather.form.fields[0].value;
                         job.notify = $("#gather-NotifiedJobTypeID").find(':selected').text();
                     }
+                    if (fieldName === "ClientID") {
+                        callData.value = $scope.gather.form.fields[0].value;
+                        job.clientID = $scope.gather.form.fields[0].value;
+                        rerate = $scope.gather.form.fields[1].value;
+                    }
                     if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
                         //Truck Job
                         return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
@@ -3555,13 +3629,28 @@ angular
                         });
                     }
                     else {
-                        return DispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID,
-                            job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked).then(function (rate) {
-                                console.log(rate);
-                                if (rate !== job.charge) {
-                                    DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
-                                }
-                                return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID).then(function (response) {
+                        if (rerate) {
+                            return DispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID,
+                                job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked).then(function (rate) {
+                                    console.log(rate);
+                                    if (rate !== job.charge) {
+                                        DispatchData.addPriceSuburbChangeEvent(job.jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                                    }
+                                    return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID).then(function (response) {
+                                        if (response.data === "OK") {
+                                            if (fieldName === "Size") {
+                                                $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
+                                            } else {
+                                                $scope.currentJob[callData.field.toLowerCase()] = callData.value;
+                                            }
+
+
+                                        }
+                                        return response;
+                                    });
+                                });
+                        } else {
+                            return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID).then(function (response) {
                                     if (response.data === "OK") {
                                         if (fieldName === "Size") {
                                             $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
@@ -3573,7 +3662,7 @@ angular
                                     }
                                     return response;
                                 });
-                            });
+                        }
                     }
 
 

@@ -632,7 +632,7 @@ namespace DespatchWeb.Repositories
 
         }
 
-        public async Task UpdateJob (int jobId, string field, string value, decimal rate, string despatcher, int staffId )
+        public async Task UpdateJob (int jobId, string field, string value, decimal? rate, string despatcher, int staffId )
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJob")
                 .WithSqlParam("@JobID", jobId)
