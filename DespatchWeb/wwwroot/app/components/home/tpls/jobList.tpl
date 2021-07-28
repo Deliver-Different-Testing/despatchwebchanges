@@ -33,7 +33,7 @@
 			<td right-click action="speedColumnClick(event)">{{job.speed}}</td>
 			<td ng-if="job.courierData.courierID === null" right-click action="notifyColumnClick(event)">{{job.notify}}</td>
             <td ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
-			<td>{{job.jobNo}}</td>
+			<td context-menu="setEventsMenu">{{job.jobNo}}</td>
 			<td right-click action="clientColumnClick(event)">{{job.client}}</td>
 			<td right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
 			<td right-click action="toColumnClick(event)">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>

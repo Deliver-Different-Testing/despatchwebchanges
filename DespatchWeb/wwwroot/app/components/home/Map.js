@@ -94,7 +94,9 @@ function initialize() {
     });
     google.maps.event.addListener(map, "rightclick", function (e) {
         console.log(e);
-    });    
+    });
+    const trafficLayer = new google.maps.TrafficLayer();
+    trafficLayer.setMap(map);
     
 }
 

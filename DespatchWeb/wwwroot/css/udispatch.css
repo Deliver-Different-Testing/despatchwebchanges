@@ -352,6 +352,7 @@ body {
   position: relative;
   left: 50%;
   top: 50%;
+  background-color: grey;
 }
 .gatherForm .gatherFields .gatherField {
   width: 100%;

@@ -64,7 +64,8 @@ angular
                         setTimeout(function () { $(".gatherForm .focusMe").focus(); }, 100);
                     });
             },
-            submitValue: "Save"
+            submitValue: "Save",
+            cancelValue: "Cancel"
         };
 
         $scope.allCouriers = { display: false };
@@ -120,7 +121,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.44",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.45",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -191,7 +192,7 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/home/tpls/map.tpl?v=1.12",
+                "tpl": "app/components/home/tpls/map.tpl?v=1.13",
                 "showSearch": 0,
                 "showRefresh": 1
             },
@@ -577,6 +578,61 @@ angular
         $scope.selectForDispatch = function (job) {
             console.log("In SelectForDispatch");
             $scope.jobForDispatch = job;
+        };
+
+
+        $scope.voidJobForm = function (jobNumber, jobId) {
+            $scope.gather.form = {
+                id: "voidJob",
+                title: `Void Job ${jobNumber}?`,
+                fields: [
+                    {
+                        "name": "notes",
+                        "label": "Add Note...",
+                        "type": "textarea",
+                        "value": ""
+                    }
+                ],
+                onSubmit: function () {
+                    return DispatchData.addNote(jobId, $scope.gather.form.fields[0].value, FirstName).then(function () {
+                        return DispatchData.voidJob(jobId);
+                        
+                    });
+                },
+                submitValue: "Confirm"
+            };
+            $scope.gather.showForm();
+
+        };
+
+        $scope.otherEventForm = function (jobNumber) {
+
+            var time = new Date();
+            time.setSeconds(0);
+            time.setMilliseconds(0);
+
+            $scope.eventForm = {
+                "data": {
+                    "jobNum": $scope.currentJob.jobNo,
+                    "client": $scope.currentJob.client,
+                    "event": "Other",
+                    "date": new Date(),
+                    "time": time
+                },
+                submit: function () {
+                    return DispatchData.addOtherEvent($scope.currentJob.jobNo, $scope.currentJob.clientID, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(function () {
+                        $(".eventForm").hide();
+                    });
+                },
+                cancel: function () {
+                    $(".eventForm").hide(0);
+                }
+            };
+
+            $(".eventForm").show(0);
+
+
+
         };
 
 
@@ -2159,11 +2215,31 @@ angular
 
                     break;
                 default:
-                    console.log("you have a strange mouse!");
+                    console.log("you have a strange mouse!");u
                     break;
 
             }
             return false;
+        };
+
+        $scope.setEventsMenu = function () {
+            var fullMenu =
+                [
+                    {
+                        text: "Void Job",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
+                        }
+                    },
+
+                    {
+                        text: "Add Event - Other",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.otherEventForm($scope.currentJob.jobNo);
+                        }
+                    }
+                ];
+            return fullMenu;
         };
 
         $scope.setJobsMenu = function () {
@@ -3690,8 +3766,9 @@ angular
 
             $scope.eventForm = {
                 "data": {
-                    "jobNum": $scope.currentJob.JobNo,
-                    "client": $scope.currentJob.Client,
+                    "jobNum": $scope.currentJob.jobNo,
+                    "client": $scope.currentJob.client,
+                    "event": "Other",
                     "date": new Date(),
                     "time": time
                 },

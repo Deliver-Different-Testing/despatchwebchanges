@@ -24,6 +24,11 @@ angular
                             return response.data;
                         });
                     },
+                    addOtherEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
+                        return $http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     allocateJobs: function (courierId, dispId, jobIds) {
                         return $http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
                             return response;
@@ -39,6 +44,12 @@ angular
                             return response;
                         });
                     },
+                    voidJob: function (jobId) {
+                        return $http.post("job/Void?jobId=" + jobId).then(function (response) {
+                            return response;
+                        });
+                    },
+
                     restoreJobs: function (courierId, dispId, jobIds) {
                         return $http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
                             return response.data;

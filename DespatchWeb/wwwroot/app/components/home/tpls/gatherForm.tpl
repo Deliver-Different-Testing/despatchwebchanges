@@ -38,6 +38,8 @@
 
         </div>
         <div class="gatherSubmit btn btn-primary promise-btn" ng-click="gather.submit()">{{gather.form.submitValue}}</div>
+        
+        <button class="btn btn-default" ng-click="gather.cancel()">Cancel</button>
     </div>
 
 

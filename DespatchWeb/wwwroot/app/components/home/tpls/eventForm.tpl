@@ -9,26 +9,18 @@
 
           <div class="form-group">
             <label for="jobNum">Job Number:</label>
-            <input type="text" class="form-control" ng-model="eventForm.data.jobNum">
+            <input type="text" readonly class="form-control" ng-model="eventForm.data.jobNum">
           </div>
-          <div class="form-group">
-            <label for="client">Client:</label>
-            <input type="text" class="form-control" ng-model="eventForm.data.client">
-          </div>
-
-          <div class="form-group">
-            <label for="contact">Contact:</label>
-            <input type="text" class="form-control" ng-model="eventForm.data.contact">
-          </div>
+           
 
           <div class="form-group">
             <label for="date">Event Date:</label>
-            <input type="date" class="form-control" ng-model="eventForm.data.date">
+            <input  readonly type="date" class="form-control" ng-model="eventForm.data.date">
           </div>
 
           <div class="form-group">
             <label for="time">Event Time:</label>
-            <input type="time" class="form-control" ng-model="eventForm.data.time">
+            <input readonly type="time" class="form-control" ng-model="eventForm.data.time">
           </div>
 
           
@@ -39,24 +31,14 @@
         </div>
         <div class="col-md-6">
 
+         <div class="form-group">
+            <label for="client">Client:</label>
+            <input type="text" readonly class="form-control" ng-model="eventForm.data.client">
+          </div>       
+
           <div class="form-group">
             <label for="event">Event:</label>
-            <input type="text" class="form-control" ng-model="eventForm.data.event">
-          </div>
-
-          <div class="form-group">
-            <label for="late">Minutes Late:</label>
-            <input type="text" class="form-control" ng-model="eventForm.data.late">
-          </div>
-
-          <div class="form-group">
-            <label for="eta">ETA:</label>
-            <input type="text" class="form-control" ng-model="eventForm.data.eta">
-          </div>
-
-          <div class="form-group">
-            <label for="type">Job Type:</label>
-            <input type="text" class="form-control" ng-model="eventForm.data.type">
+            <input readonly type="text" class="form-control" ng-model="eventForm.data.event">
           </div>
 
           

@@ -141,6 +141,13 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Void(int jobId)
+        {
+            await _jobRepo.VoidJob(jobId);
+            return Json("OK");
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> ReSendAll(int courierId)
@@ -197,6 +204,15 @@ namespace DespatchWeb.Controllers
         {
 
             await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null, "Changed Price or Suburb", 35);
+
+            return Json("OK");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddOtherEvent(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes)
+        {
+
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes, 66);
 
             return Json("OK");
         }

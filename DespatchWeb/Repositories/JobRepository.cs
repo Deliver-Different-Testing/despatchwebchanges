@@ -478,6 +478,13 @@ namespace DespatchWeb.Repositories
             }
         }
 
+        public async Task VoidJob(int jobId)
+        {
+            await _context.LoadStoredProc("DES_stpJob_Void")
+                .WithSqlParam("@JobID", jobId)
+                .ExecuteStoredNonQueryAsync();
+        }
+
         public async Task SplitJob(int jobId, string user)
         {
             await _context.LoadStoredProc("DES_stpJob_SplitJob")
