@@ -30,16 +30,17 @@
     </tr>
     </thead>
     <tbody>
-    <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox" context-menu="setCurrentWorkMenu" ng-click="selectJobDetail(job);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
+    <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobsCurrentList | filter: box.searchBox"  ng-click="selectJobDetail(job);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
             <td class="status" ng-class="job.status">{{job.status}}</td>
-			<td>{{job.remain}}</td>
-            <td>{{job.speed}}</td>
-            <td>{{job.notify}}</td>
-            <td>{{job.jobNo}}</td>
-            <td>{{job.client}}</td>
-            <td>{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-            <td>{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
-			<td><div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>
+			<td context-menu="setCurrentWorkMenu">{{job.remain}}</td>
+            <td right-click action="speedColumnClick(event)">{{job.speed}}</td>
+            <td style="width:12px;" ng-if="job.courierData.courierID === null" right-click action="notifyColumnClick(event)">{{job.notify}}</td>
+            <td ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
+            <td context-menu="setEventsMenu">{{job.jobNo}}</td>
+            <td right-click action="clientColumnClick(event)">{{job.client}}</td>
+            <td right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
+			<td right-click action="toColumnClick(event)">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
+			<td context-menu="setCurrentWorkMenu"><div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>
             <td>{{job.vehicle.label}}</td>
 			<td>{{job.runOrder}}</td>
             <td>{{job.lp}}</td>

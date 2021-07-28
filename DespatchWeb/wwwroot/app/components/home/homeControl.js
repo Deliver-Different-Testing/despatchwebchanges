@@ -144,7 +144,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.13",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.15",
                 "showSearch": 1,
                 "showRefresh": 0
             },
