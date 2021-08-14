@@ -43,7 +43,7 @@
 			<td context-menu="setCurrentWorkMenu"><div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>
             <td>{{job.vehicle.label}}</td>
 			<td>{{job.runOrder}}</td>
-            <td>{{job.lp}}</td>
+            <td right-click action="latePickColumnClick(event)">{{job.lp}}</td>
             <td>{{job.ld}}</td>
             <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>
         </tr>

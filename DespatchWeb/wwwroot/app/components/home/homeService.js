@@ -182,11 +182,11 @@ angular
                             return response.data;
                         });
                     },
-                    lateCall: function (lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact,  staffId, jobTime,  jobId,  jobType,  bookedSpeed, notifiedSpeed, despatcherName) {
+                    lateCall: function (lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact,  staffId, jobTime,  jobId,  jobType,  bookedSpeed, notifiedSpeed, despatcherName, calc) {
                         return $http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup +
                             "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact +
                             "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed +
-                            "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName).then(function (response) {
+                            "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc).then(function (response) {
                             return response.data;
                         });
                     },
@@ -234,7 +234,9 @@ angular
                     },
                     updateJobDetail: function (jobId, field, value, rate, despatcherName, staffId) {
                         if (field === "Time") {
-                            value = value.toISOString();
+                            value = moment().format("YYYY-MM-DD") +
+                                " " +
+                                value.toLocaleTimeString().substr(0,5);
                         }
                         return $http.post("job/UpdateJob?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
                             return response;

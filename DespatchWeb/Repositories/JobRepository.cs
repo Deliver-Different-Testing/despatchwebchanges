@@ -436,7 +436,7 @@ namespace DespatchWeb.Repositories
               .ExecuteStoredNonQueryAsync();
         }
 
-        public async Task LatePickup(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher)
+        public async Task LatePickup(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher, bool calculationRequired)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJobPickupLateCall")
               .WithSqlParam("@JobID", jobId)
@@ -444,10 +444,11 @@ namespace DespatchWeb.Repositories
               .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
               .WithSqlParam("@Late", late)
               .WithSqlParam("@Despatcher", despatcher)
+              .WithSqlParam("@CalculationRequired", calculationRequired)
               .ExecuteStoredNonQueryAsync();
         }
 
-        public async Task LateDelivery(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher)
+        public async Task LateDelivery(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher, bool calculationRequired)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryLateCall")
               .WithSqlParam("@JobID", jobId)
@@ -455,6 +456,7 @@ namespace DespatchWeb.Repositories
               .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
               .WithSqlParam("@Late", late)
               .WithSqlParam("@Despatcher", despatcher)
+              .WithSqlParam("@CalculationRequired", calculationRequired)
               .ExecuteStoredNonQueryAsync();
         }
 

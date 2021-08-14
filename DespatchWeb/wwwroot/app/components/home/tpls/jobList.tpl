@@ -41,8 +41,8 @@
 			<td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
 			<td>{{attention(job)}}</td>
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>
-			<td><input type="text" class="lateCallField" ng-model="job.lp" ng-keydown="$event.keyCode === 13 && lateCall(job.lp, 1, job)"  placeholder="LP" /></td>
-			<td><input type="text" class="lateCallField" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateCall(job.ld, 2, job)"  placeholder="LD" /></td>
+			<td><input type="text" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();"  ng-model="job.lp" ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, $this)"  placeholder="LP" /></td>
+			<td><input type="text" class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"  placeholder="LD" /></td>
 			<td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>
 
         </tr>

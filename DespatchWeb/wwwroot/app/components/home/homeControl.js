@@ -121,7 +121,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.45",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.49",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -144,7 +144,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.15",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.16",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -769,11 +769,31 @@ angular
 
         };
 
+        $scope.selectAllContent = function ($event) {
+            $event.target.select();
+        };
+
+        $scope.latePickup = function (minsAway, j, obj) {
+            console.log("current = " + j.lp);
+            console.log("param minsAway = " + minsAway);
+            console.log(obj);
+            $scope.lateCall(minsAway, 1, j, true);
+
+        }
+
+        $scope.lateDelivery = function (minsAway, j, obj) {
+            console.log("current = " + j.ld);
+            console.log("param minsAway = " + minsAway);
+            console.log(obj);
+            $scope.lateCall(minsAway, 2, j, true);
+
+        }
+
         /////////////////////////////////////
         // LATE CALLS
         /////////////////////////////////////
-        $scope.lateCall = function (lateTime, lateType, j) {
-            return DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName).then(function (response) {
+        $scope.lateCall = function (lateTime, lateType, j, calc) {
+            return DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName, calc).then(function (response) {
                 $scope.getData().then(function () {
 
 
@@ -2026,7 +2046,10 @@ angular
                     //highlightJobPoints(jobs);
                     displayRoutePoints(jobs, false);
                 }
-                $(jobRow).find(".dispatchField").focus();
+                if (!document.activeElement.classList.contains("lateCallField")) {
+                    $(jobRow).find(".dispatchField").focus();
+                }
+                
 
             },
                 0);
@@ -2099,6 +2122,80 @@ angular
                     setTimeout(function () {
                         $scope.updateGPS('toAddress');
                     }, 200);
+
+                    break;
+                default:
+                    console.log("you have a strange mouse!");
+                    break;
+
+            }
+            return false;
+        };
+
+        $scope.latePickColumnClick = function (evt) {
+            switch (evt.which) {
+                case 1:
+                    // this is left click
+                    break;
+                case 2:
+                    // in case you need some middle click things
+                    break;
+                case 3:
+                    // this is right click
+                    setTimeout(function () {
+                        var dueTime = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
+                        var items =[];
+                        for (var i = 1; i < 37; i++)
+                        {
+                            if (parseInt(dueTime) < (i * 5))
+                                items.push( { "id": (i * 5), "text": ((i * 5).toString() + " mins away") });
+                        }
+                        
+                        $scope.lateForm = {
+                            "data": {
+                                "jobNum": $scope.currentJob.jobNo,
+                                "client": $scope.currentJob.client,
+                                "dueMins": dueTime,
+                                "choose": ""
+                            },
+                            submit: function () {
+                                var pickupETAValue = parseInt($scope.lateForm.choose.value); 
+                                var dueMins = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
+
+                                if ($scope.currentJob.lp !== pickupETAValue) {
+                                    var window = $scope.currentJob.lp || $scope.currentJob.pickupTime;
+                                    var lateMins = pickupETAValue - dueMins + window;
+                                    $scope.currentJob.lp = lateMins;
+                                    console.log(lateMins);
+                                    $scope.lateCall(lateMins, 1, $scope.currentJob, false);
+                                    $scope.lateForm.data = null;
+                                    $("#AwayMins").select2().empty();
+                                    $("#AwayMins").select2('destroy');
+                                    $(".lateForm").hide(0)
+                                }
+                            },
+                            cancel: function () {
+                                $scope.lateForm.data = null;
+                                $("#AwayMins").select2().empty();
+                                $("#AwayMins").select2('destroy');
+                                $(".lateForm").hide(0);
+                            }
+                        };
+                        $scope.$apply();
+                        $(".lateForm").show(0);
+                        
+                        setTimeout(function () {
+                            
+                            var dueOptions = {
+                                minimumInputLength: 0,
+                                data: items,
+                                placeholder: "Start typing to enter new time..."
+                            };
+
+                            $("#AwayMins").select2(dueOptions);
+                            $("#AwayMins").select2('open');
+                        }, 200);
+                    }, 400);
 
                     break;
                 default:
@@ -2951,6 +3048,19 @@ angular
 
 
         $scope.getData();
+
+
+        // on first focus (bubbles up to document), open the menu
+        $(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
+            $(this).closest(".select2-container").siblings('select:enabled').select2('open');
+        });
+
+        // steal focus during close - only capture once and stop propogation
+        $('select.select2').on('select2:closing', function (e) {
+            $(e.target).data("select2").$selection.one('focus focusin', function (e) {
+                e.stopPropagation();
+            });
+        });
 
         /////////////////////////
         // JOB DETAILS
