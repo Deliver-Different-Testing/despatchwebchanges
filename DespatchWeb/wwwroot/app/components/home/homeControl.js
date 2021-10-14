@@ -121,7 +121,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.49",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.51",
                 "showSearch": 1,
                 "showRefresh": 1
             },

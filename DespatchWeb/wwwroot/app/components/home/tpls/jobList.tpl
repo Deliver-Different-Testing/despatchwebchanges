@@ -35,11 +35,11 @@
             <td ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
 			<td context-menu="setEventsMenu">{{job.jobNo}}</td>
 			<td right-click action="clientColumnClick(event)">{{job.client}}</td>
-			<td right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-			<td right-click action="toColumnClick(event)">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
-			<td><div title="{{job.toAddress}}">{{job.toAddress}}</div></td>	
+			<td style="width:50px; white-space:nowrap; overflow-x:hidden;" right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
+			<td style="width:50px; white-space:nowrap; overflow-x:hidden;" right-click action="toColumnClick(event)">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
+			<td><div style="width:280px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>	
 			<td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
-			<td>{{attention(job)}}</td>
+			<td><div style="width:25px; white-space:nowrap; overflow-x:hidden;" title="{{attention(job)}}">{{attention(job)}}</div></td>
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>
 			<td><input type="text" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();"  ng-model="job.lp" ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, $this)"  placeholder="LP" /></td>
 			<td><input type="text" class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"  placeholder="LD" /></td>
