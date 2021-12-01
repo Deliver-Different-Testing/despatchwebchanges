@@ -1995,7 +1995,7 @@ angular
 
         //Select Job
         $scope.selectJob = function (job, clear) {
-
+            
             setTimeout(function () {
                 var jobRow = null;
                 $scope.selectedJobs = [];
@@ -2008,7 +2008,7 @@ angular
                     $scope.selectedJobs.push($scope.jobForDispatch.ID);
                     jobRow = $(this);
                 });
-
+                console.log("selectJob");
                 $scope.currentJob = job;
                 $scope.$apply();
 
@@ -2097,8 +2097,8 @@ angular
                 case 3:
                     // this is right click
                     setTimeout(function () {
-                        $scope.updateGPS('fromAddress');
-                    }, 200);
+                        $scope.updateGPS('fromAddress', true);
+                    }, 400);
 
                     break;
                 default:
@@ -3281,6 +3281,7 @@ angular
 
 
             $(".gpsForm").show(0, function () {
+                $scope.$apply();
                 $scope.onMapReady();
                 //var auckland = { lat: -36.8804466, lng: 174.6117981 };
                 //$scope.heremaps.setCenter(auckland);
@@ -3317,8 +3318,9 @@ angular
 
         };
 
-        $scope.updateGPS = function (field) {
-
+        $scope.updateGPS = function (field, fromRightClick) {
+            console.log($scope.currentJob[field]);
+            $scope.gpsForm = null;
             var lat;
             var long;
             var q;
@@ -3337,7 +3339,7 @@ angular
                 }
             } else {
 
-                if ($scope.currentJob.PickUpLongitude) {
+                if ($scope.currentJob.pickUpLongitude) {
                     lat = $scope.currentJob.pickUpLatitude;
                     long = $scope.currentJob.pickUpLongitude;
                     q = $("#gpsMap").attr("data-src") + lat + "," + long;
@@ -3348,9 +3350,10 @@ angular
                 }
             }
 
-            console.log($scope.currentJob.pickupLatitude);
+            console.log($scope.currentJob.pickUpLatitude);
             console.log(q);
             $("#gpsMap").attr("src", q);
+            
 
             $scope.gpsForm = {
                 "data": {
@@ -3582,6 +3585,10 @@ angular
 
             waitingDialog.show();
             $(".gpsForm").show(0, function () {
+                if (fromRightClick) {
+                    $scope.$apply();
+                }
+                console.log($scope.gpsForm);
                 setTimeout(function () {
                     $scope.onMapReady();
                     $scope.markers = [];
