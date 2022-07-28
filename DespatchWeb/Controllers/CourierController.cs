@@ -48,6 +48,12 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
+        public IActionResult AllActive(string searchTerm)
+        {
+            var result =  _courierRepo.AllActiveCouriers(searchTerm);
+            return Json(result);
+        }
+
         public IActionResult Location(string code)
         {
             var result = _courierRepo.Location(code);

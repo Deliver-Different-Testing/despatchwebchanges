@@ -4,15 +4,19 @@ angular
 		"ct.ui.router.extras",
 		"angularResizable",
 		"ui.sortable",
+		"ui.bootstrap",
+		"ui.bootstrap.pagination",
 		"ui.bootstrap.contextMenu", 
 		"cfp.hotkeys",
-        "ui.timepicker",
+		"ui.timepicker",
+        'pickadate',
         "ngMap",
         "ngMapAutocomplete",
         'angularjs-dropdown-multiselect',
         'heremaps',
         'ngAnimate',
-        'angularPromiseButtons',
+		'angularPromiseButtons',
+		
         'cp.ngConfirm'
 	])
 	.directive('rightClick', function () {
@@ -37,13 +41,19 @@ angular
 	.config(["$urlRouterProvider", "$stateProvider", function($urlRouterProvider, $stateProvider) {
 		$urlRouterProvider.otherwise("/");
 
-		$stateProvider
-			.state("home",
-				{
-					url: "/",
-					templateUrl: "app/components/home/homeView.html?v=1.24",
-					controller: "HomeControl"
-				});
-		
+        $stateProvider
+            .state("home",
+                {
+                    url: "/",
+                    templateUrl: "app/components/home/homeView.html?v=1.27",
+                    controller: "HomeControl"
+                })
+            .state('cs',
+                {
+                    url: '/CS',
+                    templateUrl: 'app/components/CS/csView.html?v=1.4',
+                    controller: 'CSControl',
+                    reloadOnSearch: false
+                });
 
-	}]);
+    }]);

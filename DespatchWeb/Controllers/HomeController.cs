@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using DespatchWeb.Models;
 using System.Security.Cryptography;
 using System.IO;
+using System.Net;
+using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Hosting;
@@ -29,16 +31,17 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> Index([FromQuery] string login)
         {
-
             var disp = await _clientRepository.ValidateDispatcherLogin(User.Identity.Name.Substring(User.Identity.Name.IndexOf('\\') + 1));
             if (disp != null)
             {
                 ViewBag.FirstName = disp.FirstName;
                 ViewBag.FullName = disp.FirstName + " " + disp.LastName;
                 ViewBag.ContactID = disp.StaffID;
+                ViewBag.ClientInternal = true;
 
                 return View();
             }
+
             if (_hostingEnvironment.IsDevelopment())
             {
                 login = "WZKzmEeKz1c3/qetjbb48HcCr2UGhQ6wz8NRwSoxxOU="; //uclgf
@@ -56,14 +59,16 @@ namespace DespatchWeb.Controllers
 
                 var contactId = loginString.Substring(0, loginString.LastIndexOf("|"));
 
-                if (string.IsNullOrEmpty(contactId)) return View();
+                if (string.IsNullOrEmpty(contactId)) return Redirect(_configuration["PublicPath"]);
 
                 var clientDetail = await _clientRepository.ValidateClientAsync(Convert.ToInt32(contactId));
                 ViewBag.FirstName = clientDetail.FirstName;
                 ViewBag.FullName = clientDetail.FullName;
                 ViewBag.Email = clientDetail.Email;
                 ViewBag.ClientInternal = clientDetail.Internal;
-                ViewBag.ContactID = int.Parse(contactId);
+                ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
+
+
 
                 return View();
             }
@@ -78,6 +83,13 @@ namespace DespatchWeb.Controllers
             var result = await _clientRepository.ActiveClients(searchTerm);
             return Json(result);
         }
+
+        public async Task<IActionResult> ClientContacts(int contactId)
+        {
+            var result = await _clientRepository.ClientContacts(contactId);
+            return Json(result);
+        }
+        
 
         private string DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
         {

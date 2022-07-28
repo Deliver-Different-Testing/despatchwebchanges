@@ -310,7 +310,16 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
     map.clearLabels();
     map.clearFlags();
     $.each(ac, function (i, c) {
-        var col = '#003CA1'; //courier
+        //var col = '#003CA1'; //courier
+        var col = "#00FF00";
+        var className = "courier courierMarker";
+        if (c.totalJobs === 0) {
+            col = "#FFFDD0";
+            className = "courier courierCream courierMarker";
+        } else if (c.overDueJobs > 0) {
+            col = "#FF0000";
+            className = "courier courierRed courierMarker";
+        }
         var ll = new google.maps.LatLng(c.latitude, c.longitude);
         if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (truckChannel === false || c.vehicleType === "T")) {
             if ((truckChannel === false && truckMode === "Off" && c.vehicleType === "T") || (truckChannel === false && truckMode === "Only" && c.vehicleType !== "T"))
@@ -318,7 +327,7 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
                 return true;
                 
             } else {
-                drawItem(col, ll, pad(c.code + '-' + c.vehicleType, 5, '_', 2), c.courierID, c.code);
+                drawItem(col, ll, pad(c.code + '-' + c.vehicleType + c.totalJobs, 5, '_', 2), c.courierID, c.code, className);
             }
         }
     });
@@ -673,8 +682,8 @@ function displayRoutePoints(courierJobs, clear) {
 
 }
 
-function drawItem(col, ll, code, id, originalCode) {
-    var classname = 'courier courierMarker';
+function drawItem(col, ll, code, id, originalCode, className) {
+    var classname = className;
 
     var label = new Label({
         map: map,

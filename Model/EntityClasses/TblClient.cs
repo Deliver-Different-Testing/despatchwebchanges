@@ -50,6 +50,14 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> BaggageRateCodeId { get; set;}
 		/// <summary>Gets or sets the BillingTypeId field. </summary>
 		public System.Int32 BillingTypeId { get; set;}
+		/// <summary>Gets or sets the BulkAternoonHomePickupTime field. </summary>
+		public Nullable<System.DateTime> BulkAternoonHomePickupTime { get; set;}
+		/// <summary>Gets or sets the BulkHomeDeliveryPickupRateId field. </summary>
+		public Nullable<System.Int32> BulkHomeDeliveryPickupRateId { get; set;}
+		/// <summary>Gets or sets the BulkHomeDeliveryVanItemExcess field. </summary>
+		public Nullable<System.Int32> BulkHomeDeliveryVanItemExcess { get; set;}
+		/// <summary>Gets or sets the BulkHomeDeliveryVanItemSurcharge field. </summary>
+		public Nullable<System.Decimal> BulkHomeDeliveryVanItemSurcharge { get; set;}
 		/// <summary>Gets or sets the BulkMinimumAmount field. </summary>
 		public Nullable<System.Double> BulkMinimumAmount { get; set;}
 		/// <summary>Gets or sets the Cash field. </summary>
@@ -68,6 +76,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Boolean> CommissionExclude { get; set;}
 		/// <summary>Gets or sets the CourierPercentage field. </summary>
 		public Nullable<System.Decimal> CourierPercentage { get; set;}
+		/// <summary>Gets or sets the CreateBulkHomeDeliveryPickup field. </summary>
+		public Nullable<System.Boolean> CreateBulkHomeDeliveryPickup { get; set;}
 		/// <summary>Gets or sets the Created field. </summary>
 		public System.DateTime Created { get; set;}
 		/// <summary>Gets or sets the CreatedBy field. </summary>
@@ -444,6 +454,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> Threshold5 { get; set;}
 		/// <summary>Gets or sets the Threshold5Amount field. </summary>
 		public Nullable<System.Double> Threshold5Amount { get; set;}
+		/// <summary>Gets or sets the TrackingEta field. </summary>
+		public Nullable<System.Boolean> TrackingEta { get; set;}
 		/// <summary>Gets or sets the TruckBulkRateCodeId field. </summary>
 		public Nullable<System.Int32> TruckBulkRateCodeId { get; set;}
 		/// <summary>Gets or sets the TruckCitySurchargeRate field. </summary>

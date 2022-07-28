@@ -63,7 +63,7 @@ namespace DespatchWeb.Repositories
         public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
         {
             var result = new List<AvailableCourierPosition>();
-            _context.LoadStoredProc("MAP_stpEnvelope")
+            _context.LoadStoredProc("DESWEB_stpMapEnvelope")
                 .WithSqlParam("@MinimumLongitude", minLng)
                 .WithSqlParam("@MinimumLatitude", minLat)
                 .WithSqlParam("@MaximumLongitude", maxLng)
@@ -88,6 +88,10 @@ namespace DespatchWeb.Repositories
             return result;
         }
 
+        /// <summary>
+        /// filters by active, sms setting and logged in
+        /// </summary>
+        /// <returns></returns>
         public List<ActiveCouriersViewModel> ActiveCouriers()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();
@@ -98,6 +102,23 @@ namespace DespatchWeb.Repositories
                 });
             return activeCouriers;
         }
+
+        /// <summary>
+        /// All active couriers regardless of logged in or not
+        /// </summary>
+        /// <returns></returns>
+        public List<AllCourierActiveViewModel> AllActiveCouriers(string searchTerm)
+        {
+            var activeCouriers = new List<AllCourierActiveViewModel>();
+            _context.LoadStoredProc("DESWEB_qryCourierCombo")
+                .WithSqlParam("@SearchTerm", searchTerm)
+                .ExecuteStoredProc(handle =>
+                {
+                    activeCouriers = handle.ReadToList<AllCourierActiveViewModel>().ToList();
+                });
+            return activeCouriers;
+        }
+
 
         public CourierLocation Location(string code)
         {

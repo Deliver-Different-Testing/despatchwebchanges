@@ -13,9 +13,25 @@
     }
 }
 
+
 body {
     overflow:hidden;
 }
+
+a.pickadate-next {
+    font-size: 10px;
+    padding: 5px 10px;
+    background: #fff085;
+    border-radius: 8px;
+}
+
+a.pickadate-prev {
+    font-size: 10px;
+    padding: 5px 10px;
+    background: #fff085;
+    border-radius: 8px;
+}
+
 #box-clearLists {
     .box-content {
         overflow: hidden !important;
@@ -153,6 +169,17 @@ body {
     }
 }
 
+.pickadate {
+    text-align: left;
+    background-color: #FFF;
+    padding: 30px;
+    border: 7px solid #666;
+    border-radius: 16PX;
+    padding-top: 7px;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+
 .top-bar {
     position: absolute;
     top: 0;
@@ -161,6 +188,36 @@ body {
     background: #191919;
     z-index: 100;
     height: 40px;
+
+    .topbar-NavButtons {
+        position: absolute;
+        top: 5px;
+        left: 1150px;
+
+        .topbar-button {
+            display: inline-block;
+            background-color: lightgray;
+            border-color: darkgray;
+
+            &:hover {
+                color: #000;
+                background-color: darkgrey;
+                border-color: darkgrey;
+            }
+        }
+
+        .topbar-active {
+            background-color: @yellow;
+            border-color: darken(@yellow, 10%);
+            color: #000;
+
+            &:hover {
+                color: #000;
+                background-color: darken(@yellow, 10%);
+                border-color: darken(@yellow, 18%);
+            }
+        }
+    }
 
     .topbar-buttons {
         position: absolute;
@@ -218,6 +275,10 @@ body {
                 box-shadow: none;
                 outline: none;
             }
+        }
+
+        .btn-clients {
+            margin-top: -9px;
         }
     }
 }
@@ -1018,9 +1079,9 @@ table.table {
     }
 
 span.courier {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: normal;
-    height: 11px;
+    height: 12px;
     width: 36px;
     margin: 0px 0px 0px 0px;
     padding: 1px 2px;
@@ -1050,11 +1111,19 @@ span.courier {
 }
 
 .courierMarker {
-    left: -37%;
+    left: -25%;
     top: -30px;
 }
 
 span.courier {
-    color: #fff;
-    background-color: #003CA1;
+    color: #000000;
+    background-color: #00FF00;
+}
+span.courierCream {
+    color: #000000;
+    background-color: #FFFDD0;
+}
+span.courierRed {
+    color: #FFFFFF;
+    background-color: #FF0000;
 }

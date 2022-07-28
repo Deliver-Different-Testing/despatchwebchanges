@@ -15,6 +15,7 @@ namespace DespatchWeb.EntityClasses
 		/// <summary>Initializes a new instance of the <see cref="TucSuburb"/> class.</summary>
 		public TucSuburb() : base()
 		{
+			this.TucClients = new List<TucClient>();
 			OnCreated();
 		}
 
@@ -76,5 +77,7 @@ namespace DespatchWeb.EntityClasses
 		public System.String UcsuName { get; set;}
 		/// <summary>Gets or sets the UcsuRegion field. </summary>
 		public Nullable<System.Int32> UcsuRegion { get; set;}
+		/// <summary>Represents the navigator which is mapped onto the association 'TucClient.TucSuburb - TucSuburb.TucClients (m:1)'</summary>
+		public virtual List<TucClient> TucClients { get; set;}
 	}
 }

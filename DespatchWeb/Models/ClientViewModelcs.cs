@@ -12,6 +12,6 @@ namespace DespatchWeb.Models
         public string Email { get; set; }
         public bool Active { get; set; }
         public bool Internal { get; set; }
-        public int StaffID { get; set; }
+        public int? StaffID { get; set; }
     }
 }

@@ -10,6 +10,7 @@ namespace DespatchWeb
         public DespatchWebDataContext(DbContextOptions<DespatchWebDataContext> options)
             : base(options)
         {
+            //optionsBuilder.UseSqlServer(coonectionString, builder => builder.UseRowNumberForPaging());
         }
     }
 }

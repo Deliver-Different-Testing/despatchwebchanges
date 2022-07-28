@@ -1,0 +1,61 @@
+angular
+    .module('uDispatch')
+    .factory('uCSData', ['$http', function ($http) {
+        return {
+
+
+            getPodJobs: function (courierId, clientId, wild, fromDate, toDate, pageIndex, pageSize) {
+                return $http.get('/Job/PODSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
+                    return response.data;
+                });
+            },
+
+            getJobDetail: function (id) {
+                return $http.get('/Job/Detail?jobId=' + id).then(function (response) {
+                    return response.data;
+                });
+            },
+            getBulkJobPhoto: function (bulkJobId) {
+                return $http.get('/CS/GetBulkJobPhoto?bulkJobId=' + bulkJobId).then(function (response) {
+                    return response.data;
+                });
+            },
+            addEventNote: function (eventId, note) {
+                return $http.post('CS/AddEventNote?eventId=' + eventId + '&note=' + note + '&userName=' + ClientName).then(function (response) {
+                    return response.data;
+                });
+            },
+            closeEvent: function (eventId, userName) {
+                return $http.post('CS/CloseEvent?eventId=' + eventId + '&userName=' + `${ClientName}-${userName}`).then(function (response) {
+                    return response.data;
+                });
+            },
+            sendPOD: function (jobId, email) {
+                return $http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email).then(function (response) {
+                    return response.data;
+                });
+            },
+            generateDirectLink: function (eventId, clientId) {
+                return $http.get('/CS/GenerateDirectLink?eventId=' + eventId + '&clientId=' + clientId).then(function (response) {
+                    return response.data;
+                });
+            },
+            createEvent: function (data, notify) {
+                return $http({
+                    url: 'book/CreateEvent?clientInternal=' + ClientInternal + '&notify=' + notify + '&clientName=' + ClientName,
+                    method: "POST",
+                    data: data
+                }).then(function (response) {
+                    return response.data;
+                }).catch(function (response) {
+                    console.error('Book/CreateEvent error', response.status, response.data);
+                });
+            },
+            
+            doAPI: function (path, data) {
+                return $http.post(path, data).then(function (response) {
+                    return response.data;
+                });
+            }
+        };
+    }]);   

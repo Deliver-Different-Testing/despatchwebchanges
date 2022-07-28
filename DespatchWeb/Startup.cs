@@ -41,7 +41,7 @@ namespace DespatchWeb
                 //c.UseSqlServer(Configuration.GetConnectionString("ConnectionTest"));
 
                 // Live 
-                c.UseSqlServer(Configuration.GetConnectionString("Connection"));
+                c.UseSqlServer(Configuration.GetConnectionString("Connection"), builder => builder.UseRowNumberForPaging());
             });
             services.AddAuthentication(IISDefaults.AuthenticationScheme);
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);

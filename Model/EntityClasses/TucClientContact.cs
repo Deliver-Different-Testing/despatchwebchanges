@@ -15,6 +15,7 @@ namespace DespatchWeb.EntityClasses
 		/// <summary>Initializes a new instance of the <see cref="TucClientContact"/> class.</summary>
 		public TucClientContact() : base()
 		{
+			this.TblClientContacts = new List<TblClientContact>();
 			OnCreated();
 		}
 
@@ -94,5 +95,9 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.DateTime> WhenEmailValidatedSent { get; set;}
 		/// <summary>Gets or sets the WhenLastEmailNotificationReminderSent field. </summary>
 		public Nullable<System.DateTime> WhenLastEmailNotificationReminderSent { get; set;}
+		/// <summary>Represents the navigator which is mapped onto the association 'TblClientContact.TucClientContact - TucClientContact.TblClientContacts (m:1)'</summary>
+		public virtual List<TblClientContact> TblClientContacts { get; set;}
+		/// <summary>Represents the navigator which is mapped onto the association 'TucClientContact.TucClient - TucClient.TucClientContacts (m:1)'</summary>
+		public virtual TucClient TucClient { get; set;}
 	}
 }

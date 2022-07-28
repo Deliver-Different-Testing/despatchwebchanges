@@ -34,6 +34,12 @@
                </select>
 
             </div>
+            <div ng-switch-when="fromdatepicker">
+              <div pickadate ng-model="pickDateService.from_date"></div>
+            </div>
+            <div ng-switch-when="todatepicker">
+              <div pickadate ng-model="pickDateService.to_date"></div>
+            </div>
           </div>
 
         </div>

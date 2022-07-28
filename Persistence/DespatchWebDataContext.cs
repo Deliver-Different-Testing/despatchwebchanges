@@ -50,12 +50,30 @@ namespace DespatchWeb
 		public DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TblClient', containing entity type 'TblClient'</summary>
 		public DbSet<TblClient> TblClients { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TblClientContact', containing entity type 'TblClientContact'</summary>
+		public DbSet<TblClientContact> TblClientContacts { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TblClientContactInternetPermission', containing entity type 'TblClientContactInternetPermission'</summary>
+		public DbSet<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TblCourier', containing entity type 'TblCourier'</summary>
+		public DbSet<TblCourier> TblCouriers { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TblDespatchView', containing entity type 'TblDespatchView'</summary>
 		public DbSet<TblDespatchView> TblDespatchViews { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TblInternetPermission', containing entity type 'TblInternetPermission'</summary>
+		public DbSet<TblInternetPermission> TblInternetPermissions { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TblJob', containing entity type 'TblJob'</summary>
+		public DbSet<TblJob> TblJobs { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TblJobLeaveNotHome', containing entity type 'TblJobLeaveNotHome'</summary>
+		public DbSet<TblJobLeaveNotHome> TblJobLeaveNotHomes { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TucClient', containing entity type 'TucClient'</summary>
+		public DbSet<TucClient> TucClients { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucClientContact', containing entity type 'TucClientContact'</summary>
 		public DbSet<TucClientContact> TucClientContacts { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucJobItem', containing entity type 'TucJobItem'</summary>
 		public DbSet<TucJobItem> TucJobItems { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TucJobStatus', containing entity type 'TucJobStatus'</summary>
+		public DbSet<TucJobStatus> TucJobStatuses { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TucJobType', containing entity type 'TucJobType'</summary>
+		public DbSet<TucJobType> TucJobTypes { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucSuburb', containing entity type 'TucSuburb'</summary>
 		public DbSet<TucSuburb> TucSuburbs { get; set; } 
 }

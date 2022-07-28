@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using DespatchWebContextExtensions;
 using Remotion.Linq.Clauses;
 using System.Data.Common;
+using System.Diagnostics;
+using System.Threading;
 
 namespace DespatchWeb.Repositories
 {
@@ -22,107 +24,293 @@ namespace DespatchWeb.Repositories
             _context = context;
         }
 
+        public async Task<JobViewModel> JobDetail(int jobId)
+        {
+            var jobQuery = (
+                from j in _context.TblJobs
+                join c in _context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
+                from co in courierJoin.DefaultIfEmpty()
+                join y in _context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
+                from yo in fromJoin.DefaultIfEmpty()
+                join z in _context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
+                from zo in toJoin.DefaultIfEmpty()
+                join t in _context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+                from to in speedJoin.DefaultIfEmpty()
+                join n in _context.TucJobTypes on j.NotifiedJobTypeId equals n.UcjtId into notifiedSpeedJoin
+                from no in notifiedSpeedJoin.DefaultIfEmpty()
+                join o in _context.TucJobTypes on j.AcceptedJobTypeId equals o.UcjtId into originalSpeedJoin
+                from os in originalSpeedJoin.DefaultIfEmpty()
+                join cl in _context.TblClients on j.ClientId equals cl.ClientId into clientJoin
+                from client in clientJoin.DefaultIfEmpty()
+                join s in _context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
+                from status in statusJoin.DefaultIfEmpty()
+                join l in _context.TblJobLeaveNotHomes on j.LeaveNotHomeId equals l.LeaveNotHomeId into leaveNotHomeJoin
+                from leave in leaveNotHomeJoin.DefaultIfEmpty()
+
+                where (j.JobId == jobId)
+                select new JobViewModel()
+                {
+                    ID = j.JobId,
+                    Time = j.Time,
+                    Direct = j.Direct,
+                    Van = j.Van,
+                    Truck = j.Truck,
+                    SaturdayDelivery = j.SaturdayDelivery,
+                    Return = j.Return,
+                    Done = j.JobDone,
+                    Void = j.Void,
+                    PickupFrom = j.PickupFrom,
+                    JobNo = j.Number,
+                    Speed = to.ShortName,
+                    SpeedID = j.Speed,
+                    Notify = no.ShortName,
+                    AcceptedJobTypeID = j.AcceptedJobTypeId,
+                    NotifiedJobTypeID = j.NotifiedJobTypeId,
+                    Vehicle = new Vehicle()
+                    {
+                        id = j.Van ? (short?)Enums.Vehicle.Van : j.Size,
+                        label = j.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (j.Size ?? (short)2))
+                    },
+                    Client = j.ClientCode,
+                    ClientID = j.ClientId,
+                    ClientName = client.Name,
+                    JobType = (int)j.Type,
+                    From = yo.UcsuName,
+                    FromSuburbID = j.FromSuburbId,
+                    fromSuburbName = yo.UcsuName,
+                    FromAddress = j.FromAddress,
+                    To = zo.UcsuName,
+                    ToSuburbID = j.ToSuburbId,
+                    ToSuburbName = zo.UcsuName,
+                    ToAddress = j.ToAddress,
+                    Courier = co.Code,
+                    StatusID = j.Status,
+                    Status = status.UcjsCode,
+                    LP = j.LatePickUp,
+                    LD = j.LateDelivery,
+                    ContactName = j.DeliverToContact,
+                    Phone = j.DeliverToPhone,
+                    SpeedAccepted = os.ShortName,
+                    Size = new Vehicle()
+                    {
+                        id = j.Van ? (short?)Enums.Vehicle.Van : j.Size,
+                        label = j.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (j.Size ?? (short)2))
+                    },
+                    Weight = j.Weight,
+                    Items = j.Quantity,
+                    RefA = j.ClientReferenceA,
+                    RefB = j.ClientReferenceB,
+                    OurRef = j.OurRef,
+                    SigNotRequired = leave.Name ?? "",
+                    Charge = $"{j.Amount:C}",
+                    // Date = j.Date.ToString("dd/MM/yyyy"),
+                    Booked = DateTime.Parse(j.Date.Value.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")),
+                    DispatchTime = j.DispatchDate.HasValue ? DateTime.Parse(j.DispatchDate.Value.ToString("yyyy-MM-dd") + " " + j.DispatchTime.Value.ToString("HH:mm:ss")): j.DispatchDate,
+                    PUTime = j.PickUpTime,
+                    ClientNotes = j.ClientNotes,
+                    InternalNotes = j.Notes,
+                    //ChildNotes = j.ChildNotes,
+                    PickUpLatitude = j.PickUpLatitude,
+                    PickUpLongitude = j.PickUpLongitude,
+                    DeliveryLatitude = j.DeliveryLatitude,
+                    DeliveryLongitude = j.DeliveryLongitude,    
+                    //CourierLatitude = j.CourierLatitude,
+                    //CourierLongitude = j.CourierLongitude,
+                    //RunOrder = j.PickRunOrder,
+                    //CourierData = new CourierData()
+                    //{
+                    //    Courier = j.CourierCode + " " + j.CourierName,
+                    //    CourierID = j.UcjbCourierId
+                    //},
+                    //AllowDispatch = j.AllowDespatch,
+                    //AllowSplit = j.AllowSplit,
+                    //DGClass = j.Dgclass,
+                    //DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
+                    //TruckWeightLimit = j.TruckWeightLimit,
+                    //TruckStartTime = j.TruckStartTime,
+                    //TruckHours = j.TruckHours,
+                    //PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
+                    //PickupTime = j.PickUpTime,
+                    CompletedTime = j.CompletedTime,
+                    //AlertLatePickup = j.AlertLatePickUp,
+                    //AlertLateDelivery = j.AlertLateDelivery,
+                    //Minutes = j.Minutes,
+                    DeliverToContact = j.DeliverToContact,
+                    PODPhoto = j.DeliveryPhoto ?? j.DeliverySignature,
+                    PODName = j.Podname
+
+                });
+            return await jobQuery.FirstOrDefaultAsync();
+        }
+
+        public Tuple<int, List<JobViewModel>> PODSearch(Int32? courierId, string wild, DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
+        {
+            var clientSet = clientId.HasValue;
+            var courierSet = courierId.HasValue;
+            var wildParam = $"%{wild}%";
+            var jobsQuery = (
+                from x in _context.TblJobs
+                join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
+                from co in courierJoin.DefaultIfEmpty()
+                join y in _context.TucSuburbs on x.FromSuburbId equals y.UcsuId into fromJoin
+                from yo in fromJoin.DefaultIfEmpty()
+                join z in _context.TucSuburbs on x.ToSuburbId equals z.UcsuId into toJoin
+                from zo in toJoin.DefaultIfEmpty()
+                join t in _context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
+                from to in speedJoin.DefaultIfEmpty()
+                join s in _context.TucJobStatuses on x.Status equals s.UcjsId into statusJoin
+                from status in statusJoin.DefaultIfEmpty()
+                where (x.Date >= fromDate && x.Date <= toDate) && (!clientSet || x.ClientId == clientId) &&
+                      (!courierSet || x.CourierId == courierId) && 
+                      (wild == "" ||(EF.Functions.Like(x.FromAddress + " " + yo.UcsuName + " " + x.ToAddress + " " + zo.UcsuName + " " + x.ClientReferenceA + " " + x.ClientReferenceB + " " + x.OurRef + " " + x.Number, wildParam)))
+
+                select new JobViewModel()
+                {
+                    ID = x.JobId,
+                    Time = x.Time,
+                    ClientID = x.ClientId,
+                    Client = x.ClientCode,
+                    From = yo.UcsuName,
+                    FromSuburbID = x.FromSuburbId,
+                    To = zo.UcsuName,
+                    ToSuburbID = x.ToSuburbId,
+                    JobNo = x.Number,
+                    FromAddress = x.FromAddress,
+                    ToAddress = x.ToAddress,
+                    Courier = co.Code,
+                    StatusID = x.Status,
+                    Status = status.UcjsCode,
+                    Speed = to.ShortName,
+                    SpeedID = x.Speed,
+                    PickUpLatitude = x.PickUpLatitude,
+                    PickUpLongitude = x.PickUpLongitude,
+                    DeliveryLatitude = x.DeliveryLatitude,
+                    DeliveryLongitude = x.DeliveryLongitude,
+                    Booked = DateTime.Parse(x.Date.Value.ToString("yyyy-MM-dd") + " " + x.Time.Value.ToString("HH:mm:ss")),
+
+                });
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var total = jobsQuery.Count();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            stopwatch.Reset();
+            stopwatch.Start();
+            var jobs = jobsQuery
+                .OrderBy(a => a.Booked).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            return Tuple.Create(total, jobs);
+
+        }
         public List<JobViewModel> CurrentJobList(Int32 courierId, bool done)
         {
-            var jobs= _context.DeswebQryDespatches.FromSql($"exec [DESWeb_qryCourierJobs] {courierId}, {done}").ToList();
-            var list = 
+            var jobs = _context.DeswebQryDespatches.FromSql($"exec [DESWeb_qryCourierJobs] {courierId}, {done}").ToList();
+            var list =
                 (from j in jobs
-                    select new JobViewModel()
-                    {
-                        ID = j.UcjbId,
-                        Time = j.UcjbTime,
-                        Direct = j.Direct,
-                        Van = j.UcjbVan,
-                        Truck = j.Truck,
-                        SaturdayDelivery = j.SaturdayDelivery,
-                        Return = j.UcjbReturn,
-                        PickupFrom = j.UcjbPickUpFrom,
-                        JobNo = j.UcjbNumber,
-                        Speed = j.SpeedShortName,
-                        SpeedID = j.UcjbSpeed,
-                        Notify = j.NotifiedSpeed,
-                        AcceptedJobTypeID = j.AcceptedJobTypeId,
-                        NotifiedJobTypeID = j.NotifiedJobTypeId,
-                        Vehicle = new Vehicle()
-                        {
-                            id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                            label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
-                        },
-                        Client = j.UcclCode,
-                        ClientID = j.UcjbClientId,
-                        ClientName = j.ClientName,
-                        JobType = (int)j.UcjbType,
-                        From = j.SuburbFrom,
-                        FromSuburbID = j.FromSuburbId,
-                        fromSuburbName = j.FromSuburbName,
-                        FromAddress = j.UcjbFromAddr,
-                        To = j.SuburbTo,
-                        ToSuburbID = j.ToSuburbId,
-                        ToSuburbName = j.ToSuburbName,
-                        ToAddress = j.UcjbToAddr,
-                        Courier = j.CourierCode,
-                        Remain = j.RemainTime,
-                        StatusID = j.UcjbStatus,
-                        Status = j.UcjsCode,
-                        LP = j.UcjbLatePick,
-                        LD = j.UcjbLateDel,
-                        ContactName = j.UcjbContact,
-                        Phone = j.UcjbContactPhone,
-                        SpeedAccepted = j.OriginalSpeed,
-                        Size = new Vehicle()
-                        {
-                            id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                            label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
-                        },
-                        Weight = j.UcjbWeight,
-                        Items = j.UcjbQty,
-                        RefA = j.UcjbClientRefa,
-                        RefB = j.UcjbClientRefb,
-                        OurRef = j.UcjbOurRef,
-                        SigNotRequired = j.SigNotRequired,
-                        Charge = $"{j.UcjbAmount:C}",
-                        Date = j.UcjbDate.ToString("dd/MM/yyyy"),
-                        Booked = DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
-                        DispatchTime = j.UcjbDispTime,
-                        PUTime = j.Putime,
-                        ClientNotes = j.ClientNotes,
-                        InternalNotes = j.JobNotes,
-                        ChildNotes = j.ChildNotes,
-                        PickUpLatitude = j.PickUpLatitude,
-                        PickUpLongitude = j.PickUpLongitude,
-                        DeliveryLatitude = j.DeliveryLatitude,
-                        DeliveryLongitude = j.DeliveryLongitude,
-                        CourierLatitude = j.CourierLatitude,
-                        CourierLongitude = j.CourierLongitude,
-                        RunOrder = j.PickRunOrder,
-                        CourierData = new CourierData()
-                        {
-                            Courier = j.CourierCode + " " + j.CourierName,
-                            CourierID = j.UcjbCourierId
-                        },
-                        AllowDispatch = j.AllowDespatch,
-                        AllowSplit = j.AllowSplit,
-                        DGClass = j.Dgclass,
-                        DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
-                        TruckWeightLimit = j.TruckWeightLimit,
-                        TruckStartTime = j.TruckStartTime,
-                        TruckHours = j.TruckHours,
-                        PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
-                        PickupTime = j.PickupTime,
-                        DeliveryTime = j.DeliveryTime,
-                        AlertLatePickup = j.AlertLatePickUp,
-                        AlertLateDelivery = j.AlertLateDelivery,
-                        Minutes = j.Minutes,
-                        DeliverToContact = j.DeliverToContact,
-                        PODPhoto = j.DeliveryPhoto
+                 select new JobViewModel()
+                 {
+                     ID = j.UcjbId,
+                     Time = j.UcjbTime,
+                     Direct = j.Direct,
+                     Van = j.UcjbVan,
+                     Truck = j.Truck,
+                     SaturdayDelivery = j.SaturdayDelivery,
+                     Return = j.UcjbReturn,
+                     PickupFrom = j.UcjbPickUpFrom,
+                     JobNo = j.UcjbNumber,
+                     Speed = j.SpeedShortName,
+                     SpeedID = j.UcjbSpeed,
+                     Notify = j.NotifiedSpeed,
+                     AcceptedJobTypeID = j.AcceptedJobTypeId,
+                     NotifiedJobTypeID = j.NotifiedJobTypeId,
+                     Vehicle = new Vehicle()
+                     {
+                         id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                         label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                     },
+                     Client = j.UcclCode,
+                     ClientID = j.UcjbClientId,
+                     ClientName = j.ClientName,
+                     JobType = (int)j.UcjbType,
+                     From = j.SuburbFrom,
+                     FromSuburbID = j.FromSuburbId,
+                     fromSuburbName = j.FromSuburbName,
+                     FromAddress = j.UcjbFromAddr,
+                     To = j.SuburbTo,
+                     ToSuburbID = j.ToSuburbId,
+                     ToSuburbName = j.ToSuburbName,
+                     ToAddress = j.UcjbToAddr,
+                     Courier = j.CourierCode,
+                     Remain = j.RemainTime,
+                     StatusID = j.UcjbStatus,
+                     Status = j.UcjsCode,
+                     LP = j.UcjbLatePick,
+                     LD = j.UcjbLateDel,
+                     ContactName = j.UcjbContact,
+                     Phone = j.UcjbContactPhone,
+                     SpeedAccepted = j.OriginalSpeed,
+                     Size = new Vehicle()
+                     {
+                         id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                         label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                     },
+                     Weight = j.UcjbWeight,
+                     Items = j.UcjbQty,
+                     RefA = j.UcjbClientRefa,
+                     RefB = j.UcjbClientRefb,
+                     OurRef = j.UcjbOurRef,
+                     SigNotRequired = j.SigNotRequired,
+                     Charge = $"{j.UcjbAmount:C}",
+                     Date = j.UcjbDate.ToString("dd/MM/yyyy"),
+                     Booked = DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
+                     DispatchTime = j.UcjbDispTime,
+                     PUTime = j.Putime,
+                     ClientNotes = j.ClientNotes,
+                     InternalNotes = j.JobNotes,
+                     ChildNotes = j.ChildNotes,
+                     PickUpLatitude = j.PickUpLatitude,
+                     PickUpLongitude = j.PickUpLongitude,
+                     DeliveryLatitude = j.DeliveryLatitude,
+                     DeliveryLongitude = j.DeliveryLongitude,
+                     CourierLatitude = j.CourierLatitude,
+                     CourierLongitude = j.CourierLongitude,
+                     RunOrder = j.PickRunOrder,
+                     CourierData = new CourierData()
+                     {
+                         Courier = j.CourierCode + " " + j.CourierName,
+                         CourierID = j.UcjbCourierId
+                     },
+                     AllowDispatch = j.AllowDespatch,
+                     AllowSplit = j.AllowSplit,
+                     DGClass = j.Dgclass,
+                     DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
+                     TruckWeightLimit = j.TruckWeightLimit,
+                     TruckStartTime = j.TruckStartTime,
+                     TruckHours = j.TruckHours,
+                     PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
+                     PickupTime = j.PickupTime,
+                     DeliveryTime = j.DeliveryTime,
+                     AlertLatePickup = j.AlertLatePickUp,
+                     AlertLateDelivery = j.AlertLateDelivery,
+                     Minutes = j.Minutes,
+                     DeliverToContact = j.DeliverToContact,
+                     PODPhoto = j.DeliveryPhoto
 
-                    }).ToList();
+                 }).ToList();
             return list;
         }
 
-        public List<JobViewModel> JobList(string status, string area, string order, string ascending)
+        public List<JobViewModel> JobList(string status, string area, string order, string ascending, bool isInternal, string clientIds)
         {
             var orderToUse = "";
+            if (isInternal == false && string.IsNullOrEmpty(clientIds))
+            {
+                return new List<JobViewModel>();
+            }
+
+            //ToDo verify clientids
+
             switch (order)
             {
                 case "remain":
@@ -163,23 +351,32 @@ namespace DespatchWeb.Repositories
                     break;
             }
 
-            var areas = new List<string>() {"city", "truck", "main1", "main2", "central", "shore", "west", "deep shore", "shallow shore", "east mid", "deep west", "shallow west", "west mid", "other", "mangere", "deep south", "deep east", "parnell", "eden terrace", "regional"};
+            var areas = new List<string>() { "city", "truck", "main1", "main2", "central", "shore", "west", "deep shore", "shallow shore", "east mid", "deep west", "shallow west", "west mid", "other", "mangere", "deep south", "deep east", "parnell", "eden terrace", "regional" };
             var selectedAreas = area.Split(',').ToList();
-
-            var filter = 
-                _context.TblDespatchViews.Where(v =>
-                    (v.ShowOnAssistDespatch ?? false) == true && (area != "all" && selectedAreas.Contains(v.Name)) || ( area == "all" && areas.Contains(v.Name))).ToList();
             var whereToUse = "";
-            foreach (var w in filter)
+            if (isInternal)
             {
-                if (!string.IsNullOrEmpty(whereToUse))
+                var filter =
+                    _context.TblDespatchViews.Where(v =>
+                            (v.ShowOnAssistDespatch ?? false) == true &&
+                            (area != "all" && selectedAreas.Contains(v.Name)) ||
+                            (area == "all" && areas.Contains(v.Name)))
+                        .ToList();
+                
+                foreach (var w in filter)
                 {
-                    whereToUse += " OR ";
+                    if (!string.IsNullOrEmpty(whereToUse))
+                    {
+                        whereToUse += " OR ";
+                    }
+
+                    whereToUse += $" ({w.WhereCondition}) ";
                 }
-                whereToUse += $" ({w.WhereCondition}) ";
+
+                whereToUse = $"({whereToUse})";
             }
 
-            whereToUse = $"({whereToUse})";
+            
 
             if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status) && status != "all")
             {
@@ -211,6 +408,18 @@ namespace DespatchWeb.Repositories
                 whereToUse += " AND ";
             }
             whereToUse += " ucjbStatus <> 9";
+
+            if (isInternal == false && !string.IsNullOrEmpty(clientIds))
+            {
+
+
+                if (!string.IsNullOrEmpty(whereToUse))
+                {
+                    whereToUse += " AND ";
+                }
+
+                whereToUse += $" ucjbClientID in ({clientIds})";
+            }
             var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
             var jobs = _context.DeswebQryDespatches.FromSql(s).ToList();
@@ -218,111 +427,111 @@ namespace DespatchWeb.Repositories
 
 
             var list = (from j in jobs
-                select new JobViewModel()
-                {
-                    ID = j.UcjbId,
-                    Time = j.UcjbTime,
-                    Direct = j.Direct,
-                    Van = j.UcjbVan,
-                    Truck = j.Truck,
-                    Return = j.UcjbReturn,
-                    PickupFrom = j.UcjbPickUpFrom,
-                    SaturdayDelivery = j.SaturdayDelivery,
-                    JobNo = j.UcjbNumber,
-                    Speed = j.SpeedShortName,
-                    SpeedID = j.UcjbSpeed,
-                    Notify = j.NotifiedSpeed,
-                    AcceptedJobTypeID = j.AcceptedJobTypeId,
-                    NotifiedJobTypeID = j.NotifiedJobTypeId,
-                    Vehicle = new Vehicle()
-                    {
-                        id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                        label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int) (j.UcjbSize ?? 2))
-                    },
-                    Client = j.UcclCode,
-                    ClientID = j.UcjbClientId,
-                    ClientName = j.ClientName,
-                    JobType = (int)j.UcjbType,
-                    From = j.SuburbFrom,
-                    FromSuburbID = j.FromSuburbId,
-                    fromSuburbName = j.FromSuburbName,
-                    FromAddress = j.UcjbFromAddr,
-                    To = j.SuburbTo,
-                    ToSuburbID = j.ToSuburbId,
-                    ToSuburbName = j.ToSuburbName,
-                    ToAddress = j.UcjbToAddr,
-                    Courier = j.CourierCode,
-                    Remain = j.RemainTime,
-                    StatusID =  j.UcjbStatus,
-                    Status = j.UcjsCode,
-                    LP = j.UcjbLatePick,
-                    LD = j.UcjbLateDel,
-                    ContactName = j.UcjbContact,
-                    Phone =  j.UcjbContactPhone,
-                    SpeedAccepted = j.OriginalSpeed,
-                    Size = new Vehicle()
-                    {
-                        id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                        label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
-                    },
-                    Weight = j.UcjbWeight,
-                    Items = j.UcjbQty,
-                    RefA = j.UcjbClientRefa,
-                    RefB = j.UcjbClientRefb,
-                    OurRef = j.UcjbOurRef,
-                    SigNotRequired = j.SigNotRequired,
-                    Charge = $"{j.UcjbAmount:C}",
-                    Booked = DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
-                    Date = j.UcjbDate.ToString("dd/MM/yyyy"),
-                    DispatchTime =j.UcjbDispTime, 
-                    PUTime = j.Putime,
-                    ClientNotes = j.ClientNotes,
-                    InternalNotes = j.JobNotes,
-                    ChildNotes = j.ChildNotes,
-                    PickUpLatitude = j.PickUpLatitude,
-                    PickUpLongitude = j.PickUpLongitude,
-                    DeliveryLatitude = j.DeliveryLatitude,
-                    DeliveryLongitude = j.DeliveryLongitude,
-                    PalletInfo = (
-                        from pa in pallets.Where(p=>p.JobId == j.UcjbId)
-                        select new Palletinfo()
+                        select new JobViewModel()
                         {
-                            ID = pa.JobId,
-                            Quantity = pa.Items,
-                            Weight = pa.Weight,
-                            Length = pa.Length,
-                            Depth = pa.Depth,
-                            Height = pa.Height,
-                            PU = pa.Pu,
-                            DO = pa.Do,
-                            DGClass = pa.Dgclass,
-                            Notes = pa.Notes
+                            ID = j.UcjbId,
+                            Time = j.UcjbTime,
+                            Direct = j.Direct,
+                            Van = j.UcjbVan,
+                            Truck = j.Truck,
+                            Return = j.UcjbReturn,
+                            PickupFrom = j.UcjbPickUpFrom,
+                            SaturdayDelivery = j.SaturdayDelivery,
+                            JobNo = j.UcjbNumber,
+                            Speed = j.SpeedShortName,
+                            SpeedID = j.UcjbSpeed,
+                            Notify = j.NotifiedSpeed,
+                            AcceptedJobTypeID = j.AcceptedJobTypeId,
+                            NotifiedJobTypeID = j.NotifiedJobTypeId,
+                            Vehicle = new Vehicle()
+                            {
+                                id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                                label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                            },
+                            Client = j.UcclCode,
+                            ClientID = j.UcjbClientId,
+                            ClientName = j.ClientName,
+                            JobType = (int)j.UcjbType,
+                            From = j.SuburbFrom,
+                            FromSuburbID = j.FromSuburbId,
+                            fromSuburbName = j.FromSuburbName,
+                            FromAddress = j.UcjbFromAddr,
+                            To = j.SuburbTo,
+                            ToSuburbID = j.ToSuburbId,
+                            ToSuburbName = j.ToSuburbName,
+                            ToAddress = j.UcjbToAddr,
+                            Courier = j.CourierCode,
+                            Remain = j.RemainTime,
+                            StatusID = j.UcjbStatus,
+                            Status = j.UcjsCode,
+                            LP = j.UcjbLatePick,
+                            LD = j.UcjbLateDel,
+                            ContactName = j.UcjbContact,
+                            Phone = j.UcjbContactPhone,
+                            SpeedAccepted = j.OriginalSpeed,
+                            Size = new Vehicle()
+                            {
+                                id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                                label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                            },
+                            Weight = j.UcjbWeight,
+                            Items = j.UcjbQty,
+                            RefA = j.UcjbClientRefa,
+                            RefB = j.UcjbClientRefb,
+                            OurRef = j.UcjbOurRef,
+                            SigNotRequired = j.SigNotRequired,
+                            Charge = $"{j.UcjbAmount:C}",
+                            Booked = DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
+                            Date = j.UcjbDate.ToString("dd/MM/yyyy"),
+                            DispatchTime = j.UcjbDispTime,
+                            PUTime = j.Putime,
+                            ClientNotes = j.ClientNotes,
+                            InternalNotes = j.JobNotes,
+                            ChildNotes = j.ChildNotes,
+                            PickUpLatitude = j.PickUpLatitude,
+                            PickUpLongitude = j.PickUpLongitude,
+                            DeliveryLatitude = j.DeliveryLatitude,
+                            DeliveryLongitude = j.DeliveryLongitude,
+                            PalletInfo = (
+                                from pa in pallets.Where(p => p.JobId == j.UcjbId)
+                                select new Palletinfo()
+                                {
+                                    ID = pa.JobId,
+                                    Quantity = pa.Items,
+                                    Weight = pa.Weight,
+                                    Length = pa.Length,
+                                    Depth = pa.Depth,
+                                    Height = pa.Height,
+                                    PU = pa.Pu,
+                                    DO = pa.Do,
+                                    DGClass = pa.Dgclass,
+                                    Notes = pa.Notes
 
-                        }).ToList(),
-                    CourierData = new CourierData()
-                    {
-                        Courier = j.CourierCode + " " + j.CourierName,
-                        CourierID = j.UcjbCourierId
-                    },
-                    AllowDispatch = j.AllowDespatch,
-                    AllowSplit = j.AllowSplit,
-                    DGClass = j.Dgclass,
-                    DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
-                    TruckWeightLimit = j.TruckWeightLimit,
-                    TruckStartTime = j.TruckStartTime,
-                    TruckHours = j.TruckHours,
-                    PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
-                    PickupTime = j.PickupTime,
-                    DeliveryTime = j.DeliveryTime,
-                    AlertLatePickup = j.AlertLatePickUp,
-                    AlertLateDelivery = j.AlertLateDelivery,
-                    Minutes = j.Minutes,
-                    DeliverToContact= j.DeliverToContact,
-                    PODPhoto = j.DeliveryPhoto
+                                }).ToList(),
+                            CourierData = new CourierData()
+                            {
+                                Courier = j.CourierCode + " " + j.CourierName,
+                                CourierID = j.UcjbCourierId
+                            },
+                            AllowDispatch = j.AllowDespatch,
+                            AllowSplit = j.AllowSplit,
+                            DGClass = j.Dgclass,
+                            DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
+                            TruckWeightLimit = j.TruckWeightLimit,
+                            TruckStartTime = j.TruckStartTime,
+                            TruckHours = j.TruckHours,
+                            PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
+                            PickupTime = j.PickupTime,
+                            DeliveryTime = j.DeliveryTime,
+                            AlertLatePickup = j.AlertLatePickUp,
+                            AlertLateDelivery = j.AlertLateDelivery,
+                            Minutes = j.Minutes,
+                            DeliverToContact = j.DeliverToContact,
+                            PODPhoto = j.DeliveryPhoto
 
 
 
-                }).ToList();
+                        }).ToList();
 
             return list;
 
@@ -335,8 +544,8 @@ namespace DespatchWeb.Repositories
               .WithSqlParam("@CourierID", courierId)
               .WithSqlParam("@DispID", dispId)
               .ExecuteStoredNonQueryAsync();
-            
-            foreach (var jid in jobIds.Split(",").ToList().Where(x=>!string.IsNullOrWhiteSpace(x)))
+
+            foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
             {
 
                 await _context.LoadStoredProc("DES_stpJob_AutoDespatchChildJobs")
@@ -384,9 +593,9 @@ namespace DespatchWeb.Repositories
                     .WithSqlParam("@CourierID", courierId)
                     .WithSqlParam("@DispID", dispId)
                     .ExecuteStoredNonQueryAsync();
-            
+
         }
-            
+
         public async Task ReSendAllJobs(int courierId)
         {
             await _context.LoadStoredProc("uspReDespatchJobByCourierID")
@@ -515,9 +724,10 @@ namespace DespatchWeb.Repositories
                .ExecuteStoredNonQueryAsync();
         }
 
-        public List<SuburbLookup> Suburbs() {
+        public List<SuburbLookup> Suburbs()
+        {
             var data = (from s in _context.TucSuburbs
-                              select s).Select(x => new SuburbLookup() { ID = x.UcsuId, Text = x.UcsuName, Alias = x.GoogleSuburbAlias });
+                        select s).Select(x => new SuburbLookup() { ID = x.UcsuId, Text = x.UcsuName, Alias = x.GoogleSuburbAlias });
             return data.ToList();
         }
 
@@ -528,7 +738,7 @@ namespace DespatchWeb.Repositories
             return data.ToList();
         }
 
-        public async Task<decimal> RateTruckJob (int clientId, int fromId, int toId, double weight, int size, int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems, 
+        public async Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
                                                 int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)
         {
             DbParameter outputDescriptionParam = null;
@@ -567,10 +777,10 @@ namespace DespatchWeb.Repositories
                .ExecuteStoredNonQueryAsync();
 
             return (decimal)outputRateParam.Value;
-                
+
         }
 
-        public async Task<decimal> RateJob (int clientId, int fromId, int toId, int speed, bool pedal, bool van, bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId, 
+        public async Task<decimal> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van, bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
                                             string ourRef, string refA, string refB, int quantity, DateTime booked)
         {
             DbParameter outputRateParam = null;
@@ -603,7 +813,7 @@ namespace DespatchWeb.Repositories
             return (decimal)outputRateParam.Value;
         }
 
-        public async Task<TruckItemsSummary> TruckJobItems (int jobId, int truckWeightLimit)
+        public async Task<TruckItemsSummary> TruckJobItems(int jobId, int truckWeightLimit)
         {
             var result = new List<TruckItemsSummary>();
             await _context.LoadStoredProc("qry_tucJobItems")
@@ -613,7 +823,7 @@ namespace DespatchWeb.Repositories
             return result.FirstOrDefault();
         }
 
-        public async Task UpdateDeliveryAddress (int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate)
+        public async Task UpdateDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryAddress")
                 .WithSqlParam("@JobID", jobId)
@@ -641,7 +851,7 @@ namespace DespatchWeb.Repositories
 
         }
 
-        public async Task UpdateJob (int jobId, string field, string value, decimal? rate, string despatcher, int staffId )
+        public async Task UpdateJob(int jobId, string field, string value, decimal? rate, string despatcher, int staffId)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJob")
                 .WithSqlParam("@JobID", jobId)

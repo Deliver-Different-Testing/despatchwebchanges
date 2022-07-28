@@ -20,6 +20,7 @@
       "wwwroot/lib/contextMenu.js",
       "wwwroot/lib/ModernizerLocalStorage.js",
       "wwwroot/lib/autocomplete/angular-auto-complete.js",
+      "wwwroot/lib/ng-map.min.js",
       "wwwroot/lib/ng-map-autocomplete.js",
       "wwwroot/lib/angular-promise-buttons.js",
       "wwwroot/app/app.js",
@@ -27,12 +28,20 @@
       "wwwroot/app/label.js",
       "wwwroot/js/site.js",
       "wwwroot/app/components/home/homeService.js",
-      "wwwroot/app/components/home/homeControl.js"
+      "wwwroot/app/components/home/homeControl.js",
+      "wwwroot/app/components/CS/csService.js",
+      "wwwroot/app/components/CS/csControl.js"
     ],
     "minify": {
       "enabled": true,
       "renameLocals": true
-    },
-    "sourceMap": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/app/components/home/bundle.js",
+    "inputFiles": [
+      "wwwroot/app/components/home/homeControl.js",
+      "wwwroot/app/components/home/homeService.js"
+    ]
   }
 ]

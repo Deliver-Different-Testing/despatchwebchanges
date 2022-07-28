@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace DespatchWeb.Controllers
 {
@@ -11,22 +15,47 @@ namespace DespatchWeb.Controllers
     {
         private JobRepository _jobRepo;
         private CourierRepository _courierRepo;
+        private ClientRepository _clientRepo;
+        private IConfiguration _configuration;
 
-        public JobController(JobRepository jobRepository, CourierRepository courierRepo)
+        public JobController(JobRepository jobRepository, CourierRepository courierRepo, ClientRepository clientRepo, IConfiguration configuration)
         {
             _jobRepo = jobRepository;
             _courierRepo = courierRepo;
-
+            _clientRepo = clientRepo;
+            _configuration = configuration;
         }
-        public IActionResult Index(string status, string area, string order, string asc)
+        public async Task<IActionResult> Index(string status, string area, string order, string asc, bool isInternal, int cid, string clientIds)
         {
-            var result = _jobRepo.JobList(status, area, order, asc);
+            //Security check to confirm these clients belong to this contact and have permissions set
+            if (!isInternal && !string.IsNullOrEmpty(clientIds))
+            {
+                var clientContacts = await _clientRepo.ClientContacts(cid);
+                if (!clientContacts.Select(c => c.ID).Any(x=>clientIds.Split(',').Any(y=>y == x.ToString())))
+                {
+                    var empty =new List<Models.JobViewModel>();
+                    return Json(empty);
+                }
+            }
+            var result = _jobRepo.JobList(status, area, order, asc, isInternal, clientIds);
             return Json(result);
         }
 
         public IActionResult Current(int courierId, bool done)
         {
             var result = _jobRepo.CurrentJobList(courierId, done);
+            return Json(result);
+        }
+
+        public async Task<IActionResult> Detail(int jobId)
+        {
+            var result = await _jobRepo.JobDetail(jobId);
+            return Json(result);
+        }
+
+        public IActionResult PODSearch(int? courierId, int? clientId, string wild, DateTime fromDate, DateTime toDate, int pageIndex, int pageSize)
+        {
+            var result = _jobRepo.PODSearch(courierId, wild ?? "", fromDate.ResetTimeToStartOfDay(), toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
             return Json(result);
         }
 
@@ -274,6 +303,63 @@ namespace DespatchWeb.Controllers
         {
             await _jobRepo.AddNote(jobId, note, despatcher);
             return Json("OK");
+        }
+
+        public async Task<IActionResult> SendPOD(int jobId, string toEmail)
+        {
+
+            var selectedJob = await _jobRepo.JobDetail(jobId);
+
+            if (selectedJob == null)
+            {
+                return NotFound();
+            }
+
+            Attachment att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo.ToString() + ".png");
+
+            SendEmail(toEmail, _configuration["FromAddress"], $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.", $"Delivery Photo for {selectedJob.JobNo}", att);
+
+            return Json("OK");
+        }
+        private void SendEmail(string toAddress, string fromAddress, string body, string subject, Attachment attachment = null, string replyTo = null)
+        {
+
+            using (var message = new MailMessage
+            {
+                IsBodyHtml = true,
+                From = new MailAddress(fromAddress),
+                Subject = subject,
+                Body = body,
+                Priority = MailPriority.High
+
+            })
+            {
+                message.To.Add(toAddress);
+                message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@urgent.co.nz>");
+                if (attachment != null)
+                {
+                    message.Attachments.Add(attachment);
+                }
+                if (!string.IsNullOrEmpty(replyTo))
+                {
+                    message.ReplyToList.Add(new MailAddress(replyTo));
+                }
+
+                using (var smtp = new SmtpClient
+                {
+                    Host = _configuration["SMTPServer"],
+                    UseDefaultCredentials = false,
+                    EnableSsl = true,
+                    Credentials = new NetworkCredential(_configuration["SMTPUser"], _configuration["SMTPPass"]),
+                    Port = int.Parse(_configuration["SMTP_Port"])
+                })
+                {
+                    smtp.Send(message);
+                }
+
+            }
+
+
         }
     }
 }

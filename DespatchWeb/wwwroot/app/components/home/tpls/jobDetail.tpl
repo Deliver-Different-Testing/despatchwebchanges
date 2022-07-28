@@ -63,10 +63,7 @@
 							<label>Our Ref</label>
 							<div class="value">{{currentJob.ourRef}}</div>
 						</div>
-						<div class="field" >
-							<label>Event</label>
-							<div class="value">{{currentJob.event}}</div>
-						</div>
+
 					</div>
 					<div class="col-md-4">
 						<div class="field">

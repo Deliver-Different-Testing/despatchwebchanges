@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWebContextExtensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories
 {
@@ -34,10 +35,26 @@ namespace DespatchWeb.Repositories
                 FirstName = contact.UcctFirstname,
                 FullName = contact.UcctFirstname + " " + contact.UcctSurname,
                 Email = contact.UcctEmail,
-                Internal = client.Internal
-                //ToDo get staffId once Kevin has updated mapping in Mercury
+                Internal = client.Internal,
+                StaffID = contact.StaffId
             };
             
+        }
+
+        public async Task<List<ClientContactViewModel>> ClientContacts(int contactId)
+        {
+            var clientContacts = from c in _context.TblClientContacts
+                join cip in _context.TblClientContactInternetPermissions on c.ClientContactId equals cip.ClientContactId
+                join ip in _context.TblInternetPermissions on cip.InternetPermissionId equals ip.InternetPermissionId
+                where (c.ContactId == contactId && ip.SystemName == "DespatchWeb")
+                orderby (c.IsDefaultAccount)
+                select new ClientContactViewModel()
+                {
+                    ID = c.ClientId,
+                    Text = c.TucClient.UcclName
+                };
+            return await clientContacts.ToListAsync();
+
         }
 
         public async Task<DispatcherViewModel> ValidateDispatcherLogin(string name)

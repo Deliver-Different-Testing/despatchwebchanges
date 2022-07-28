@@ -12,6 +12,8 @@ namespace DespatchWeb.Models
         public DateTime? Time { get; set; }
         public bool Direct { get; set; }
         public bool Van { get; set; }
+        public bool Done { get; set; }
+        public bool Void { get; set; }
         public bool? Truck { get; set; }
         public bool SaturdayDelivery { get; set; }
         public bool Return { get; set; }
@@ -47,6 +49,7 @@ namespace DespatchWeb.Models
         public string ContactName { get; set; }
         public string DeliverToContact { get; set; }
         public byte[] PODPhoto { get; set; }
+        public string PODName { get; set; }
         public string Phone { get; set; }
         public string SpeedAccepted { get; set; }
         public int? AcceptedJobTypeID { get; set; }
@@ -83,6 +86,8 @@ namespace DespatchWeb.Models
         public double? TruckHours { get; set; }
         public bool PrivateRes { get; set; }
         public bool? AllowSplit { get; internal set; }
+
+        public DateTime? CompletedTime { get; set; }
     }
 
     public class Vehicle

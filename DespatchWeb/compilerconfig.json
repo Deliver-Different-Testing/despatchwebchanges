@@ -1,0 +1,8 @@
+[
+  {
+    "outputFile": "wwwroot/css/udispatch.css",
+    "inputFile": "wwwroot/css/udispatch.less",
+    "sourceMap": false,
+    "useNodeSass": false
+  }
+]

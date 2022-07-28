@@ -9,7 +9,7 @@
         <button type="button" class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})">All</button>
     </div>
 
-    <div id="area-group" class="btn-group" role="group" aria-label="Basic example">
+    <div id="area-group" class="btn-group" role="group" aria-label="Basic example" ng-show="isInternal">
         <button type="button" class="btn city btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'city'})">City</button>
         <button type="button" class="btn truck btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'truck'})">Truck</button>
         <button type="button" class="btn main1 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main1'})">Main1</button>
@@ -23,6 +23,12 @@
         <button type="button" class="btn regional btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'regional'})">Regional</button>
 
     </div>
+    <div class="topbar-NavButtons" role="navigation">
+        <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
+        <!--<div class="btn btn-sm btn-nav topbar-button" target="_blank" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>-->
+        <a ui-sref="cs" href="#/CS" target="_blank" class="btn btn-sm topbar-button" ui-sref-active="topbar-active">POD/Search</a>
+        
+    </div>
 
     <div class="btn-group box-search chat" ng-show="showChat">
 
@@ -32,7 +38,11 @@
     </div>
 
     <div class="topbar-buttons">
-        <div class="btn topbar-button" style="color:white;"><span>hi {{userName}} - layout: {{currentLayoutName}}</span></div>
+        <span ng-show="!isInternal" style="color:white;">Clients:</span>
+        <div ng-show="!isInternal" class="multi-element btn-sm topbar-active" style="display: inline-block; margin-top: -5px; padding-left: 0px; padding-right: 50px;" disabled="false" extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickClients" selected-model="pickService.clients">
+
+        </div>
+        <div class="btn topbar-button" style="color: white;"><span>hi {{userName}} - layout: {{currentLayoutName}}</span></div>
         <div class="btn btn-sm btn-primary topbar-button" ng-click="getData()"><i class="fa fa-refresh"></i></div>
         <div class="dropdown topbar-button">
             <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">

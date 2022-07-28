@@ -15,6 +15,8 @@ namespace DespatchWeb.Models
         public string ClearListAreaIDs { get; set; }
         public Nullable<decimal> Longitude { get; set; }
         public Nullable<decimal> Latitude { get; set; }
+        public int TotalJobs { get; set; }
+        public int OverDueJobs { get; set; }
 
 
     }

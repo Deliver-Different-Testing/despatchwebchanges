@@ -16,7 +16,7 @@ angular
         });
     }])
     .controller("HomeControl", ["$scope", "DispatchData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "$ngConfirm", function ($scope, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm) {
-
+        $scope.isInternal = (ClientInternal === "True");
         $scope.gather = {
             submit: function () {
                 return $scope.gather.form.onSubmit().then(function (response) {
@@ -121,7 +121,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.51",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.54",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -192,7 +192,7 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/home/tpls/map.tpl?v=1.13",
+                "tpl": "app/components/home/tpls/map.tpl?v=1.17",
                 "showSearch": 0,
                 "showRefresh": 1
             },
@@ -203,6 +203,17 @@ angular
                 "showRefresh": 0
             }
         };
+        $scope.pickService = {
+            "clients": [],
+            "settings": {
+                "enableSearch": true,
+                "selectedToTop": true,
+                "closeOnBlur": true,
+                "closeOnSelect": true,
+                "buttonClasses": "topBarActive btn-sm btn-clients"
+            }
+        };
+        $scope.pickClients = [];
 
         ///////////////////////////////
         // LAYOUT 
@@ -256,7 +267,7 @@ angular
                         {
                             "id": "col3",
                             "width": "300px",
-                            "boxes": [
+                            "boxes": $scope.isInternal ?  [
                                 {
                                     "name": "clearLists",
                                     "height": "600px"
@@ -264,7 +275,9 @@ angular
                                 {
                                     "name": "map"
                                 }
-                            ]
+                            ] : [{
+                                "name": "map"
+                            }]
                         }//,
                         //{
                         //    "id": "col4",
@@ -286,6 +299,8 @@ angular
                 }
             }
         ];
+
+
         if (layoutsObject !== null) {
             layoutsObject[0] = defaultLayout[0];
         }
@@ -483,6 +498,7 @@ angular
             }
 
         };
+
 
         $scope.openChat = function () {
             if ($(".chat").hasClass("open")) {
@@ -2523,7 +2539,8 @@ angular
             if (Modernizr.localstorage) {
                 localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.jobFilters));
             }
-            return DispatchData.getJobsFilter($scope.jobFilters).then(function (data) {
+            var selectedClients = $scope.pickService.clients.map(a => a.id);
+            return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(function (data) {
                 $scope.jobList = data;
                 $("#box-jobsList .loading").fadeOut();
                 setTimeout(function () {
@@ -2536,6 +2553,12 @@ angular
                     $scope.getAvailableCourierLocation();
                 }, 200);
 
+            });
+        };
+
+        $scope.getClientContacts = function() {
+            DispatchData.getClientContacts(ContactID).then(function(data) {
+                $scope.pickClients = data;
             });
         };
 
@@ -2554,6 +2577,8 @@ angular
             $scope.jobGroups = false;
             $scope.jobsCurrentList = false;
             $scope.currentCourier = false;
+            
+            
 
             $scope.getClearListEnvelope = function (id) {
                 DispatchData.getClearListEnvelope(id).then(function (data) {
@@ -3046,6 +3071,9 @@ angular
             return $scope.getJobList();
         };
 
+        if (!$scope.isInternal) {
+            $scope.getClientContacts();
+        }
 
         $scope.getData();
 

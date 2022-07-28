@@ -20,9 +20,18 @@ namespace DespatchWeb
 			MapDesQryAllJobType(modelBuilder.Entity<DesQryAllJobType>());
 			MapDeswebQryDespatch(modelBuilder.Entity<DeswebQryDespatch>());
 			MapTblClient(modelBuilder.Entity<TblClient>());
+			MapTblClientContact(modelBuilder.Entity<TblClientContact>());
+			MapTblClientContactInternetPermission(modelBuilder.Entity<TblClientContactInternetPermission>());
+			MapTblCourier(modelBuilder.Entity<TblCourier>());
 			MapTblDespatchView(modelBuilder.Entity<TblDespatchView>());
+			MapTblInternetPermission(modelBuilder.Entity<TblInternetPermission>());
+			MapTblJob(modelBuilder.Entity<TblJob>());
+			MapTblJobLeaveNotHome(modelBuilder.Entity<TblJobLeaveNotHome>());
+			MapTucClient(modelBuilder.Entity<TucClient>());
 			MapTucClientContact(modelBuilder.Entity<TucClientContact>());
 			MapTucJobItem(modelBuilder.Entity<TucJobItem>());
+			MapTucJobStatus(modelBuilder.Entity<TucJobStatus>());
+			MapTucJobType(modelBuilder.Entity<TucJobType>());
 			MapTucSuburb(modelBuilder.Entity<TucSuburb>());
 		}
 
@@ -411,6 +420,12 @@ namespace DespatchWeb
 			config.Property(t => t.AddonPercentage);
 			config.Property(t => t.XeroId).HasMaxLength(50);
 			config.Property(t => t.IsDirectDebit);
+			config.Property(t => t.CreateBulkHomeDeliveryPickup);
+			config.Property(t => t.BulkHomeDeliveryPickupRateId).HasColumnName("BulkHomeDeliveryPickupRateID");
+			config.Property(t => t.BulkHomeDeliveryVanItemExcess);
+			config.Property(t => t.BulkHomeDeliveryVanItemSurcharge);
+			config.Property(t => t.BulkAternoonHomePickupTime);
+			config.Property(t => t.TrackingEta).HasColumnName("TrackingETA");
 			config.Property(t => t.ClientId).HasColumnName("ClientID");
 			config.Property(t => t.Name).HasMaxLength(75).IsRequired();
 			config.Property(t => t.LegalName).HasMaxLength(150).IsRequired();
@@ -479,6 +494,229 @@ namespace DespatchWeb
 			config.Property(t => t.VanRateCodeId).HasColumnName("VanRateCodeID");
 		}
 
+		/// <summary>Defines the mapping information for the entity 'TblClientContact'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTblClientContact(EntityTypeBuilder<TblClientContact> config)
+		{
+			config.ToTable("tblClientContact");
+			config.HasKey(t => t.ClientContactId);
+			config.Property(t => t.ClientContactId).HasColumnName("ClientContactID").ValueGeneratedOnAdd();
+			config.Property(t => t.ClientId).HasColumnName("ClientID");
+			config.Property(t => t.ContactId).HasColumnName("ContactID");
+			config.Property(t => t.DefaultJobType).HasMaxLength(500);
+			config.Property(t => t.DefaultJobSpeed).HasMaxLength(500);
+			config.Property(t => t.DefaultPickupLocation).HasMaxLength(500);
+			config.Property(t => t.DefaultJobSize).HasMaxLength(500);
+			config.Property(t => t.DefaultPage).HasMaxLength(500);
+			config.Property(t => t.IsDefaultAccount);
+			config.Property(t => t.DefaultPod).HasColumnName("DefaultPOD");
+			config.Property(t => t.DefaultPodphone).HasColumnName("DefaultPODPhone").HasMaxLength(500);
+			config.Property(t => t.DefaultPodemail).HasColumnName("DefaultPODEmail").HasMaxLength(500);
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.LastModified);
+			config.Property(t => t.LastModifiedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Notes).HasMaxLength(1073741823);
+			config.Property(t => t.AddOnCharge);
+			config.Property(t => t.HoldJobs);
+			config.Property(t => t.MaxJobSpend);
+			config.Property(t => t.DefaultPrinter).HasMaxLength(50);
+			config.Property(t => t.DefaultPrintSize);
+			config.Property(t => t.RotateLabel);
+			config.Property(t => t.DefaultClientAddressBookId).HasColumnName("DefaultClientAddressBookID");
+			config.Property(t => t.DefaultSendTrackAndTraceToPodemail).HasColumnName("DefaultSendTrackAndTraceToPODEmail");
+			config.Property(t => t.DefaultRotate180);
+			config.Property(t => t.DefaultTrackingMethod);
+			config.Property(t => t.DefaultTrackingMobile).HasMaxLength(500);
+			config.Property(t => t.DefaultTrackingEmail).HasMaxLength(500);
+			config.HasOne(t => t.TucClient).WithMany(t => t.TblClientContacts).HasForeignKey(t => t.ClientId);
+			config.HasOne(t => t.TucClientContact).WithMany(t => t.TblClientContacts).HasForeignKey(t => t.ContactId);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TblClientContactInternetPermission'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTblClientContactInternetPermission(EntityTypeBuilder<TblClientContactInternetPermission> config)
+		{
+			config.ToTable("tblClientContactInternetPermission");
+			config.HasKey(t => new { t.ClientContactId, t.InternetPermissionId });
+			config.Property(t => t.ClientContactId).HasColumnName("ClientContactID");
+			config.Property(t => t.InternetPermissionId).HasColumnName("InternetPermissionID");
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.HasOne(t => t.TblClientContact).WithMany(t => t.TblClientContactInternetPermissions).HasForeignKey(t => t.ClientContactId);
+			config.HasOne(t => t.TblInternetPermission).WithMany(t => t.TblClientContactInternetPermissions).HasForeignKey(t => t.InternetPermissionId);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TblCourier'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTblCourier(EntityTypeBuilder<TblCourier> config)
+		{
+			config.ToTable("tblCourier");
+			config.IsReadOnly();
+			config.HasKey(t => t.CourierId);
+			config.Property(t => t.CourierId).HasColumnName("CourierID");
+			config.Property(t => t.FirstName).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Surname).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Email).HasMaxLength(100);
+			config.Property(t => t.VehicleType).HasMaxLength(50);
+			config.Property(t => t.Percentage);
+			config.Property(t => t.LateNightId).HasColumnName("LateNightID");
+			config.Property(t => t.Notes).HasMaxLength(1073741823);
+			config.Property(t => t.Address).HasMaxLength(100);
+			config.Property(t => t.HomePhone).HasMaxLength(50);
+			config.Property(t => t.Mobile).HasMaxLength(50);
+			config.Property(t => t.GstregistrationNumber).HasColumnName("GSTRegistrationNumber").HasMaxLength(50);
+			config.Property(t => t.DriversLicenceNumber).HasMaxLength(50);
+			config.Property(t => t.PolicyNumber).HasMaxLength(50);
+			config.Property(t => t.VehicleRegistrationNumber).HasMaxLength(50);
+			config.Property(t => t.Rtserial).HasColumnName("RTSerial").HasMaxLength(50);
+			config.Property(t => t.Rttype).HasColumnName("RTType").HasMaxLength(50);
+			config.Property(t => t.GoodsServiceLicenceNumber).HasMaxLength(50);
+			config.Property(t => t.StartDate);
+			config.Property(t => t.FinishDate);
+			config.Property(t => t.NextOfKin).HasMaxLength(50);
+			config.Property(t => t.NextOfKinPhone).HasMaxLength(50);
+			config.Property(t => t.NextOfKinAddress).HasMaxLength(100);
+			config.Property(t => t.PagerId).HasColumnName("PagerID");
+			config.Property(t => t.PagerSerial).HasMaxLength(50);
+			config.Property(t => t.Internal);
+			config.Property(t => t.Team);
+			config.Property(t => t.Profile).HasMaxLength(255);
+			config.Property(t => t.PicturePath).HasMaxLength(500);
+			config.Property(t => t.Password).HasMaxLength(50);
+			config.Property(t => t.ChannelId).HasColumnName("ChannelID");
+			config.Property(t => t.Doctor).HasMaxLength(50);
+			config.Property(t => t.DoctorPhone).HasMaxLength(50);
+			config.Property(t => t.NextOfKinRelationship).HasMaxLength(50);
+			config.Property(t => t.DateOfBirth);
+			config.Property(t => t.VehicleModel).HasMaxLength(50);
+			config.Property(t => t.VehicleYear);
+			config.Property(t => t.VehicleMakeId).HasColumnName("VehicleMakeID");
+			config.Property(t => t.InsuranceCompanyId).HasColumnName("InsuranceCompanyID");
+			config.Property(t => t.CarrierLiabilityId).HasColumnName("CarrierLiabilityID");
+			config.Property(t => t.PublicLiabilityId).HasColumnName("PublicLiabilityID");
+			config.Property(t => t.DangerousGoods);
+			config.Property(t => t.BankNameId).HasColumnName("BankNameID");
+			config.Property(t => t.BankBranch).HasMaxLength(50);
+			config.Property(t => t.BankAccountNumber).HasMaxLength(50);
+			config.Property(t => t.ContractSignedDate);
+			config.Property(t => t.SecurityCheckDate);
+			config.Property(t => t.CustomField1).HasMaxLength(50);
+			config.Property(t => t.CustomField2).HasMaxLength(50);
+			config.Property(t => t.CustomField3).HasMaxLength(50);
+			config.Property(t => t.WebEnabled);
+			config.Property(t => t.ShowClientPhone);
+			config.Property(t => t.UccrId).HasColumnName("uccrID");
+			config.Property(t => t.Code).HasMaxLength(50).IsRequired();
+			config.Property(t => t.UccrName).HasColumnName("uccrName").HasMaxLength(50).IsRequired();
+			config.Property(t => t.UccrSurname).HasColumnName("uccrSurname").HasMaxLength(50).IsRequired();
+			config.Property(t => t.UccrEmail).HasColumnName("uccrEmail").HasMaxLength(100);
+			config.Property(t => t.UccrVehicle).HasColumnName("uccrVehicle").HasMaxLength(50);
+			config.Property(t => t.UccrPercentage).HasColumnName("uccrPercentage");
+			config.Property(t => t.CourierFleetId).HasColumnName("CourierFleetID");
+			config.Property(t => t.UccrLate).HasColumnName("uccrLate");
+			config.Property(t => t.UccrNotes).HasColumnName("uccrNotes").HasMaxLength(1073741823);
+			config.Property(t => t.UccrAddress).HasColumnName("uccrAddress").HasMaxLength(100);
+			config.Property(t => t.UccrTel).HasColumnName("uccrTel").HasMaxLength(50);
+			config.Property(t => t.UccrMobile).HasColumnName("uccrMobile").HasMaxLength(50);
+			config.Property(t => t.UccrGst).HasColumnName("uccrGST").HasMaxLength(50);
+			config.Property(t => t.UccrDlno).HasColumnName("uccrDLNo").HasMaxLength(50);
+			config.Property(t => t.UccrPolicyNo).HasColumnName("uccrPolicy_No").HasMaxLength(50);
+			config.Property(t => t.UccrReg).HasColumnName("uccrReg").HasMaxLength(50);
+			config.Property(t => t.UccrRt).HasColumnName("uccrRT").HasMaxLength(50);
+			config.Property(t => t.UccrRtaddress).HasColumnName("uccrRTAddress").HasMaxLength(50);
+			config.Property(t => t.UccrGsl).HasColumnName("uccrGSL").HasMaxLength(50);
+			config.Property(t => t.UccrStartDate).HasColumnName("uccrStartDate");
+			config.Property(t => t.UccrFinishDate).HasColumnName("uccrFinishDate");
+			config.Property(t => t.UccrKinName).HasColumnName("uccrKinName").HasMaxLength(50);
+			config.Property(t => t.UccrKinTel).HasColumnName("uccrKinTel").HasMaxLength(50);
+			config.Property(t => t.UccrKinAdd).HasColumnName("uccrKinAdd").HasMaxLength(100);
+			config.Property(t => t.UccrPagerId).HasColumnName("uccrPagerID");
+			config.Property(t => t.UccrPagerSerial).HasColumnName("uccrPagerSerial").HasMaxLength(50);
+			config.Property(t => t.UccrInternal).HasColumnName("uccrInternal");
+			config.Property(t => t.UccrTeam).HasColumnName("uccrTeam");
+			config.Property(t => t.UccrProfile).HasColumnName("uccrProfile").HasMaxLength(255);
+			config.Property(t => t.UccrPicturePath).HasColumnName("uccrPicturePath").HasMaxLength(500);
+			config.Property(t => t.UccrPassword).HasColumnName("uccrPassword").HasMaxLength(50);
+			config.Property(t => t.UccrChannelId).HasColumnName("uccrChannelID");
+			config.Property(t => t.UccrDoctor).HasColumnName("uccrDoctor").HasMaxLength(50);
+			config.Property(t => t.UccrDoctorPhone).HasColumnName("uccrDoctorPhone").HasMaxLength(50);
+			config.Property(t => t.UccrKinRelationship).HasColumnName("uccrKinRelationship").HasMaxLength(50);
+			config.Property(t => t.UccrDob).HasColumnName("uccrDOB");
+			config.Property(t => t.UccrVehicleModel).HasColumnName("uccrVehicleModel").HasMaxLength(50);
+			config.Property(t => t.UccrVehicleYear).HasColumnName("uccrVehicleYear");
+			config.Property(t => t.UccrVehicleMakeId).HasColumnName("uccrVehicleMakeID");
+			config.Property(t => t.UccrInsuranceId).HasColumnName("uccrInsuranceID");
+			config.Property(t => t.UccrCarrierLiabilityId).HasColumnName("uccrCarrierLiabilityID");
+			config.Property(t => t.UccrPublicLiabilityId).HasColumnName("uccrPublicLiabilityID");
+			config.Property(t => t.UccrDangerousGoods).HasColumnName("uccrDangerousGoods");
+			config.Property(t => t.UccrBankNameId).HasColumnName("uccrBankNameID");
+			config.Property(t => t.UccrBankBranch).HasColumnName("uccrBankBranch").HasMaxLength(50);
+			config.Property(t => t.UccrBankAccountNo).HasColumnName("uccrBankAccountNo").HasMaxLength(50);
+			config.Property(t => t.UccrContractDate).HasColumnName("uccrContractDate");
+			config.Property(t => t.UccrSecurityDate).HasColumnName("uccrSecurityDate");
+			config.Property(t => t.UccrCustomField1).HasColumnName("uccrCustomField1").HasMaxLength(50);
+			config.Property(t => t.UccrCustomField2).HasColumnName("uccrCustomField2").HasMaxLength(50);
+			config.Property(t => t.UccrCustomField3).HasColumnName("uccrCustomField3").HasMaxLength(50);
+			config.Property(t => t.UccrWebEnabled).HasColumnName("uccrWebEnabled");
+			config.Property(t => t.UccrShowClientPh).HasColumnName("uccrShowClientPh");
+			config.Property(t => t.SiteId).HasColumnName("SiteID");
+			config.Property(t => t.MobileInsurance);
+			config.Property(t => t.MobileRental);
+			config.Property(t => t.Podreqd).HasColumnName("PODreqd");
+			config.Property(t => t.Active);
+			config.Property(t => t.Blurb).HasMaxLength(1000);
+			config.Property(t => t.DisplayWeb);
+			config.Property(t => t.SendJobsViaSms).HasColumnName("SendJobsViaSMS");
+			config.Property(t => t.SendAlertSms).HasColumnName("SendAlertSMS");
+			config.Property(t => t.VodafoneNetwork);
+			config.Property(t => t.ExpectedStartTime);
+			config.Property(t => t.ExpectedEndTime);
+			config.Property(t => t.CourierGpsid).HasColumnName("CourierGPSID");
+			config.Property(t => t.CourierLogInOutId).HasColumnName("CourierLogInOutID");
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.LastModified);
+			config.Property(t => t.LastModifiedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.JobPaperPrintOut);
+			config.Property(t => t.AccountProfileId).HasColumnName("AccountProfileID");
+			config.Property(t => t.Macourier).HasColumnName("MACourier");
+			config.Property(t => t.TaxSavingsStart);
+			config.Property(t => t.TaxSavingsEnd);
+			config.Property(t => t.CarSavingsStart);
+			config.Property(t => t.CarSavingsEnd);
+			config.Property(t => t.CarSavingsAmount);
+			config.Property(t => t.AutoDespatch);
+			config.Property(t => t.AfterHoursWeb);
+			config.Property(t => t.PersonalMobile).HasMaxLength(50);
+			config.Property(t => t.Gender);
+			config.Property(t => t.DriversLicenseExpiry);
+			config.Property(t => t.DglicenseExpiry).HasColumnName("DGLicenseExpiry");
+			config.Property(t => t.LowEmissionVehicle);
+			config.Property(t => t.TrainingHrFu).HasColumnName("TrainingHrFU").HasMaxLength(50);
+			config.Property(t => t.TrainingHr).HasMaxLength(50);
+			config.Property(t => t.MobileAdAmount);
+			config.Property(t => t.MobileAdEnd);
+			config.Property(t => t.MobileAdStart);
+			config.Property(t => t.DeviceTypeId).HasColumnName("DeviceTypeID");
+			config.Property(t => t.DeviceAdmin);
+			config.Property(t => t.MaxPallets);
+			config.Property(t => t.MaxPayLoad);
+			config.Property(t => t.HeavyTransportEndorcement);
+			config.Property(t => t.TareWeight);
+			config.Property(t => t.Rucweight).HasColumnName("RUCWeight");
+			config.Property(t => t.Ruckms).HasColumnName("RUCKms");
+			config.Property(t => t.Wofexpiry).HasColumnName("WOFExpiry");
+			config.Property(t => t.RegistrationExpiry);
+			config.Property(t => t.Height);
+			config.Property(t => t.Width);
+			config.Property(t => t.Length);
+			config.Property(t => t.Rucpayload).HasColumnName("RUCPayload");
+			config.Property(t => t.WithholdingTaxPercentage);
+			config.Property(t => t.PaydayFileRegistration);
+			config.Property(t => t.CommercialInsurance);
+		}
+
 		/// <summary>Defines the mapping information for the entity 'TblDespatchView'</summary>
 		/// <param name="config">The configuration to modify.</param>
 		protected virtual void MapTblDespatchView(EntityTypeBuilder<TblDespatchView> config)
@@ -496,6 +734,447 @@ namespace DespatchWeb
 			config.Property(t => t.ShowOnDespatch);
 			config.Property(t => t.ShowOnAssistDespatch);
 			config.Property(t => t.ShowOnJobFollowup);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TblInternetPermission'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTblInternetPermission(EntityTypeBuilder<TblInternetPermission> config)
+		{
+			config.ToTable("tblInternetPermission");
+			config.HasKey(t => t.InternetPermissionId);
+			config.Property(t => t.InternetPermissionId).HasColumnName("InternetPermissionID").ValueGeneratedOnAdd();
+			config.Property(t => t.Name).HasMaxLength(50).IsRequired();
+			config.Property(t => t.SystemName).HasMaxLength(50);
+			config.Property(t => t.HideWhenInactive);
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.LastModified);
+			config.Property(t => t.LastModifiedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Notes).HasMaxLength(1073741823);
+			config.Property(t => t.AssignToNewContacts);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TblJob'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTblJob(EntityTypeBuilder<TblJob> config)
+		{
+			config.ToTable("tblJob");
+			config.IsReadOnly();
+			config.HasKey(t => t.JobId);
+			config.Property(t => t.JobId).HasColumnName("JobID");
+			config.Property(t => t.Number).HasMaxLength(15).IsRequired();
+			config.Property(t => t.ClientId).HasColumnName("ClientID");
+			config.Property(t => t.ClientCode).HasMaxLength(5);
+			config.Property(t => t.CourierId).HasColumnName("CourierID");
+			config.Property(t => t.Date);
+			config.Property(t => t.Time);
+			config.Property(t => t.JobTypeId).HasColumnName("JobTypeID");
+			config.Property(t => t.FromSuburbId).HasColumnName("FromSuburbID");
+			config.Property(t => t.ToSuburbId).HasColumnName("ToSuburbID");
+			config.Property(t => t.Amount);
+			config.Property(t => t.Locked);
+			config.Property(t => t.Month);
+			config.Property(t => t.Year);
+			config.Property(t => t.OurRef).HasMaxLength(20);
+			config.Property(t => t.JobDone);
+			config.Property(t => t.Void);
+			config.Property(t => t.Podname).HasColumnName("PODName").HasMaxLength(100);
+			config.Property(t => t.Speed);
+			config.Property(t => t.LatePickUp);
+			config.Property(t => t.LateDelivery);
+			config.Property(t => t.CompletedTime);
+			config.Property(t => t.DispatchDate);
+			config.Property(t => t.DispatchTime);
+			config.Property(t => t.DispatcherId).HasColumnName("DispatcherID");
+			config.Property(t => t.ZoneCount);
+			config.Property(t => t.RtnJob);
+			config.Property(t => t.PickUpTime);
+			config.Property(t => t.Status);
+			config.Property(t => t.Rebate);
+			config.Property(t => t.Weight);
+			config.Property(t => t.Quantity);
+			config.Property(t => t.FromAddress).HasMaxLength(150);
+			config.Property(t => t.ToAddress).HasMaxLength(150);
+			config.Property(t => t.Notes).HasMaxLength(4000);
+			config.Property(t => t.ClientReferenceA).HasMaxLength(20);
+			config.Property(t => t.ClientReferenceB).HasMaxLength(15);
+			config.Property(t => t.Recipient).HasMaxLength(30);
+			config.Property(t => t.Size);
+			config.Property(t => t.ClientNotes).HasMaxLength(4000);
+			config.Property(t => t.InternalNotes).HasMaxLength(4000);
+			config.Property(t => t.OperatorId).HasColumnName("OperatorID");
+			config.Property(t => t.ChargeType);
+			config.Property(t => t.FuelSurchargeAmount);
+			config.Property(t => t.Km);
+			config.Property(t => t.SaturdayDelivery);
+			config.Property(t => t.Type);
+			config.Property(t => t.Contact).HasMaxLength(30);
+			config.Property(t => t.ToSpecial).HasMaxLength(120);
+			config.Property(t => t.Cbd).HasColumnName("CBD");
+			config.Property(t => t.FlightDetails).HasMaxLength(50);
+			config.Property(t => t.Van);
+			config.Property(t => t.Attention);
+			config.Property(t => t.PickupFrom);
+			config.Property(t => t.RefJobId).HasColumnName("RefJobID");
+			config.Property(t => t.ContactPhone).HasMaxLength(15);
+			config.Property(t => t.Return);
+			config.Property(t => t.RemoteJob);
+			config.Property(t => t.InvoiceNo);
+			config.Property(t => t.ContactId).HasColumnName("ContactID");
+			config.Property(t => t.LatePickupNotificationHasBeenSent);
+			config.Property(t => t.WhenLatePickupNotificationSent);
+			config.Property(t => t.LateDeliveryNotificationHasBeenSent);
+			config.Property(t => t.WhenLateDeliveryNotificationSent);
+			config.Property(t => t.ProofOfDelivery);
+			config.Property(t => t.ProofOfDeliveryEmail).HasMaxLength(100);
+			config.Property(t => t.ProofOfDeliveryMobile).HasMaxLength(100);
+			config.Property(t => t.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
+			config.Property(t => t.WhenPodnotificationSent).HasColumnName("WhenPODNotificationSent");
+			config.Property(t => t.PickupFromContact).HasMaxLength(100);
+			config.Property(t => t.PickupFromPhone).HasMaxLength(100);
+			config.Property(t => t.DeliverToContact).HasMaxLength(100);
+			config.Property(t => t.DeliverToPhone).HasMaxLength(100);
+			config.Property(t => t.DeliverToPrivateBusiness);
+			config.Property(t => t.LeaveNotHomeId).HasColumnName("LeaveNotHomeID");
+			config.Property(t => t.RuralDelivery);
+			config.Property(t => t.PickUpSignature);
+			config.Property(t => t.DeliverySignature);
+			config.Property(t => t.PickUpLongitude);
+			config.Property(t => t.PickUpLatitude);
+			config.Property(t => t.DeliveryLongitude);
+			config.Property(t => t.DeliveryLatitude);
+			config.Property(t => t.WaitedPickUp);
+			config.Property(t => t.WaitedDelivery);
+			config.Property(t => t.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
+			config.Property(t => t.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
+			config.Property(t => t.Direct);
+			config.Property(t => t.OriginalSpeedId).HasColumnName("OriginalSpeedID");
+			config.Property(t => t.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
+			config.Property(t => t.UndeliverableLocationId).HasColumnName("UndeliverableLocationID");
+			config.Property(t => t.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
+			config.Property(t => t.ParentId).HasColumnName("ParentID");
+			config.Property(t => t.InformationParentId).HasColumnName("InformationParentID");
+			config.Property(t => t.RootParentId).HasColumnName("RootParentID");
+			config.Property(t => t.Sequence);
+			config.Property(t => t.MobileSend);
+			config.Property(t => t.SendTime);
+			config.Property(t => t.ExternalCodingId).HasColumnName("ExternalCodingID");
+			config.Property(t => t.ExternalCourierCodingId).HasColumnName("ExternalCourierCodingID");
+			config.Property(t => t.Ppdexclusiveamount).HasColumnName("ppdexclusiveamount");
+			config.Property(t => t.Gstrate).HasColumnName("GSTRate");
+			config.Property(t => t.Truck);
+			config.Property(t => t.Dgclass).HasColumnName("DGClass");
+			config.Property(t => t.Dgdocument).HasColumnName("DGDocument");
+			config.Property(t => t.TextRef1).HasMaxLength(50);
+			config.Property(t => t.TextRef2).HasMaxLength(50);
+			config.Property(t => t.TextRef3).HasMaxLength(50);
+			config.Property(t => t.TextRef4).HasMaxLength(50);
+			config.Property(t => t.FromAddressExtras).HasMaxLength(200);
+			config.Property(t => t.FromAddressStreetName).HasMaxLength(200);
+			config.Property(t => t.FromAddressExtras2).HasMaxLength(200);
+			config.Property(t => t.ToAddressExtras).HasMaxLength(200);
+			config.Property(t => t.ToAddressStreetName).HasMaxLength(200);
+			config.Property(t => t.ToAddressExtras2).HasMaxLength(200);
+			config.Property(t => t.ClientReferenceC).HasMaxLength(50);
+			config.Property(t => t.Gssamount).HasColumnName("GSSAmount");
+			config.Property(t => t.RawAmount);
+			config.Property(t => t.Gssconnote).HasColumnName("GSSConnote").HasMaxLength(50);
+			config.Property(t => t.GsstrackingUrl).HasColumnName("GSSTrackingURL").HasMaxLength(400);
+			config.Property(t => t.JobTrackingNotificationHasBeenSent);
+			config.Property(t => t.WhenJobTrackingNotificationSent);
+			config.Property(t => t.TrackingMethod);
+			config.Property(t => t.TrackingEmail).HasMaxLength(500);
+			config.Property(t => t.TrackingMobile).HasMaxLength(500);
+			config.Property(t => t.RatedManually);
+			config.Property(t => t.DeliveryPhoto);
+			config.Property(t => t.DeliveryGps).HasMaxLength(50);
+			config.Property(t => t.RunName).HasMaxLength(50);
+			config.Property(t => t.CourierPayment);
+			config.Property(t => t.RawBaseAmount);
+			config.Property(t => t.CourierBonus);
+			config.Property(t => t.Duration);
+			config.Property(t => t.ShopId);
+			config.Property(t => t.ShopRef1).HasMaxLength(50);
+			config.Property(t => t.ShopRef2).HasMaxLength(50);
+			config.Property(t => t.ShopRef3).HasMaxLength(50);
+			config.Property(t => t.ShopRef4).HasMaxLength(50);
+			config.Property(t => t.ShopRef5).HasMaxLength(50);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TblJobLeaveNotHome'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTblJobLeaveNotHome(EntityTypeBuilder<TblJobLeaveNotHome> config)
+		{
+			config.ToTable("tblJobLeaveNotHome");
+			config.HasKey(t => t.LeaveNotHomeId);
+			config.Property(t => t.LeaveNotHomeId).HasColumnName("LeaveNotHomeID").ValueGeneratedOnAdd();
+			config.Property(t => t.Name).HasMaxLength(100).IsRequired();
+			config.Property(t => t.Smsname).HasColumnName("SMSName").HasMaxLength(100).IsRequired();
+			config.Property(t => t.RequireCourierNotes);
+			config.Property(t => t.AllowLeave);
+			config.Property(t => t.Sequence);
+			config.Property(t => t.Category).HasMaxLength(100);
+			config.Property(t => t.LastModified);
+			config.Property(t => t.LastModifiedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Notes).HasMaxLength(1073741823);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TucClient'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTucClient(EntityTypeBuilder<TucClient> config)
+		{
+			config.ToTable("tucClient");
+			config.HasKey(t => t.UcclId);
+			config.Property(t => t.UcclId).HasColumnName("ucclID").ValueGeneratedOnAdd();
+			config.Property(t => t.UcclName).HasColumnName("ucclName").HasMaxLength(75).IsRequired();
+			config.Property(t => t.UcclLegalName).HasColumnName("ucclLegalName").HasMaxLength(150).IsRequired();
+			config.Property(t => t.Smsname).HasColumnName("SMSName").HasMaxLength(50).IsRequired();
+			config.Property(t => t.UcclCode).HasColumnName("ucclCode").HasMaxLength(50).IsRequired();
+			config.Property(t => t.UcclAddress).HasColumnName("ucclAddress").HasMaxLength(150);
+			config.Property(t => t.UcclExtraAddress).HasColumnName("ucclExtraAddress").HasMaxLength(550);
+			config.Property(t => t.UcclPostal).HasColumnName("ucclPostal").HasMaxLength(150);
+			config.Property(t => t.UcclSuburbId).HasColumnName("ucclSuburbID");
+			config.Property(t => t.UcclPostCode).HasColumnName("ucclPostCode").HasMaxLength(50);
+			config.Property(t => t.UcclPhone).HasColumnName("ucclPhone").HasMaxLength(50);
+			config.Property(t => t.UcclPhone2).HasColumnName("ucclPhone2").HasMaxLength(50);
+			config.Property(t => t.UcclMobile).HasColumnName("ucclMobile").HasMaxLength(50);
+			config.Property(t => t.UcclFax).HasColumnName("ucclFax").HasMaxLength(50);
+			config.Property(t => t.Invoice);
+			config.Property(t => t.UcclBillingType).HasColumnName("ucclBillingType");
+			config.Property(t => t.UcclType).HasColumnName("ucclType").HasMaxLength(50);
+			config.Property(t => t.UcclRate).HasColumnName("ucclRate");
+			config.Property(t => t.UcclSlow).HasColumnName("ucclSlow");
+			config.Property(t => t.UcclPedal).HasColumnName("ucclPedal");
+			config.Property(t => t.UcclRateNi).HasColumnName("ucclRateNI");
+			config.Property(t => t.UcclRateNiweight).HasColumnName("ucclRateNIWeight");
+			config.Property(t => t.UcclRateSi).HasColumnName("ucclRateSI");
+			config.Property(t => t.UcclRateSiweight).HasColumnName("ucclRateSIWeight");
+			config.Property(t => t.UcclRateDoc).HasColumnName("ucclRateDoc");
+			config.Property(t => t.UcclRateMainTrunk).HasColumnName("ucclRateMainTrunk");
+			config.Property(t => t.UcclRateMainTrunkKg).HasColumnName("ucclRateMainTrunkKG");
+			config.Property(t => t.UcclRateOther).HasColumnName("ucclRateOther");
+			config.Property(t => t.UcclRateOtherKg).HasColumnName("ucclRateOtherKG");
+			config.Property(t => t.UcclRateShorthaul).HasColumnName("ucclRateShorthaul");
+			config.Property(t => t.UcclRateShorthaulKg).HasColumnName("ucclRateShorthaulKG");
+			config.Property(t => t.RateSat);
+			config.Property(t => t.RateRr).HasColumnName("RateRR");
+			config.Property(t => t.RateShortRr).HasColumnName("RateShortRR");
+			config.Property(t => t.Rate15min);
+			config.Property(t => t.Rate30min);
+			config.Property(t => t.Rate45min);
+			config.Property(t => t.Rate75min);
+			config.Property(t => t.Rate90min);
+			config.Property(t => t.Rate2hr);
+			config.Property(t => t.RateVan);
+			config.Property(t => t.RuralDeliveryRateCodeId).HasColumnName("RuralDeliveryRateCodeID");
+			config.Property(t => t.UcclGstinc).HasColumnName("ucclGSTInc");
+			config.Property(t => t.UcclCash).HasColumnName("ucclCash");
+			config.Property(t => t.UcclNote).HasColumnName("ucclNote").HasMaxLength(1073741823);
+			config.Property(t => t.UcclAwesome).HasColumnName("ucclAwesome");
+			config.Property(t => t.UcclStaff).HasColumnName("ucclStaff");
+			config.Property(t => t.UcclInternal).HasColumnName("ucclInternal");
+			config.Property(t => t.UcclDateJoined).HasColumnName("ucclDateJoined");
+			config.Property(t => t.Ucclemail).HasColumnName("ucclemail").HasMaxLength(100);
+			config.Property(t => t.UcclInternet).HasColumnName("ucclInternet").HasMaxLength(100);
+			config.Property(t => t.UcclIndustry).HasColumnName("ucclIndustry");
+			config.Property(t => t.UcclPassword).HasColumnName("ucclPassword").HasMaxLength(50);
+			config.Property(t => t.UcclNotes).HasColumnName("ucclNotes").HasMaxLength(550);
+			config.Property(t => t.UcclPodrequired).HasColumnName("ucclPODRequired");
+			config.Property(t => t.UcclAccountStatus).HasColumnName("ucclAccountStatus");
+			config.Property(t => t.UcclDmfirstName).HasColumnName("ucclDMFirstName").HasMaxLength(50);
+			config.Property(t => t.UcclDmlastName).HasColumnName("ucclDMLastName").HasMaxLength(50);
+			config.Property(t => t.UcclMcfirstName).HasColumnName("ucclMCFirstName").HasMaxLength(50);
+			config.Property(t => t.UcclMclastName).HasColumnName("ucclMCLastName").HasMaxLength(50);
+			config.Property(t => t.UcclActive).HasColumnName("ucclActive");
+			config.Property(t => t.UcclInActiveDate).HasColumnName("ucclInActiveDate");
+			config.Property(t => t.UcclInActiveSetBy).HasColumnName("ucclInActiveSetBy").HasMaxLength(50);
+			config.Property(t => t.UcclReferralSource).HasColumnName("ucclReferralSource");
+			config.Property(t => t.UcclReferralNotes).HasColumnName("ucclReferralNotes").HasMaxLength(1073741823);
+			config.Property(t => t.UcclAverageDaily).HasColumnName("ucclAverageDaily");
+			config.Property(t => t.UcclAverageDailyGroup).HasColumnName("ucclAverageDailyGroup");
+			config.Property(t => t.UcclGroupId).HasColumnName("ucclGroupID");
+			config.Property(t => t.UcclUseGroup).HasColumnName("ucclUseGroup");
+			config.Property(t => t.RemoteJobs);
+			config.Property(t => t.SiteId).HasColumnName("SiteID");
+			config.Property(t => t.StartingWeightExcess);
+			config.Property(t => t.AlertLatePickUp);
+			config.Property(t => t.AlertLateDelivery);
+			config.Property(t => t.InternetRebate);
+			config.Property(t => t.InvoiceMethod).HasMaxLength(50);
+			config.Property(t => t.InvoiceGroupBy).HasMaxLength(50);
+			config.Property(t => t.ReferenceAmandatory).HasColumnName("ReferenceAMandatory");
+			config.Property(t => t.ReferenceAmessage).HasColumnName("ReferenceAMessage").HasMaxLength(500);
+			config.Property(t => t.ReferenceAdefineList).HasColumnName("ReferenceADefineList");
+			config.Property(t => t.ReferenceBmandatory).HasColumnName("ReferenceBMandatory");
+			config.Property(t => t.ReferenceBmessage).HasColumnName("ReferenceBMessage").HasMaxLength(500);
+			config.Property(t => t.ReferenceBdefineList).HasColumnName("ReferenceBDefineList");
+			config.Property(t => t.InternetShowPickUpLocation);
+			config.Property(t => t.IfPickupClientRateUsingZones);
+			config.Property(t => t.WhenBookingJobDisplayFullName);
+			config.Property(t => t.WebServicePassword).HasMaxLength(100);
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.LastModified);
+			config.Property(t => t.LastModifiedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.InternetDisplaySavedJobsAsCombo);
+			config.Property(t => t.Longitude);
+			config.Property(t => t.Latitude);
+			config.Property(t => t.PromptForEmailAddress);
+			config.Property(t => t.MarkUp);
+			config.Property(t => t.UrgentTonightStyleSheet).HasMaxLength(500);
+			config.Property(t => t.UrgentTonightLogo).HasMaxLength(500);
+			config.Property(t => t.UrgentTonightShow);
+			config.Property(t => t.UrgentTonightCategoryId).HasColumnName("UrgentTonightCategoryID");
+			config.Property(t => t.SiteUrl).HasColumnName("SiteURL").HasMaxLength(500);
+			config.Property(t => t.AccountProfileId).HasColumnName("AccountProfileID");
+			config.Property(t => t.IsFeaturedClient);
+			config.Property(t => t.UrgentTonightActive);
+			config.Property(t => t.UrgentTonightSequence);
+			config.Property(t => t.UtrateCodeId).HasColumnName("UTRateCodeID");
+			config.Property(t => t.UtaddtionalItemRateCodeId).HasColumnName("UTAddtionalItemRateCodeID");
+			config.Property(t => t.UtpickupTime).HasColumnName("UTPickupTime");
+			config.Property(t => t.UtminimumJobsPerDay).HasColumnName("UTMinimumJobsPerDay");
+			config.Property(t => t.UtminimumJobsAmount).HasColumnName("UTMinimumJobsAmount");
+			config.Property(t => t.CourierPercentage);
+			config.Property(t => t.InvoiceEmail).HasMaxLength(500);
+			config.Property(t => t.EconomyActive);
+			config.Property(t => t.EconomyZones);
+			config.Property(t => t.EconomyRuns);
+			config.Property(t => t.EconomyMinimumJobRateCodeId).HasColumnName("EconomyMinimumJobRateCodeID");
+			config.Property(t => t.EconomyRateCodeId).HasColumnName("EconomyRateCodeID");
+			config.Property(t => t.EconomyRunRateCodeId).HasColumnName("EconomyRunRateCodeID");
+			config.Property(t => t.EconomyRun1);
+			config.Property(t => t.EconomyRun2);
+			config.Property(t => t.EconomyRun3);
+			config.Property(t => t.EconomyRun4);
+			config.Property(t => t.EconomyRun5);
+			config.Property(t => t.EconomyRun6);
+			config.Property(t => t.EconomyRun7);
+			config.Property(t => t.EconomyRun8);
+			config.Property(t => t.RateEconomy);
+			config.Property(t => t.Ppdrate).HasColumnName("PPDRate");
+			config.Property(t => t.PpdgraceDays).HasColumnName("PPDGraceDays");
+			config.Property(t => t.BaggageRateCodeId).HasColumnName("BaggageRateCodeID");
+			config.Property(t => t.BaggageActive);
+			config.Property(t => t.CommissionExclude);
+			config.Property(t => t.CommissionDate);
+			config.Property(t => t.FastPalletStandardRateCodeId).HasColumnName("FastPalletStandardRateCodeID");
+			config.Property(t => t.FastPalletExpressRateCodeId).HasColumnName("FastPalletExpressRateCodeID");
+			config.Property(t => t.FastPalletSuperRateCodeId).HasColumnName("FastPalletSuperRateCodeID");
+			config.Property(t => t.ExpressRateCodeId).HasColumnName("ExpressRateCodeID");
+			config.Property(t => t.TruckRoadRateCodeId).HasColumnName("TruckRoadRateCodeID");
+			config.Property(t => t.HiabHourRateCodeId).HasColumnName("HiabHourRateCodeID");
+			config.Property(t => t.FastParcelRateCodeId).HasColumnName("FastParcelRateCodeID");
+			config.Property(t => t.TruckRateCodeId).HasColumnName("TruckRateCodeID");
+			config.Property(t => t.TruckBulkRateCodeId).HasColumnName("TruckBulkRateCodeID");
+			config.Property(t => t.TruckExcessPalletSlowRateCodeId).HasColumnName("TruckExcessPalletSlowRateCodeID");
+			config.Property(t => t.TruckExcessPalletFastRateCodeId).HasColumnName("TruckExcessPalletFastRateCodeID");
+			config.Property(t => t.TailLiftRateCodeId).HasColumnName("TailLiftRateCodeID");
+			config.Property(t => t.TruckExcessWeightSlowRateCodeId).HasColumnName("TruckExcessWeightSlowRateCodeID");
+			config.Property(t => t.TruckExcessWeightFastRateCodeId).HasColumnName("TruckExcessWeightFastRateCodeID");
+			config.Property(t => t.OversizeRateCodeId).HasColumnName("OversizeRateCodeID");
+			config.Property(t => t.PrivateAddressSurchargeRateCodeId).HasColumnName("PrivateAddressSurchargeRateCodeID");
+			config.Property(t => t.DangerousServiceRateCodeId).HasColumnName("DangerousServiceRateCodeID");
+			config.Property(t => t.TruckWeightLimit);
+			config.Property(t => t.TruckExcessZoneLimit);
+			config.Property(t => t.TruckExcessZoneRateCodeId).HasColumnName("TruckExcessZoneRateCodeID");
+			config.Property(t => t.FreightForwardNorthIsland);
+			config.Property(t => t.FreightForwardSouthIsland);
+			config.Property(t => t.FreightForwardDocuments);
+			config.Property(t => t.VanStartingWeightExcess);
+			config.Property(t => t.BulkMinimumAmount);
+			config.Property(t => t.Threshold1Amount);
+			config.Property(t => t.Threshold2Amount);
+			config.Property(t => t.Threshold3Amount);
+			config.Property(t => t.Threshold4Amount);
+			config.Property(t => t.Threshold5Amount);
+			config.Property(t => t.Threshold1);
+			config.Property(t => t.Threshold2);
+			config.Property(t => t.Threshold3);
+			config.Property(t => t.Threshold4);
+			config.Property(t => t.Threshold5);
+			config.Property(t => t.DropoffReport).HasMaxLength(10);
+			config.Property(t => t.TruckEconomyRateCodeId).HasColumnName("TruckEconomyRateCodeID");
+			config.Property(t => t.TruckExcessPalletSuperRateCodeId).HasColumnName("TruckExcessPalletSuperRateCodeID");
+			config.Property(t => t.TruckExcessPalletEconomyRateCodeId).HasColumnName("TruckExcessPalletEconomyRateCodeID");
+			config.Property(t => t.HamiltonDayRunPurateCodeId).HasColumnName("HamiltonDayRunPURateCodeID");
+			config.Property(t => t.HamiltonDayRunDeliveryRateCodeId).HasColumnName("HamiltonDayRunDeliveryRateCodeID");
+			config.Property(t => t.HamiltonNextDayPurateCodeId).HasColumnName("HamiltonNextDayPURateCodeID");
+			config.Property(t => t.HamiltonNextDayDeliveryRateCodeId).HasColumnName("HamiltonNextDayDeliveryRateCodeID");
+			config.Property(t => t.HamiltonRunWeightLimit);
+			config.Property(t => t.HamiltonRunWeightExcess);
+			config.Property(t => t.EconomyRunItemsExcessRateCodeId).HasColumnName("EconomyRunItemsExcessRateCodeID");
+			config.Property(t => t.HamiltonRunAdditionalItemsRateCodeId).HasColumnName("HamiltonRunAdditionalItemsRateCodeID");
+			config.Property(t => t.AddressExtras).HasMaxLength(200);
+			config.Property(t => t.AddressStreetName).HasMaxLength(200);
+			config.Property(t => t.UtcutOff).HasColumnName("UTCutOff");
+			config.Property(t => t.RerateJobs);
+			config.Property(t => t.OvernightPickupNotRequired);
+			config.Property(t => t.MedicalActive);
+			config.Property(t => t.MedicalRunFirstItemRateId).HasColumnName("MedicalRunFirstItemRateID");
+			config.Property(t => t.MedicalRunAdditionalItemsRateId).HasColumnName("MedicalRunAdditionalItemsRateID");
+			config.Property(t => t.ShowMap);
+			config.Property(t => t.ReferenceCdefineList).HasColumnName("ReferenceCDefineList");
+			config.Property(t => t.ReferenceCmandatory).HasColumnName("ReferenceCMandatory");
+			config.Property(t => t.ReferenceCmessage).HasColumnName("ReferenceCMessage").HasMaxLength(500);
+			config.Property(t => t.DisplayRateRef);
+			config.Property(t => t.NextFlight1RateId).HasColumnName("NextFlight1RateID");
+			config.Property(t => t.NextFlight2RateId).HasColumnName("NextFlight2RateID");
+			config.Property(t => t.NextFlight3RateId).HasColumnName("NextFlight3RateID");
+			config.Property(t => t.NextFlight4RateId).HasColumnName("NextFlight4RateID");
+			config.Property(t => t.NextFlight1KgrateId).HasColumnName("NextFlight1KGRateID");
+			config.Property(t => t.NextFlight2KgrateId).HasColumnName("NextFlight2KGRateID");
+			config.Property(t => t.NextFlight3KgrateId).HasColumnName("NextFlight3KGRateID");
+			config.Property(t => t.NextFlight4KgrateId).HasColumnName("NextFlight4KGRateID");
+			config.Property(t => t.EconomyFlightPeak1RateId).HasColumnName("EconomyFlightPeak1RateID");
+			config.Property(t => t.EconomyFlightPeak2RateId).HasColumnName("EconomyFlightPeak2RateID");
+			config.Property(t => t.EconomyFlightPeak3RateId).HasColumnName("EconomyFlightPeak3RateID");
+			config.Property(t => t.EconomyFlightPeak4RateId).HasColumnName("EconomyFlightPeak4RateID");
+			config.Property(t => t.EconomyFlightPeakKg1RateId).HasColumnName("EconomyFlightPeakKG1RateID");
+			config.Property(t => t.EconomyFlightPeakKg2RateId).HasColumnName("EconomyFlightPeakKG2RateID");
+			config.Property(t => t.EconomyFlightPeakKg3RateId).HasColumnName("EconomyFlightPeakKG3RateID");
+			config.Property(t => t.EconomyFlightPeakKg4RateId).HasColumnName("EconomyFlightPeakKG4RateID");
+			config.Property(t => t.EconomyFlightOffPeak1RateId).HasColumnName("EconomyFlightOffPeak1RateID");
+			config.Property(t => t.EconomyFlightOffPeak2RateId).HasColumnName("EconomyFlightOffPeak2RateID");
+			config.Property(t => t.EconomyFlightOffPeak3RateId).HasColumnName("EconomyFlightOffPeak3RateID");
+			config.Property(t => t.EconomyFlightOffPeak4RateId).HasColumnName("EconomyFlightOffPeak4RateID");
+			config.Property(t => t.EconomyFlightOffPeakKg1RateId).HasColumnName("EconomyFlightOffPeakKG1RateID");
+			config.Property(t => t.EconomyFlightOffPeakKg2RateId).HasColumnName("EconomyFlightOffPeakKG2RateID");
+			config.Property(t => t.EconomyFlightOffPeakKg3RateId).HasColumnName("EconomyFlightOffPeakKG3RateID");
+			config.Property(t => t.EconomyFlightOffPeakKg4RateId).HasColumnName("EconomyFlightOffPeakKG4RateID");
+			config.Property(t => t.NextFlightMarkup);
+			config.Property(t => t.EconomyFlightMarkup);
+			config.Property(t => t.Dgfee).HasColumnName("DGFee");
+			config.Property(t => t.DgdryIce).HasColumnName("DGDryIce");
+			config.Property(t => t.Sddenabled).HasColumnName("SDDEnabled");
+			config.Property(t => t.Sdrenabled).HasColumnName("SDREnabled");
+			config.Property(t => t.GssregularPickupClient).HasColumnName("GSSRegularPickupClient");
+			config.Property(t => t.GssregularPickupTime).HasColumnName("GSSRegularPickupTime");
+			config.Property(t => t.InvoiceDue);
+			config.Property(t => t.TruckEconomyExcessZoneRateCodeId).HasColumnName("TruckEconomyExcessZoneRateCodeID");
+			config.Property(t => t.TruckStandardExcessZoneRateCodeId).HasColumnName("TruckStandardExcessZoneRateCodeID");
+			config.Property(t => t.TruckExpressExcessZoneRateCodeId).HasColumnName("TruckExpressExcessZoneRateCodeID");
+			config.Property(t => t.TruckSuperExcessZoneRateCodeId).HasColumnName("TruckSuperExcessZoneRateCodeID");
+			config.Property(t => t.ApplyCitySurcharge);
+			config.Property(t => t.CitySurchargeRate);
+			config.Property(t => t.TruckCitySurchargeRate);
+			config.Property(t => t.Discount);
+			config.Property(t => t.NoUtpickUp).HasColumnName("NoUTPickUp");
+			config.Property(t => t.MaxJobsPerRun);
+			config.Property(t => t.NzPostSiteCode).HasMaxLength(50);
+			config.Property(t => t.JobPrefix).HasMaxLength(3);
+			config.Property(t => t.AddonPercentage);
+			config.Property(t => t.XeroId).HasMaxLength(50);
+			config.Property(t => t.IsDirectDebit);
+			config.Property(t => t.CreateBulkHomeDeliveryPickup);
+			config.Property(t => t.BulkHomeDeliveryPickupRateId).HasColumnName("BulkHomeDeliveryPickupRateID");
+			config.Property(t => t.BulkHomeDeliveryVanItemExcess);
+			config.Property(t => t.BulkHomeDeliveryVanItemSurcharge);
+			config.Property(t => t.BulkAternoonHomePickupTime);
+			config.Property(t => t.TrackingEta).HasColumnName("TrackingETA");
+			config.HasOne(t => t.TucSuburb).WithMany(t => t.TucClients).HasForeignKey(t => t.UcclSuburbId);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TucClientContact'</summary>
@@ -516,7 +1195,7 @@ namespace DespatchWeb
 			config.Property(t => t.UcctMobile).HasColumnName("ucctMobile").HasMaxLength(50);
 			config.Property(t => t.UcctNotes).HasColumnName("ucctNotes").HasMaxLength(250);
 			config.Property(t => t.Fax).HasMaxLength(50);
-			config.Property(t => t.UserName).HasMaxLength(50);
+			config.Property(t => t.UserName).HasMaxLength(200);
 			config.Property(t => t.Password).HasMaxLength(50);
 			config.Property(t => t.Active);
 			config.Property(t => t.AllowCookieLogin);
@@ -542,6 +1221,7 @@ namespace DespatchWeb
 			config.Property(t => t.Password2).HasMaxLength(200);
 			config.Property(t => t.Salt).HasMaxLength(64);
 			config.Property(t => t.StaffId).HasColumnName("StaffID");
+			config.HasOne(t => t.TucClient).WithMany(t => t.TucClientContacts).HasForeignKey(t => t.UcctClientId);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TucJobItem'</summary>
@@ -561,6 +1241,57 @@ namespace DespatchWeb
 			config.Property(t => t.Do).HasColumnName("DO");
 			config.Property(t => t.Dgclass).HasColumnName("DGClass");
 			config.Property(t => t.Notes).HasMaxLength(4000);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TucJobStatus'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTucJobStatus(EntityTypeBuilder<TucJobStatus> config)
+		{
+			config.ToTable("tucJobStatus");
+			config.HasKey(t => t.UcjsId);
+			config.Property(t => t.UcjsId).HasColumnName("ucjsID").ValueGeneratedOnAdd();
+			config.Property(t => t.UcjsReplyCode).HasColumnName("ucjsReplyCode").HasMaxLength(3);
+			config.Property(t => t.UcjsName).HasColumnName("ucjsName").HasMaxLength(50).IsRequired();
+			config.Property(t => t.UcjsCode).HasColumnName("ucjsCode").HasMaxLength(10);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TucJobType'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTucJobType(EntityTypeBuilder<TucJobType> config)
+		{
+			config.ToTable("tucJobType");
+			config.HasKey(t => t.UcjtId);
+			config.Property(t => t.UcjtId).HasColumnName("ucjtID").ValueGeneratedOnAdd();
+			config.Property(t => t.UcjtName).HasColumnName("ucjtName").HasMaxLength(50).IsRequired();
+			config.Property(t => t.ShortName).HasMaxLength(50);
+			config.Property(t => t.UcjtDescription).HasColumnName("ucjtDescription").HasMaxLength(500);
+			config.Property(t => t.UcjtBaseRate).HasColumnName("ucjtBaseRate");
+			config.Property(t => t.UcjtUnitRate).HasColumnName("ucjtUnitRate");
+			config.Property(t => t.UcjtCode).HasColumnName("ucjtCode").HasMaxLength(10);
+			config.Property(t => t.Minutes);
+			config.Property(t => t.DeliveryMargin);
+			config.Property(t => t.JobLetter).HasMaxLength(5);
+			config.Property(t => t.PickupTime);
+			config.Property(t => t.DeliveryTime);
+			config.Property(t => t.JobEntry);
+			config.Property(t => t.NationwideEntry);
+			config.Property(t => t.DatacomEntry);
+			config.Property(t => t.WebJobEntry);
+			config.Property(t => t.CourierPercentage);
+			config.Property(t => t.SuccessRate);
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.LastModified);
+			config.Property(t => t.LastModifiedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Notes).HasMaxLength(1073741823);
+			config.Property(t => t.SystemName).HasMaxLength(50);
+			config.Property(t => t.WebServiceEntry);
+			config.Property(t => t.SplitJobDeliveryTime);
+			config.Property(t => t.TruckJobEntry);
+			config.Property(t => t.ExtraName).HasMaxLength(50);
+			config.Property(t => t.Alias).HasMaxLength(500);
+			config.Property(t => t.ZoneRated);
+			config.Property(t => t.ServiceTrackingId);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TucSuburb'</summary>
@@ -595,7 +1326,7 @@ namespace DespatchWeb
 			config.Property(t => t.SdrawAmount).HasColumnName("SDRawAmount");
 			config.Property(t => t.AirportKm).HasColumnName("AirportKM");
 			config.Property(t => t.GoogleSuburbAlias).HasMaxLength(500);
-			config.Property(t => t.PostCode).HasMaxLength(200);
+			config.Property(t => t.PostCode).HasMaxLength(200).IsRequired();
 			config.Property(t => t.PrefixRunName).HasMaxLength(50);
 			config.Property(t => t.Gsscity).HasColumnName("GSSCity").HasMaxLength(50);
 		}

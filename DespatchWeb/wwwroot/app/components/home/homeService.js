@@ -70,6 +70,11 @@ angular
                             return response.data;
                         });
                     },
+                    sendPOD: function (jobId, email) {
+                        return $http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getJobs: function () {
                         return $http.get("app/components/home/api/jobsList.php").then(function (response) {
                             return response.data;
@@ -151,6 +156,11 @@ angular
                             return response.data;
                         });
                     },
+                    getClientContacts: function(contactId) {
+                        return $http.get("home/ClientContacts?contactId=" + contactId).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getPotentialCouriers: function (jobId) {
                         return $http.get("courier/PotentialCouriers?jobId=" + jobId).then(function (response) {
                             return response.data;
@@ -159,7 +169,7 @@ angular
                     getCourierPosition: function (code) {
                         return $http.get("courier/location?code=" + code).then(function (response) {
                             return response.data;
-                        });
+                        }); 
 
                     },
                     getAvailableCourierLocation: function (minLng, minLat, maxLng, maxLat) {
@@ -249,8 +259,8 @@ angular
 
 
                     },
-                    getJobsFilter: function (data) {
-                        return $http.get("job?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc).then(function (response) {
+                    getJobsFilter: function (data, selectedClients, internal) {
+                        return $http.get("job?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients).then(function (response) {
                             return response.data;
                         });
 
