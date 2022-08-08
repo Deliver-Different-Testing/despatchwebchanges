@@ -15,9 +15,11 @@
 				<th scope="col" ng-click="orderList('jobList','to')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i>To </th>
 				<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
                 <th></th>
-                <th scope="col" ng-click="orderList('jobList','remain')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i>R </th>
+                <th scope="col" ng-click="orderList('jobList','remain')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i>Remain</th>
                 <th></th>
-                
+                <th></th>
+                <th>R</th>
+                <th>RD</th>
             </tr>
             </thead>
         </table>
@@ -44,6 +46,8 @@
 			<td><input type="text" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();"  ng-model="job.lp" ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, $this)"  placeholder="LP" /></td>
 			<td><input type="text" class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"  placeholder="LD" /></td>
 			<td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>
+            <td ng-click="job.courier == null || restoreJobs();" title="Restore"><i ng-if="job.courier !== null" class="fa fa-undo"></i></td>
+            <td ng-click="job.courier == null || reAllocateJobs();" title="ReDispatch"><i ng-if="job.courier !== null" class="fa fa-repeat"></i></td>
 
         </tr>
         <tr>
@@ -60,6 +64,8 @@
 			<td><div></div></td>
             <td><div style="width:12px;"></div></td>
             <td><div style="width:12px;"></div></td>
+            <td><div></div></td>
+            <td><div></div></td>
             <td><div></div></td>
         </tr>
         </tbody>

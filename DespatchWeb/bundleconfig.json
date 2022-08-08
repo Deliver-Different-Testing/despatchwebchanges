@@ -36,12 +36,5 @@
       "enabled": true,
       "renameLocals": true
     }
-  },
-  {
-    "outputFileName": "wwwroot/app/components/home/bundle.js",
-    "inputFiles": [
-      "wwwroot/app/components/home/homeControl.js",
-      "wwwroot/app/components/home/homeService.js"
-    ]
   }
 ]

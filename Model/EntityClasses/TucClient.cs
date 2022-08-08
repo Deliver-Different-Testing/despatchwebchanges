@@ -17,6 +17,7 @@ namespace DespatchWeb.EntityClasses
 		{
 			this.TblClientContacts = new List<TblClientContact>();
 			this.TucClientContacts = new List<TucClientContact>();
+			this.TucEvents = new List<TucEvent>();
 			OnCreated();
 		}
 
@@ -518,6 +519,8 @@ namespace DespatchWeb.EntityClasses
 		public virtual List<TblClientContact> TblClientContacts { get; set;}
 		/// <summary>Represents the navigator which is mapped onto the association 'TucClientContact.TucClient - TucClient.TucClientContacts (m:1)'</summary>
 		public virtual List<TucClientContact> TucClientContacts { get; set;}
+		/// <summary>Represents the navigator which is mapped onto the association 'TucEvent.TucClient - TucClient.TucEvents (m:1)'</summary>
+		public virtual List<TucEvent> TucEvents { get; set;}
 		/// <summary>Represents the navigator which is mapped onto the association 'TucClient.TucSuburb - TucSuburb.TucClients (m:1)'</summary>
 		public virtual TucSuburb TucSuburb { get; set;}
 	}

@@ -38,6 +38,7 @@ namespace DespatchWeb.Controllers
                 ViewBag.FullName = disp.FirstName + " " + disp.LastName;
                 ViewBag.ContactID = disp.StaffID;
                 ViewBag.ClientInternal = true;
+                ViewBag.DispatcherName = User.Identity.Name.Substring(User.Identity.Name.IndexOf('\\') + 1);
 
                 return View();
             }

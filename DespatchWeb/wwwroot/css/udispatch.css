@@ -778,6 +778,12 @@ table.table tr .status.ASC {
   right: 0;
   display: none;
 }
+#supports tr.Yel {
+  background-color: yellow;
+}
+#supports tr.Gre {
+  background-color: lightgreen;
+}
 a.uline {
   color: #000;
   text-decoration: underline;

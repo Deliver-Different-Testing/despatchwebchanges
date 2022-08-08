@@ -113,7 +113,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/CS/tpls/jobDetail.tpl?v=1.14",
+                "tpl": "app/components/CS/tpls/jobDetail.tpl?v=1.15",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -366,7 +366,13 @@ angular
             description: 'Submit gather form',
             allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
             callback: function () {
-                setTimeout($scope.gather.submit(), 0);
+                if ($(".gatherForm").is(":visible") === true) {
+                    setTimeout($scope.gather.submit(), 0);
+                }
+                if (event.srcElement.id === "Wild") {
+                    $scope.refreshData(true);
+                }
+                
             }
         });
 

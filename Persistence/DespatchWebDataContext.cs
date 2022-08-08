@@ -46,6 +46,8 @@ namespace DespatchWeb
 
 		/// <summary>Gets an object query for the entity set 'DesQryAllJobType', containing entity type 'DesQryAllJobType'</summary>
 		public DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; } 
+		/// <summary>Gets an object query for the entity set 'DesQrySupportEventsCustomerAndCourier', containing entity type 'DesQrySupportEventsCustomerAndCourier'</summary>
+		public DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; } 
 		/// <summary>Gets an object query for the entity set 'DeswebQryDespatch', containing entity type 'DeswebQryDespatch'</summary>
 		public DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TblClient', containing entity type 'TblClient'</summary>
@@ -68,6 +70,8 @@ namespace DespatchWeb
 		public DbSet<TucClient> TucClients { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucClientContact', containing entity type 'TucClientContact'</summary>
 		public DbSet<TucClientContact> TucClientContacts { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TucEvent', containing entity type 'TucEvent'</summary>
+		public DbSet<TucEvent> TucEvents { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucJobItem', containing entity type 'TucJobItem'</summary>
 		public DbSet<TucJobItem> TucJobItems { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucJobStatus', containing entity type 'TucJobStatus'</summary>

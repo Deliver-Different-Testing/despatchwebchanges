@@ -81,6 +81,11 @@ angular
                         });
 
                     },
+                    getJobDetail: function (id) {
+                        return $http.get('/Job/Detail?jobId=' + id).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getJobsGrouped: function () {
                         return $http.get("app/components/home/api/jobsGroupedList.json").then(function (response) {
                             return response.data;
@@ -123,11 +128,26 @@ angular
                         });
 
                     },
-                    getSupports: function () {
-                        return $http.get("app/components/home/api/supports.json").then(function (response) {
+                    getSupports: function (channel) {
+                        return $http.get("job/supports?channel=" + channel).then(function (response) {
                             return response.data;
                         });
 
+                    },
+                    closeSupport: function (supportId, staffId) {
+                        return $http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId).then(function (response) {
+                            return response;
+                        });
+                    },
+                    lockSupport: function(id, dispatcher) {
+                        return $http.post("job/LockSupport?id=" + id +"&dispatcher=" + dispatcher).then(function (response) {
+                            return response;
+                        });
+                    },
+                    unLockSupport: function (id, dispatcher) {
+                        return $http.post("job/UnLockSupport?id=" + id + "&dispatcher=" + dispatcher).then(function (response) {
+                            return response;
+                        });
                     },
                     getLateCalls: function () {
                         return $http.get("app/components/home/api/lateCalls.json").then(function (response) {

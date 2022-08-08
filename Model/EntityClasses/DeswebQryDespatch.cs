@@ -116,6 +116,10 @@ namespace DespatchWeb.EntityClasses
 		public System.Byte PickRunOrder { get; set;}
 		/// <summary>Gets or sets the PickupAmount field. </summary>
 		public Nullable<System.Decimal> PickupAmount { get; set;}
+		/// <summary>Gets or sets the PickupFromContact field. </summary>
+		public System.String PickupFromContact { get; set;}
+		/// <summary>Gets or sets the PickupFromPhone field. </summary>
+		public System.String PickupFromPhone { get; set;}
 		/// <summary>Gets or sets the PickUpLatitude field. </summary>
 		public Nullable<System.Decimal> PickUpLatitude { get; set;}
 		/// <summary>Gets or sets the PickUpLongitude field. </summary>

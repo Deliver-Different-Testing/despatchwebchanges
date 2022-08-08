@@ -40,11 +40,50 @@ namespace DespatchWeb.Controllers
             var result = _jobRepo.JobList(status, area, order, asc, isInternal, clientIds);
             return Json(result);
         }
-
+        
         public IActionResult Current(int courierId, bool done)
         {
             var result = _jobRepo.CurrentJobList(courierId, done);
             return Json(result);
+        }
+
+        public async Task<IActionResult> Supports(string channel)
+        {
+            var result = await _jobRepo.SupportEvents(channel);
+            return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CloseSupport(int supportId, int staffId)
+        {
+            await _jobRepo.CloseSupportEvent(supportId, staffId);
+            return Json("OK");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> LockSupport(int id, string dispatcher)
+        {
+            var support = await _jobRepo.GetSupportEvent(id);
+            support.UcevDespatcher = dispatcher;
+            var result = await _jobRepo.UpdateSupportEvent(support);
+            return Json(result > 0);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UnLockSupport(int id, string dispatcher)
+        {
+            var support = await _jobRepo.GetSupportEvent(id);
+            if (support.UcevDespatcher == dispatcher)
+            {
+                support.UcevDespatcher = "";
+                var result = await _jobRepo.UpdateSupportEvent(support);
+                return Json(result > 0);
+            }
+            else
+            {
+                return Json(false);
+            }
+            
         }
 
         public async Task<IActionResult> Detail(int jobId)
@@ -241,7 +280,7 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> AddOtherEvent(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes)
         {
 
-            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes, 66);
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null, notes, 66);
 
             return Json("OK");
         }

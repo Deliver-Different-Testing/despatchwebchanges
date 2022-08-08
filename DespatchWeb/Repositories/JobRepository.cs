@@ -12,6 +12,7 @@ using Remotion.Linq.Clauses;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Threading;
+using Remotion.Linq.Parsing.Structure.IntermediateModel;
 
 namespace DespatchWeb.Repositories
 {
@@ -79,6 +80,8 @@ namespace DespatchWeb.Repositories
                     FromSuburbID = j.FromSuburbId,
                     fromSuburbName = yo.UcsuName,
                     FromAddress = j.FromAddress,
+                    FromContactName = j.PickupFromContact,
+                    FromContactNumber = j.PickupFromPhone,
                     To = zo.UcsuName,
                     ToSuburbID = j.ToSuburbId,
                     ToSuburbName = zo.UcsuName,
@@ -113,15 +116,15 @@ namespace DespatchWeb.Repositories
                     PickUpLatitude = j.PickUpLatitude,
                     PickUpLongitude = j.PickUpLongitude,
                     DeliveryLatitude = j.DeliveryLatitude,
-                    DeliveryLongitude = j.DeliveryLongitude,    
+                    DeliveryLongitude = j.DeliveryLongitude,
                     //CourierLatitude = j.CourierLatitude,
                     //CourierLongitude = j.CourierLongitude,
                     //RunOrder = j.PickRunOrder,
-                    //CourierData = new CourierData()
-                    //{
-                    //    Courier = j.CourierCode + " " + j.CourierName,
-                    //    CourierID = j.UcjbCourierId
-                    //},
+                    CourierData = new CourierData()
+                    {
+                        Courier = co.Code + " " + co.FirstName + " " + co.Surname,
+                        CourierID = co.CourierId
+                    },
                     //AllowDispatch = j.AllowDespatch,
                     //AllowSplit = j.AllowSplit,
                     //DGClass = j.Dgclass,
@@ -162,7 +165,7 @@ namespace DespatchWeb.Repositories
                 from status in statusJoin.DefaultIfEmpty()
                 where (x.Date >= fromDate && x.Date <= toDate) && (!clientSet || x.ClientId == clientId) &&
                       (!courierSet || x.CourierId == courierId) && 
-                      (wild == "" ||(EF.Functions.Like(x.FromAddress + " " + yo.UcsuName + " " + x.ToAddress + " " + zo.UcsuName + " " + x.ClientReferenceA + " " + x.ClientReferenceB + " " + x.OurRef + " " + x.Number, wildParam)))
+                      (wild == "" ||(EF.Functions.Like(x.FromAddress + " " + yo.UcsuName + " " + x.ToAddress + " " + zo.UcsuName + " " + (x.ClientReferenceA ?? "") + " " + (x.ClientReferenceB ?? "") + " "  + (x.OurRef ?? "") + " " + x.Number.ToLower(), wildParam)))
 
                 select new JobViewModel()
                 {
@@ -237,6 +240,8 @@ namespace DespatchWeb.Repositories
                      FromSuburbID = j.FromSuburbId,
                      fromSuburbName = j.FromSuburbName,
                      FromAddress = j.UcjbFromAddr,
+                     FromContactName = j.PickupFromContact,
+                     FromContactNumber = j.PickupFromPhone,
                      To = j.SuburbTo,
                      ToSuburbID = j.ToSuburbId,
                      ToSuburbName = j.ToSuburbName,
@@ -453,6 +458,8 @@ namespace DespatchWeb.Repositories
                             ClientName = j.ClientName,
                             JobType = (int)j.UcjbType,
                             From = j.SuburbFrom,
+                            FromContactName = j.PickupFromContact,
+                            FromContactNumber = j.PickupFromPhone,
                             FromSuburbID = j.FromSuburbId,
                             fromSuburbName = j.FromSuburbName,
                             FromAddress = j.UcjbFromAddr,
@@ -535,6 +542,70 @@ namespace DespatchWeb.Repositories
 
             return list;
 
+        }
+
+        public async Task<List<SupportViewModel>> SupportEvents(string channel)
+        {
+            var whereToUse = "";
+            var orderToUse = "CASE WHEN ucevType = 1 THEN 1 WHEN ucevType = 2 THEN 2 ELSE 0 END, ucevTime";
+            switch (channel)
+            {
+                case "Main":
+                    whereToUse =
+                        "(RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 1 OR RegionToID = 4 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) or ((RegionFromID = 2 OR RegionFromID = 3) AND (RegionToID = 2 OR RegionToID = 3) And ucjbVan=1) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND (RegionFromID = 4 OR RegionFromID = 10 OR (RegionFromID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) AND   (RegionToID < 5 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND  NOT (RegionFromID = 10 AND (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or ((ucjbSpeed IN(45) OR Truck = 1) AND IsParentJob = 0)";
+                    break;
+                case "City":
+                    whereToUse =
+                        "((RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 2 OR RegionToID = 3 Or RegionToID = 10)) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND RegionFromID = 3  AND RegionToID = 3  AND ucjbSize in(0,1) AND (Truck = 0 OR Truck is NULL))";
+                    break;
+                case "Trucks":
+                    whereToUse = "(ucjbSpeed IN (45,109) OR Truck = 1) AND IsParentJob = 0";
+                    break;
+                case "All":
+                    break;
+            }
+
+            var s = channel == "All" ? $"select * from DES_qrySupportEvents_CustomerAndCourier order by {orderToUse}" : $"select * from DES_qrySupportEvents_CustomerAndCourier where {whereToUse} order by {orderToUse}";
+
+            var events = _context.DesQrySupportEventsCustomerAndCouriers.FromSql(s).ToList();
+            var evm = (from e in events
+                       select new SupportViewModel()
+                       {
+                           EventType = e.UcevType,
+                           Courier = e.Code,
+                           Description = e.EventDescription,
+                           JobNumber = e.UcevJobNumber,
+                           LockedBy = e.UcevDespatcher,
+                           Notes = e.UcevNotes,
+                           RemainTime = e.RemainTime,
+                           Staff = e.UcstWindowsLogonName,
+                           TimeStamp = e.UcevTime,
+                           JobId = e.UcevJobId,
+                           EventId = e.UcevId
+                       }).ToList();
+            return evm;
+        }
+
+
+
+        public async Task<TucEvent> GetSupportEvent(int id)
+        {
+            var support = await _context.TucEvents.FindAsync(id);
+            return support;
+        }
+
+        public async Task<int> UpdateSupportEvent(TucEvent supportEvent)
+        {
+            _context.Entry(supportEvent).State = EntityState.Modified;
+            return await _context.SaveChangesAsync();
+        }
+
+        public async Task CloseSupportEvent(int supportId, int staffId)
+        {
+            await _context.LoadStoredProc("uspCompleteEvent")
+                .WithSqlParam("@intEventID", supportId)
+                .WithSqlParam("@intStaffID", staffId)
+                .ExecuteStoredNonQueryAsync();
         }
 
         public async Task DispatchSelectedJobs(int courierId, int dispId, string jobIds)

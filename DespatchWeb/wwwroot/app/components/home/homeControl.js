@@ -121,13 +121,13 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.54",
+                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.55",
                 "showSearch": 1,
                 "showRefresh": 1
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.17",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=1.20",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -180,7 +180,7 @@ angular
             },
             "supports": {
                 "title": "Supports",
-                "tpl": "app/components/home/tpls/supports.tpl",
+                "tpl": "app/components/home/tpls/supports.tpl?v=1.10",
                 "showSearch": 0,
                 "showRefresh": 0
             },
@@ -259,6 +259,10 @@ angular
                                     "height": "200px"
                                 },
                                 {
+                                    "name": "supports",
+                                    "height": "300px"
+                                },
+                                {
                                     "name": "jobDetail",
                                     "height": "300px"
                                 }
@@ -267,7 +271,7 @@ angular
                         {
                             "id": "col3",
                             "width": "300px",
-                            "boxes": $scope.isInternal ?  [
+                            "boxes": $scope.isInternal ? [
                                 {
                                     "name": "clearLists",
                                     "height": "600px"
@@ -309,6 +313,7 @@ angular
         $scope.userName = FirstName;
         $scope.currentLayoutName = "default";
         $scope.truckMode = "On";
+        $scope.supportChannel = "All";
 
         $scope.groupJobsSelection = "";
         $scope.currentWorkSelection = "";
@@ -612,7 +617,7 @@ angular
                 onSubmit: function () {
                     return DispatchData.addNote(jobId, $scope.gather.form.fields[0].value, FirstName).then(function () {
                         return DispatchData.voidJob(jobId);
-                        
+
                     });
                 },
                 submitValue: "Confirm"
@@ -651,6 +656,18 @@ angular
 
         };
 
+        $scope.getSupportColorClass = function(support) {
+            switch (support.eventType) {
+            case 73:
+                    return "Yel";
+                case 1:
+                    return "Gre";
+            case 2:
+                return "Gre";
+            default:
+                break;
+            }
+        }
 
         ////////////////////////////////////////
         // LOAD DISPATCH JOBS SCREEN
@@ -735,10 +752,10 @@ angular
                             var j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
                             var jn = j.jobNo;
 
-                            if (!j.allowDispatch) {
-                                $ngConfirm("Can not despatch " + jn + " until all other child jobs have been despatched.");
-                                return;
-                            }
+                            //if (!j.allowDispatch) {
+                            //    $ngConfirm("Can not despatch " + jn + " until all other child jobs have been despatched.");
+                            //    return;
+                            //}
                             if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
                                 $ngConfirm("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
                                 return;
@@ -850,11 +867,11 @@ angular
                     reset();
                     return;
                 }
-                if (!j.allowDispatch) {
-                    alert("Can not despatch " + jn + " until all other child jobs have been despatched.");
-                    reset();
-                    return;
-                }
+                //if (!j.allowDispatch) {
+                //    alert("Can not despatch " + jn + " until all other child jobs have been despatched.");
+                //    reset();
+                //    return;
+                //}
                 if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
                     alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
                     reset();
@@ -920,11 +937,11 @@ angular
                     reset();
                     return;
                 }
-                if (!j.allowDispatch) {
-                    alert("Can not despatch " + jn + " until all other child jobs have been despatched.");
-                    reset();
-                    return;
-                }
+                //if (!j.allowDispatch) {
+                //    alert("Can not despatch " + jn + " until all other child jobs have been despatched.");
+                //    reset();
+                //    return;
+                //}
                 if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
                     alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
                     reset();
@@ -2005,16 +2022,39 @@ angular
 
         $scope.selectJobDetail = function (job) {
             $scope.currentJob = job;
+            $scope.currentSupport = null;
             $scope.potentialCouriers = false;
             $scope.potentialCouriersSelection = " for Job " + job.jobNo;
         };
 
+        $scope.selectSupportJobDetail = function (support) {
+            console.log("select Job  " + support.jobId);
+
+            $scope.currentSupport = support;
+            $("#box-jobDetail").find(".loading").show();
+
+            DispatchData.getJobDetail(support.jobId).then(function (data) {
+                $scope.currentJob = data;
+                $("#box-jobDetail").find(".loading").hide();
+                $scope.currentSelection = " for Job " + support.jobNumber;
+                var jobs = [];
+                jobs.push($scope.currentJob);
+                displayRoutePointsOnly(jobs, true);
+                setMapBounds();
+                map.setZoom(12);
+            });
+
+
+
+        };
+
         //Select Job
         $scope.selectJob = function (job, clear) {
-            
+
             setTimeout(function () {
                 var jobRow = null;
                 $scope.selectedJobs = [];
+                $scope.currentSupport = null;   
 
                 $(".activeTable .active").each(function () {
 
@@ -2065,7 +2105,7 @@ angular
                 if (!document.activeElement.classList.contains("lateCallField")) {
                     $(jobRow).find(".dispatchField").focus();
                 }
-                
+
 
             },
                 0);
@@ -2160,13 +2200,12 @@ angular
                     // this is right click
                     setTimeout(function () {
                         var dueTime = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
-                        var items =[];
-                        for (var i = 1; i < 37; i++)
-                        {
+                        var items = [];
+                        for (var i = 1; i < 37; i++) {
                             if (parseInt(dueTime) < (i * 5))
-                                items.push( { "id": (i * 5), "text": ((i * 5).toString() + " mins away") });
+                                items.push({ "id": (i * 5), "text": ((i * 5).toString() + " mins away") });
                         }
-                        
+
                         $scope.lateForm = {
                             "data": {
                                 "jobNum": $scope.currentJob.jobNo,
@@ -2175,7 +2214,7 @@ angular
                                 "choose": ""
                             },
                             submit: function () {
-                                var pickupETAValue = parseInt($scope.lateForm.choose.value); 
+                                var pickupETAValue = parseInt($scope.lateForm.choose.value);
                                 var dueMins = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
 
                                 if ($scope.currentJob.lp !== pickupETAValue) {
@@ -2199,9 +2238,9 @@ angular
                         };
                         $scope.$apply();
                         $(".lateForm").show(0);
-                        
+
                         setTimeout(function () {
-                            
+
                             var dueOptions = {
                                 minimumInputLength: 0,
                                 data: items,
@@ -2328,7 +2367,7 @@ angular
 
                     break;
                 default:
-                    console.log("you have a strange mouse!");u
+                    console.log("you have a strange mouse!"); u
                     break;
 
             }
@@ -2475,6 +2514,11 @@ angular
             $scope.getData();
         };
 
+        $scope.setSupportChannel = function (channel) {
+            $scope.supportChannel = channel;
+            $scope.getSupports();
+        };
+
         $scope.getAvailableCourierLocation = function () {
             if (!$scope.allCouriers.display) {
                 map.clearLabels();
@@ -2556,8 +2600,76 @@ angular
             });
         };
 
-        $scope.getClientContacts = function() {
-            DispatchData.getClientContacts(ContactID).then(function(data) {
+        $scope.closeSupport = function(support) {
+            DispatchData.closeSupport(support.eventId, ContactID).then(function (data) {
+                $scope.getSupports();
+                $scope.currentSupport = null;
+            });
+        }
+
+        $scope.lockSupport = function(support) {
+            console.log(support);
+            if (support.lockedBy === Dispatcher) {
+                DispatchData.unLockSupport(support.eventId, Dispatcher).then(function (data) {
+                    $scope.getSupports();
+                });
+            } else {
+                DispatchData.lockSupport(support.eventId, Dispatcher).then(function (data) {
+                    $scope.getSupports();
+                });
+            }
+        }
+
+        $scope.getSupports = function() {
+            ////////////////////////////
+            // SUPPORTS
+            ////////////////////////////
+            $("#box-supports").find(".loading").show();
+            return DispatchData.getSupports($scope.supportChannel).then(function (data) {
+                $scope.supports = data;
+                
+
+                $scope.supportMenu = [
+                    // NEW IMPLEMENTATION
+                    {
+                        text: "Complete",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+
+                            $scope.closeSupport($itemScope.support);
+
+                        }
+                    },
+                    {
+                        text: "Toggle Lock",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+
+                            $scope.lockSupport($itemScope.support);
+
+
+                        }
+                    }
+                ];
+
+
+                setTimeout(function () {
+                    $(document).ready(function (event) {
+                        $("#box-supports").find(".loading").fadeOut();
+                        if ($scope.currentSupport) {
+                            $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
+                        }
+                    });
+
+                },
+                    100);
+
+
+                setTimeout(function () { sizeHeadings($("#supports").parents(".column")); }, 1000);
+                setTimeout(function () { sizeHeadings($("#supports").parents(".column")); }, 2000);
+            });
+        }
+
+        $scope.getClientContacts = function () {
+            DispatchData.getClientContacts(ContactID).then(function (data) {
                 $scope.pickClients = data;
             });
         };
@@ -2577,8 +2689,8 @@ angular
             $scope.jobGroups = false;
             $scope.jobsCurrentList = false;
             $scope.currentCourier = false;
-            
-            
+
+
 
             $scope.getClearListEnvelope = function (id) {
                 DispatchData.getClearListEnvelope(id).then(function (data) {
@@ -2932,70 +3044,9 @@ angular
  
  
              });
- 
-             ////////////////////////////
-             // SUPPORTS
-             ////////////////////////////
- 
-            // $("#box-supports").find(".loading").show();
-             DispatchData.getSupports().then(function (data) {
-                 $scope.supports = data;
- 
- 
-                 $scope.supportMenu = [
-                     // NEW IMPLEMENTATION
-                     {
-                         text: "Complete",
-                         click: function ($itemScope, $event, modelValue, text, $li) {
- 
-                             var callData = {
-                                 "call": "dismissSupport",
-                                 "support": $itemScope.support
-                             };
- 
-                             DispatchData.doAPI(callData).then(function (data) {
- 
-                                 console.log(data);
- 
-                                 if (data.response === "Success") {
- 
-                                     $(".rightActiveTable .active").fadeOut();
- 
-                                 } else {
- 
-                                     console.log("Critical Error");
- 
-                                 }
- 
-                             });
- 
-                         }
-                     },
-                     {
-                         text: "Lock",
-                         click: function ($itemScope, $event, modelValue, text, $li) {
-                             //$scope.items.splice($itemScope.$index, 1);
- 
- 
-                             //LOCK WITH CURRENT USER
- 
-                         }
-                     }
-                 ];
- 
- 
-                 setTimeout(function () {
-                     $(document).ready(function (event) {
-                         $("#box-supports").find(".loading").fadeOut();
-                     });
-                 },
-                     100);
- 
- 
-                 setTimeout(function () { sizeHeadings($("#getSupports").parents(".column")); }, 1000);
-                 setTimeout(function () { sizeHeadings($("#getSupports").parents(".column")); }, 2000);
-             });
-             */
+ */
+
+            
 
             ////////////////////////////
             // LATE CALLS
@@ -3076,7 +3127,7 @@ angular
         }
 
         $scope.getData();
-
+        $(document).everyTime("10s", "SP", function () { $scope.getSupports(); });
 
         // on first focus (bubbles up to document), open the menu
         $(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
@@ -3117,7 +3168,7 @@ angular
 
         $scope.onMapReady = function () {
             //$scope.heremaps = heremaps;
-            
+
             var options = {
                 minimumInputLength: 1,
                 ajax: {
@@ -3381,7 +3432,7 @@ angular
             console.log($scope.currentJob.pickUpLatitude);
             console.log(q);
             $("#gpsMap").attr("src", q);
-            
+
 
             $scope.gpsForm = {
                 "data": {
@@ -3735,7 +3786,7 @@ angular
         //                    });
         //            }
 
-        
+
         //            //$scope.updateDetailField($scope.gather.form.fields[0].jobID, $scope.gather.form.fields[0].name, $scope.gather.form.fields[0].value);
 
         //        },
@@ -3872,17 +3923,17 @@ angular
                                 });
                         } else {
                             return DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID).then(function (response) {
-                                    if (response.data === "OK") {
-                                        if (fieldName === "Size") {
-                                            $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
-                                        } else {
-                                            $scope.currentJob[callData.field.toLowerCase()] = callData.value;
-                                        }
-
-
+                                if (response.data === "OK") {
+                                    if (fieldName === "Size") {
+                                        $scope.currentJob[callData.field.toLowerCase()] = $scope.gather.form.fields[0].value;
+                                    } else {
+                                        $scope.currentJob[callData.field.toLowerCase()] = callData.value;
                                     }
-                                    return response;
-                                });
+
+
+                                }
+                                return response;
+                            });
                         }
                     }
 
@@ -3898,7 +3949,7 @@ angular
                 $scope.$apply();
                 $scope.gather.showForm();
             }, 200);
-            
+
 
         };
 

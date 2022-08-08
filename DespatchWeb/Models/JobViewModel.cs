@@ -88,6 +88,10 @@ namespace DespatchWeb.Models
         public bool? AllowSplit { get; internal set; }
 
         public DateTime? CompletedTime { get; set; }
+        public string FromContactName { get; set;  }
+        public string FromContactNumber { get; set; }
+
+
     }
 
     public class Vehicle

@@ -15,6 +15,7 @@ namespace DespatchWeb.EntityClasses
 		/// <summary>Initializes a new instance of the <see cref="TucJobType"/> class.</summary>
 		public TucJobType() : base()
 		{
+			this.TucEvents = new List<TucEvent>();
 			OnCreated();
 		}
 
@@ -80,5 +81,7 @@ namespace DespatchWeb.EntityClasses
 		public System.Boolean WebServiceEntry { get; set;}
 		/// <summary>Gets or sets the ZoneRated field. </summary>
 		public Nullable<System.Boolean> ZoneRated { get; set;}
+		/// <summary>Represents the navigator which is mapped onto the association 'TucEvent.TucJobType - TucJobType.TucEvents (m:1)'</summary>
+		public virtual List<TucEvent> TucEvents { get; set;}
 	}
 }

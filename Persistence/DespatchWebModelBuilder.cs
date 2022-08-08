@@ -18,6 +18,7 @@ namespace DespatchWeb
 		{
 			modelBuilder.HasDefaultSchema("dbo");
 			MapDesQryAllJobType(modelBuilder.Entity<DesQryAllJobType>());
+			MapDesQrySupportEventsCustomerAndCourier(modelBuilder.Entity<DesQrySupportEventsCustomerAndCourier>());
 			MapDeswebQryDespatch(modelBuilder.Entity<DeswebQryDespatch>());
 			MapTblClient(modelBuilder.Entity<TblClient>());
 			MapTblClientContact(modelBuilder.Entity<TblClientContact>());
@@ -29,6 +30,7 @@ namespace DespatchWeb
 			MapTblJobLeaveNotHome(modelBuilder.Entity<TblJobLeaveNotHome>());
 			MapTucClient(modelBuilder.Entity<TucClient>());
 			MapTucClientContact(modelBuilder.Entity<TucClientContact>());
+			MapTucEvent(modelBuilder.Entity<TucEvent>());
 			MapTucJobItem(modelBuilder.Entity<TucJobItem>());
 			MapTucJobStatus(modelBuilder.Entity<TucJobStatus>());
 			MapTucJobType(modelBuilder.Entity<TucJobType>());
@@ -44,6 +46,59 @@ namespace DespatchWeb
 			config.HasKey(t => t.JobTypeId);
 			config.Property(t => t.JobTypeId).HasColumnName("JobTypeID");
 			config.Property(t => t.Name).HasMaxLength(50).IsRequired();
+		}
+
+		/// <summary>Defines the mapping information for the entity 'DesQrySupportEventsCustomerAndCourier'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapDesQrySupportEventsCustomerAndCourier(EntityTypeBuilder<DesQrySupportEventsCustomerAndCourier> config)
+		{
+			config.ToTable("DES_qrySupportEvents_CustomerAndCourier");
+			config.IsReadOnly();
+			config.HasKey(t => t.UcevId);
+			config.Property(t => t.UcclName).HasColumnName("ucclName").HasMaxLength(75).IsRequired();
+			config.Property(t => t.UcclCode).HasColumnName("ucclCode").HasMaxLength(50).IsRequired();
+			config.Property(t => t.OriginalSpeed).HasMaxLength(50);
+			config.Property(t => t.Speed).HasMaxLength(50);
+			config.Property(t => t.UcclId).HasColumnName("ucclID");
+			config.Property(t => t.UcclPhone).HasColumnName("ucclPhone").HasMaxLength(50);
+			config.Property(t => t.Code).HasMaxLength(50);
+			config.Property(t => t.RemainTime);
+			config.Property(t => t.UcevId).HasColumnName("ucevID");
+			config.Property(t => t.UcevJobNumber).HasColumnName("ucevJobNumber").HasMaxLength(15).IsRequired();
+			config.Property(t => t.UcevClientId).HasColumnName("ucevClientID");
+			config.Property(t => t.UcevContact).HasColumnName("ucevContact").HasMaxLength(30);
+			config.Property(t => t.UcevDate).HasColumnName("ucevDate");
+			config.Property(t => t.UcevTime).HasColumnName("ucevTime");
+			config.Property(t => t.UcevType).HasColumnName("ucevType");
+			config.Property(t => t.UcevLateTime).HasColumnName("ucevLateTime");
+			config.Property(t => t.UcevEtatime).HasColumnName("ucevETATime");
+			config.Property(t => t.UcevStaffIdin).HasColumnName("ucevStaffIDIn");
+			config.Property(t => t.UcstWindowsLogonName).HasColumnName("ucstWindowsLogonName").HasMaxLength(50);
+			config.Property(t => t.UcevStaffIdout).HasColumnName("ucevStaffIDOut");
+			config.Property(t => t.UcevResponseTime).HasColumnName("ucevResponseTime");
+			config.Property(t => t.UcevNotes).HasColumnName("ucevNotes").HasMaxLength(1000);
+			config.Property(t => t.UcevPageCourier).HasColumnName("ucevPageCourier");
+			config.Property(t => t.UcevClosed).HasColumnName("ucevClosed");
+			config.Property(t => t.UcevOriginator).HasColumnName("ucevOriginator");
+			config.Property(t => t.UcevDescription).HasColumnName("ucevDescription").HasMaxLength(255);
+			config.Property(t => t.UcevCourierId).HasColumnName("ucevCourierID");
+			config.Property(t => t.UcevJobId).HasColumnName("ucevJobID");
+			config.Property(t => t.UcevDespatcher).HasColumnName("ucevDespatcher").HasMaxLength(15);
+			config.Property(t => t.UcevJobType).HasColumnName("ucevJobType");
+			config.Property(t => t.SpeedId).HasColumnName("SpeedID");
+			config.Property(t => t.EventDescription).HasMaxLength(50);
+			config.Property(t => t.JobTime);
+			config.Property(t => t.DisplayNote).HasMaxLength(1067);
+			config.Property(t => t.CourierFleetId).HasColumnName("CourierFleetID");
+			config.Property(t => t.RemoteJob);
+			config.Property(t => t.RegionFromId).HasColumnName("RegionFromID");
+			config.Property(t => t.RegionToId).HasColumnName("RegionToID");
+			config.Property(t => t.IsParentJob);
+			config.Property(t => t.Truck);
+			config.Property(t => t.VanOk).HasColumnName("VanOK");
+			config.Property(t => t.UcjbSize).HasColumnName("ucjbSize");
+			config.Property(t => t.UcjbSpeed).HasColumnName("ucjbSpeed");
+			config.Property(t => t.UcjbVan).HasColumnName("ucjbVan");
 		}
 
 		/// <summary>Defines the mapping information for the entity 'DeswebQryDespatch'</summary>
@@ -76,6 +131,8 @@ namespace DespatchWeb
 			config.Property(t => t.UcjbPagedTime).HasColumnName("ucjbPagedTime");
 			config.Property(t => t.UcjbLatePick).HasColumnName("ucjbLatePick");
 			config.Property(t => t.UcjbLateDel).HasColumnName("ucjbLateDel");
+			config.Property(t => t.PickupFromContact).HasMaxLength(100);
+			config.Property(t => t.PickupFromPhone).HasMaxLength(100);
 			config.Property(t => t.UcjbContact).HasColumnName("ucjbContact").HasMaxLength(30);
 			config.Property(t => t.UcjbContactPhone).HasColumnName("ucjbContactPhone").HasMaxLength(15);
 			config.Property(t => t.UcjbWeight).HasColumnName("ucjbWeight");
@@ -1222,6 +1279,38 @@ namespace DespatchWeb
 			config.Property(t => t.Salt).HasMaxLength(64);
 			config.Property(t => t.StaffId).HasColumnName("StaffID");
 			config.HasOne(t => t.TucClient).WithMany(t => t.TucClientContacts).HasForeignKey(t => t.UcctClientId);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TucEvent'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTucEvent(EntityTypeBuilder<TucEvent> config)
+		{
+			config.ToTable("tucEvent");
+			config.HasKey(t => t.UcevId);
+			config.Property(t => t.UcevId).HasColumnName("ucevID").ValueGeneratedOnAdd();
+			config.Property(t => t.UcevJobNumber).HasColumnName("ucevJobNumber").HasMaxLength(15).IsRequired();
+			config.Property(t => t.UcevClientId).HasColumnName("ucevClientID");
+			config.Property(t => t.UcevContact).HasColumnName("ucevContact").HasMaxLength(30);
+			config.Property(t => t.UcevDate).HasColumnName("ucevDate");
+			config.Property(t => t.UcevTime).HasColumnName("ucevTime");
+			config.Property(t => t.UcevType).HasColumnName("ucevType");
+			config.Property(t => t.UcevLateTime).HasColumnName("ucevLateTime");
+			config.Property(t => t.UcevEtatime).HasColumnName("ucevETATime");
+			config.Property(t => t.UcevStaffIdin).HasColumnName("ucevStaffIDIn");
+			config.Property(t => t.UcevStaffIdout).HasColumnName("ucevStaffIDOut");
+			config.Property(t => t.UcevResponseTime).HasColumnName("ucevResponseTime");
+			config.Property(t => t.UcevNotes).HasColumnName("ucevNotes").HasMaxLength(1000);
+			config.Property(t => t.UcevPageCourier).HasColumnName("ucevPageCourier");
+			config.Property(t => t.UcevClosed).HasColumnName("ucevClosed");
+			config.Property(t => t.UcevOriginator).HasColumnName("ucevOriginator");
+			config.Property(t => t.UcevDescription).HasColumnName("ucevDescription").HasMaxLength(255);
+			config.Property(t => t.UcevCourierId).HasColumnName("ucevCourierID");
+			config.Property(t => t.UcevJobId).HasColumnName("ucevJobID");
+			config.Property(t => t.UcevDespatcher).HasColumnName("ucevDespatcher").HasMaxLength(15);
+			config.Property(t => t.UcevJobType).HasColumnName("ucevJobType");
+			config.Property(t => t.SpeedId).HasColumnName("SpeedID");
+			config.HasOne(t => t.TucClient).WithMany(t => t.TucEvents).HasForeignKey(t => t.UcevClientId);
+			config.HasOne(t => t.TucJobType).WithMany(t => t.TucEvents).HasForeignKey(t => t.SpeedId);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TucJobItem'</summary>

@@ -12,15 +12,32 @@
 							<label>From: {{currentJob.from}}</label>
 							<div class="value">{{currentJob.fromAddress}}</div>
 						</div>
+						<div class="field">
+							<label>From Contact:</label>
+							<div class="value">{{currentJob.fromContactName}}</div>
+						</div>
+						<div class="field">
+							<label>From Phone:	</label>
+							<div class="value">{{currentJob.fromContactNumber}}</div>
+						</div>
 					</div>
 					<div class="col-md-6">
-						<div class="field contact">
-							<label>Contact</label>
-							<div class="value">{{currentJob.contactName}}</div>
+						<div class="field">
+							<label>Job #</label>
+							<div class="value">{{currentJob.jobNo}}</div>
 						</div>
-						<div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="toAddress">
+						
+						<div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="toAddress" ng-click="updateGPS('toAddress')">
 							<label>To: {{currentJob.to}}</label>
 							<div class="value">{{currentJob.toAddress}}</div>
+						</div>
+						<div class="field contact">
+							<label>To Contact</label>
+							<div class="value">{{currentJob.contactName}}</div>
+						</div>
+						<div class="field" >
+							<label>To Phone</label>
+							<div class="value">{{currentJob.phone}}</div>
 						</div>
 					</div>
 				</div>
@@ -35,10 +52,7 @@
 				<div class="row row-no-padding">
 					<div class="col-md-4">
 
-						<div class="field" >
-							<label>Phone</label>
-							<div class="value">{{currentJob.phone}}</div>
-						</div>
+						
 						<div class="field">
 							<label>Size</label>
 							<div class="value">{{currentJob.size.label}}</div>
@@ -111,10 +125,7 @@
 							<label>POD Time</label>
 							<div class="value">{{currentJob.completedTime | date : "h:mm a"}}</div>
 						</div>
-						<div class="field">
-							<label>Job #</label>
-							<div class="value">{{currentJob.jobNo}}</div>
-						</div>
+							
 						<div class="field">
 							<label>Date</label>
 							<div class="value">{{currentJob.booked | date : "dd/MM/yyyy"}}</div>
