@@ -456,7 +456,7 @@ namespace DespatchWeb.Repositories
                             Client = j.UcclCode,
                             ClientID = j.UcjbClientId,
                             ClientName = j.ClientName,
-                            JobType = (int)j.UcjbType,
+                            JobType = (int)(j.UcjbType ?? 0),
                             From = j.SuburbFrom,
                             FromContactName = j.PickupFromContact,
                             FromContactNumber = j.PickupFromPhone,
@@ -517,7 +517,7 @@ namespace DespatchWeb.Repositories
                                 }).ToList(),
                             CourierData = new CourierData()
                             {
-                                Courier = j.CourierCode + " " + j.CourierName,
+                                Courier = string.IsNullOrEmpty(j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
                                 CourierID = j.UcjbCourierId
                             },
                             AllowDispatch = j.AllowDespatch,
