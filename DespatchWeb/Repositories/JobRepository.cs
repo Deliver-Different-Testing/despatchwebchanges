@@ -13,6 +13,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Threading;
 using Remotion.Linq.Parsing.Structure.IntermediateModel;
+using System.Security.Cryptography;
 
 namespace DespatchWeb.Repositories
 {
@@ -47,6 +48,8 @@ namespace DespatchWeb.Repositories
                 from status in statusJoin.DefaultIfEmpty()
                 join l in _context.TblJobLeaveNotHomes on j.LeaveNotHomeId equals l.LeaveNotHomeId into leaveNotHomeJoin
                 from leave in leaveNotHomeJoin.DefaultIfEmpty()
+                join u in _context.TblUndeliverableLocations on j.UndeliverableLocationId equals u.UndeliverableLocationId into undeliverableLocationJoin
+                from ud in undeliverableLocationJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
                 select new JobViewModel()
@@ -106,7 +109,7 @@ namespace DespatchWeb.Repositories
                     OurRef = j.OurRef,
                     SigNotRequired = leave.Name ?? "",
                     Charge = $"{j.Amount:C}",
-                    // Date = j.Date.ToString("dd/MM/yyyy"),
+                    Date = j.Date.Value.ToString("dd/MM/yyyy"),
                     Booked = DateTime.Parse(j.Date.Value.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")),
                     DispatchTime = j.DispatchDate.HasValue ? DateTime.Parse(j.DispatchDate.Value.ToString("yyyy-MM-dd") + " " + j.DispatchTime.Value.ToString("HH:mm:ss")): j.DispatchDate,
                     PUTime = j.PickUpTime,
@@ -127,7 +130,8 @@ namespace DespatchWeb.Repositories
                     },
                     //AllowDispatch = j.AllowDespatch,
                     //AllowSplit = j.AllowSplit,
-                    //DGClass = j.Dgclass,
+                    DGClass = j.Dgclass,
+                    DGDocumentation = j.Dgdocument,
                     //DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
                     //TruckWeightLimit = j.TruckWeightLimit,
                     //TruckStartTime = j.TruckStartTime,
@@ -140,7 +144,12 @@ namespace DespatchWeb.Repositories
                     //Minutes = j.Minutes,
                     DeliverToContact = j.DeliverToContact,
                     PODPhoto = j.DeliveryPhoto ?? j.DeliverySignature,
-                    PODName = j.Podname
+                    PODName = j.Podname,
+                    TrackingMethod = j.TrackingMethod,
+                    TrackingMobile = j.TrackingMobile,
+                    TrackingEmail = j.TrackingEmail,
+                    UDStatus = ud.Name,
+                    RatedManually = j.RatedManually
 
                 });
             return await jobQuery.FirstOrDefaultAsync();
@@ -165,7 +174,7 @@ namespace DespatchWeb.Repositories
                 from status in statusJoin.DefaultIfEmpty()
                 where (x.Date >= fromDate && x.Date <= toDate) && (!clientSet || x.ClientId == clientId) &&
                       (!courierSet || x.CourierId == courierId) && 
-                      (wild == "" ||(EF.Functions.Like(x.FromAddress + " " + yo.UcsuName + " " + x.ToAddress + " " + zo.UcsuName + " " + (x.ClientReferenceA ?? "") + " " + (x.ClientReferenceB ?? "") + " "  + (x.OurRef ?? "") + " " + x.Number.ToLower(), wildParam)))
+                      (wild == "" ||(EF.Functions.Like(x.FromAddress + " " + x.PickupFromContact + " " + yo.UcsuName + " " + x.ToAddress + " " + x.DeliverToContact + " " + zo.UcsuName + " " + (x.ClientReferenceA ?? "") + " " + (x.ClientReferenceB ?? "") + " "  + (x.OurRef ?? "") + " " + x.Number.ToLower(), wildParam)))
 
                 select new JobViewModel()
                 {
@@ -235,7 +244,7 @@ namespace DespatchWeb.Repositories
                      Client = j.UcclCode,
                      ClientID = j.UcjbClientId,
                      ClientName = j.ClientName,
-                     JobType = (int)j.UcjbType,
+                     JobType = (int)(j.UcjbType ?? 0),
                      From = j.SuburbFrom,
                      FromSuburbID = j.FromSuburbId,
                      fromSuburbName = j.FromSuburbName,
@@ -253,7 +262,7 @@ namespace DespatchWeb.Repositories
                      LP = j.UcjbLatePick,
                      LD = j.UcjbLateDel,
                      ContactName = j.UcjbContact,
-                     Phone = j.UcjbContactPhone,
+                     Phone = j.DeliverToPhone,
                      SpeedAccepted = j.OriginalSpeed,
                      Size = new Vehicle()
                      {
@@ -289,6 +298,7 @@ namespace DespatchWeb.Repositories
                      AllowDispatch = j.AllowDespatch,
                      AllowSplit = j.AllowSplit,
                      DGClass = j.Dgclass,
+                     DGDocumentation = j.Dgdocumentation,
                      DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
                      TruckWeightLimit = j.TruckWeightLimit,
                      TruckStartTime = j.TruckStartTime,
@@ -300,7 +310,14 @@ namespace DespatchWeb.Repositories
                      AlertLateDelivery = j.AlertLateDelivery,
                      Minutes = j.Minutes,
                      DeliverToContact = j.DeliverToContact,
-                     PODPhoto = j.DeliveryPhoto
+                     PODPhoto = j.DeliveryPhoto,
+                     PODName = j.UcjbPodname,
+                     CompletedTime = j.UcjbComplTime,
+                     TrackingMethod = j.TrackingMethod,
+                     TrackingMobile = j.TrackingMobile,
+                     TrackingEmail = j.TrackingEmail,
+                     UDStatus = j.UDStatus,
+                     RatedManually = j.RatedManually
 
                  }).ToList();
             return list;
@@ -474,7 +491,7 @@ namespace DespatchWeb.Repositories
                             LP = j.UcjbLatePick,
                             LD = j.UcjbLateDel,
                             ContactName = j.UcjbContact,
-                            Phone = j.UcjbContactPhone,
+                            Phone = j.DeliverToPhone,
                             SpeedAccepted = j.OriginalSpeed,
                             Size = new Vehicle()
                             {
@@ -523,6 +540,7 @@ namespace DespatchWeb.Repositories
                             AllowDispatch = j.AllowDespatch,
                             AllowSplit = j.AllowSplit,
                             DGClass = j.Dgclass,
+                            DGDocumentation = j.Dgdocumentation,
                             DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
                             TruckWeightLimit = j.TruckWeightLimit,
                             TruckStartTime = j.TruckStartTime,
@@ -534,8 +552,15 @@ namespace DespatchWeb.Repositories
                             AlertLateDelivery = j.AlertLateDelivery,
                             Minutes = j.Minutes,
                             DeliverToContact = j.DeliverToContact,
-                            PODPhoto = j.DeliveryPhoto
-
+                            PODPhoto = j.DeliveryPhoto,
+                            PODName = j.UcjbPodname,
+                            CompletedTime = j.UcjbComplTime.HasValue ? DateTime.Parse(j.UcjbComplTime.Value.ToString("yyyy-MM-dd") + " " + j.UcjbComplTime.Value.ToString("HH:mm")) : j.UcjbComplTime,
+                            Done = j.UcjbJobDone,
+                            TrackingMethod = j.TrackingMethod,
+                            TrackingMobile = j.TrackingMobile,
+                            TrackingEmail = j.TrackingEmail,
+                            UDStatus = j.UDStatus,
+                            RatedManually = j.RatedManually
 
 
                         }).ToList();
@@ -708,6 +733,24 @@ namespace DespatchWeb.Repositories
             return (Int32)outputMaxParam.Value;
         }
 
+        public async Task<decimal> PPDExclusiveAmount(int clientId, decimal amount)
+        {
+            DbParameter outputMaxParam = null;
+            await _context.LoadStoredProc("UTL_stpPPD_ExclusiveAmount")
+                .WithSqlParam("@ClientID", clientId)
+                .WithSqlParam("@Amount", amount)
+                .WithSqlParam("@PPD", (dbParam) =>
+                {
+                    dbParam.Direction = System.Data.ParameterDirection.Output;
+                    dbParam.DbType = System.Data.DbType.Currency;
+                    outputMaxParam = dbParam;
+                })
+
+                .ExecuteStoredNonQueryAsync();
+
+            return (decimal)outputMaxParam.Value;
+        }
+
         public async Task ResetLateEvent(int jobId, int eventType)
         {
             await _context.LoadStoredProc("DES_qdfLateCall_Reset")
@@ -802,10 +845,26 @@ namespace DespatchWeb.Repositories
             return data.ToList();
         }
 
-        public List<Speed> Speeds()
+        public List<Lookup> Speeds()
         {
             var data = (from s in _context.DesQryAllJobTypes
-                        select s).Select(x => new Speed() { ID = x.JobTypeId, Text = x.Name });
+                        select s).Select(x => new Lookup() { ID = x.JobTypeId, Text = x.Name });
+            return data.ToList();
+        }
+
+        public List<Lookup> LeaveParcelLocations()
+        {
+            var data = (from l in _context.TblJobLeaveNotHomes
+                orderby l.Sequence
+                select l).Select(x => new Lookup() { ID=x.LeaveNotHomeId, Text = x.Name});
+            return data.ToList();
+        }
+
+        public List<UndeliverableLocation> UndeliverableLocations()
+        {
+            var data = (from u in _context.TblUndeliverableLocations
+                orderby u.Name
+                select u).Select(x => new UndeliverableLocation() { ID = x.UndeliverableLocationId, Text = x.Name, JobStatusId =x.JobTypeId });
             return data.ToList();
         }
 
@@ -884,6 +943,51 @@ namespace DespatchWeb.Repositories
             return (decimal)outputRateParam.Value;
         }
 
+        public async Task<DirectToASAPViewModel> DirectToASAP(int jobId)
+        {
+            var result = new List<DirectToASAPViewModel>();
+            await _context.LoadStoredProc("DESWEB_stpJob_DirectToASAP")
+                .WithSqlParam("@JobID", jobId)
+                .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DirectToASAPViewModel>().ToList(); });
+            return result.FirstOrDefault();
+        }
+
+        public async Task<UpdateFirstAvailableSpeedResult> UpdateFirstAvailableSpeed(int jobId)
+        {
+            DbParameter outputParam = null;
+            DbParameter nameOutput = null;
+            await _context.LoadStoredProc("DESWEB_stpJob_UpdateFirstAvailableSpeed")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@JobTypeID", (dbParam) =>
+                {
+                    dbParam.Direction = System.Data.ParameterDirection.Output;
+                    dbParam.DbType = System.Data.DbType.Int32;
+                    outputParam = dbParam;
+                })
+                .WithSqlParam("@Name", (dbParam) =>
+                {
+                    dbParam.Direction = System.Data.ParameterDirection.Output;
+                    dbParam.DbType = System.Data.DbType.String;
+                    dbParam.Size = 50;
+                    nameOutput = dbParam;
+                })
+                .ExecuteStoredNonQueryAsync();
+            var updateReturn = new UpdateFirstAvailableSpeedResult()
+            {
+                JobTypeId = (int)outputParam.Value,
+                Name = (string)nameOutput.Value
+            };
+            return updateReturn;
+        }
+
+        public async Task<SettingsViewModel> Settings()
+        {
+            var result = new List<SettingsViewModel>();
+            await _context.LoadStoredProc("DES_stpSettings")
+                .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<SettingsViewModel>().ToList(); });
+            return result.FirstOrDefault();
+        }
+
         public async Task<TruckItemsSummary> TruckJobItems(int jobId, int truckWeightLimit)
         {
             var result = new List<TruckItemsSummary>();
@@ -894,7 +998,7 @@ namespace DespatchWeb.Repositories
             return result.FirstOrDefault();
         }
 
-        public async Task UpdateDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate)
+        public async Task UpdateDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcher)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryAddress")
                 .WithSqlParam("@JobID", jobId)
@@ -904,11 +1008,12 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@DeliveryLongitude", deliveryLng)
                 .WithSqlParam("@CBD", cbd)
                 .WithSqlParam("@Rate", rate)
+                .WithSqlParam("@Username", despatcher)
                 .ExecuteStoredNonQueryAsync();
 
         }
 
-        public async Task UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat, decimal pickupLng, bool cbd, decimal rate)
+        public async Task UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcher)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJobPickupAddress")
                 .WithSqlParam("@JobID", jobId)
@@ -918,6 +1023,7 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@PickupLongitude", pickupLng)
                 .WithSqlParam("@CBD", cbd)
                 .WithSqlParam("@Rate", rate)
+                .WithSqlParam("@Username", despatcher)
                 .ExecuteStoredNonQueryAsync();
 
         }

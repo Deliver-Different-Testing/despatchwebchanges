@@ -849,6 +849,9 @@ a.uline {
   min-height: 15px;
   font-size: 11px;
 }
+#jobDetail .fields .field .value.disabled {
+  color: #9c9c9c;
+}
 #jobDetail .fields .field .value pre {
   border: 0;
   font-family: sans-serif;

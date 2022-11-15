@@ -60,6 +60,7 @@ namespace DespatchWeb.EntityClasses
 		public System.Boolean DesCheck { get; set;}
 		/// <summary>Gets or sets the Dgclass field. </summary>
 		public Nullable<System.Int32> Dgclass { get; set;}
+        public Nullable<System.Boolean> Dgdocumentation { get; set; }
 		/// <summary>Gets or sets the Direct field. </summary>
 		public System.Boolean Direct { get; set;}
 		/// <summary>Gets or sets the DisplayMultiJobDetail field. </summary>
@@ -192,6 +193,12 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.DateTime> UcjbComplTime { get; set;}
 		/// <summary>Gets or sets the UcjbContact field. </summary>
 		public System.String UcjbContact { get; set;}
+        public System.String DeliverToPhone { get; set; }
+        public Nullable<System.Int32> TrackingMethod { get; set; }
+		public string TrackingMobile { get; set; }
+        public string TrackingEmail { get; set; }
+		public string UDStatus { get; set; }
+		public System.Boolean RatedManually { get; set; }
 		/// <summary>Gets or sets the UcjbContactPhone field. </summary>
 		public System.String UcjbContactPhone { get; set;}
 		/// <summary>Gets or sets the UcjbCourierId field. </summary>

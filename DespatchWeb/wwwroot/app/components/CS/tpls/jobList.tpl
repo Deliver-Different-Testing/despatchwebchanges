@@ -27,7 +27,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobList | filter: box.searchBox"  ng-click="selectJobDetail(job);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
+    <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobList | filter: box.searchBox"  ng-click="selectJobDetail(job.id);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
             <td>{{job.booked | date : "dd/MM/yy hh:mm"}}</td>
             <td class="status" ng-class="job.status">{{job.status}}</td>
             <td right-click action="speedColumnClick(event)">{{job.speed}}</td>

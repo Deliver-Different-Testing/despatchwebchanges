@@ -48,6 +48,10 @@ namespace DespatchWeb.Models
         public int? LD { get; set; }
         public string ContactName { get; set; }
         public string DeliverToContact { get; set; }
+        public int? TrackingMethod { get; set; }
+        public string TrackingMobile { get; set; }
+        public string TrackingEmail { get; set; }
+        public string UDStatus { get; set; }
         public byte[] PODPhoto { get; set; }
         public string PODName { get; set; }
         public string Phone { get; set; }
@@ -79,6 +83,7 @@ namespace DespatchWeb.Models
         public int? RunOrder { get; set; }
         public CourierData CourierData { get; set; }
         public bool? AllowDispatch { get; set; }
+        public bool? DGDocumentation { get; set;}
         public int? DGClass { get; set; }
         public bool? DisplaySplitJobDetail { get; set; }
         public int? TruckWeightLimit { get; set; }
@@ -86,10 +91,10 @@ namespace DespatchWeb.Models
         public double? TruckHours { get; set; }
         public bool PrivateRes { get; set; }
         public bool? AllowSplit { get; internal set; }
-
         public DateTime? CompletedTime { get; set; }
         public string FromContactName { get; set;  }
         public string FromContactNumber { get; set; }
+        public bool RatedManually { get; set; }
 
 
     }

@@ -51,6 +51,7 @@ angular
                     console.error('Book/CreateEvent error', response.status, response.data);
                 });
             },
+
             
             doAPI: function (path, data) {
                 return $http.post(path, data).then(function (response) {

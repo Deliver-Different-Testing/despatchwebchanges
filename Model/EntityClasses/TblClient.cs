@@ -410,6 +410,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> ShortRoadRunRateCodeId { get; set;}
 		/// <summary>Gets or sets the ShowMap field. </summary>
 		public System.Boolean ShowMap { get; set;}
+		/// <summary>Gets or sets the SigRequiredDefault field. </summary>
+		public System.String SigRequiredDefault { get; set;}
 		/// <summary>Gets or sets the SirateCodeId field. </summary>
 		public Nullable<System.Int32> SirateCodeId { get; set;}
 		/// <summary>Gets or sets the SiteId field. </summary>

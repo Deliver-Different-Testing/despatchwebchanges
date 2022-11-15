@@ -24,6 +24,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Decimal> Amount { get; set;}
 		/// <summary>Gets or sets the Attention field. </summary>
 		public System.Boolean Attention { get; set;}
+		/// <summary>Gets or sets the Barcode field. </summary>
+		public System.String Barcode { get; set;}
 		/// <summary>Gets or sets the Cbd field. </summary>
 		public System.Boolean Cbd { get; set;}
 		/// <summary>Gets or sets the ChargeType field. </summary>
@@ -72,6 +74,10 @@ namespace DespatchWeb.EntityClasses
 		public System.Byte[] DeliveryPhoto { get; set;}
 		/// <summary>Gets or sets the DeliverySignature field. </summary>
 		public System.Byte[] DeliverySignature { get; set;}
+		/// <summary>Gets or sets the DeliveryState field. </summary>
+		public Nullable<System.Int32> DeliveryState { get; set;}
+		/// <summary>Gets or sets the DepotId field. </summary>
+		public Nullable<System.Int32> DepotId { get; set;}
 		/// <summary>Gets or sets the DesiredJobTypeId field. </summary>
 		public Nullable<System.Int32> DesiredJobTypeId { get; set;}
 		/// <summary>Gets or sets the Dgclass field. </summary>
@@ -238,6 +244,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> Speed { get; set;}
 		/// <summary>Gets or sets the Status field. </summary>
 		public Nullable<System.Int32> Status { get; set;}
+		/// <summary>Gets or sets the StorageState field. </summary>
+		public Nullable<System.Int32> StorageState { get; set;}
 		/// <summary>Gets or sets the TextRef1 field. </summary>
 		public System.String TextRef1 { get; set;}
 		/// <summary>Gets or sets the TextRef2 field. </summary>

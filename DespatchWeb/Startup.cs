@@ -13,18 +13,21 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Mindscape.Raygun4Net.AspNetCore;
 
 namespace DespatchWeb
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
             Configuration = configuration;
+            Environment = environment;
         }
 
         public IConfiguration Configuration { get; }
+        public IWebHostEnvironment Environment { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -35,6 +38,7 @@ namespace DespatchWeb
                 options.CheckConsentNeeded = context => true;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
+
             services.AddDbContext<DespatchWebDataContext>(c =>
             {
                 //// Test
@@ -44,7 +48,7 @@ namespace DespatchWeb
                 c.UseSqlServer(Configuration.GetConnectionString("Connection"), builder => builder.UseRowNumberForPaging());
             });
             services.AddAuthentication(IISDefaults.AuthenticationScheme);
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc();
             services.AddRaygun(Configuration);
             services.AddScoped<JobRepository, JobRepository>();
             services.AddScoped<CourierRepository, CourierRepository>();
@@ -52,9 +56,9 @@ namespace DespatchWeb
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app)
         {
-            if (env.IsDevelopment())
+            if (Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
@@ -77,12 +81,13 @@ namespace DespatchWeb
             app.UseRaygun();
             app.UseStaticFiles();
             app.UseCookiePolicy();
+            app.UseRouting();
 
-            app.UseMvc(routes =>
+            app.UseEndpoints(endPoints =>
             {
-                routes.MapRoute(
+                endPoints.MapControllerRoute(
                     name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
             });
         }
     }

@@ -4,7 +4,7 @@
         <div ng-repeat="field in gather.form.fields" class="gatherField" style="display:inline-block; {{field.cssExtras}}">
           <div ng-switch="field.type">
             <div ng-switch-default>
-              <input type="text" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe" />
+              <input type="text" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" maxLength="{{field.maxLength}}" ng-model="field.value" class="form-control focusMe" />
             </div>
             <div ng-switch-when="textarea">
               <textarea placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe"></textarea>
@@ -15,12 +15,9 @@
             <div ng-switch-when="date">
                <input type="date" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe" />
             </div>
-            <div ng-switch-when="date">
-               <input type="date" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe" />
-            </div>
             <div ng-switch-when="checkbox" style="background-color:lightgray">
                 <input type="checkbox" id="gather-{{field.name}}" name="{{field.name}}" ng-model="field.value" class="form-control" style="width:20px;height:20px;background-color:lightgray;font-size:21px;display:inline-block;">
-                <label for="{{field.name}}">Re-Rate Job?</label>
+                <label for="{{field.name}}">{{field.label}}</label>
             </div>
             <div ng-switch-when="select">
 

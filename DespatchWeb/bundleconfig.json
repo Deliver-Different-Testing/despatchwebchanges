@@ -27,6 +27,7 @@
       "wwwroot/app/filters.js",
       "wwwroot/app/label.js",
       "wwwroot/js/site.js",
+      "wwwroot/app/jobDetailService.js",
       "wwwroot/app/components/home/homeService.js",
       "wwwroot/app/components/home/homeControl.js",
       "wwwroot/app/components/CS/csService.js",

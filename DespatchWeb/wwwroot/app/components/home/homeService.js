@@ -49,7 +49,11 @@ angular
                             return response;
                         });
                     },
-
+                    processUncheckDirect: function (jobId, despatcherName, staffId, currentSpeed) {
+                        return $http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     restoreJobs: function (courierId, dispId, jobIds) {
                         return $http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
                             return response.data;
@@ -108,7 +112,6 @@ angular
                         return $http.get("app/components/home/api/couriersThrough.json").then(function (response) {
                             return response.data;
                         });
-
                     },
                     getCouriersClear: function () {
                         return $http.get("app/components/home/api/couriersClear.json").then(function (response) {
@@ -207,6 +210,16 @@ angular
                             return response.data;
                         });
                     },
+                    getLeaveList: function () {
+                        return $http.get("job/LeaveList").then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    getUndeliverableList: function () {
+                        return $http.get("job/UndeliverableList").then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getTruckItemsSummary: function (jobId, truckWeightLimit) {
                         return $http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit).then(function (response) {
                             return response.data;
@@ -237,6 +250,12 @@ angular
                             return response.data;
                         });
                     },
+                    ppdExclusiveAmount: function(cid, amount) {
+                        return $http.get("job/PPDExclusiveAmount?clientId=" + cid + "&amount=" + amount).then(
+                            function(response) {
+                                return response.data;
+                            });
+                    },
                     splitJob: function (jobId, despatcherName) {
                         return $http.post("job/splitJob?jobId=" + jobId+ "&despatcherName=" + despatcherName).then(function (response) {
                             return response;
@@ -247,13 +266,13 @@ angular
                             return response;
                         });
                     },
-                    updateDeliveryAddress: function (jobId, toSuburbId, address, lat, lng, cbd, rate) {
-                        return $http.post("job/UpdateDeliveryAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate).then(function (response) {
+                    updateDeliveryAddress: function (jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName) {
+                        return $http.post("job/UpdateDeliveryAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
                             return response;
                         });
                     },
-                    updatePickupAddress: function (jobId, fromSuburbId, address, lat, lng, cbd, rate) {
-                        return $http.post("job/UpdatePickupAddress?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate).then(function (response) {
+                    updatePickupAddress: function (jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName) {
+                        return $http.post("job/UpdatePickupAddress?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
                             return response;
                         });
                     },
@@ -263,10 +282,13 @@ angular
                         });
                     },
                     updateJobDetail: function (jobId, field, value, rate, despatcherName, staffId) {
-                        if (field === "Time") {
+                        if (field === "Time" || field === "CompletedTime") {
                             value = moment().format("YYYY-MM-DD") +
                                 " " +
-                                value.toLocaleTimeString().substr(0,5);
+                                moment(value).format("HH:mm:ss");
+                        }
+                        if (field === "Date") {
+                            value = moment(value).format("YYYY-MM-DD");
                         }
                         return $http.post("job/UpdateJob?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
                             return response;

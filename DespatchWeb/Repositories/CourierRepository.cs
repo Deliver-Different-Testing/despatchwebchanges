@@ -22,12 +22,12 @@ namespace DespatchWeb.Repositories
             _context = context;
         }
 
-        public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null)
+        public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null, bool close = false)
         {
             int? staffOut = null;
             DateTime? responseTime = null;
             var pageCourier = false;
-            var closed = false;
+            
             string description = null;
             var date = DateTime.Now;
             var time = DateTime.Now;
@@ -47,7 +47,7 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@ResponseTime", responseTime)
                 .WithSqlParam("@Notes", notes)
                 .WithSqlParam("@PageCourier", pageCourier)
-                .WithSqlParam("@Closed", closed)
+                .WithSqlParam("@Closed", close)
                 .WithSqlParam("@Originator", staffId)
                 .WithSqlParam("@Description", description)
                 .WithSqlParam("@CourierID", courierId)

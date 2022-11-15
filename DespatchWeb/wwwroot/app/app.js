@@ -45,14 +45,14 @@ angular
             .state("home",
                 {
                     url: "/",
-                    templateUrl: "app/components/home/homeView.html?v=1.28",
+                    templateUrl: "app/components/home/homeView.html?v=1.29",
                     controller: "HomeControl"
                 })
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.4',
-                    controller: 'CSControl',
+                    templateUrl: 'app/components/CS/csView.html?v=1.5',
+					controller: 'CSControl',
                     reloadOnSearch: false
                 });
 

@@ -303,6 +303,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Boolean> Sdrenabled { get; set;}
 		/// <summary>Gets or sets the ShowMap field. </summary>
 		public System.Boolean ShowMap { get; set;}
+		/// <summary>Gets or sets the SigRequiredDefault field. </summary>
+		public System.String SigRequiredDefault { get; set;}
 		/// <summary>Gets or sets the SiteId field. </summary>
 		public System.Int32 SiteId { get; set;}
 		/// <summary>Gets or sets the SiteUrl field. </summary>

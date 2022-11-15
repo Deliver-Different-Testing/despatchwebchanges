@@ -187,7 +187,16 @@ namespace DespatchWebContextExtensions
                                 val = dr.GetValue(colMapping[PropName(prop)].ColumnOrdinal.Value);
                             }
 
-                            prop.SetValue(obj, val == DBNull.Value ? null : val);
+                            try
+                            {
+                                prop.SetValue(obj, val == DBNull.Value ? null : val);
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine(e);
+                                throw;
+                            }
+                            
                         }
                         objList.Add(obj);
                     }

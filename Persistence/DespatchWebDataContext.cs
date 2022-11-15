@@ -66,6 +66,8 @@ namespace DespatchWeb
 		public DbSet<TblJob> TblJobs { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TblJobLeaveNotHome', containing entity type 'TblJobLeaveNotHome'</summary>
 		public DbSet<TblJobLeaveNotHome> TblJobLeaveNotHomes { get; set; } 
+		/// <summary>Gets an object query for the entity set 'TblUndeliverableLocation', containing entity type 'TblUndeliverableLocation'</summary>
+		public DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucClient', containing entity type 'TucClient'</summary>
 		public DbSet<TucClient> TucClients { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucClientContact', containing entity type 'TucClientContact'</summary>

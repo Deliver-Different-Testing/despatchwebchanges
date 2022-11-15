@@ -1,6 +1,6 @@
 angular
     .module('uDispatch')
-    .controller('CSControl', ['$scope', 'uCSData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$ngConfirm', function ($scope, uCSData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $ngConfirm) {
+    .controller('CSControl', ['$scope','JobDetailService', 'uCSData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$ngConfirm', function ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $ngConfirm) {
 
         $scope.isAdmin = (ClientInternal === "True");
         $scope.mapSetting = {
@@ -19,13 +19,68 @@ angular
 
         //$scope.linkedEventId = $location.$$search.eid;
         //$scope.linkedEvent = undefined;
+        $scope.jdSvc = jdSvc;
+        $scope.gpsForm = {
+            submit: function() {
+                return $scope.jdSvc.gpsForm.onSubmit().then(function(response) {
+                    $scope.selectJobDetail($scope.currentJob.id);
+                });
+            }
+        };
+
+        $scope.jdSvc.setGPSForm($scope.gpsForm);
+
+        $scope.jdSvc = jdSvc;
+        var gpsForm = {
+            submit: function () {
+                return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
+                    $scope.selectJobDetail($scope.currentJob.id);
+                });
+            },
+            showForm: function (fromRightClick) {
+
+                $(".gpsForm").show(0, function () {
+                    if (fromRightClick) {
+                        $scope.$apply();
+                    }
+                    waitingDialog.hide();
+
+                });
+                setTimeout(function () {
+                    $('#location').select2('open').val(null).trigger('change');
+                    var search = $('#location').data('select2').dropdown.$search;
+                    if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {
+                        search.val($scope.jdSvc.gpsForm.data.address.split(',')[1].split());
+                    } else {
+                        search.val($scope.jdSvc.gpsForm.data.address);
+                    }
+                    search.trigger("input");
+                }, 150);
+            }
+        };
+
+        $scope.gpsForm = gpsForm;
+        $scope.jdSvc.setGPSForm($scope.gpsForm);
 
 
+        $scope.updateGPS = function (currentJob, field, fromRightClick) {
+            $scope.gpsForm = null;
+            $scope.jdSvc.gpsForm = null;
+            $scope.gpsForm = gpsForm;
+            $scope.jdSvc.setGPSForm($scope.gpsForm);
+            $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
+        };
 
         $scope.gather = {
             submit: function () {
-                $scope.gather.form.onSubmit();
                 $(".gatherForm").hide();
+                $scope.gather.form.onSubmit().then(function(response) {
+
+                    $scope.selectJobDetail($scope.currentJob.id);
+                });
+                
+                //setTimeout(function () {  }, 1000);
+                
 
             },
             cancel: function () {
@@ -39,9 +94,15 @@ angular
             submitValue: "Save"
         };
 
+        $scope.jdSvc.setGather($scope.gather);
+
         $scope.options = {
             "detail": {
                 "size": [
+                    {
+                        "id": 1,
+                        "label": "Bike"
+                    },
                     {
                         "id": 2,
                         "label": "Car"
@@ -53,6 +114,66 @@ angular
                     {
                         "id": 4,
                         "label": "Truck"
+                    },
+                    {
+                        "id": 5,
+                        "label": "Scooter"
+                    }
+                ],
+                "tracking": [
+                    {
+                        "id": 1,
+                        "label": "Email"
+                    },
+                    {
+                        "id": 2,
+                        "label": "Mobile"
+                    },
+                    {
+                        "id": 3,
+                        "label": "Email & Mobile"
+                    }
+                ],
+                "DGClass": [
+                    {
+                        "id": 0,
+                        "label": "0"
+                    },
+                    {
+                        "id": 1,
+                        "label": "1"
+                    },
+                    {
+                        "id": 2,
+                        "label": "2"
+                    },
+                    {
+                        "id": 3,
+                        "label": "3"
+                    },
+                    {
+                        "id": 4,
+                        "label": "4"
+                    },
+                    {
+                        "id": 5,
+                        "label": "5"
+                    },
+                    {
+                        "id": 6,
+                        "label": "6"
+                    },
+                    {
+                        "id": 7,
+                        "label": "7"
+                    },
+                    {
+                        "id": 8,
+                        "label": "8"
+                    },
+                    {
+                        "id": 9,
+                        "label": "9"
                     }
                 ]
             }
@@ -67,7 +188,7 @@ angular
 
             "jobList": {
                 "title": "Job Data",
-                "tpl": "app/components/CS/tpls/jobList.tpl?v=1.31",
+                "tpl": "app/components/CS/tpls/jobList.tpl?v=1.12",
                 "showSearch": 1,
                 "model": "jobList",
                 "headings": [
@@ -113,7 +234,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/CS/tpls/jobDetail.tpl?v=1.15",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.5",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -478,6 +599,7 @@ angular
 
 
         }
+        
 
         $scope.refreshData = function (wait) {
 
@@ -612,18 +734,18 @@ angular
         };
 
         //Select Job
-        $scope.selectJobDetail = function (job) {
-            console.log("select Job  " + job.id);
+        $scope.selectJobDetail = function (id) {
+            console.log("select Job  " + id);
             //$("#jobList").find(".active").removeClass("active");
             clearTimeout($scope.myTimer);
             //$scope.currentEvent = event;
             
             $("#box-jobDetail").find(".loading").show();
             
-            uCSData.getJobDetail(job.id).then(function (data) {
+            uCSData.getJobDetail(id).then(function (data) {
                 $scope.currentJob = data;
                 $("#box-jobDetail").find(".loading").hide();
-                $scope.currentSelection = " for Job " + job.jobNo;
+                $scope.currentSelection = " for Job " + data.jobNo;
                 var jobs = [];
                 jobs.push($scope.currentJob);
                 displayRoutePointsOnly(jobs, true);
@@ -707,6 +829,82 @@ angular
 
         // $scope.getData();
 
+
+        NgMap.getMap().then(function (map) {
+            $scope.map = map;
+            $scope.marker = map.markers[0];
+            $scope.onMapReady();
+        });
+
+        $scope.onMapReady = function () {
+            //$scope.heremaps = heremaps;
+
+            var options = {
+                minimumInputLength: 1,
+                ajax: {
+                    url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
+                    delay: 250,
+                    dataType: "json",
+                    data: function (params) {
+                        return {
+                            query: params.term,
+                            app_id: "bBPfh2x8Cauun3ygLMAx",
+                            app_code: "yjfwTdkin_R2rGXYTrwWVg",
+                            beginHighlight: "<b>",
+                            endHighlight: "</b>",
+                            country: "NZL"
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: $.map(data.suggestions, function (obj) {
+                                return { id: obj.locationId, text: obj.label.split(", ").reverse().join(", ") };
+                            })
+                        };
+                    }
+                },
+                escapeMarkup: function (markup) { return markup; }
+            };
+
+            $("#location").select2(options).on("select2:select", function (e) {
+                $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json", {
+                    app_id: "bBPfh2x8Cauun3ygLMAx",
+                    app_code: "yjfwTdkin_R2rGXYTrwWVg",
+                    locationId: e.params.data.id
+                }).done(function (data) {
+                    var locn = data.Response.View[0].Result[0].Location;
+                    console.log("Suburb = " + locn.Address.District);
+                    console.log("PostCode = " + locn.Address.PostalCode);
+                    $("#suburb").val(locn.Address.District);
+                    var mappedSub = $scope.jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
+                    if (mappedSub !== undefined) {
+                        console.log(mappedSub);
+                        $('#our_suburb').val(mappedSub.id).trigger('change');
+                    }
+                    else {
+                        $('#our_suburb').val(null).trigger('change');
+                    }
+
+
+                    $scope.jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
+                    $scope.jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
+                    $scope.jdSvc.gpsForm.data.address = locn.Address.Label;
+                    var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
+                    $scope.map.setCenter(ll);
+                    $scope.marker.setPosition(ll);
+
+                });
+            });
+
+            var suburbOptions = {
+                minimumInputLength: 1,
+                data: $scope.jdSvc.pickSuburbs
+            };
+
+            $("#our_suburb").select2(suburbOptions);
+
+            waitingDialog.hide();
+        };
 
         $scope.highlightEvent = function () {
             $("#jobList .active").each(function () {
@@ -904,168 +1102,6 @@ angular
 
         };
 
-        /////////////////////////
-        // JOB DETAILS
-        /////////////////////////
-
-        $scope.updateGPS = function (field) {
-            var suburb = "";
-            if (field === "toAddress") {
-                if ($scope.currentEvent.toLat) {
-                    var postCode = $scope.currentEvent.toPostCode;
-                    var lat = $scope.currentEvent.toLat;
-                    var long = $scope.currentEvent.toLng;
-                    var q = $("#gpsMap").attr("data-src") + lat + "," + long;
-                    suburb = $scope.currentEvent.toSuburb;
-                } else {
-                    var lat = "";
-                    var long = "";
-                    var q = $("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentEvent[field]);
-                }
-            } else {
-                if ($scope.currentEvent.fromLat) {
-                    var postCode = $scope.currentEvent.fromPostCode;
-                    var lat = $scope.currentEvent.fromLat;
-                    var long = $scope.currentEvent.fromLng;
-                    var q = $("#gpsMap").attr("data-src") + lat + "," + long;
-                    suburb = $scope.currentEvent.fromSuburb;
-                } else {
-                    var lat = "";
-                    var long = "";
-                    var q = $("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentEvent[field]);
-                }
-            }
-
-            $("#gpsMap").attr("src", q);
-
-            $scope.gpsForm = {
-                "data": {
-                    "address": $scope.currentEvent[field] + ", " + suburb,
-                    "lat": lat,
-                    "long": long,
-                    "postCode": postCode
-
-                },
-                submit: function (response) {
-                    var location;
-                    var postCode = null;
-                    // Custom GPS Location
-                    if (!response) {
-                        location = new google.maps.LatLng($scope.gpsForm.data.lat, $scope.gpsForm.data.long);
-                        postCode = $scope.gpsForm.data.postCode;
-                    } else {
-                        location = response.geometry.location;
-
-                        if (response.address_components.find(x => x.types[0] === "postal_code")) {
-                            postCode = response.address_components.find(x => x.types[0] === "postal_code").long_name;
-                        }
-                    }
-
-                    var callData = {
-                        "address": field,
-                        "lat": location.lat(),
-                        "lng": location.lng(),
-                        "postCode": postCode,
-                        "jobId": $scope.currentEvent.bulkJobID
-                    };
-
-                    uCSData.updateGps(callData.address, callData.jobId, callData.lat, callData.lng, callData.postCode).then(function (data) {
-                        if (data.response === "Success") {
-                            if (field === "toAddress") {
-                                $scope.currentEvent.toLat = location.lat();
-                                $scope.currentEvent.toLng = location.lng();
-                                $scope.currentEvent.ToPostCode = postCode;
-                            } else {
-                                $scope.currentEvent.fromLat = location.lat();
-                                $scope.currentEvent.fromLng = location.lng();
-                                $scope.currentEvent.FromPostCode = postCode;
-                            }
-                            alert("GPS updated successfully!");
-                        } else {
-                            alert(data.response);
-                        }
-
-                        // Hide the GPS update form
-                        $(".gpsForm").hide(0);
-                        // Hide the Update address form and return to the Detail section
-                        $scope.gather.cancel();
-
-                        setTimeout(function () {
-                            $scope.$apply();
-                        },
-                            0);
-
-                    });
-                },
-                cancel: function () {
-                    $(".gpsForm").hide(0);
-                },
-                placeChanged: function (place) {
-                    if (place !== undefined && place !== null) {
-                        $scope.place = place;
-                    } else {
-                        $scope.place = this.getPlace();
-                    }
-
-                    $scope.gpsForm.search = $scope.place.formatted_address;
-                    $scope.gpsForm.data.lat = $scope.place.geometry.location.lat();
-                    $scope.gpsForm.data.long = $scope.place.geometry.location.lng();
-                    if ($scope.place.address_components.find(x => x.types[0] === "postal_code")) {
-                        $scope.gpsForm.data.postCode = $scope.place.address_components
-                            .find(x => x.types[0] === "postal_code").long_name;
-                    }
-                    $scope.map.setCenter($scope.place.geometry.location);
-                },
-                moveMarker: function (event) {
-                    var latlng = event.latLng;
-                    GeoCoder.geocode({ location: latlng })
-                        .then(function (result) {
-                            $scope.marker.setPosition(latlng);
-                            $scope.gpsForm.placeChanged(result[0]);
-                        });
-                },
-                markerDragend: function () {
-                    //Geo coder for drag marker
-                    GeoCoder.geocode({ location: $scope.marker.getPosition() })
-                        .then(function (result) {
-                            $scope.gpsForm.placeChanged(result[0]);
-                        });
-                }
-            };
-
-            $(".gpsForm").show(0);
-
-            $scope.$watch('gpsForm.details', function (newValue, oldValue, scope) {
-                setTimeout(function () {
-                    if ($scope.gpsForm.search) {
-
-                        $("#gpsMap").attr("src", $("#gpsMap").attr("data-src") + encodeURIComponent($scope.gpsForm.search));
-                        if ($scope.gpsForm.details.geometry.location) {
-                            $scope.gpsForm.data.lat = $scope.gpsForm.details.geometry.location.lat();
-                            $scope.gpsForm.data.long = $scope.gpsForm.details.geometry.location.lng();
-                            if ($scope.gpsForm.details.address_components.find(x => x.types[0] === "postal_code")) {
-                                $scope.gpsForm.data.postCode = $scope.gpsForm.details.address_components
-                                    .find(x => x.types[0] === "postal_code").long_name;
-                            }
-                        }
-
-                    } else {
-                        if (!$scope.gpsForm.data.long) {
-                            $("#gpsMap").attr("src", $("#gpsMap").attr("data-src") + "Auckland");
-                        }
-                    }
-                }, 1000);
-            });
-
-            $scope.copyGpsAddress = function () {
-                //Trim to street address only
-                $scope.gpsForm.search = $scope.gpsForm.data.address.split(",")[1].trim();
-                //$scope.gpsForm.search = angular.copy($scope.gpsForm.data.address);
-                $("#gpsSearch").focus();
-            };
-
-
-        };
 
         $scope.addEventNote = function (eventId, type, options) {
 
@@ -1112,60 +1148,7 @@ angular
 
         };
 
-        $scope.editDetailField = function (fieldName, label, value, jobId, type, options) {
 
-            if (type === "date") {
-                if (!(value instanceof Date)) {
-                    value = moment(value, "DD/MM/YYYY").toDate();
-                }
-            }
-
-            if (type === "time") {
-                value = moment(value, "hh:mm:ss").toDate();
-            }
-
-            $scope.gather.form = {
-                id: "editField",
-                title: "Edit " + label,
-                fields: [
-                    {
-                        "name": fieldName,
-                        "label": label + "...",
-                        "value": value,
-                        "jobID": jobId,
-                        "type": type,
-                        "options": options
-                    }
-                ],
-                onSubmit: function () {
-
-                    $scope.updateDetailField($scope.gather.form.fields[0].name, $scope.gather.form.fields[0].value, $scope.gather.form.fields[0].jobID);
-
-                },
-                submitValue: "Update Field"
-            };
-            $scope.gather.showForm();
-
-        };
-
-        $scope.updateDetailField = function (field, value, jobId) {
-
-
-            uCSData.updateJobDetail(jobId, field, value).then(function (data) {
-
-                if (data.response === "Success") {
-                    $scope.currentEvent = data.job;
-                    alert(field + " updated successfully!");
-
-                } else {
-
-                    alert(data.response);
-
-                }
-
-            });
-
-        };
 
     }]);
 

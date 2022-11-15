@@ -28,6 +28,7 @@ namespace DespatchWeb
 			MapTblInternetPermission(modelBuilder.Entity<TblInternetPermission>());
 			MapTblJob(modelBuilder.Entity<TblJob>());
 			MapTblJobLeaveNotHome(modelBuilder.Entity<TblJobLeaveNotHome>());
+			MapTblUndeliverableLocation(modelBuilder.Entity<TblUndeliverableLocation>());
 			MapTucClient(modelBuilder.Entity<TucClient>());
 			MapTucClientContact(modelBuilder.Entity<TucClientContact>());
 			MapTucEvent(modelBuilder.Entity<TucEvent>());
@@ -123,6 +124,7 @@ namespace DespatchWeb
 			config.Property(t => t.UcjbComplTime).HasColumnName("ucjbComplTime");
 			config.Property(t => t.UcjbDispId).HasColumnName("ucjbDispID");
 			config.Property(t => t.UcjbAttention).HasColumnName("ucjbAttention");
+            config.Property(t => t.RatedManually).HasColumnName("RatedManually");
 			config.Property(t => t.UcjbPickUpFrom).HasColumnName("ucjbPickUpFrom");
 			config.Property(t => t.RegionFromId).HasColumnName("RegionFromID");
 			config.Property(t => t.RegionToId).HasColumnName("RegionToID");
@@ -134,6 +136,9 @@ namespace DespatchWeb
 			config.Property(t => t.PickupFromContact).HasMaxLength(100);
 			config.Property(t => t.PickupFromPhone).HasMaxLength(100);
 			config.Property(t => t.UcjbContact).HasColumnName("ucjbContact").HasMaxLength(30);
+            config.Property(t => t.DeliverToPhone).HasColumnName("DeliverToPhone").HasMaxLength(100);
+            config.Property(t => t.TrackingMobile).HasColumnName("TrackingMobile").HasMaxLength(100);
+            config.Property(t => t.TrackingEmail).HasColumnName("TrackingEmail").HasMaxLength(100);
 			config.Property(t => t.UcjbContactPhone).HasColumnName("ucjbContactPhone").HasMaxLength(15);
 			config.Property(t => t.UcjbWeight).HasColumnName("ucjbWeight");
 			config.Property(t => t.UcjbQty).HasColumnName("ucjbQty");
@@ -213,6 +218,7 @@ namespace DespatchWeb
 			config.Property(t => t.BulletFreight);
 			config.Property(t => t.VanOk).HasColumnName("VanOK");
 			config.Property(t => t.Dgclass).HasColumnName("DGClass");
+            config.Property(t => t.Dgdocumentation).HasColumnName("DGDocument");
 			config.Property(t => t.InternalAccount);
 			config.Property(t => t.FromArea);
 			config.Property(t => t.ToArea);
@@ -483,6 +489,7 @@ namespace DespatchWeb
 			config.Property(t => t.BulkHomeDeliveryVanItemSurcharge);
 			config.Property(t => t.BulkAternoonHomePickupTime);
 			config.Property(t => t.TrackingEta).HasColumnName("TrackingETA");
+			config.Property(t => t.SigRequiredDefault).HasMaxLength(500);
 			config.Property(t => t.ClientId).HasColumnName("ClientID");
 			config.Property(t => t.Name).HasMaxLength(75).IsRequired();
 			config.Property(t => t.LegalName).HasMaxLength(150).IsRequired();
@@ -956,6 +963,10 @@ namespace DespatchWeb
 			config.Property(t => t.ShopRef3).HasMaxLength(50);
 			config.Property(t => t.ShopRef4).HasMaxLength(50);
 			config.Property(t => t.ShopRef5).HasMaxLength(50);
+			config.Property(t => t.DepotId);
+			config.Property(t => t.Barcode).HasMaxLength(300);
+			config.Property(t => t.StorageState);
+			config.Property(t => t.DeliveryState);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TblJobLeaveNotHome'</summary>
@@ -976,6 +987,26 @@ namespace DespatchWeb
 			config.Property(t => t.Created);
 			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
 			config.Property(t => t.Notes).HasMaxLength(1073741823);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'TblUndeliverableLocation'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapTblUndeliverableLocation(EntityTypeBuilder<TblUndeliverableLocation> config)
+		{
+			config.ToTable("tblUndeliverableLocation");
+			config.HasKey(t => t.UndeliverableLocationId);
+			config.Property(t => t.UndeliverableLocationId).HasColumnName("UndeliverableLocationID").ValueGeneratedOnAdd();
+			config.Property(t => t.Created);
+			config.Property(t => t.CreatedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.LastModified);
+			config.Property(t => t.LastModifiedBy).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Notes).HasMaxLength(1073741823);
+			config.Property(t => t.Name).HasMaxLength(50).IsRequired();
+			config.Property(t => t.Podname).HasColumnName("PODName").HasMaxLength(50).IsRequired();
+			config.Property(t => t.JobTypeId).HasColumnName("JobTypeID");
+			config.Property(t => t.Message).HasMaxLength(1073741823).IsRequired();
+			config.Property(t => t.WebDeliveredTimeLabel).HasMaxLength(50).IsRequired();
+			config.HasOne(t => t.TucJobType).WithMany(t => t.TblUndeliverableLocations).HasForeignKey(t => t.JobTypeId);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TucClient'</summary>
@@ -1231,6 +1262,7 @@ namespace DespatchWeb
 			config.Property(t => t.BulkHomeDeliveryVanItemSurcharge);
 			config.Property(t => t.BulkAternoonHomePickupTime);
 			config.Property(t => t.TrackingEta).HasColumnName("TrackingETA");
+			config.Property(t => t.SigRequiredDefault).HasMaxLength(500);
 			config.HasOne(t => t.TucSuburb).WithMany(t => t.TucClients).HasForeignKey(t => t.UcclSuburbId);
 		}
 
@@ -1381,6 +1413,7 @@ namespace DespatchWeb
 			config.Property(t => t.Alias).HasMaxLength(500);
 			config.Property(t => t.ZoneRated);
 			config.Property(t => t.ServiceTrackingId);
+			config.Property(t => t.AddonPercentage);
 		}
 
 		/// <summary>Defines the mapping information for the entity 'TucSuburb'</summary>

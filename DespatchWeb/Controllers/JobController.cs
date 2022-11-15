@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.VisualBasic;
 
 namespace DespatchWeb.Controllers
 {
@@ -18,29 +22,33 @@ namespace DespatchWeb.Controllers
         private ClientRepository _clientRepo;
         private IConfiguration _configuration;
 
-        public JobController(JobRepository jobRepository, CourierRepository courierRepo, ClientRepository clientRepo, IConfiguration configuration)
+        public JobController(JobRepository jobRepository, CourierRepository courierRepo, ClientRepository clientRepo,
+            IConfiguration configuration)
         {
             _jobRepo = jobRepository;
             _courierRepo = courierRepo;
             _clientRepo = clientRepo;
             _configuration = configuration;
         }
-        public async Task<IActionResult> Index(string status, string area, string order, string asc, bool isInternal, int cid, string clientIds)
+
+        public async Task<IActionResult> Index(string status, string area, string order, string asc, bool isInternal,
+            int cid, string clientIds)
         {
             //Security check to confirm these clients belong to this contact and have permissions set
             if (!isInternal && !string.IsNullOrEmpty(clientIds))
             {
                 var clientContacts = await _clientRepo.ClientContacts(cid);
-                if (!clientContacts.Select(c => c.ID).Any(x=>clientIds.Split(',').Any(y=>y == x.ToString())))
+                if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
                 {
-                    var empty =new List<Models.JobViewModel>();
+                    var empty = new List<Models.JobViewModel>();
                     return Json(empty);
                 }
             }
+
             var result = _jobRepo.JobList(status, area, order, asc, isInternal, clientIds);
             return Json(result);
         }
-        
+
         public IActionResult Current(int courierId, bool done)
         {
             var result = _jobRepo.CurrentJobList(courierId, done);
@@ -83,7 +91,7 @@ namespace DespatchWeb.Controllers
             {
                 return Json(false);
             }
-            
+
         }
 
         public async Task<IActionResult> Detail(int jobId)
@@ -92,14 +100,19 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        public IActionResult PODSearch(int? courierId, int? clientId, string wild, DateTime fromDate, DateTime toDate, int pageIndex, int pageSize)
+        public IActionResult PODSearch(int? courierId, int? clientId, string wild, DateTime fromDate, DateTime toDate,
+            int pageIndex, int pageSize)
         {
-            var result = _jobRepo.PODSearch(courierId, wild ?? "", fromDate.ResetTimeToStartOfDay(), toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
+            var result = _jobRepo.PODSearch(courierId, wild ?? "", fromDate.ResetTimeToStartOfDay(),
+                toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
             return Json(result);
         }
 
         [HttpPost]
-        public async Task<IActionResult> LateCall(int lateType, int lateTime, int minutes, int pickupTime, int alertLatePickup, int deliveryTime, int alertLateDelivery, string jobNo, int clientId, string contact, int staffId, DateTime jobTime, int jobId, int jobType, string bookedSpeed, string notifiedSpeed, string despatcherName, bool calculationRequired)
+        public async Task<IActionResult> LateCall(int lateType, int lateTime, int minutes, int pickupTime,
+            int alertLatePickup, int deliveryTime, int alertLateDelivery, string jobNo, int clientId, string contact,
+            int staffId, DateTime jobTime, int jobId, int jobType, string bookedSpeed, string notifiedSpeed,
+            string despatcherName, bool calculationRequired)
         {
             var late = lateTime;
             var createEvent = false;
@@ -130,6 +143,7 @@ namespace DespatchWeb.Controllers
                                 }
                             }
                         }
+
                         break;
                     case 2:
                         jobStatus = 8;
@@ -149,6 +163,7 @@ namespace DespatchWeb.Controllers
                                 }
                             }
                         }
+
                         break;
                     default:
                         break;
@@ -164,18 +179,21 @@ namespace DespatchWeb.Controllers
             {
                 //Event_Insert Me.ucjbNumber, Me.ucjbClientID, Me.ucjbContact, intLateType, intLateTime, DateAdd("n", intLate, Me.ucjbTime), _
                 //    lngUserID, 0, Null, "Late Call from Despatch", False, False, 2, Null, Null, Me.ucjbID, Null, Me.ucjbType, Date, Now
-                await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, null, jobId, jobType, null, "Late Call from Despatch", lateType, lateTime, jobTime.AddMinutes(late));
+                await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, null, jobId, jobType, null,
+                    "Late Call from Despatch", lateType, lateTime, jobTime.AddMinutes(late));
             }
 
             await _jobRepo.ResetLateEvent(jobId, lateType);
 
             if (lateType == 1)
             {
-                await _jobRepo.LatePickup(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName, calculationRequired);
+                await _jobRepo.LatePickup(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName,
+                    calculationRequired);
             }
             else
             {
-                await _jobRepo.LateDelivery(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName, calculationRequired);
+                await _jobRepo.LateDelivery(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName,
+                    calculationRequired);
             }
 
             return Json("OK");
@@ -252,35 +270,42 @@ namespace DespatchWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateSplitJobAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng)
+        public async Task<IActionResult> UpdateSplitJobAddress(int jobId, int toSuburbId, string address,
+            decimal deliveryLat, decimal deliveryLng)
         {
             await _jobRepo.UpdateSplitJobAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng);
             return Json("OK");
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddRestoreEvent(string jobNo, int clientId, string contact, int staffId, int courierId, int jobId, int jobType, string despatcherName)
+        public async Task<IActionResult> AddRestoreEvent(string jobNo, int clientId, string contact, int staffId,
+            int courierId, int jobId, int jobType, string despatcherName)
         {
 
-            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, "Job Restored", 33);
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
+                despatcherName, "Job Restored", 33);
 
             return Json("OK");
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddPriceSuburbChangeEvent(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName)
+        public async Task<IActionResult> AddPriceSuburbChangeEvent(string jobNo, int clientId, string contact,
+            int staffId, int? courierId, int jobId, int jobType, string despatcherName)
         {
 
-            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null, "Changed Price or Suburb", 35);
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null,
+                "Changed Price or Suburb", 35);
 
             return Json("OK");
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddOtherEvent(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes)
+        public async Task<IActionResult> AddOtherEvent(string jobNo, int clientId, string contact, int staffId,
+            int? courierId, int jobId, int jobType, string despatcherName, string notes)
         {
 
-            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null, notes, 66);
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null, notes,
+                66);
 
             return Json("OK");
         }
@@ -298,19 +323,41 @@ namespace DespatchWeb.Controllers
             return Json(data);
         }
 
-        public async Task<IActionResult> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
-                                          int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)
+        public IActionResult LeaveList()
         {
-            var rate = await _jobRepo.RateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours);
+            var data = _jobRepo.LeaveParcelLocations();
+            return Json(data);
+        }
+
+        public IActionResult UndeliverableList()
+        {
+            var data = _jobRepo.UndeliverableLocations();
+            return Json(data);
+        }
+
+        public async Task<IActionResult> RateTruckJob(int clientId, int fromId, int toId, double weight, int size,
+            int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
+            int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)
+        {
+            var rate = await _jobRepo.RateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp,
+                dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours);
             return Json($"{rate:C}");
         }
 
-        public async Task<IActionResult> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van, bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
-                                            string ourRef, string refA, string refB, int quantity, DateTime booked)
+        public async Task<IActionResult> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
+            bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
+            string ourRef, string refA, string refB, int quantity, DateTime booked)
         {
-            var rate = await _jobRepo.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
-                                             ourRef, refA, refB, quantity, booked);
+            var rate = await _jobRepo.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
+                includeFuelSurcharge, direct, acceptedJobTypeId,
+                ourRef, refA, refB, quantity, booked);
             return Json($"{rate:C}");
+        }
+
+        public async Task<IActionResult> PPDExclusiveAmount(int clientId, decimal amount)
+        {
+            var ppd = _jobRepo.PPDExclusiveAmount(clientId, amount);
+            return Json(ppd);
         }
 
         public async Task<IActionResult> TruckItemsSummary(int jobId, int truckWeightLimit)
@@ -319,19 +366,24 @@ namespace DespatchWeb.Controllers
             return Json(summary);
         }
 
-        public async Task<IActionResult> UpdateDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate)
+        public async Task<IActionResult> UpdateDeliveryAddress(int jobId, int toSuburbId, string address,
+            decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcherName)
         {
-            await _jobRepo.UpdateDeliveryAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate);
+            await _jobRepo.UpdateDeliveryAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
+                despatcherName);
             return Json("OK");
         }
 
-        public async Task<IActionResult> UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat, decimal pickupLng, bool cbd, decimal rate)
+        public async Task<IActionResult> UpdatePickupAddress(int jobId, int fromSuburbId, string address,
+            decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
         {
-            await _jobRepo.UpdatePickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate);
+            await _jobRepo.UpdatePickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
+                despatcherName);
             return Json("OK");
         }
 
-        public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal? rate, string despatcherName, int staffId)
+        public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal? rate,
+            string despatcherName, int staffId)
         {
             await _jobRepo.UpdateJob(jobId, field, value, rate, despatcherName, staffId);
             return Json("OK");
@@ -344,61 +396,129 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-        public async Task<IActionResult> SendPOD(int jobId, string toEmail)
+
+        
+
+        [HttpPost]
+        public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId,string currentSpeed)
         {
-
-            var selectedJob = await _jobRepo.JobDetail(jobId);
-
-            if (selectedJob == null)
+            var jobData = await _jobRepo.DirectToASAP(jobId);
+            var settingData = await _jobRepo.Settings();
+            var emailMessage = FormatDelimMessage(settingData.UncheckDirectEmailMessage, "[", "]", jobData);
+            await _courierRepo.AddEventAsync(jobData.Number, jobData.ClientID ?? 0, jobData.Recipient, staffId, null,
+                jobId, jobData.JobTypeID ?? 0, despatcher, "Direct job changed to ASAP", 42, null, null,
+                jobData.CloseEvent);
+            if (jobData.NotifyViaEmail)
             {
-                return NotFound();
+                SendEmail(jobData.ContactEmail, "noreply@urgent.co.nz", emailMessage,
+                    settingData.UncheckDirectEmailSubject ?? "");
             }
+            var result = await _jobRepo.UpdateFirstAvailableSpeed(jobId);
 
-            Attachment att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo.ToString() + ".png");
-
-            SendEmail(toEmail, _configuration["FromAddress"], $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.", $"Delivery Photo for {selectedJob.JobNo}", att);
+            var msg =
+                $"Client advised by email that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
+            var msgPhone =
+                $" to be called and advised that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
+            if (jobData.NotifyViaEmail)
+            {
+                await AddNote(jobId, msg, despatcher);
+            }
+            else
+            {
+                await AddNote(jobId, jobData.Contact + msgPhone, despatcher);
+            }
 
             return Json("OK");
         }
-        private void SendEmail(string toAddress, string fromAddress, string body, string subject, Attachment attachment = null, string replyTo = null)
+
+    
+
+   
+
+    private string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
+    {
+        var message = "";
+        while (format?.Length > 0)
         {
 
-            using (var message = new MailMessage
+            var c = Strings.Left(format, 1);
+            format = Strings.Mid(format, 2);
+            if (c == startDelim)
             {
-                IsBodyHtml = true,
-                From = new MailAddress(fromAddress),
-                Subject = subject,
-                Body = body,
-                Priority = MailPriority.High
+                var fieldName = Strings.Left(format, Strings.InStr(format, endDelim) - 1);
+                format = Strings.Mid(format, Strings.InStr(format, endDelim) + 1);
+                var props = typeof(T).GetRuntimeProperties();
+                var p = props.First(x => String.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
 
-            })
+                message += p?.GetValue(data)?.ToString();
+            }
+            else
             {
-                message.To.Add(toAddress);
-                message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@urgent.co.nz>");
-                if (attachment != null)
-                {
-                    message.Attachments.Add(attachment);
-                }
-                if (!string.IsNullOrEmpty(replyTo))
-                {
-                    message.ReplyToList.Add(new MailAddress(replyTo));
-                }
-
-                using (var smtp = new SmtpClient
-                {
-                    Host = _configuration["SMTPServer"],
-                    UseDefaultCredentials = false,
-                    EnableSsl = true,
-                    Credentials = new NetworkCredential(_configuration["SMTPUser"], _configuration["SMTPPass"]),
-                    Port = int.Parse(_configuration["SMTP_Port"])
-                })
-                {
-                    smtp.Send(message);
-                }
-
+                message += c;
             }
 
+        };
+
+        message = message.Replace("  ", " ");
+        message = Strings.Trim(message);
+        return message;
+    }
+
+    public async Task<IActionResult> SendPOD(int jobId, string toEmail)
+    {
+
+        var selectedJob = await _jobRepo.JobDetail(jobId);
+
+        if (selectedJob == null)
+        {
+            return NotFound();
+        }
+
+        Attachment att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo.ToString() + ".png");
+
+        SendEmail(toEmail, _configuration["FromAddress"], $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.", $"Delivery Photo for {selectedJob.JobNo}", att);
+
+        return Json("OK");
+    }
+    private void SendEmail(string toAddress, string fromAddress, string body, string subject, Attachment attachment = null, string replyTo = null)
+    {
+
+        using (var message = new MailMessage
+        {
+            IsBodyHtml = true,
+            From = new MailAddress(fromAddress),
+            Subject = subject,
+            Body = body,
+            Priority = MailPriority.High
+
+        })
+        {
+            message.To.Add(toAddress);
+            message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@urgent.co.nz>");
+            if (attachment != null)
+            {
+                message.Attachments.Add(attachment);
+            }
+            if (!string.IsNullOrEmpty(replyTo))
+            {
+                message.ReplyToList.Add(new MailAddress(replyTo));
+            }
+
+            using (var smtp = new SmtpClient
+            {
+                Host = _configuration["SMTPServer"],
+                UseDefaultCredentials = false,
+                EnableSsl = true,
+                Credentials = new NetworkCredential(_configuration["SMTPUser"], _configuration["SMTPPass"]),
+                Port = int.Parse(_configuration["SMTP_Port"])
+            })
+            {
+                smtp.Send(message);
+            }
 
         }
+
+
     }
+}
 }
