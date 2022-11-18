@@ -10,6 +10,7 @@ namespace DespatchWeb.Models
     {
         public int ID { get; set; }
         public DateTime? Time { get; set; }
+        public DateTime? BookedDate { get; set; }
         public bool Direct { get; set; }
         public bool Van { get; set; }
         public bool Done { get; set; }
@@ -95,6 +96,7 @@ namespace DespatchWeb.Models
         public string FromContactName { get; set;  }
         public string FromContactNumber { get; set; }
         public bool RatedManually { get; set; }
+        public short? SizeID { get; set; }
 
 
     }

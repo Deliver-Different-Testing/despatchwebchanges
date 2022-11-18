@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.EntityClasses;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,9 +11,9 @@ namespace DespatchWeb.Repositories
 {
     public class ClientRepository
     {
-        private readonly DespatchWebDataContext _context;
+        private readonly DespatchContext _context;
 
-        public ClientRepository(DespatchWebDataContext context)
+        public ClientRepository(DespatchContext context)
         {
             _context = context;
         }
@@ -51,7 +52,7 @@ namespace DespatchWeb.Repositories
                 select new ClientContactViewModel()
                 {
                     ID = c.ClientId,
-                    Text = c.TucClient.UcclName
+                    Text = c.Client.UcclName
                 };
             return await clientContacts.ToListAsync();
 

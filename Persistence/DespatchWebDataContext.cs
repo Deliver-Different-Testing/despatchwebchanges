@@ -82,5 +82,7 @@ namespace DespatchWeb
 		public DbSet<TucJobType> TucJobTypes { get; set; } 
 		/// <summary>Gets an object query for the entity set 'TucSuburb', containing entity type 'TucSuburb'</summary>
 		public DbSet<TucSuburb> TucSuburbs { get; set; } 
+		/// <summary>Gets an object query for the entity set 'UvwBookingToday', containing entity type 'UvwBookingToday'</summary>
+		public DbSet<UvwBookingToday> UvwBookingTodays { get; set; } 
 }
 }

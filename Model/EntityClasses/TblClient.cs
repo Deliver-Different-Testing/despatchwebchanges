@@ -340,6 +340,8 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Decimal> Ppdrate { get; set;}
 		/// <summary>Gets or sets the PrivateAddressSurchargeRateCodeId field. </summary>
 		public Nullable<System.Int32> PrivateAddressSurchargeRateCodeId { get; set;}
+		/// <summary>Gets or sets the PromoCode field. </summary>
+		public System.String PromoCode { get; set;}
 		/// <summary>Gets or sets the PromptForEmailAddress field. </summary>
 		public System.Boolean PromptForEmailAddress { get; set;}
 		/// <summary>Gets or sets the Rate15min field. </summary>
@@ -428,6 +430,10 @@ namespace DespatchWeb.EntityClasses
 		public Nullable<System.Int32> StandardRateCodeId { get; set;}
 		/// <summary>Gets or sets the StartingWeightExcess field. </summary>
 		public System.Int32 StartingWeightExcess { get; set;}
+		/// <summary>Gets or sets the StripeClient field. </summary>
+		public System.Boolean StripeClient { get; set;}
+		/// <summary>Gets or sets the StripeClientId field. </summary>
+		public System.String StripeClientId { get; set;}
 		/// <summary>Gets or sets the SuburbId field. </summary>
 		public Nullable<System.Int32> SuburbId { get; set;}
 		/// <summary>Gets or sets the TailLiftRateCodeId field. </summary>

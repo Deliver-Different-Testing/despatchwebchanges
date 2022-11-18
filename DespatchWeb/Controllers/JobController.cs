@@ -105,6 +105,7 @@ namespace DespatchWeb.Controllers
         {
             var result = _jobRepo.PODSearch(courierId, wild ?? "", fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
+
             return Json(result);
         }
 

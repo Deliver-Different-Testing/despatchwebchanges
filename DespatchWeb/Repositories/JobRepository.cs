@@ -8,20 +8,20 @@ using DespatchWeb.Models;
 using System.Linq.Dynamic.Core;
 using Microsoft.EntityFrameworkCore;
 using DespatchWebContextExtensions;
-using Remotion.Linq.Clauses;
+
 using System.Data.Common;
 using System.Diagnostics;
 using System.Threading;
-using Remotion.Linq.Parsing.Structure.IntermediateModel;
+
 using System.Security.Cryptography;
 
 namespace DespatchWeb.Repositories
 {
     public class JobRepository
     {
-        private readonly DespatchWebDataContext _context;
+        private readonly DespatchContext _context;
 
-        public JobRepository(DespatchWebDataContext context)
+        public JobRepository(DespatchContext context)
         {
             _context = context;
         }
@@ -56,7 +56,9 @@ namespace DespatchWeb.Repositories
                 {
                     ID = j.JobId,
                     Time = j.Time,
+                    BookedDate = j.Date,
                     Direct = j.Direct,
+                    SizeID = j.Size,
                     Van = j.Van,
                     Truck = j.Truck,
                     SaturdayDelivery = j.SaturdayDelivery,
@@ -70,11 +72,6 @@ namespace DespatchWeb.Repositories
                     Notify = no.ShortName,
                     AcceptedJobTypeID = j.AcceptedJobTypeId,
                     NotifiedJobTypeID = j.NotifiedJobTypeId,
-                    Vehicle = new Vehicle()
-                    {
-                        id = j.Van ? (short?)Enums.Vehicle.Van : j.Size,
-                        label = j.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (j.Size ?? (short)2))
-                    },
                     Client = j.ClientCode,
                     ClientID = j.ClientId,
                     ClientName = client.Name,
@@ -97,11 +94,6 @@ namespace DespatchWeb.Repositories
                     ContactName = j.DeliverToContact,
                     Phone = j.DeliverToPhone,
                     SpeedAccepted = os.ShortName,
-                    Size = new Vehicle()
-                    {
-                        id = j.Van ? (short?)Enums.Vehicle.Van : j.Size,
-                        label = j.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (j.Size ?? (short)2))
-                    },
                     Weight = j.Weight,
                     Items = j.Quantity,
                     RefA = j.ClientReferenceA,
@@ -109,8 +101,6 @@ namespace DespatchWeb.Repositories
                     OurRef = j.OurRef,
                     SigNotRequired = leave.Name ?? "",
                     Charge = $"{j.Amount:C}",
-                    Date = j.Date.Value.ToString("dd/MM/yyyy"),
-                    Booked = DateTime.Parse(j.Date.Value.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")),
                     DispatchTime = j.DispatchDate.HasValue ? DateTime.Parse(j.DispatchDate.Value.ToString("yyyy-MM-dd") + " " + j.DispatchTime.Value.ToString("HH:mm:ss")): j.DispatchDate,
                     PUTime = j.PickUpTime,
                     ClientNotes = j.ClientNotes,
@@ -152,7 +142,22 @@ namespace DespatchWeb.Repositories
                     RatedManually = j.RatedManually
 
                 });
-            return await jobQuery.FirstOrDefaultAsync();
+            var job = await jobQuery.FirstOrDefaultAsync();
+            if (job != null)
+            {
+                job.Vehicle = new Vehicle()
+                {
+                    id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeID,
+                    label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (job.SizeID ?? (short)2))
+                };
+                job.Size = job.Vehicle;
+                job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
+                job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
+                                            job.Time.Value.ToString("HH:mm:ss"));
+
+            }
+
+            return job;
         }
 
         public Tuple<int, List<JobViewModel>> PODSearch(Int32? courierId, string wild, DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
@@ -198,7 +203,8 @@ namespace DespatchWeb.Repositories
                     PickUpLongitude = x.PickUpLongitude,
                     DeliveryLatitude = x.DeliveryLatitude,
                     DeliveryLongitude = x.DeliveryLongitude,
-                    Booked = DateTime.Parse(x.Date.Value.ToString("yyyy-MM-dd") + " " + x.Time.Value.ToString("HH:mm:ss")),
+                    BookedDate = x.Date
+
 
                 });
             var stopwatch = new Stopwatch();
@@ -209,15 +215,46 @@ namespace DespatchWeb.Repositories
             stopwatch.Reset();
             stopwatch.Start();
             var jobs = jobsQuery
-                .OrderBy(a => a.Booked).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
+                .OrderBy(a => a.BookedDate).ThenBy(v=>v.Time).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
             stopwatch.Stop();
             Console.WriteLine(stopwatch.ElapsedMilliseconds);
-            return Tuple.Create(total, jobs);
+            stopwatch.Reset();
+            stopwatch.Start();
+            var jobList = jobs.Select(v => new JobViewModel()
+            {
+                ID = v.ID,
+                Time = v.Time,
+                ClientID = v.ClientID,
+                Client = v.Client,
+                From = v.From,
+                FromSuburbID = v.FromSuburbID,
+                To = v.To,
+                ToSuburbID = v.ToSuburbID,
+                JobNo = v.JobNo,
+                FromAddress = v.FromAddress,
+                ToAddress = v.ToAddress,
+                Courier = v.Courier,
+                StatusID = v.StatusID,
+                Status = v.Status,
+                Speed = v.Speed,
+                SpeedID = v.SpeedID,
+                PickUpLatitude = v.PickUpLatitude,
+                PickUpLongitude = v.PickUpLongitude,
+                DeliveryLatitude = v.DeliveryLatitude,
+                DeliveryLongitude = v.DeliveryLongitude,
+                Booked = DateTime.Parse(v.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
+                                        v.Time.Value.ToString("HH:mm:ss"))
+
+
+            }).ToList();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            return Tuple.Create(total, jobList);
 
         }
         public List<JobViewModel> CurrentJobList(Int32 courierId, bool done)
         {
-            var jobs = _context.DeswebQryDespatches.FromSql($"exec [DESWeb_qryCourierJobs] {courierId}, {done}").ToList();
+            var jobs = _context.DeswebQryDespatches.FromSqlRaw($"exec [DESWeb_qryCourierJobs] {courierId}, {done}").ToList();
             var list =
                 (from j in jobs
                  select new JobViewModel()
@@ -298,7 +335,7 @@ namespace DespatchWeb.Repositories
                      AllowDispatch = j.AllowDespatch,
                      AllowSplit = j.AllowSplit,
                      DGClass = j.Dgclass,
-                     DGDocumentation = j.Dgdocumentation,
+                     DGDocumentation = j.Dgdocument,
                      DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
                      TruckWeightLimit = j.TruckWeightLimit,
                      TruckStartTime = j.TruckStartTime,
@@ -316,7 +353,7 @@ namespace DespatchWeb.Repositories
                      TrackingMethod = j.TrackingMethod,
                      TrackingMobile = j.TrackingMobile,
                      TrackingEmail = j.TrackingEmail,
-                     UDStatus = j.UDStatus,
+                     UDStatus = j.Udstatus,
                      RatedManually = j.RatedManually
 
                  }).ToList();
@@ -444,7 +481,7 @@ namespace DespatchWeb.Repositories
             }
             var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
-            var jobs = _context.DeswebQryDespatches.FromSql(s).ToList();
+            var jobs = _context.DeswebQryDespatches.FromSqlRaw(s).ToList();
             var pallets = _context.TucJobItems.ToList();
 
 
@@ -540,7 +577,7 @@ namespace DespatchWeb.Repositories
                             AllowDispatch = j.AllowDespatch,
                             AllowSplit = j.AllowSplit,
                             DGClass = j.Dgclass,
-                            DGDocumentation = j.Dgdocumentation,
+                            DGDocumentation = j.Dgdocument,
                             DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
                             TruckWeightLimit = j.TruckWeightLimit,
                             TruckStartTime = j.TruckStartTime,
@@ -559,7 +596,8 @@ namespace DespatchWeb.Repositories
                             TrackingMethod = j.TrackingMethod,
                             TrackingMobile = j.TrackingMobile,
                             TrackingEmail = j.TrackingEmail,
-                            UDStatus = j.UDStatus,
+                            UDStatus = j.
+                            Udstatus,
                             RatedManually = j.RatedManually
 
 
@@ -569,6 +607,7 @@ namespace DespatchWeb.Repositories
 
         }
 
+        
         public async Task<List<SupportViewModel>> SupportEvents(string channel)
         {
             var whereToUse = "";
@@ -592,7 +631,7 @@ namespace DespatchWeb.Repositories
 
             var s = channel == "All" ? $"select * from DES_qrySupportEvents_CustomerAndCourier order by {orderToUse}" : $"select * from DES_qrySupportEvents_CustomerAndCourier where {whereToUse} order by {orderToUse}";
 
-            var events = _context.DesQrySupportEventsCustomerAndCouriers.FromSql(s).ToList();
+            var events = _context.DesQrySupportEventsCustomerAndCouriers.FromSqlRaw(s).ToList();
             var evm = (from e in events
                        select new SupportViewModel()
                        {
@@ -610,8 +649,6 @@ namespace DespatchWeb.Repositories
                        }).ToList();
             return evm;
         }
-
-
 
         public async Task<TucEvent> GetSupportEvent(int id)
         {

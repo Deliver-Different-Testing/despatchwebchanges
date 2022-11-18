@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Hosting;
 using System.Security.Claims;
+using Microsoft.Extensions.Hosting;
 
 namespace DespatchWeb.Controllers
 {
@@ -20,9 +21,9 @@ namespace DespatchWeb.Controllers
     {
         private IConfiguration _configuration;
         private readonly ClientRepository _clientRepository;
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly IWebHostEnvironment _hostingEnvironment;
 
-        public HomeController(ClientRepository clientRepository, IConfiguration configuration, IHostingEnvironment hostingEnvironment)
+        public HomeController(ClientRepository clientRepository, IConfiguration configuration, IWebHostEnvironment hostingEnvironment)
         {
             _clientRepository = clientRepository;
             _configuration = configuration;

@@ -36,6 +36,7 @@ namespace DespatchWeb
 			MapTucJobStatus(modelBuilder.Entity<TucJobStatus>());
 			MapTucJobType(modelBuilder.Entity<TucJobType>());
 			MapTucSuburb(modelBuilder.Entity<TucSuburb>());
+			MapUvwBookingToday(modelBuilder.Entity<UvwBookingToday>());
 		}
 
 		/// <summary>Defines the mapping information for the entity 'DesQryAllJobType'</summary>
@@ -135,10 +136,11 @@ namespace DespatchWeb
 			config.Property(t => t.UcjbLateDel).HasColumnName("ucjbLateDel");
 			config.Property(t => t.PickupFromContact).HasMaxLength(100);
 			config.Property(t => t.PickupFromPhone).HasMaxLength(100);
-			config.Property(t => t.UcjbContact).HasColumnName("ucjbContact").HasMaxLength(30);
+            config.Property(t => t.UcjbContact).HasColumnName("ucjbContact").HasMaxLength(30);
             config.Property(t => t.DeliverToPhone).HasColumnName("DeliverToPhone").HasMaxLength(100);
             config.Property(t => t.TrackingMobile).HasColumnName("TrackingMobile").HasMaxLength(100);
             config.Property(t => t.TrackingEmail).HasColumnName("TrackingEmail").HasMaxLength(100);
+
 			config.Property(t => t.UcjbContactPhone).HasColumnName("ucjbContactPhone").HasMaxLength(15);
 			config.Property(t => t.UcjbWeight).HasColumnName("ucjbWeight");
 			config.Property(t => t.UcjbQty).HasColumnName("ucjbQty");
@@ -219,7 +221,7 @@ namespace DespatchWeb
 			config.Property(t => t.VanOk).HasColumnName("VanOK");
 			config.Property(t => t.Dgclass).HasColumnName("DGClass");
             config.Property(t => t.Dgdocumentation).HasColumnName("DGDocument");
-			config.Property(t => t.InternalAccount);
+            config.Property(t => t.InternalAccount);
 			config.Property(t => t.FromArea);
 			config.Property(t => t.ToArea);
 			config.Property(t => t.FromSuburbId).HasColumnName("FromSuburbID");
@@ -490,6 +492,9 @@ namespace DespatchWeb
 			config.Property(t => t.BulkAternoonHomePickupTime);
 			config.Property(t => t.TrackingEta).HasColumnName("TrackingETA");
 			config.Property(t => t.SigRequiredDefault).HasMaxLength(500);
+			config.Property(t => t.StripeClient);
+			config.Property(t => t.StripeClientId).HasColumnName("StripeClientID").HasMaxLength(50);
+			config.Property(t => t.PromoCode).HasMaxLength(50);
 			config.Property(t => t.ClientId).HasColumnName("ClientID");
 			config.Property(t => t.Name).HasMaxLength(75).IsRequired();
 			config.Property(t => t.LegalName).HasMaxLength(150).IsRequired();
@@ -1263,6 +1268,9 @@ namespace DespatchWeb
 			config.Property(t => t.BulkAternoonHomePickupTime);
 			config.Property(t => t.TrackingEta).HasColumnName("TrackingETA");
 			config.Property(t => t.SigRequiredDefault).HasMaxLength(500);
+			config.Property(t => t.StripeClient);
+			config.Property(t => t.StripeClientId).HasColumnName("StripeClientID").HasMaxLength(50);
+			config.Property(t => t.PromoCode).HasMaxLength(50);
 			config.HasOne(t => t.TucSuburb).WithMany(t => t.TucClients).HasForeignKey(t => t.UcclSuburbId);
 		}
 
@@ -1451,6 +1459,30 @@ namespace DespatchWeb
 			config.Property(t => t.PostCode).HasMaxLength(200).IsRequired();
 			config.Property(t => t.PrefixRunName).HasMaxLength(50);
 			config.Property(t => t.Gsscity).HasColumnName("GSSCity").HasMaxLength(50);
+		}
+
+		/// <summary>Defines the mapping information for the entity 'UvwBookingToday'</summary>
+		/// <param name="config">The configuration to modify.</param>
+		protected virtual void MapUvwBookingToday(EntityTypeBuilder<UvwBookingToday> config)
+		{
+			config.ToTable("uvwBookingToday");
+			config.IsReadOnly();
+			config.HasKey(t => t.UcbkId);
+			config.Property(t => t.UcbkNextDue).HasColumnName("ucbkNextDue");
+			config.Property(t => t.UcbkId).HasColumnName("ucbkID");
+			config.Property(t => t.UcbkTime).HasColumnName("ucbkTime");
+			config.Property(t => t.UcbkClientCode).HasColumnName("ucbkClientCode").HasMaxLength(50);
+			config.Property(t => t.FromSuburb).HasMaxLength(30).IsRequired();
+			config.Property(t => t.ToSuburb).HasMaxLength(30).IsRequired();
+			config.Property(t => t.UcjtName).HasColumnName("ucjtName").HasMaxLength(50).IsRequired();
+			config.Property(t => t.UcbkDone).HasColumnName("ucbkDone");
+			config.Property(t => t.UcbkFromAddr).HasColumnName("ucbkFromAddr").HasMaxLength(150);
+			config.Property(t => t.UcbkToAddr).HasColumnName("ucbkToAddr").HasMaxLength(150);
+			config.Property(t => t.UcbkJobNumber).HasColumnName("ucbkJobNumber").HasMaxLength(15);
+			config.Property(t => t.UcbkContact).HasColumnName("ucbkContact").HasMaxLength(30);
+			config.Property(t => t.UcbkClientId).HasColumnName("ucbkClientID");
+			config.Property(t => t.UcbkType).HasColumnName("ucbkType");
+			config.Property(t => t.Code).HasMaxLength(50);
 		}
 	}
 

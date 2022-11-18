@@ -9,15 +9,15 @@ using DespatchWeb.Models;
 using System.Linq.Dynamic.Core;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
-using Remotion.Linq.Clauses;
+
 
 namespace DespatchWeb.Repositories
 {
     public class CourierRepository
     {
-        private readonly DespatchWebDataContext _context;
+        private readonly DespatchContext _context;
 
-        public CourierRepository(DespatchWebDataContext context)
+        public CourierRepository(DespatchContext context)
         {
             _context = context;
         }

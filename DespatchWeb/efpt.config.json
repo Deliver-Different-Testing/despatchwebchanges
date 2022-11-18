@@ -7,25 +7,105 @@
    "IncludeConnectionString": false,
    "ModelNamespace": null,
    "OutputContextPath": null,
-   "OutputPath": "Models",
+   "OutputPath": "EntityClasses",
    "ProjectRootNamespace": "DespatchWeb",
    "Schemas": null,
    "SelectedHandlebarsLanguage": 0,
-   "SelectedToBeGenerated": 2,
+   "SelectedToBeGenerated": 0,
    "Tables": [
+      {
+         "Name": "[dbo].[tblClientContact]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClientContactInternetPermission]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblDespatchView]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblInternetPermission]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblJobLeaveNotHome]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblUndeliverableLocation]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucClient]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucClientContact]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucEvent]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobStatus]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucSuburb]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DES_qryAllJobTypes]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[DES_qrySupportEvents_CustomerAndCourier]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[DESWEB_qryDespatch]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblClient]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblCourier]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblJob]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[uvwBookingToday]",
+         "ObjectType": 3
+      },
       {
          "Name": "[dbo].[DES_stpJob_DirectToASAP]",
          "ObjectType": 1
       }
    ],
-   "UiHint": "UCLSQL2.Despatch",
+   "UiHint": "UCLSQL2.DespatchTest",
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": false,
    "UseDbContextSplitting": false,
    "UseFluentApiOnly": true,
    "UseHandleBars": false,
    "UseHierarchyId": false,
-   "UseInflector": false,
+   "UseInflector": true,
    "UseLegacyPluralizer": false,
    "UseManyToManyEntity": false,
    "UseNoConstructor": false,
