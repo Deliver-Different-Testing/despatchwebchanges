@@ -234,7 +234,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.5",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.12",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -572,6 +572,18 @@ angular
             $scope.refreshData(true);
         };
 
+        $scope.unlockJob = function() {
+            return $scope.jdSvc
+                .unlockJob($scope.currentJob);
+                    
+        };
+
+        $scope.lockJob = function () {
+            return $scope.jdSvc
+                .lockJob($scope.currentJob);
+
+        };
+
         $scope.sendPOD = function () {
             if (!$scope.currentJob.podPhoto) {
                 alert("Sorry no photo for this Job");
@@ -757,6 +769,7 @@ angular
 
         };
 
+        $scope.jdSvc.setSelectJobDetail($scope.selectJobDetail);
 
         //This method is calling from pagination number  
         $scope.pageChanged = function (i) {

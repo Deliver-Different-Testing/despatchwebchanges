@@ -80,43 +80,68 @@ angular
             $scope.jdSvc.setGPSForm($scope.gpsForm);
             $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
         };
-        
+
+        $scope.jdSvc.setSelectJobDetail(function () {
+            var j = $scope.currentJob;
+            jdSvc.setJob($scope.currentJob);
+            $scope.getData().then(function () {
+                if (j === null || j === undefined || j === false) {
+                    return;
+                }
+
+                var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                $scope.selectJob(refreshedJob);
+                $timeout(function () {
+                    $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+
+                    var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                    var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                    try {
+                        goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                        $parentDiv.scrollTop(goTop);
+
+                    } catch (e) {
+                        //ignore
+                    }
+                }, 1000);
+
+            });
+        });
 
         $scope.gather = {
             submit: function () {
                 return $scope.gather.form.onSubmit().then(function (response) {
                     console.log("pointer 3");
-                    if (response === undefined) {
-                        return;
-                    }
-                    if (response.data === "OK") {
-                        $(".gatherForm").hide();
-                        var j = $scope.currentJob;
-                        $scope.getData().then(function () {
-                            if (j === null || j === undefined || j === false) {
-                                return;
+                    
+                    $(".gatherForm").hide();
+                    var j = $scope.currentJob;
+                    $scope.getData().then(function () {
+                        if (j === null || j === undefined || j === false) {
+                            return;
+                        }
+
+                        var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                        $scope.selectJob(refreshedJob);
+                        $timeout(function () {
+                            $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+
+                            var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                            var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                            try {
+                                goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                $parentDiv.scrollTop(goTop);
+
+                            } catch (e) {
+                                //ignore
                             }
+                        }, 1000);
 
-                            var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
-                            $scope.selectJob(refreshedJob);
-                            $timeout(function () {
-                                $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
-
-                                var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                                var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
-
-
-                                try {
-                                    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                                    $parentDiv.scrollTop(goTop);
-
-                                } catch (e) {
-                                    //ignore
-                                }
-                            }, 1000);
-
-                        });
-                    }
+                    });
+                    
                 });
 
             },
@@ -135,6 +160,7 @@ angular
 
         $scope.jdSvc.setGather($scope.gather);
         $scope.allCouriers = { display: false };
+        $scope.mapZoom = { display: true };
 
         $scope.options = {
             "detail": {
@@ -249,7 +275,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.7",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.14",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -343,6 +369,7 @@ angular
         var layoutsObject = null;
         if (Modernizr.localstorage) {
             layoutsObject = JSON.parse(localStorage.getItem("layouts-" + ContactID));
+            $scope.mapZoom = JSON.parse(localStorage.getItem("mapZoom-" + ContactID)) || { display: true };
         }
         var defaultLayout = [
             {
@@ -440,6 +467,12 @@ angular
         $scope.groupJobsSelection = "";
         $scope.currentWorkSelection = "";
         $scope.potentialCouriersSelection = "";
+
+        $scope.storeMapZoomDisplay = function () {
+            if (Modernizr.localstorage) {
+                localStorage.setItem("mapZoom-" + ContactID, JSON.stringify($scope.mapZoom));
+            }
+        }
 
         $scope.layout = angular.copy($scope.layouts[0].layout);
 
@@ -710,6 +743,18 @@ angular
             }
         });
 
+        $scope.unlockJob = function () {
+            return $scope.jdSvc
+                .unlockJob($scope.currentJob);
+
+        };
+
+        $scope.lockJob = function () {
+            return $scope.jdSvc
+                .lockJob($scope.currentJob);
+
+        };
+
         $scope.selectClearList = function (id, event, area) {
             $("#area-group .btn").removeClass("topBarActive");
             $(".clearLists-list-title").removeClass("listActive");
@@ -737,7 +782,7 @@ angular
                     }
                 ],
                 onSubmit: function () {
-                    return DispatchData.addNote(jobId, $scope.gather.form.fields[0].value, FirstName).then(function () {
+                    return DispatchData.addNote(jobId, $scope.gather.form.fields[0].value, FirstName, false).then(function () {
                         return DispatchData.voidJob(jobId);
 
                     });
@@ -1554,265 +1599,7 @@ angular
         ];
 
 
-        $scope.newPallet = function () {
-
-            $scope.gather.form = {
-                id: "newPallet",
-                tpl: "multi",
-                title: "Add Pallet",
-                fields: [
-                    {
-                        "name": "amount",
-                        "label": "# of pallets...",
-                        "colSize": "6"
-                    },
-                    {
-                        "name": "weight",
-                        "label": "Weight (KG)",
-                        "colSize": "6"
-                    },
-                    {
-                        "name": "length",
-                        "label": "Length (m)",
-                        "colSize": "6"
-                    },
-                    {
-                        "name": "depth",
-                        "label": "Depth (m)",
-                        "colSize": "6"
-                    },
-                    {
-                        "name": "height",
-                        "label": "Height (m)",
-                        "colSize": "6"
-                    },
-                    {
-                        "name": "pu",
-                        "label": "PU...",
-                        "colSize": "6"
-                    },
-                    {
-                        "name": "do",
-                        "label": "DO...",
-                        "colSize": "6"
-                    },
-                    {
-                        "name": "dgclass",
-                        "label": "DG Class...",
-                        "colSize": "6"
-                    },
-                    {
-                        "name": "notes",
-                        "label": "Notes...",
-                        "colSize": "12",
-                        "type": "textarea"
-                    }
-                ],
-                onSubmit: function () {
-
-                    var newP = {};
-
-                    $scope.gather.form.fields.forEach(function (field) {
-                        if (field.name === "amount") {
-                            newP["Quantity"] = field.value;
-                        }
-                        if (field.name === "weight") {
-                            newP["Weight"] = field.value;
-                        }
-                        if (field.name === "length") {
-                            newP["Length"] = field.value;
-                        }
-                        if (field.name === "depth") {
-                            newP["Depth"] = field.value;
-                        }
-                        if (field.name === "height") {
-                            newP["Height"] = field.value;
-                        }
-                        if (field.name === "pu") {
-                            newP["PU"] = field.value;
-                        }
-                        if (field.name === "do") {
-                            newP["DO"] = field.value;
-                        }
-                        if (field.name === "dgclass") {
-                            newP["DGClass"] = field.value;
-                        }
-                        if (field.name === "notes") {
-                            newP["Notes"] = field.value;
-                        }
-
-                    });
-
-                    var callData = {
-                        "call": "addPallet",
-                        "palletData": newP,
-                        "jobID": $scope.currentJob.ID
-                    };
-
-                    DispatchData.doAPI(callData).then(function (data) {
-
-                        console.log(data);
-
-                        if (data.response === "Success") {
-
-                            newP["ID"] = data.submitID;
-                            if (!$scope.currentJob.PalletInfo) {
-                                $scope.currentJob.PalletInfo = [];
-                            }
-                            $scope.currentJob.PalletInfo.push(newP);
-
-                        } else {
-
-                            console.log("Critical Error");
-
-                        }
-
-                    });
-
-                },
-                submitValue: "Add Pallet"
-            };
-            $scope.gather.showForm();
-
-        };
-
-        $scope.currentPallet = "";
-
-        $scope.editPallet = function (pallet) {
-
-            $scope.currentPallet = pallet;
-
-            $scope.gather.form = {
-                id: "editPallet",
-                title: "Edit Pallet",
-                tpl: "multi",
-                fields: [
-                    {
-                        "name": "amount",
-                        "label": "# of pallets",
-                        "colSize": "6",
-                        "value": pallet.Quantity
-                    },
-                    {
-                        "name": "weight",
-                        "label": "Weight (KG)",
-                        "colSize": "6",
-                        "value": pallet.Weight
-                    },
-                    {
-                        "name": "length",
-                        "label": "Length (m)",
-                        "colSize": "6",
-                        "value": pallet.Length
-                    },
-                    {
-                        "name": "depth",
-                        "label": "Depth (m)",
-                        "colSize": "6",
-                        "value": pallet.Depth
-                    },
-                    {
-                        "name": "height",
-                        "label": "Height (m)",
-                        "colSize": "6",
-                        "value": pallet.Height
-                    },
-                    {
-                        "name": "pu",
-                        "label": "PU",
-                        "colSize": "6",
-                        "value": pallet.PU
-                    },
-                    {
-                        "name": "do",
-                        "label": "DO",
-                        "colSize": "6",
-                        "value": pallet.DO
-                    },
-                    {
-                        "name": "dgclass",
-                        "label": "DG Class",
-                        "colSize": "6",
-                        "value": pallet.DGClass
-                    },
-                    {
-                        "name": "notes",
-                        "label": "Notes",
-                        "colSize": "12",
-                        "type": "textarea",
-                        "value": pallet.Notes
-                    }
-                ],
-                onSubmit: function () {
-
-                    var newP = {};
-
-                    $scope.gather.form.fields.forEach(function (field) {
-                        if (field.name === "amount") {
-                            newP["Quantity"] = field.value;
-                        }
-                        if (field.name === "weight") {
-                            newP["Weight"] = field.value;
-                        }
-                        if (field.name === "length") {
-                            newP["Length"] = field.value;
-                        }
-                        if (field.name === "depth") {
-                            newP["Depth"] = field.value;
-                        }
-                        if (field.name === "height") {
-                            newP["Height"] = field.value;
-                        }
-                        if (field.name === "pu") {
-                            newP["PU"] = field.value;
-                        }
-                        if (field.name === "do") {
-                            newP["DO"] = field.value;
-                        }
-                        if (field.name === "dgclass") {
-                            newP["DGClass"] = field.value;
-                        }
-                        if (field.name === "notes") {
-                            newP["Notes"] = field.value;
-                        }
-                    });
-
-                    newP["ID"] = $scope.currentPallet.ID;
-
-                    var callData = {
-                        "call": "editPallet",
-                        "palletData": newP,
-                        "palletID": $scope.currentPallet.ID,
-                        "jobID": $scope.currentJob.ID
-                    };
-
-                    DispatchData.doAPI(callData).then(function (data) {
-
-                        console.log(data);
-
-                        if (data.response === "Success") {
-
-
-                            for (var key in $scope.currentPallet) {
-                                $scope.currentPallet[key] = newP[key];
-
-                            }
-
-
-                        } else {
-
-                            console.log("Critical Error");
-
-                        }
-
-                    });
-
-                },
-                submitValue: "Edit Pallet"
-            };
-            $scope.gather.showForm();
-
-        };
+        
 
 
         //ACTIVATE DROP
@@ -1969,7 +1756,7 @@ angular
                 //}
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
-                    displayRoutePointsOnly(data, false);
+                    displayRoutePointsOnly(data, false, $scope.mapZoom.display);
                 }
                 $scope.activateDrop();
                 setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
@@ -2014,7 +1801,7 @@ angular
                 }
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
-                    displayRoutePoints(data, false);
+                    displayRoutePoints(data, false, $scope.mapZoom.display);
                 } else {
                     DispatchData.getCourierPosition(code).then(function (posData) {
                         displayCourierPositionOnly(posData.latitude, posData.longitude);
@@ -2084,7 +1871,7 @@ angular
                 */
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
-                    displayRoutePoints(data, true);
+                    displayRoutePoints(data, true, $scope.mapZoom.display);
                 } else {
                     DispatchData.getCourierPosition(code).then(function (posData) {
                         displayCourierPositionOnly(posData.latitude, posData.longitude);
@@ -2162,9 +1949,13 @@ angular
                 $scope.currentSelection = " for Job " + support.jobNumber;
                 var jobs = [];
                 jobs.push($scope.currentJob);
-                displayRoutePointsOnly(jobs, true);
-                setMapBounds();
-                map.setZoom(12);
+                displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
+
+                if ($scope.mapZoom.display) {
+                    setMapBounds();
+                    map.setZoom(12);
+                }
+                
             });
 
 
@@ -2192,6 +1983,8 @@ angular
                 $scope.$apply();
 
                 console.log(job);
+
+                jdSvc.setJob($scope.currentJob);
 
                 DispatchData.getActiveCouriers().then(function (data) {
                     $scope.pickCouriers = data;
@@ -2223,7 +2016,7 @@ angular
                     var jobs = [job];
 
                     //highlightJobPoints(jobs);
-                    displayRoutePoints(jobs, false);
+                    displayRoutePoints(jobs, false, $scope.mapZoom.display);
                 }
                 if (!document.activeElement.classList.contains("lateCallField")) {
                     $(jobRow).find(".dispatchField").focus();

@@ -574,6 +574,12 @@ a.pickadate-prev {
   position: absolute;
   left: -130px;
 }
+.columns .column .column-sortable .box .box-bar .box-buttons .box-toggleZoom {
+  display: inline-block;
+  top: 5px;
+  position: absolute;
+  left: -250px;
+}
 .columns .column .column-sortable .box .box-bar .box-buttons .box-trucks {
   display: inline-block;
   top: 5px;
@@ -789,6 +795,9 @@ a.uline {
   text-decoration: underline;
   cursor: pointer;
 }
+a.uline.disabled {
+  color: #9c9c9c;
+}
 #jobDetail .addresses .address {
   background-color: #f3f2f2;
   margin-left: 2px;
@@ -839,6 +848,14 @@ a.uline {
 #jobDetail .fields .field.red {
   border-top: 3px solid #ffb3ba;
 }
+#jobDetail .fields .field .fa-exclamation {
+  color: red;
+}
+#jobDetail .fields .field .multi-element .btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  width: 160px;
+}
 #jobDetail .fields .field label {
   height: 6px;
   color: #9c9c9c;
@@ -850,6 +867,9 @@ a.uline {
   font-size: 11px;
 }
 #jobDetail .fields .field .value.disabled {
+  color: #9c9c9c;
+}
+#jobDetail .fields .field .value.disabled > * {
   color: #9c9c9c;
 }
 #jobDetail .fields .field .value pre {

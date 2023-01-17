@@ -1,32 +1,28 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 
 namespace DespatchWeb.Models
 {
     public class TruckItemsSummary
     {
-        [JsonProperty("quantity")]
+        [JsonPropertyName("quantity")]
         public int intQuantity { get; set; }
 
-        [JsonProperty("weight")]
+        [JsonPropertyName("weight")]
         public double intWeight { get; set; }
 
         public double TotalWeight { get; set; }
 
-        [JsonProperty("pickUp")]
+        [JsonPropertyName("pickUp")]
         public int intPU { get; set; }
 
-        [JsonProperty("dropOff")]
+        [JsonPropertyName("dropOff")]
         public int intDO { get; set; }
 
-        [JsonProperty("overSize")]
+        [JsonPropertyName("overSize")]
         public double intOverSizeItems { get; set; }
 
-        [JsonProperty("overWeight")]
+        [JsonPropertyName("overWeight")]
         public int intOverWeightItems { get; set; }
 
         public int DGClass { get; set; }

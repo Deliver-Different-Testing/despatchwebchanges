@@ -20,6 +20,10 @@
                 <label for="jobNum">{{field.label}}:</label>
                  <input type="time" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe" />
               </div>
+              <div ng-switch-when="checkbox" style="background-color:lightgray">
+                <input type="checkbox" id="gather-{{field.name}}" name="{{field.name}}" ng-model="field.value" class="form-control" style="width:20px;height:20px;background-color:lightgray;font-size:21px;display:inline-block;">
+                <label for="{{field.name}}">{{field.label}}</label>
+            </div>
               <div ng-switch-when="date">
                 <label for="jobNum">{{field.label}}:</label>
                  <input type="date" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe" />
@@ -29,6 +33,10 @@
                  <select name="{{field.name}}" id="gather-{{field.name}}" ng-options="option as option.label for option in field.options track by option.id" ng-model="field.value" class="form-control focusMe">
                  </select>
 
+              </div>
+              <div ng-switch-when="hidden">
+                <label>{{field.label}}:</label>
+                <hidden name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value"/>
               </div>
             </div>
           </div> 

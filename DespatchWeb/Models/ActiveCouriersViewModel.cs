@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using DespatchWeb.Attributes;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models
 {
@@ -13,7 +9,7 @@ namespace DespatchWeb.Models
         private string _label;
         public int CourierID { get; set; }
 
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Code{ get; set; }
 
         public string Name { get; set; }

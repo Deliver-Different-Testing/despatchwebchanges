@@ -4,9 +4,37 @@ angular
         [
             "$http", function ($http) {
                 return {
-                    addNote: function (jobId, note, despatcherName) {
-                        return $http.post("job/AddNote?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName).then(function (response) {
+                    addNote: function (jobId, note, despatcherName, preBook) {
+                        var method = preBook ? "job/AddJobBookingNote" : "job/AddNote";
+                        return $http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName).then(function (response) {
                             return response;
+                        });
+                    },
+                    addPallet: function (pallet, preBook, despatcherName) {
+                        return $http({
+                            url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName,
+                            method: "POST",
+                            data: pallet
+                        }).then(function(response) {
+                            return response.data;
+                        });
+                    },
+                    editPallet: function (pallet, preBook, despatcherName) {
+                        return $http({
+                            url: "job/EditPallet?preBook=" + preBook + "&despatcher=" + despatcherName,
+                            method: "POST",
+                            data: pallet
+                        }).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    deletePallet: function (pallet, preBook, despatcherName) {
+                        return $http({
+                            url: "job/DeletePallet?preBook=" + preBook + "&despatcher=" + despatcherName,
+                            method: "POST",
+                            data: pallet
+                        }).then(function (response) {
+                            return response.data;
                         });
                     },
                     addFollowupEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
@@ -266,13 +294,15 @@ angular
                             return response;
                         });
                     },
-                    updateDeliveryAddress: function (jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName) {
-                        return $http.post("job/UpdateDeliveryAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
+                    updateDeliveryAddress: function (jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
+                        var method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
+                        return $http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
                             return response;
                         });
                     },
-                    updatePickupAddress: function (jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName) {
-                        return $http.post("job/UpdatePickupAddress?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
+                    updatePickupAddress: function (jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
+                        var method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
+                        return $http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
                             return response;
                         });
                     },
@@ -281,16 +311,17 @@ angular
                             return response;
                         });
                     },
-                    updateJobDetail: function (jobId, field, value, rate, despatcherName, staffId) {
+                    updateJobDetail: function (jobId, field, value, rate, despatcherName, staffId, preBook) {
                         if (field === "Time" || field === "CompletedTime") {
                             value = moment().format("YYYY-MM-DD") +
                                 " " +
                                 moment(value).format("HH:mm:ss");
                         }
-                        if (field === "Date") {
+                        if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
                             value = moment(value).format("YYYY-MM-DD");
                         }
-                        return $http.post("job/UpdateJob?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
+                        var method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
+                        return $http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
                             return response;
                         });
                     },

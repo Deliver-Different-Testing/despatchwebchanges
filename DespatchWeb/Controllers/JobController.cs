@@ -8,6 +8,7 @@ using System.Net.Mail;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -47,6 +48,40 @@ namespace DespatchWeb.Controllers
 
             var result = _jobRepo.JobList(status, area, order, asc, isInternal, clientIds);
             return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddPallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
+        {
+            await _jobRepo.AddPalletInfo(palletInfo, preBook, despatcher);
+            return Ok("OK");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditPallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
+        {
+            await _jobRepo.EditPalletInfo(palletInfo, preBook, despatcher);
+            return Ok("OK");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeletePallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
+        {
+            await _jobRepo.DeletePalletInfo(palletInfo, preBook, despatcher);
+            return Ok("OK");
+        }
+
+
+        public async Task<IActionResult> SendPrebookJob(int jobId)
+        {
+            await _jobRepo.SendPrebookJob(jobId);
+            return Ok("OK");
+        }
+
+        public async Task<IActionResult> VoidPrebookJob(int jobId, string despatcher, int staffId)
+        {
+            await _jobRepo.VoidPrebookJob(jobId, despatcher, staffId);
+            return Ok("OK");
         }
 
         public IActionResult Current(int courierId, bool done)
@@ -97,6 +132,18 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> Detail(int jobId)
         {
             var result = await _jobRepo.JobDetail(jobId);
+            return Json(result);
+        }
+
+        public async Task<IActionResult> PreBookDetail(int preBookJobId)
+        {
+            var result = await _jobRepo.PreBookDetail(preBookJobId);
+            return Json(result);
+        }
+
+        public async Task<IActionResult> PreBookJobs()
+        {
+            var result = await _jobRepo.PreBookJobList();
             return Json(result);
         }
 
@@ -375,10 +422,26 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        public async Task<IActionResult> UpdateBookingDeliveryAddress(int jobId, int toSuburbId, string address,
+            decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcherName)
+        {
+            await _jobRepo.UpdateBookingDeliveryAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
+                despatcherName);
+            return Json("OK");
+        }
+
         public async Task<IActionResult> UpdatePickupAddress(int jobId, int fromSuburbId, string address,
             decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
         {
             await _jobRepo.UpdatePickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
+                despatcherName);
+            return Json("OK");
+        }
+
+        public async Task<IActionResult> UpdateBookingPickupAddress(int jobId, int fromSuburbId, string address,
+            decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
+        {
+            await _jobRepo.UpdateBookingPickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
                 despatcherName);
             return Json("OK");
         }
@@ -390,6 +453,13 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        public async Task<IActionResult> UpdateJobBooking(int jobId, string field, string value, decimal? rate,
+            string despatcherName, int staffId)
+        {
+            await _jobRepo.UpdateJobBooking(jobId, field, value, rate, despatcherName, staffId);
+            return Json("OK");
+        }
+
         [HttpPost]
         public async Task<IActionResult> AddNote(int jobId, string note, string despatcher)
         {
@@ -397,8 +467,15 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        [HttpPost]
+        public async Task<IActionResult> AddJobBookingNote(int jobId, string note, string despatcher)
+        {
+            await _jobRepo.AddJobBookingNote(jobId, note, despatcher);
+            return Json("OK");
+        }
 
-        
+
+
 
         [HttpPost]
         public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId,string currentSpeed)

@@ -45,15 +45,23 @@ angular
             .state("home",
                 {
                     url: "/",
-                    templateUrl: "app/components/home/homeView.html?v=1.29",
+                    templateUrl: "app/components/home/homeView.html?v=1.31",
                     controller: "HomeControl"
                 })
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.5',
+                    templateUrl: 'app/components/CS/csView.html?v=1.8',
 					controller: 'CSControl',
                     reloadOnSearch: false
+				})
+            .state('prebooks',
+                {
+                    url: '/prebooks',
+                    templateUrl: 'app/components/prebooks/prebookView.html?v=1.0',
+                    controller: 'PBControl',
+                    reloadOnSearch: false
                 });
+
 
     }]);

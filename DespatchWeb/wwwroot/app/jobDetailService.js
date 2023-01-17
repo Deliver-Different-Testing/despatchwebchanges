@@ -121,6 +121,189 @@
                     self.gpsForm = g;
                     //self.setupAutoComplete();
                 };
+                self.setSelectJobDetail = function(f) {
+                    self.selectJobDetail = f;
+                };
+                self.setJob = function(job) {
+                    self.currentJob = job;
+                };
+
+                self.pickHolidays = [
+                    {
+                        "id": "0",
+                        "label": "Don't Book"
+                    },
+                    {
+                        "id": "1",
+                        "label": "Next Business Day"
+                    }
+                ];
+
+                self.pickDays = [
+                    {
+                        "id": "0",
+                        "label": "Monday"
+                    },
+                    {
+                        "id": "1",
+                        "label": "Tuesday"
+                    },
+                    {
+                        "id": "2",
+                        "label": "Wednesday"
+                    },
+                    {
+                        "id": "3",
+                        "label": "Thursday"
+                    },
+                    {
+                        "id": "4",
+                        "label": "Friday"
+                    },
+                    {
+                        "id": "5",
+                        "label": "Saturday"
+                    },
+                    {
+                        "id": "6",
+                        "label": "Sunday"
+                    }
+                ];
+                self.pickFrequency = [
+                    {
+                        "id": "0",
+                        "label": "Weekly"
+                    },
+                    {
+                        "id": "1",
+                        "label": "Fortnightly"
+                    },
+                    {
+                        "id": "2",
+                        "label": "First of the Month"
+                    },
+                    {
+                        "id": "3",
+                        "label": "Second of the Month"
+                    },
+                    {
+                        "id": "4",
+                        "label": "Third of the Month"
+                    },
+                    {
+                        "id": "5",
+                        "label": "Last of the Month"
+                    },
+                    {
+                        "id": "6",
+                        "label": "First work day of the Month"
+                    },
+                    {
+                        "id": "7",
+                        "label": "Last work day of the Month"
+                    }
+                ];
+
+                self.combos = {
+                    "frequency": [],
+                    "frequencyEvents": {
+                        onSelectionChanged: function(item) {
+                            console.log("Freq =");
+                            console.log(self.combos.frequency);
+                            if (self.combos.frequency.length > 0 &&
+                                self.combos.days.length > 0 &&
+                                self.combos.holidays.length > 0) {
+                                var newDays = "0000000";
+                                for (let i = 0; i < self.combos.days.length; i++) {
+                                    newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
+                                }
+                                newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
+                                console.log(newDays);
+                                return DispatchData
+                                    .updateJobDetail(self.currentJob.id,
+                                        "Frequency",
+                                        newDays,
+                                        self.currentJob.charge,
+                                        FirstName,
+                                        ContactID,
+                                        self.currentJob.preBook).then(function (response) {
+                                            self.selectJobDetail(self.currentJob.id);
+                                            return response;
+                                    });
+                            } else {
+                                console.log("invalid data");
+                            }
+                        }
+                    },
+                    "days": [],
+                    "daysEvents": {
+                        onSelectionChanged: function (item) {
+                            console.log("Days =");
+                            console.log(self.combos.days);
+                            if (self.combos.frequency.length > 0 &&
+                                self.combos.days.length > 0 &&
+                                self.combos.holidays.length > 0) {
+                                var newDays = "0000000";
+                                for (let i = 0; i < self.combos.days.length; i++) {
+                                    newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
+                                }
+                                newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
+                                console.log(newDays);
+                                return DispatchData
+                                    .updateJobDetail(self.currentJob.id,
+                                        "Days",
+                                        newDays,
+                                        self.currentJob.charge,
+                                        FirstName,
+                                        ContactID,
+                                        self.currentJob.preBook).then(function (response) {
+                                            self.selectJobDetail(self.currentJob.id);
+                                            return response;
+                                    });
+                            } else {
+                                console.log("invalid data");
+                            }
+                        }
+                    },
+                    "holidays": [],
+                    "holidaysEvents": {
+                        onSelectionChanged: function (item) {
+                            console.log("Days =");
+                            console.log(self.combos.days);
+                            if (self.combos.frequency.length > 0 &&
+                                self.combos.days.length > 0 &&
+                                self.combos.holidays.length > 0) {
+                                var newDays = "0000000";
+                                for (let i = 0; i < self.combos.days.length; i++) {
+                                    newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
+                                }
+                                newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
+                                console.log(newDays);
+                                return DispatchData
+                                    .updateJobDetail(self.currentJob.id,
+                                        "Holidays",
+                                        newDays,
+                                        self.currentJob.charge,
+                                        FirstName,
+                                        ContactID,
+                                        self.currentJob.preBook).then(function (response) {
+                                            self.selectJobDetail(self.currentJob.id);
+                                            return response;
+                                    });
+                            } else {
+                                console.log("invalid data");
+                            }
+                        }
+                    }
+                };
+
+                String.prototype.replaceAt = function(index, replacement) {
+                    return this.substring(0, index) + replacement + this.substring(index + replacement.length);
+                };
+
+                self.frequencyChanged = function() {
+                    
+                };
 
                 self.getTrackingMethod = function(tm) {
                     switch (tm || 0) {
@@ -307,10 +490,10 @@
                             };
 
                             if (callData.field === "Notes") {
-                                return DispatchData.addNote(job.id, callData.value, FirstName);
+                                return DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
                             }
 
-                            if (fieldName === "Items" || fieldName === "Weight") {
+                            if (fieldName === "Items" || fieldName === "Weight" || fieldName === "Date") {
                                 rerate = true;
                             }
                             if (fieldName === "Size") {
@@ -370,7 +553,8 @@
                                         callData.value,
                                         job.charge,
                                         FirstName,
-                                        ContactID).then(function(response) {
+                                        ContactID,
+                                        job.preBook).then(function (response) {
                                         if (job.dgDocumentation !== dgdocs) {
                                             job.dgDocumentation = dgdocs;
                                             return DispatchData
@@ -379,7 +563,8 @@
                                                     job.dgDocumentation,
                                                     job.charge,
                                                     FirstName,
-                                                    ContactID).then(function(response) {
+                                                    ContactID,
+                                                    job.preBook).then(function (response) {
                                                     return response;
                                                 });
                                         } else {
@@ -407,7 +592,8 @@
                                             callData.value,
                                             Number(rate.replace(/[^0-9.-]+/g, "")),
                                             FirstName,
-                                            ContactID).then(function(response) {
+                                            ContactID,
+                                            job.preBook).then(function (response) {
                                             return response;
                                         });
                                 });
@@ -418,7 +604,8 @@
                                         callData.value,
                                         job.charge,
                                         FirstName,
-                                        ContactID).then(function(response) {
+                                        ContactID,
+                                        job.preBook).then(function(response) {
                                         return response;
                                     });
                             }
@@ -627,7 +814,8 @@
                                     callData.long,
                                     callData.CBD,
                                     Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName).then(function() {
+                                    FirstName,
+                                    job.preBook).then(function () {
                                     $(".gpsForm").hide(0);
 
                                 });
@@ -639,7 +827,8 @@
                                     callData.long,
                                     callData.CBD,
                                     Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName).then(function() {
+                                    FirstName,
+                                    job.preBook).then(function () {
                                     $(".gpsForm").hide(0);
                                     var j = currentJob;
 
@@ -727,6 +916,117 @@
                 };
 
 
+                };
+
+                self.unlockJob = function(job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Locked",
+                            false,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                                self.selectJobDetail(job.id);
+                            return response;
+                        });
+                }
+
+                self.lockJob = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Locked",
+                            true,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                                self.selectJobDetail(job.id);
+                            return response;
+                        });
+                }
+
+                self.preBookDirectClick = function(job) {
+                    return DispatchData
+                    .updateJobDetail(job.id,
+                        "Direct",
+                        job.direct,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+                };
+
+            self.repriceClick = function (job) {
+                return DispatchData
+                    .updateJobDetail(job.id,
+                        "Reprice",
+                        job.reprice,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+            };
+
+
+            self.vanClick = function (job) {
+                return self.rateJob(job).then(function (rate) {
+                    console.log(rate);
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Van",
+                            true,
+                            Number(rate.replace(/[^0-9.-]+/g, "")),
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                                self.selectJobDetail(job.id);
+                                return response;
+                        });
+                });
+
+            };
+
+            self.pedalClick = function (job) {
+                return self.rateJob(job).then(function (rate) {
+                    console.log(rate);
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Pedal",
+                            true,
+                            Number(rate.replace(/[^0-9.-]+/g, "")),
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                                self.selectJobDetail(job.id);
+                            return response;
+                        });
+                });
+
+            };
+
+            self.truckClick = function (job) {
+                return self.rateJob(job).then(function (rate) {
+                    console.log(rate);
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Truck",
+                            true,
+                            Number(rate.replace(/[^0-9.-]+/g, "")),
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                                self.selectJobDetail(job.id);
+                            return response;
+                        });
+                });
+
             };
 
             self.directClick = function(job) {
@@ -741,13 +1041,91 @@
                                 true,
                                 Number(rate.replace(/[^0-9.-]+/g, "")),
                                 FirstName,
-                                ContactID).then(function (response) {
-                                    self.selectJobDetail(self.currentJob.id);
+                                ContactID,
+                                job.preBook).then(function (response) {
+                                    self.selectJobDetail(job.id);
                                     return response;
                             });
                     });
 
                 }
+
+            };
+
+            self.attentionClick = function(job) {
+                return DispatchData
+                    .updateJobDetail(job.id,
+                        "Attention",
+                        job.attention,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                    });
+                };
+
+
+            self.preBookReturnClick = function(job) {
+                return DispatchData
+                    .updateJobDetail(job.id,
+                        "Return",
+                        job.return,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+            };
+
+
+
+
+            self.oneOffClick = function (job) {
+                return DispatchData
+                    .updateJobDetail(job.id,
+                        "OneOff",
+                        job.oneOff,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                        return response;
+                    });
+
+                };
+
+            self.activeClick = function (job) {
+                return DispatchData
+                    .updateJobDetail(job.id,
+                        "Active",
+                        job.active,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+
+                };
+
+            self.doneClick = function (job) {
+                return DispatchData
+                    .updateJobDetail(job.id,
+                        "Done",
+                        job.done,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
 
             };
 
@@ -854,7 +1232,365 @@
 
                     },
                     200);
-            };
+                };
+
+                //////////////////////////////
+                //  PALLET CONTROLS //
+                /////////////////////////////
+                self.palletMenu = [
+                    // NEW IMPLEMENTATION
+                    {
+                        text: "Delete",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+
+                            return DispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(function (response) {
+
+                                console.log(response);
+
+                                if (response === "OK") {
+
+                                    var index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
+                                    $itemScope.currentJob.palletInfo.splice(index, 1);
+
+                                    return self.rateJob(self.currentJob).then(function (rate) {
+                                        console.log(rate);
+                                        if (rate !== self.currentJob.charge) {
+                                            DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
+                                                self.currentJob.clientID,
+                                                self.currentJob.contactName,
+                                                ContactID,
+                                                self.currentJob.courierData.courierID,
+                                                self.currentJob.id,
+                                                self.currentJob.jobType,
+                                                FirstName);
+
+                                            return DispatchData
+                                                .updateJobDetail(self.currentJob.id,
+                                                    "rate",
+                                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                                    FirstName,
+                                                    ContactID,
+                                                    self.currentJob.preBook).then(function (response) {
+                                                        self.selectJobDetail(self.currentJob.id);
+                                                        return response;
+                                                    });
+                                        }
+
+                                    });
+
+                                } else {
+
+                                    console.log("Critical Error Add Pallet");
+
+                                }
+
+                            });
+
+
+
+
+                        }
+                    }
+                ];
+
+
+                self.newPallet = function () {
+
+                    gather.form = {
+                        id: "newPallet",
+                        tpl: "multi",
+                        title: "Add Pallet",
+                        fields: [
+                            {
+                                "name": "amount",
+                                "label": "# of pallets...",
+                                "colSize": "6"
+                            },
+                            {
+                                "name": "weight",
+                                "label": "Weight (KG)",
+                                "colSize": "6"
+                            },
+                            {
+                                "name": "length",
+                                "label": "Length (m)",
+                                "colSize": "6"
+                            },
+                            {
+                                "name": "depth",
+                                "label": "Depth (m)",
+                                "colSize": "6"
+                            },
+                            {
+                                "name": "height",
+                                "label": "Height (m)",
+                                "colSize": "6"
+                            },
+                            {
+                                "name": "pu",
+                                "label": "PU",
+                                "type": "checkbox",
+                                "colSize": "6"
+                            },
+                            {
+                                "name": "do",
+                                "label": "DO",
+                                "type": "checkbox",
+                                "colSize": "6"
+                            },
+                            {
+                                "name": "dgclass",
+                                "label": "DG Class",
+                                "colSize": "6"
+                            },
+                            {
+                                "name": "notes",
+                                "label": "Notes...",
+                                "colSize": "12",
+                                "type": "textarea"
+                            }
+                        ],
+                        onSubmit: function () {
+
+                            var newP = {};
+
+                            gather.form.fields.forEach(function (field) {
+                                if (field.name === "amount") {
+                                    newP["Quantity"] = field.value;
+                                }
+                                if (field.name === "weight") {
+                                    newP["Weight"] = field.value;
+                                }
+                                if (field.name === "length") {
+                                    newP["Length"] = field.value;
+                                }
+                                if (field.name === "depth") {
+                                    newP["Depth"] = field.value;
+                                }
+                                if (field.name === "height") {
+                                    newP["Height"] = field.value;
+                                }
+                                if (field.name === "pu") {
+                                    newP["PU"] = field.value;
+                                }
+                                if (field.name === "do") {
+                                    newP["DO"] = field.value;
+                                }
+                                if (field.name === "dgclass") {
+                                    newP["DGClass"] = field.value;
+                                }
+                                if (field.name === "notes") {
+                                    newP["Notes"] = field.value;
+                                }
+
+                            });
+
+                            newP["id"] = self.currentJob.id;
+                            
+
+                            return DispatchData.addPallet(newP, self.currentJob.preBook, FirstName).then(function (response) {
+
+                                console.log(response);
+
+                                if (response === "OK") {
+
+                                    if (!self.currentJob.palletInfo) {
+                                        self.currentJob.palletInfo = [];
+                                    }
+
+                                    self.currentJob.palletInfo.push(newP);
+
+                                    return self.rateJob(self.currentJob).then(function (rate) {
+                                        console.log(rate);
+                                        if (rate !== self.currentJob.charge) {
+                                            DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
+                                                self.currentJob.clientID,
+                                                self.currentJob.contactName,
+                                                ContactID,
+                                                self.currentJob.courierData.courierID,
+                                                self.currentJob.id,
+                                                self.currentJob.jobType,
+                                                FirstName);
+                                        
+                                            return DispatchData
+                                                .updateJobDetail(self.currentJob.id,
+                                                    "rate",
+                                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                                    FirstName,
+                                                    ContactID,
+                                                    self.currentJob.preBook).then(function (response) {
+                                                        self.selectJobDetail(self.currentJob.id);
+                                                        return response;
+                                                    });
+                                        }
+
+                                    });
+
+                                } else {
+
+                                    console.log("Critical Error Add Pallet");
+
+                                }
+
+                            });
+
+                        },
+                        submitValue: "Add Pallet"
+                    };
+                    setTimeout(function () {
+                        
+                        gather.showForm();
+                    },
+                        200);
+                    
+
+                };
+
+                self.currentPallet = "";
+
+                self.editPallet = function (pallet) {
+
+                    self.currentPallet = pallet;
+
+                    gather.form = {
+                        id: "editPallet",
+                        title: "Edit Pallet",
+                        tpl: "multi",
+                        fields: [
+                            {
+                                "name": "amount",
+                                "label": "# of pallets",
+                                "colSize": "6",
+                                "value": pallet.quantity
+                            },
+                            {
+                                "name": "weight",
+                                "label": "Weight (KG)",
+                                "colSize": "6",
+                                "value": pallet.weight
+                            },
+                            {
+                                "name": "length",
+                                "label": "Length (m)",
+                                "colSize": "6",
+                                "value": pallet.length
+                            },
+                            {
+                                "name": "depth",
+                                "label": "Depth (m)",
+                                "colSize": "6",
+                                "value": pallet.depth
+                            },
+                            {
+                                "name": "height",
+                                "label": "Height (m)",
+                                "colSize": "6",
+                                "value": pallet.height
+                            },
+                            {
+                                "name": "pu",
+                                "label": "PU",
+                                "colSize": "6",
+                                "type": "checkbox",
+                                "value": pallet.pu
+                            },
+                            {
+                                "name": "do",
+                                "label": "DO",
+                                "colSize": "6",
+                                "type": "checkbox",
+                                "value": pallet.do
+                            },
+                            {
+                                "name": "dgclass",
+                                "label": "DG Class",
+                                "colSize": "6",
+                                "value": pallet.dgClass
+                            },
+                            {
+                                "name": "notes",
+                                "label": "Notes",
+                                "colSize": "12",
+                                "type": "textarea",
+                                "value": pallet.notes
+                            }
+                        ],
+                        onSubmit: function() {
+
+                            var newP = {};
+
+                            gather.form.fields.forEach(function(field) {
+                                if (field.name === "amount") {
+                                    newP["Quantity"] = field.value;
+                                }
+                                if (field.name === "weight") {
+                                    newP["Weight"] = field.value;
+                                }
+                                if (field.name === "length") {
+                                    newP["Length"] = field.value;
+                                }
+                                if (field.name === "depth") {
+                                    newP["Depth"] = field.value;
+                                }
+                                if (field.name === "height") {
+                                    newP["Height"] = field.value;
+                                }
+                                if (field.name === "pu") {
+                                    newP["PU"] = field.value;
+                                }
+                                if (field.name === "do") {
+                                    newP["DO"] = field.value;
+                                }
+                                if (field.name === "dgclass") {
+                                    newP["DGClass"] = field.value;
+                                }
+                                if (field.name === "notes") {
+                                    newP["Notes"] = field.value;
+                                }
+                            });
+
+                            newP["id"] = self.currentPallet.id;
+                            newP["itemId"] = self.currentPallet.itemID;
+
+                            return DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function() {
+                                return self.rateJob(self.currentJob).then(function(rate) {
+                                    console.log(rate);
+                                    if (rate !== self.currentJob.charge) {
+                                        DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
+                                            self.currentJob.clientID,
+                                            self.currentJob.contactName,
+                                            ContactID,
+                                            self.currentJob.courierData.courierID,
+                                            self.currentJob.id,
+                                            self.currentJob.jobType,
+                                            FirstName);
+                                        return DispatchData
+                                            .updateJobDetail(self.currentJob.id,
+                                                "rate",
+                                                Number(rate.replace(/[^0-9.-]+/g, "")),
+                                                Number(rate.replace(/[^0-9.-]+/g, "")),
+                                                FirstName,
+                                                ContactID,
+                                                self.currentJob.preBook).then(function (response) {
+                                                    self.selectJobDetail(self.currentJob.id);
+                                                    return response;
+                                            });
+                                    }
+
+                                });
+                            });
+                        },
+                        submitValue: "Edit Pallet"
+                    };
+                    setTimeout(function() {
+
+                            gather.showForm();
+                        },
+                        200);
+
+                };
 
             return self;
 

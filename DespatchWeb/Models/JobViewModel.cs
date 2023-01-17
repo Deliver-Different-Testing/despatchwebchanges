@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace DespatchWeb.Models
 {
@@ -13,11 +11,14 @@ namespace DespatchWeb.Models
         public DateTime? BookedDate { get; set; }
         public bool Direct { get; set; }
         public bool Van { get; set; }
-        public bool Done { get; set; }
+        public bool? Done { get; set; }
         public bool Void { get; set; }
         public bool? Truck { get; set; }
         public bool SaturdayDelivery { get; set; }
         public bool Return { get; set; }
+        public bool? Pedal { get; set; }
+        public bool? Reprice { get; set; }
+        public bool Attention { get; set; }
         public short? PickupFrom { get; set; }
         public string JobNo { get; set; }
         public string Speed { get; set; }
@@ -74,11 +75,13 @@ namespace DespatchWeb.Models
         public string ClientNotes { get; set; }
         public string InternalNotes { get; set; }
         public string ChildNotes { get; set; }
+        public bool Locked { get; set; }
+        public bool Invoiced { get; set; }
         public decimal? PickUpLongitude { get; set; }
         public decimal? PickUpLatitude { get; set; }
         public decimal? DeliveryLongitude { get; set; }
         public decimal? DeliveryLatitude { get; set; }
-        public List<Palletinfo> PalletInfo { get; set; }
+        public List<PalletInfo> PalletInfo { get; set; }
         public decimal? CourierLatitude { get; set; }
         public decimal? CourierLongitude { get; set; }
         public int? RunOrder { get; set; }
@@ -97,8 +100,18 @@ namespace DespatchWeb.Models
         public string FromContactNumber { get; set; }
         public bool RatedManually { get; set; }
         public short? SizeID { get; set; }
-
-
+        public bool? Active { get; set; }
+        public bool? OneOff { get; set; }
+        public string InActiveBy { get; set; }
+        public DateTime? InActiveDate { get; set; }
+        public DateTime? FirstDue { get; set; }
+        public DateTime? NextDue { get; set; }
+        public DateTime? LastDone { get; set; }
+        public DateTime? StopDate { get; set; }
+        public DateTime? RestartDate { get; set; }
+        public string Days { get; set; }
+        public bool PreBook { get; set; }
+        
     }
 
     public class Vehicle
@@ -114,7 +127,7 @@ namespace DespatchWeb.Models
         public string label { get; set; }
     }
 
-    public class Palletinfo
+    public class PalletInfo
     {
         public int ID { get; set; }
         public int Quantity { get; set; }
@@ -126,6 +139,7 @@ namespace DespatchWeb.Models
         public bool? DO { get; set; }
         public int? DGClass { get; set; }
         public string Notes { get; set; }
+        public int ItemID { get; set; }
     }
 
 

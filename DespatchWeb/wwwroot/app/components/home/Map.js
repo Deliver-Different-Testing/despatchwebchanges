@@ -531,7 +531,7 @@ function displayRoutePointsOnly(courierJobs, clear) {
 
 }
 
-function displayRoutePoints(courierJobs, clear) {
+function displayRoutePoints(courierJobs, clear, zoom) {
     if (clear === true) {
         if (map.markers.length) {
             map.clearMarkers();
@@ -637,7 +637,12 @@ function displayRoutePoints(courierJobs, clear) {
         bounds.extend(zoomMarkers[x].getPosition());
     }
 
-    map.fitBounds(bounds);
+    if (zoom) {
+        map.fitBounds(bounds);
+    } else {
+        map.panToBounds(bounds);
+    }
+    
 
     for (var y = 0; y < zoomMarkers.length; y++) {
         var thisMarker = zoomMarkers[y];
@@ -677,7 +682,10 @@ function displayRoutePoints(courierJobs, clear) {
     });
 
     map.setCenter(gl1);
-    map.setZoom(13);
+    if (zoom) {
+        map.setZoom(13);
+    }
+    
 
 
 }

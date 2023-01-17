@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 
 namespace DespatchWeb.Models
@@ -12,280 +8,280 @@ namespace DespatchWeb.Models
 
     public class Welcome
     {
-        [JsonProperty("ucjbClientID")]
+        [JsonPropertyName("ucjbClientID")]
         public int UcjbClientId { get; set; }
 
-        [JsonProperty("ucjbNumber")]
+        [JsonPropertyName("ucjbNumber")]
         public string UcjbNumber { get; set; }
 
-        [JsonProperty("ucjbDispTime")]
+        [JsonPropertyName("ucjbDispTime")]
         public string UcjbDispTime { get; set; }
 
-        [JsonProperty("ucjbTime")]
+        [JsonPropertyName("ucjbTime")]
         public DateTime UcjbTime { get; set; }
 
-        [JsonProperty("ucjbID")]
+        [JsonPropertyName("ucjbID")]
         public int UcjbId { get; set; }
 
-        [JsonProperty("ucjbCourierID")]
+        [JsonPropertyName("ucjbCourierID")]
         public int UcjbCourierId { get; set; }
 
-        [JsonProperty("CourierCode")]
+        [JsonPropertyName("CourierCode")]
         public string CourierCode { get; set; }
 
-        [JsonProperty("SuburbFrom")]
+        [JsonPropertyName("SuburbFrom")]
         public string SuburbFrom { get; set; }
 
-        [JsonProperty("SuburbTo")]
+        [JsonPropertyName("SuburbTo")]
         public string SuburbTo { get; set; }
 
-        [JsonProperty("ucjbSpeed")]
+        [JsonPropertyName("ucjbSpeed")]
         public int UcjbSpeed { get; set; }
 
-        [JsonProperty("ucjbComplTime")]
+        [JsonPropertyName("ucjbComplTime")]
         public DateTime UcjbComplTime { get; set; }
 
-        [JsonProperty("ucjbDispID")]
+        [JsonPropertyName("ucjbDispID")]
         public int UcjbDispId { get; set; }
 
-        [JsonProperty("ucjbAttention")]
+        [JsonPropertyName("ucjbAttention")]
         public int UcjbAttention { get; set; }
 
-        [JsonProperty("ucjbPickUpFrom")]
+        [JsonPropertyName("ucjbPickUpFrom")]
         public int UcjbPickUpFrom { get; set; }
 
-        [JsonProperty("RegionFromID")]
+        [JsonPropertyName("RegionFromID")]
         public int RegionFromId { get; set; }
 
-        [JsonProperty("RegionToID")]
+        [JsonPropertyName("RegionToID")]
         public int RegionToId { get; set; }
 
-        [JsonProperty("ucjbJobDone")]
+        [JsonPropertyName("ucjbJobDone")]
         public bool UcjbJobDone { get; set; }
 
-        [JsonProperty("ucjbPaged")]
+        [JsonPropertyName("ucjbPaged")]
         public bool UcjbPaged { get; set; }
 
-        [JsonProperty("ucjbPagedTime")]
+        [JsonPropertyName("ucjbPagedTime")]
         public DateTime UcjbPagedTime { get; set; }
 
-        [JsonProperty("ucjbLatePick")]
+        [JsonPropertyName("ucjbLatePick")]
         public string UcjbLatePick { get; set; }
 
-        [JsonProperty("ucjbLateDel")]
+        [JsonPropertyName("ucjbLateDel")]
         public string UcjbLateDel { get; set; }
 
-        [JsonProperty("ucjbContact")]
+        [JsonPropertyName("ucjbContact")]
         public string UcjbContact { get; set; }
 
-        [JsonProperty("ucjbToAddr")]
+        [JsonPropertyName("ucjbToAddr")]
         public string UcjbToAddr { get; set; }
 
-        [JsonProperty("ucjbType")]
+        [JsonPropertyName("ucjbType")]
         public int UcjbType { get; set; }
 
-        [JsonProperty("ucjbVoid")]
+        [JsonPropertyName("ucjbVoid")]
         public string UcjbVoid { get; set; }
 
-        [JsonProperty("ucjbVan")]
+        [JsonPropertyName("ucjbVan")]
         public string UcjbVan { get; set; }
 
-        [JsonProperty("ucjbReturn")]
+        [JsonPropertyName("ucjbReturn")]
         public string UcjbReturn { get; set; }
 
-        [JsonProperty("ucjbDispDate")]
+        [JsonPropertyName("ucjbDispDate")]
         public string UcjbDispDate { get; set; }
 
-        [JsonProperty("ucjbSize")]
+        [JsonPropertyName("ucjbSize")]
         public int UcjbSize { get; set; }
 
-        [JsonProperty("ucjbStatus")]
+        [JsonPropertyName("ucjbStatus")]
         public int UcjbStatus { get; set; }
 
-        [JsonProperty("ucjbDate")]
+        [JsonPropertyName("ucjbDate")]
         public string UcjbDate { get; set; }
 
-        [JsonProperty("ucclCode")]
+        [JsonPropertyName("ucclCode")]
         public string UcclCode { get; set; }
 
-        [JsonProperty("ucjbToSpecial")]
+        [JsonPropertyName("ucjbToSpecial")]
         public string UcjbToSpecial { get; set; }
 
-        [JsonProperty("ucjsCode")]
+        [JsonPropertyName("ucjsCode")]
         public string UcjsCode { get; set; }
 
-        [JsonProperty("SaturdayDelivery")]
+        [JsonPropertyName("SaturdayDelivery")]
         public string SaturdayDelivery { get; set; }
 
-        [JsonProperty("EmailForJobFU")]
+        [JsonPropertyName("EmailForJobFU")]
         public string EmailForJobFu { get; set; }
 
-        [JsonProperty("PickupRemain")]
+        [JsonPropertyName("PickupRemain")]
         public string PickupRemain { get; set; }
 
-        [JsonProperty("Remain")]
+        [JsonPropertyName("Remain")]
         public int Remain { get; set; }
 
-        [JsonProperty("RemainTime")]
+        [JsonPropertyName("RemainTime")]
         public int RemainTime { get; set; }
 
-        [JsonProperty("RemoteJob")]
+        [JsonPropertyName("RemoteJob")]
         public string RemoteJob { get; set; }
 
-        [JsonProperty("SpeedShortName")]
+        [JsonPropertyName("SpeedShortName")]
         public string SpeedShortName { get; set; }
 
-        [JsonProperty("Minutes")]
+        [JsonPropertyName("Minutes")]
         public int Minutes { get; set; }
 
-        [JsonProperty("PickupTime")]
+        [JsonPropertyName("PickupTime")]
         public int PickupTime { get; set; }
 
-        [JsonProperty("DeliveryTime")]
+        [JsonPropertyName("DeliveryTime")]
         public int DeliveryTime { get; set; }
 
-        [JsonProperty("AlertLatePickUp")]
+        [JsonPropertyName("AlertLatePickUp")]
         public int AlertLatePickUp { get; set; }
 
-        [JsonProperty("AlertLateDelivery")]
+        [JsonPropertyName("AlertLateDelivery")]
         public int AlertLateDelivery { get; set; }
 
-        [JsonProperty("OriginalSpeed")]
+        [JsonPropertyName("OriginalSpeed")]
         public string OriginalSpeed { get; set; }
 
-        [JsonProperty("ucjbPODName")]
+        [JsonPropertyName("ucjbPODName")]
         public string UcjbPodName { get; set; }
 
-        [JsonProperty("NotifiedSpeed")]
+        [JsonPropertyName("NotifiedSpeed")]
         public string NotifiedSpeed { get; set; }
 
-        [JsonProperty("Direct")]
+        [JsonPropertyName("Direct")]
         public string Direct { get; set; }
 
-        [JsonProperty("FirstJob")]
+        [JsonPropertyName("FirstJob")]
         public string FirstJob { get; set; }
 
-        [JsonProperty("NotifiedJobTypeID")]
+        [JsonPropertyName("NotifiedJobTypeID")]
         public int NotifiedJobTypeId { get; set; }
 
-        [JsonProperty("IsParentJob")]
+        [JsonPropertyName("IsParentJob")]
         public int IsParentJob { get; set; }
 
-        [JsonProperty("RootParentID")]
+        [JsonPropertyName("RootParentID")]
         public int RootParentId { get; set; }
 
-        [JsonProperty("DisplaySplitJobDetail")]
+        [JsonPropertyName("DisplaySplitJobDetail")]
         public int DisplaySplitJobDetail { get; set; }
 
-        [JsonProperty("DisplayReturnJobDetail")]
+        [JsonPropertyName("DisplayReturnJobDetail")]
         public int DisplayReturnJobDetail { get; set; }
 
-        [JsonProperty("DisplayMultiJobDetail")]
+        [JsonPropertyName("DisplayMultiJobDetail")]
         public int DisplayMultiJobDetail { get; set; }
 
-        [JsonProperty("IsChildJob")]
+        [JsonPropertyName("IsChildJob")]
         public int IsChildJob { get; set; }
 
-        [JsonProperty("AllowSplit")]
+        [JsonPropertyName("AllowSplit")]
         public string AllowSplit { get; set; }
 
-        [JsonProperty("ChildNotes")]
+        [JsonPropertyName("ChildNotes")]
         public string ChildNotes { get; set; }
 
-        [JsonProperty("AllowDespatch")]
+        [JsonPropertyName("AllowDespatch")]
         public string AllowDespatch { get; set; }
 
-        [JsonProperty("ClosestCourierID")]
+        [JsonPropertyName("ClosestCourierID")]
         public string ClosestCourierId { get; set; }
 
-        [JsonProperty("JobRelationshipTypeID")]
+        [JsonPropertyName("JobRelationshipTypeID")]
         public int JobRelationshipTypeId { get; set; }
 
-        [JsonProperty("ucclAccountStatus")]
+        [JsonPropertyName("ucclAccountStatus")]
         public int UcclAccountStatus { get; set; }
 
-        [JsonProperty("CDT")]
+        [JsonPropertyName("CDT")]
         public int Cdt { get; set; }
 
-        [JsonProperty("PickRunOrder")]
+        [JsonPropertyName("PickRunOrder")]
         public int PickRunOrder { get; set; }
 
-        [JsonProperty("DropRunOrder")]
+        [JsonPropertyName("DropRunOrder")]
         public int DropRunOrder { get; set; }
 
-        [JsonProperty("ucjbMobileSend")]
+        [JsonPropertyName("ucjbMobileSend")]
         public string UcjbMobileSend { get; set; }
 
-        [JsonProperty("SendJobsViaSMS")]
+        [JsonPropertyName("SendJobsViaSMS")]
         public string SendJobsViaSms { get; set; }
 
-        [JsonProperty("ucjbFromAddr")]
+        [JsonPropertyName("ucjbFromAddr")]
         public string UcjbFromAddr { get; set; }
 
-        [JsonProperty("Truck")]
+        [JsonPropertyName("Truck")]
         public string Truck { get; set; }
 
-        [JsonProperty("InternalStatus")]
+        [JsonPropertyName("InternalStatus")]
         public string InternalStatus { get; set; }
 
-        [JsonProperty("FollowupTime")]
+        [JsonPropertyName("FollowupTime")]
         public string FollowupTime { get; set; }
 
-        [JsonProperty("Reprice")]
+        [JsonPropertyName("Reprice")]
         public string Reprice { get; set; }
 
-        [JsonProperty("SiteID")]
+        [JsonPropertyName("SiteID")]
         public int SiteId { get; set; }
 
-        [JsonProperty("PickupAmount")]
+        [JsonPropertyName("PickupAmount")]
         public string PickupAmount { get; set; }
 
-        [JsonProperty("DropoffAmount")]
+        [JsonPropertyName("DropoffAmount")]
         public string DropoffAmount { get; set; }
 
-        [JsonProperty("BulletFreight")]
+        [JsonPropertyName("BulletFreight")]
         public string BulletFreight { get; set; }
 
-        [JsonProperty("VanOK")]
+        [JsonPropertyName("VanOK")]
         public string VanOk { get; set; }
 
-        [JsonProperty("DGClass")]
+        [JsonPropertyName("DGClass")]
         public string DgClass { get; set; }
 
-        [JsonProperty("InternalAccount")]
+        [JsonPropertyName("InternalAccount")]
         public string InternalAccount { get; set; }
 
-        [JsonProperty("FromArea")]
+        [JsonPropertyName("FromArea")]
         public int FromArea { get; set; }
 
-        [JsonProperty("ToArea")]
+        [JsonPropertyName("ToArea")]
         public int ToArea { get; set; }
 
-        [JsonProperty("FromSuburbID")]
+        [JsonPropertyName("FromSuburbID")]
         public int FromSuburbId { get; set; }
 
-        [JsonProperty("ToSuburbID")]
+        [JsonPropertyName("ToSuburbID")]
         public int ToSuburbId { get; set; }
 
-        [JsonProperty("DesCheck")]
+        [JsonPropertyName("DesCheck")]
         public string DesCheck { get; set; }
 
-        [JsonProperty("FDCourierID")]
+        [JsonPropertyName("FDCourierID")]
         public string FdCourierId { get; set; }
 
-        [JsonProperty("FDCourierCode")]
+        [JsonPropertyName("FDCourierCode")]
         public string FdCourierCode { get; set; }
 
-        [JsonProperty("HasGeoLocation")]
+        [JsonPropertyName("HasGeoLocation")]
         public int HasGeoLocation { get; set; }
 
-        [JsonProperty("Code")]
+        [JsonPropertyName("Code")]
         public int Code { get; set; }
 
-        [JsonProperty("intAddress")]
+        [JsonPropertyName("intAddress")]
         public string intAddress { get; set; }
 
-        [JsonProperty("intAddressFrom")]
+        [JsonPropertyName("intAddressFrom")]
         public string intAddressFrom { get; set; }
     }
 

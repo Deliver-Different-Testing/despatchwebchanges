@@ -33,6 +33,8 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucClient> TucClients { get; set; }
         public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
         public virtual DbSet<TucEvent> TucEvents { get; set; }
+        public virtual DbSet<TucJobBooking> TucJobBookings { get; set; }
+        public virtual DbSet<TucJobBookingItem> TucJobBookingItems { get; set; }
         public virtual DbSet<TucJobItem> TucJobItems { get; set; }
         public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
         public virtual DbSet<TucJobType> TucJobTypes { get; set; }
@@ -319,6 +321,8 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("ucjbAmount");
 
                 entity.Property(e => e.UcjbAttention).HasColumnName("ucjbAttention");
+
+                entity.Property(e => e.UcjbCbd).HasColumnName("ucjbCBD");
 
                 entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
 
@@ -1863,6 +1867,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.TrackingMobile).HasMaxLength(500);
 
+                entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
+
                 entity.Property(e => e.UndeliverableLocationId).HasColumnName("UndeliverableLocationID");
 
                 entity.Property(e => e.WhenJobTrackingNotificationSent).HasColumnType("datetime");
@@ -2744,6 +2750,390 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucEvents)
                     .HasForeignKey(d => d.UcevClientId)
                     .HasConstraintName("FK_tucEvent_tucClient");
+            });
+
+            modelBuilder.Entity<TucJobBooking>(entity =>
+            {
+                entity.HasKey(e => e.UcbkId)
+                    .IsClustered(false);
+
+                entity.ToTable("tucJobBooking");
+
+                entity.HasIndex(e => e.BookingInformationParentId, "BookingInformationParentID");
+
+                entity.HasIndex(e => e.BookingParentId, "BookingParentID");
+
+                entity.HasIndex(e => e.BookingRootParentId, "BookingRootParentID");
+
+                entity.HasIndex(e => e.ContactId, "ContactID");
+
+                entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
+
+                entity.HasIndex(e => e.InformationParentId, "InformationParentID");
+
+                entity.HasIndex(e => e.JobRelationshipTypeId, "JobRelationshipTypeID");
+
+                entity.HasIndex(e => e.ParentId, "ParentID");
+
+                entity.HasIndex(e => e.RootParentId, "RootParentID");
+
+                entity.Property(e => e.UcbkId).HasColumnName("ucbkID");
+
+                entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
+
+                entity.Property(e => e.AgentAmount).HasColumnType("money");
+
+                entity.Property(e => e.AutoDespatch).HasDefaultValueSql("(1)");
+
+                entity.Property(e => e.Barcode).HasMaxLength(300);
+
+                entity.Property(e => e.BookingInformationParentId).HasColumnName("BookingInformationParentID");
+
+                entity.Property(e => e.BookingParentId).HasColumnName("BookingParentID");
+
+                entity.Property(e => e.BookingRootParentId).HasColumnName("BookingRootParentID");
+
+                entity.Property(e => e.ClientNotes).HasMaxLength(500);
+
+                entity.Property(e => e.ContactId).HasColumnName("ContactID");
+
+                entity.Property(e => e.CourierId).HasColumnName("CourierID");
+
+                entity.Property(e => e.DeliverToContact).HasMaxLength(100);
+
+                entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
+
+                entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
+
+                entity.Property(e => e.DeliveryLatitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
+
+                entity.Property(e => e.Dgclass).HasColumnName("DGClass");
+
+                entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
+
+                entity.Property(e => e.DropoffAmount).HasColumnType("money");
+
+                entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
+
+                entity.Property(e => e.FixedPrice)
+                    .IsRequired()
+                    .HasDefaultValueSql("(1)");
+
+                entity.Property(e => e.FromAddressExtras)
+                    .HasMaxLength(200)
+                    .HasColumnName("fromAddressExtras");
+
+                entity.Property(e => e.FromAddressExtras2)
+                    .HasMaxLength(200)
+                    .HasColumnName("fromAddressExtras2");
+
+                entity.Property(e => e.FromAddressStreetName)
+                    .HasMaxLength(200)
+                    .HasColumnName("fromAddressStreetName");
+
+                entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
+
+                entity.Property(e => e.GssTrackingUrl)
+                    .HasMaxLength(400)
+                    .HasColumnName("GssTrackingURL");
+
+                entity.Property(e => e.Gssamount)
+                    .HasColumnType("money")
+                    .HasColumnName("GSSAmount");
+
+                entity.Property(e => e.Gssconnote)
+                    .HasMaxLength(50)
+                    .HasColumnName("GSSConnote");
+
+                entity.Property(e => e.InformationParentId).HasColumnName("InformationParentID");
+
+                entity.Property(e => e.InternalNotes).HasMaxLength(500);
+
+                entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
+
+                entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
+
+                entity.Property(e => e.Nwamount)
+                    .HasColumnType("money")
+                    .HasColumnName("NWAmount");
+
+                entity.Property(e => e.NwrawAmount)
+                    .HasColumnType("money")
+                    .HasColumnName("NWRawAmount");
+
+                entity.Property(e => e.ParentId).HasColumnName("ParentID");
+
+                entity.Property(e => e.PickUpLatitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.PickUpLongitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.PickupAmount).HasColumnType("money");
+
+                entity.Property(e => e.PickupFromContact).HasMaxLength(100);
+
+                entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
+
+                entity.Property(e => e.PickupRawAmount).HasColumnType("money");
+
+                entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
+
+                entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
+
+                entity.Property(e => e.RawAmount).HasColumnType("money");
+
+                entity.Property(e => e.RefJobId).HasColumnName("RefJobID");
+
+                entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
+
+                entity.Property(e => e.RestartDate).HasColumnType("datetime");
+
+                entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
+
+                entity.Property(e => e.RunName).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef1).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef2).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef3).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef4).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef5).HasMaxLength(50);
+
+                entity.Property(e => e.SourceId).HasColumnName("SourceID");
+
+                entity.Property(e => e.StopDate).HasColumnType("datetime");
+
+                entity.Property(e => e.StripeChargeId)
+                    .HasMaxLength(50)
+                    .HasColumnName("StripeChargeID");
+
+                entity.Property(e => e.TextRef1)
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.TextRef2)
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.TextRef3)
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.TextRef4)
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.ToAddressExtras)
+                    .HasMaxLength(200)
+                    .HasColumnName("toAddressExtras");
+
+                entity.Property(e => e.ToAddressExtras2)
+                    .HasMaxLength(200)
+                    .HasColumnName("toAddressExtras2");
+
+                entity.Property(e => e.ToAddressStreetName)
+                    .HasMaxLength(200)
+                    .HasColumnName("toAddressStreetName");
+
+                entity.Property(e => e.TrackingEmail).HasMaxLength(500);
+
+                entity.Property(e => e.TrackingMobile).HasMaxLength(500);
+
+                entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
+
+                entity.Property(e => e.UcbkActive)
+                    .HasColumnName("ucbkActive")
+                    .HasDefaultValueSql("(1)");
+
+                entity.Property(e => e.UcbkAmount)
+                    .HasColumnType("money")
+                    .HasColumnName("ucbkAmount");
+
+                entity.Property(e => e.UcbkAttention).HasColumnName("ucbkAttention");
+
+                entity.Property(e => e.UcbkCbd)
+                    .HasColumnName("ucbkCBD")
+                    .HasDefaultValueSql("(0)");
+
+                entity.Property(e => e.UcbkChargeType).HasColumnName("ucbkChargeType");
+
+                entity.Property(e => e.UcbkClientCode)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkClientCode");
+
+                entity.Property(e => e.UcbkClientId).HasColumnName("ucbkClientID");
+
+                entity.Property(e => e.UcbkClientRef)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkClientRef");
+
+                entity.Property(e => e.UcbkClientRefa)
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkClientRefa");
+
+                entity.Property(e => e.UcbkClientRefb)
+                    .HasMaxLength(15)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkClientRefb");
+
+                entity.Property(e => e.UcbkClientRefc)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucbkClientRefc");
+
+                entity.Property(e => e.UcbkContact)
+                    .HasMaxLength(30)
+                    .HasColumnName("ucbkContact");
+
+                entity.Property(e => e.UcbkDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucbkDate");
+
+                entity.Property(e => e.UcbkDateDone)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucbkDateDone");
+
+                entity.Property(e => e.UcbkDay).HasColumnName("ucbkDay");
+
+                entity.Property(e => e.UcbkDays)
+                    .HasMaxLength(9)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkDays")
+                    .HasDefaultValueSql("(0)")
+                    .IsFixedLength();
+
+                entity.Property(e => e.UcbkDone)
+                    .HasColumnName("ucbkDone")
+                    .HasDefaultValueSql("(0)");
+
+                entity.Property(e => e.UcbkFirstDue)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucbkFirstDue");
+
+                entity.Property(e => e.UcbkFortnight).HasColumnName("ucbkFortnight");
+
+                entity.Property(e => e.UcbkFrom).HasColumnName("ucbkFrom");
+
+                entity.Property(e => e.UcbkFromAddr)
+                    .HasMaxLength(150)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkFromAddr");
+
+                entity.Property(e => e.UcbkInActiveBy)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkInActiveBy");
+
+                entity.Property(e => e.UcbkInActiveDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucbkInActiveDate");
+
+                entity.Property(e => e.UcbkJobNumber)
+                    .HasMaxLength(15)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkJobNumber");
+
+                entity.Property(e => e.UcbkKm).HasColumnName("ucbkKm");
+
+                entity.Property(e => e.UcbkNextDue)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucbkNextDue");
+
+                entity.Property(e => e.UcbkNotes)
+                    .HasMaxLength(4000)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkNotes");
+
+                entity.Property(e => e.UcbkOneOff)
+                    .HasColumnName("ucbkOneOff")
+                    .HasDefaultValueSql("(0)");
+
+                entity.Property(e => e.UcbkOperator).HasColumnName("ucbkOperator");
+
+                entity.Property(e => e.UcbkOurRef)
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkOurRef");
+
+                entity.Property(e => e.UcbkPickUpFrom)
+                    .HasColumnName("ucbkPickUpFrom")
+                    .HasDefaultValueSql("(0)");
+
+                entity.Property(e => e.UcbkRefClientId).HasColumnName("ucbkRefClientID");
+
+                entity.Property(e => e.UcbkReturn).HasColumnName("ucbkReturn");
+
+                entity.Property(e => e.UcbkScreen).HasColumnName("ucbkScreen");
+
+                entity.Property(e => e.UcbkSize)
+                    .HasColumnName("ucbkSize")
+                    .HasDefaultValueSql("(0)");
+
+                entity.Property(e => e.UcbkSpeed).HasColumnName("ucbkSpeed");
+
+                entity.Property(e => e.UcbkTime)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucbkTime");
+
+                entity.Property(e => e.UcbkTo).HasColumnName("ucbkTo");
+
+                entity.Property(e => e.UcbkToAddr)
+                    .HasMaxLength(150)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkToAddr");
+
+                entity.Property(e => e.UcbkToSpecial)
+                    .HasMaxLength(120)
+                    .HasColumnName("ucbkToSpecial");
+
+                entity.Property(e => e.UcbkType).HasColumnName("ucbkType");
+
+                entity.Property(e => e.UcbkUpdateBy)
+                    .HasMaxLength(5)
+                    .IsUnicode(false)
+                    .HasColumnName("ucbkUpdateBy");
+
+                entity.Property(e => e.UcbkVan).HasColumnName("ucbkVan");
+
+                entity.Property(e => e.UcbkWeight)
+                    .HasColumnName("ucbkWeight")
+                    .HasDefaultValueSql("(0)");
+
+                entity.Property(e => e.VanOk).HasColumnName("VanOK");
+            });
+
+            modelBuilder.Entity<TucJobBookingItem>(entity =>
+            {
+                entity.HasKey(e => new { e.BookingId, e.ItemId })
+                    .HasName("PK_tucBookingItems");
+
+                entity.ToTable("tucJobBookingItems");
+
+                entity.Property(e => e.BookingId).HasColumnName("BookingID");
+
+                entity.Property(e => e.ItemId).HasColumnName("ItemID");
+
+                entity.Property(e => e.Dgclass).HasColumnName("DGClass");
+
+                entity.Property(e => e.Do).HasColumnName("DO");
+
+                entity.Property(e => e.Notes).HasMaxLength(4000);
+
+                entity.Property(e => e.Pu).HasColumnName("PU");
+
+                entity.HasOne(d => d.Booking)
+                    .WithMany(p => p.TucJobBookingItems)
+                    .HasForeignKey(d => d.BookingId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tucBookingItems_tucBooking");
             });
 
             modelBuilder.Entity<TucJobItem>(entity =>

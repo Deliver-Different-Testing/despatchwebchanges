@@ -20,12 +20,12 @@ namespace DespatchWeb.Repositories
 
         public async Task<ClientViewModel> ValidateClientAsync(int contactId)
         {
-            var contact = _context.TucClientContacts.FirstOrDefault(c=>c.UcctId == contactId);
+            var contact = await _context.TucClientContacts.FirstOrDefaultAsync(c=>c.UcctId == contactId);
             if (contact == null)
             {
                 return null;
             }
-            var client = await _context.TblClients.FindAsync(contact.UcctClientId);
+            var client = await _context.TblClients.FirstOrDefaultAsync(x=>x.ClientId == contact.UcctClientId);
             if (client == null)
             {
                 return null;

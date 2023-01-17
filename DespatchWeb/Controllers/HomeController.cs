@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Hosting;
 using System.Security.Claims;
+using System.Web;
 using Microsoft.Extensions.Hosting;
 
 namespace DespatchWeb.Controllers
@@ -47,6 +48,11 @@ namespace DespatchWeb.Controllers
             if (_hostingEnvironment.IsDevelopment())
             {
                 login = "WZKzmEeKz1c3/qetjbb48HcCr2UGhQ6wz8NRwSoxxOU="; //uclgf
+                //login = "KssU6Ai9cGikcw/3nS0qFzBPGEwNg/QPCROLhnaoiq0="; //UCLGE
+            }
+            else
+            {
+                login = WebUtility.UrlDecode(login);
             }
             if (!string.IsNullOrEmpty(login))
             {

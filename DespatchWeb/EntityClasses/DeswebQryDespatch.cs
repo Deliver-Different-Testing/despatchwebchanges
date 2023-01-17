@@ -133,5 +133,7 @@ namespace DespatchWeb.EntityClasses
         public string Udstatus { get; set; }
         public bool? Dgdocument { get; set; }
         public bool RatedManually { get; set; }
+        public bool UcjbCbd { get; set; }
+        public bool? Locked { get; set; }
     }
 }

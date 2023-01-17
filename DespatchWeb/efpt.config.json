@@ -50,6 +50,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucJobBooking]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobBookingItems]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJobItems]",
          "ObjectType": 0
       },

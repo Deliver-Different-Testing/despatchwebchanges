@@ -14,6 +14,8 @@ using System.Diagnostics;
 using System.Threading;
 
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Components;
+using System.Net;
 
 namespace DespatchWeb.Repositories
 {
@@ -24,6 +26,139 @@ namespace DespatchWeb.Repositories
         public JobRepository(DespatchContext context)
         {
             _context = context;
+        }
+
+        public async Task<JobViewModel> PreBookDetail(int prebookId)
+        {
+            var pallets = _context.TucJobBookingItems.Where(x => x.BookingId == prebookId).ToList();
+            var jobQuery = (
+                from j in _context.TucJobBookings
+                join c in _context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
+                from co in courierJoin.DefaultIfEmpty()
+                join y in _context.TucSuburbs on j.UcbkFrom equals y.UcsuId into fromJoin
+                from yo in fromJoin.DefaultIfEmpty()
+                join z in _context.TucSuburbs on j.UcbkTo equals z.UcsuId into toJoin
+                from zo in toJoin.DefaultIfEmpty()
+                join t in _context.TucJobTypes on j.UcbkSpeed.Value equals t.UcjtId into speedJoin
+                from to in speedJoin.DefaultIfEmpty()
+                join cl in _context.TblClients on j.UcbkClientId equals cl.ClientId into clientJoin
+                from client in clientJoin.DefaultIfEmpty()
+                
+                
+
+                where (j.UcbkId == prebookId)
+                select new JobViewModel()
+                {
+                    ID = j.UcbkId,
+                    Time = j.UcbkTime,
+                    BookedDate = j.UcbkDate,
+                    Direct = j.Direct,
+                    SizeID = j.UcbkSize,
+                    Van = j.UcbkVan,
+                    Truck = j.Truck,
+                    SaturdayDelivery = j.SaturdayDelivery,
+                    Return = j.UcbkReturn,
+                    Attention = j.UcbkAttention,
+                    Done = j.UcbkDone,
+                    PickupFrom = (short?)j.UcbkPickUpFrom,
+                    JobNo = j.UcbkJobNumber,
+                    Speed = to.ShortName,
+                    SpeedID = j.UcbkSpeed,
+                    AcceptedJobTypeID = j.AcceptedJobTypeId,
+                    NotifiedJobTypeID = j.NotifiedJobTypeId,
+                    Client = j.UcbkClientCode,
+                    ClientID = j.UcbkClientId,
+                    ClientName = client.Name,
+                    JobType = (int)j.UcbkType,
+                    From = yo.UcsuName,
+                    FromSuburbID = (int)j.UcbkFrom,
+                    fromSuburbName = yo.UcsuName,
+                    FromAddress = j.UcbkFromAddr,
+                    FromContactName = j.PickupFromContact,
+                    FromContactNumber = j.PickupFromPhone,
+                    To = zo.UcsuName,
+                    ToSuburbID = (int)j.UcbkTo,
+                    ToSuburbName = zo.UcsuName,
+                    ToAddress = j.UcbkToAddr,
+                    Courier = co.Code,
+                    ContactName = j.DeliverToContact,
+                    Phone = j.DeliverToPhone,
+                    Weight = j.UcbkWeight,
+                    Items = j.Quantity,
+                    RefA = j.UcbkClientRefa,
+                    RefB = j.UcbkClientRefb,
+                    OurRef = j.UcbkOurRef,
+                    Charge = $"{j.UcbkAmount:C}",
+                    ClientNotes = j.ClientNotes,
+                    InternalNotes = j.UcbkNotes,
+                    PickUpLatitude = j.PickUpLatitude,
+                    PickUpLongitude = j.PickUpLongitude,
+                    DeliveryLatitude = j.DeliveryLatitude,
+                    DeliveryLongitude = j.DeliveryLongitude,
+                    CourierData = new CourierData()
+                    {
+                        Courier = co.Code + " " + co.FirstName + " " + co.Surname,
+                        CourierID = co.CourierId
+                    },
+
+                    DGClass = j.Dgclass,
+                    DGDocumentation = j.Dgdocument,
+                    DeliverToContact = j.DeliverToContact,
+                    TrackingMethod = j.TrackingMethod,
+                    TrackingMobile = j.TrackingMobile,
+                    TrackingEmail = j.TrackingEmail,
+                    RatedManually = j.RatedManually,
+                    OneOff = j.UcbkOneOff,
+                    Active = j.UcbkActive,
+                    InActiveBy = j.UcbkInActiveBy,
+                    InActiveDate = j.UcbkInActiveDate,
+                    FirstDue = j.UcbkFirstDue,
+                    NextDue = j.UcbkNextDue,
+                    LastDone = j.UcbkDateDone,
+                    RestartDate = j.RestartDate,
+                    StopDate = j.StopDate,
+                    Days = j.UcbkDays,
+                    PreBook = true,
+                    Pedal = j.UcbkCbd,
+                    Reprice = j.Reprice,
+                    PalletInfo = (
+                        from pa in pallets
+                        select new PalletInfo()
+                        {
+                            ID = pa.BookingId,
+                            Quantity = pa.Items,
+                            ItemID = pa.ItemId,
+                            Weight = pa.Weight,
+                            Length = pa.Length,
+                            Depth = pa.Depth,
+                            Height = pa.Height,
+                            PU = pa.Pu,
+                            DO = pa.Do,
+                            DGClass = pa.Dgclass,
+                            Notes = pa.Notes
+
+                        }).ToList(),
+
+
+
+
+                });
+            var job = await jobQuery.FirstOrDefaultAsync();
+            if (job != null)
+            {
+                job.Vehicle = new Vehicle()
+                {
+                    id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeID,
+                    label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (job.SizeID ?? (short)2))
+                };
+                job.Size = job.Vehicle;
+                job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
+                job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
+                                            job.Time.Value.ToString("HH:mm:ss"));
+
+            }
+
+            return job;
         }
 
         public async Task<JobViewModel> JobDetail(int jobId)
@@ -61,6 +196,7 @@ namespace DespatchWeb.Repositories
                     SizeID = j.Size,
                     Van = j.Van,
                     Truck = j.Truck,
+                    Attention = j.Attention,
                     SaturdayDelivery = j.SaturdayDelivery,
                     Return = j.Return,
                     Done = j.JobDone,
@@ -139,7 +275,11 @@ namespace DespatchWeb.Repositories
                     TrackingMobile = j.TrackingMobile,
                     TrackingEmail = j.TrackingEmail,
                     UDStatus = ud.Name,
-                    RatedManually = j.RatedManually
+                    RatedManually = j.RatedManually,
+                    Locked = (j.Locked ?? 0) == 1,
+                    Invoiced = (j.InvoiceNo.HasValue && j.InvoiceNo.Value > 0),
+                    PreBook = false,
+                    Pedal = j.Cbd
 
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
@@ -252,6 +392,29 @@ namespace DespatchWeb.Repositories
             return Tuple.Create(total, jobList);
 
         }
+
+        public async Task<List<JobViewModel>> PreBookJobList()
+        {
+            var jobs = await _context.UvwBookingTodays
+                .FromSqlRaw(
+                    "SELECT * FROM uvwBookingToday WHERE ucbkDone=0  ORDER BY CONVERT(nvarchar(10), ucbkTime, 108), ucbkJobNumber")
+                .ToListAsync();
+            var jobList = (from j in jobs
+                select new JobViewModel()
+                {
+                    ID = j.UcbkId,
+                    Booked = DateTime.Parse(j.UcbkNextDue.Value.ToString("yyyy-MM-dd") + " " + j.UcbkTime.Value.ToString("HH:mm:ss")),
+                    Client = j.UcbkClientCode,
+                    FromAddress = j.UcbkFromAddr,
+                    ToAddress = j.UcbkToAddr,
+                    JobNo = j.UcbkJobNumber,
+                    ClientID = j.UcbkClientId,
+                    Courier = j.Code,
+                    Speed = j.UcjtName
+                }).ToList();
+            return jobList;
+        }
+
         public List<JobViewModel> CurrentJobList(Int32 courierId, bool done)
         {
             var jobs = _context.DeswebQryDespatches.FromSqlRaw($"exec [DESWeb_qryCourierJobs] {courierId}, {done}").ToList();
@@ -354,7 +517,11 @@ namespace DespatchWeb.Repositories
                      TrackingMobile = j.TrackingMobile,
                      TrackingEmail = j.TrackingEmail,
                      UDStatus = j.Udstatus,
-                     RatedManually = j.RatedManually
+                     RatedManually = j.RatedManually,
+                     Attention = j.UcjbAttention,
+                     Pedal = j.UcjbCbd,
+                     Locked = j.Locked ?? false,
+                     Invoiced = false
 
                  }).ToList();
             return list;
@@ -555,10 +722,11 @@ namespace DespatchWeb.Repositories
                             DeliveryLongitude = j.DeliveryLongitude,
                             PalletInfo = (
                                 from pa in pallets.Where(p => p.JobId == j.UcjbId)
-                                select new Palletinfo()
+                                select new PalletInfo()
                                 {
                                     ID = pa.JobId,
                                     Quantity = pa.Items,
+                                    ItemID = pa.ItemId,
                                     Weight = pa.Weight,
                                     Length = pa.Length,
                                     Depth = pa.Depth,
@@ -598,7 +766,13 @@ namespace DespatchWeb.Repositories
                             TrackingEmail = j.TrackingEmail,
                             UDStatus = j.
                             Udstatus,
-                            RatedManually = j.RatedManually
+                            RatedManually = j.RatedManually,
+                            PreBook = false,
+                            Attention = j.UcjbAttention,
+                            Pedal = j.UcjbCbd,
+                            Locked = j.Locked ?? false,
+                            Invoiced = false
+                            
 
 
                         }).ToList();
@@ -1025,6 +1199,71 @@ namespace DespatchWeb.Repositories
             return result.FirstOrDefault();
         }
 
+        public async Task AddPalletInfo(PalletInfo p, bool preBook, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpJobItems_Insert")
+                .WithSqlParam("@JobID", p.ID)
+                .WithSqlParam("@Items", p.Quantity)
+                .WithSqlParam("@Weight", p.Weight)
+                .WithSqlParam("@Depth", p.Depth)
+                .WithSqlParam("@Length", p.Length)
+                .WithSqlParam("@Height", p.Height)
+                .WithSqlParam("@PU", p.PU)
+                .WithSqlParam("@DO", p.DO)
+                .WithSqlParam("@DGClass", p.DGClass)
+                .WithSqlParam("@Notes", p.Notes)
+                .WithSqlParam("@Prebook", preBook)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task EditPalletInfo(PalletInfo p, bool preBook, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpJobItems_Update")
+                .WithSqlParam("@JobID", p.ID)
+                .WithSqlParam("@ItemID", p.ItemID)
+                .WithSqlParam("@Items", p.Quantity)
+                .WithSqlParam("@Weight", p.Weight)
+                .WithSqlParam("@Depth", p.Depth)
+                .WithSqlParam("@Length", p.Length)
+                .WithSqlParam("@Height", p.Height)
+                .WithSqlParam("@PU", p.PU)
+                .WithSqlParam("@DO", p.DO)
+                .WithSqlParam("@DGClass", p.DGClass)
+                .WithSqlParam("@Notes", p.Notes)
+                .WithSqlParam("@Prebook", preBook)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task DeletePalletInfo(PalletInfo p, bool preBook, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpJobItems_Delete")
+                .WithSqlParam("@JobID", p.ID)
+                .WithSqlParam("@ItemID", p.ItemID)
+                .WithSqlParam("@Prebook", preBook)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task SendPrebookJob(int jobId)
+        {
+            await _context.LoadStoredProc("DES_stpJobBooking_InsertJobAndChildren")
+                .WithSqlParam("@JobBookingID", jobId)
+                .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task VoidPrebookJob(int jobId, string despatcher, int staffId)
+        {
+            await _context.LoadStoredProc("DESWEB_stpVoidPrebookJob")
+                .WithSqlParam("@JobBookingID", jobId)
+                .WithSqlParam("@Username", despatcher)
+                .WithSqlParam("@StaffID", staffId)
+                .ExecuteStoredNonQueryAsync();
+        }
+
+        
+
         public async Task<TruckItemsSummary> TruckJobItems(int jobId, int truckWeightLimit)
         {
             var result = new List<TruckItemsSummary>();
@@ -1065,6 +1304,36 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public async Task UpdateBookingDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJobBookingDeliveryAddress")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@ToSuburb", toSuburbId)
+                .WithSqlParam("@Address", address)
+                .WithSqlParam("@DeliveryLatitude", deliveryLat)
+                .WithSqlParam("@DeliveryLongitude", deliveryLng)
+                .WithSqlParam("@CBD", cbd)
+                .WithSqlParam("@Rate", rate)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+
+        }
+
+        public async Task UpdateBookingPickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJobBookingPickupAddress")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@FromSuburb", fromSuburbId)
+                .WithSqlParam("@Address", address)
+                .WithSqlParam("@PickupLatitude", pickupLat)
+                .WithSqlParam("@PickupLongitude", pickupLng)
+                .WithSqlParam("@CBD", cbd)
+                .WithSqlParam("@Rate", rate)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+
+        }
+
         public async Task UpdateJob(int jobId, string field, string value, decimal? rate, string despatcher, int staffId)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJob")
@@ -1077,9 +1346,30 @@ namespace DespatchWeb.Repositories
                 .ExecuteStoredNonQueryAsync();
         }
 
+        public async Task UpdateJobBooking(int jobId, string field, string value, decimal? rate, string despatcher, int staffId)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJobBooking")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@PropertyName", field)
+                .WithSqlParam("@Value", value)
+                .WithSqlParam("@Rate", rate)
+                .WithSqlParam("@Username", despatcher)
+                .WithSqlParam("@StaffID", staffId)
+                .ExecuteStoredNonQueryAsync();
+        }
+
         public async Task AddNote(int jobId, string note, string despatcher)
         {
             await _context.LoadStoredProc("DES_stpJob_AddNotes")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@Notes", note)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task AddJobBookingNote(int jobId, string note, string despatcher)
+        {
+            await _context.LoadStoredProc("DES_stpJobBooking_AddNotes")
                 .WithSqlParam("@JobID", jobId)
                 .WithSqlParam("@Notes", note)
                 .WithSqlParam("@Username", despatcher)

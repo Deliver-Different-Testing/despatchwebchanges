@@ -139,6 +139,8 @@ namespace DespatchWeb.EntityClasses
         public decimal? RawBaseAmount { get; set; }
         public decimal? CourierBonus { get; set; }
         public int? Duration { get; set; }
+        public double? TruckHours { get; set; }
+        public DateTime? TruckStartTime { get; set; }
         public int? ShopId { get; set; }
         public string ShopRef1 { get; set; }
         public string ShopRef2 { get; set; }

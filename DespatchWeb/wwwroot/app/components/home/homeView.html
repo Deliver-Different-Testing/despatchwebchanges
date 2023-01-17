@@ -27,7 +27,8 @@
         <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
         <!--<div class="btn btn-sm btn-nav topbar-button" target="_blank" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>-->
         <a ui-sref="cs" href="#/CS" target="_blank" class="btn btn-sm topbar-button" ui-sref-active="topbar-active">POD/Search</a>
-        
+        <a ui-sref="prebooks" href="#/prebooks" target="_blank" class="btn btn-sm topbar-button" ui-sref-active="topbar-active">PreBooks</a>
+
     </div>
 
     <div class="btn-group box-search chat" ng-show="showChat">
@@ -87,10 +88,13 @@
                                 <div class="btn-group" role="group" aria-label="Basic example">
                                     <button type="button" class="btn btn-sm btn-secondary" title="ADD EVENT" ng-click="otherEventForm(currentJob.jobNo)"><i class="fa fa-calendar-plus-o"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="CLOSE EVENT" ng-disabled="!currentSupport" ng-click="closeSupport(currentSupport);"><i class="fa fa-calendar-check-o"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job" ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)" ng-click="unlockJob()"><i class="fa fa-lock"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Lock Job" ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)" ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
+                                    
                                     <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
+    <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
                                 </div>
 
                             </div>
@@ -125,6 +129,7 @@
                             </div>
                             <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity">City <i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggle" ng-show="box.name === 'map'" ng-click="allCouriers.display = !allCouriers.display;getAvailableCourierLocation();">All <i ng-class="allCouriers.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
+                            <div class="btn btn-sm box-toggleZoom" ng-show="box.name === 'map'" ng-click="mapZoom.display = !mapZoom.display;storeMapZoomDisplay()">Auto Zoom <i ng-class="mapZoom.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
 
                             <div class="box-search" ng-show="boxes[box.name].showSearch">
                                 <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
@@ -153,7 +158,7 @@
 
 <div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.12'"></div>
 
-<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
+<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
 
 <div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.10'"></div>
 

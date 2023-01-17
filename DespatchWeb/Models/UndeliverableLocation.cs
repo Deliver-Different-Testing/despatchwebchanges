@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models
 {
     public class UndeliverableLocation
     {
-        [JsonProperty("id")] public int ID { get; set; }
+        [JsonPropertyName("id")] public int ID { get; set; }
 
         public string Text { get; set; }
 

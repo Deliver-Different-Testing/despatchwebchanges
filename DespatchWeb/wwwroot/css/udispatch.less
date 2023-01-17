@@ -659,6 +659,13 @@ a.pickadate-prev {
                             left: -130px
                         }
 
+                        .box-toggleZoom {
+                            display: inline-block;
+                            top: 5px;
+                            position: absolute;
+                            left: -250px
+                        }
+
                         .box-trucks {
                             display: inline-block;
                             top: 5px;
@@ -941,11 +948,16 @@ table.table {
     }
 }
 
-    a.uline {
-        color: #000;
-        text-decoration: underline;
-        cursor: pointer;
+a.uline {
+    color: #000;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &.disabled {
+        color: #9c9c9c;
     }
+}
+
 
 #jobDetail {
     .addresses {
@@ -1008,7 +1020,17 @@ table.table {
                 border-top: 3px solid @s-red;
             }
 
+            .fa-exclamation {
+                color: red;
+            }
 
+            .multi-element {
+                .btn {
+                    font-size: 11px;
+                    padding: 4px 10px;
+                    width: 160px;
+                }
+            }
 
             label {
                 height: 6px;
@@ -1022,6 +1044,10 @@ table.table {
                 font-size: 11px;
 
                 &.disabled {
+                    color: #9c9c9c;
+                }
+
+                &.disabled > * {
                     color: #9c9c9c;
                 }
 
