@@ -666,6 +666,13 @@ a.pickadate-prev {
                             left: -250px
                         }
 
+                        .box-toggleUA {
+                            display: inline-block;
+                            top: 5px;
+                            position: absolute;
+                            left: -350px
+                        }
+
                         .box-trucks {
                             display: inline-block;
                             top: 5px;
@@ -760,7 +767,7 @@ table.table {
 
     tr {
 
-       
+
 
         &.late {
             background-color: #ffecec;
@@ -778,9 +785,18 @@ table.table {
             }
         }
 
+        &.direct {
+            color: red;
+
+            td {
+                color: red;
+            }
+        }
+
         .fa-exclamation {
             color: red;
         }
+
 
         .status {
             font-weight: 600;

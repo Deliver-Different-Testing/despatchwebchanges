@@ -47,6 +47,7 @@ angular
 
                 });
                 setTimeout(function () {
+                    $scope.onMapReady();
                     $('#location').select2('open').val(null).trigger('change');
                     var search = $('#location').data('select2').dropdown.$search;
                     if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {

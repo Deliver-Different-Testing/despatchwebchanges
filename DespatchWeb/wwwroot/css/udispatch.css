@@ -580,6 +580,12 @@ a.pickadate-prev {
   position: absolute;
   left: -250px;
 }
+.columns .column .column-sortable .box .box-bar .box-buttons .box-toggleUA {
+  display: inline-block;
+  top: 5px;
+  position: absolute;
+  left: -350px;
+}
 .columns .column .column-sortable .box .box-bar .box-buttons .box-trucks {
   display: inline-block;
   top: 5px;
@@ -657,6 +663,12 @@ table.table tr.active {
 }
 table.table tr.active td {
   background-color: transparent;
+}
+table.table tr.direct {
+  color: red;
+}
+table.table tr.direct td {
+  color: red;
 }
 table.table tr .fa-exclamation {
   color: red;

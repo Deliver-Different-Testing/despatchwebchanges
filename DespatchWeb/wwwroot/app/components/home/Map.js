@@ -306,11 +306,14 @@ function displayCourierPositionOnly(lat, lng) {
     map.setZoom(13);
 }
 
-function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truckMode) {
+function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truckMode, includeUA) {
     map.clearLabels();
     map.clearFlags();
     $.each(ac, function (i, c) {
         //var col = '#003CA1'; //courier
+        if (!includeUA && c.fleetCode === "UA") {
+            return true;
+        }
         var col = "#00FF00";
         var className = "courier courierMarker";
         if (c.totalJobs === 0) {

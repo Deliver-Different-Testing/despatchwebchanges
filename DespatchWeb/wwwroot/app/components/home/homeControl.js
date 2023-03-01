@@ -57,6 +57,7 @@ angular
 
                 });
                 setTimeout(function () {
+                    $scope.onMapReady();
                     $('#location').select2('open').val(null).trigger('change');
                     var search = $('#location').data('select2').dropdown.$search;
                     if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {
@@ -159,7 +160,7 @@ angular
         };
 
         $scope.jdSvc.setGather($scope.gather);
-        $scope.allCouriers = { display: false };
+        $scope.allCouriers = { display: false, includeUA: false };
         $scope.mapZoom = { display: true };
 
         $scope.options = {
@@ -269,7 +270,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.55",
+                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.64",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -310,7 +311,7 @@ angular
             },
             "courierMoveClear": {
                 "title": "Couriers Movement Clear List",
-                "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?1.1",
+                "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?1.3",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -340,13 +341,13 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/home/tpls/map.tpl?v=1.17",
+                "tpl": "app/components/home/tpls/map.tpl?v=1.18",
                 "showSearch": 0,
                 "showRefresh": 1
             },
             "clearLists": {
                 "title": "Clear Lists",
-                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.7",
+                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.8",
                 "showSearch": 0,
                 "showRefresh": 0
             }
@@ -2431,7 +2432,7 @@ angular
             }
             DispatchData.getAvailableCourierLocation(map.getBounds().getSouthWest().lng(), map.getBounds().getSouthWest().lat(), map.getBounds().getNorthEast().lng(), map.getBounds().getNorthEast().lat())
                 .then(function (returnData) {
-                    displayAvailableCouriers(returnData, $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks, $scope.truckMode);
+                    displayAvailableCouriers(returnData, $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
                 });
         };
 
