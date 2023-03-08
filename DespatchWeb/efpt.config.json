@@ -102,6 +102,10 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[DES_qryTruckCourierStatus]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_stpJob_DirectToASAP]",
          "ObjectType": 1
       }

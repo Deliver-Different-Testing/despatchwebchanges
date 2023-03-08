@@ -41,6 +41,7 @@ namespace DespatchWeb.EntityClasses
         public int? DefaultTrackingMethod { get; set; }
         public string DefaultTrackingMobile { get; set; }
         public string DefaultTrackingEmail { get; set; }
+        public bool UseDefaultOnNewBooking { get; set; }
 
         public virtual TucClient Client { get; set; }
         public virtual TucClientContact Contact { get; set; }

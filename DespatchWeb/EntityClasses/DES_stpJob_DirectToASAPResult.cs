@@ -237,11 +237,9 @@ namespace DespatchWeb.EntityClasses
         public int? SourceID { get; set; }
         public string StripeChargeID { get; set; }
         public bool? ucjbLocked { get; set; }
-        
         public string DesiredSpeed { get; set; }
         public string NotifiedSpeed { get; set; }
         public string JobType { get; set; }
-        
         public string ClientName { get; set; }
         public string ExtraAddress { get; set; }
         public string SuburbFrom { get; set; }

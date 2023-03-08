@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -57,6 +58,12 @@ namespace DespatchWeb.Controllers
         public IActionResult Location(string code)
         {
             var result = _courierRepo.Location(code);
+            return Json(result);
+        }
+
+        public async Task<IActionResult> TruckCourierStatus(string courierId)
+        {
+            var result =  await _courierRepo.TruckCourierStatus(courierId);
             return Json(result);
         }
 

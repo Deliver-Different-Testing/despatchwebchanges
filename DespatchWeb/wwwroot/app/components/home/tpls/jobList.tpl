@@ -12,8 +12,9 @@
                 <th scope="col" ng-click="orderList('jobList','jobNo')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'jobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-jobNo'"></i>Job </th>
                 <th scope="col" ng-click="orderList('jobList','client')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-client'"></i>Client </th>
                 <th scope="col" ng-click="orderList('jobList','from')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i>From </th>
-				<th scope="col" ng-click="orderList('jobList','to')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i>To </th>
-				<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
+				<th colspan="2" scope="col" ng-click="orderList('jobList','to')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i>To </th>
+				<!--<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>-->
+                
                 <th></th>
                 <th scope="col" ng-click="orderList('jobList','remain')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i>Remain</th>
                 <th></th>
@@ -39,7 +40,7 @@
 			<td context-menu="setEventsMenu">{{job.jobNo}}</td>
 			<td right-click action="clientColumnClick(event)">{{job.client}}</td>
 			<td style="width:50px; white-space:nowrap; overflow-x:hidden;" right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-			<td colspan="2" style="width:330px; white-space:nowrap; overflow-x:hidden;" right-click action="toColumnClick(event)"title="{{job.toAddress}}">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i>{{job.toAddress}}</td>
+			<td colspan="2" right-click action="toColumnClick(event)"title="{{job.toAddress}}"><div style="width:450px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}"><i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i>{{job.to}} {{job.toAddress}}</div></td>
 			<!--<td><div style="width:280px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>	-->
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>
             <td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
@@ -59,8 +60,7 @@
             <td><div></div></td>
             <td><div></div></td>
 			<td><div></div></td>
-			<td><div></div></td>
-            <td><div></div></td>
+			<td colspan="2"><div></div></td>
 			<td><div></div></td>
             <td><div style="width:12px;"></div></td>
             <td><div style="width:12px;"></div></td>

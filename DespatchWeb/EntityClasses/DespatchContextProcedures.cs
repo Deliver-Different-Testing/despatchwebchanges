@@ -34,6 +34,7 @@ namespace DespatchWeb.EntityClasses
 
         protected void OnModelCreatingGeneratedProcedures(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<DES_qryTruckCourierStatusResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_stpJob_DirectToASAPResult>().HasNoKey().ToView(null);
         }
     }
@@ -45,6 +46,33 @@ namespace DespatchWeb.EntityClasses
         public DespatchContextProcedures(DespatchContext context)
         {
             _context = context;
+        }
+
+        public virtual async Task<List<DES_qryTruckCourierStatusResult>> DES_qryTruckCourierStatusAsync(string CourierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "CourierID",
+                    Size = 40,
+                    Value = CourierID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DES_qryTruckCourierStatusResult>("EXEC @returnValue = [dbo].[DES_qryTruckCourierStatus] @CourierID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
         }
 
         public virtual async Task<List<DES_stpJob_DirectToASAPResult>> DES_stpJob_DirectToASAPAsync(int? JobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)

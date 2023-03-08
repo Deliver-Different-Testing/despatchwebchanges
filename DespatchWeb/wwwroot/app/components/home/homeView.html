@@ -50,9 +50,12 @@
                 Layout
                 <span class="caret"></span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu1">
-                <li><a class="dropdown-item" href="#" ng-click="saveLayout()"><b>Save Layout</b></a></li>
-                <li><a class="dropdown-item" href="#" ng-click="loadLayout($index)" ng-repeat="lo in layouts track by $index">{{lo.name}}</a></li>
+            <ul class="dropdown-menu dropdown-menu-right list-group w-50" aria-labelledby="dropdownMenu1">
+                <li class="list-group-item" ng-click="saveLayout()"><b>Save Layout</b></li>
+                <li ng-repeat="lo in layouts track by $index" class="list-group-item">
+                    <i ng-click="deleteLayout($index)" style="cursor: pointer" title="Delete Layout" class="fa fa-trash"></i>
+                    <span ng-click="loadLayout($index)" style="cursor: pointer">{{lo.name}}</span>
+                </li>
             </ul>
         </div>
     </div>
@@ -77,6 +80,7 @@
                             <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
 
                                 <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Truck Loading Status" ng-if="truckCourierStatus.length >0" ng-click="truckLoadingStatus()"><i class="fa fa-truck"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Restore All" ng-click="restoreAll()"><i class="fa fa-undo"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Redispatch All" ng-click="redispatchAll()"><i class="fa fa-repeat"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Resend All" ng-click="resendAll()"><i class="fa fa-send"></i></button>
@@ -154,6 +158,8 @@
 
 
 <div ng-include="'app/components/home/tpls/eventForm.tpl?v=1.1'"></div>
+
+<div ng-include="'app/components/home/tpls/truckCourierStatus.tpl?v=1.7'"></div>
 
 <div ng-include="'app/components/home/tpls/lateForm.tpl?v=1.1'"></div>
 

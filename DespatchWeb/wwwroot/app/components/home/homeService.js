@@ -72,6 +72,11 @@ angular
                             return response;
                         });
                     },
+                    truckCourierStatus: function(courierId) {
+                        return $http.post("courier/TruckCourierStatus?courierId=" + courierId).then(function (response) {
+                            return response;
+                        });
+                    },
                     voidJob: function (jobId) {
                         return $http.post("job/Void?jobId=" + jobId).then(function (response) {
                             return response;

@@ -246,6 +246,7 @@ angular
             }
         };
         $scope.markers = [];
+        $scope.truckCourierStatus = [];
         $scope.getJobStyle = function (assigned) {
             var normal =
             {
@@ -270,7 +271,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.64",
+                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.74",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -379,7 +380,7 @@ angular
                     "columns": [
                         {
                             "id": "col1",
-                            "width": "700px",
+                            "width": "1100px",
                             "boxes": [
                                 {
                                     "name": "jobsList"
@@ -477,6 +478,12 @@ angular
 
         $scope.layout = angular.copy($scope.layouts[0].layout);
 
+        $scope.deleteLayout = function (i) {
+            $scope.layouts.splice(i, 1);
+            if (Modernizr.localstorage) {
+                localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
+            }
+        }
 
         $scope.loadLayout = function (i) {
             $scope.currentLayoutName = $scope.layouts[i].name;
@@ -1717,7 +1724,7 @@ angular
             if (courier.courier === undefined) {
                 courier.courier = courier.code + ' ' + courier.firstName;
             }
-
+            console.log(courier);
             //$scope.getGroupedJobs(courier);
             //$scope.groupJobsSelection = " for Courier " + courier.courier;
             $scope.getCurrentJobs(courier.courierID);
@@ -1737,7 +1744,15 @@ angular
             },
                 100);
 
+            DispatchData.truckCourierStatus(courier.courierID).then(function (result) {
+                $scope.truckCourierStatus = result.data;
+            });
+        };
 
+        $scope.refreshTruckCourierStatus = function () {
+            DispatchData.truckCourierStatus($scope.currentCourier.courierID).then(function (result) {
+                $scope.truckCourierStatus = result.data;
+            });
         };
 
         $scope.selectMapCourier = function (courier) {
@@ -1776,6 +1791,9 @@ angular
                 });
             }, 100);
 
+            DispatchData.truckCourierStatus(courier.courierID).then(function (data) {
+                $scope.truckCourierStatus = data;
+            });
 
         };
 
@@ -3313,6 +3331,23 @@ angular
             };
 
             $(".eventForm").show(0);
+
+
+        };
+
+        $scope.truckLoadingStatus = function () {
+
+            $scope.truckCourierStatusForm = {
+                "data": $scope.truckCourierStatus[0],
+                refresh: function () {
+                    $scope.refreshTruckCourierStatus();
+                },
+                close: function () {
+                    $(".truckCourierStatusForm").hide(0);
+                }
+            };
+
+            $(".truckCourierStatusForm").show(0);
 
 
         };

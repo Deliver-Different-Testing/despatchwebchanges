@@ -22,6 +22,12 @@ namespace DespatchWeb.Repositories
             _context = context;
         }
 
+        public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId)
+        {
+            var result = await _context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
+            return result;
+        }
+
         public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null, bool close = false)
         {
             int? staffOut = null;
