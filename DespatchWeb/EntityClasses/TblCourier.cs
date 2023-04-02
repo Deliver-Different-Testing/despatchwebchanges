@@ -167,5 +167,6 @@ namespace DespatchWeb.EntityClasses
         public double? Rucpayload { get; set; }
         public decimal? WithholdingTaxPercentage { get; set; }
         public bool? PaydayFileRegistration { get; set; }
+        public bool? CommercialInsurance { get; set; }
     }
 }

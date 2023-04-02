@@ -780,6 +780,15 @@ table.table tr .status.ASC {
 #jobList tr {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
+#jobList tr.O {
+  background-color: #ffdfba !important;
+}
+#jobList tr.B {
+  background-color: #bae1ff !important;
+}
+#jobList tr.G {
+  background-color: #b0f57b !important;
+}
 #jobList td {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
@@ -792,6 +801,102 @@ table.table tr .status.ASC {
   height: 15px;
 }
 #jobList input.lateCallField {
+  width: 21px;
+  text-align: center;
+  height: 15px;
+}
+#jobListPOD th {
+  white-space: nowrap;
+  cursor: pointer;
+}
+#jobListPOD tr {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListPOD tr.O {
+  background-color: #ffdfba !important;
+}
+#jobListPOD tr.B {
+  background-color: #bae1ff !important;
+}
+#jobListPOD tr.G {
+  background-color: #b0f57b !important;
+}
+#jobListPOD td {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListPOD .doing {
+  background-color: #d7f3ce !important;
+}
+#jobListPOD input.dispatchField {
+  width: 29px;
+  text-align: center;
+  height: 15px;
+}
+#jobListPOD input.lateCallField {
+  width: 21px;
+  text-align: center;
+  height: 15px;
+}
+#jobListDelivery th {
+  white-space: nowrap;
+  cursor: pointer;
+}
+#jobListDelivery tr {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListDelivery tr.O {
+  background-color: #ffdfba !important;
+}
+#jobListDelivery tr.B {
+  background-color: #bae1ff !important;
+}
+#jobListDelivery tr.G {
+  background-color: #b0f57b !important;
+}
+#jobListDelivery td {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListDelivery .doing {
+  background-color: #d7f3ce !important;
+}
+#jobListDelivery input.dispatchField {
+  width: 29px;
+  text-align: center;
+  height: 15px;
+}
+#jobListDelivery input.lateCallField {
+  width: 21px;
+  text-align: center;
+  height: 15px;
+}
+#jobListReprice th {
+  white-space: nowrap;
+  cursor: pointer;
+}
+#jobListReprice tr {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListReprice tr.O {
+  background-color: #ffdfba !important;
+}
+#jobListReprice tr.B {
+  background-color: #bae1ff !important;
+}
+#jobListReprice tr.G {
+  background-color: #b0f57b !important;
+}
+#jobListReprice td {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListReprice .doing {
+  background-color: #d7f3ce !important;
+}
+#jobListReprice input.dispatchField {
+  width: 29px;
+  text-align: center;
+  height: 15px;
+}
+#jobListReprice input.lateCallField {
   width: 21px;
   text-align: center;
   height: 15px;

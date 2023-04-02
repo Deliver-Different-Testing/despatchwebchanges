@@ -33,8 +33,10 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucClient> TucClients { get; set; }
         public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
         public virtual DbSet<TucEvent> TucEvents { get; set; }
+        public virtual DbSet<TucEventType> TucEventTypes { get; set; }
         public virtual DbSet<TucJobBooking> TucJobBookings { get; set; }
         public virtual DbSet<TucJobBookingItem> TucJobBookingItems { get; set; }
+        public virtual DbSet<TucJobInternalStatus> TucJobInternalStatuses { get; set; }
         public virtual DbSet<TucJobItem> TucJobItems { get; set; }
         public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
         public virtual DbSet<TucJobType> TucJobTypes { get; set; }
@@ -1717,6 +1719,8 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(50)
                     .IsUnicode(false);
 
+                entity.Property(e => e.FollowupTime).HasColumnType("datetime");
+
                 entity.Property(e => e.FromAddress)
                     .HasMaxLength(150)
                     .IsUnicode(false);
@@ -2012,6 +2016,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.AddressStreetName).HasMaxLength(200);
 
+                entity.Property(e => e.ApplyCitySurcharge).HasDefaultValueSql("((1))");
+
                 entity.Property(e => e.BaggageRateCodeId).HasColumnName("BaggageRateCodeID");
 
                 entity.Property(e => e.BulkAternoonHomePickupTime).HasColumnType("datetime");
@@ -2020,7 +2026,9 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.BulkHomeDeliveryVanItemSurcharge).HasColumnType("money");
 
-                entity.Property(e => e.CitySurchargeRate).HasColumnType("money");
+                entity.Property(e => e.CitySurchargeRate)
+                    .HasColumnType("money")
+                    .HasDefaultValueSql("((1.75))");
 
                 entity.Property(e => e.CommissionDate).HasColumnType("datetime");
 
@@ -2288,7 +2296,9 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.TruckBulkRateCodeId).HasColumnName("TruckBulkRateCodeID");
 
-                entity.Property(e => e.TruckCitySurchargeRate).HasColumnType("money");
+                entity.Property(e => e.TruckCitySurchargeRate)
+                    .HasColumnType("money")
+                    .HasDefaultValueSql("((10))");
 
                 entity.Property(e => e.TruckEconomyExcessZoneRateCodeId).HasColumnName("TruckEconomyExcessZoneRateCodeID");
 
@@ -2752,6 +2762,27 @@ namespace DespatchWeb.EntityClasses
                     .HasConstraintName("FK_tucEvent_tucClient");
             });
 
+            modelBuilder.Entity<TucEventType>(entity =>
+            {
+                entity.HasKey(e => e.UcetId)
+                    .IsClustered(false);
+
+                entity.ToTable("tucEventType");
+
+                entity.Property(e => e.UcetId).HasColumnName("ucetID");
+
+                entity.Property(e => e.UcetGroup)
+                    .HasMaxLength(2)
+                    .IsUnicode(false)
+                    .HasColumnName("ucetGroup")
+                    .IsFixedLength();
+
+                entity.Property(e => e.UcetName)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasColumnName("ucetName");
+            });
+
             modelBuilder.Entity<TucJobBooking>(entity =>
             {
                 entity.HasKey(e => e.UcbkId)
@@ -3134,6 +3165,21 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.BookingId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_tucBookingItems_tucBooking");
+            });
+
+            modelBuilder.Entity<TucJobInternalStatus>(entity =>
+            {
+                entity.HasNoKey();
+
+                entity.ToTable("tucJobInternalStatus");
+
+                entity.Property(e => e.DefaultSchedule).HasMaxLength(50);
+
+                entity.Property(e => e.Tcis).HasColumnName("tcis");
+
+                entity.Property(e => e.TcisName)
+                    .HasMaxLength(20)
+                    .HasColumnName("tcisName");
             });
 
             modelBuilder.Entity<TucJobItem>(entity =>

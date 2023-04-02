@@ -277,7 +277,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.14",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.18",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -1181,7 +1181,7 @@ angular
             });
 
             if (callData.splitJobs.length > 0) {
-                DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
+                DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs);
             }
             if (callData.jobs.length > 0) {
                 DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
@@ -2011,7 +2011,7 @@ angular
 
                 if (clear === true && job.courier === null) {
 
-                    $scope.jobGroups = false;
+                    $scope.jobGroups = false;   
                     $scope.jobsCurrentList = false;
                     $scope.getPotentialCouriers(job.id);
                     $scope.potentialCouriersSelection = " for Job " + job.jobNo;

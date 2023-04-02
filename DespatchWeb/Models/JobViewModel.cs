@@ -74,6 +74,8 @@ namespace DespatchWeb.Models
         public DateTime? PUTime { get; set; }
         public string ClientNotes { get; set; }
         public string InternalNotes { get; set; }
+        public DateTime? FollowupTime { get; set; }
+        public int? InternalStatusID { get; set; }
         public string ChildNotes { get; set; }
         public bool Locked { get; set; }
         public bool Invoiced { get; set; }

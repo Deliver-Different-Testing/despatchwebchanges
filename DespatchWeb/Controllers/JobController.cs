@@ -13,6 +13,9 @@ using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualBasic;
+using Mindscape.Raygun4Net.AspNetCore;
+using RestSharp;
+using RestSharp.Authenticators;
 
 namespace DespatchWeb.Controllers
 {
@@ -47,6 +50,78 @@ namespace DespatchWeb.Controllers
             }
 
             var result = _jobRepo.JobList(status, area, order, asc, isInternal, clientIds);
+            return Json(result);
+        }
+
+        public async Task<IActionResult> NationwideJobListNew(string status, string area, string order, string asc, bool isInternal,
+            int cid, string clientIds)
+        {
+            //Security check to confirm these clients belong to this contact and have permissions set
+            if (!isInternal && !string.IsNullOrEmpty(clientIds))
+            {
+                var clientContacts = await _clientRepo.ClientContacts(cid);
+                if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
+                {
+                    var empty = new List<Models.JobViewModel>();
+                    return Json(empty);
+                }
+            }
+
+            var result = _jobRepo.NationwideJobList(status, area, order, asc, isInternal, clientIds, 1);
+            return Json(result);
+        }
+
+        public async Task<IActionResult> NationwideJobListPOD(string status, string area, string order, string asc, bool isInternal,
+            int cid, string clientIds)
+        {
+            //Security check to confirm these clients belong to this contact and have permissions set
+            if (!isInternal && !string.IsNullOrEmpty(clientIds))
+            {
+                var clientContacts = await _clientRepo.ClientContacts(cid);
+                if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
+                {
+                    var empty = new List<Models.JobViewModel>();
+                    return Json(empty);
+                }
+            }
+
+            var result = _jobRepo.NationwideJobList(status, area, order, asc, isInternal, clientIds, 2);
+            return Json(result);
+        }
+
+        public async Task<IActionResult> NationwideJobListBookDelivery(string status, string area, string order, string asc, bool isInternal,
+            int cid, string clientIds)
+        {
+            //Security check to confirm these clients belong to this contact and have permissions set
+            if (!isInternal && !string.IsNullOrEmpty(clientIds))
+            {
+                var clientContacts = await _clientRepo.ClientContacts(cid);
+                if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
+                {
+                    var empty = new List<Models.JobViewModel>();
+                    return Json(empty);
+                }
+            }
+
+            var result = _jobRepo.NationwideJobList(status, area, order, asc, isInternal, clientIds, 3);
+            return Json(result);
+        }
+
+        public async Task<IActionResult> NationwideJobListReprice(string status, string area, string order, string asc, bool isInternal,
+            int cid, string clientIds)
+        {
+            //Security check to confirm these clients belong to this contact and have permissions set
+            if (!isInternal && !string.IsNullOrEmpty(clientIds))
+            {
+                var clientContacts = await _clientRepo.ClientContacts(cid);
+                if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
+                {
+                    var empty = new List<Models.JobViewModel>();
+                    return Json(empty);
+                }
+            }
+
+            var result = _jobRepo.NationwideJobList(status, area, order, asc, isInternal, clientIds, 4);
             return Json(result);
         }
 
@@ -358,6 +433,52 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        [HttpPost]
+        public async Task<IActionResult> AddEvent(string jobNo, int clientId, string contact, int staffId,
+            int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType)
+        {
+
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes,eventType);
+
+            return Json("OK");
+        }
+
+        public async Task<IActionResult> ExsalerateActivity(string eventName, string notes, int clientId, string jobNumber, string despatcherName)
+        {
+            var baseUrl = _configuration["ExsalerateAPI"];
+            var un = _configuration["ExsalerateAPIUsername"];
+            var pw = _configuration["ExsalerateAPIPW"];
+
+            
+            var rco = new RestClientOptions() { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl)};
+            var client = new RestClient(rco);
+
+            var body = new ExsalerateActivity()
+            {
+                SiteOwnerID = 11,
+                CustomerRefCode = clientId.ToString(),
+                Subject = $"Dispatch:{despatcherName} {eventName}",
+                ActivityType = eventName,
+                Description = $"Job Number: {jobNumber} - {notes}"
+
+            };
+
+            var request = new RestRequest("activity", Method.Post).AddJsonBody(body);
+
+
+
+            var restResponse = await client.PostAsync(request);
+
+            if (restResponse.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                var e = new ApplicationException($"Exsalerate Activity Failed {restResponse.Content} {Environment.NewLine} CurrentBody= {body}");
+                var key = _configuration["RaygunSettings:ApiKey"];
+                var rc = new RaygunClient(key).SendInBackground(e);
+            }
+
+            return Json("OK");
+        }
+
 
         public IActionResult SuburbList()
         {
@@ -380,6 +501,18 @@ namespace DespatchWeb.Controllers
         public IActionResult UndeliverableList()
         {
             var data = _jobRepo.UndeliverableLocations();
+            return Json(data);
+        }
+
+        public IActionResult InternalStatusList()
+        {
+            var data = _jobRepo.InternalStatusList();
+            return Json(data);
+        }
+
+        public IActionResult EventTypeList()
+        {
+            var data = _jobRepo.EventTypeList();
             return Json(data);
         }
 

@@ -15,6 +15,9 @@
             <div ng-switch-when="date">
                <input type="date" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe" />
             </div>
+            <div ng-switch-when="datetime">
+               <input type="datetime-local" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe" />
+            </div>
             <div ng-switch-when="checkbox" style="background-color:lightgray">
                 <input type="checkbox" id="gather-{{field.name}}" name="{{field.name}}" ng-model="field.value" class="form-control" style="width:20px;height:20px;background-color:lightgray;font-size:21px;display:inline-block;">
                 <label for="{{field.name}}">{{field.label}}</label>

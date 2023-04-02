@@ -253,6 +253,11 @@ angular
                             return response.data;
                         });
                     },
+                    getInternalStatusList: function () {
+                        return $http.get("job/InternalStatusList").then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getTruckItemsSummary: function (jobId, truckWeightLimit) {
                         return $http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit).then(function (response) {
                             return response.data;

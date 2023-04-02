@@ -130,7 +130,6 @@ namespace DespatchWeb.EntityClasses
         public decimal? PickupRawAmount { get; set; }
         public decimal? DropoffRawAmount { get; set; }
         public decimal? NwrawAmount { get; set; }
-        public bool IsBulkInsert { get; set; }
         public int? TrackingMethod { get; set; }
         public string TrackingMobile { get; set; }
         public string TrackingEmail { get; set; }

@@ -112,6 +112,10 @@
                     self.pickSuburbs = data;
                 });
 
+                DispatchData.getInternalStatusList().then(function(data) {
+                    self.pickInternalStatus = data;
+                });
+
 
                 self.setGather = function(g) {
                     gather = g;
@@ -317,6 +321,12 @@
                         return "";
                     }
                 };
+
+                self.getInternalStatus = function(is) {
+                    var selected = self.pickInternalStatus.find(({ id }) => id === is);
+                    return selected !== undefined ? selected.text : "";
+                }
+
                 self.hasDGDocs = function(job) {
                     if (job.dgClass) {
                         return ((job.dgDocumentation || 0) === 1) || ((job.dgDocumentation || false) === true)
@@ -515,6 +525,10 @@
                                 job.speedID = gather.form.fields[0].value;
                                 job.speed = $("#gather-SpeedID").find(':selected').text();
                                 rerate = true;
+                            }
+                            if (fieldName === "InternalStatusID") {
+                                callData.value = gather.form.fields[0].value;
+                                job.internalStatusID = gather.form.fields[0].value;
                             }
                             if (fieldName === "NotifiedJobTypeID") {
                                 callData.value = gather.form.fields[0].value;
@@ -1066,6 +1080,20 @@
                     });
                 };
 
+            self.repriceClick = function (job) {
+                return DispatchData
+                    .updateJobDetail(job.id,
+                        "Reprice",
+                        job.reprice,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+            };
+
 
             self.preBookReturnClick = function(job) {
                 return DispatchData
@@ -1200,6 +1228,21 @@
                         };
 
                         $("#gather-SpeedID").select2(speedOptions);
+
+                    },
+                    200);
+            };
+
+            self.internalStatusClick = function(job) {
+                this.editDetailField(job, 'InternalStatusID', 'Job FollowUp', '', job.id, 'select2');
+                setTimeout(function() {
+                        var statusOptions = {
+                            minimumInputLength: 1,
+                            data: self.pickInternalStatus,
+                            placeholder: "Start typing to enter new status..."
+                        };
+
+                        $("#gather-InternalStatusID").select2(statusOptions);
 
                     },
                     200);

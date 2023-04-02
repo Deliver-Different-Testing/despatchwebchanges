@@ -151,5 +151,8 @@ namespace DespatchWeb.EntityClasses
         public string Barcode { get; set; }
         public int? StorageState { get; set; }
         public int? DeliveryState { get; set; }
+        public int? InternalStatus { get; set; }
+        public DateTime? FollowupTime { get; set; }
+        public bool? Reprice { get; set; }
     }
 }

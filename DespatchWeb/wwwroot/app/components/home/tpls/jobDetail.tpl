@@ -90,6 +90,14 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Tracing Email</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.trackingEmail}}</div>
 						</div>
+						<div class="field"  ng-click="!currentJob.locked && jdSvc.internalStatusClick(currentJob)">
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Job FollowUp</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{jdSvc.getInternalStatus(currentJob.internalStatusID)}}</div>
+						</div>
+						<div class="field" ng-click="!currentJob.locked && !currentJob.internalStatusID ==1 && !currentJob.internalStatusID ==4 && jdSvc.editDetailField(currentJob, 'FollowupTime','FollowUp Time',currentJob.followupTime,currentJob.id,'datetime')">
+							<label ng-class="currentJob.locked || currentJob.internalStatusID ===1 || currentJob.internalStatusID ===4 ? 'disabled' : ''">FollowUp Time</label>
+							<div ng-class="currentJob.locked || currentJob.internalStatusID ===1 || currentJob.internalStatusID ===4  ? 'disabled' : ''" class="value">{{currentJob.followupTime | date : "dd/MM/yyyy h:mm a"}}</div>
+						</div>
 
 					</div>
 					<div class="col-md-4">
@@ -128,6 +136,10 @@
 						<div class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Courier</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.courier}}</div>
+						</div>
+						<div class="field" >
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Reprice</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.repriceClick(currentJob)" ng-model="currentJob.reprice"/></div>
 						</div>
 					</div>
 					<div class="col-md-4">

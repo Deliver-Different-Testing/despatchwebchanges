@@ -249,8 +249,8 @@ namespace DespatchWeb.EntityClasses
         public decimal? TruckCitySurchargeRate { get; set; }
         public decimal Discount { get; set; }
         public bool NoUtpickUp { get; set; }
-        public string NzPostSiteCode { get; set; }
         public int? MaxJobsPerRun { get; set; }
+        public string NzPostSiteCode { get; set; }
         public string JobPrefix { get; set; }
         public decimal? AddonPercentage { get; set; }
         public string XeroId { get; set; }

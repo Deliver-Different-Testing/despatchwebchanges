@@ -31,6 +31,8 @@
       "wwwroot/app/jobDetailService.js",
       "wwwroot/app/components/home/homeService.js",
       "wwwroot/app/components/home/homeControl.js",
+      "wwwroot/app/components/Nationwide/nationwideService.js",
+      "wwwroot/app/components/Nationwide/nationwideControl.js",
       "wwwroot/app/components/CS/csService.js",
       "wwwroot/app/components/CS/csControl.js",
       "wwwroot/app/components/prebooks/prebookService.js",

@@ -47,6 +47,13 @@ angular
                     url: "/",
                     templateUrl: "app/components/home/homeView.html?v=1.33",
                     controller: "HomeControl"
+				})
+			.state('nw',
+                {
+                    url: '/Nationwide',
+                    templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.1',
+                    controller: 'NationwideControl',
+                    reloadOnSearch: false
                 })
             .state('cs',
                 {

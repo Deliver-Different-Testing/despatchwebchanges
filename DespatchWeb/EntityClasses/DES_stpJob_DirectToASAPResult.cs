@@ -206,7 +206,6 @@ namespace DespatchWeb.EntityClasses
         public decimal? NWRawAmount { get; set; }
         public int? FDCourierID { get; set; }
         public bool DesCheck { get; set; }
-        public bool IsBulkInsert { get; set; }
         public bool JobTrackingNotificationHasBeenSent { get; set; }
         public DateTime? WhenJobTrackingNotificationSent { get; set; }
         public int? TrackingMethod { get; set; }

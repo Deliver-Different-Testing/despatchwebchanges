@@ -50,11 +50,19 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucEventType]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJobBooking]",
          "ObjectType": 0
       },
       {
          "Name": "[dbo].[tucJobBookingItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobInternalStatus]",
          "ObjectType": 0
       },
       {

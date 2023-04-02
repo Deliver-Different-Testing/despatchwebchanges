@@ -279,7 +279,10 @@ namespace DespatchWeb.Repositories
                     Locked = (j.Locked ?? 0) == 1,
                     Invoiced = (j.InvoiceNo.HasValue && j.InvoiceNo.Value > 0),
                     PreBook = false,
-                    Pedal = j.Cbd
+                    Pedal = j.Cbd,
+                    InternalStatusID = j.InternalStatus,
+                    FollowupTime = j.FollowupTime,
+                    Reprice = j.Reprice
 
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
@@ -521,7 +524,10 @@ namespace DespatchWeb.Repositories
                      Attention = j.UcjbAttention,
                      Pedal = j.UcjbCbd,
                      Locked = j.Locked ?? false,
-                     Invoiced = false
+                     Invoiced = false,
+                     InternalStatusID = j.InternalStatus,
+                     Reprice = j.Reprice,
+                     FollowupTime = j.FollowupTime
 
                  }).ToList();
             return list;
@@ -771,8 +777,11 @@ namespace DespatchWeb.Repositories
                             Attention = j.UcjbAttention,
                             Pedal = j.UcjbCbd,
                             Locked = j.Locked ?? false,
-                            Invoiced = false
-                            
+                            Invoiced = false,
+                            InternalStatusID = j.InternalStatus,
+                            FollowupTime = j.FollowupTime,
+                            Reprice = j.Reprice
+
 
 
                         }).ToList();
@@ -781,7 +790,325 @@ namespace DespatchWeb.Repositories
 
         }
 
-        
+        /// <summary>
+        /// Main query for Nationwide job window panes. New =1, POD=2, BookDel=3, Reprice=4
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="area"></param>
+        /// <param name="order"></param>
+        /// <param name="ascending"></param>
+        /// <param name="isInternal"></param>
+        /// <param name="clientIds"></param>
+        /// <param name="windowPane"></param>
+        /// <returns></returns>
+        public List<JobViewModel> NationwideJobList(string status, string area, string order, string ascending, bool isInternal, string clientIds, int windowPane)
+        {
+            var orderToUse = "";
+            if (isInternal == false && string.IsNullOrEmpty(clientIds))
+            {
+                return new List<JobViewModel>();
+            }
+
+            //ToDo verify clientids
+
+            switch (order)
+            {
+                case "courier":
+                    orderToUse = $"Convert(int, CourierCode) {ascending}, ucjbtime {ascending}";
+                    break;
+                case "remain":
+                    orderToUse = $"FollowupTime {ascending},  ucjbDispTime {ascending}, Remaintime {ascending}, ucjbtime {ascending}";
+                    break;
+                case "to":
+                    orderToUse = $"SuburbTo {ascending}, ucjbTime {ascending}, SuburbFrom {ascending}, Convert(int, CourierCode) {ascending}";
+                    break;
+                case "from":
+                    orderToUse = $"SuburbFrom {ascending}, SuburbTo {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}";
+                    break;
+                case "client":
+                    orderToUse = $"ucclCode {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}";
+                    break;
+                case "jobNo":
+                    orderToUse = $"ucjbNumber {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}";
+                    break;
+                case "status":
+                    orderToUse = $"ucjbStatus {ascending}";
+                    break;
+                case "speed":
+                    orderToUse = $"SpeedShortName {ascending}";
+                    break;
+                case "notify":
+                    orderToUse = $"NotifiedSpeed {ascending}";
+                    break;
+                case "lp":
+                    orderToUse = $"ucjbLatePick {ascending}";
+                    break;
+                case "ld":
+                    orderToUse = $"ucjbLateDel {ascending}";
+                    break;
+                case "time":
+                    orderToUse = $"ucjbTime {ascending}, Convert(int,CourierCode) {ascending}";
+                    break;
+                case "pod":
+                    orderToUse = $"ucjbPODName {ascending}, Convert(int, CourierCode) {ascending}";
+                    break;
+                default:
+                    orderToUse = $"FollowupTime {ascending}, ucjbDispTime {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}";
+                    break;
+            }
+
+
+            var whereToUse = "";
+            List<int> selectedViews = null;
+            switch (area)
+            {
+                case "mainfu":
+                    selectedViews = new List<int>() { 11, 15, 3, 4, 18, 19 };
+                    break;
+                case "nwakl":
+                    selectedViews = new List<int>() { 17 };
+                    break;
+                case "baggage":
+                    selectedViews = new List<int>() { 20 };
+                    break;
+
+            }
+
+            if (isInternal)
+            {
+                var filter =
+                    _context.TblDespatchViews.Where(v =>
+                            (v.ShowOnJobFollowup ?? false) == true &&
+                            (selectedViews.Contains(v.DespatchViewId)))
+                        .ToList();
+
+                foreach (var w in filter)
+                {
+                    if (!string.IsNullOrEmpty(whereToUse))
+                    {
+                        whereToUse += " OR ";
+                    }
+
+                    whereToUse += $" ({w.WhereCondition}) ";
+                }
+
+                whereToUse = $"({whereToUse})";
+            }
+
+
+
+            if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status))
+            {
+                whereToUse += " AND ";
+            }
+
+            switch (status)
+            {
+                case "all":
+                    whereToUse += windowPane == 4 ? " Reprice = 1" : " ucjbJobDone = 0";
+                    break;
+                case "active":
+                    switch (windowPane)
+                    {
+                        case 1:
+                            whereToUse += " ucjbJobDone = 0";
+                            break;
+                        case 2:
+                            whereToUse += " ucjbJobDone = 0 AND FollowupTime < GETDATE()";
+                            break;
+                        case 3:
+                            whereToUse += " ucjbJobDone = 0 AND FollowupTime < GETDATE()";
+                            break;
+                        case 4:
+                            whereToUse += " Reprice = 1";
+                            break;
+                    }
+                    
+                    break;
+                case "done":
+                    whereToUse += windowPane == 4 ? " Reprice = 1" : " ucjbJobDone = 1";
+                    break;
+                
+                case "default":
+                    break;
+            }
+
+            if (!string.IsNullOrEmpty(whereToUse))
+            {
+                whereToUse += " AND ";
+            }
+
+            switch (windowPane)
+            {
+                case 1:
+                    whereToUse += " (InternalStatus = 1 OR (InternalStatus is Null AND ucjbStatus <> 9))";
+                    break;
+                case 2:
+                    whereToUse += " (InternalStatus = 3 OR ucjbStatus = 9)";
+                    break;
+                case 3:
+                    whereToUse += " (InternalStatus = 2)";
+                    break;
+                case 4:
+                    whereToUse += " (ucjbStatus = 6)";
+                    break;
+
+
+            }
+
+            
+
+            if (isInternal == false && !string.IsNullOrEmpty(clientIds))
+            {
+
+
+                if (!string.IsNullOrEmpty(whereToUse))
+                {
+                    whereToUse += " AND ";
+                }
+
+                whereToUse += $" ucjbClientID in ({clientIds})";
+            }
+            var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
+
+            var jobs = _context.DeswebQryDespatches.FromSqlRaw(s).ToList();
+            var pallets = _context.TucJobItems.ToList();
+
+
+            var list = (from j in jobs
+                        select new JobViewModel()
+                        {
+                            ID = j.UcjbId,
+                            Time = j.UcjbTime,
+                            Direct = j.Direct,
+                            Van = j.UcjbVan,
+                            Truck = j.Truck,
+                            Return = j.UcjbReturn,
+                            PickupFrom = j.UcjbPickUpFrom,
+                            SaturdayDelivery = j.SaturdayDelivery,
+                            JobNo = j.UcjbNumber,
+                            Speed = j.SpeedShortName,
+                            SpeedID = j.UcjbSpeed,
+                            Notify = j.NotifiedSpeed,
+                            AcceptedJobTypeID = j.AcceptedJobTypeId,
+                            NotifiedJobTypeID = j.NotifiedJobTypeId,
+                            Vehicle = new Vehicle()
+                            {
+                                id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                                label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                            },
+                            Client = j.UcclCode,
+                            ClientID = j.UcjbClientId,
+                            ClientName = j.ClientName,
+                            JobType = (int)(j.UcjbType ?? 0),
+                            From = j.SuburbFrom,
+                            FromContactName = j.PickupFromContact,
+                            FromContactNumber = j.PickupFromPhone,
+                            FromSuburbID = j.FromSuburbId,
+                            fromSuburbName = j.FromSuburbName,
+                            FromAddress = j.UcjbFromAddr,
+                            To = j.SuburbTo,
+                            ToSuburbID = j.ToSuburbId,
+                            ToSuburbName = j.ToSuburbName,
+                            ToAddress = j.UcjbToAddr,
+                            Courier = j.CourierCode,
+                            Remain = j.RemainTime,
+                            StatusID = j.UcjbStatus,
+                            Status = j.UcjsCode,
+                            LP = j.UcjbLatePick,
+                            LD = j.UcjbLateDel,
+                            ContactName = j.UcjbContact,
+                            Phone = j.DeliverToPhone,
+                            SpeedAccepted = j.OriginalSpeed,
+                            Size = new Vehicle()
+                            {
+                                id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                                label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                            },
+                            Weight = j.UcjbWeight,
+                            Items = j.UcjbQty,
+                            RefA = j.UcjbClientRefa,
+                            RefB = j.UcjbClientRefb,
+                            OurRef = j.UcjbOurRef,
+                            SigNotRequired = j.SigNotRequired,
+                            Charge = $"{j.UcjbAmount:C}",
+                            Booked = DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
+                            Date = j.UcjbDate.ToString("dd/MM/yyyy"),
+                            DispatchTime = j.UcjbDispTime,
+                            PUTime = j.Putime,
+                            ClientNotes = j.ClientNotes,
+                            InternalNotes = j.JobNotes,
+                            ChildNotes = j.ChildNotes,
+                            PickUpLatitude = j.PickUpLatitude,
+                            PickUpLongitude = j.PickUpLongitude,
+                            DeliveryLatitude = j.DeliveryLatitude,
+                            DeliveryLongitude = j.DeliveryLongitude,
+                            PalletInfo = (
+                                from pa in pallets.Where(p => p.JobId == j.UcjbId)
+                                select new PalletInfo()
+                                {
+                                    ID = pa.JobId,
+                                    Quantity = pa.Items,
+                                    ItemID = pa.ItemId,
+                                    Weight = pa.Weight,
+                                    Length = pa.Length,
+                                    Depth = pa.Depth,
+                                    Height = pa.Height,
+                                    PU = pa.Pu,
+                                    DO = pa.Do,
+                                    DGClass = pa.Dgclass,
+                                    Notes = pa.Notes
+
+                                }).ToList(),
+                            CourierData = new CourierData()
+                            {
+                                Courier = string.IsNullOrEmpty(j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
+                                CourierID = j.UcjbCourierId
+                            },
+                            AllowDispatch = j.AllowDespatch,
+                            AllowSplit = j.AllowSplit,
+                            DGClass = j.Dgclass,
+                            DGDocumentation = j.Dgdocument,
+                            DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
+                            TruckWeightLimit = j.TruckWeightLimit,
+                            TruckStartTime = j.TruckStartTime,
+                            TruckHours = j.TruckHours,
+                            PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
+                            PickupTime = j.PickupTime,
+                            DeliveryTime = j.DeliveryTime,
+                            AlertLatePickup = j.AlertLatePickUp,
+                            AlertLateDelivery = j.AlertLateDelivery,
+                            Minutes = j.Minutes,
+                            DeliverToContact = j.DeliverToContact,
+                            PODPhoto = j.DeliveryPhoto,
+                            PODName = j.UcjbPodname,
+                            CompletedTime = j.UcjbComplTime.HasValue ? DateTime.Parse(j.UcjbComplTime.Value.ToString("yyyy-MM-dd") + " " + j.UcjbComplTime.Value.ToString("HH:mm")) : j.UcjbComplTime,
+                            Done = j.UcjbJobDone,
+                            TrackingMethod = j.TrackingMethod,
+                            TrackingMobile = j.TrackingMobile,
+                            TrackingEmail = j.TrackingEmail,
+                            UDStatus = j.
+                            Udstatus,
+                            RatedManually = j.RatedManually,
+                            PreBook = false,
+                            Attention = j.UcjbAttention,
+                            Pedal = j.UcjbCbd,
+                            Locked = j.Locked ?? false,
+                            Invoiced = false,
+                            InternalStatusID = j.InternalStatus,
+                            Reprice = j.Reprice,
+                            FollowupTime = j.FollowupTime
+
+
+
+
+                        }).ToList();
+
+            return list;
+
+        }
+
+
         public async Task<List<SupportViewModel>> SupportEvents(string channel)
         {
             var whereToUse = "";
@@ -1078,6 +1405,24 @@ namespace DespatchWeb.Repositories
                 select u).Select(x => new UndeliverableLocation() { ID = x.UndeliverableLocationId, Text = x.Name, JobStatusId =x.JobTypeId });
             return data.ToList();
         }
+
+        public List<InternalStatus> InternalStatusList()
+        {
+            var data = (from u in _context.TucJobInternalStatuses
+                orderby u.Tcis
+                select u).Select(x => new InternalStatus() { ID = x.Tcis, Text = x.TcisName, DefaultSchedule = x.DefaultSchedule, DefaultMins = x.DefaultMinutes});
+            return data.ToList();
+        }
+
+        public List<Lookup> EventTypeList()
+        {
+            var data = (from u in _context.TucEventTypes
+                        where u.UcetGroup == "CS" || u.UcetGroup == "GE"
+                        orderby u.UcetName
+                        select u).Select(x => new Lookup() { ID = x.UcetId, Text = x.UcetName});
+            return data.ToList();
+        }
+
 
         public async Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
                                                 int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)

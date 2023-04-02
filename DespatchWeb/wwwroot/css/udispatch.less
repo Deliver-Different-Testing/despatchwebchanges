@@ -5,9 +5,10 @@
 .btn-primary {
     background-color: @yellow;
     border-color: darken(@yellow, 10%);
-    color:#000;
+    color: #000;
+
     &:hover {
-        color:#000;
+        color: #000;
         background-color: darken(@yellow, 10%);
         border-color: darken(@yellow, 18%);
     }
@@ -15,7 +16,7 @@
 
 
 body {
-    overflow:hidden;
+    overflow: hidden;
 }
 
 a.pickadate-next {
@@ -35,8 +36,9 @@ a.pickadate-prev {
 #box-clearLists {
     .box-content {
         overflow: hidden !important;
-    } 
+    }
 }
+
 #clearLists {
     .col-xs-3 {
         padding: 4px;
@@ -284,66 +286,72 @@ a.pickadate-prev {
 }
 
 .no-data {
-    top:0;
-    left:0;
-    bottom:0;
-    right:0;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
     background-color: #e8e8e8;
     text-align: center;
     position: absolute;
+
     .text {
         position: absolute;
-        top:50%;
-        width:100%;
-        transform:translateY(-50%);
+        top: 50%;
+        width: 100%;
+        transform: translateY(-50%);
+
         .fa {
         }
     }
 }
+
 .loading {
-    display:none;
-    z-index:400;
-    top:0;
-    left:0;
-    bottom:0;
-    right:0;
+    display: none;
+    z-index: 400;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
     background-color: #FFF;
     text-align: center;
     position: absolute;
+
     .text {
         position: absolute;
-        top:50%;
-        left:50%;
+        top: 50%;
+        left: 50%;
         margin-left: -28px;
         margin-top: -28px;
+
         .fa {
         }
     }
 }
 
 .noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome and Opera */
 }
 
-#draggingItems { 
-    border: 3px dotted #CCC; 
-    width:100px; 
-    height:50px; 
-    background-color: #fbfbfb; 
-    position:absolute; 
-    z-index:9999;
+#draggingItems {
+    border: 3px dotted #CCC;
+    width: 100px;
+    height: 50px;
+    background-color: #fbfbfb;
+    position: absolute;
+    z-index: 9999;
     padding: 15px;
     text-align: center;
     font-size: 10px;
-    color:#888;
-    opacity:0.8;
+    color: #888;
+    opacity: 0.8;
 }
+
 .eventForm {
     position: absolute;
     top: 0;
@@ -356,6 +364,7 @@ a.pickadate-prev {
     padding: 20px;
     display: none;
     text-align: center;
+
     .event-box {
         background: #FFF;
         width: 900px;
@@ -367,6 +376,7 @@ a.pickadate-prev {
         padding: 40px;
         border: 7px solid #666;
         border-radius: 16PX;
+
         .event-title {
             text-transform: uppercase;
             font-weight: 700;
@@ -484,6 +494,7 @@ a.pickadate-prev {
         height: 400px;
     }
 }
+
 .gatherFormMulti {
     position: absolute;
     top: 0;
@@ -495,6 +506,7 @@ a.pickadate-prev {
     border: 1px solid #CCC;
     padding: 20px;
     display: none;
+
     .gather-box {
         background: #FFF;
         width: 900px;
@@ -506,6 +518,7 @@ a.pickadate-prev {
         padding: 40px;
         border: 7px solid #666;
         border-radius: 16PX;
+
         .gather-title {
             text-transform: uppercase;
             font-weight: 700;
@@ -514,6 +527,7 @@ a.pickadate-prev {
         }
     }
 }
+
 .gatherForm {
     position: absolute;
     top: 0;
@@ -535,7 +549,7 @@ a.pickadate-prev {
         position: relative;
         left: 50%;
         top: 50%;
-        background-color:grey;
+        background-color: grey;
 
         .gatherField {
             width: 100%;
@@ -596,6 +610,7 @@ a.pickadate-prev {
         }
     }
 }
+
 .columns {
     min-height: 50px;
     flex: 1;
@@ -783,7 +798,7 @@ a.pickadate-prev {
 
 .rg-bottom {
     background: #FFF !important;
-    height:16px;
+    height: 16px;
     margin-bottom: -16px;
     border-top: 1px solid #5d5d5d;
 }
@@ -796,11 +811,11 @@ a.pickadate-prev {
 @s-red: #ffb3ba;
 @s-grey: #DDD;
 @s-purple: #f1cbff;
-.table-striped > tbody > tr:nth-child(2n+1) {
 
+.table-striped > tbody > tr:nth-child(2n+1) {
     background-color: #d9d9d9;
-   
 }
+
 table.table {
     margin-top: 28px;
 
@@ -889,21 +904,25 @@ table.table {
         }
     }
 }
+
 .table-headings {
     position: absolute;
     top: 0px;
     z-index: 15;
+
     thead {
         display: block;
         background: #FFF;
-        border-bottom:1px solid #CCC;
+        border-bottom: 1px solid #CCC;
     }
+
     tr {
         th {
-            padding:2px;
+            padding: 2px;
             white-space: nowrap;
-            cursor:pointer;
+            cursor: pointer;
             position: relative;
+
             .fa {
                 position: absolute;
                 left: -2px;
@@ -911,10 +930,11 @@ table.table {
         }
     }
 }
+
 .table > tbody > tr > td, .table > tbody > tr > th, .table > thead > tr > td, .table > thead > tr > th {
     padding: 1px;
-    min-width:15px;
-    }
+    min-width: 15px;
+}
 
 #jobList {
     th {
@@ -924,6 +944,22 @@ table.table {
 
     tr {
         border: 1px solid rgba(0,0,0,0.5);
+
+       
+
+
+        &.O {
+            background-color: @s-orange!important;
+        }
+
+        &.B {
+            background-color: @s-blue!important;
+        }
+
+        &.G {
+            background-color: @s-green!important;
+        }
+    
     }
 
     td {
@@ -947,45 +983,177 @@ table.table {
     }
 }
 
-    #map_canvas_container {
-        position: relative;
+#jobListPOD {
+    th {
+        white-space: nowrap;
+        cursor: pointer;
     }
 
-    #map_canvas {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
+    tr {
+        border: 1px solid rgba(0,0,0,0.5);
+
+
+        &.O {
+            background-color: @s-orange!important;
+        }
+
+        &.B {
+            background-color: @s-blue!important;
+        }
+
+        &.G {
+            background-color: @s-green!important;
+        }
+        
     }
 
-    .noselect {
-        -webkit-touch-callout: none; /* iOS Safari */
-        -webkit-user-select: none; /* Safari */
-        -khtml-user-select: none; /* Konqueror HTML */
-        -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-        user-select: none; /* Non-prefixed version, currently
+    td {
+        border: 1px solid rgba(0,0,0,0.5);
+    }
+
+    .doing {
+        background-color: #d7f3ce !important;
+    }
+
+    input.dispatchField {
+        width: 29px;
+        text-align: center;
+        height: 15px;
+    }
+
+    input.lateCallField {
+        width: 21px;
+        text-align: center;
+        height: 15px;
+    }
+}
+
+#jobListDelivery {
+    th {
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+    tr {
+        border: 1px solid rgba(0,0,0,0.5);
+
+        &.O {
+            background-color: @s-orange !important;
+        }
+
+        &.B {
+            background-color: @s-blue !important;
+        }
+
+        &.G {
+            background-color: @s-green !important;
+        }
+    }
+
+    td {
+        border: 1px solid rgba(0,0,0,0.5);
+    }
+
+    .doing {
+        background-color: #d7f3ce !important;
+    }
+
+    input.dispatchField {
+        width: 29px;
+        text-align: center;
+        height: 15px;
+    }
+
+    input.lateCallField {
+        width: 21px;
+        text-align: center;
+        height: 15px;
+    }
+}
+
+#jobListReprice {
+    th {
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+    tr {
+        border: 1px solid rgba(0,0,0,0.5);
+
+
+        &.O {
+            background-color: @s-orange !important;
+        }
+
+        &.B {
+            background-color: @s-blue !important;
+        }
+
+        &.G {
+            background-color: @s-green !important;
+        }
+    }
+
+    td {
+        border: 1px solid rgba(0,0,0,0.5);
+    }
+
+    .doing {
+        background-color: #d7f3ce !important;
+    }
+
+    input.dispatchField {
+        width: 29px;
+        text-align: center;
+        height: 15px;
+    }
+
+    input.lateCallField {
+        width: 21px;
+        text-align: center;
+        height: 15px;
+    }
+}
+
+#map_canvas_container {
+    position: relative;
+}
+
+#map_canvas {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome and Opera */
-    }
+}
 
-    .overlay-map-fix {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        /* background: #000; */
-        left: 0;
-        right: 0;
-        display: none;
-    }
+.overlay-map-fix {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    /* background: #000; */
+    left: 0;
+    right: 0;
+    display: none;
+}
 
 
-    #lateCalls {
-        //  table-layout: fixed;
-        //   tbody {
-        //min-width:500px;
-        //   }
-    }
+#lateCalls {
+    //  table-layout: fixed;
+    //   tbody {
+    //min-width:500px;
+    //   }
+}
 
 #supports {
     //   table-layout: fixed;
@@ -1164,15 +1332,15 @@ a.uline {
     }
 }
 
-    .row-no-padding {
-        margin-left: 0;
-        margin-right: 0;
+.row-no-padding {
+    margin-left: 0;
+    margin-right: 0;
 
-        [class*="col-"] {
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
+    [class*="col-"] {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
     }
+}
 
 span.courier {
     font-size: 10px;
@@ -1215,10 +1383,12 @@ span.courier {
     color: #000000;
     background-color: #00FF00;
 }
+
 span.courierCream {
     color: #000000;
     background-color: #FFFDD0;
 }
+
 span.courierRed {
     color: #FFFFFF;
     background-color: #FF0000;
