@@ -154,5 +154,6 @@ namespace DespatchWeb.EntityClasses
         public int? InternalStatus { get; set; }
         public DateTime? FollowupTime { get; set; }
         public bool? Reprice { get; set; }
+        public bool? VanOk { get; set; }
     }
 }

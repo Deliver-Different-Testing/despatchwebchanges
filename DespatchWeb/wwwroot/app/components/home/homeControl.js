@@ -17,6 +17,7 @@ angular
     }])
     .controller("HomeControl", ["$scope", 'JobDetailService', "DispatchData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "$ngConfirm", function ($scope, jdSvc, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm) {
         $scope.isInternal = (ClientInternal === "True");
+        $scope.name = "Home";
         $scope.jdSvc = jdSvc;
         var gpsForm = {
             submit: function () {
@@ -277,7 +278,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.18",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.21",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -1550,38 +1551,37 @@ angular
         //////////////////////////////
         //  SPLIT JOB //
         /////////////////////////////
-        $scope.splitJob = function () {
-            var jid;
-            jid = $(".activeTable .active").first().data("jobid");
-            var j = $scope.jobList.find(jo => jo.id === jid);
-            if (!j.allowSplit) {
-                alert("Can not split " + j.JobNo + ".");
+        $scope.splitJob = function (job) {
+            
+            if (!job.allowSplit) {
+                alert("Can not split " + job.JobNo + ".");
                 return;
             }
 
-            DispatchData.splitJob(j.id, FirstName).then(function (response) {
-                $scope.getData().then(function () {
-                    var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
-                    $scope.selectJob(refreshedJob);
-                    $timeout(function () {
-                        $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+            $ngConfirm({
+                title: 'Split Job?',
+                content: 'Are you sure you wish to split this job?',
+                scope: $scope,
+                buttons: {
 
-                        var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                        var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
-
-
-                        try {
-                            goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                            $parentDiv.scrollTop(goTop);
-
-                        } catch (e) {
-                            //ignore
+                    Yes: {
+                        btnClass: 'btn-green',
+                        action: function (scope, button) {
+                            DispatchData.splitJob(job.id, FirstName).then(function (response) {
+                                $scope.setSplitJobMeetingPoint();
+                            });
                         }
-                    }, 1000);
+                    },
+                    No: {
+                        btnClass: 'btn-red',
+                        action: function (scope, button) {
 
+                        }
+                    }
 
-                });
+                }
             });
+            
 
 
 
@@ -1753,6 +1753,10 @@ angular
             DispatchData.truckCourierStatus($scope.currentCourier.courierID).then(function (result) {
                 $scope.truckCourierStatus = result.data;
             });
+        };
+
+        $scope.sendSMS = function (courierId, message) {
+            return DispatchData.sendSMS(courierId, ContactID, FirstName, message);
         };
 
         $scope.selectMapCourier = function (courier) {
@@ -2263,7 +2267,7 @@ angular
 
                     break;
                 default:
-                    console.log("you have a strange mouse!"); u
+                    console.log("you have a strange mouse!");
                     break;
 
             }
@@ -2277,7 +2281,7 @@ angular
                         text: "Void Job",
                         click: function ($itemScope, $event, modelValue, text, $li) {
                             $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
-                        }
+                        } 
                     },
 
                     {
@@ -2285,6 +2289,16 @@ angular
                         click: function ($itemScope, $event, modelValue, text, $li) {
                             $scope.otherEventForm($scope.currentJob.jobNo);
                         }
+                    },
+
+                    {
+                        text: "Split Job",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.splitJob($scope.currentJob);
+                        },
+                        enabled: function ($itemScope, $event, modelValue, text, $li) {
+                            return $itemScope.job.allowSplit;
+                        },
                     }
                 ];
             return fullMenu;
@@ -3175,12 +3189,20 @@ angular
                         "toAddress": job.toAddress,
                         "jobID": $scope.currentJob.id
                     };
-                    //TODO
-                    DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long).then(function (response) {
-                        DispatchData.reRateJobData(callData.jobID).then(function (response) {
 
+                    $scope.gpsForm = gpsForm;
+                    $scope.jdSvc.setGPSForm($scope.gpsForm);
+
+                    return DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long).then(function (response) {
+                        return DispatchData.reRateSplitJob(callData.jobID).then(function (response) {
+                            return DispatchData.finishSplitJobProcess(callData.jobID, FirstName).then(function (response) {
+                                $(".gpsForm").hide(0);
+                                $scope.getData();
+                            });
                         });
                     });
+                    
+
                     //Set Toaddress/tosuburb/togps of Child Job 1
                     //Set Fromaddress/Fromsuburb/Fromgps of Child Job 2
                     // Rate Split Jobs Parent STP
@@ -3192,6 +3214,8 @@ angular
 
                 },
                 cancel: function () {
+                    $scope.gpsForm = gpsForm;
+                    $scope.jdSvc.setGPSForm($scope.gpsForm);
                     $(".gpsForm").hide(0);
                 },
                 placeChanged: function (place) {
@@ -3249,10 +3273,12 @@ angular
                 }
             };
 
+            //$scope.gpsForm = gpsForm;
+            $scope.jdSvc.setGPSForm($scope.gpsForm);
 
 
             $(".gpsForm").show(0, function () {
-                $scope.$apply();
+                //$scope.$apply();
                 $scope.onMapReady();
                 //var auckland = { lat: -36.8804466, lng: 174.6117981 };
                 //$scope.heremaps.setCenter(auckland);

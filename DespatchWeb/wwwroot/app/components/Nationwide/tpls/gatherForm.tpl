@@ -9,6 +9,9 @@
             <div ng-switch-when="textarea">
               <textarea placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe"></textarea>
             </div>
+            <div ng-switch-when="sms">
+              <textarea maxlength="160" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe"></textarea>
+            </div>
             <div ng-switch-when="time">
                <input type="time" placeholder="{{field.label}}" name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value" class="form-control focusMe" />
             </div>

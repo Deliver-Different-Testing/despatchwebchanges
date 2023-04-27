@@ -87,6 +87,9 @@
                                 <div class="btn-group" role="group" aria-label="Basic example">
                                     <button type="button" class="btn btn-sm btn-secondary" title="Lock Job" ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)" ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
                                 </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="UnSplit Job" ng-show="currentJob && (!currentJob.locked && currentJob.jobRelationshipTypeID ==8)" ng-click="unSplitJob()"><i class="fa fa-recycle"></i></button>
+                                </div>
                             </div>
 
                             <div class="box-details" ng-show="box.name == 'map'">

@@ -45,20 +45,20 @@ angular
             .state("home",
                 {
                     url: "/",
-                    templateUrl: "app/components/home/homeView.html?v=1.33",
+                    templateUrl: "app/components/home/homeView.html?v=1.37",
                     controller: "HomeControl"
 				})
 			.state('nw',
                 {
                     url: '/Nationwide',
-                    templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.1',
+                    templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.2',
                     controller: 'NationwideControl',
                     reloadOnSearch: false
                 })
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.8',
+                    templateUrl: 'app/components/CS/csView.html?v=1.9',
 					controller: 'CSControl',
                     reloadOnSearch: false
 				})

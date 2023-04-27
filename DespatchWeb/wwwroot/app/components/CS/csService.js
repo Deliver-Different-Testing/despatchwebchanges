@@ -35,6 +35,11 @@ angular
                     return response.data;
                 });
             },
+            unSplitJob: function (jobId) {
+                return $http.post('job/UnSplitJob?jobId=' + jobId).then(function (response) {
+                    return response.data;
+                });
+            },
             generateDirectLink: function (eventId, clientId) {
                 return $http.get('/CS/GenerateDirectLink?eventId=' + eventId + '&clientId=' + clientId).then(function (response) {
                     return response.data;

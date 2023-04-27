@@ -122,6 +122,11 @@ angular
                             return response.data;
                         });
                     },
+                    sendSMS: function (courierId, staffId, despatcherName, message) {
+                        return $http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getJobs: function () {
                         return $http.get("app/components/home/api/jobsList.php").then(function (response) {
                             return response.data;

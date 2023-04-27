@@ -1,8 +1,8 @@
 ﻿angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData",
-            function(DispatchData) {
+        ["DispatchData", "$ngConfirm",
+            function (DispatchData, $ngConfirm) {
                 var self = this;
                 const options = {
                     "detail": {
@@ -988,6 +988,20 @@
                         });
             };
 
+            self.vanOkClick = function (job) {
+                return DispatchData
+                    .updateJobDetail(job.id,
+                        "VanOK",
+                        job.vanOK,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                        return response;
+                    });
+            };
+
 
             self.vanClick = function (job) {
                 return self.rateJob(job).then(function (rate) {
@@ -995,7 +1009,7 @@
                     return DispatchData
                         .updateJobDetail(job.id,
                             "Van",
-                            true,
+                            job.van,
                             Number(rate.replace(/[^0-9.-]+/g, "")),
                             FirstName,
                             ContactID,
@@ -1013,7 +1027,7 @@
                     return DispatchData
                         .updateJobDetail(job.id,
                             "Pedal",
-                            true,
+                            job.pedal,
                             Number(rate.replace(/[^0-9.-]+/g, "")),
                             FirstName,
                             ContactID,
@@ -1031,7 +1045,7 @@
                     return DispatchData
                         .updateJobDetail(job.id,
                             "Truck",
-                            true,
+                            job.truck,
                             Number(rate.replace(/[^0-9.-]+/g, "")),
                             FirstName,
                             ContactID,
@@ -1052,7 +1066,7 @@
                         return DispatchData
                             .updateJobDetail(job.id,
                                 "Direct",
-                                true,
+                                job.direct,
                                 Number(rate.replace(/[^0-9.-]+/g, "")),
                                 FirstName,
                                 ContactID,
@@ -1140,17 +1154,38 @@
                             return response;
                         });
 
-                };
+            };
 
-            self.doneClick = function (job) {
+            self.voidClick = function (job) {
                 return DispatchData
                     .updateJobDetail(job.id,
-                        "Done",
-                        job.done,
+                        "Void",
+                        job.void,
                         job.charge,
                         FirstName,
                         ContactID,
                         job.preBook).then(function (response) {
+                        self.selectJobDetail(job.id);
+                        return response;
+                    });
+
+            };
+            self.doneClick = function (job) {
+                if (!job.completedTime) {
+                    $ngConfirm("You must set completed time (POD Time) first");
+                    job.done = false;
+                    return false;
+                }
+                if (!job.podName) {
+                    $ngConfirm("You must set POD Name first");
+                    job.done = false;
+                    return false;
+                }
+                return DispatchData
+                    .updatePODDetail(job.jobNo,
+                        job.statusID,
+                        job.podName,
+                        job.completedTime).then(function (response) {
                             self.selectJobDetail(job.id);
                             return response;
                         });

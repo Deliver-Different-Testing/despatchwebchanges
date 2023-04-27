@@ -7,6 +7,7 @@ namespace DespatchWeb.Models
     {
 
         private string _label;
+        private string _text;
         public int CourierID { get; set; }
 
         [JsonPropertyName("id")]
@@ -22,6 +23,13 @@ namespace DespatchWeb.Models
         {
             get => $"{Code} {Name}";
             set => _label = value;
+        }
+
+        public string Text
+        {
+            get => $"{Code} {Name}";
+            set => _text = value;
+
         }
     }
 }

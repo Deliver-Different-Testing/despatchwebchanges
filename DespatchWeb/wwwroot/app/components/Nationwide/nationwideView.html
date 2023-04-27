@@ -80,7 +80,7 @@
 
                             <div class="box-details" ng-show="boxes[box.name].showDetailButtons" ng-if="currentJob">
                                 <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="ADD EVENT" ng-click="otherEventForm(currentJob.jobNo)"><i class="fa fa-calendar-plus-o"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="ADD EVENT" ng-click="createEvent()"><i class="fa fa-calendar-plus-o"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="CLOSE EVENT" ng-disabled="!currentSupport" ng-click="closeSupport(currentSupport);"><i class="fa fa-calendar-check-o"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job" ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)" ng-click="unlockJob()"><i class="fa fa-lock"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Lock Job" ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)" ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
@@ -153,7 +153,7 @@
 
 <div ng-include="'app/components/home/tpls/lateForm.tpl?v=1.1'"></div>
 
-<div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.13'"></div>
+<div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.14'"></div>
 
 <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
 
@@ -177,6 +177,56 @@
                     // do key down stuff here
                     if (e.keyCode == 82 && e.ctrlKey) {
                         //location.reload();
+                    }
+                    if (e.keyCode === 113) {
+                        var sc = angular.element(document.getElementById('box-jobDetail')).scope();
+                        
+                        sc.gather.form = {
+                            id: "smsCustomer",
+                            title: "Enter your Message (160 chars)",
+                            fields: [
+                                {
+                                    "name": "editMessage",
+                                    "label": "Message",
+                                    "type": "sms",
+                                    "value": ""
+                                },
+                                {
+                                    "name": "courier",
+                                    "label": "Courier",
+                                    "type": "select2"
+                                }
+                            ],
+                            onSubmit: function () {
+                                console.log(sc.gather.form.fields[1]);
+                                var c = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
+                                return sc.sendSMS(c.courierID, sc.gather.form.fields[0].value).then(function (data) {
+                                    sc.gather.cancel();
+                                    alert("Message Sent");
+                                });
+                                
+
+                            },
+                            submitValue: "Send Message"
+                        };
+
+                        sc.gather.showForm();
+
+                        
+                        setTimeout(function () {
+                            sc.$apply();
+
+                            var statusOptions = {
+                                minimumInputLength: 0,
+                                data: sc.pickCouriers,
+                                placeholder: "Start typing to choose courier..."
+                            };
+
+                            $(".gatherForm #gather-courier").select2(statusOptions);
+                            $(".gatherForm #gather-courier").select2('open');
+                    
+
+                        },200);
                     }
                 }
                 break;

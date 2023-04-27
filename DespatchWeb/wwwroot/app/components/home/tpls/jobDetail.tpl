@@ -141,6 +141,14 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Reprice</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.repriceClick(currentJob)" ng-model="currentJob.reprice"/></div>
 						</div>
+						<div class="field" ng-if="name=='POD'">
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Void</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.voidClick(currentJob)" ng-model="currentJob.void"/></div>
+						</div>
+						<div class="field" ng-if="name=='POD'">	
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Done</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.doneClick(currentJob)" ng-model="currentJob.done"/></div>
+						</div>
 					</div>
 					<div class="col-md-4">
 						<div class="field" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'CompletedTime','Completed Time',currentJob.completedTime,currentJob.id,'time')">
@@ -189,7 +197,10 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Attention</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.attentionClick(currentJob)" ng-model="currentJob.attention"/></div>
 						</div>
-						
+						<div class="field" >
+							<label ng-class="currentJob.locked ? 'disabled' : ''">VanOK?</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.vanOkClick(currentJob)" ng-model="currentJob.vanOK"/></div>
+						</div>
 					</div>
 				</div>
 			</div>

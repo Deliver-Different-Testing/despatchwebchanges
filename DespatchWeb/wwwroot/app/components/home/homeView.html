@@ -94,11 +94,12 @@
                                     <button type="button" class="btn btn-sm btn-secondary" title="CLOSE EVENT" ng-disabled="!currentSupport" ng-click="closeSupport(currentSupport);"><i class="fa fa-calendar-check-o"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job" ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)" ng-click="unlockJob()"><i class="fa fa-lock"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Lock Job" ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)" ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Split Job" ng-show="currentJob && (currentJob.allowSplit)" ng-click="splitJob(currentJob)"><i class="fa fa-random"></i></button>
 
                                     <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
+    <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
                                 </div>
 
                             </div>
@@ -147,7 +148,7 @@
                         </div>
                     </div>
                     <div class="box-content" ng-include="boxes[box.name].tpl"></div>
-                </div>
+                </div>  
 
             </div>
         </div>
@@ -187,6 +188,56 @@
                     // do key down stuff here
                     if (e.keyCode == 82 && e.ctrlKey) {
                         //location.reload();
+                    }
+                    if (e.keyCode === 113) {
+                        var sc = angular.element(document.getElementById('box-jobDetail')).scope();
+
+                        sc.gather.form = {
+                            id: "smsCustomer",
+                            title: "Enter your Message (160 chars)",
+                            fields: [
+                                {
+                                    "name": "editMessage",
+                                    "label": "Message",
+                                    "type": "sms",
+                                    "value": ""
+                                },
+                                {
+                                    "name": "courier",
+                                    "label": "Courier",
+                                    "type": "select2"
+                                }
+                            ],
+                            onSubmit: function () {
+                                console.log(sc.gather.form.fields[1]);
+                                var c = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
+                                return sc.sendSMS(c.courierID, sc.gather.form.fields[0].value).then(function (data) {
+                                    sc.gather.cancel();
+                                    alert("Message Sent");
+                                });
+
+
+                            },
+                            submitValue: "Send Message"
+                        };
+
+                        sc.gather.showForm();
+
+
+                        setTimeout(function () {
+                            sc.$apply();
+
+                            var statusOptions = {
+                                minimumInputLength: 0,
+                                data: sc.pickCouriers,
+                                placeholder: "Start typing to choose courier..."
+                            };
+
+                            $(".gatherForm #gather-courier").select2(statusOptions);
+                            $(".gatherForm #gather-courier").select2('open');
+
+
+                        }, 200);
                     }
                 }
                 break;

@@ -13,12 +13,13 @@ angular
         $scope.maxSize = 5;     // Limit number for pagination display number.  
         $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero  
         $scope.pageIndex = 1;   // Current page number. First page is 1.-->  
-        $scope.pageSizeSelected = 50; // Maximum number of items per page.  
+        $scope.pageSizeSelected = 50; // Maximum number of items per page.
         //$(document).stopTime("CL");
         //$(document).stopTime("RD");
 
         //$scope.linkedEventId = $location.$$search.eid;
         //$scope.linkedEvent = undefined;
+        $scope.name = "POD";
         $scope.jdSvc = jdSvc;
         $scope.gpsForm = {
             submit: function() {
@@ -235,7 +236,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.14",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.17",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -582,6 +583,51 @@ angular
         $scope.lockJob = function () {
             return $scope.jdSvc
                 .lockJob($scope.currentJob);
+
+        };
+
+        $scope.unSplitJob = function () {
+            $ngConfirm({
+                title: 'Un-Split Job?',
+                content: 'Are you sure you wish to un-split this job?',
+                scope: $scope,
+                buttons: {
+
+                    Yes: {
+                        btnClass: 'btn-green',
+                        action: function (scope, button) {
+                            uCSData.unSplitJob($scope.currentJob.id).then(function(msg) {
+                                if ((msg || "").length > 2) {
+                                    $ngConfirm({
+                                        title: 'Error',
+                                        content: msg,
+                                        scope: $scope,
+                                        buttons: {
+
+                                            Close: {
+                                                btnClass: 'btn-red',
+                                                action: function (scope, button) {
+
+                                                }
+                                            }
+
+                                        }
+                                    });
+                                }
+                            });
+                            
+                        }
+                    },
+                    No: {
+                        btnClass: 'btn-red',
+                        action: function (scope, button) {
+
+                        }
+                    }
+
+                }
+            });
+            
 
         };
 

@@ -1875,6 +1875,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.UndeliverableLocationId).HasColumnName("UndeliverableLocationID");
 
+                entity.Property(e => e.VanOk).HasColumnName("VanOK");
+
                 entity.Property(e => e.WhenJobTrackingNotificationSent).HasColumnType("datetime");
 
                 entity.Property(e => e.WhenLateDeliveryNotificationSent).HasColumnType("datetime");

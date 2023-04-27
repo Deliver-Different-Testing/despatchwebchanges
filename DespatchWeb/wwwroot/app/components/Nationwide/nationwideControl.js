@@ -18,6 +18,7 @@ angular
     .controller("NationwideControl", ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "$ngConfirm", function ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm) {
         $scope.isInternal = (ClientInternal === "True");
         $scope.jdSvc = jdSvc;
+        $scope.name = "Nationwide";
         var gpsForm = {
             submit: function () {
                 return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
@@ -91,41 +92,9 @@ angular
                 }
 
                 var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
-                $scope.selectJob(refreshedJob);
-                $timeout(function () {
-                    $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
-
-                    var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                    var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
-
-
-                    try {
-                        goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                        $parentDiv.scrollTop(goTop);
-
-                    } catch (e) {
-                        //ignore
-                    }
-                }, 1000);
-
-            });
-        });
-
-        $scope.gather = {
-            submit: function () {
-                return $scope.gather.form.onSubmit().then(function (response) {
-                    console.log("pointer 3");
-                    
-                    $(".gatherForm").hide();
-                    var j = $scope.currentJob;
-                    $scope.getData().then(function () {
-                        if (j === null || j === undefined || j === false) {
-                            return;
-                        }
-
-                        var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
-                        $scope.selectJob(refreshedJob);
-                        $timeout(function () {
+                if (refreshedJob) {
+                    $scope.selectJob(refreshedJob);
+                    $timeout(function() {
                             $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
 
                             var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
@@ -139,7 +108,109 @@ angular
                             } catch (e) {
                                 //ignore
                             }
-                        }, 1000);
+                        },
+                        1000);
+                } else {
+                    refreshedJob = $scope.jobListDelivery.find(jo => jo.id === j.id);
+                    if (refreshedJob) {
+                        $scope.selectJob(refreshedJob);
+                        $timeout(function() {
+                                $("#jobListDelivery tr[data-jobid='" + j.id + "']").addClass("active");
+
+                                var $parentDiv = $("#jobListDelivery tr[data-jobid='" + j.id + "']")
+                                    .parents(".box-content");
+                                var goTop = $("#jobListDelivery tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                                try {
+                                    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                    $parentDiv.scrollTop(goTop);
+
+                                } catch (e) {
+                                    //ignore
+                                }
+                            },
+                            1000);
+                    } else {
+                        refreshedJob = $scope.jobListPOD.find(jo => jo.id === j.id);
+                        if (refreshedJob) {
+                            $scope.selectJob(refreshedJob);
+                            $timeout(function() {
+                                    $("#jobListPOD tr[data-jobid='" + j.id + "']").addClass("active");
+
+                                    var $parentDiv = $("#jobListPOD tr[data-jobid='" + j.id + "']")
+                                        .parents(".box-content");
+                                    var goTop = $("#jobListPOD tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                                    try {
+                                        goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                        $parentDiv.scrollTop(goTop);
+
+                                    } catch (e) {
+                                        //ignore
+                                    }
+                                },
+                                1000);
+                        } else {
+                            refreshedJob = $scope.jobListReprice.find(jo => jo.id === j.id);
+                            if (refreshedJob) {
+                                $scope.selectJob(refreshedJob);
+                                $timeout(function() {
+                                        $("#jobListReprice tr[data-jobid='" + j.id + "']").addClass("active");
+
+                                        var $parentDiv = $("#jobListReprice tr[data-jobid='" + j.id + "']")
+                                            .parents(".box-content");
+                                        var goTop = $("#jobListReprice tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                                        try {
+                                            goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                                            $parentDiv.scrollTop(goTop);
+
+                                        } catch (e) {
+                                            //ignore
+                                        }
+                                    },
+                                    1000);
+                            }
+                        }
+                    }
+                }
+
+
+            });
+        });
+
+        $scope.gather = {
+            submit: function () {
+                return $scope.gather.form.onSubmit().then(function (response) {
+                    //console.log("pointer 3");
+                    
+                    $(".gatherForm").hide();
+                    //var j = $scope.currentJob;
+                    $scope.getData().then(function () {
+                        //if (j === null || j === undefined || j === false) {
+                        //    return;
+                        //}
+
+                        //var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                        //$scope.selectJob(refreshedJob);
+                        //$timeout(function () {
+                        //    $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+
+                        //    var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                        //    var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+
+
+                        //    try {
+                        //        goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
+                        //        $parentDiv.scrollTop(goTop);
+
+                        //    } catch (e) {
+                        //        //ignore
+                        //    }
+                        //}, 1000);
 
                     });
                     
@@ -295,7 +366,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.18",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.22",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -802,6 +873,10 @@ angular
             };
             $scope.gather.showForm();
 
+        };
+
+        $scope.sendSMS = function(courierId, message) {
+            return NWData.sendSMS(courierId, ContactID, FirstName, message);
         };
 
         $scope.otherEventForm = function (jobNumber) {
@@ -3136,11 +3211,12 @@ angular
 
 
         $scope.createEvent = function () {
-
+            
             var time = new Date();
             time.setSeconds(0);
             time.setMilliseconds(0);
             setTimeout(function () {
+                console.log($scope.currentJob);
                 $scope.eventForm = {
                     "data": {
                         "jobNum": $scope.currentJob.jobNo,
@@ -3190,6 +3266,7 @@ angular
                 };
 
                 $(".eventForm").show(0, function () {
+                    $scope.$apply();
                     setTimeout(function () {
                         var statusOptions = {
                             minimumInputLength: 0,
@@ -3199,9 +3276,10 @@ angular
 
                         $(".eventForm #event-type").select2(statusOptions);
                         $(".eventForm #event-type").select2('open');
+                        
 
                     },200);
-                }); }, 600);
+                }); }, 300);
             
 
 

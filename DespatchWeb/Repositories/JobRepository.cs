@@ -55,6 +55,7 @@ namespace DespatchWeb.Repositories
                     Direct = j.Direct,
                     SizeID = j.UcbkSize,
                     Van = j.UcbkVan,
+                    VanOK = j.VanOk,
                     Truck = j.Truck,
                     SaturdayDelivery = j.SaturdayDelivery,
                     Return = j.UcbkReturn,
@@ -190,11 +191,13 @@ namespace DespatchWeb.Repositories
                 select new JobViewModel()
                 {
                     ID = j.JobId,
+                    JobRelationshipTypeID = j.JobRelationshipTypeId,
                     Time = j.Time,
                     BookedDate = j.Date,
                     Direct = j.Direct,
                     SizeID = j.Size,
                     Van = j.Van,
+                    VanOK = j.VanOk,
                     Truck = j.Truck,
                     Attention = j.Attention,
                     SaturdayDelivery = j.SaturdayDelivery,
@@ -429,6 +432,7 @@ namespace DespatchWeb.Repositories
                      Time = j.UcjbTime,
                      Direct = j.Direct,
                      Van = j.UcjbVan,
+                     VanOK = j.VanOk,
                      Truck = j.Truck,
                      SaturdayDelivery = j.SaturdayDelivery,
                      Return = j.UcjbReturn,
@@ -665,6 +669,7 @@ namespace DespatchWeb.Repositories
                             Time = j.UcjbTime,
                             Direct = j.Direct,
                             Van = j.UcjbVan,
+                            VanOK = j.VanOk,
                             Truck = j.Truck,
                             Return = j.UcjbReturn,
                             PickupFrom = j.UcjbPickUpFrom,
@@ -982,6 +987,7 @@ namespace DespatchWeb.Repositories
                             Time = j.UcjbTime,
                             Direct = j.Direct,
                             Van = j.UcjbVan,
+                            VanOK = j.VanOk,
                             Truck = j.Truck,
                             Return = j.UcjbReturn,
                             PickupFrom = j.UcjbPickUpFrom,
@@ -1230,6 +1236,18 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public async Task UpdatePODDetails(string jobNumber, int jobStatus, string podName, DateTime podTime )
+        {
+            await _context.LoadStoredProc("DESWEB_qdfJob_UpdatePODDetails")
+                .WithSqlParam("@ucjbNumber", jobNumber)
+                .WithSqlParam("@ucjbJobDone", true)
+                .WithSqlParam("@ucjbStatus", jobStatus)
+                .WithSqlParam("@ucjbPODName", podName)
+                .WithSqlParam("@ucjbComplTime", podTime)
+                .ExecuteStoredNonQueryAsync();
+
+        }
+
         public async Task ReSendAllJobs(int courierId)
         {
             await _context.LoadStoredProc("uspReDespatchJobByCourierID")
@@ -1341,6 +1359,16 @@ namespace DespatchWeb.Repositories
             }
         }
 
+        public async Task MessageCourier(int courierId, int dispId, string despatcher, string message)
+        {
+            await _context.LoadStoredProc("DES_stpManualMessage_Insert")
+                .WithSqlParam("@SendToID", courierId)
+                .WithSqlParam("@StaffID", dispId)
+                .WithSqlParam("@WindowsUser", despatcher)
+                .WithSqlParam("@Message", message)
+                .ExecuteStoredNonQueryAsync();
+        }
+
         public async Task VoidJob(int jobId)
         {
             await _context.LoadStoredProc("DES_stpJob_Void")
@@ -1355,6 +1383,22 @@ namespace DespatchWeb.Repositories
                .WithSqlParam("@PreBookJob", false)
                .WithSqlParam("@UserName", user)
                .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task<string> UnSplitJob(int jobId)
+        {
+            DbParameter messageOutput = null;
+            await _context.LoadStoredProc("DES_stpJob_UnSplit")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@Message", (dbParam) =>
+                {
+                    dbParam.Direction = System.Data.ParameterDirection.Output;
+                    dbParam.DbType = System.Data.DbType.String;
+                    dbParam.Size = 4000;
+                    messageOutput = dbParam;
+                })
+                .ExecuteStoredNonQueryAsync();
+            return (string)messageOutput.Value;
         }
 
         public async Task UpdateSplitJobAddress(int jobId, int toSuburbId, string address, decimal deliveryLat, decimal deliveryLng)
@@ -1374,6 +1418,19 @@ namespace DespatchWeb.Repositories
                .WithSqlParam("@ParentJobID", jobId)
                .WithSqlParam("@PreBookJob", false)
                .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task FinishSplitJobProcess(int jobId, string despatcher)
+        {
+            await _context.LoadStoredProc("DES_stpJob_ColsolidateMarsInformation")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@Consolidate", false)
+                .WithSqlParam("@UserName", despatcher)
+                .ExecuteStoredNonQueryAsync();
+
+            await _context.LoadStoredProc("DES_stpJob_DisplayInDespatch")
+                .WithSqlParam("@JobID", jobId)
+                .ExecuteStoredNonQueryAsync();
         }
 
         public List<SuburbLookup> Suburbs()

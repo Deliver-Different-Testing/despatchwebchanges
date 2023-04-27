@@ -386,9 +386,37 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        [HttpPost]
+        public async Task<IActionResult> UnSplitJob(int jobId)
+        {
+            var message =await _jobRepo.UnSplitJob(jobId);
+            return Json(message);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePODDetails(string jobNumber, int jobStatus, string podName, DateTime podTime)
+        {
+            await _jobRepo.UpdatePODDetails(jobNumber, jobStatus, podName, podTime);
+            return Json("OK");
+        }
+
+
         public async Task<IActionResult> ReRateSplitJob(int jobId)
         {
             await _jobRepo.ReRateSplitJob(jobId);
+            return Json("OK");
+        }
+
+        public async Task<IActionResult> FinishSplitJobProcess(int jobId, string despatcherName)
+        {
+            await _jobRepo.FinishSplitJobProcess(jobId, despatcherName);
+            return Json("OK");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendSMS(int courierId, int dispId, string despatcherName, string message)
+        {
+            await _jobRepo.MessageCourier(courierId, dispId, despatcherName, message);
             return Json("OK");
         }
 

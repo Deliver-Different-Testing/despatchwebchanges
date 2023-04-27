@@ -299,6 +299,21 @@ angular
                             return response;
                         });
                     },
+                    finishSplitJobProcess: function (jobId, despatcherName) {
+                        return $http.post("job/finishSplitJobProcess?jobId=" + jobId + "&despatcherName=" + despatcherName).then(function (response) {
+                            return response;
+                        });
+                    },
+                    updatePODDetail: function (jobNumber, jobStatus, podName, podTime) {
+                        return $http.post("job/UpdatePODDetails?jobNumber=" + jobNumber + "&jobStatus=" + jobStatus + "&podName=" + podName + "&podTime=" + podTime).then(function (response) {
+                            return response;
+                        });
+                    },
+                    sendSMS: function (courierId, staffId, despatcherName, message) {
+                        return $http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     reRateSplitJob: function (jobId) {
                         return $http.post("job/ReRateSplitJob?jobId=" + jobId).then(function (response) {
                             return response;

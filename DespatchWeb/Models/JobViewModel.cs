@@ -11,6 +11,8 @@ namespace DespatchWeb.Models
         public DateTime? BookedDate { get; set; }
         public bool Direct { get; set; }
         public bool Van { get; set; }
+        public int? JobRelationshipTypeID { get; set; }
+        public bool? VanOK { get; set; }
         public bool? Done { get; set; }
         public bool Void { get; set; }
         public bool? Truck { get; set; }
