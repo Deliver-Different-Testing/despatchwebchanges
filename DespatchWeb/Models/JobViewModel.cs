@@ -115,6 +115,8 @@ namespace DespatchWeb.Models
         public DateTime? RestartDate { get; set; }
         public string Days { get; set; }
         public bool PreBook { get; set; }
+        public bool BulkJob { get; set; }
+        public string RunName { get; set; }
         
     }
 

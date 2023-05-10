@@ -30,7 +30,7 @@
 
     <table class="table  table-responsive table-rows" id="jobList" data-group="jobsGroup">
         <tbody>
-        <tr class="clickable-row draggable-row noselect" ng-class="job.direct ? 'direct' : ''" ng-repeat="job in jobList | filter: box.searchBox"  data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
+        <tr class="clickable-row draggable-row noselect" ng-class="job.direct ? 'direct' : ''" ng-repeat="job in jobList | filter: box.searchBox"  data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="job.courier == null ? selectJob(job, false): selectJob(job, true)">
 			<td class="status" ng-class="job.status">{{job.status}}</td>
 			<td>{{job.time | date : "HH:mm"}}</td>
 			<td right-click action="speedColumnClick(event)">{{job.speed}}</td>

@@ -10,6 +10,11 @@ angular
                             return response;
                         });
                     },
+                    addBulkJobNote: function (id, note, despatcherName, preBook) {
+                        return $http.post(method + "job/AddBulkJobNote?BulkJobId=" + id + "&note=" + note + "&despatcher=" + despatcherName).then(function (response) {
+                            return response;
+                        });
+                    },
                     addPallet: function (pallet, preBook, despatcherName) {
                         return $http({
                             url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName,
@@ -325,9 +330,19 @@ angular
                             return response;
                         });
                     },
+                    updateBulkDeliveryAddress: function (bulkJobId, toSuburb, toPostCode, address, lat, lng, despatcherName) {
+                        return $http.post("job/UpdateBulkDeliveryAddress?bulkJobId=" + bulkJobId + "&toSuburb=" + toSuburb + "&toPostCode=" + toPostCode + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + '&despatcherName=' + despatcherName).then(function (response) {
+                            return response;
+                        });
+                    },
                     updatePickupAddress: function (jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
                         var method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
                         return $http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
+                            return response;
+                        });
+                    },
+                    updateBulkPickupAddress: function (bulkJobId, fromSuburb, fromPostCode, address, lat, lng, despatcherName) {
+                        return $http.post("job/UpdateBulkPickupAddress?bulkJobId=" + bulkJobId + "&fromSuburb=" + fromSuburb + "&fromPostCode=" + fromPostCode + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + '&despatcherName=' + despatcherName).then(function (response) {
                             return response;
                         });
                     },
@@ -347,6 +362,19 @@ angular
                         }
                         var method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
                         return $http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
+                            return response;
+                        });
+                    },
+                    updateBulkJobDetail: function (bulkJobId, field, value, rate, despatcherName, staffId) {
+                        if (field === "Time" || field === "CompletedTime") {
+                            value = moment().format("YYYY-MM-DD") +
+                                " " +
+                                moment(value).format("HH:mm:ss");
+                        }
+                        if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
+                            value = moment(value).format("YYYY-MM-DD");
+                        }
+                        return $http.post("job/UpdateBulkJob?bulkJobId=" + bulkJobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
                             return response;
                         });
                     },

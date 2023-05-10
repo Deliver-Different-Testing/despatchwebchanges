@@ -10,8 +10,19 @@ angular
                 });
             },
 
+            searchBulkJobs: function (courierId, clientId, wild, fromDate, toDate, pageIndex, pageSize) {
+                return $http.get('/Job/BulkSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
+                    return response.data;
+                });
+            },
+
             getJobDetail: function (id) {
                 return $http.get('/Job/Detail?jobId=' + id).then(function (response) {
+                    return response.data;
+                });
+            },
+            getBulkJobDetail: function (id) {
+                return $http.get('/Job/BulkDetail?bulkJobId=' + id).then(function (response) {
                     return response.data;
                 });
             },

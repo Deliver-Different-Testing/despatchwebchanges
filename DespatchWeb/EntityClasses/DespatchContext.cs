@@ -21,6 +21,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
+        public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
         public virtual DbSet<TblClient> TblClients { get; set; }
         public virtual DbSet<TblClientContact> TblClientContacts { get; set; }
         public virtual DbSet<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; }
@@ -450,6 +451,146 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
             });
 
+            modelBuilder.Entity<TblBulkJob>(entity =>
+            {
+                entity.HasKey(e => e.BulkJobId)
+                    .HasName("PK__tblBulkJ__1B2363F00EF20DB6");
+
+                entity.ToTable("tblBulkJob");
+
+                entity.HasIndex(e => e.BookDate, "BookDate-NonClusteredIndex-20190824-120700");
+
+                entity.HasIndex(e => e.BookDate, "DespatchWebSearch2");
+
+                entity.HasIndex(e => e.ImportId, "FK_ImportId");
+
+                entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
+
+                entity.HasIndex(e => e.JobId, "JobId-NonClusteredIndex-20190417-112100");
+
+                entity.HasIndex(e => e.BookDate, "idx_BookDate");
+
+                entity.Property(e => e.BulkJobId).HasColumnName("BulkJobID");
+
+                entity.Property(e => e.Amount).HasColumnType("money");
+
+                entity.Property(e => e.Barcode).HasMaxLength(300);
+
+                entity.Property(e => e.BookDate).HasColumnType("datetime");
+
+                entity.Property(e => e.BookTime).HasColumnType("datetime");
+
+                entity.Property(e => e.BulkRunId).HasColumnName("BulkRunID");
+
+                entity.Property(e => e.ClientCode).HasMaxLength(5);
+
+                entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.ClientRefa).HasMaxLength(20);
+
+                entity.Property(e => e.ClientRefb).HasMaxLength(15);
+
+                entity.Property(e => e.Contact).HasMaxLength(50);
+
+                entity.Property(e => e.CourierId).HasColumnName("CourierID");
+
+                entity.Property(e => e.CourierPayment).HasColumnType("money");
+
+                entity.Property(e => e.DeliverToContact).HasMaxLength(100);
+
+                entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
+
+                entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
+
+                entity.Property(e => e.DeliveryLatitude).HasMaxLength(50);
+
+                entity.Property(e => e.DeliveryLongitude).HasMaxLength(50);
+
+                entity.Property(e => e.FromAddress).HasMaxLength(150);
+
+                entity.Property(e => e.FromCompany).HasMaxLength(150);
+
+                entity.Property(e => e.FromSuburb).HasMaxLength(50);
+
+                entity.Property(e => e.Height).HasColumnType("numeric(18, 0)");
+
+                entity.Property(e => e.InformationParentId).HasColumnName("InformationParentID");
+
+                entity.Property(e => e.JobId).HasColumnName("JobID");
+
+                entity.Property(e => e.JobNumber)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
+
+                entity.Property(e => e.Length).HasColumnType("numeric(18, 0)");
+
+                entity.Property(e => e.LinehaulRunId).HasColumnName("LinehaulRunID");
+
+                entity.Property(e => e.Manifest).HasMaxLength(50);
+
+                entity.Property(e => e.MultiboxParentId).HasColumnName("MultiboxParentID");
+
+                entity.Property(e => e.Notes).HasMaxLength(4000);
+
+                entity.Property(e => e.NwdocJob).HasColumnName("NWDocJob");
+
+                entity.Property(e => e.OrderRef).HasMaxLength(50);
+
+                entity.Property(e => e.OurRef).HasMaxLength(20);
+
+                entity.Property(e => e.ParentId).HasColumnName("ParentID");
+
+                entity.Property(e => e.PickUpLatitude).HasMaxLength(50);
+
+                entity.Property(e => e.PickUpLongitude).HasMaxLength(50);
+
+                entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(500);
+
+                entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
+
+                entity.Property(e => e.RegionId).HasColumnName("RegionID");
+
+                entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
+
+                entity.Property(e => e.RunName).HasMaxLength(50);
+
+                entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
+
+                entity.Property(e => e.ShopRef1).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef2).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef3).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef4).HasMaxLength(50);
+
+                entity.Property(e => e.ShopRef5).HasMaxLength(50);
+
+                entity.Property(e => e.SourceId).HasColumnName("SourceID");
+
+                entity.Property(e => e.ToAddress).HasMaxLength(150);
+
+                entity.Property(e => e.ToCompany).HasMaxLength(150);
+
+                entity.Property(e => e.ToSuburb).HasMaxLength(50);
+
+                entity.Property(e => e.TrackingEmail).HasMaxLength(500);
+
+                entity.Property(e => e.TrackingMobile).HasMaxLength(500);
+
+                entity.Property(e => e.Weight).HasColumnType("decimal(6, 2)");
+
+                entity.Property(e => e.Width).HasColumnType("numeric(18, 0)");
+
+                entity.HasOne(d => d.SpeedNavigation)
+                    .WithMany(p => p.TblBulkJobs)
+                    .HasForeignKey(d => d.Speed)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblBulkJob_tucJobType");
+            });
+
             modelBuilder.Entity<TblClient>(entity =>
             {
                 entity.HasNoKey();
@@ -643,6 +784,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.InvoiceMethod).HasMaxLength(50);
 
                 entity.Property(e => e.JobPrefix).HasMaxLength(3);
+
+                entity.Property(e => e.KnownShipperAirNz).HasColumnName("KnownShipperAirNZ");
 
                 entity.Property(e => e.LastModified).HasColumnType("datetime");
 
@@ -2168,6 +2311,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.JobPrefix).HasMaxLength(3);
 
+                entity.Property(e => e.KnownShipperAirNz).HasColumnName("KnownShipperAirNZ");
+
                 entity.Property(e => e.LastModified).HasColumnType("datetime");
 
                 entity.Property(e => e.LastModifiedBy)
@@ -3460,6 +3605,7 @@ namespace DespatchWeb.EntityClasses
             });
 
             OnModelCreatingGeneratedProcedures(modelBuilder);
+            OnModelCreatingGeneratedFunctions(modelBuilder);
             OnModelCreatingPartial(modelBuilder);
         }
 

@@ -265,6 +265,7 @@ namespace DespatchWeb.EntityClasses
         public bool StripeClient { get; set; }
         public string StripeClientId { get; set; }
         public string PromoCode { get; set; }
+        public bool KnownShipperAirNz { get; set; }
 
         public virtual TucSuburb UcclSuburb { get; set; }
         public virtual ICollection<TblClientContact> TblClientContacts { get; set; }

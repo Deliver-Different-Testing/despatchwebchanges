@@ -16,6 +16,7 @@ using System.Threading;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Components;
 using System.Net;
+using DespatchWeb.Controllers;
 
 namespace DespatchWeb.Repositories
 {
@@ -304,6 +305,189 @@ namespace DespatchWeb.Repositories
             }
 
             return job;
+        }
+
+        public async Task<JobViewModel> BulkJobDetail(int bulkJobId)
+        {
+            var today = DateTime.Today.ResetTimeToStartOfDay();
+            var jobQuery = (
+                from j in _context.TblBulkJobs
+                join c in _context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
+                from co in courierJoin.DefaultIfEmpty()
+                join t in _context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+                from to in speedJoin.DefaultIfEmpty()
+                join cl in _context.TblClients on j.ClientId equals cl.ClientId into clientJoin
+                from client in clientJoin.DefaultIfEmpty()
+                join s in _context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
+                from status in statusJoin.DefaultIfEmpty()
+                join l in _context.TblJobLeaveNotHomes on j.DeliverToLeaveId equals l.LeaveNotHomeId into leaveNotHomeJoin
+                from leave in leaveNotHomeJoin.DefaultIfEmpty()
+                
+
+                where (j.BulkJobId == bulkJobId)
+                select new JobViewModel()
+                {
+                    ID = j.BulkJobId,
+                    JobRelationshipTypeID = j.JobRelationshipTypeId,
+                    Time = j.BookTime,
+                    BookedDate = j.BookDate,
+                    SizeID = j.Size,
+                    Void = j.Void,
+                    //PickupFrom = j.FromAddress,
+                    JobNo = j.JobNumber,
+                    Speed = to.ShortName,
+                    SpeedID = j.Speed,
+                    Client = j.ClientCode,
+                    ClientID = j.ClientId,
+                    ClientName = client.Name,
+                    From = j.FromSuburb,
+                    fromSuburbName = j.FromSuburb,
+                    FromAddress = j.FromAddress,
+                    FromContactName = j.Contact,
+                    To = j.ToSuburb,
+                    ToSuburbName = j.ToSuburb,
+                    ToAddress = j.ToAddress,
+                    Courier = co.Code,
+                    Status = status.UcjsCode,
+                    ContactName = j.DeliverToContact,
+                    Phone = j.DeliverToPhone,
+                    Weight = (double?)j.Weight,
+                    Items = j.Qty,
+                    RefA = j.ClientRefa,
+                    RefB = j.ClientRefb,
+                    OurRef = j.OurRef,
+                    SigNotRequired = leave.Name ?? "",
+                    Charge = $"{j.Amount:C}",
+                    InternalNotes = j.Notes,
+                    PickUpLatitude = decimal.Parse(j.PickUpLatitude),
+                    PickUpLongitude = decimal.Parse(j.PickUpLongitude),
+                    DeliveryLatitude = decimal.Parse(j.DeliveryLatitude),
+                    DeliveryLongitude = decimal.Parse(j.DeliveryLongitude),
+                    CourierData = new CourierData()
+                    {
+                        Courier = co.Code + " " + co.FirstName + " " + co.Surname,
+                        CourierID = co.CourierId
+                    },
+
+                    DeliverToContact = j.DeliverToContact,
+                    TrackingMethod = j.TrackingMethod,
+                    TrackingMobile = j.TrackingMobile,
+                    TrackingEmail = j.TrackingEmail,
+                    PreBook = false,
+                    BulkJob = true,
+                    Locked = (j.RunName ?? "").Length > 1 || j.BookDate < today,
+                    RunName = j.RunName,
+                    Done = j.Done
+
+                });
+            var jobList = await jobQuery.ToListWithNoLockAsync();
+            var job = jobList.FirstOrDefault();
+            if (job != null)
+            {
+                job.Vehicle = new Vehicle()
+                {
+                    id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeID,
+                    label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (job.SizeID ?? (short)2))
+                };
+                job.Size = job.Vehicle;
+                job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
+                job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
+                                            job.Time.Value.ToString("HH:mm:ss"));
+
+            }
+
+            return job;
+        }
+
+        public async Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(Int32? courierId, string wild, DateTime fromDate,
+            DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
+        {
+            var clientSet = clientId.HasValue;
+            var courierSet = courierId.HasValue;
+            var wildParam = $"%{wild}%";
+
+            var jobsQuery = (
+                from x in _context.TblBulkJobs
+                join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
+                from co in courierJoin.DefaultIfEmpty()
+                
+                join t in _context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
+                from to in speedJoin.DefaultIfEmpty()
+                join s in _context.TucJobStatuses on x.JobStatus equals s.UcjsId into statusJoin
+                from status in statusJoin.DefaultIfEmpty()
+                where (x.BookDate >= fromDate && x.BookDate <= toDate) && (!clientSet || x.ClientId == clientId) &&
+                      (!courierSet || x.CourierId == courierId) &&
+                      (wild == "" || (EF.Functions.Like(x.FromAddress + " " + x.Contact + " " + x.FromSuburb + " " + x.ToAddress + " " + x.DeliverToContact + " " + x.ToSuburb + " " + (x.ClientRefa ?? "") + " " + (x.ClientRefb ?? "") + " " + (x.OurRef ?? "") + " " + x.JobNumber.ToLower(), wildParam)))
+                select new JobViewModel()
+                {
+                    ID = x.BulkJobId,
+                    Time = x.BookTime,
+                    ClientID = x.ClientId,
+                    Client = x.ClientCode,
+                    From = x.FromSuburb,
+                    //FromSuburbID = _context.,
+                    To = x.ToSuburb,
+                    //ToSuburbID = x.ToSuburbId,
+                    JobNo = x.JobNumber,
+                    FromAddress = x.FromAddress,
+                    ToAddress = x.ToAddress,
+                    Courier = co.Code,
+                    StatusID = x.JobStatus,
+                    Status = status.UcjsCode,
+                    Speed = to.ShortName,
+                    SpeedID = x.Speed,
+                    PickUpLatitude =decimal.Parse(x.PickUpLatitude),
+                    PickUpLongitude = decimal.Parse(x.PickUpLongitude),
+                    DeliveryLatitude = decimal.Parse(x.DeliveryLatitude),
+                    DeliveryLongitude = decimal.Parse(x.DeliveryLongitude),
+                    BookedDate = x.BookDate
+                    
+
+                });
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var total = await jobsQuery.CountWithNoLockAsync();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            stopwatch.Reset();
+            stopwatch.Start();
+            var jobs = await jobsQuery
+                .OrderBy(a => a.BookedDate).ThenBy(v => v.Time).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListWithNoLockAsync();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            stopwatch.Reset();
+            stopwatch.Start();
+            var jobList = jobs.Select(v => new JobViewModel()
+            {
+                ID = v.ID,
+                Time = v.Time,
+                ClientID = v.ClientID,
+                Client = v.Client,
+                From = v.From,
+                FromSuburbID = v.FromSuburbID,
+                To = v.To,
+                ToSuburbID = v.ToSuburbID,
+                JobNo = v.JobNo,
+                FromAddress = v.FromAddress,
+                ToAddress = v.ToAddress,
+                Courier = v.Courier,
+                StatusID = v.StatusID,
+                Status = v.Status,
+                Speed = v.Speed,
+                SpeedID = v.SpeedID,
+                PickUpLatitude = v.PickUpLatitude,
+                PickUpLongitude = v.PickUpLongitude,
+                DeliveryLatitude = v.DeliveryLatitude,
+                DeliveryLongitude = v.DeliveryLongitude,
+                Booked = DateTime.Parse(v.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
+                                        v.Time.Value.ToString("HH:mm:ss"))
+
+
+            }).ToList();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            return Tuple.Create(total, jobList);
+
         }
 
         public Tuple<int, List<JobViewModel>> PODSearch(Int32? courierId, string wild, DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
@@ -1691,6 +1875,20 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public async Task UpdateBulkDeliveryAddress(int bulkJobId, string toSuburb, int toPostCode, string address, decimal deliveryLat, decimal deliveryLng, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateBulkJobDeliveryAddress")
+                .WithSqlParam("@BulkJobID", bulkJobId)
+                .WithSqlParam("@ToSuburb", toSuburb)
+                .WithSqlParam("@ToPostCode", toPostCode)
+                .WithSqlParam("@Address", address)
+                .WithSqlParam("@DeliveryLatitude", deliveryLat)
+                .WithSqlParam("@DeliveryLongitude", deliveryLng)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+
+        }
+
         public async Task UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcher)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJobPickupAddress")
@@ -1701,6 +1899,20 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@PickupLongitude", pickupLng)
                 .WithSqlParam("@CBD", cbd)
                 .WithSqlParam("@Rate", rate)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+
+        }
+
+        public async Task UpdateBulkPickupAddress(int bulkJobId, string fromSuburb, int fromPostCode, string address, decimal pickupLat, decimal pickupLng, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateBulkJobPickupAddress")
+                .WithSqlParam("@BulkJobID", bulkJobId)
+                .WithSqlParam("@FromSuburb", fromSuburb)
+                .WithSqlParam("@FromPostCode", fromPostCode)
+                .WithSqlParam("@Address", address)
+                .WithSqlParam("@PickupLatitude", pickupLat)
+                .WithSqlParam("@PickupLongitude", pickupLng)
                 .WithSqlParam("@Username", despatcher)
                 .ExecuteStoredNonQueryAsync();
 
@@ -1748,6 +1960,18 @@ namespace DespatchWeb.Repositories
                 .ExecuteStoredNonQueryAsync();
         }
 
+        public async Task UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate, string despatcher, int staffId)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateBulkJob")
+                .WithSqlParam("@BulkJobID", bulkJobId)
+                .WithSqlParam("@PropertyName", field)
+                .WithSqlParam("@Value", value)
+                .WithSqlParam("@Rate", rate)
+                .WithSqlParam("@Username", despatcher)
+                .WithSqlParam("@StaffID", staffId)
+                .ExecuteStoredNonQueryAsync();
+        }
+
         public async Task UpdateJobBooking(int jobId, string field, string value, decimal? rate, string despatcher, int staffId)
         {
             await _context.LoadStoredProc("DESWEB_stpUpdateJobBooking")
@@ -1764,6 +1988,15 @@ namespace DespatchWeb.Repositories
         {
             await _context.LoadStoredProc("DES_stpJob_AddNotes")
                 .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@Notes", note)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
+        }
+
+        public async Task AddBulkJobNote(int bulkJobId, string note, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpBulkJob_AddNotes")
+                .WithSqlParam("@BulkJobID", bulkJobId)
                 .WithSqlParam("@Notes", note)
                 .WithSqlParam("@Username", despatcher)
                 .ExecuteStoredNonQueryAsync();

@@ -14,6 +14,9 @@ angular
         $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero  
         $scope.pageIndex = 1;   // Current page number. First page is 1.-->  
         $scope.pageSizeSelected = 50; // Maximum number of items per page.
+        $scope.bulkTotalCount = 0;  // Total number of items in all pages. initialize as a zero  
+        $scope.bulkPageIndex = 1;   // Current page number. First page is 1.-->  
+        $scope.bulkPageSizeSelected = 50; // Maximum number of items per page.
         //$(document).stopTime("CL");
         //$(document).stopTime("RD");
 
@@ -23,8 +26,13 @@ angular
         $scope.jdSvc = jdSvc;
         $scope.gpsForm = {
             submit: function() {
-                return $scope.jdSvc.gpsForm.onSubmit().then(function(response) {
-                    $scope.selectJobDetail($scope.currentJob.id);
+                return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
+                    if ($scope.currentJob.bulkJob) {
+                        $scope.selectBulkJobDetail($scope.currentJob.id);
+                    } else {
+                        $scope.selectJobDetail($scope.currentJob.id);
+                    }
+                    
                 });
             }
         };
@@ -35,7 +43,11 @@ angular
         var gpsForm = {
             submit: function () {
                 return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
-                    $scope.selectJobDetail($scope.currentJob.id);
+                    if ($scope.currentJob.bulkJob) {
+                        $scope.selectBulkJobDetail($scope.currentJob.id);
+                    } else {
+                        $scope.selectJobDetail($scope.currentJob.id);
+                    }
                 });
             },
             showForm: function (fromRightClick) {
@@ -78,7 +90,7 @@ angular
                 $(".gatherForm").hide();
                 $scope.gather.form.onSubmit().then(function(response) {
 
-                    $scope.selectJobDetail($scope.currentJob.id);
+                    $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
                 });
                 
                 //setTimeout(function () {  }, 1000);
@@ -184,7 +196,7 @@ angular
         $scope.boxes = {
             "pickDate": {
                 "title": "Filters",
-                "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.4",
+                "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.5",
                 "showSearch": 0
             },
 
@@ -234,9 +246,55 @@ angular
 
                 ]
             },
+            "bulkJobList": {
+                "title": "Bulk Job Data",
+                "tpl": "app/components/CS/tpls/bulkJobList.tpl?v=1.14",
+                "showSearch": 1,
+                "model": "bulkJobList",
+                "headings": [
+                    {
+                        "label": "Created",
+                        "name": "created"
+                    },
+                    {
+                        "label": "ID",
+                        "name": "bulkEventID"
+                    },
+                    {
+                        "label": "Job #",
+                        "name": "jobNumber"
+                    },
+                    {
+                        "label": "Courier",
+                        "name": "courierCode"
+                    },
+                    {
+                        "label": "Created By",
+                        "name": "name"
+                    },
+                    {
+                        "label": "Followup By",
+                        "name": "clientFollowup"
+                    },
+                    {
+                        "label": "Client Visible",
+                        "name": "clientVisible"
+                    },
+                    {
+                        "label": "Closed By",
+                        "name": "closedByName"
+                    },
+                    {
+                        "label": "Notes",
+                        "name": "notes"
+                    }
+
+
+                ]
+            },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.17",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.21",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -272,7 +330,12 @@ angular
                             "boxes": [
                                 {
 
-                                    "name": "jobList"
+                                    "name": "jobList",
+                                    "height": "550px"
+                                },
+                                {
+
+                                    "name": "bulkJobList"
                                 }
                             ]
                         },
@@ -572,6 +635,7 @@ angular
             $scope.pickDateService.regions = [];
             $scope.pickDateService.regions.push(sr);
             $scope.refreshData(true);
+            $scope.refreshBulkData(true);
         };
 
         $scope.unlockJob = function() {
@@ -658,7 +722,11 @@ angular
 
 
         }
-        
+
+        $scope.refreshAllData = function(wait) {
+            $scope.refreshData(wait);
+            $scope.refreshBulkData(wait);
+        }
 
         $scope.refreshData = function (wait) {
 
@@ -714,10 +782,68 @@ angular
 
                         }, 1000);
 
-                });
+                    });
+
 
         };
 
+        $scope.refreshBulkData = function (wait) {
+
+            var goTop = $("#bulkJobList").offset().top;
+            var $parentDiv = $("#bulkJobList").parents(".box-content");
+
+            try {
+                goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
+                $parentDiv.scrollTop(goTop);
+            } catch (e) {
+                //ignore
+            }
+            $("#box-bulkJobList").find(".loading").show();
+
+
+            var dateChanged = false;
+            if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
+
+                $scope.currentFromDate = $scope.pickDateService.from_date;
+                dateChanged = true;
+            }
+            if ($scope.currentToDate !== $scope.pickDateService.to_date) {
+
+                $scope.currentToDate = $scope.pickDateService.to_date;
+                dateChanged = true;
+            }
+
+            //localStorageService.set("Date", $scope.currentDate);
+            if (($scope.pickDateService.client || "") === "" &&
+                ($scope.pickDateService.courier || "") === "" &&
+                ($scope.pickDateService.wild || "") === "") {
+                $ngConfirm("You must use more Search Criteria");
+                $("#box-jobList").find(".loading").hide();
+                return;
+            }
+
+            console.log("about to call bulk data - page " + $scope.bulkPageIndex);
+            
+            uCSData.searchBulkJobs($scope.pickDateService.courier,
+                $scope.pickDateService.client,
+                ($scope.pickDateService.wild || ""),
+                moment($scope.currentFromDate),
+                moment($scope.currentToDate),
+                $scope.bulkPageIndex,
+                $scope.bulkPageSizeSelected).then(
+                    function (data) {
+                        //var filteredData = $filter('filter')(data, $scope.searchBox);
+                        $scope.bulkJobList = data.item2;
+                        $scope.bulkTotalCount = data.item1;
+                        $("#box-bulkJobList").find(".loading").hide();
+                        setTimeout(function () {
+                            sizeHeadings($("#bulkJobList").parents(".column"));
+
+                        }, 1000);
+
+                    });
+
+        };
 
 
 
@@ -816,7 +942,32 @@ angular
 
         };
 
+        //Select Bulk Job
+        $scope.selectBulkJobDetail = function (id) {
+            console.log("select Bulk Job  " + id);
+            //$("#jobList").find(".active").removeClass("active");
+            clearTimeout($scope.myTimer);
+            //$scope.currentEvent = event;
+
+            $("#box-jobDetail").find(".loading").show();
+
+            uCSData.getBulkJobDetail(id).then(function (data) {
+                $scope.currentJob = data;
+                $("#box-jobDetail").find(".loading").hide();
+                $scope.currentSelection = " for Bulk Job " + data.jobNo;
+                var jobs = [];
+                jobs.push($scope.currentJob);
+                displayRoutePointsOnly(jobs, true);
+                setMapBounds();
+                map.setZoom(14);
+            });
+
+
+
+        };
+
         $scope.jdSvc.setSelectJobDetail($scope.selectJobDetail);
+        $scope.jdSvc.setSelectBulkJobDetail($scope.selectBulkJobDetail);
 
         //This method is calling from pagination number  
         $scope.pageChanged = function (i) {
@@ -827,13 +978,27 @@ angular
         };
 
         //This method is calling from dropDown  
+        $scope.changeBulkPageSize = function (i) {
+            $scope.bulkPageIndex = 1;
+            $scope.bulkPageSizeSelected = i;
+            $scope.refreshBulkData();
+        };
+
+        //This method is calling from pagination number  
+        $scope.bulkPageChanged = function (i) {
+
+            $scope.bulkPageIndex = i;
+            $scope.refreshBulkData();
+
+        };
+
+        //This method is calling from dropDown  
         $scope.changePageSize = function (i) {
             $scope.pageIndex = 1;
             $scope.pageSizeSelected = i;
             $scope.refreshData();
         };
 
-      
 
 
         $scope.currentFromDate = $scope.pickDateService.from_date;
@@ -949,6 +1114,8 @@ angular
                     $scope.jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
                     $scope.jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
                     $scope.jdSvc.gpsForm.data.address = locn.Address.Label;
+                    $scope.jdSvc.gpsForm.data.suburb = locn.Address.District;
+                    $scope.jdSvc.gpsForm.data.postCode = locn.Address.PostalCode;
                     var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
                     $scope.map.setCenter(ll);
                     $scope.marker.setPosition(ll);

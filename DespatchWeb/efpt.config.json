@@ -14,6 +14,10 @@
    "SelectedToBeGenerated": 0,
    "Tables": [
       {
+         "Name": "[dbo].[tblBulkJob]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblClientContact]",
          "ObjectType": 0
       },
@@ -116,6 +120,10 @@
       {
          "Name": "[dbo].[DES_stpJob_DirectToASAP]",
          "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_fncSuburb_FromNameWithPostCode]",
+         "ObjectType": 2
       }
    ],
    "UiHint": "UCLSQL2.DespatchTest",

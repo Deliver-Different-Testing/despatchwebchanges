@@ -39,7 +39,7 @@
 			
 
 			<br />
-			<div class="btn btn-primary" ng-click="refreshData(true)">Search</div>
+			<div class="btn btn-primary" ng-click="refreshAllData(true)">Search</div>
 
 			<br />
 			<br />

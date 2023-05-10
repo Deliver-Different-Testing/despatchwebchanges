@@ -128,6 +128,9 @@
                 self.setSelectJobDetail = function(f) {
                     self.selectJobDetail = f;
                 };
+                self.setSelectBulkJobDetail = function (f) {
+                    self.selectBulkJobDetail = f;
+                };
                 self.setJob = function(job) {
                     self.currentJob = job;
                 };
@@ -500,7 +503,7 @@
                             };
 
                             if (callData.field === "Notes") {
-                                return DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
+                                return job.bulkJobID ? DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) : DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
                             }
 
                             if (fieldName === "Items" || fieldName === "Weight" || fieldName === "Date") {
@@ -587,7 +590,7 @@
 
                                     });
                             }
-                            if (rerate) {
+                            if (rerate && !job.bulkJob) {
                                 return self.rateJob(job).then(function(rate) {
                                     console.log(rate);
                                     if (rate !== job.charge) {
@@ -612,7 +615,16 @@
                                         });
                                 });
                             } else {
-                                return DispatchData
+                                return job.bulkJob ?  DispatchData
+                                    .updateBulkJobDetail(job.id,
+                                        callData.field,
+                                        callData.value,
+                                        job.charge,
+                                        FirstName,
+                                        ContactID).then(function (response) {
+                                        return response;
+                                    }) :
+                                    DispatchData
                                     .updateJobDetail(callData.jobID,
                                         callData.field,
                                         callData.value,
@@ -695,6 +707,8 @@
                                 self.gpsForm.data.lat = locn.DisplayPosition.Latitude;
                                 self.gpsForm.data.long = locn.DisplayPosition.Longitude;
                                 self.gpsForm.data.address = locn.Address.Label;
+                                self.gpsForm.data.suburb = locn.Address.District;
+                                self.gpsForm.data.postCode = locn.Address.PostalCode;
                                 //var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
                                 //self.map.setCenter(ll);
                                 //self.marker.setPosition(ll);
@@ -761,9 +775,23 @@
                             return self.gpsFormPromise;
                         }
 
+
+
                         if (field === "toAddress") {
                             job.toAddress = job.deliverToContact + ',' + self.gpsForm.data.address;
-                            if (job.toSuburbID.toString() !== self.gpsForm.data.our_suburb) {
+                            if (job.bulkJob) {
+                                return DispatchData.updateBulkDeliveryAddress(job.id,
+                                    self.gpsForm.data.suburb,
+                                    self.gpsForm.data.postCode,
+                                    job.toAddress,
+                                    self.gpsForm.data.lat,
+                                    self.gpsForm.data.long,
+                                    FirstName).then(function () {
+                                        $(".gpsForm").hide(0);
+
+                                });
+                            }
+                            if (!job.bulkJob && job.toSuburbID.toString() !== self.gpsForm.data.our_suburb) {
                                 //ToDo create change event
                                 DispatchData.addPriceSuburbChangeEvent(job.jobNo,
                                     job.clientID,
@@ -777,7 +805,21 @@
                             job.toSuburbID = parseInt(self.gpsForm.data.our_suburb);
                         } else {
                             job.fromAddress = self.gpsForm.data.address;
-                            if (job.fromSuburbID.toString() !== self.gpsForm.data.our_suburb) {
+                            if (job.bulkJob) {
+                                return DispatchData.updateBulkPickupAddress(job.id,
+                                    self.gpsForm.data.suburb,
+                                    self.gpsForm.data.postCode,
+                                    job.fromAddress,
+                                    self.gpsForm.data.lat,
+                                    self.gpsForm.data.long,
+                                    FirstName).then(function () {
+                                    $(".gpsForm").hide(0);
+                                    
+
+                                });
+                            }
+                            
+                            if (!job.bulkJob && job.fromSuburbID.toString() !== self.gpsForm.data.our_suburb) {
                                 //ToDo create change event
                                 DispatchData.addPriceSuburbChangeEvent(job.jobNo,
                                     job.clientID,
@@ -1157,7 +1199,16 @@
             };
 
             self.voidClick = function (job) {
-                return DispatchData
+                return job.bulkJob ? DispatchData
+                    .updateBulkJobDetail(job.id,
+                        "Void",
+                        job.void,
+                        job.charge,
+                        FirstName,
+                        ContactID).then(function (response) {
+                            self.selectBulkJobDetail(job.id);
+                        return response;
+                    }) : DispatchData
                     .updateJobDetail(job.id,
                         "Void",
                         job.void,
