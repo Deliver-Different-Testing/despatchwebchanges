@@ -1548,6 +1548,32 @@ angular
 
         };
 
+        $scope.setFirstJob = function (job) {
+            $ngConfirm({
+                title: 'Set First Job?',
+                content: 'Are you sure you wish to set this as the First Job?',
+                scope: $scope,
+                buttons: {
+
+                    Yes: {
+                        btnClass: 'btn-green',
+                        action: function (scope, button) {
+                            DispatchData.setFirstJob(job.id, $scope.currentCourier.courierID).then(function (response) {
+                                $scope.getCurrentJobs($scope.currentCourier.courierID);
+                            });
+                        }
+                    },
+                    No: {
+                        btnClass: 'btn-red',
+                        action: function (scope, button) {
+
+                        }
+                    }
+
+                }
+            });
+        }
+
         //////////////////////////////
         //  SPLIT JOB //
         /////////////////////////////
@@ -2299,6 +2325,13 @@ angular
                         enabled: function ($itemScope, $event, modelValue, text, $li) {
                             return $itemScope.job.allowSplit;
                         },
+                    },
+
+                    {
+                        text: "Set First Job",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.setFirstJob($scope.currentJob);
+                        }
                     }
                 ];
             return fullMenu;

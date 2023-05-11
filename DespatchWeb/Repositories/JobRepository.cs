@@ -1410,6 +1410,16 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public async Task SetFirstJob(int jobId, int courierId)
+        {
+            await _context.LoadStoredProc("DES_stpJob_AutoDespatchSelectedJobs_FSCourierID")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@CourierID", courierId)
+                .ExecuteStoredNonQueryAsync();
+
+        }
+
+
         public async Task TransferJob(int jobId, int courierId, int dispId)
         {
             await _context.LoadStoredProc("DESWEB_stpJob_TransferJob")

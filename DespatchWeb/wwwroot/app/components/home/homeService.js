@@ -77,6 +77,11 @@ angular
                             return response;
                         });
                     },
+                    setFirstJob: function (jobId, courierId) {
+                        return $http.post("job/SetFirstJob?jobId=" + jobId + "&courierId=" + courierId).then(function (response) {
+                            return response;
+                        });
+                    },
                     truckCourierStatus: function(courierId) {
                         return $http.post("courier/TruckCourierStatus?courierId=" + courierId).then(function (response) {
                             return response;

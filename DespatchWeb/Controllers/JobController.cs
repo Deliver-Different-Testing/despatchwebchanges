@@ -366,6 +366,13 @@ namespace DespatchWeb.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> SetFirstJob(int jobId, int courierId)
+        {
+            await _jobRepo.SetFirstJob(jobId, courierId);
+            return Json("OK");
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Void(int jobId)
         {
             await _jobRepo.VoidJob(jobId);
