@@ -48,7 +48,9 @@ angular
                     $('#location').select2('open').val(null).trigger('change');
                     var search = $('#location').data('select2').dropdown.$search;
                     if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {
-                        search.val($scope.jdSvc.gpsForm.data.address.split(',')[1].split());
+                        var parts = $scope.jdSvc.gpsForm.data.address.split(',');
+                        search.val(parts[1].split());
+                        $scope.jdSvc.gpsForm.data.extras = parts[0];
                     } else {
                         search.val($scope.jdSvc.gpsForm.data.address);
                     }

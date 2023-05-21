@@ -773,6 +773,38 @@ table.table tr .status.ASC {
   padding: 1px;
   min-width: 15px;
 }
+#currentWork th {
+  white-space: nowrap;
+  cursor: pointer;
+}
+#currentWork tr {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#currentWork tr.O {
+  background-color: #ffdfba !important;
+}
+#currentWork tr.B {
+  background-color: #bae1ff !important;
+}
+#currentWork tr.G {
+  background-color: #b0f57b !important;
+}
+#currentWork td {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#currentWork .doing {
+  background-color: #d7f3ce !important;
+}
+#currentWork input.dispatchField {
+  width: 29px;
+  text-align: center;
+  height: 15px;
+}
+#currentWork input.lateCallField {
+  width: 21px;
+  text-align: center;
+  height: 15px;
+}
 #jobList th {
   white-space: nowrap;
   cursor: pointer;

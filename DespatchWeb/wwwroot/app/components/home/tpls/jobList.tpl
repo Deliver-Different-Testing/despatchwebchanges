@@ -40,7 +40,7 @@
 			<td context-menu="setEventsMenu">{{job.jobNo}}</td>
 			<td right-click action="clientColumnClick(event)">{{job.client}}</td>
 			<td style="width:50px; white-space:nowrap; overflow-x:hidden;" right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-			<td colspan="2" right-click action="toColumnClick(event)"title="{{job.toAddress}}"><div style="width:450px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}"><i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i>{{job.to}} {{job.toAddress}}</div></td>
+			<td colspan="2"title="{{job.toAddress}}"><div right-click action="toColumnClick(event)" style="width:450px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}"><i ng-if="!job.deliveryLongitude"  class="fa fa-exclamation"></i>{{job.to}} {{job.toAddress}}</div></td>
 			<!--<td><div style="width:280px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>	-->
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>
             <td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
@@ -72,7 +72,7 @@
     </table>
 
 
-<div class="loading" style="display:block">
+<div class="loading" style="display:none">
     <div class="text">
         <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
         <span class="sr-only">Loading...</span>

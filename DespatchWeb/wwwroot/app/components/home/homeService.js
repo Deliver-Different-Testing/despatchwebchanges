@@ -217,6 +217,11 @@ angular
                             return response.data;
                         });
                     },
+                    getAllCouriers: function () {
+                        return $http.get("courier/AllActive").then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getActiveClients: function () {
                         return $http.get("home/ActiveClients").then(function (response) {
                             return response.data;
@@ -348,6 +353,11 @@ angular
                     },
                     updateBulkPickupAddress: function (bulkJobId, fromSuburb, fromPostCode, address, lat, lng, despatcherName) {
                         return $http.post("job/UpdateBulkPickupAddress?bulkJobId=" + bulkJobId + "&fromSuburb=" + fromSuburb + "&fromPostCode=" + fromPostCode + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + '&despatcherName=' + despatcherName).then(function (response) {
+                            return response;
+                        });
+                    },
+                    updateJobType: function (jobId, jobType,despatcherName) {
+                        return $http.post("job/UpdateJobType?jobId=" + jobId + "&jobType=" + jobType +  '&despatcherName=' + despatcherName).then(function (response) {
                             return response;
                         });
                     },

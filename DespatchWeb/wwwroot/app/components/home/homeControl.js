@@ -54,7 +54,7 @@ angular
                     if (fromRightClick) {
                         $scope.$apply();
                     }
-                    waitingDialog.hide();
+                    
 
                 });
                 setTimeout(function () {
@@ -62,11 +62,16 @@ angular
                     $('#location').select2('open').val(null).trigger('change');
                     var search = $('#location').data('select2').dropdown.$search;
                     if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {
-                        search.val($scope.jdSvc.gpsForm.data.address.split(',')[1].split());
+                        var parts = $scope.jdSvc.gpsForm.data.address.split(',');
+                        search.val(parts[1].split());
+                        $scope.jdSvc.gpsForm.data.extras = parts[0];
+                        $scope.$apply();
                     } else {
                         search.val($scope.jdSvc.gpsForm.data.address);
                     }
+                    waitingDialog.hide();
                     search.trigger("input");
+                    
                 }, 150);
             }
         };
@@ -163,6 +168,7 @@ angular
         $scope.jdSvc.setGather($scope.gather);
         $scope.allCouriers = { display: false, includeUA: false };
         $scope.mapZoom = { display: true };
+        $scope.supportSettings = { autoRefresh: true };
 
         $scope.options = {
             "detail": {
@@ -272,7 +278,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.76",
+                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.82",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -295,7 +301,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.16",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.26",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -331,7 +337,7 @@ angular
             },
             "supports": {
                 "title": "Supports",
-                "tpl": "app/components/home/tpls/supports.tpl?v=1.10",
+                "tpl": "app/components/home/tpls/supports.tpl?v=1.11",
                 "showSearch": 0,
                 "showRefresh": 0
             },
@@ -584,7 +590,7 @@ angular
                 }
             }
             if (job.van) {
-                temp += "VAN ";
+                temp = "VAN ";
             }
             if (job.truck || job.speedID === 45) {
                 temp += "TRUCK ";
@@ -766,10 +772,13 @@ angular
 
         $scope.selectClearList = function (id, event, area) {
             $("#area-group .btn").removeClass("topBarActive");
-            $(".clearLists-list-title").removeClass("listActive");
-            $(event.currentTarget).addClass("listActive");
-            $scope.getClearListEnvelope(id);
-            $scope.setFilters({ 'area': area });
+            //$(".clearLists-list-title").removeClass("listActive");
+            //$(event.currentTarget).addClass("listActive");
+            if ($("#clearLists").find('.listActive').length <= 1) {
+                $scope.getClearListEnvelope(id);
+            }
+            
+            $scope.setFilters({ 'clearList': area });
         };
 
         $scope.selectForDispatch = function (job) {
@@ -1013,16 +1022,47 @@ angular
             });
         };
 
+        
+
         ////////////////////////////////////////
         // DISPATCH THE JOBS
         ///////////////////////////////////////
         $scope.dispatchJobs = function (courier) {
             var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
             if (foundCourier === undefined) {
-                alert("Invalid Courier");
-                return;
-            }
+               $ngConfirm({
+                    title: 'Courier Offline',
+                    content: 'Dispatch anyway?',
+                    scope: $scope,
+                    buttons: {
 
+                        Yes: {
+                            btnClass: 'btn-green',
+                            action: function (scope, button) {
+                                foundCourier = $scope.pickAllCouriers.find(c => c.id === courier);
+                                //console.log(foundCourier);
+                                return $scope.dispatchJobsContinue(courier, foundCourier, true);
+                            }
+                            
+
+                        },
+                        No: {
+                            btnClass: 'btn-red',
+                            action: function (scope, button) {
+                                
+                            }
+                        }
+                    }
+               });
+               return;
+            };
+
+            return $scope.dispatchJobsContinue(courier, foundCourier, false);
+
+
+        };
+
+        $scope.dispatchJobsContinue = function (courier, foundCourier, offline) {
             var callData = {
                 "call": "dispatchJobs",
                 "courier": courier,
@@ -1073,7 +1113,11 @@ angular
                     $("#box-map").find(".loading").show();
 
                     $scope.courier = { gpsCourier: foundCourier.id };
-                    $scope.searchCourier();
+                    if (!offline) {
+                        $scope.searchCourier();
+                    } else {
+                        $scope.getCurrentJobs(foundCourier.id);
+                    }
                     setTimeout(function () {
                         $("#jobList tr").first().find(".dispatchField").focus()
                     }, 200);
@@ -1082,9 +1126,7 @@ angular
                 return response;
             });
 
-
-
-        };
+        }
 
         $scope.dispatchJobsFromPotentialCouriers = function (courier) {
             var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
@@ -1953,6 +1995,8 @@ angular
             $scope.setFilters(data);
         };
 
+        
+
         $scope.setFilters = function (data) {
             setTimeout(function () {
                 if (data.status) {
@@ -1969,6 +2013,16 @@ angular
                         $scope.jobFilters.area = data.area;
                     }
 
+                }
+
+                if (data.clearList) {
+                    var clSelected = $("#clearLists").find('.listActive').length;
+                    if (clSelected > 1) {
+                        $scope.jobFilters.area += "," + data.clearList;
+                    }
+                    else {
+                        $scope.jobFilters.area = data.clearList;
+                    }
                 }
 
                 if (data.order) {
@@ -2570,7 +2624,7 @@ angular
             $("#box-supports").find(".loading").show();
             return DispatchData.getSupports($scope.supportChannel).then(function (data) {
                 $scope.supports = data;
-                
+                $("#box-supports").find(".loading").fadeOut();
 
                 $scope.supportMenu = [
                     // NEW IMPLEMENTATION
@@ -2596,7 +2650,7 @@ angular
 
                 setTimeout(function () {
                     $(document).ready(function (event) {
-                        $("#box-supports").find(".loading").fadeOut();
+                        //$("#box-supports").find(".loading").fadeOut();
                         if ($scope.currentSupport) {
                             $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
                         }
@@ -2659,6 +2713,10 @@ angular
 
             DispatchData.getActiveCouriers().then(function (data) {
                 $scope.pickCouriers = data;
+            });
+
+            DispatchData.getAllCouriers().then(function (data) {
+                $scope.pickAllCouriers = data;
             });
 
             
@@ -3065,7 +3123,9 @@ angular
         }
 
         $scope.getData();
-        $(document).everyTime("10s", "SP", function () { $scope.getSupports(); });
+
+        $(document).everyTime("30s", "SP", function () { $scope.getSupports(); });
+        $scope.getSupports();
 
         // on first focus (bubbles up to document), open the menu
         $(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
@@ -3107,7 +3167,6 @@ angular
 
         $scope.onMapReady = function () {
             //$scope.heremaps = heremaps;
-
             var options = {
                 minimumInputLength: 1,
                 ajax: {
@@ -3323,7 +3382,9 @@ angular
                     $('#location').select2('open');
                     var search = $('#location').data('select2').dropdown.$search;
                     if ($scope.gpsForm.data.address.indexOf(',') > 0) {
-                        search.val($scope.gpsForm.data.address.split(',')[1].split());
+                        var parts = $scope.gpsForm.data.address.split(',');
+                        search.val(parts[1].split());
+                        $scope.gpsForm.data.extras = parts[0];
                     } else {
                         search.val($scope.gpsForm.data.address);
                     }
@@ -3338,7 +3399,9 @@ angular
                 $('#location').select2('open');
                 var search = $('#location').data('select2').dropdown.$search;
                 if ($scope.gpsForm.data.address.indexOf(',') > 0) {
-                    search.val($scope.gpsForm.data.address.split(',')[1].split());
+                    var parts = $scope.gpsForm.data.address.split(','); 
+                    search.val(parts[1].split());
+                    $scope.gpsForm.data.extras = parts[0];
                 } else {
                     search.val($scope.gpsForm.data.address);
                 }

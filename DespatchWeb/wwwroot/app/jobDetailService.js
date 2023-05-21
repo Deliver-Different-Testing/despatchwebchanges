@@ -529,6 +529,16 @@
                                 job.speed = $("#gather-SpeedID").find(':selected').text();
                                 rerate = true;
                             }
+                            if (fieldName === "JobTypeID") {
+                                callData.value = gather.form.fields[0].value;
+                                job.jobType = gather.form.fields[0].value;
+                                return DispatchData
+                                    .updateJobType(callData.jobID,
+                                        callData.value,
+                                        FirstName).then(function(response) {
+
+                                    });
+                            }
                             if (fieldName === "InternalStatusID") {
                                 callData.value = gather.form.fields[0].value;
                                 job.internalStatusID = gather.form.fields[0].value;
@@ -727,7 +737,7 @@
                 };
 
                 self.updateGPS = function(currentJob, field, fromRightClick) {
-
+                    waitingDialog.show();
                     var lat;
                     var long;
                     var q;
@@ -738,28 +748,28 @@
 
                             lat = currentJob.deliveryLatitude;
                             long = currentJob.deliveryLongitude;
-                            q = $("#gpsMap").attr("data-src") + lat + "," + long;
+                            //q = $("#gpsMap").attr("data-src") + lat + "," + long;
                         } else {
                             lat = "";
                             long = "";
-                            q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.toAddress);
+                            //q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.toAddress);
                         }
                     } else {
 
                         if (currentJob.pickUpLongitude) {
                             lat = currentJob.pickUpLatitude;
                             long = currentJob.pickUpLongitude;
-                            q = $("#gpsMap").attr("data-src") + lat + "," + long;
+                            //q = $("#gpsMap").attr("data-src") + lat + "," + long;
                         } else {
                             lat = "";
                             long = "";
-                            q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.fromAddress);
+                           //q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.fromAddress);
                         }
                     }
 
                     console.log(currentJob.pickUpLatitude);
-                    console.log(q);
-                    $("#gpsMap").attr("src", q);
+                    //console.log(q);
+                   // $("#gpsMap").attr("src", q);
 
 
                     self.gpsForm.data = {
@@ -778,7 +788,7 @@
 
 
                         if (field === "toAddress") {
-                            job.toAddress = job.deliverToContact + ',' + self.gpsForm.data.address;
+                            job.toAddress = (self.gpsForm.data.extras || '').length > 1 ? self.gpsForm.data.extras + ',' + self.gpsForm.data.address : self.gpsForm.data.address;
                             if (job.bulkJob) {
                                 return DispatchData.updateBulkDeliveryAddress(job.id,
                                     self.gpsForm.data.suburb,
@@ -804,7 +814,7 @@
                             }
                             job.toSuburbID = parseInt(self.gpsForm.data.our_suburb);
                         } else {
-                            job.fromAddress = self.gpsForm.data.address;
+                            job.fromAddress = (self.gpsForm.data.extras || '').length > 1 ? self.gpsForm.data.extras + ',' + self.gpsForm.data.address : self.gpsForm.data.address;
                             if (job.bulkJob) {
                                 return DispatchData.updateBulkPickupAddress(job.id,
                                     self.gpsForm.data.suburb,
@@ -1253,6 +1263,8 @@
                         };
 
                         $("#gather-DeliverToLeaveID").select2(speedOptions);
+                        $("#gather-DeliverToLeaveID").select2('open');
+                        $("#gather-DeliverToLeaveID").select2().dropdown.$search;
 
                     },
                     400);
@@ -1268,6 +1280,8 @@
                         };
 
                         $("#gather-UndeliverableLocationID").select2(speedOptions);
+                        $("#gather-UndeliverableLocationID").select2('open').val(job.udStatus).trigger('change');
+                        $("#gather-UndeliverableLocationID").select2().dropdown.$search;
 
                     },
                     400);
@@ -1283,7 +1297,9 @@
                             placeholder: "Start typing to enter new speed..."
                         };
 
-                        $("#gather-NotifiedJobTypeID").select2(speedOptions);
+                    $("#gather-NotifiedJobTypeID").select2(speedOptions);
+                    $("#gather-NotifiedJobTypeID").select2('open').val(job.notifiedJobTypeID).trigger('change');
+                    $("#gather-NotifiedJobTypeID").select2().dropdown.$search;
 
                     },
                     400);
@@ -1314,9 +1330,53 @@
                         };
 
                         $("#gather-SpeedID").select2(speedOptions);
+                        $("#gather-SpeedID").select2('open').val(job.speedID).trigger('change');
+                        $("#gather-SpeedID").select2().dropdown.$search;
 
                     },
                     200);
+                };
+
+            self.getJobTypeDescription = function(jobTypeID) {
+                switch (jobTypeID||1) {
+                case 1:
+                        return "Pickup";
+                case 2:
+                        return "Delivery";
+                case 3:
+                    return "3rd-Party";
+
+                    default:
+                        return "Pickup";
+                }
+            };
+
+            self.jobTypeClick = function (job) {
+                this.editDetailField(job, 'JobTypeID', 'Job Type', '', job.id, 'select2');
+                setTimeout(function() {
+                    var jtOptions = {
+                        minimumInputLength: 1,
+                        data: [
+                            {
+                                id: 1,
+                                text: 'Pickup'
+                            },
+                            {
+                                id: 2,
+                                text: 'Delivery'
+                            },
+                            {
+                                id: 3,
+                                text: '3rd-Party'
+                            }
+                        ],
+                        placeholder: "Start typing to enter new speed..."
+                    };
+
+                    $("#gather-JobTypeID").select2(jtOptions);
+                    $("#gather-JobTypeID").select2('open').val(job.jobType).trigger('change');
+                    $("#gather-JobTypeID").select2().dropdown.$search;
+                },200);
             };
 
             self.internalStatusClick = function(job) {

@@ -294,7 +294,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.21",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.22",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -1029,7 +1029,7 @@ angular
             });
             $("#FilterCourier").select2({
                 ajax: {
-                    url: "/courier/AllActive",
+                    url: "/courier/AllActiveSearch",
                     dataType: 'json',
                     delay: 250,
                     data: function (params) {

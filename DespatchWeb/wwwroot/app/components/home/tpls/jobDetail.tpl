@@ -117,6 +117,10 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Speed Notified</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.notify}}</div>
 						</div>
+						<div ng-if="!currentJob.bulkJob" class="field" ng-click="!currentJob.locked && jdSvc.jobTypeClick(currentJob)">
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Job Type</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{jdSvc.getJobTypeDescription(currentJob.jobType)}}</div>
+						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Direct</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.directClick(currentJob)" ng-model="currentJob.direct"/></div>

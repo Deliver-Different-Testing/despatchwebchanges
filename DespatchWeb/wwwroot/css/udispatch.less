@@ -936,6 +936,52 @@ table.table {
     min-width: 15px;
 }
 
+#currentWork {
+    th {
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+    tr {
+        border: 1px solid rgba(0,0,0,0.5);
+
+
+
+
+        &.O {
+            background-color: @s-orange !important;
+        }
+
+        &.B {
+            background-color: @s-blue !important;
+        }
+
+        &.G {
+            background-color: @s-green !important;
+        }
+    }
+
+    td {
+        border: 1px solid rgba(0,0,0,0.5);
+    }
+
+    .doing {
+        background-color: #d7f3ce !important;
+    }
+
+    input.dispatchField {
+        width: 29px;
+        text-align: center;
+        height: 15px;
+    }
+
+    input.lateCallField {
+        width: 21px;
+        text-align: center;
+        height: 15px;
+    }
+}
+
 #jobList {
     th {
         white-space: nowrap;

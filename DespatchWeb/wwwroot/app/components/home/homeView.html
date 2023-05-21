@@ -97,9 +97,9 @@
                                     <button type="button" class="btn btn-sm btn-secondary" title="Split Job" ng-show="currentJob && (currentJob.allowSplit)" ng-click="splitJob(currentJob)"><i class="fa fa-random"></i></button>
 
                                     <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
+            <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
+            <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
+            <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
                                 </div>
 
                             </div>
@@ -132,6 +132,7 @@
                                     <li><a href="#" ng-click="setSupportChannel('All');">All</a></li>
                                 </ul>
                             </div>
+                            <div class="btn btn-sm btn-primary box-refresh" style="margin-left: 8px;" ng-show="box.name == 'supports'" ng-click="getSupports()"><i class="fa fa-refresh"></i></div>
                             <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity">City <i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggle" ng-show="box.name === 'map'" ng-click="allCouriers.display = !allCouriers.display;getAvailableCourierLocation();">All <i ng-class="allCouriers.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggleZoom" ng-show="box.name === 'map'" ng-click="mapZoom.display = !mapZoom.display;storeMapZoomDisplay()">Auto Zoom <i ng-class="mapZoom.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
@@ -168,7 +169,7 @@
 
 <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
 
-<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.10'"></div>
+<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.11'"></div>
 
 <div id='draggingItems'></div>
 
@@ -271,11 +272,19 @@
     });
 
     $(document).on('click', '.top-bar .btn-group .btn', function (event) {
-        if (!event.ctrlKey) {
+        if (!event.ctrlKey && !event.metaKey) {
             $(this).parent().find('.topBarActive').removeClass('topBarActive');
         }
 
         $(this).addClass('topBarActive');
+    });
+
+    $(document).on('click', '.clearLists-list-title', function (event) {
+        if (!event.ctrlKey && !event.metaKey) {
+            $("#clearLists").find('.listActive').removeClass('listActive');
+        }
+
+        $(this).addClass('listActive');
     });
 
 

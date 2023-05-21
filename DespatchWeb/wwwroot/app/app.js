@@ -22,7 +22,8 @@ angular
 	.directive('rightClick', function () {
 
 		document.oncontextmenu = function (e) {
-			if (e.target.hasAttribute('right-click')) {
+            if (e.target.hasAttribute('right-click')) {
+                e.stopPropagation();
 				return false;
 			}
 		};

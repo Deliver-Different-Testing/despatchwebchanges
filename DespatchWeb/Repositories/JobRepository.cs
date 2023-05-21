@@ -1503,7 +1503,7 @@ namespace DespatchWeb.Repositories
 
         public async Task ResetLateEvent(int jobId, int eventType)
         {
-            await _context.LoadStoredProc("DES_qdfLateCall_Reset")
+            await _context.LoadStoredProc("DESWEB_qdfLateCall_Reset")
               .WithSqlParam("@JobID", jobId)
               .WithSqlParam("@Type", eventType)
               .ExecuteStoredNonQueryAsync();
@@ -1912,6 +1912,15 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@Username", despatcher)
                 .ExecuteStoredNonQueryAsync();
 
+        }
+
+        public async Task UpdateJobType(int jobId, int jobType, string despatcher)
+        {
+            await _context.LoadStoredProc("DESWEB_stpUpdateJobType")
+                .WithSqlParam("@JobID", jobId)
+                .WithSqlParam("@JobType", jobType)
+                .WithSqlParam("@Username", despatcher)
+                .ExecuteStoredNonQueryAsync();
         }
 
         public async Task UpdateBulkPickupAddress(int bulkJobId, string fromSuburb, int fromPostCode, string address, decimal pickupLat, decimal pickupLng, string despatcher)

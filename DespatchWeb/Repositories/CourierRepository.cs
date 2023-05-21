@@ -98,11 +98,11 @@ namespace DespatchWeb.Repositories
         /// filters by active, sms setting and logged in
         /// </summary>
         /// <returns></returns>
-        public List<ActiveCouriersViewModel> ActiveCouriers()
+        public async Task<List<ActiveCouriersViewModel>> ActiveCouriers()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();
-            _context.LoadStoredProc("DES_qryCourierCombo_Active")
-                .ExecuteStoredProc(handle =>
+            await _context.LoadStoredProc("DES_qryCourierCombo_Active")
+                .ExecuteStoredProcAsync(handle =>
                 {
                     activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
                 });
@@ -110,17 +110,32 @@ namespace DespatchWeb.Repositories
         }
 
         /// <summary>
-        /// All active couriers regardless of logged in or not
+        /// All active couriers regardless of logged in or not via search
         /// </summary>
         /// <returns></returns>
-        public List<AllCourierActiveViewModel> AllActiveCouriers(string searchTerm)
+        public async Task<List<AllCourierActiveViewModel>> AllActiveCouriers(string searchTerm)
         {
             var activeCouriers = new List<AllCourierActiveViewModel>();
-            _context.LoadStoredProc("DESWEB_qryCourierCombo")
+            await _context.LoadStoredProc("DESWEB_qryCourierCombo")
                 .WithSqlParam("@SearchTerm", searchTerm)
-                .ExecuteStoredProc(handle =>
+                .ExecuteStoredProcAsync(handle =>
                 {
                     activeCouriers = handle.ReadToList<AllCourierActiveViewModel>().ToList();
+                });
+            return activeCouriers;
+        }
+
+        /// <summary>
+        /// All active couriers regardless of logged in or not 
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
+        {
+            var activeCouriers = new List<ActiveCouriersViewModel>();
+            await _context.LoadStoredProc("DESWEB_qryCourierActive")
+                .ExecuteStoredProcAsync(handle =>
+                {
+                    activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
                 });
             return activeCouriers;
         }

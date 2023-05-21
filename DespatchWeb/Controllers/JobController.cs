@@ -628,6 +628,13 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        public async Task<IActionResult> UpdateJobType(int jobId, int jobType, string despatcherName)
+        {
+            await _jobRepo.UpdateJobType(jobId, jobType,despatcherName);
+            return Json("OK");
+        }
+
+
         public async Task<IActionResult> UpdateBulkPickupAddress(int bulkJobId, string fromSuburb, int fromPostCode, string address,
             decimal pickupLat, decimal pickupLng, string despatcherName)
         {

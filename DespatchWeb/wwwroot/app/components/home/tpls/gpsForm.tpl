@@ -41,6 +41,10 @@
             </div>
         </div>
         <div class="col-md-12">
+            <label>Address Extras:</label>
+            <input type="text" id="extras" ng-model="jdSvc.gpsForm.data.extras" class="form-control" />
+        </div>
+        <div class="col-md-12">
 
           <div class="form-group">
             <label for="jobNum">Search Address:</label>

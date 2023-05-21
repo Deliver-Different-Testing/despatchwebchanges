@@ -29,9 +29,9 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        public IActionResult Active()
+        public async Task<IActionResult> Active()
         {
-            var result = _courierRepo.ActiveCouriers();
+            var result = await _courierRepo.ActiveCouriers();
             return Json(result);
         }
 
@@ -49,11 +49,18 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        public IActionResult AllActive(string searchTerm)
+        public async Task<IActionResult> AllActiveSearch(string searchTerm)
         {
-            var result =  _courierRepo.AllActiveCouriers(searchTerm);
+            var result =  await _courierRepo.AllActiveCouriers(searchTerm);
             return Json(result);
         }
+
+        public async Task<IActionResult> AllActive()
+        {
+            var result = await _courierRepo.AllActiveCouriersAsync();
+            return Json(result);
+        }
+
 
         public IActionResult Location(string code)
         {
