@@ -695,6 +695,37 @@ angular
 
         };
 
+        $scope.swapPOD = function () {
+            
+            $scope.gather.form = {
+                id: "swapPOD",
+                title: "Enter the other job number",
+                fields: [
+                    {
+                        "name": "JobNumber",
+                        "label": "Job Number",
+                        "type": "text"
+                    }
+                ],
+                onSubmit: function () {
+                    return uCSData.validateSwapPOD($scope.gather.form.fields[0].value).then(function (data) {
+                        if (!data) {
+                            $ngConfirm("Invalid Job");
+                        } else {
+                            return uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(function (data) {
+                                $ngConfirm("POD Swap Completed Successfully");  
+                            });
+                        }
+                    });
+                    
+                },
+                submitValue: "Submit"
+            };
+            $scope.gather.showForm();
+
+
+        }
+
         $scope.sendPOD = function () {
             if (!$scope.currentJob.podPhoto) {
                 alert("Sorry no photo for this Job");

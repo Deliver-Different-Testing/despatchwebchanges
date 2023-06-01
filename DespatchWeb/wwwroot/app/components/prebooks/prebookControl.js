@@ -713,9 +713,13 @@ angular
         NgMap.getMap().then(function (map) {
             $scope.map = map;
             $scope.marker = map.markers[0];
-            $scope.onMapReady(); $scope.refreshData();
+            $scope.onMapReady();
+            console.log("here...");
+            
         });
 
+        $scope.refreshData();
+    
         $scope.onMapReady = function () {
             //$scope.heremaps = heremaps;
 

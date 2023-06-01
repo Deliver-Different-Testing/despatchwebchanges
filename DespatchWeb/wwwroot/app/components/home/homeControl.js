@@ -362,6 +362,18 @@ angular
         };
         $scope.pickService = {
             "clients": [],
+            "channel": [],
+            "channelTexts": {
+                buttonDefaultText: "Select Channel..."
+            },
+            "channelEvents": {
+                "onSelectionChanged": function () {
+                    const temp = $scope.pickService.channel.map(el => el.label);
+
+                    $scope.setSupportChannel(String(temp) || "All");
+                    
+                }
+            },
             "settings": {
                 "enableSearch": true,
                 "selectedToTop": true,
@@ -371,6 +383,20 @@ angular
             }
         };
         $scope.pickClients = [];
+        $scope.pickChannels = [
+            {
+                "id": "1",
+                "label": "City"
+            },
+            {
+                "id": "2",
+                "label": "Main"
+            },
+            {
+                "id": "3",
+                "label": "Trucks"
+            }
+        ];
 
         ///////////////////////////////
         // LAYOUT 
@@ -471,7 +497,8 @@ angular
         $scope.userName = FirstName;
         $scope.currentLayoutName = "default";
         $scope.truckMode = "On";
-        $scope.supportChannel = "All";
+        $scope.supportChannel = JSON.parse(localStorage.getItem("support-channel-" + ContactID)) || "All";
+        //$scope.pickService.channel = $scope.supportChannel;
 
         $scope.groupJobsSelection = "";
         $scope.currentWorkSelection = "";
@@ -575,6 +602,10 @@ angular
 
             $scope.gather.showForm();
 
+        };
+
+        $scope.supportChannelChanged = function () {
+            console.log($scope.pickService.channel);
         };
 
         $scope.attention = function (job) {
@@ -2513,6 +2544,9 @@ angular
 
         $scope.setSupportChannel = function (channel) {
             $scope.supportChannel = channel;
+            if (Modernizr.localstorage) {
+                localStorage.setItem("support-channel-" + ContactID, JSON.stringify($scope.supportChannel));
+            }
             $scope.getSupports();
         };
 
@@ -2617,14 +2651,29 @@ angular
             }
         }
 
+        function SetSelectedChannels(item, index) {
+            var sr = $scope.pickChannels.find(obj => {
+
+                return obj.label === item;
+
+            });
+            $scope.pickService.channel.push(sr);
+        }
+
         $scope.getSupports = function() {
             ////////////////////////////
             // SUPPORTS
             ////////////////////////////
             $("#box-supports").find(".loading").show();
             return DispatchData.getSupports($scope.supportChannel).then(function (data) {
+                var first = $scope.supports === null || $scope.supports === undefined;
+
                 $scope.supports = data;
-                $("#box-supports").find(".loading").fadeOut();
+
+                if (first) {
+                    $scope.supportChannel.split(',').forEach(SetSelectedChannels);
+                }
+                $("#box-supports").find(".loading").fadeOut();  
 
                 $scope.supportMenu = [
                     // NEW IMPLEMENTATION

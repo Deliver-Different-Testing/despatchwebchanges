@@ -1149,3 +1149,6 @@ span.courierRed {
   color: #FFFFFF;
   background-color: #FF0000;
 }
+#SupportChannels .dropdown-menu {
+  z-index: 99999;
+}

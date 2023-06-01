@@ -237,6 +237,28 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
+        public IActionResult ValidateSwapPOD(string job)
+        {
+            var fromDate = DateTime.Today;
+            var result = _jobRepo.PODSearch(null, job, fromDate.ResetTimeToStartOfDay(),
+                fromDate.ResetTimeToEndOfDay(), null, 1, 5);
+            if (result.Item1 == 0)
+            {
+                return Json(false);
+            }
+            else
+            {
+                return Json(true);
+            }
+
+        }
+
+        public async Task<IActionResult> SwapPOD(string job1, string job2)
+        {
+            await _jobRepo.SwapPOD(job1, job2);
+            return Json("OK");
+        }
+
         public async Task<IActionResult> BulkSearch(int? courierId, int? clientId, string wild, DateTime fromDate, DateTime toDate,
             int pageIndex, int pageSize)
         {

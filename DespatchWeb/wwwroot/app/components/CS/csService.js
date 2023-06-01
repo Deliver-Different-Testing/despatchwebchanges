@@ -36,6 +36,16 @@ angular
                     return response.data;
                 });
             },
+            validateSwapPOD: function (jobNumber) {
+                return $http.post('Job/ValidateSwapPOD?job=' + jobNumber).then(function (response) {
+                    return response.data;
+                });
+            },
+            swapPOD: function (job1, job2) {
+                return $http.post('Job/SwapPOD?job1=' + job1 + '&job2=' + job2).then(function (response) {
+                    return response.data;
+                });
+            },
             closeEvent: function (eventId, userName) {
                 return $http.post('CS/CloseEvent?eventId=' + eventId + '&userName=' + `${ClientName}-${userName}`).then(function (response) {
                     return response.data;

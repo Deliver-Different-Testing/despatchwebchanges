@@ -91,7 +91,7 @@ namespace DespatchWeb.Repositories
                     RefB = j.UcbkClientRefb,
                     OurRef = j.UcbkOurRef,
                     Charge = $"{j.UcbkAmount:C}",
-                    ClientNotes = j.ClientNotes,
+                    ClientNotes = client.UcclNotes,
                     InternalNotes = j.UcbkNotes,
                     PickUpLatitude = j.PickUpLatitude,
                     PickUpLongitude = j.PickUpLongitude,
@@ -162,6 +162,7 @@ namespace DespatchWeb.Repositories
 
             return job;
         }
+
 
         public async Task<JobViewModel> JobDetail(int jobId)
         {
@@ -243,7 +244,7 @@ namespace DespatchWeb.Repositories
                     Charge = $"{j.Amount:C}",
                     DispatchTime = j.DispatchDate.HasValue ? DateTime.Parse(j.DispatchDate.Value.ToString("yyyy-MM-dd") + " " + j.DispatchTime.Value.ToString("HH:mm:ss")): j.DispatchDate,
                     PUTime = j.PickUpTime,
-                    ClientNotes = j.ClientNotes,
+                    ClientNotes = client.UcclNotes,
                     InternalNotes = j.Notes,
                     //ChildNotes = j.ChildNotes,
                     PickUpLatitude = j.PickUpLatitude,
@@ -1303,22 +1304,60 @@ namespace DespatchWeb.Repositories
         {
             var whereToUse = "";
             var orderToUse = "CASE WHEN ucevType = 1 THEN 1 WHEN ucevType = 2 THEN 2 ELSE 0 END, ucevTime";
-            switch (channel)
+
+            var channelItems = channel.Split(',');
+
+            if (channelItems.Length == 3)
             {
-                case "Main":
-                    whereToUse =
-                        "(RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 1 OR RegionToID = 4 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) or ((RegionFromID = 2 OR RegionFromID = 3) AND (RegionToID = 2 OR RegionToID = 3) And ucjbVan=1) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND (RegionFromID = 4 OR RegionFromID = 10 OR (RegionFromID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) AND   (RegionToID < 5 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND  NOT (RegionFromID = 10 AND (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or ((ucjbSpeed IN(45) OR Truck = 1) AND IsParentJob = 0)";
-                    break;
-                case "City":
-                    whereToUse =
-                        "((RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 2 OR RegionToID = 3 Or RegionToID = 10)) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND RegionFromID = 3  AND RegionToID = 3  AND ucjbSize in(0,1) AND (Truck = 0 OR Truck is NULL))";
-                    break;
-                case "Trucks":
-                    whereToUse = "(ucjbSpeed IN (45,109) OR Truck = 1) AND IsParentJob = 0";
-                    break;
-                case "All":
-                    break;
+                channel = "All";
             }
+            else
+            {
+                foreach (var ch in channelItems)
+                {
+                    switch (ch)
+                    {
+                        case "Main":
+                            var main = "(RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 1 OR RegionToID = 4 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) or ((RegionFromID = 2 OR RegionFromID = 3) AND (RegionToID = 2 OR RegionToID = 3) And ucjbVan=1) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND (RegionFromID = 4 OR RegionFromID = 10 OR (RegionFromID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) AND   (RegionToID < 5 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND  NOT (RegionFromID = 10 AND (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) ";
+                            if (string.IsNullOrEmpty(whereToUse))
+                            {
+                                whereToUse = main;
+                            }
+                            else
+                            {
+                                whereToUse += (" OR " + main);
+                            }
+
+                            break;
+                        case "City":
+                            var city = "((RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 2 OR RegionToID = 3 Or RegionToID = 10)) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND RegionFromID = 3  AND RegionToID = 3  AND ucjbSize in(0,1) AND (Truck = 0 OR Truck is NULL))";
+                            if (string.IsNullOrEmpty(whereToUse))
+                            {
+                                whereToUse = city;
+                            }
+                            else
+                            {
+                                whereToUse += (" OR " + city);
+                            }
+                            break;
+                        case "Trucks":
+                            var trucks = "(ucjbSpeed IN (45,109) OR Truck = 1) AND IsParentJob = 0";
+                            if (string.IsNullOrEmpty(whereToUse))
+                            {
+                                whereToUse = trucks;
+                            }
+                            else
+                            {
+                                whereToUse += (" OR " + trucks);
+                            }
+                            break;
+                        case "All":
+                            break;
+                    }
+                }
+            }
+
+            
 
             var s = channel == "All" ? $"select * from DES_qrySupportEvents_CustomerAndCourier order by {orderToUse}" : $"select * from DES_qrySupportEvents_CustomerAndCourier where {whereToUse} order by {orderToUse}";
 
@@ -1377,6 +1416,16 @@ namespace DespatchWeb.Repositories
                 .ExecuteStoredNonQueryAsync();
 
             }
+
+        }
+
+        public async Task SwapPOD(string job1, string job2)
+        {
+            await _context.LoadStoredProc("DES_qdfSwapPOD")
+                .WithSqlParam("@ucjbNumber1", job1)
+                .WithSqlParam("@ucjbNumber2", job2)
+                .ExecuteStoredNonQueryAsync();
+
 
         }
 

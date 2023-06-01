@@ -602,17 +602,17 @@
                             }
                             if (rerate && !job.bulkJob) {
                                 return self.rateJob(job).then(function(rate) {
-                                    console.log(rate);
-                                    if (rate !== job.charge) {
-                                        DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                                            job.clientID,
-                                            job.contactName,
-                                            ContactID,
-                                            job.courierData.courierID,
-                                            job.id,
-                                            job.jobType,
-                                            FirstName);
-                                    }
+                                    //console.log(rate);
+                                    //if (rate !== job.charge) {
+                                    //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
+                                    //        job.clientID,
+                                    //        job.contactName,
+                                    //        ContactID,
+                                    //        job.courierData.courierID,
+                                    //        job.id,
+                                    //        job.jobType,
+                                    //        FirstName);
+                                    //}
                                     return DispatchData
                                         .updateJobDetail(callData.jobID,
                                             callData.field,
@@ -801,17 +801,17 @@
 
                                 });
                             }
-                            if (!job.bulkJob && job.toSuburbID.toString() !== self.gpsForm.data.our_suburb) {
-                                //ToDo create change event
-                                DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                                    job.clientID,
-                                    job.contactName,
-                                    ContactID,
-                                    job.courierData.courierID,
-                                    job.id,
-                                    job.jobType,
-                                    FirstName);
-                            }
+                            //if (!job.bulkJob && job.toSuburbID.toString() !== self.gpsForm.data.our_suburb) {
+                            //    //ToDo create change event
+                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
+                            //        job.clientID,
+                            //        job.contactName,
+                            //        ContactID,
+                            //        job.courierData.courierID,
+                            //        job.id,
+                            //        job.jobType,
+                            //        FirstName);
+                            //}
                             job.toSuburbID = parseInt(self.gpsForm.data.our_suburb);
                         } else {
                             job.fromAddress = (self.gpsForm.data.extras || '').length > 1 ? self.gpsForm.data.extras + ',' + self.gpsForm.data.address : self.gpsForm.data.address;
@@ -829,17 +829,17 @@
                                 });
                             }
                             
-                            if (!job.bulkJob && job.fromSuburbID.toString() !== self.gpsForm.data.our_suburb) {
-                                //ToDo create change event
-                                DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                                    job.clientID,
-                                    job.contactName,
-                                    ContactID,
-                                    job.courierData.courierID,
-                                    job.id,
-                                    job.jobType,
-                                    FirstName);
-                            }
+                            //if (!job.bulkJob && job.fromSuburbID.toString() !== self.gpsForm.data.our_suburb) {
+                            //    //ToDo create change event
+                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
+                            //        job.clientID,
+                            //        job.contactName,
+                            //        ContactID,
+                            //        job.courierData.courierID,
+                            //        job.id,
+                            //        job.jobType,
+                            //        FirstName);
+                            //}
                             job.fromSuburbID = parseInt(self.gpsForm.data.our_suburb);
                         }
                         var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
@@ -847,17 +847,17 @@
                             job.fromSuburbID === 480 && job.toSuburbID === 480;
 
                         return self.rateJob(job).then(function(rate) {
-                            console.log(rate);
-                            if (rate !== job.charge) {
-                                DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                                    job.clientID,
-                                    job.contactName,
-                                    ContactID,
-                                    job.courierData.courierID,
-                                    job.id,
-                                    job.jobType,
-                                    FirstName);
-                            }
+                            //console.log(rate);
+                            //if (rate !== job.charge) {
+                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
+                            //        job.clientID,
+                            //        job.contactName,
+                            //        ContactID,
+                            //        job.courierData.courierID,
+                            //        job.id,
+                            //        job.jobType,
+                            //        FirstName);
+                            //}
                             var callData = {
                                 "call": "updateJobData",
                                 "addressField": field,
@@ -1444,14 +1444,14 @@
                                     return self.rateJob(self.currentJob).then(function (rate) {
                                         console.log(rate);
                                         if (rate !== self.currentJob.charge) {
-                                            DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
-                                                self.currentJob.clientID,
-                                                self.currentJob.contactName,
-                                                ContactID,
-                                                self.currentJob.courierData.courierID,
-                                                self.currentJob.id,
-                                                self.currentJob.jobType,
-                                                FirstName);
+                                            //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
+                                            //    self.currentJob.clientID,
+                                            //    self.currentJob.contactName,
+                                            //    ContactID,
+                                            //    self.currentJob.courierData.courierID,
+                                            //    self.currentJob.id,
+                                            //    self.currentJob.jobType,
+                                            //    FirstName);
 
                                             return DispatchData
                                                 .updateJobDetail(self.currentJob.id,
@@ -1593,14 +1593,14 @@
                                     return self.rateJob(self.currentJob).then(function (rate) {
                                         console.log(rate);
                                         if (rate !== self.currentJob.charge) {
-                                            DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
-                                                self.currentJob.clientID,
-                                                self.currentJob.contactName,
-                                                ContactID,
-                                                self.currentJob.courierData.courierID,
-                                                self.currentJob.id,
-                                                self.currentJob.jobType,
-                                                FirstName);
+                                            //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
+                                            //    self.currentJob.clientID,
+                                            //    self.currentJob.contactName,
+                                            //    ContactID,
+                                            //    self.currentJob.courierData.courierID,
+                                            //    self.currentJob.id,
+                                            //    self.currentJob.jobType,
+                                            //    FirstName);
                                         
                                             return DispatchData
                                                 .updateJobDetail(self.currentJob.id,
@@ -1747,14 +1747,14 @@
                                 return self.rateJob(self.currentJob).then(function(rate) {
                                     console.log(rate);
                                     if (rate !== self.currentJob.charge) {
-                                        DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
-                                            self.currentJob.clientID,
-                                            self.currentJob.contactName,
-                                            ContactID,
-                                            self.currentJob.courierData.courierID,
-                                            self.currentJob.id,
-                                            self.currentJob.jobType,
-                                            FirstName);
+                                        //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
+                                        //    self.currentJob.clientID,
+                                        //    self.currentJob.contactName,
+                                        //    ContactID,
+                                        //    self.currentJob.courierData.courierID,
+                                        //    self.currentJob.id,
+                                        //    self.currentJob.jobType,
+                                        //    FirstName);
                                         return DispatchData
                                             .updateJobDetail(self.currentJob.id,
                                                 "rate",
