@@ -16,8 +16,19 @@ angular
                 });
             },
 
+            searchPreBookJobs: function (courierId, clientId, wild, fromDate, toDate, pageIndex, pageSize) {
+                return $http.get('/Job/PreBookSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
+                    return response.data;
+                });
+            },
+
             getJobDetail: function (id) {
                 return $http.get('/Job/Detail?jobId=' + id).then(function (response) {
+                    return response.data;
+                });
+            },
+            getPreBookDetail: function (id) {
+                return $http.get('/Job/PreBookDetail?preBookJobId=' + id).then(function (response) {
                     return response.data;
                 });
             },

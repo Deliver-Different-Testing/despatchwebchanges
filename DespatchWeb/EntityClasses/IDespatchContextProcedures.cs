@@ -13,6 +13,5 @@ namespace DespatchWeb.EntityClasses
     public partial interface IDespatchContextProcedures
     {
         Task<List<DES_qryTruckCourierStatusResult>> DES_qryTruckCourierStatusAsync(string CourierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<DES_stpJob_DirectToASAPResult>> DES_stpJob_DirectToASAPAsync(int? JobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }
 }

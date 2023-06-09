@@ -284,7 +284,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.22",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.26",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -1799,19 +1799,11 @@ angular
 
             $scope.currentSelection = " for Courier " + ac.id + " " + ac.name;
             $scope.getCurrentJobs(ac.courierID);
-            //DispatchData.getJobsCurrent(ac.courierID, false).then(function (data) {
-            //    $("#box-currentWork").find(".loading").fadeOut();
-            //    $scope.jobsCurrentList = data;
-            //    if (data.length > 0) {
-            //        displayRoutePoints(data);
-            //    } else {
-            //        DispatchData.getCourierPosition(ac.id).then(function (posData) {
-            //            displayCourierPositionOnly(posData.latitude, posData.longitude);
-            //        });
-            //    }
-            //    setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
-            //    setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
-            //});
+
+            DispatchData.truckCourierStatus(ac.courierID).then(function (result) {
+                $scope.truckCourierStatus = result.data;
+            });
+            
         };
 
         // Select the courier
@@ -2124,15 +2116,15 @@ angular
                     $scope.pickCouriers = data;
                 });
 
-                if (clear === true && job.courier === null) {
+                if (job.courier === null) {
 
                     $scope.jobGroups = false;   
-                    $scope.jobsCurrentList = false;
+                    //$scope.jobsCurrentList = false;
                     $scope.getPotentialCouriers(job.id);
                     $scope.potentialCouriersSelection = " for Job " + job.jobNo;
-                    $scope.getGroupedJobs();
-                    $scope.groupJobsSelection = " for Job " + job.jobNo;
-                    $scope.currentWorkSelection = "";
+                    //$scope.getGroupedJobs();
+                    //$scope.groupJobsSelection = " for Job " + job.jobNo;
+                    //$scope.currentWorkSelection = "";
 
 
                 } else {

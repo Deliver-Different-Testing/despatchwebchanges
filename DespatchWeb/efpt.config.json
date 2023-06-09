@@ -8,6 +8,7 @@
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "EntityClasses",
+   "PreserveCasingWithRegex": true,
    "ProjectRootNamespace": "DespatchWeb",
    "Schemas": null,
    "SelectedHandlebarsLanguage": 0,
@@ -110,6 +111,10 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[UTL_qryContact_Lookup]",
+         "ObjectType": 3
+      },
+      {
          "Name": "[dbo].[uvwBookingToday]",
          "ObjectType": 3
       },
@@ -127,8 +132,10 @@
       }
    ],
    "UiHint": "UCLSQL2.DespatchTest",
+   "UncountableWords": null,
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": false,
+   "UseDateOnlyTimeOnly": false,
    "UseDbContextSplitting": false,
    "UseFluentApiOnly": true,
    "UseHandleBars": false,
@@ -136,12 +143,11 @@
    "UseInflector": true,
    "UseLegacyPluralizer": false,
    "UseManyToManyEntity": false,
-   "UseNoConstructor": false,
    "UseNoDefaultConstructor": false,
-   "UseNoNavigations": false,
    "UseNoObjectFilter": false,
    "UseNodaTime": false,
    "UseNullableReferences": false,
    "UseSchemaFolders": false,
-   "UseSpatial": false
+   "UseSpatial": false,
+   "UseT4": false
 }

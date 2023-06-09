@@ -59,7 +59,7 @@ angular
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.12',
+                    templateUrl: 'app/components/CS/csView.html?v=1.13',
 					controller: 'CSControl',
                     reloadOnSearch: false
 				})

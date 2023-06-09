@@ -11,7 +11,7 @@ angular
                         });
                     },
                     addBulkJobNote: function (id, note, despatcherName, preBook) {
-                        return $http.post(method + "job/AddBulkJobNote?BulkJobId=" + id + "&note=" + note + "&despatcher=" + despatcherName).then(function (response) {
+                        return $http.post("job/AddBulkJobNote?BulkJobId=" + id + "&note=" + note + "&despatcher=" + despatcherName).then(function (response) {
                             return response;
                         });
                     },
@@ -255,6 +255,11 @@ angular
                     },
                     getSpeedList: function () {
                         return $http.get("job/SpeedList").then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    getContactList: function (clientId) {
+                        return $http.get("job/ContactList?clientId="+ clientId).then(function (response) {
                             return response.data;
                         });
                     },

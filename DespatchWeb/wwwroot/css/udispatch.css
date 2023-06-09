@@ -837,6 +837,38 @@ table.table tr .status.ASC {
   text-align: center;
   height: 15px;
 }
+#pbList th {
+  white-space: nowrap;
+  cursor: pointer;
+}
+#pbList tr {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#pbList tr.O {
+  background-color: #ffdfba !important;
+}
+#pbList tr.B {
+  background-color: #bae1ff !important;
+}
+#pbList tr.G {
+  background-color: #b0f57b !important;
+}
+#pbList td {
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#pbList .doing {
+  background-color: #d7f3ce !important;
+}
+#pbList input.dispatchField {
+  width: 29px;
+  text-align: center;
+  height: 15px;
+}
+#pbList input.lateCallField {
+  width: 21px;
+  text-align: center;
+  height: 15px;
+}
 #jobListPOD th {
   white-space: nowrap;
   cursor: pointer;

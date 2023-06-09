@@ -83,7 +83,7 @@ namespace DespatchWeb.Repositories
                     ToSuburbName = zo.UcsuName,
                     ToAddress = j.UcbkToAddr,
                     Courier = co.Code,
-                    ContactName = j.DeliverToContact,
+                    ContactName = j.UcbkContact,
                     Phone = j.DeliverToPhone,
                     Weight = j.UcbkWeight,
                     Items = j.Quantity,
@@ -232,7 +232,7 @@ namespace DespatchWeb.Repositories
                     Status = status.UcjsCode,
                     LP = j.LatePickUp,
                     LD = j.LateDelivery,
-                    ContactName = j.DeliverToContact,
+                    ContactName = j.Contact,
                     Phone = j.DeliverToPhone,
                     SpeedAccepted = os.ShortName,
                     Weight = j.Weight,
@@ -350,7 +350,7 @@ namespace DespatchWeb.Repositories
                     ToAddress = j.ToAddress,
                     Courier = co.Code,
                     Status = status.UcjsCode,
-                    ContactName = j.DeliverToContact,
+                    ContactName = j.Contact,
                     Phone = j.DeliverToPhone,
                     Weight = (double?)j.Weight,
                     Items = j.Qty,
@@ -475,6 +475,7 @@ namespace DespatchWeb.Repositories
                 StatusID = v.StatusID,
                 Status = v.Status,
                 Speed = v.Speed,
+                PreBook = false,
                 SpeedID = v.SpeedID,
                 PickUpLatitude = v.PickUpLatitude,
                 PickUpLongitude = v.PickUpLongitude,
@@ -530,6 +531,7 @@ namespace DespatchWeb.Repositories
                     Status = status.UcjsCode,
                     Speed = to.ShortName,
                     SpeedID = x.Speed,
+                    PreBook = false,
                     PickUpLatitude = x.PickUpLatitude,
                     PickUpLongitude = x.PickUpLongitude,
                     DeliveryLatitude = x.DeliveryLatitude,
@@ -569,6 +571,7 @@ namespace DespatchWeb.Repositories
                 Status = v.Status,
                 Speed = v.Speed,
                 SpeedID = v.SpeedID,
+                PreBook = false,
                 PickUpLatitude = v.PickUpLatitude,
                 PickUpLongitude = v.PickUpLongitude,
                 DeliveryLatitude = v.DeliveryLatitude,
@@ -576,6 +579,82 @@ namespace DespatchWeb.Repositories
                 Booked = DateTime.Parse(v.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
                                         v.Time.Value.ToString("HH:mm:ss"))
 
+
+            }).ToList();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            return Tuple.Create(total, jobList);
+
+        }
+
+        public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(Int32? courierId, string wild, DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
+        {
+            var clientSet = clientId.HasValue;
+            var courierSet = courierId.HasValue;
+            var wildParam = $"%{wild}%";
+            var jobsQuery = (
+                from x in _context.TucJobBookings
+                join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
+                from co in courierJoin.DefaultIfEmpty()
+                join y in _context.TucSuburbs on x.UcbkFrom equals y.UcsuId into fromJoin
+                from yo in fromJoin.DefaultIfEmpty()
+                join z in _context.TucSuburbs on x.UcbkTo equals z.UcsuId into toJoin
+                from zo in toJoin.DefaultIfEmpty()
+                join t in _context.TucJobTypes on (int)x.UcbkSpeed equals t.UcjtId into speedJoin
+                from to in speedJoin.DefaultIfEmpty()
+
+                where (x.UcbkNextDue >= fromDate && x.UcbkNextDue <= toDate) && (!clientSet || x.UcbkClientId == clientId) &&
+                      (!courierSet || x.CourierId == courierId) &&
+                      (wild == "" || (EF.Functions.Like(x.UcbkFromAddr + " " + x.PickupFromContact + " " + yo.UcsuName + " " + x.UcbkToAddr + " " + x.DeliverToContact + " " + zo.UcsuName + " " + (x.UcbkClientRefa ?? "") + " " + (x.UcbkClientRefa ?? "") + " " + (x.UcbkOurRef ?? "") + " " + x.UcbkJobNumber.ToLower(), wildParam)))
+
+                select new JobViewModel()
+                {
+                    ID = x.UcbkId,
+                    Time = x.UcbkTime,
+                    ClientID = x.UcbkClientId,
+                    Client = x.UcbkClientCode,
+                    From = yo.UcsuName,
+                    To = zo.UcsuName,
+                    JobNo = x.UcbkJobNumber,
+                    FromAddress = x.UcbkFromAddr,
+                    ToAddress = x.UcbkToAddr,
+                    Courier = co.Code,
+                    Speed = to.ShortName,
+                    PickUpLatitude = x.PickUpLatitude,
+                    PickUpLongitude = x.PickUpLongitude,
+                    DeliveryLatitude = x.DeliveryLatitude,
+                    DeliveryLongitude = x.DeliveryLongitude,
+                    BookedDate = x.UcbkNextDue,
+                    FollowupTime = x.UcbkTime,
+                    PreBook = true
+
+
+                });
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var total = await jobsQuery.CountWithNoLockAsync();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            stopwatch.Reset();
+            stopwatch.Start();
+            var jobs = await jobsQuery
+                .OrderBy(a => a.BookedDate).ThenBy(v => v.Time).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListWithNoLockAsync();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
+            stopwatch.Reset();
+            stopwatch.Start();
+            var jobList = jobs.Select(j => new JobViewModel()
+            {
+                
+                ID = j.ID,
+                Booked = DateTime.Parse(j.Booked.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")),
+                Client = j.Client,
+                FromAddress = j.FromAddress,
+                ToAddress = j.ToAddress,
+                JobNo = j.JobNo,
+                ClientID = j.ClientID,
+                Courier = j.Courier,
+                Speed = j.Speed
 
             }).ToList();
             stopwatch.Stop();
@@ -1689,6 +1768,17 @@ namespace DespatchWeb.Repositories
                         select s).Select(x => new Lookup() { ID = x.JobTypeId, Text = x.Name });
             return data.ToList();
         }
+
+        public List<Lookup> Contacts(int clientId)
+        {
+            var data = (from s in _context.UtlQryContactLookups
+                join cc in _context.TblClientContacts on s.ContactId equals cc.ContactId into cjoin
+                from co in cjoin
+                where co.ClientId == clientId && s.Active == true
+                select new Lookup() { ID = s.ContactId, Text = s.Name }).Distinct();
+            return data.ToList();
+        }
+
 
         public List<Lookup> LeaveParcelLocations()
         {

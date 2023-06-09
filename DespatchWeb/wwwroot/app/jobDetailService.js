@@ -89,6 +89,7 @@
                 var pickLeaveList = [];
                 var pickUndeliverableList = [];
                 var pickSpeeds = [];
+                var pickContacts = [];
 
                 var gather = {
                 };
@@ -133,6 +134,9 @@
                 };
                 self.setJob = function(job) {
                     self.currentJob = job;
+                    DispatchData.getContactList(job.clientID).then(function (data) {
+                        pickContacts = data;
+                    });
                 };
 
                 self.pickHolidays = [
@@ -503,7 +507,7 @@
                             };
 
                             if (callData.field === "Notes") {
-                                return job.bulkJobID ? DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) : DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
+                                return job.bulkJob ? DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) : DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
                             }
 
                             if (fieldName === "Items" || fieldName === "Weight" || fieldName === "Date") {
@@ -1336,6 +1340,23 @@
                     },
                     200);
                 };
+
+            self.contactClick = function (job) {
+                this.editDetailField(job, 'ContactID', 'Contact', '', job.id, 'select2');
+                setTimeout(function () {
+                        var speedOptions = {
+                            minimumInputLength: 1,
+                            data: pickContacts,
+                            placeholder: "Start typing to enter new contact..."
+                        };
+
+                        $("#gather-ContactID").select2(speedOptions);
+                        $("#gather-ContactID").select2('open').val(job.contactID).trigger('change');
+                        $("#gather-ContactID").select2().dropdown.$search;
+
+                    },
+                    200);
+            };
 
             self.getJobTypeDescription = function(jobTypeID) {
                 switch (jobTypeID||1) {

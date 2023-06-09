@@ -268,6 +268,15 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
+        public async Task<IActionResult> PreBookSearch(int? courierId, int? clientId, string wild, DateTime fromDate, DateTime toDate,
+            int pageIndex, int pageSize)
+        {
+            var result = await _jobRepo.PreBookSearchAsync(courierId, wild ?? "", fromDate.ResetTimeToStartOfDay(),
+                toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
+
+            return Json(result);
+        }
+
         [HttpPost]
         public async Task<IActionResult> LateCall(int lateType, int lateTime, int minutes, int pickupTime,
             int alertLatePickup, int deliveryTime, int alertLateDelivery, string jobNo, int clientId, string contact,
@@ -561,6 +570,12 @@ namespace DespatchWeb.Controllers
         public IActionResult SpeedList()
         {
             var data = _jobRepo.Speeds();
+            return Json(data);
+        }
+
+        public IActionResult ContactList(int clientId )
+        {
+            var data = _jobRepo.Contacts(clientId);
             return Json(data);
         }
 

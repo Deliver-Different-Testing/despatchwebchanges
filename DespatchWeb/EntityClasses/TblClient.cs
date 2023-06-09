@@ -258,7 +258,8 @@ namespace DespatchWeb.EntityClasses
         public bool StripeClient { get; set; }
         public string StripeClientId { get; set; }
         public string PromoCode { get; set; }
-        public bool? KnownShipperAirNz { get; set; }
+        public bool AirNzknownShipper { get; set; }
+        public decimal? AirNzmargin { get; set; }
         public int ClientId { get; set; }
         public string Name { get; set; }
         public string LegalName { get; set; }

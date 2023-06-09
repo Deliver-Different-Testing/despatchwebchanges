@@ -42,6 +42,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
         public virtual DbSet<TucJobType> TucJobTypes { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
+        public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -202,7 +203,7 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(75);
 
-                entity.Property(e => e.ClientNotes).HasMaxLength(4000);
+                entity.Property(e => e.ClientNotes).HasMaxLength(550);
 
                 entity.Property(e => e.ClosestCourierId)
                     .HasMaxLength(50)
@@ -570,6 +571,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.SourceId).HasColumnName("SourceID");
 
+                entity.Property(e => e.StripeChargeId)
+                    .HasMaxLength(50)
+                    .HasColumnName("StripeChargeID");
+
                 entity.Property(e => e.ToAddress).HasMaxLength(150);
 
                 entity.Property(e => e.ToCompany).HasMaxLength(150);
@@ -608,6 +613,12 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.AddressExtras).HasMaxLength(200);
 
                 entity.Property(e => e.AddressStreetName).HasMaxLength(200);
+
+                entity.Property(e => e.AirNzknownShipper).HasColumnName("AirNZKnownShipper");
+
+                entity.Property(e => e.AirNzmargin)
+                    .HasColumnType("decimal(18, 2)")
+                    .HasColumnName("AirNZMargin");
 
                 entity.Property(e => e.AverageDaily).HasColumnType("money");
 
@@ -784,8 +795,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.InvoiceMethod).HasMaxLength(50);
 
                 entity.Property(e => e.JobPrefix).HasMaxLength(3);
-
-                entity.Property(e => e.KnownShipperAirNz).HasColumnName("KnownShipperAirNZ");
 
                 entity.Property(e => e.LastModified).HasColumnType("datetime");
 
@@ -2161,6 +2170,13 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.AddressStreetName).HasMaxLength(200);
 
+                entity.Property(e => e.AirNzknownShipper).HasColumnName("AirNZKnownShipper");
+
+                entity.Property(e => e.AirNzmargin)
+                    .HasColumnType("decimal(18, 2)")
+                    .HasColumnName("AirNZMargin")
+                    .HasDefaultValueSql("((0.57))");
+
                 entity.Property(e => e.ApplyCitySurcharge).HasDefaultValueSql("((1))");
 
                 entity.Property(e => e.BaggageRateCodeId).HasColumnName("BaggageRateCodeID");
@@ -2310,8 +2326,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.InvoiceMethod).HasMaxLength(50);
 
                 entity.Property(e => e.JobPrefix).HasMaxLength(3);
-
-                entity.Property(e => e.KnownShipperAirNz).HasColumnName("KnownShipperAirNZ");
 
                 entity.Property(e => e.LastModified).HasColumnType("datetime");
 
@@ -2945,6 +2959,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.HasIndex(e => e.ContactId, "ContactID");
 
+                entity.HasIndex(e => e.UcbkNextDue, "DespatchWebSearch2");
+
                 entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
                 entity.HasIndex(e => e.InformationParentId, "InformationParentID");
@@ -3538,6 +3554,107 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("ucsuName");
 
                 entity.Property(e => e.UcsuRegion).HasColumnName("ucsuRegion");
+            });
+
+            modelBuilder.Entity<UtlQryContactLookup>(entity =>
+            {
+                entity.HasNoKey();
+
+                entity.ToView("UTL_qryContact_Lookup");
+
+                entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.ContactId).HasColumnName("ContactID");
+
+                entity.Property(e => e.ContactRoleId).HasColumnName("ContactRoleID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.DirectDial).HasMaxLength(50);
+
+                entity.Property(e => e.Email).HasMaxLength(200);
+
+                entity.Property(e => e.Fax).HasMaxLength(50);
+
+                entity.Property(e => e.Firstname).HasMaxLength(50);
+
+                entity.Property(e => e.JobTitle).HasMaxLength(50);
+
+                entity.Property(e => e.LastAccessed).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Mobile).HasMaxLength(50);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(101);
+
+                entity.Property(e => e.Notes).HasMaxLength(250);
+
+                entity.Property(e => e.ParentContactId).HasColumnName("ParentContactID");
+
+                entity.Property(e => e.Password).HasMaxLength(50);
+
+                entity.Property(e => e.Password2).HasMaxLength(200);
+
+                entity.Property(e => e.ResetKey).HasMaxLength(50);
+
+                entity.Property(e => e.Salt).HasMaxLength(64);
+
+                entity.Property(e => e.StaffId).HasColumnName("StaffID");
+
+                entity.Property(e => e.Surname).HasMaxLength(50);
+
+                entity.Property(e => e.UcctClientId).HasColumnName("ucctClientID");
+
+                entity.Property(e => e.UcctDirectDial)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctDirectDial");
+
+                entity.Property(e => e.UcctEmail)
+                    .HasMaxLength(200)
+                    .HasColumnName("ucctEmail");
+
+                entity.Property(e => e.UcctFirstname)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctFirstname");
+
+                entity.Property(e => e.UcctId).HasColumnName("ucctID");
+
+                entity.Property(e => e.UcctJobTitle)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctJobTitle");
+
+                entity.Property(e => e.UcctMobile)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctMobile");
+
+                entity.Property(e => e.UcctNotes)
+                    .HasMaxLength(250)
+                    .HasColumnName("ucctNotes");
+
+                entity.Property(e => e.UcctSurname)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctSurname");
+
+                entity.Property(e => e.UserName).HasMaxLength(200);
+
+                entity.Property(e => e.WhenEmailNotificationSent).HasColumnType("datetime");
+
+                entity.Property(e => e.WhenEmailValidated).HasColumnType("datetime");
+
+                entity.Property(e => e.WhenEmailValidatedSent).HasColumnType("datetime");
+
+                entity.Property(e => e.WhenLastEmailNotificationReminderSent).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<UvwBookingToday>(entity =>

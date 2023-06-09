@@ -17,6 +17,9 @@ angular
         $scope.bulkTotalCount = 0;  // Total number of items in all pages. initialize as a zero  
         $scope.bulkPageIndex = 1;   // Current page number. First page is 1.-->  
         $scope.bulkPageSizeSelected = 50; // Maximum number of items per page.
+        $scope.pbTotalCount = 0;  // Total number of items in all pages. initialize as a zero  
+        $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->  
+        $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
         //$(document).stopTime("CL");
         //$(document).stopTime("RD");
 
@@ -90,7 +93,7 @@ angular
                 $(".gatherForm").hide();
                 $scope.gather.form.onSubmit().then(function(response) {
 
-                    $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
+                    $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
                 });
                 
                 //setTimeout(function () {  }, 1000);
@@ -292,9 +295,56 @@ angular
 
                 ]
             },
+            "pbList": {
+                "title": "PreBook Data",
+                "tpl": "app/components/CS/tpls/pbList.tpl?v=1.4",
+                "showSearch": 1,
+                "showRefresh": 1,
+                "model": "pbList",
+                "headings": [
+                    {
+                        "label": "Booked",
+                        "name": "booked"
+                    },
+                    {
+                        "label": "Speed",
+                        "name": "speed"
+                    },
+                    {
+                        "label": "Job #",
+                        "name": "jobNumber"
+                    },
+                    {
+                        "label": "Client",
+                        "name": "clientCode"
+                    },
+                    {
+                        "label": "From",
+                        "name": "froAddress"
+                    },
+                    {
+                        "label": "To",
+                        "name": "toAddress"
+                    },
+                    {
+                        "label": "Code",
+                        "name": "code"
+                    },
+                    {
+                        "label": "Send",
+                        "name": "send"
+                    },
+                    {
+                        "label": "Void",
+                        "name": "void"
+                    }
+
+
+                ]
+            },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.22",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.24",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -335,7 +385,13 @@ angular
                                 },
                                 {
 
-                                    "name": "bulkJobList"
+                                    "name": "bulkJobList",
+                                    "height": "225px"
+                                },
+                                {
+
+                                    "name": "pbList",
+                                    "height": "225px"
                                 }
                             ]
                         },
@@ -636,6 +692,7 @@ angular
             $scope.pickDateService.regions.push(sr);
             $scope.refreshData(true);
             $scope.refreshBulkData(true);
+            $scope.refreshPreBookData(true);
         };
 
         $scope.unlockJob = function() {
@@ -757,6 +814,7 @@ angular
         $scope.refreshAllData = function(wait) {
             $scope.refreshData(wait);
             $scope.refreshBulkData(wait);
+            $scope.refreshPreBookData(wait);
         }
 
         $scope.refreshData = function (wait) {
@@ -876,7 +934,63 @@ angular
 
         };
 
+        $scope.refreshPreBookData = function (wait) {
 
+            var goTop = $("#pbList").offset().top;
+            var $parentDiv = $("#pbList").parents(".box-content");
+
+            try {
+                goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
+                $parentDiv.scrollTop(goTop);
+            } catch (e) {
+                //ignore
+            }
+            $("#box-pbList").find(".loading").show();
+
+
+            var dateChanged = false;
+            if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
+
+                $scope.currentFromDate = $scope.pickDateService.from_date;
+                dateChanged = true;
+            }
+            if ($scope.currentToDate !== $scope.pickDateService.to_date) {
+
+                $scope.currentToDate = $scope.pickDateService.to_date;
+                dateChanged = true;
+            }
+
+            //localStorageService.set("Date", $scope.currentDate);
+            if (($scope.pickDateService.client || "") === "" &&
+                ($scope.pickDateService.courier || "") === "" &&
+                ($scope.pickDateService.wild || "") === "") {
+                $ngConfirm("You must use more Search Criteria");
+                $("#box-pbList").find(".loading").hide();
+                return;
+            }
+
+            console.log("about to call prebook data - page " + $scope.pbPageIndex);
+
+            uCSData.searchPreBookJobs($scope.pickDateService.courier,
+                $scope.pickDateService.client,
+                ($scope.pickDateService.wild || ""),
+                moment($scope.currentFromDate),
+                moment($scope.currentToDate),
+                $scope.pbPageIndex,
+                $scope.pbPageSizeSelected).then(
+                    function (data) {
+                        //var filteredData = $filter('filter')(data, $scope.searchBox);
+                        $scope.pbList = data.item2;
+                        $scope.pbTotalCount = data.item1;
+                        $("#box-pbList").find(".loading").hide();
+                        setTimeout(function () {
+                            sizeHeadings($("#pbList").parents(".column"));
+
+                        }, 1000);
+
+                    });
+
+        };
 
         $scope.selectJobData = function (lat, lng) {
 
@@ -960,6 +1074,7 @@ angular
             
             uCSData.getJobDetail(id).then(function (data) {
                 $scope.currentJob = data;
+                jdSvc.setJob($scope.currentJob);
                 $("#box-jobDetail").find(".loading").hide();
                 $scope.currentSelection = " for Job " + data.jobNo;
                 var jobs = [];
@@ -969,6 +1084,48 @@ angular
                 map.setZoom(14);
             });
  
+
+
+        };
+
+        $scope.selectPreBookDetail = function (id) {
+            console.log("select pre book Job  " + id);
+            //$("#jobList").find(".active").removeClass("active");
+            clearTimeout($scope.myTimer);
+            //$scope.currentEvent = event;
+
+            $("#box-jobDetail").find(".loading").show();
+
+            uCSData.getPreBookDetail(id).then(function (data) {
+                $scope.currentJob = data;
+                jdSvc.setJob($scope.currentJob);
+                $("#box-jobDetail").find(".loading").hide();
+                $scope.currentSelection = " for Job " + data.jobNo;
+                console.log($scope.currentJob.days);
+                var freq = $scope.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(8, 9);
+                console.log(freq);
+                jdSvc.combos.frequency = [jdSvc.pickFrequency[freq]];
+                console.log(jdSvc.combos.frequency);
+                var hol = $scope.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(9, 10);
+                console.log(hol);
+                jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
+                console.log(jdSvc.combos.holidays);
+                var selectedDays = [];
+                var days = $scope.currentJob.days.slice(0, 7);
+                for (let i = 0; i < days.length; i++) {
+                    if (days[i] === '1') {
+                        selectedDays.push(jdSvc.pickDays[i]);
+                    }
+                }
+                console.log(selectedDays);
+                jdSvc.combos.days = selectedDays;
+                var jobs = [];
+                jobs.push($scope.currentJob);
+                displayRoutePointsOnly(jobs, true);
+                setMapBounds();
+                map.setZoom(14);
+            });
+
 
 
         };
@@ -984,6 +1141,7 @@ angular
 
             uCSData.getBulkJobDetail(id).then(function (data) {
                 $scope.currentJob = data;
+                jdSvc.setJob($scope.currentJob);
                 $("#box-jobDetail").find(".loading").hide();
                 $scope.currentSelection = " for Bulk Job " + data.jobNo;
                 var jobs = [];
@@ -1010,9 +1168,23 @@ angular
 
         //This method is calling from dropDown  
         $scope.changeBulkPageSize = function (i) {
-            $scope.bulkPageIndex = 1;
+            $scope.bulkPageIndex = i;
             $scope.bulkPageSizeSelected = i;
             $scope.refreshBulkData();
+        };
+
+        //This method is calling from pagination number  
+        $scope.pbPageChanged = function (i) {
+
+            $scope.pbPageIndex = i;
+            $scope.refreshPreBookData();
+
+        };
+
+        $scope.changePBPageSize = function (i) {
+            $scope.pbPageIndex = i;
+            $scope.pbPageSizeSelected = i;
+            $scope.refreshPreBookData();
         };
 
         //This method is calling from pagination number  
@@ -1025,7 +1197,7 @@ angular
 
         //This method is calling from dropDown  
         $scope.changePageSize = function (i) {
-            $scope.pageIndex = 1;
+            $scope.pageIndex = i;
             $scope.pageSizeSelected = i;
             $scope.refreshData();
         };

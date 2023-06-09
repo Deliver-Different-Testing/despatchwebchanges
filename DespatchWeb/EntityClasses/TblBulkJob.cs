@@ -87,6 +87,7 @@ namespace DespatchWeb.EntityClasses
         public int? InformationParentId { get; set; }
         public int? RootParentId { get; set; }
         public int? SourceId { get; set; }
+        public string StripeChargeId { get; set; }
 
         public virtual TucJobType SpeedNavigation { get; set; }
     }
