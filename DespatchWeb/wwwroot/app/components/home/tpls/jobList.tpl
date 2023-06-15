@@ -4,7 +4,6 @@
         <table>
             <thead class="thead-dark no select">
             <tr>
-                <th scope="col" ng-click="orderList('jobList','status')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i>S </th>
 				<th scope="col" ng-click="orderList('jobList','time')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'time'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-time'"></i>T </th>
                 <th scope="col" ng-click="orderList('jobList', 'speed')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-speed'"></i>Speed </th>
                 <th scope="col" ng-click="orderList('jobList','notify')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'notify'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-notify'"></i>N </th>
@@ -17,6 +16,7 @@
                 
                 <th></th>
                 <th scope="col" ng-click="orderList('jobList','remain')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i>Remain</th>
+                <th scope="col" ng-click="orderList('jobList','status')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i>S </th>
                 <th></th>
                 <th></th>
                 <th>R</th>
@@ -31,7 +31,6 @@
     <table class="table  table-responsive table-rows" id="jobList" data-group="jobsGroup">
         <tbody>
         <tr class="clickable-row draggable-row noselect" ng-class="job.direct ? 'direct' : ''" ng-repeat="job in jobList | filter: box.searchBox"  data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="job.courier == null ? selectJob(job, false): selectJob(job, true)">
-			<td class="status" ng-class="job.status">{{job.status}}</td>
 			<td>{{job.time | date : "HH:mm"}}</td>
 			<td right-click action="speedColumnClick(event)">{{job.speed}}</td>
 			<td ng-if="job.courierData.courierID === null" right-click action="notifyColumnClick(event)">{{job.notify}}</td>
@@ -44,6 +43,7 @@
 			<!--<td><div style="width:280px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>	-->
 			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>
             <td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
+            <td class="status" ng-class="job.status">{{job.status}}</td>
 			<td><input type="text" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();"  ng-model="job.lp" ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, $this)"  placeholder="LP" /></td>
 			<td><input type="text" class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();" ng-model="job.ld" ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"  placeholder="LD" /></td>
 			<td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();" title="placeholder selector" style="display:none"></td>
@@ -52,7 +52,7 @@
 
         </tr>
         <tr>
-            <td><div></div></td>
+            
             <td><div></div></td>
 			<td><div></div></td>
             <td><div></div></td>
@@ -62,6 +62,7 @@
 			<td><div></div></td>
 			<td colspan="2"><div></div></td>
 			<td><div></div></td>
+            <td><div></div></td>
             <td><div style="width:12px;"></div></td>
             <td><div style="width:12px;"></div></td>
             <td><div></div></td>

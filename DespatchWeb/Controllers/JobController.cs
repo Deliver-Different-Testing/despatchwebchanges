@@ -603,6 +603,20 @@ namespace DespatchWeb.Controllers
             return Json(data);
         }
 
+        public async Task<IActionResult> TruckJobAmountBreakdown(int clientId, int fromId, int toId, double weight, int size,
+            int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
+            int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours, decimal gstRate)
+        {
+            var rate = await _jobRepo.RateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp,
+                dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours);
+            var description = await _jobRepo.RateTruckJobDescription(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp,
+                dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours);
+            description += ($"\rTotal = {rate:C}");
+            description += ($"\rTotal (+GST) = {rate * (1+ gstRate):C}");
+            return Json(description);
+        }
+
+
         public async Task<IActionResult> RateTruckJob(int clientId, int fromId, int toId, double weight, int size,
             int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
             int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)
@@ -610,6 +624,40 @@ namespace DespatchWeb.Controllers
             var rate = await _jobRepo.RateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp,
                 dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours);
             return Json($"{rate:C}");
+        }
+
+        public async Task<IActionResult> JobAmountBreakdown(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
+            bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
+            string ourRef, string refA, string refB, int quantity, DateTime booked, decimal gstRate, decimal amount)
+        {
+            
+            var currentRateAmount = await _jobRepo.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
+                includeFuelSurcharge, direct, acceptedJobTypeId,
+                ourRef, refA, refB, quantity, booked);
+            var finalDescription = direct ? "DIRECT PRICE\r" : currentRateAmount != amount ? "NORMAL PRICE\r" : "";
+            var description = await _jobRepo.RateJobDescription(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
+                includeFuelSurcharge, direct, acceptedJobTypeId,
+                ourRef, refA, refB, quantity, booked);
+            finalDescription += description;
+            finalDescription += $"\rTotal = {currentRateAmount:C}";
+            finalDescription += $"\rTotal (+GST) = {currentRateAmount * (1 + gstRate):C}";
+
+            if (currentRateAmount != amount)
+            {
+                var fs = includeFuelSurcharge ? await _jobRepo.FuelSurchargeInclusiveAmount(clientId, amount, fromId, toId, booked, size) : 0;
+                var ppd = includeFuelSurcharge ? await _jobRepo.PPDInclusiveAmount(clientId, amount) : 0; 
+                finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}" );
+                if (fs > 0)
+                {
+                    //strDescription = strDescription & vbCrLf & "Plus fuel surcharge = $" & Format(curFuelSurcharge, "0.00")
+                    finalDescription += $"\rPlus fuel surcharge = {fs:C}";
+                    finalDescription += $"\rPlus PPD = {ppd:C}";
+                    finalDescription += $"\rTOTAL = {amount:C}";
+                    finalDescription += $"\rTotal (+GST) = {amount * (1 + gstRate):C}";
+                }
+            }
+
+            return Json(finalDescription);
         }
 
         public async Task<IActionResult> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van,

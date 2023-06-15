@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -181,10 +182,26 @@ namespace DespatchWeb.Repositories
                 DeepEast = BuildClearListViewModel(activeCouriers, 3, 33)
             };
 
+            data.Central.TotalRemaining = ClearListTotalRemaining("central");
+            data.City.TotalRemaining = ClearListTotalRemaining("city");
+            data.Parnell.TotalRemaining = ClearListTotalRemaining("parnell");
+            data.Ponsonby.TotalRemaining = ClearListTotalRemaining("ponsonby");
+            data.NewMarket.TotalRemaining = ClearListTotalRemaining("newmarket");
+            data.Eden.TotalRemaining = ClearListTotalRemaining("eden");
+            data.Other.TotalRemaining = ClearListTotalRemaining("other");
+            data.WestMid.TotalRemaining = ClearListTotalRemaining("west mid");
+            data.Eden.TotalRemaining = ClearListTotalRemaining("east mid");
+            data.ShallowWest.TotalRemaining = ClearListTotalRemaining("shallow west");
+            data.DeepWest.TotalRemaining = ClearListTotalRemaining("deep west");
+            data.ShallowShore.TotalRemaining = ClearListTotalRemaining("shallow shore");
+            data.DeepShore.TotalRemaining = ClearListTotalRemaining("deep shore");
+            data.Mangere.TotalRemaining = ClearListTotalRemaining("mangere");
+            data.DeepSouth.TotalRemaining = ClearListTotalRemaining("deep south");
+            data.DeepEast.TotalRemaining = ClearListTotalRemaining("deep east");
             return data;
         }
 
-        public ClearListEnvelopeViewModel ClearListEnvelope(int id)
+        internal ClearListEnvelopeViewModel ClearListEnvelope(int id)
         {
             var envelope = new ClearListEnvelopeViewModel();
             _context.LoadStoredProc("MAP_stpClearListArea_Envelope")
@@ -193,6 +210,22 @@ namespace DespatchWeb.Repositories
                 .ExecuteStoredProc(handle => { envelope = handle.ReadToList<ClearListEnvelopeViewModel>().FirstOrDefault(); });
             return envelope;
         }
+
+        public int ClearListTotalRemaining(string area)
+        {
+            var filter =
+                _context.TblDespatchViews.FirstOrDefault(v =>
+                        (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
+            if (string.IsNullOrEmpty(filter))
+            {
+                return 0;
+            }
+            filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
+            var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
+            var jobs = _context.DeswebQryDespatches.FromSqlRaw(s).ToList();
+            return jobs.Count;
+        }
+
 
         private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers, int clearListId, int percentHeight)
         {

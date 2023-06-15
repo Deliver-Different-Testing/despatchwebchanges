@@ -299,6 +299,13 @@ angular
                                 return response.data;
                             });
                     },
+                    truckJobAmountBreakdown: function (cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours, gstRate) {
+                        return $http.get("job/TruckJobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate +
+                            "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass +
+                            "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours + "&gstRate=" + gstRate).then(function (response) {
+                                return response.data;
+                            });
+                    },
                     rateJob: function (cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
                         ourRef, refA, refB, quantity, booked) {
                         return $http.get("job/RateJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van +
@@ -308,6 +315,16 @@ angular
                             return response.data;
                         });
                     },
+                    jobAmountBreakdown: function (cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
+                        ourRef, refA, refB, quantity, booked,  gstRate, amount) {
+                        return $http.get("job/JobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van +
+                            "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct +
+                            "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity +
+                            "&booked=" + booked + "&gstRate=" + gstRate + "&amount=" + amount).then(function (response) {
+                                return response.data;
+                            });
+                    },
+
                     ppdExclusiveAmount: function(cid, amount) {
                         return $http.get("job/PPDExclusiveAmount?clientId=" + cid + "&amount=" + amount).then(
                             function(response) {

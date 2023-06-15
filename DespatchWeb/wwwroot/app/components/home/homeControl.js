@@ -278,13 +278,13 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.82",
+                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.83",
                 "showSearch": 1,
                 "showRefresh": 1
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.26",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.27",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -355,7 +355,7 @@ angular
             },
             "clearLists": {
                 "title": "Clear Lists",
-                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.8",
+                "tpl": "app/components/home/tpls/clearLists.tpl?v=1.9",
                 "showSearch": 0,
                 "showRefresh": 0
             }
@@ -1150,6 +1150,7 @@ angular
                         $scope.getCurrentJobs(foundCourier.id);
                     }
                     setTimeout(function () {
+                        $("#jobList tr").first().addClass('active');
                         $("#jobList tr").first().find(".dispatchField").focus()
                     }, 200);
 
@@ -1606,7 +1607,7 @@ angular
             });
 
             if (callData.splitJobs.length > 0) {
-                DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
+                DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs);
             }
             if (callData.jobs.length > 0) {
                 DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);

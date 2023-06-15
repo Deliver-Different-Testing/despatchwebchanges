@@ -29,6 +29,7 @@ namespace DespatchWeb.Models
         public List<ClearListSection> Top { get; set; }
         public List<ClearListSection> Middle { get; set; }
         public List<ClearListSection> Bottom { get; set; }
+        public int TotalRemaining { get; set; }
     }
 
     public class ClearListSection

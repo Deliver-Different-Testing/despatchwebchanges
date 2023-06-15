@@ -190,6 +190,7 @@
 						<div class="field" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'Amount','Amount',currentJob.charge,currentJob.id)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''" ng-if="!currentJob.ratedManually">Charge</label>
 							<label ng-class="currentJob.locked ? 'disabled' : ''" ng-if="currentJob.ratedManually">Charge (Manually Rated)</label>
+							<i  ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-info-circle" title="Click for Price Breakdown" ng-click="!currentJob.locked && jdSvc.displayPriceBreakdown($event, currentJob)"></i>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.charge}}</div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field">

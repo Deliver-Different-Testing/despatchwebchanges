@@ -135,5 +135,6 @@ namespace DespatchWeb.EntityClasses
         public bool RatedManually { get; set; }
         public bool UcjbCbd { get; set; }
         public bool? Locked { get; set; }
+        public decimal? Gstrate { get; set; }
     }
 }

@@ -40,6 +40,7 @@ namespace DespatchWeb.Models
         public string ToSuburbName { get; set;  }
         public string ToAddress { get; set; }
         public string Courier { get; set; }
+        public decimal? GstRate { get; set; }
         public int? Remain { get; set; }
         public int? PickupTime { get; set; }
         public int? DeliveryTime { get; set; }

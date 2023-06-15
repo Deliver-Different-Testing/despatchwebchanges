@@ -245,6 +245,10 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(30)
                     .IsUnicode(false);
 
+                entity.Property(e => e.Gstrate)
+                    .HasColumnType("decimal(18, 3)")
+                    .HasColumnName("GSTRate");
+
                 entity.Property(e => e.InternalNotes).HasMaxLength(4000);
 
                 entity.Property(e => e.JobNotes).HasMaxLength(4000);

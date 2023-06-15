@@ -287,7 +287,8 @@ namespace DespatchWeb.Repositories
                     Pedal = j.Cbd,
                     InternalStatusID = j.InternalStatus,
                     FollowupTime = j.FollowupTime,
-                    Reprice = j.Reprice
+                    Reprice = j.Reprice,
+                    GstRate = j.Gstrate
 
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
@@ -795,12 +796,14 @@ namespace DespatchWeb.Repositories
                      Invoiced = false,
                      InternalStatusID = j.InternalStatus,
                      Reprice = j.Reprice,
-                     FollowupTime = j.FollowupTime
+                     FollowupTime = j.FollowupTime,
+                     GstRate = j.Gstrate
 
                  }).ToList();
             return list;
         }
 
+        
         public List<JobViewModel> JobList(string status, string area, string order, string ascending, bool isInternal, string clientIds)
         {
             var orderToUse = "";
@@ -1049,7 +1052,8 @@ namespace DespatchWeb.Repositories
                             Invoiced = false,
                             InternalStatusID = j.InternalStatus,
                             FollowupTime = j.FollowupTime,
-                            Reprice = j.Reprice
+                            Reprice = j.Reprice,
+                            GstRate = j.Gstrate
 
 
 
@@ -1629,6 +1633,48 @@ namespace DespatchWeb.Repositories
             return (decimal)outputMaxParam.Value;
         }
 
+        public async Task<decimal> PPDInclusiveAmount(int clientId, decimal amount)
+        {
+            DbParameter outputMaxParam = null;
+            await _context.LoadStoredProc("UTL_stpPPD_ExclusiveAmount")
+                .WithSqlParam("@ClientID", clientId)
+                .WithSqlParam("@Amount", amount)
+                .WithSqlParam("@PPD", (dbParam) =>
+                {
+                    dbParam.Direction = System.Data.ParameterDirection.Output;
+                    dbParam.DbType = System.Data.DbType.Currency;
+                    outputMaxParam = dbParam;
+                })
+
+                .ExecuteStoredNonQueryAsync();
+
+            return (decimal)outputMaxParam.Value;
+        }
+
+
+        public async Task<decimal> FuelSurchargeInclusiveAmount(int clientId, decimal amount, int from, int to, DateTime booked, int size)
+        {
+            DbParameter outputMaxParam = null;
+            await _context.LoadStoredProc("UTL_stpFuelSurcharge_InclusiveAmount")
+                .WithSqlParam("@ClientID", clientId)
+                .WithSqlParam("@Date", booked)
+                .WithSqlParam("@Size", size)
+                .WithSqlParam("@Amount", amount)
+                .WithSqlParam("@FromSuburbID", from)
+                .WithSqlParam("@ToSuburbID", to)
+                .WithSqlParam("@FuelSurcharge", (dbParam) =>
+                {
+                    dbParam.Direction = System.Data.ParameterDirection.Output;
+                    dbParam.DbType = System.Data.DbType.Currency;
+                    outputMaxParam = dbParam;
+                })
+
+                .ExecuteStoredNonQueryAsync();
+
+            return (decimal)outputMaxParam.Value;
+        }
+
+
         public async Task ResetLateEvent(int jobId, int eventType)
         {
             await _context.LoadStoredProc("DESWEB_qdfLateCall_Reset")
@@ -1856,6 +1902,48 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public async Task<string> RateTruckJobDescription(int clientId, int fromId, int toId, double weight, int size, int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
+                                                int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours)
+        {
+            DbParameter outputDescriptionParam = null;
+            DbParameter outputRateParam = null;
+
+            await _context.LoadStoredProc("DES_stpJob_Truck_Rate_Described")
+               .WithSqlParam("@ClientID", clientId)
+               .WithSqlParam("@FromSuburbID", fromId)
+               .WithSqlParam("@ToSuburbID", toId)
+               .WithSqlParam("@AverageWeight", weight)
+               .WithSqlParam("@Size", size)
+               .WithSqlParam("@Speed", speed)
+               .WithSqlParam("@Quantity", qty)
+               .WithSqlParam("@Booked", bookedDate)
+               .WithSqlParam("@Pickup", pickUp)
+               .WithSqlParam("@Dropoff", dropOff)
+               .WithSqlParam("@PrivateRes", privateRes)
+               .WithSqlParam("@OversizeItems", oversizeItems)
+               .WithSqlParam("@OverWeightItems", overWeightItems)
+               .WithSqlParam("@DangerousGoods", dGClass)
+               .WithSqlParam("@TruckStartTime", truckStartTime)
+               .WithSqlParam("@TruckHours", truckHours)
+               .WithSqlParam("@Description", (dbParam) =>
+               {
+                   dbParam.Direction = System.Data.ParameterDirection.Output;
+                   dbParam.DbType = System.Data.DbType.String;
+                   dbParam.Size = 1000;
+                   outputDescriptionParam = dbParam;
+               })
+               .WithSqlParam("@Rate", (dbParam) =>
+               {
+                   dbParam.Direction = System.Data.ParameterDirection.Output;
+                   dbParam.DbType = System.Data.DbType.Currency;
+                   outputRateParam = dbParam;
+               })
+               .ExecuteStoredNonQueryAsync();
+
+            return (string)outputDescriptionParam.Value;
+
+        }
+
         public async Task<decimal> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van, bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
                                             string ourRef, string refA, string refB, int quantity, DateTime booked)
         {
@@ -1887,6 +1975,48 @@ namespace DespatchWeb.Repositories
                .ExecuteStoredNonQueryAsync();
 
             return (decimal)outputRateParam.Value;
+        }
+
+        public async Task<string> RateJobDescription(int clientId, int fromId, int toId, int speed, bool pedal, bool van, bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
+            string ourRef, string refA, string refB, int quantity, DateTime booked)
+        {
+            DbParameter outputDescriptionParam = null;
+            DbParameter outputCourierParam = null;
+
+            await _context.LoadStoredProc("sp_RateJob_Described")
+                .WithSqlParam("@intClientID", clientId)
+                .WithSqlParam("@intFromID", fromId)
+                .WithSqlParam("@intToID", toId)
+                .WithSqlParam("@intSpeed", direct? acceptedJobTypeId : speed)
+                .WithSqlParam("@bolPedal", pedal)
+                .WithSqlParam("@bolVan", van)
+                .WithSqlParam("@bolReturn", returnJob)
+                .WithSqlParam("@intWeight", weight)
+                .WithSqlParam("@strDescription", (dbParam) =>
+               {
+                   dbParam.Direction = System.Data.ParameterDirection.Output;
+                   dbParam.DbType = System.Data.DbType.String;
+                   dbParam.Size = 1000;
+                   outputDescriptionParam = dbParam;
+               })
+                .WithSqlParam("@Size", size)
+                .WithSqlParam("@IncludeFuelSurcharge", includeFuelSurcharge)
+                .WithSqlParam("@OurRef", ourRef)
+                .WithSqlParam("@ClientRefA", refA)
+                .WithSqlParam("@ClientRefB", refB)
+                .WithSqlParam("@Quantity", quantity)
+                .WithSqlParam("@Booked", booked)
+                .WithSqlParam("@CourierID", (dbParam) =>
+                {
+                    dbParam.Direction = System.Data.ParameterDirection.Output;
+                    dbParam.DbType = System.Data.DbType.Int32;
+                    outputCourierParam = dbParam;
+                })
+
+
+                .ExecuteStoredNonQueryAsync();
+
+            return (string)(outputDescriptionParam.Value == DBNull.Value ? "" : outputDescriptionParam.Value);
         }
 
         public async Task<DirectToASAPViewModel> DirectToASAP(int jobId)
