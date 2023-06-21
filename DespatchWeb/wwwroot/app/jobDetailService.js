@@ -139,6 +139,13 @@
                     });
                 };
 
+                self.getClientContactDetail = function ($event, job) {
+                    $event.stopPropagation();
+                    DispatchData.getContactDetailList(job.clientID).then(function (data) {
+                        job.contactList = data;
+                    });
+                }
+
                 self.pickHolidays = [
                     {
                         "id": "0",

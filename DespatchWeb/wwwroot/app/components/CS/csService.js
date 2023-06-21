@@ -62,6 +62,16 @@ angular
                     return response.data;
                 });
             },
+            reSendJobs: function (jobIds) {
+                return $http.post("job/ReSendSelected?jobIds=" + jobIds).then(function (response) {
+                    return response.data;
+                });
+            },
+            reAssignJobs: function (jobIds) {
+                return $http.post("job/ReAssignSelected?jobIds=" + jobIds).then(function (response) {
+                    return response.data;
+                });
+            },
             sendPOD: function (jobId, email) {
                 return $http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email).then(function (response) {
                     return response.data;

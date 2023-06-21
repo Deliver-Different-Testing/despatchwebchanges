@@ -344,7 +344,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.24",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.25",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -769,9 +769,42 @@ angular
                         if (!data) {
                             $ngConfirm("Invalid Job");
                         } else {
-                            return uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(function (data) {
-                                $ngConfirm("POD Swap Completed Successfully");  
+                            var secondJobId = data;
+                            var firstJobId = $scope.currentJob.id;
+                            $ngConfirm({
+                                title: 'Swap Delivery Info',
+                                content: `Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`,
+                                scope: $scope,
+                                buttons: {
+
+                                    Yes: {
+                                        btnClass: 'btn-green',
+                                        action: function (scope, button) {
+                                            return uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(function (data) {
+                                                $ngConfirm("POD Swap Completed Successfully");
+                                                uCSData.reSendJobs(secondJobId);
+                                                uCSData.reAssignJobs(firstJobId).then(function (data) {
+                                                    uCSData.reSendJobs(firstJobId).then(function (data) {
+                                                        $scope.refreshData(true);
+                                                    });
+                                                });
+                                                
+
+                                            });
+                                            
+                                            
+                                        }
+                                    },
+                                    No: {
+                                        btnClass: 'btn-red',
+                                        action: function (scope, button) {
+
+                                        }
+                                    }
+
+                                }
                             });
+                            
                         }
                     });
                     

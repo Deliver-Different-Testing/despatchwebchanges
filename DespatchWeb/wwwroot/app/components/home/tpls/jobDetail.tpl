@@ -53,7 +53,7 @@
 				<div class="row row-no-padding">
 					<div class="col-md-4">
 						<div ng-show="!currentJob.bulkJob" class="field"  ng-click="!currentJob.locked && jdSvc.contactClick(currentJob)">
-							<label ng-class="currentJob.locked ? 'disabled' : ''">Booked by Contact</label>
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Booked by Contact</label>&nbsp;<i  ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-info-circle" title="Show Client Contact List" ng-click="!currentJob.locked && jdSvc.getClientContactDetail($event, currentJob)"></i>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.contactName}}</div>
 						</div>
 						
@@ -225,44 +225,75 @@
 		<div ng-if="!currentJob.bulkJob" class="row row-no-padding row-out">
 			<img ng-src="{{'data:image/png;base64,'+currentJob.podPhoto}}" />
 		</div>
-			<div ng-if="!currentJob.bulkJob">
-				<div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
+		<div ng-if="!currentJob.bulkJob">
+			<div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
 					
-					<label>Pallet Info</label>
-					<div ng-class="currentJob.locked ? 'disabled' : ''"  class="btn btn-sml addPallet" ng-click="!currentJob.locked && jdSvc.newPallet()">Add Pallet</div>
-					<div ng-class="currentJob.locked ? 'disabled' : ''"  class="value">
-						<table class="table table-striped table-responsive">
-							<thead>
-								<tr class="pallet-table-head no select">
-									<th>#</td>
-									<th>W</td>
-									<th>L</td>
-									<th>D</td>
-									<th>H</td>
-									<th>PU</td>
-									<th>DO</td>
-									<th>DG Class</td>
-									<th>Notes</td>
-								</tr>
-							</thead>
-							<tbody>
-								<tr ng-repeat="pallet in currentJob.palletInfo" context-menu="!currentJob.locked && jdSvc.palletMenu" ng-click="!currentJob.locked && jdSvc.editPallet(pallet)">
-									<td>{{pallet.quantity}}</td>
-									<td>{{pallet.weight}}</td>
-									<td>{{pallet.length}}</td>
-									<td>{{pallet.depth}}</td>
-									<td>{{pallet.height}}</td>
-									<td>{{pallet.pu}}</td>
-									<td>{{pallet.do}}</td>
-									<td>{{pallet.DGClass}}</td>
-									<td>{{pallet.notes}}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-
+				<label>Pallet Info</label>
+				<div ng-class="currentJob.locked ? 'disabled' : ''"  class="btn btn-sml addPallet" ng-click="!currentJob.locked && jdSvc.newPallet()">Add Pallet</div>
+				<div ng-class="currentJob.locked ? 'disabled' : ''"  class="value">
+					<table class="table table-striped table-responsive">
+						<thead>
+							<tr class="pallet-table-head no select">
+								<th>#</td>
+								<th>W</td>
+								<th>L</td>
+								<th>D</td>
+								<th>H</td>
+								<th>PU</td>
+								<th>DO</td>
+								<th>DG Class</td>
+								<th>Notes</td>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="pallet in currentJob.palletInfo" context-menu="!currentJob.locked && jdSvc.palletMenu" ng-click="!currentJob.locked && jdSvc.editPallet(pallet)">
+								<td>{{pallet.quantity}}</td>
+								<td>{{pallet.weight}}</td>
+								<td>{{pallet.length}}</td>
+								<td>{{pallet.depth}}</td>
+								<td>{{pallet.height}}</td>
+								<td>{{pallet.pu}}</td>
+								<td>{{pallet.do}}</td>
+								<td>{{pallet.DGClass}}</td>
+								<td>{{pallet.notes}}</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
+
 			</div>
+		</div>
+		<div ng-if="!currentJob.bulkJob && currentJob.contactList">
+			<div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
+					
+				<label>Client Contact Info</label>
+				
+					<table class="table table-striped table-responsive">
+						<thead>
+							<tr class="pallet-table-head no select">
+								<th>Name</td>
+								<th>Title</td>
+								<th>Direct Dial</td>
+								<th>Mobile</td>
+								<th>Email</td>
+								
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="contact in currentJob.contactList" >
+								<td>{{contact.fullName}}</td>
+								<td>{{contact.jobTitle}}</td>
+								<td><a class="pointer:cursor" ng-href="tel:{{contact.directDial}}">{{contact.directDial}}<a/></td>
+								<td><a class="pointer:cursor" ng-href="tel:{{contact.mobile}}">{{contact.mobile}}<a/></td>
+								<td>{{contact.email}}</td>
+								
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+			</div>
+		</div>
 
 
 	</div>

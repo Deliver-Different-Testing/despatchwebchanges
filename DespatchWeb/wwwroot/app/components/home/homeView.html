@@ -96,11 +96,13 @@
                                     <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job" ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)" ng-click="unlockJob()"><i class="fa fa-lock"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Lock Job" ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)" ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Split Job" ng-show="currentJob && (currentJob.allowSplit)" ng-click="splitJob(currentJob)"><i class="fa fa-random"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Swap POD" ng-show="currentJob && currentJob.done && !currentJob.bulkJob && !currentJob.preBook" ng-click="swapPOD()"><i class="fa fa-exchange"></i></button>
+
 
                                     <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
+    <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
+    <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
                                 </div>
 
                             </div>

@@ -713,6 +713,23 @@ namespace DespatchWeb.Repositories
                          id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
                          label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
                      },
+                     PalletInfo = (
+                         from pa in  _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
+                         select new PalletInfo()
+                         {
+                             ID = pa.JobId,
+                             Quantity = pa.Items,
+                             ItemID = pa.ItemId,
+                             Weight = pa.Weight,
+                             Length = pa.Length,
+                             Depth = pa.Depth,
+                             Height = pa.Height,
+                             PU = pa.Pu,
+                             DO = pa.Do,
+                             DGClass = pa.Dgclass,
+                             Notes = pa.Notes
+
+                         }).ToList(),
                      Client = j.UcclCode,
                      ClientID = j.UcjbClientId,
                      ClientName = j.ClientName,
@@ -926,7 +943,7 @@ namespace DespatchWeb.Repositories
             var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
             var jobs = _context.DeswebQryDespatches.FromSqlRaw(s).ToList();
-            var pallets = _context.TucJobItems.ToList();
+            //var pallets = _context.TucJobItems.ToList();
 
 
             var list = (from j in jobs
@@ -999,7 +1016,7 @@ namespace DespatchWeb.Repositories
                             DeliveryLatitude = j.DeliveryLatitude,
                             DeliveryLongitude = j.DeliveryLongitude,
                             PalletInfo = (
-                                from pa in pallets.Where(p => p.JobId == j.UcjbId)
+                                from pa in _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
                                 select new PalletInfo()
                                 {
                                     ID = pa.JobId,
@@ -1504,7 +1521,7 @@ namespace DespatchWeb.Repositories
 
         public async Task SwapPOD(string job1, string job2)
         {
-            await _context.LoadStoredProc("DES_qdfSwapPOD")
+            await _context.LoadStoredProc("DESWEB_qdfSwapPOD")
                 .WithSqlParam("@ucjbNumber1", job1)
                 .WithSqlParam("@ucjbNumber2", job2)
                 .ExecuteStoredNonQueryAsync();
@@ -1536,6 +1553,21 @@ namespace DespatchWeb.Repositories
                 await _context.LoadStoredProc("uspReDespatchJob")
                 .WithSqlParam("@intJobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
+
+            }
+
+
+        }
+
+        public async Task ReAssignSelectedJobs(string jobIds)
+        {
+
+            foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+            {
+
+                await _context.LoadStoredProc("uspReassignJob")
+                    .WithSqlParam("@intJobID", int.Parse(jid))
+                    .ExecuteStoredNonQueryAsync();
 
             }
 
@@ -1821,8 +1853,18 @@ namespace DespatchWeb.Repositories
                 join cc in _context.TblClientContacts on s.ContactId equals cc.ContactId into cjoin
                 from co in cjoin
                 where co.ClientId == clientId && s.Active == true
-                select new Lookup() { ID = s.ContactId, Text = s.Name }).Distinct();
+                select new Lookup() { ID = s.ContactId, Text = s.Name}).Distinct();
             return data.ToList();
+        }
+
+        public Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId)
+        {
+            var data = (from s in _context.UtlQryContactLookups
+                join cc in _context.TblClientContacts on s.ContactId equals cc.ContactId into cjoin
+                from co in cjoin
+                where co.ClientId == clientId && s.Active == true
+                select new ClientContactDetailViewModel() { ID = s.ContactId, FullName = $"{s.Firstname} {s.Surname}", Mobile = s.Mobile, DirectDial = s.DirectDial, Email = s.Email, JobTitle = s.JobTitle}).Distinct();
+            return data.ToListAsync();
         }
 
 

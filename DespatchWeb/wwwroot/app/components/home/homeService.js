@@ -87,6 +87,16 @@ angular
                             return response;
                         });
                     },
+                    validateSwapPOD: function (jobNumber) {
+                        return $http.post('Job/ValidateSwapPOD?job=' + jobNumber).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    swapPOD: function (job1, job2) {
+                        return $http.post('Job/SwapPOD?job1=' + job1 + '&job2=' + job2).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     voidJob: function (jobId) {
                         return $http.post("job/Void?jobId=" + jobId).then(function (response) {
                             return response;
@@ -114,6 +124,11 @@ angular
                     },
                     resendAllJobs: function (courierId) {
                         return $http.post("job/ResendAll?courierId=" + courierId).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    reAssignJobs: function (jobIds) {
+                        return $http.post("job/ReAssignSelected?jobIds=" + jobIds).then(function (response) {
                             return response.data;
                         });
                     },
@@ -260,6 +275,11 @@ angular
                     },
                     getContactList: function (clientId) {
                         return $http.get("job/ContactList?clientId="+ clientId).then(function (response) {
+                            return response.data;
+                        });
+                    },
+                    getContactDetailList: function (clientId) {
+                        return $http.get("job/ContactDetailList?clientId=" + clientId).then(function (response) {
                             return response.data;
                         });
                     },

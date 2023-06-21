@@ -284,7 +284,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.27",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.28",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -301,7 +301,7 @@ angular
             //},
             "currentWork": {
                 "title": "Current Work",
-                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.26",
+                "tpl": "app/components/home/tpls/currentWork.tpl?v=1.27",
                 "showSearch": 1,
                 "showRefresh": 0
             },
@@ -817,6 +817,68 @@ angular
             $scope.jobForDispatch = job;
         };
 
+        $scope.swapPOD = function () {
+
+            $scope.gather.form = {
+                id: "swapPOD",
+                title: "Enter the other job number",
+                fields: [
+                    {
+                        "name": "JobNumber",
+                        "label": "Job Number",
+                        "type": "text"
+                    }
+                ],
+                onSubmit: function () {
+                    return DispatchData.validateSwapPOD($scope.gather.form.fields[0].value).then(function (data) {
+                        if (!data) {
+                            $ngConfirm("Invalid Job");
+                        } else {
+                            var secondJobId = data;
+                            var firstJobId = $scope.currentJob.id;
+                            $ngConfirm({
+                                title: 'Swap Delivery Info',
+                                content: `Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`,
+                                scope: $scope,
+                                buttons: {
+
+                                    Yes: {
+                                        btnClass: 'btn-green',
+                                        action: function (scope, button) {
+                                            return DispatchData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(function (data) {
+                                                $ngConfirm("POD Swap Completed Successfully");
+                                                DispatchData.resendJobs(secondJobId);
+                                                DispatchData.reAssignJobs(firstJobId).then(function (data) {
+                                                    DispatchData.resendJobs(firstJobId).then(function (data) {
+                                                        $scope.getData();
+                                                    });
+                                                });
+                                                
+
+                                            });
+                                            
+                                        }
+                                    },
+                                    No: {
+                                        btnClass: 'btn-red',
+                                        action: function (scope, button) {
+
+                                        }
+                                    }
+
+                                }
+                            });
+
+                        }
+                    });
+
+                },
+                submitValue: "Submit"
+            };
+            $scope.gather.showForm();
+
+
+        }
 
         $scope.voidJobForm = function (jobNumber, jobId) {
             $scope.gather.form = {
@@ -2686,7 +2748,16 @@ angular
 
 
                         }
-                    }
+                    },
+                    {
+                        text: "Void Job",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.voidJobForm($itemScope.support.jobNumber, $itemScope.support.jobId);
+                        },
+                        enabled: function ($itemScope, $event, modelValue, text, $li) {
+                            return ($itemScope.support.jobId);
+                        },
+                    },
                 ];
 
 

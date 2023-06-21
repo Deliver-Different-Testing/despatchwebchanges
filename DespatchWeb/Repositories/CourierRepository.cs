@@ -190,7 +190,7 @@ namespace DespatchWeb.Repositories
             data.Eden.TotalRemaining = ClearListTotalRemaining("eden");
             data.Other.TotalRemaining = ClearListTotalRemaining("other");
             data.WestMid.TotalRemaining = ClearListTotalRemaining("west mid");
-            data.Eden.TotalRemaining = ClearListTotalRemaining("east mid");
+            data.EastMid.TotalRemaining = ClearListTotalRemaining("east mid");
             data.ShallowWest.TotalRemaining = ClearListTotalRemaining("shallow west");
             data.DeepWest.TotalRemaining = ClearListTotalRemaining("deep west");
             data.ShallowShore.TotalRemaining = ClearListTotalRemaining("shallow shore");

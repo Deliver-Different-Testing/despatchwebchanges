@@ -248,7 +248,7 @@ namespace DespatchWeb.Controllers
             }
             else
             {
-                return Json(true);
+                return Json(result.Item2.First().ID);
             }
 
         }
@@ -386,6 +386,13 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> ReSendSelected(string jobIds)
         {
             await _jobRepo.ReSendSelectedJobs(jobIds);
+            return Json("OK");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReAssignSelected(string jobIds)
+        {
+            await _jobRepo.ReAssignSelectedJobs(jobIds);
             return Json("OK");
         }
 
@@ -576,6 +583,12 @@ namespace DespatchWeb.Controllers
         public IActionResult ContactList(int clientId )
         {
             var data = _jobRepo.Contacts(clientId);
+            return Json(data);
+        }
+
+        public async Task<IActionResult> ContactDetailList(int clientId)
+        {
+            var data = await _jobRepo.ContactDetailList(clientId);
             return Json(data);
         }
 
