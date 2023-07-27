@@ -120,7 +120,7 @@
 						</div>
 						<div class="field" >
 							<label>Courier</label>
-							<div class="value">{{currentJob.courier}}</div>
+							<div class="value" ng-click="jdSvc.courierClick(currentJob)">{{currentJob.courier}}</div>
 						</div>
 							<div class="field" ng-class="jdSvc.combos.frequency.length > 0 ? '' : 'red'">
 							<b>Frequency:</b>&nbsp;<i ng-if="jdSvc.combos.frequency.length === 0" class="fa fa-exclamation"></i> <br />

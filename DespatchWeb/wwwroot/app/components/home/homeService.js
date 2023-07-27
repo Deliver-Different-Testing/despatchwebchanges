@@ -148,6 +148,11 @@ angular
                             return response.data;
                         });
                     },
+                    getRelatedJobs: function (id, clientId) {
+                        return $http.get('/Job/Related?parentId=' + id + '&clientId=' + clientId).then(function (response) {
+                            return response.data;
+                        });
+                    },
                     getJobsGrouped: function () {
                         return $http.get("app/components/home/api/jobsGroupedList.json").then(function (response) {
                             return response.data;

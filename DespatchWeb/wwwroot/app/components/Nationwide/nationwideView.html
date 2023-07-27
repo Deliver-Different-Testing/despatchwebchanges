@@ -65,6 +65,7 @@
                             <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
                             <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
                             <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
+                            <span ng-show="box.name == 'jobDetail'" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
                         </div>
                         <div class="box-buttons">
                             <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">

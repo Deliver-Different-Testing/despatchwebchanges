@@ -189,7 +189,7 @@ angular
 
             "jobList": {
                 "title": "Job Data",
-                "tpl": "app/components/prebooks/tpls/pbList.tpl?v=1.2",
+                "tpl": "app/components/prebooks/tpls/pbList.tpl?v=1.3",
                 "showSearch": 1,
                 "showRefresh": 1,
                 "model": "jobList",

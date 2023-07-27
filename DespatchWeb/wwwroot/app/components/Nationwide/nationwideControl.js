@@ -368,7 +368,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.26",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.27",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -2007,7 +2007,7 @@ angular
             //$scope.currentJob = null;
             $scope.currentCourier = courier;
 
-            $scope.currentSelection = " for Courier " + + courier.courier;
+            //$scope.currentSelection = " for Courier " + + courier.courier;
 
             setTimeout(function () {
                 $(document).ready(function (event) {
@@ -2055,7 +2055,7 @@ angular
             $scope.currentWorkSelection = " for Courier " + courier.label;
 
 
-            $scope.currentSelection = " for Courier " + + courier.label;
+            //$scope.currentSelection = " for Courier " + + courier.label;
 
             setTimeout(function () {
                 $(document).ready(function (event) {
@@ -2108,7 +2108,7 @@ angular
 
             $scope.currentCourier = courier;
 
-            $scope.currentSelection = " for Courier " + + courier.courier;
+            //$scope.currentSelection = " for Courier " + + courier.courier;
 
             setTimeout(function () {
                 $(document).ready(function (event) {
@@ -2254,6 +2254,15 @@ angular
 
         };
 
+        $scope.loadRelatedJobDetail = function (id, jn) {
+            $("#box-jobDetail").find(".loading").show();
+            NWData.getJobDetail(id).then(function (data) {
+                $scope.currentJob = data;
+                $("#box-jobDetail").find(".loading").hide();
+                $scope.currentSelection = " for Job " + jn;
+            });
+        }
+
         //Select Job
         $scope.selectJob = function (job, clear) {
 
@@ -2281,6 +2290,13 @@ angular
                 NWData.getActiveCouriers().then(function (data) {
                     $scope.pickCouriers = data;
                 });
+
+                if ($scope.currentJob.rootParentID) {
+                    NWData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                        data = data.filter(item => item.id !== $scope.currentJob.id);
+                        $scope.currentJob.relatedJobs = data;
+                    });
+                }
 
                 if (clear === true && job.courier === null) {
 

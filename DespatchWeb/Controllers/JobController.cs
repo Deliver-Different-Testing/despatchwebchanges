@@ -210,6 +210,12 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
+        public async Task<IActionResult> Related(int parentId, int clientId)
+        {
+            var result = await _jobRepo.RelatedJobs(parentId, clientId);
+            return Json(result);
+        }
+
         public async Task<IActionResult> BulkDetail(int bulkJobId)
         {
             var result = await _jobRepo.BulkJobDetail(bulkJobId);

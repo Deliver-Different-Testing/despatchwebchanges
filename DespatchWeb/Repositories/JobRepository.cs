@@ -259,6 +259,7 @@ namespace DespatchWeb.Repositories
                         Courier = co.Code + " " + co.FirstName + " " + co.Surname,
                         CourierID = co.CourierId
                     },
+                    
                     //AllowDispatch = j.AllowDespatch,
                     //AllowSplit = j.AllowSplit,
                     DGClass = j.Dgclass,
@@ -288,7 +289,8 @@ namespace DespatchWeb.Repositories
                     InternalStatusID = j.InternalStatus,
                     FollowupTime = j.FollowupTime,
                     Reprice = j.Reprice,
-                    GstRate = j.Gstrate
+                    GstRate = j.Gstrate,
+                    RootParentID = j.RootParentId
 
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
@@ -299,6 +301,15 @@ namespace DespatchWeb.Repositories
                     id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeID,
                     label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (job.SizeID ?? (short)2))
                 };
+                job.RelatedJobs = (
+                    from rel in _context.TblJobs.Where(r =>
+                        r.ParentId == job.RootParentID && r.Number != job.JobNo && r.ClientId == job.ClientID)
+                    select new Size()
+                    {
+                        id = rel.JobId,
+                        label = rel.Number
+                    }
+                ).ToList();
                 job.Size = job.Vehicle;
                 job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
                 job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
@@ -307,6 +318,20 @@ namespace DespatchWeb.Repositories
             }
 
             return job;
+        }
+
+        public async Task<List<Size>> RelatedJobs(int parentId, int clientId)
+        {
+            var jobQuery = await (
+                from j in _context.TblJobs
+                where (j.RootParentId == parentId && j.ClientId == clientId)
+                select new Size()
+                {
+                    id = j.JobId,
+                    label = j.Number
+                }
+            ).ToListAsync();
+            return jobQuery;
         }
 
         public async Task<JobViewModel> BulkJobDetail(int bulkJobId)
@@ -694,6 +719,7 @@ namespace DespatchWeb.Repositories
                  select new JobViewModel()
                  {
                      ID = j.UcjbId,
+                     RootParentID = j.RootParentId,
                      Time = j.UcjbTime,
                      Direct = j.Direct,
                      Van = j.UcjbVan,
@@ -730,6 +756,14 @@ namespace DespatchWeb.Repositories
                              Notes = pa.Notes
 
                          }).ToList(),
+                     //RelatedJobs = (
+                     //    from rel in _context.TblJobs.Where(r => r.ParentId == j.RootParentId && r.JobId != j.RootParentId)
+                     //    select new Size()
+                     //    {
+                     //        id = rel.JobId,
+                     //        label = rel.Number
+                     //    } 
+                     //).ToList(),
                      Client = j.UcclCode,
                      ClientID = j.UcjbClientId,
                      ClientName = j.ClientName,
@@ -950,6 +984,7 @@ namespace DespatchWeb.Repositories
                         select new JobViewModel()
                         {
                             ID = j.UcjbId,
+                            RootParentID = j.RootParentId,
                             Time = j.UcjbTime,
                             Direct = j.Direct,
                             Van = j.UcjbVan,
@@ -1032,6 +1067,14 @@ namespace DespatchWeb.Repositories
                                     Notes = pa.Notes
 
                                 }).ToList(),
+                            //RelatedJobs = (
+                            //    from rel in _context.TblJobs.Where(r => r.ParentId == j.RootParentId && r.JobId != j.RootParentId)
+                            //    select new Size()
+                            //    {
+                            //        id = rel.JobId,
+                            //        label = rel.Number
+                            //    }
+                            //).ToList(),
                             CourierData = new CourierData()
                             {
                                 Courier = string.IsNullOrEmpty(j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
@@ -1388,7 +1431,8 @@ namespace DespatchWeb.Repositories
                             Invoiced = false,
                             InternalStatusID = j.InternalStatus,
                             Reprice = j.Reprice,
-                            FollowupTime = j.FollowupTime
+                            FollowupTime = j.FollowupTime,
+                            RootParentID = j.RootParentId
 
 
 

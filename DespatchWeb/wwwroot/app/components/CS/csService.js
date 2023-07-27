@@ -27,6 +27,11 @@ angular
                     return response.data;
                 });
             },
+            getRelatedJobs: function (id, clientId) {
+                return $http.get('/Job/Related?parentId=' + id + '&clientId=' + clientId).then(function (response) {
+                    return response.data;
+                });
+            },
             getPreBookDetail: function (id) {
                 return $http.get('/Job/PreBookDetail?preBookJobId=' + id).then(function (response) {
                     return response.data;

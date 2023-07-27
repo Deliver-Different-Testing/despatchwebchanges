@@ -1516,6 +1516,35 @@
                     200);
                 };
 
+                self.courierClick = function (job) {
+                    this.editDetailField(job, 'CourierID', 'Courier', '', job.id, 'select2');
+                    setTimeout(function () {
+                        $("#gather-CourierID").select2({
+                            ajax: {
+                                url: "/courier/AllActiveSearch",
+                                dataType: 'json',
+                                delay: 250,
+                                data: function (params) {
+                                    return {
+                                        searchTerm: params.term
+                                    };
+                                },
+                                processResults: function (data) {
+                                    // parse the results into the format expected by Select2
+                                    return {
+                                        results: data
+                                    };
+                                },
+                                cache: true
+                            },
+                            placeholder: "Start typing to search courier...",
+                            minimumInputLength: 3
+                        });
+
+                    },
+                        200);
+                };
+
                 //////////////////////////////
                 //  PALLET CONTROLS //
                 /////////////////////////////

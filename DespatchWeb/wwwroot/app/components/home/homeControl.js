@@ -284,7 +284,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.28",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.29",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -1888,7 +1888,7 @@ angular
             //$scope.currentJob = null;
             $scope.currentCourier = courier;
 
-            $scope.currentSelection = " for Courier " + + courier.courier;
+            //$scope.currentSelection = " for Courier " + + courier.courier;
 
             setTimeout(function () {
                 $(document).ready(function (event) {
@@ -2124,7 +2124,24 @@ angular
             $scope.currentSupport = null;
             $scope.potentialCouriers = false;
             $scope.potentialCouriersSelection = " for Job " + job.jobNo;
+            $scope.currentSelection = " for Job " + job.jobNo;
+            if ($scope.currentJob.rootParentID) {
+                DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                    data = data.filter(item => item.id !== $scope.currentJob.id);
+                    $scope.currentJob.relatedJobs = data;
+                });
+            }
+
         };
+
+        $scope.loadRelatedJobDetail = function (id, jn) {
+            $("#box-jobDetail").find(".loading").show();
+            DispatchData.getJobDetail(id).then(function (data) {
+                $scope.currentJob = data;
+                $("#box-jobDetail").find(".loading").hide();
+                $scope.currentSelection = " for Job " + jn;
+            });
+        }
 
         $scope.selectSupportJobDetail = function (support) {
             console.log("select Job  " + support.jobId);
@@ -2143,6 +2160,13 @@ angular
                 if ($scope.mapZoom.display) {
                     setMapBounds();
                     map.setZoom(12);
+                }
+
+                if ($scope.currentJob.rootParentID) {
+                    DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                        data = data.filter(item => item.id !== $scope.currentJob.id);
+                        $scope.currentJob.relatedJobs = data;
+                    });
                 }
                 
             });
@@ -2178,6 +2202,14 @@ angular
                 DispatchData.getActiveCouriers().then(function (data) {
                     $scope.pickCouriers = data;
                 });
+
+                if ($scope.currentJob.rootParentID) {
+                    DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                        data = data.filter(item => item.id !== $scope.currentJob.id);
+                        $scope.currentJob.relatedJobs = data;
+                    });
+                }
+                
 
                 if (job.courier === null) {
 

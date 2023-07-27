@@ -344,7 +344,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.25",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.26",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -1096,6 +1096,15 @@ angular
             return sn === undefined ? "" : sn.label;
         };
 
+        $scope.loadRelatedJobDetail = function (id, jn) {
+            $("#box-jobDetail").find(".loading").show();
+            uCSData.getJobDetail(id).then(function (data) {
+                $scope.currentJob = data;
+                $("#box-jobDetail").find(".loading").hide();
+                $scope.currentSelection = " for Job " + jn;
+            });
+        }
+
         //Select Job
         $scope.selectJobDetail = function (id) {
             console.log("select Job  " + id);
@@ -1115,6 +1124,12 @@ angular
                 displayRoutePointsOnly(jobs, true);
                 setMapBounds();
                 map.setZoom(14);
+                if ($scope.currentJob.rootParentID) {
+                    uCSData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                        data = data.filter(item => item.id !== $scope.currentJob.id);
+                        $scope.currentJob.relatedJobs = data;
+                    });
+                }
             });
  
 

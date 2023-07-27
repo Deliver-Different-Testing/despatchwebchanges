@@ -7,6 +7,7 @@ namespace DespatchWeb.Models
     public class JobViewModel
     {
         public int ID { get; set; }
+        public int? RootParentID { get; set; }
         public DateTime? Time { get; set; }
         public DateTime? BookedDate { get; set; }
         public bool Direct { get; set; }
@@ -87,6 +88,7 @@ namespace DespatchWeb.Models
         public decimal? DeliveryLongitude { get; set; }
         public decimal? DeliveryLatitude { get; set; }
         public List<PalletInfo> PalletInfo { get; set; }
+        public List<Size> RelatedJobs { get; set; }
         public decimal? CourierLatitude { get; set; }
         public decimal? CourierLongitude { get; set; }
         public int? RunOrder { get; set; }

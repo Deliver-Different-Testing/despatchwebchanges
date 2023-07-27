@@ -46,20 +46,20 @@ angular
             .state("home",
                 {
                     url: "/",
-                    templateUrl: "app/components/home/homeView.html?v=1.38",
+                    templateUrl: "app/components/home/homeView.html?v=1.39",
                     controller: "HomeControl"
 				})
 			.state('nw',
                 {
                     url: '/Nationwide',
-                    templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.2',
+                    templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.3',
                     controller: 'NationwideControl',
                     reloadOnSearch: false
                 })
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.13',
+                    templateUrl: 'app/components/CS/csView.html?v=1.14',
 					controller: 'CSControl',
                     reloadOnSearch: false
 				})
