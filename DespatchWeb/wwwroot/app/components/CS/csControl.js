@@ -199,7 +199,7 @@ angular
         $scope.boxes = {
             "pickDate": {
                 "title": "Filters",
-                "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.5",
+                "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.6",
                 "showSearch": 0
             },
 
@@ -344,7 +344,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.26",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.29",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -416,8 +416,8 @@ angular
         $scope.pickDateService = {
             "couriers": [],
             "date": moment().format("YYYY-MM-DD"),
-            "from_date": moment().format("YYYY-MM-DD"),
-            "to_date": moment().format("YYYY-MM-DD"),
+            "from_date": moment().subtract(7, 'days').format("YYYY-MM-DD"),
+            "to_date": moment().add(7, 'days').format("YYYY-MM-DD"),
             "followupClient": "All",
             "includeClosed": true
         };

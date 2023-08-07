@@ -9,6 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public TucClient()
         {
+            TblBulkRunSchedules = new HashSet<TblBulkRunSchedule>();
             TblClientContacts = new HashSet<TblClientContact>();
             TucClientContacts = new HashSet<TucClientContact>();
             TucEvents = new HashSet<TucEvent>();
@@ -267,8 +268,10 @@ namespace DespatchWeb.EntityClasses
         public string PromoCode { get; set; }
         public bool AirNzknownShipper { get; set; }
         public decimal? AirNzmargin { get; set; }
+        public bool? ShowNwflight { get; set; }
 
         public virtual TucSuburb UcclSuburb { get; set; }
+        public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual ICollection<TblClientContact> TblClientContacts { get; set; }
         public virtual ICollection<TucClientContact> TucClientContacts { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }

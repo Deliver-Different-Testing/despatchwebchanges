@@ -188,6 +188,10 @@ namespace DespatchWeb.Repositories
                 from leave in leaveNotHomeJoin.DefaultIfEmpty()
                 join u in _context.TblUndeliverableLocations on j.UndeliverableLocationId equals u.UndeliverableLocationId into undeliverableLocationJoin
                 from ud in undeliverableLocationJoin.DefaultIfEmpty()
+                join b in _context.TblBulkJobs on j.JobId equals b.JobId into bulkJoin
+                from bj in bulkJoin.DefaultIfEmpty()
+                join sc in _context.TblBulkRunSchedules on bj.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
+                from schedule in scheduleJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
                 select new JobViewModel()
@@ -290,7 +294,8 @@ namespace DespatchWeb.Repositories
                     FollowupTime = j.FollowupTime,
                     Reprice = j.Reprice,
                     GstRate = j.Gstrate,
-                    RootParentID = j.RootParentId
+                    RootParentID = j.RootParentId,
+                    ScheduleName = schedule.Name
 
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
@@ -349,7 +354,9 @@ namespace DespatchWeb.Repositories
                 from status in statusJoin.DefaultIfEmpty()
                 join l in _context.TblJobLeaveNotHomes on j.DeliverToLeaveId equals l.LeaveNotHomeId into leaveNotHomeJoin
                 from leave in leaveNotHomeJoin.DefaultIfEmpty()
-                
+                join sc in _context.TblBulkRunSchedules on j.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
+                from schedule in scheduleJoin.DefaultIfEmpty()
+
 
                 where (j.BulkJobId == bulkJobId)
                 select new JobViewModel()
@@ -404,7 +411,8 @@ namespace DespatchWeb.Repositories
                     BulkJob = true,
                     Locked = (j.RunName ?? "").Length > 1 || j.BookDate < today,
                     RunName = j.RunName,
-                    Done = j.Done
+                    Done = j.Done,
+                    ScheduleName = schedule.Name
 
                 });
             var jobList = await jobQuery.ToListWithNoLockAsync();
@@ -848,7 +856,8 @@ namespace DespatchWeb.Repositories
                      InternalStatusID = j.InternalStatus,
                      Reprice = j.Reprice,
                      FollowupTime = j.FollowupTime,
-                     GstRate = j.Gstrate
+                     GstRate = j.Gstrate,
+                     ScheduleName = j.ScheduleName
 
                  }).ToList();
             return list;
@@ -1067,14 +1076,7 @@ namespace DespatchWeb.Repositories
                                     Notes = pa.Notes
 
                                 }).ToList(),
-                            //RelatedJobs = (
-                            //    from rel in _context.TblJobs.Where(r => r.ParentId == j.RootParentId && r.JobId != j.RootParentId)
-                            //    select new Size()
-                            //    {
-                            //        id = rel.JobId,
-                            //        label = rel.Number
-                            //    }
-                            //).ToList(),
+                            
                             CourierData = new CourierData()
                             {
                                 Courier = string.IsNullOrEmpty(j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
@@ -1113,7 +1115,8 @@ namespace DespatchWeb.Repositories
                             InternalStatusID = j.InternalStatus,
                             FollowupTime = j.FollowupTime,
                             Reprice = j.Reprice,
-                            GstRate = j.Gstrate
+                            GstRate = j.Gstrate,
+                            ScheduleName = j.ScheduleName
 
 
 
@@ -1432,7 +1435,8 @@ namespace DespatchWeb.Repositories
                             InternalStatusID = j.InternalStatus,
                             Reprice = j.Reprice,
                             FollowupTime = j.FollowupTime,
-                            RootParentID = j.RootParentId
+                            RootParentID = j.RootParentId,
+                            ScheduleName = j.ScheduleName
 
 
 
@@ -2320,6 +2324,14 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@Username", despatcher)
                 .ExecuteStoredNonQueryAsync();
 
+        }
+
+        public async Task ReleaseBulkJob(string jobNumber, DateTime bookDate)
+        {
+            await _context.LoadStoredProc("UTL_stpJob_tblBulkJob_ReleaseByJobNumber")
+                .WithSqlParam("@JobNumber", jobNumber)
+                .WithSqlParam("@DateTime", bookDate)
+                .ExecuteStoredNonQueryAsync();
         }
 
         public async Task UpdateJob(int jobId, string field, string value, decimal? rate, string despatcher, int staffId)

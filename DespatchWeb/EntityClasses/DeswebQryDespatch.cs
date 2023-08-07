@@ -136,5 +136,6 @@ namespace DespatchWeb.EntityClasses
         public bool UcjbCbd { get; set; }
         public bool? Locked { get; set; }
         public decimal? Gstrate { get; set; }
+        public string ScheduleName { get; set; }
     }
 }

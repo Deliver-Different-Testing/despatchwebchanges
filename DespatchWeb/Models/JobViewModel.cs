@@ -120,6 +120,8 @@ namespace DespatchWeb.Models
         public bool PreBook { get; set; }
         public bool BulkJob { get; set; }
         public string RunName { get; set; }
+
+        public string ScheduleName { get; set; }
         
     }
 

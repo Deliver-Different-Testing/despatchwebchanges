@@ -769,6 +769,12 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
+        public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
+        {
+            await _jobRepo.ReleaseBulkJob(jobNumber, bookDate);
+            return Json("OK");
+        }
+
         public async Task<IActionResult> UpdateJobBooking(int jobId, string field, string value, decimal? rate,
             string despatcherName, int staffId)
         {

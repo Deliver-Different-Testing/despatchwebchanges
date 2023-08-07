@@ -260,6 +260,7 @@ namespace DespatchWeb.EntityClasses
         public string PromoCode { get; set; }
         public bool AirNzknownShipper { get; set; }
         public decimal? AirNzmargin { get; set; }
+        public bool? ShowNwflight { get; set; }
         public int ClientId { get; set; }
         public string Name { get; set; }
         public string LegalName { get; set; }

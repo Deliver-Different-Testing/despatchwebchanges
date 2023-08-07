@@ -10,6 +10,8 @@ namespace DespatchWeb.EntityClasses
         public TucJobType()
         {
             TblBulkJobs = new HashSet<TblBulkJob>();
+            TblBulkRunScheduleParentSpeeds = new HashSet<TblBulkRunSchedule>();
+            TblBulkRunScheduleSpeeds = new HashSet<TblBulkRunSchedule>();
             TblUndeliverableLocations = new HashSet<TblUndeliverableLocation>();
             TucEvents = new HashSet<TucEvent>();
         }
@@ -48,6 +50,8 @@ namespace DespatchWeb.EntityClasses
         public decimal? AddonPercentage { get; set; }
 
         public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
+        public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; }
+        public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleSpeeds { get; set; }
         public virtual ICollection<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
     }

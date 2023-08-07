@@ -413,9 +413,20 @@ angular
                             return response;
                         });
                     },
+                    releaseBulkJob: function (jobNumber, bookDate) {
+                        var dt = moment(bookDate).format("YYYY-MM-DD");
+                        return $http.post("job/ReleaseBulkJob?jobNumber=" + jobNumber + "&bookDate=" + dt).then(function (response) {
+                            return response;
+                        });
+                    },
                     updateJobDetail: function (jobId, field, value, rate, despatcherName, staffId, preBook) {
                         if (field === "Time" || field === "CompletedTime") {
                             value = moment().format("YYYY-MM-DD") +
+                                " " +
+                                moment(value).format("HH:mm:ss");
+                        }
+                        if (field === "FollowupTime") {
+                            value = moment(value).format("YYYY-MM-DD") +
                                 " " +
                                 moment(value).format("HH:mm:ss");
                         }

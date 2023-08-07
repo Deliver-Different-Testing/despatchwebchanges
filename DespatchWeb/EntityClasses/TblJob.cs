@@ -155,5 +155,6 @@ namespace DespatchWeb.EntityClasses
         public DateTime? FollowupTime { get; set; }
         public bool? Reprice { get; set; }
         public bool? VanOk { get; set; }
+        public int? SourceId { get; set; }
     }
 }

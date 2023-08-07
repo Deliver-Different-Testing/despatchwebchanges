@@ -101,7 +101,7 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Job FollowUp</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{jdSvc.getInternalStatus(currentJob.internalStatusID)}}</div>
 						</div>
-						<div ng-if="!currentJob.bulkJob" class="field" ng-click="!currentJob.locked && !currentJob.internalStatusID ==1 && !currentJob.internalStatusID ==4 && jdSvc.editDetailField(currentJob, 'FollowupTime','FollowUp Time',currentJob.followupTime,currentJob.id,'datetime')">
+						<div ng-if="!currentJob.bulkJob" class="field" ng-click="!currentJob.locked && currentJob.internalStatusID !=1 && currentJob.internalStatusID !=4 && jdSvc.editDetailField(currentJob, 'FollowupTime','FollowUp Time',currentJob.followupTime,currentJob.id,'datetime')">
 							<label ng-class="currentJob.locked || currentJob.internalStatusID ===1 || currentJob.internalStatusID ===4 ? 'disabled' : ''">FollowUp Time</label>
 							<div ng-class="currentJob.locked || currentJob.internalStatusID ===1 || currentJob.internalStatusID ===4  ? 'disabled' : ''" class="value">{{currentJob.followupTime | date : "dd/MM/yyyy h:mm a"}}</div>
 						</div>
@@ -111,6 +111,10 @@
 						<div ng-if="currentJob.bulkJob" class="field">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Run Name</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.runName}}</div>
+						</div>
+						<div  class="field">
+							<label class="disabled">Schedule Name</label>
+							<div class="disabled" class="value">{{currentJob.scheduleName}}</div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'PODName','POD Name',currentJob.podName,currentJob.id)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">POD Name</label>
@@ -130,7 +134,7 @@
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Direct</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.directClick(currentJob)" ng-model="currentJob.direct"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.directClick(currentJob)" ng-model="currentJob.direct"/></div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field"  ng-click="!currentJob.locked && currentJob.direct && jdSvc.acceptedClick(currentJob)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Speed Accepted</label>
@@ -154,19 +158,25 @@
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Reprice</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.repriceClick(currentJob)" ng-model="currentJob.reprice"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.repriceClick(currentJob)" ng-model="currentJob.reprice"/></div>
 						</div>
 						<div class="field" ng-if="name=='POD'">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Void</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.voidClick(currentJob)" ng-model="currentJob.void"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.voidClick(currentJob)" ng-model="currentJob.void"/></div>
 						</div>
 						<div class="field" ng-if="name=='POD' && !currentJob.bulkJob">	
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Done</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.doneClick(currentJob)" ng-model="currentJob.done"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.doneClick(currentJob)" ng-model="currentJob.done"/></div>
 						</div>
-						<div class="field" ng-if="currentJob.bulkJob">	
-							<label class="disabled">Pushed To Live</label>
-							<div class="value disabled"><input type="checkbox" class="disabled" ng-model="currentJob.done"/></div>
+						<div class="field" ng-if="name=='Nationwide' && !currentJob.bulkJob">	
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Delivered</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.deliveredClick(currentJob)" ng-model="currentJob.done"/></div>
+						</div>
+						<div class="field" ng-if="currentJob.bulkJob" >	
+							<label ng-class="(currentJob.jobRelationshipTypeID != 19 || currentJob.done) ? 'disabled' : ''">Pushed To Live</label>
+							<div ng-class="(currentJob.jobRelationshipTypeID != 19 || currentJob.done) ? 'disabled' : ''" class="value">
+								<input type="checkbox" ng-disabled="(currentJob.jobRelationshipTypeID != 19 || currentJob.done)" ng-class="(currentJob.jobRelationshipTypeID != 19 || currentJob.done) ? 'disabled' : ''" ng-click="jdSvc.pushToLive(currentJob)" ng-model="currentJob.done"/>
+							</div>
 						</div>
 					</div>
 					<div class="col-md-4">
@@ -203,23 +213,23 @@
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Van</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.vanClick(currentJob)" ng-model="currentJob.van"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.vanClick(currentJob)" ng-model="currentJob.van"/></div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Truck</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.truckClick(currentJob)" ng-model="currentJob.truck"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.truckClick(currentJob)" ng-model="currentJob.truck"/></div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Pedal</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.pedalClick(currentJob)" ng-model="currentJob.pedal"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.pedalClick(currentJob)" ng-model="currentJob.pedal"/></div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Attention</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.attentionClick(currentJob)" ng-model="currentJob.attention"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.attentionClick(currentJob)" ng-model="currentJob.attention"/></div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">VanOK?</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value" class="value"><input type="checkbox" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.vanOkClick(currentJob)" ng-model="currentJob.vanOK"/></div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.vanOkClick(currentJob)" ng-model="currentJob.vanOK"/></div>
 						</div>
 					</div>
 				</div>

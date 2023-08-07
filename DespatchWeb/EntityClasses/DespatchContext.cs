@@ -22,6 +22,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
+        public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual DbSet<TblClient> TblClients { get; set; }
         public virtual DbSet<TblClientContact> TblClientContacts { get; set; }
         public virtual DbSet<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; }
@@ -286,6 +287,8 @@ namespace DespatchWeb.EntityClasses
                     .IsUnicode(false);
 
                 entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
+
+                entity.Property(e => e.ScheduleName).HasMaxLength(250);
 
                 entity.Property(e => e.SendJobsViaSms).HasColumnName("SendJobsViaSMS");
 
@@ -598,6 +601,38 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.Speed)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_tblBulkJob_tucJobType");
+            });
+
+            modelBuilder.Entity<TblBulkRunSchedule>(entity =>
+            {
+                entity.HasKey(e => e.BulkRunScheduleId);
+
+                entity.ToTable("tblBulkRunSchedule");
+
+                entity.HasIndex(e => e.ClientId, "idx_ClientId");
+
+                entity.HasIndex(e => e.Region, "idx_Region");
+
+                entity.HasIndex(e => e.SpeedId, "idx_SpeedId");
+
+                entity.Property(e => e.Description).HasMaxLength(500);
+
+                entity.Property(e => e.Name).HasMaxLength(250);
+
+                entity.HasOne(d => d.Client)
+                    .WithMany(p => p.TblBulkRunSchedules)
+                    .HasForeignKey(d => d.ClientId)
+                    .HasConstraintName("FK_tblBulkRunSchedule_tucClient");
+
+                entity.HasOne(d => d.ParentSpeed)
+                    .WithMany(p => p.TblBulkRunScheduleParentSpeeds)
+                    .HasForeignKey(d => d.ParentSpeedId)
+                    .HasConstraintName("FK_tblBulkRunSchedule_tucJobType2");
+
+                entity.HasOne(d => d.Speed)
+                    .WithMany(p => p.TblBulkRunScheduleSpeeds)
+                    .HasForeignKey(d => d.SpeedId)
+                    .HasConstraintName("FK_tblBulkRunSchedule_tucJobType");
             });
 
             modelBuilder.Entity<TblClient>(entity =>
@@ -947,6 +982,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.ShorthaulKgrateCodeId).HasColumnName("ShorthaulKGRateCodeID");
 
                 entity.Property(e => e.ShorthaulRateCodeId).HasColumnName("ShorthaulRateCodeID");
+
+                entity.Property(e => e.ShowNwflight).HasColumnName("ShowNWFlight");
 
                 entity.Property(e => e.SigRequiredDefault).HasMaxLength(500);
 
@@ -1989,6 +2026,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.ShopRef5).HasMaxLength(50);
 
+                entity.Property(e => e.SourceId).HasColumnName("SourceID");
+
                 entity.Property(e => e.TextRef1)
                     .HasMaxLength(50)
                     .IsUnicode(false);
@@ -2434,6 +2473,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.Sdrenabled)
                     .HasColumnName("SDREnabled")
+                    .HasDefaultValueSql("((1))");
+
+                entity.Property(e => e.ShowNwflight)
+                    .HasColumnName("ShowNWFlight")
                     .HasDefaultValueSql("((1))");
 
                 entity.Property(e => e.SigRequiredDefault).HasMaxLength(500);

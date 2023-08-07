@@ -485,6 +485,10 @@
 
                     }
 
+                    if (type === "datetime") {
+                        value = new Date(moment(value).format("YYYY-MM-DDTHH:mm"))
+                    }
+
                     var max = "";
                     var valueToUse = options ? options[value] : value;
 
@@ -1116,6 +1120,14 @@
                         });
             };
 
+            self.pushToLive = function (job) {
+                return DispatchData
+                    .releaseBulkJob(job.jobNo, job.bookedDate).then(function (response) {
+                        self.selectBulkJobDetail(job.id);
+                        return response;
+                    });
+            };
+
             self.vanOkClick = function (job) {
                 return DispatchData
                     .updateJobDetail(job.id,
@@ -1327,8 +1339,23 @@
                             return response;
                         });
 
-            };
+                };
 
+
+            self.deliveredClick = function (job) {
+                DispatchData
+                    .updateJobDetail(job.id,
+                        "Delivered",
+                        job.done,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+                };
+            
             self.leaveClick = function(job) {
                 this.editDetailField(job, 'DeliverToLeaveID', 'Leave Parcel', '', job.id, 'select2');
                 setTimeout(function() {
