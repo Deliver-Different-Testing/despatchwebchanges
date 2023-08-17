@@ -10,7 +10,7 @@
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a  ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#" ng-click="!currentJob.locked && jdSvc.clientClick(currentJob)">{{currentJob.client}} {{currentJob.clientName}}</a></div>
 						</div>
 						<div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="fromAddress" ng-click="!currentJob.locked && jdSvc.updateGPS(currentJob, 'fromAddress')">
-							<label ng-class="currentJob.locked ? 'disabled' : ''">From: {{currentJob.from}}</label>
+							<label ng-class="currentJob.locked ? 'disabled' : ''">From: {{currentJob.from}} {{currentJob.fromPostCode}}</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.fromAddress}}</div>
 						</div>
 						<div class="field" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'FromContactName','From Contact Name',currentJob.fromContactName,currentJob.id)">
@@ -29,7 +29,7 @@
 						</div>
 						
 						<div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="toAddress" ng-click="!currentJob.locked && jdSvc.updateGPS(currentJob,'toAddress')">
-							<label ng-class="currentJob.locked ? 'disabled' : ''">To: {{currentJob.to}}</label>
+							<label ng-class="currentJob.locked ? 'disabled' : ''">To: {{currentJob.to}} {{currentJob.toPostCode}}</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.toAddress}}</div>
 						</div>
 						<div class="field contact" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ToContactName','To Contact Name',currentJob.deliverToContact,currentJob.id)">
@@ -101,6 +101,10 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Job FollowUp</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{jdSvc.getInternalStatus(currentJob.internalStatusID)}}</div>
 						</div>
+						<div class="field" ng-if="(name=='Nationwide' || name=='POD') && !currentJob.bulkJob && currentJob.hasNationwide" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ConNote','Connote',currentJob.conNote,currentJob.id)">	
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Connote</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.conNote}}</div>
+						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" ng-click="!currentJob.locked && currentJob.internalStatusID !=1 && currentJob.internalStatusID !=4 && jdSvc.editDetailField(currentJob, 'FollowupTime','FollowUp Time',currentJob.followupTime,currentJob.id,'datetime')">
 							<label ng-class="currentJob.locked || currentJob.internalStatusID ===1 || currentJob.internalStatusID ===4 ? 'disabled' : ''">FollowUp Time</label>
 							<div ng-class="currentJob.locked || currentJob.internalStatusID ===1 || currentJob.internalStatusID ===4  ? 'disabled' : ''" class="value">{{currentJob.followupTime | date : "dd/MM/yyyy h:mm a"}}</div>
@@ -122,11 +126,11 @@
 						</div>
 						<div class="field"  ng-click="!currentJob.locked && jdSvc.speedClick(currentJob)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Speed</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.speed}}</div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.speedName}}</div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" ng-click="!currentJob.locked && jdSvc.notifyClick(currentJob)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Speed Notified</label>
-							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.notify}}</div>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.notifiedName}}</div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field" ng-click="!currentJob.locked && jdSvc.jobTypeClick(currentJob)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Job Type</label>
@@ -138,7 +142,7 @@
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field"  ng-click="!currentJob.locked && currentJob.direct && jdSvc.acceptedClick(currentJob)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Speed Accepted</label>
-							<div ng-class="currentJob.direct && !currentJob.locked ? '' : 'disabled'" class="value" >{{currentJob.speedAccepted}}</div>
+							<div ng-class="currentJob.direct && !currentJob.locked ? '' : 'disabled'" class="value" >{{currentJob.acceptedName}}</div>
 						</div>
 						<div class="field" ng-click="!currentJob.locked && jdSvc.leaveClick(currentJob)" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Leave Parcel</label>
@@ -171,6 +175,10 @@
 						<div class="field" ng-if="name=='Nationwide' && !currentJob.bulkJob">	
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Delivered</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.deliveredClick(currentJob)" ng-model="currentJob.done"/></div>
+						</div>
+						<div class="field" ng-if="(name=='Nationwide' || name=='POD') && !currentJob.bulkJob && currentJob.hasNationwide">	
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Airport Only</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.airportOnlyClick(currentJob)" ng-model="currentJob.airportOnly"/></div>
 						</div>
 						<div class="field" ng-if="currentJob.bulkJob" >	
 							<label ng-class="(currentJob.jobRelationshipTypeID != 19 || currentJob.done) ? 'disabled' : ''">Pushed To Live</label>
@@ -325,7 +333,7 @@
 							<div class="value"><a class="uline" src="#" ng-click="jdSvc.clientClick(currentJob)">{{currentJob.client}} {{currentJob.clientName}}</a></div>
 						</div>
 						<div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="fromAddress" ng-click="jdSvc.updateGPS(currentJob, 'fromAddress')">
-							<label>From: {{currentJob.from}}</label>
+							<label>From: {{currentJob.from}} {{currentJob.fromPostCode}}</label>
 							<div class="value">{{currentJob.fromAddress}}</div>
 						</div>
 						<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'FromContactName','From Contact Name',currentJob.fromContactName,currentJob.id)">
@@ -344,7 +352,7 @@
 						</div>
 						
 						<div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="toAddress" ng-click="jdSvc.updateGPS(currentJob,'toAddress')">
-							<label>To: {{currentJob.to}}</label>
+							<label>To: {{currentJob.to}} {{currentJob.toPostCode}}</label>
 							<div class="value">{{currentJob.toAddress}}</div>
 						</div>
 						<div class="field contact" ng-click="jdSvc.editDetailField(currentJob, 'ToContactName','To Contact Name',currentJob.deliverToContact,currentJob.id)">
@@ -416,7 +424,7 @@
 						
 						<div class="field"  ng-click="jdSvc.speedClick(currentJob)">
 							<label>Speed</label>
-							<div class="value">{{currentJob.speed}}</div>
+							<div class="value">{{currentJob.speedName}}</div>
 						</div>
 						
 						<div class="field" >

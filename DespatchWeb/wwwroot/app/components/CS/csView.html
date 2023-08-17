@@ -2,6 +2,7 @@
 <link rel="stylesheet" href="/css/udispatch.css?v=8">
 <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.21/angular-material.min.css">
 
+
 <div class="top-bar">
     <img src="/images/menu-urgent.png" class="logo" />
 
@@ -30,7 +31,7 @@
                             <span ng-show="box.name == 'scanList'">{{currentSelection}}</span>
                             <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
                             <span ng-show="box.name == 'jobDetail' && currentJob.locked"> - LOCKED</span>
-                            <span ng-show="box.name == 'jobDetail'" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
+                            <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
 
                         </div>
                         <div class="searchBox"  ng-show="box.name == 'eventList'">
@@ -135,6 +136,7 @@
     document.onkeydown = overrideKeyboardEvent;
     document.onkeyup = overrideKeyboardEvent;
     var keyIsDown = {};
+    
 
     $(document).on('focus', '.searchBox input', function () {
         $(".results").fadeIn(100);
@@ -191,7 +193,8 @@
 
 
     $(document).ready(function () {
-
+        const favicon = document.getElementById("favicon");
+        favicon.setAttribute("href", "/POD_favicon.ico"); 
         var isDown = false;   // Tracks status of mouse button
 
         $(document).mousedown(function () {

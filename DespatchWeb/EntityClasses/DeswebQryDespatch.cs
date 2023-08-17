@@ -137,5 +137,13 @@ namespace DespatchWeb.EntityClasses
         public bool? Locked { get; set; }
         public decimal? Gstrate { get; set; }
         public string ScheduleName { get; set; }
+        public string FromPostCode { get; set; }
+        public string ToPostCode { get; set; }
+        public string ConNote { get; set; }
+        public bool? AirportOnly { get; set; }
+        public string SpeedName { get; set; }
+        public string NotifiedName { get; set; }
+        public string OriginalName { get; set; }
+        public int? HasNationwide { get; set; }
     }
 }

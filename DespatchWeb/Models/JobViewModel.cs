@@ -25,6 +25,9 @@ namespace DespatchWeb.Models
         public short? PickupFrom { get; set; }
         public string JobNo { get; set; }
         public string Speed { get; set; }
+        public string SpeedName { get; set; }
+        public string NotifiedName { get; set; }
+        public string AcceptedName { get; set; }
         public int? SpeedID { get; set; }
         public string Notify { get; set; }
         public Vehicle Vehicle { get; set; }
@@ -35,10 +38,12 @@ namespace DespatchWeb.Models
         public string From { get; set; }
         public int? FromSuburbID { get; set; }
         public string fromSuburbName { get; set; }
+        public string FromPostCode { get; set; }
         public string FromAddress { get; set; }
         public string To { get; set; }
         public int? ToSuburbID { get; set; }
         public string ToSuburbName { get; set;  }
+        public string ToPostCode { get; set; }
         public string ToAddress { get; set; }
         public string Courier { get; set; }
         public decimal? GstRate { get; set; }
@@ -122,7 +127,10 @@ namespace DespatchWeb.Models
         public string RunName { get; set; }
 
         public string ScheduleName { get; set; }
-        
+        public string ConNote { get; set; }
+        public bool? AirportOnly { get; set; }
+        public bool HasNationwide { get; set; }
+
     }
 
     public class Vehicle

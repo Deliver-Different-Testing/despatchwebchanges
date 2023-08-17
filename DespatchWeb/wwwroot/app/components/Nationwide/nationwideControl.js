@@ -368,7 +368,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.31",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.34",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -2293,7 +2293,7 @@ angular
 
                 if ($scope.currentJob.rootParentID) {
                     NWData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                        data = data.filter(item => item.id !== $scope.currentJob.id);
+                        //data = data.filter(item => item.id !== $scope.currentJob.id);
                         $scope.currentJob.relatedJobs = data;
                     });
                 }

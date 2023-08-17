@@ -284,7 +284,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.32",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.35",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -2127,7 +2127,7 @@ angular
             $scope.currentSelection = " for Job " + job.jobNo;
             if ($scope.currentJob.rootParentID) {
                 DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                    data = data.filter(item => item.id !== $scope.currentJob.id);
+                    //data = data.filter(item => item.id !== $scope.currentJob.id);
                     $scope.currentJob.relatedJobs = data;
                 });
             }
@@ -2164,7 +2164,7 @@ angular
 
                 if ($scope.currentJob.rootParentID) {
                     DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                        data = data.filter(item => item.id !== $scope.currentJob.id);
+                        //data = data.filter(item => item.id !== $scope.currentJob.id);
                         $scope.currentJob.relatedJobs = data;
                     });
                 }
@@ -2205,7 +2205,7 @@ angular
 
                 if ($scope.currentJob.rootParentID) {
                     DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                        data = data.filter(item => item.id !== $scope.currentJob.id);
+                        //data = data.filter(item => item.id !== $scope.currentJob.id);
                         $scope.currentJob.relatedJobs = data;
                     });
                 }

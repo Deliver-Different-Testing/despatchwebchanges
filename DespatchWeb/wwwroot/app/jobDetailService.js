@@ -507,6 +507,9 @@
                         break;
                     case "TrackingEmail":
                         max = "500";
+                            break;
+                    case "ConNote":
+                        max = "50";
                         break;
                     case "Size":
                         valueToUse = options[value.id - 1];
@@ -1355,6 +1358,20 @@
                             return response;
                         });
                 };
+
+            self.airportOnlyClick = function (job) {
+                DispatchData
+                    .updateJobDetail(job.id,
+                        "AirportOnly",
+                        job.airportOnly,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+            };
             
             self.leaveClick = function(job) {
                 this.editDetailField(job, 'DeliverToLeaveID', 'Leave Parcel', '', job.id, 'select2');

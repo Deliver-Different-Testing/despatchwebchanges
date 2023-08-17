@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Components;
 using System.Net;
 using DespatchWeb.Controllers;
+using Microsoft.AspNetCore.Razor.Language.CodeGeneration;
 
 namespace DespatchWeb.Repositories
 {
@@ -65,6 +66,7 @@ namespace DespatchWeb.Repositories
                     PickupFrom = (short?)j.UcbkPickUpFrom,
                     JobNo = j.UcbkJobNumber,
                     Speed = to.ShortName,
+                    SpeedName = to.UcjtName,
                     SpeedID = j.UcbkSpeed,
                     AcceptedJobTypeID = j.AcceptedJobTypeId,
                     NotifiedJobTypeID = j.NotifiedJobTypeId,
@@ -75,12 +77,14 @@ namespace DespatchWeb.Repositories
                     From = yo.UcsuName,
                     FromSuburbID = (int)j.UcbkFrom,
                     fromSuburbName = yo.UcsuName,
+                    FromPostCode = yo.PostCode,
                     FromAddress = j.UcbkFromAddr,
                     FromContactName = j.PickupFromContact,
                     FromContactNumber = j.PickupFromPhone,
                     To = zo.UcsuName,
                     ToSuburbID = (int)j.UcbkTo,
                     ToSuburbName = zo.UcsuName,
+                    ToPostCode = zo.PostCode,
                     ToAddress = j.UcbkToAddr,
                     Courier = co.Code,
                     ContactName = j.UcbkContact,
@@ -192,6 +196,8 @@ namespace DespatchWeb.Repositories
                 from bj in bulkJoin.DefaultIfEmpty()
                 join sc in _context.TblBulkRunSchedules on bj.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
                 from schedule in scheduleJoin.DefaultIfEmpty()
+                join nationwide in _context.TucJobNationwides on j.JobId equals nationwide.UcnwJobId into nationwideJoin
+                from nw in nationwideJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
                 select new JobViewModel()
@@ -215,6 +221,9 @@ namespace DespatchWeb.Repositories
                     Speed = to.ShortName,
                     SpeedID = j.Speed,
                     Notify = no.ShortName,
+                    SpeedName = to.UcjtName,
+                    NotifiedName = no.UcjtName,
+                    AcceptedName = os.UcjtName,
                     AcceptedJobTypeID = j.AcceptedJobTypeId,
                     NotifiedJobTypeID = j.NotifiedJobTypeId,
                     Client = j.ClientCode,
@@ -224,12 +233,14 @@ namespace DespatchWeb.Repositories
                     From = yo.UcsuName,
                     FromSuburbID = j.FromSuburbId,
                     fromSuburbName = yo.UcsuName,
+                    FromPostCode = yo.PostCode,  
                     FromAddress = j.FromAddress,
                     FromContactName = j.PickupFromContact,
                     FromContactNumber = j.PickupFromPhone,
                     To = zo.UcsuName,
                     ToSuburbID = j.ToSuburbId,
                     ToSuburbName = zo.UcsuName,
+                    ToPostCode = zo.PostCode,
                     ToAddress = j.ToAddress,
                     Courier = co.Code,
                     StatusID = j.Status,
@@ -295,7 +306,10 @@ namespace DespatchWeb.Repositories
                     Reprice = j.Reprice,
                     GstRate = j.Gstrate,
                     RootParentID = j.RootParentId,
-                    ScheduleName = schedule.Name
+                    ScheduleName = schedule.Name,
+                    ConNote = nw.UcnwConNote,
+                    AirportOnly = nw.UcnwAirportOnly,
+                    HasNationwide = nw.UcnwJobId.HasValue
 
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
@@ -308,7 +322,8 @@ namespace DespatchWeb.Repositories
                 };
                 job.RelatedJobs = (
                     from rel in _context.TblJobs.Where(r =>
-                        r.ParentId == job.RootParentID && r.Number != job.JobNo && r.ClientId == job.ClientID)
+                        r.ParentId == job.RootParentID &&  r.ClientId == job.ClientID
+                        ).OrderBy(t=>t.Date).ThenBy(x=>x.Time)
                     select new Size()
                     {
                         id = rel.JobId,
@@ -330,6 +345,7 @@ namespace DespatchWeb.Repositories
             var jobQuery = await (
                 from j in _context.TblJobs
                 where (j.RootParentId == parentId && j.ClientId == clientId)
+                orderby j.Date, j.Time
                 select new Size()
                 {
                     id = j.JobId,
@@ -370,16 +386,19 @@ namespace DespatchWeb.Repositories
                     //PickupFrom = j.FromAddress,
                     JobNo = j.JobNumber,
                     Speed = to.ShortName,
+                    SpeedName = to.UcjtName,
                     SpeedID = j.Speed,
                     Client = j.ClientCode,
                     ClientID = j.ClientId,
                     ClientName = client.Name,
                     From = j.FromSuburb,
                     fromSuburbName = j.FromSuburb,
+                    FromPostCode = j.FromPostCode.ToString(),
                     FromAddress = j.FromAddress,
                     FromContactName = j.Contact,
                     To = j.ToSuburb,
                     ToSuburbName = j.ToSuburb,
+                    ToPostCode = j.ToPostCode.ToString(),
                     ToAddress = j.ToAddress,
                     Courier = co.Code,
                     Status = status.UcjsCode,
@@ -543,9 +562,11 @@ namespace DespatchWeb.Repositories
                 from to in speedJoin.DefaultIfEmpty()
                 join s in _context.TucJobStatuses on x.Status equals s.UcjsId into statusJoin
                 from status in statusJoin.DefaultIfEmpty()
+                join nw in _context.TucJobNationwides on x.JobId equals nw.UcnwJobId into nationwideJoin
+                from nationwide in nationwideJoin.DefaultIfEmpty()
                 where (x.Date >= fromDate && x.Date <= toDate) && (!clientSet || x.ClientId == clientId) &&
                       (!courierSet || x.CourierId == courierId) && 
-                      (wild == "" ||(EF.Functions.Like(x.FromAddress + " " + x.PickupFromContact + " " + yo.UcsuName + " " + x.ToAddress + " " + x.DeliverToContact + " " + zo.UcsuName + " " + (x.ClientReferenceA ?? "") + " " + (x.ClientReferenceB ?? "") + " "  + (x.OurRef ?? "") + " " + x.Number.ToLower(), wildParam)))
+                      (wild == "" || EF.Functions.Like(nationwide.UcnwConNote, wildParam) || (EF.Functions.Like(x.FromAddress + " " + x.PickupFromContact + " " + yo.UcsuName + " " + x.ToAddress + " " + x.DeliverToContact + " " + zo.UcsuName + " " + (x.ClientReferenceA ?? "") + " " + (x.ClientReferenceB ?? "") + " "  + (x.OurRef ?? "") + " " + x.Number.ToLower(), wildParam)))
 
                 select new JobViewModel()
                 {
@@ -738,9 +759,12 @@ namespace DespatchWeb.Repositories
                      PickupFrom = j.UcjbPickUpFrom,
                      JobNo = j.UcjbNumber,
                      Speed = j.SpeedShortName,
+                     SpeedName = j.SpeedName,
                      SpeedID = j.UcjbSpeed,
                      Notify = j.NotifiedSpeed,
+                     NotifiedName = j.NotifiedName,
                      AcceptedJobTypeID = j.AcceptedJobTypeId,
+                     AcceptedName = j.OriginalName,
                      NotifiedJobTypeID = j.NotifiedJobTypeId,
                      Vehicle = new Vehicle()
                      {
@@ -779,12 +803,14 @@ namespace DespatchWeb.Repositories
                      From = j.SuburbFrom,
                      FromSuburbID = j.FromSuburbId,
                      fromSuburbName = j.FromSuburbName,
+                     FromPostCode = j.FromPostCode,
                      FromAddress = j.UcjbFromAddr,
                      FromContactName = j.PickupFromContact,
                      FromContactNumber = j.PickupFromPhone,
                      To = j.SuburbTo,
                      ToSuburbID = j.ToSuburbId,
                      ToSuburbName = j.ToSuburbName,
+                     ToPostCode = j.ToPostCode,
                      ToAddress = j.UcjbToAddr,
                      Courier = j.CourierCode,
                      Remain = j.RemainTime,
@@ -1004,9 +1030,12 @@ namespace DespatchWeb.Repositories
                             SaturdayDelivery = j.SaturdayDelivery,
                             JobNo = j.UcjbNumber,
                             Speed = j.SpeedShortName,
+                            SpeedName = j.SpeedName,
                             SpeedID = j.UcjbSpeed,
                             Notify = j.NotifiedSpeed,
+                            NotifiedName = j.NotifiedName,
                             AcceptedJobTypeID = j.AcceptedJobTypeId,
+                            AcceptedName = j.OriginalName,
                             NotifiedJobTypeID = j.NotifiedJobTypeId,
                             Vehicle = new Vehicle()
                             {
@@ -1022,10 +1051,12 @@ namespace DespatchWeb.Repositories
                             FromContactNumber = j.PickupFromPhone,
                             FromSuburbID = j.FromSuburbId,
                             fromSuburbName = j.FromSuburbName,
+                            FromPostCode = j.FromPostCode,
                             FromAddress = j.UcjbFromAddr,
                             To = j.SuburbTo,
                             ToSuburbID = j.ToSuburbId,
                             ToSuburbName = j.ToSuburbName,
+                            ToPostCode = j.ToPostCode,
                             ToAddress = j.UcjbToAddr,
                             Courier = j.CourierCode,
                             Remain = j.RemainTime,
@@ -1193,22 +1224,43 @@ namespace DespatchWeb.Repositories
                     break;
             }
 
+            var selectedAreas = area.Split(',').ToList();
 
+           
             var whereToUse = "";
-            List<int> selectedViews = null;
-            switch (area)
+            List<int> selectedViews = new List<int>();
+            foreach (var a in selectedAreas)
             {
-                case "mainfu":
-                    selectedViews = new List<int>() { 11, 15, 3, 4, 18, 19 };
-                    break;
-                case "nwakl":
-                    selectedViews = new List<int>() { 17 };
-                    break;
-                case "baggage":
-                    selectedViews = new List<int>() { 20 };
-                    break;
+                switch (a)
+                {
+                    case "mainfu":
+                        selectedViews.AddRange(new List<int>(){ 11, 15, 3, 4, 18, 19 });
+                        break;
+                    case "nwakl":
+                        selectedViews.Add(17);
+                        break;
+                    case "baggage":
+                        selectedViews.Add(20);
+                        break;
+                    case "chch":
+                        selectedViews.Add(4);
+                        break;
+                    case "int":
+                        selectedViews.Add(15);
+                        break;
+                    case "nwother":
+                        selectedViews.Add(18);
+                        break;
+                    case "sameday":
+                        selectedViews.Add(11);
+                        break;
+                    case "wlg":
+                        selectedViews.Add(3);
+                        break;
 
+                }
             }
+           
 
             if (isInternal)
             {
@@ -1325,6 +1377,9 @@ namespace DespatchWeb.Repositories
                             SaturdayDelivery = j.SaturdayDelivery,
                             JobNo = j.UcjbNumber,
                             Speed = j.SpeedShortName,
+                            SpeedName = j.SpeedName,
+                            NotifiedName = j.NotifiedName,
+                            AcceptedName = j.OriginalName,
                             SpeedID = j.UcjbSpeed,
                             Notify = j.NotifiedSpeed,
                             AcceptedJobTypeID = j.AcceptedJobTypeId,
@@ -1343,10 +1398,12 @@ namespace DespatchWeb.Repositories
                             FromContactNumber = j.PickupFromPhone,
                             FromSuburbID = j.FromSuburbId,
                             fromSuburbName = j.FromSuburbName,
+                            FromPostCode = j.FromPostCode,
                             FromAddress = j.UcjbFromAddr,
                             To = j.SuburbTo,
                             ToSuburbID = j.ToSuburbId,
                             ToSuburbName = j.ToSuburbName,
+                            ToPostCode = j.ToPostCode,
                             ToAddress = j.UcjbToAddr,
                             Courier = j.CourierCode,
                             Remain = j.RemainTime,
@@ -1436,9 +1493,10 @@ namespace DespatchWeb.Repositories
                             Reprice = j.Reprice,
                             FollowupTime = j.FollowupTime,
                             RootParentID = j.RootParentId,
-                            ScheduleName = j.ScheduleName
-
-
+                            ScheduleName = j.ScheduleName,
+                            ConNote = j.ConNote,
+                            AirportOnly =j.AirportOnly,
+                            HasNationwide = j.HasNationwide.HasValue
 
 
                         }).ToList();

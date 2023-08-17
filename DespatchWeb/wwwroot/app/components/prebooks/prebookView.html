@@ -173,7 +173,8 @@ F
 
 
     $(document).ready(function () {
-
+        const favicon = document.getElementById("favicon");
+        favicon.setAttribute("href", "/Prebook.ico"); 
         var isDown = false;   // Tracks status of mouse button
 
         $(document).mousedown(function () {

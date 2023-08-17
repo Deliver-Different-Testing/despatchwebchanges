@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucJobBooking()
         {
             TucJobBookingItems = new HashSet<TucJobBookingItem>();
+            TucJobNationwides = new HashSet<TucJobNationwide>();
         }
 
         public int UcbkId { get; set; }
@@ -150,7 +151,9 @@ namespace DespatchWeb.EntityClasses
         public int? DeliveryState { get; set; }
         public int? SourceId { get; set; }
         public string StripeChargeId { get; set; }
+        public string ScheduleName { get; set; }
 
         public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; }
+        public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }
     }
 }

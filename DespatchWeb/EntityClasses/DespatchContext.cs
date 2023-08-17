@@ -40,6 +40,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucJobBookingItem> TucJobBookingItems { get; set; }
         public virtual DbSet<TucJobInternalStatus> TucJobInternalStatuses { get; set; }
         public virtual DbSet<TucJobItem> TucJobItems { get; set; }
+        public virtual DbSet<TucJobNationwide> TucJobNationwides { get; set; }
         public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
         public virtual DbSet<TucJobType> TucJobTypes { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
@@ -210,6 +211,10 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(50)
                     .HasColumnName("ClosestCourierID");
 
+                entity.Property(e => e.ConNote)
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
                 entity.Property(e => e.CourierCode).HasMaxLength(50);
 
                 entity.Property(e => e.CourierName).HasMaxLength(50);
@@ -240,6 +245,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.FollowupTime).HasColumnType("datetime");
 
+                entity.Property(e => e.FromPostCode).HasMaxLength(200);
+
                 entity.Property(e => e.FromSuburbId).HasColumnName("FromSuburbID");
 
                 entity.Property(e => e.FromSuburbName)
@@ -258,7 +265,11 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
 
+                entity.Property(e => e.NotifiedName).HasMaxLength(50);
+
                 entity.Property(e => e.NotifiedSpeed).HasMaxLength(50);
+
+                entity.Property(e => e.OriginalName).HasMaxLength(50);
 
                 entity.Property(e => e.OriginalSpeed).HasMaxLength(50);
 
@@ -296,6 +307,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.SiteId).HasColumnName("SiteID");
 
+                entity.Property(e => e.SpeedName)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
                 entity.Property(e => e.SpeedShortName).HasMaxLength(50);
 
                 entity.Property(e => e.SuburbFrom)
@@ -305,6 +320,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.SuburbTo)
                     .IsRequired()
                     .HasMaxLength(50);
+
+                entity.Property(e => e.ToPostCode).HasMaxLength(200);
 
                 entity.Property(e => e.ToSiteId).HasColumnName("ToSiteID");
 
@@ -554,6 +571,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.PickUpLongitude).HasMaxLength(50);
 
+                entity.Property(e => e.PickupReadyDateTime).HasColumnType("datetime");
+
                 entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(500);
 
                 entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
@@ -565,6 +584,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.RunName).HasMaxLength(50);
 
                 entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
+
+                entity.Property(e => e.ScheduleName).HasMaxLength(200);
 
                 entity.Property(e => e.ShopRef1).HasMaxLength(50);
 
@@ -3136,6 +3157,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.RunName).HasMaxLength(50);
 
+                entity.Property(e => e.ScheduleName).HasMaxLength(200);
+
                 entity.Property(e => e.ShopRef1).HasMaxLength(50);
 
                 entity.Property(e => e.ShopRef2).HasMaxLength(50);
@@ -3409,6 +3432,85 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.Notes).HasMaxLength(4000);
 
                 entity.Property(e => e.Pu).HasColumnName("PU");
+            });
+
+            modelBuilder.Entity<TucJobNationwide>(entity =>
+            {
+                entity.HasKey(e => e.UcnwId)
+                    .IsClustered(false);
+
+                entity.ToTable("tucJobNationwide");
+
+                entity.HasIndex(e => e.UcnwJobId, "IX_tucJobNationwide_ucnwJobID")
+                    .HasFillFactor(80);
+
+                entity.HasIndex(e => e.JobBookingId, "JobBookingID");
+
+                entity.HasIndex(e => e.UcnwClientId, "ucnwClientID");
+
+                entity.HasIndex(e => e.UcnwConNote, "ucnwConNote");
+
+                entity.Property(e => e.UcnwId).HasColumnName("ucnwID");
+
+                entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
+
+                entity.Property(e => e.UcnwAirportOnly).HasColumnName("ucnwAirportOnly");
+
+                entity.Property(e => e.UcnwClientId).HasColumnName("ucnwClientID");
+
+                entity.Property(e => e.UcnwConNote)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasColumnName("ucnwConNote");
+
+                entity.Property(e => e.UcnwCpsignature).HasColumnName("ucnwCPSignature");
+
+                entity.Property(e => e.UcnwDeliveryAgentId).HasColumnName("ucnwDeliveryAgentID");
+
+                entity.Property(e => e.UcnwDeliveryJobId).HasColumnName("ucnwDeliveryJobID");
+
+                entity.Property(e => e.UcnwDestinationId).HasColumnName("ucnwDestinationID");
+
+                entity.Property(e => e.UcnwEta)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucnwETA");
+
+                entity.Property(e => e.UcnwEtd)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucnwETD");
+
+                entity.Property(e => e.UcnwFlightNo)
+                    .HasMaxLength(10)
+                    .IsUnicode(false)
+                    .HasColumnName("ucnwFlightNo");
+
+                entity.Property(e => e.UcnwItb).HasColumnName("ucnwITB");
+
+                entity.Property(e => e.UcnwJobId).HasColumnName("ucnwJobID");
+
+                entity.Property(e => e.UcnwJobNumber)
+                    .IsRequired()
+                    .HasMaxLength(10)
+                    .IsUnicode(false)
+                    .HasColumnName("ucnwJobNumber");
+
+                entity.Property(e => e.UcnwNotes)
+                    .HasColumnType("text")
+                    .HasColumnName("ucnwNotes");
+
+                entity.Property(e => e.UcnwPickUpAgentId).HasColumnName("ucnwPickUpAgentID");
+
+                entity.Property(e => e.UcnwPickUpJobId).HasColumnName("ucnwPickUpJobID");
+
+                entity.Property(e => e.UcnwSystemDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucnwSystemDate")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.HasOne(d => d.JobBooking)
+                    .WithMany(p => p.TucJobNationwides)
+                    .HasForeignKey(d => d.JobBookingId)
+                    .HasConstraintName("FK_tucJobNationwide_tucJobBooking");
             });
 
             modelBuilder.Entity<TucJobStatus>(entity =>

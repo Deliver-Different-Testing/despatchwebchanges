@@ -11,6 +11,11 @@
         <button type="button" class="btn mainfu btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'mainfu'})">Main-FU</button>
         <button type="button" class="btn nwakl btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwakl'})">NW-AKL</button>
         <button type="button" class="btn baggage btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'baggage'})">Baggage</button>
+        <button type="button" class="btn chch btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'chch'})">ChCh</button>
+        <button type="button" class="btn int btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'int'})">International</button>
+        <button type="button" class="btn nwother btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwother'})">NW-Other</button>
+        <button type="button" class="btn sameday btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'sameday'})">SameDay</button>
+        <button type="button" class="btn wlg btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'wlg'})">WLG</button>
 
     </div>
     <div class="topbar-NavButtons" role="navigation">
@@ -65,7 +70,7 @@
                             <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
                             <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
                             <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
-                            <span ng-show="box.name == 'jobDetail'" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
+                            <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
                         </div>
                         <div class="box-buttons">
                             <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
@@ -270,7 +275,8 @@
 
 
     $(document).ready(function () {
-
+        const favicon = document.getElementById("favicon");
+        favicon.setAttribute("href", "/Nationwide.ico"); 
         var isDown = false;   // Tracks status of mouse button
 
         $(document).mousedown(function () {

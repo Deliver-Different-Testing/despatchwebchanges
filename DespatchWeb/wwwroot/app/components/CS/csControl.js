@@ -344,7 +344,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.29",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.32",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -612,7 +612,7 @@ angular
                     setTimeout($scope.gather.submit(), 0);
                 }
                 if (event.srcElement.id === "Wild") {
-                    $scope.refreshData(true);
+                    $scope.refreshAllData(true);
                 }
                 
             }
@@ -1126,7 +1126,7 @@ angular
                 map.setZoom(14);
                 if ($scope.currentJob.rootParentID) {
                     uCSData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                        data = data.filter(item => item.id !== $scope.currentJob.id);
+                        //data = data.filter(item => item.id !== $scope.currentJob.id);
                         $scope.currentJob.relatedJobs = data;
                     });
                 }
