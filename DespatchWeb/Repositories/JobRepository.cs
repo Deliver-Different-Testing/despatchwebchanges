@@ -1665,6 +1665,17 @@ namespace DespatchWeb.Repositories
 
         }
 
+        public async Task< List<BulkScanDetail>> ScanList(DateTime? runDate, string scan)
+        {
+            var cmd = _context.LoadStoredProc("DESWeb_stpScanDetail")
+                .WithSqlParam("@RunDate", runDate)
+                .WithSqlParam("@Scan", scan);
+            var scans = new List<BulkScanDetail>();
+
+            await cmd.ExecuteStoredProcAsync(h => { scans = h.ReadToList<BulkScanDetail>().ToList(); });
+            return scans;
+        }
+
         public async Task ReAssignSelectedJobs(string jobIds)
         {
 

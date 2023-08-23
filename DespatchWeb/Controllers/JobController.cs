@@ -210,6 +210,13 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ScanJobDetailAsync(DateTime? runDate, string scan)
+        {
+            var data = await  _jobRepo.ScanList(runDate, scan);
+            return Json(data);
+        }
+
         public async Task<IActionResult> Related(int parentId, int clientId)
         {
             var result = await _jobRepo.RelatedJobs(parentId, clientId);

@@ -348,6 +348,26 @@ angular
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
+            "scanList": {
+                "title": "Scan Detail",
+                "tpl": "app/components/CS/tpls/scanList.tpl?v=1.0",
+                "showSearch": 0,
+                "model": "scanList",
+                "headings": [
+                    {
+                        "label": "Time",
+                        "name": "scanDateTime"
+                    },
+                    {
+                        "label": "Scan Type",
+                        "name": "scanDetail"
+                    },
+                    {
+                        "label": "Courier",
+                        "name": "courier"
+                    }
+                ]
+            },
             "map": {
                 "title": "Google Map",
                 "tpl": "app/components/CS/tpls/map.tpl?v=1.2",
@@ -402,6 +422,10 @@ angular
                                 {
                                     "name": "jobDetail",
                                     "height": "550px"
+                                },
+                                {
+                                    "name": "scanList",
+                                    "height": "225px"
                                 },
                                 {
                                     "name": "map"
@@ -1107,6 +1131,7 @@ angular
 
         //Select Job
         $scope.selectJobDetail = function (id) {
+            $scope.scanList = [];
             console.log("select Job  " + id);
             //$("#jobList").find(".active").removeClass("active");
             clearTimeout($scope.myTimer);
@@ -1130,6 +1155,15 @@ angular
                         $scope.currentJob.relatedJobs = data;
                     });
                 }
+                $("#box-scanList").find(".loading").show();
+                uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
+                    $scope.scanList = data;
+                    
+                    setTimeout(function () {
+                        sizeHeadings($("#scanList").parents(".column"));
+                        $("#box-scanList").find(".loading").fadeOut();
+                    }, 200);
+                });
             });
  
 
@@ -1137,6 +1171,7 @@ angular
         };
 
         $scope.selectPreBookDetail = function (id) {
+            $scope.scanList = [];
             console.log("select pre book Job  " + id);
             //$("#jobList").find(".active").removeClass("active");
             clearTimeout($scope.myTimer);
@@ -1172,6 +1207,14 @@ angular
                 displayRoutePointsOnly(jobs, true);
                 setMapBounds();
                 map.setZoom(14);
+                uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
+                    $scope.scanList = data;
+
+                    setTimeout(function () {
+                        sizeHeadings($("#scanList").parents(".column"));
+                        $("#box-scanList").find(".loading").fadeOut();
+                    }, 200);
+                });
             });
 
 
@@ -1180,6 +1223,7 @@ angular
 
         //Select Bulk Job
         $scope.selectBulkJobDetail = function (id) {
+            $scope.scanList = [];
             console.log("select Bulk Job  " + id);
             //$("#jobList").find(".active").removeClass("active");
             clearTimeout($scope.myTimer);
@@ -1197,6 +1241,14 @@ angular
                 displayRoutePointsOnly(jobs, true);
                 setMapBounds();
                 map.setZoom(14);
+                uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
+                    $scope.scanList = data;
+
+                    setTimeout(function () {
+                        sizeHeadings($("#scanList").parents(".column"));
+                        $("#box-scanList").find(".loading").fadeOut();
+                    }, 200);
+                });
             });
 
 

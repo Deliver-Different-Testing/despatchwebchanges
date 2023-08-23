@@ -32,6 +32,11 @@ angular
                     return response.data;
                 });
             },
+            getScanDetail: function (runDate, scan) {
+                return $http.get('/Job/ScanJobDetail?runDate=' + runDate.toISOString() + '&scan=' + scan).then(function (response) {
+                    return response.data;
+                });
+            },
             getPreBookDetail: function (id) {
                 return $http.get('/Job/PreBookDetail?preBookJobId=' + id).then(function (response) {
                     return response.data;
