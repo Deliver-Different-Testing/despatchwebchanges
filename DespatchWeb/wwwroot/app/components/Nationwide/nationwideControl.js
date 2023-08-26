@@ -653,11 +653,11 @@ angular
             if (job.direct) {
                 temp += "DIRECT ";
             }
-            else {
-                if (job.speedID !== job.notifiedJobTypeID && job.notifiedJobTypeID !== -1) {
-                    temp += "ASAP ";
-                }
-            }
+            //else {
+            //    if (job.speedID !== job.notifiedJobTypeID && job.notifiedJobTypeID !== -1) {
+            //        temp += "ASAP ";
+            //    }
+            //}
             if (job.van) {
                 temp += "VAN ";
             }

@@ -204,7 +204,7 @@ angular
             },
 
             "jobList": {
-                "title": "Job Data",
+                "title": "Live Job Data",
                 "tpl": "app/components/CS/tpls/jobList.tpl?v=1.12",
                 "showSearch": 1,
                 "model": "jobList",

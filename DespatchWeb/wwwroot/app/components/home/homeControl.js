@@ -615,11 +615,11 @@ angular
             if (job.direct) {
                 temp += "DIRECT ";
             }
-            else {
-                if (job.speedID !== job.notifiedJobTypeID && job.notifiedJobTypeID !== -1) {
-                    temp += "ASAP ";
-                }
-            }
+            //else {
+            //    if (job.speedID !== job.notifiedJobTypeID && job.notifiedJobTypeID !== -1) {
+            //        temp += "ASAP ";
+            //    }
+            //}
             if (job.van) {
                 temp = "VAN ";
             }
@@ -1308,7 +1308,7 @@ angular
                 DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
                 }
                 if (j.displaySplitJobDetail) {
                     callData.splitJobs.push($(this).data("jobid"));
@@ -1358,7 +1358,7 @@ angular
             $("#jobList .active").each(function () {
                 var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
                 var jn = j.jobNo;
-                foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
                 callData.jobs.push($(this).attr("data-jobid"));
             });
 
@@ -1392,7 +1392,7 @@ angular
 
             $("#jobList .active").each(function () {
                 var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
-                foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
                 callData.jobs.push($(this).attr("data-jobid"));
             });
 
@@ -1438,7 +1438,7 @@ angular
                                 DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                                 if (callData.courierID === null) {
                                     callData.courierID = j.courierData.courierID;
-                                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
                                 }
                                 if (j.displaySplitJobDetail) {
                                     callData.splitJobs.push($(this).data("jobid"));
@@ -1495,7 +1495,7 @@ angular
                             var foundCourier = null;
                             $("#currentWork tr.droppable-row").each(function () {
                                 callData.jobs.push($(this).attr("data-jobid"));
-                                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+                                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
                             });
 
 
@@ -1545,7 +1545,7 @@ angular
                             var foundCourier = null;
                             $("#currentWork tr.droppable-row").each(function () {
                                 callData.jobs.push($(this).attr("data-jobid"));
-                                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+                                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
                             });
 
 
@@ -1587,7 +1587,7 @@ angular
             var foundCourier = null;
             $("#currentWork .active").each(function () {
                 callData.jobs.push($(this).attr("data-jobid"));
-                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
             });
 
 
@@ -1620,7 +1620,7 @@ angular
             var foundCourier = null;
             $("#currentWork .active").each(function () {
                 callData.jobs.push($(this).attr("data-jobid"));
-                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
             });
 
 
@@ -1659,7 +1659,7 @@ angular
                 DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
+                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID)
                 }
                 if (j.displaySplitJobDetail) {
                     callData.splitJobs.push($(this).data("jobid"));
@@ -1846,7 +1846,7 @@ angular
         $scope.searchCourier = function () {
             $("#box-currentWork").find(".loading").show();
             $("#box-map").find(".loading").show();
-            var ac = $scope.pickCouriers.find(c => c.id === $scope.courier.gpsCourier);
+            var ac = $scope.pickAllCouriers.find(c => c.id === $scope.courier.gpsCourier);
             console.log(ac);
             if (ac === undefined) {
                 $("#box-currentWork").find(".loading").fadeOut();
@@ -2829,8 +2829,11 @@ angular
             $scope.currentJob = false;
             $scope.potentialCouriers = false;
             $scope.jobGroups = false;
-            $scope.jobsCurrentList = false;
-            $scope.currentCourier = false;
+            if (!$scope.courier) {
+                $scope.jobsCurrentList = false;
+                $scope.currentCourier = false;
+            }
+            
 
 
 
