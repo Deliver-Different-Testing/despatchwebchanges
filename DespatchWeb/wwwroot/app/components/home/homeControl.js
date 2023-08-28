@@ -1955,6 +1955,12 @@ angular
 
         };
 
+        $scope.clearCourierSearch = function () {
+            $scope.jobsCurrentList = false;
+            $scope.courier.gpsCourier = '';
+            $scope.currentWorkSelection = '';
+        }
+
         $scope.selectPotentialCourier = function (courier) {
             $("#box-jobDetail").find(".loading").show();
             $("#box-map").find(".loading").show();

@@ -16,7 +16,26 @@
         <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
         <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks</div>
     </div>
+    <div class="topbar-buttons">
+
+        <div class="btn topbar-button" style="color: white;"><span>hi {{userName}} - layout: {{currentLayoutName}}</span></div>
+        <div class="dropdown topbar-button">
+            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                Layout
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-right list-group w-50" aria-labelledby="dropdownMenu1">
+                <li class="list-group-item" ng-click="saveLayout()"><b>Save Layout</b></li>
+                <li ng-repeat="lo in layouts track by $index" class="list-group-item">
+                    <i ng-click="deleteLayout($index)" style="cursor: pointer" title="Delete Layout" class="fa fa-trash"></i>
+                    <span ng-click="loadLayout($index)" style="cursor: pointer">{{lo.name}}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
 </div>
+
+
 
 <div class="">
 
@@ -34,7 +53,7 @@
                             <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
 
                         </div>
-                        <div class="searchBox"  ng-show="box.name == 'eventList'">
+                        <div class="searchBox" ng-show="box.name == 'eventList'">
                             <input type="text" ng-model="searchBox" placeholder="Search Events..." />
                             <div class="results" ng-show="searchBox">
                                 <ul>
@@ -44,7 +63,7 @@
                             </div>
                         </div>
                         <div class="box-buttons">
-                            
+
                             <div class="box-details" ng-show="box.name == 'eventList'">
                                 <label class="checkbox-inline">
                                     <input type="checkbox" ng-model="pickDateService.includeClosed" ng-change="refreshData(true)" value="All">
@@ -65,7 +84,8 @@
 
 
                                 <!--<span>{{currentDate | date : "dd/MM/yyyy"}}</span>-->
-                                <div class="btn-group" role="group" aria-label="Basic example">F
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    F
                                     <!--<button type="button" class="btn btn-sm btn-secondary" title="Choose Date" ng-click="chooseDate()"><i class="fa fa-calendar-alt"></i></button>-->
                                 </div>
 
@@ -136,7 +156,7 @@
     document.onkeydown = overrideKeyboardEvent;
     document.onkeyup = overrideKeyboardEvent;
     var keyIsDown = {};
-    
+
 
     $(document).on('focus', '.searchBox input', function () {
         $(".results").fadeIn(100);
@@ -194,7 +214,7 @@
 
     $(document).ready(function () {
         const favicon = document.getElementById("favicon");
-        favicon.setAttribute("href", "/POD_favicon.ico"); 
+        favicon.setAttribute("href", "/POD_favicon.ico");
         var isDown = false;   // Tracks status of mouse button
 
         $(document).mousedown(function () {

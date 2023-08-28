@@ -1,6 +1,6 @@
 angular
     .module('uDispatch')
-    .controller('CSControl', ['$scope','JobDetailService', 'uCSData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$ngConfirm', function ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $ngConfirm) {
+    .controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", "$q", 'NgMap', 'GeoCoder', '$ngConfirm', function ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys, $location, $q, NgMap, GeoCoder, $ngConfirm) {
 
         $scope.isAdmin = (ClientInternal === "True");
         $scope.mapSetting = {
@@ -92,8 +92,10 @@ angular
             submit: function () {
                 $(".gatherForm").hide();
                 $scope.gather.form.onSubmit().then(function(response) {
-
-                    $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
+                    if ($scope.currentJob) {
+                        $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
+                    }
+                    
                 });
                 
                 //setTimeout(function () {  }, 1000);
@@ -377,9 +379,14 @@ angular
         };
 
         ///////////////////////////////
-        // LAYOUT 
+        // LAYOUT
         ///////////////////////////////
-        $scope.layouts = [
+        var layoutsObject = null;
+        if (Modernizr.localstorage) {
+            layoutsObject = JSON.parse(localStorage.getItem("layoutsCS-" + ContactID));
+        }
+
+        var defaultLayout = [
             {
                 name: "Default",
                 layout: {
@@ -437,6 +444,14 @@ angular
             }
         ];
 
+        if (layoutsObject !== null) {
+            layoutsObject[0] = defaultLayout[0];
+        }
+
+        $scope.layouts = layoutsObject || defaultLayout;
+        $scope.userName = FirstName;
+        
+
         $scope.pickDateService = {
             "couriers": [],
             "date": moment().format("YYYY-MM-DD"),
@@ -451,30 +466,39 @@ angular
         };
 
         var layoutToUse = angular.copy($scope.layouts[0].layout);
+
         if (!$scope.isAdmin) {
             //layoutToUse.columns[0].boxes.splice(0, 1);
             //layoutToUse.columns.splice(2, 1);
         }
 
         $scope.layout = layoutToUse;
+        $scope.currentLayoutName = $scope.layouts[0].name;
+
+        $scope.deleteLayout = function (i) {
+            $scope.layouts.splice(i, 1);
+            if (Modernizr.localstorage) {
+                localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
+            }
+        }
 
         $scope.loadLayout = function (i) {
-            $scope.layout = angular.copy($scope.layouts[i].layout, function () {
-                setTimeout(sizeHeadings(), 1000);
-
-            });
-            //$scope.$apply();
+            $scope.currentLayoutName = $scope.layouts[i].name;
+            $scope.layout = angular.copy($scope.layouts[i].layout);
+            setTimeout($scope.getData, 1000);
         };
 
         $scope.saveLayout = function () {
 
 
-            angular.forEach($scope.layout.columns, function (column, colKey) {
-                column.width = $("#co-" + column.id).css("flex-basis");
-                angular.forEach(column.boxes, function (box, boxKey) {
-                    box.height = $("#box-" + box.name).css("flex-basis");
+            angular.forEach($scope.layout.columns,
+                function (column, colKey) {
+                    column.width = $("#co-" + column.id).css("flex-basis");
+                    angular.forEach(column.boxes,
+                        function (box, boxKey) {
+                            box.height = $("#box-" + box.name).css("flex-basis");
+                        });
                 });
-            });
 
 
             $scope.gather.form = {
@@ -497,31 +521,22 @@ angular
                         "layout": $scope.layout
                     };
 
-                    //DO THE API CALL
-                    uCSData.doAPI(callData).then(function (data) {
 
-                        console.log(data);
+                    if (Modernizr.localstorage) {
+                        $scope.layouts = $scope.layouts.concat(
+                            {
+                                name: layoutName,
+                                layout: angular.copy($scope.layout)
+                            });
+                        localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
+                    }
 
-                        if (data.response === "Success") {
-
-                            $scope.layouts = $scope.layouts.concat(
-                                {
-                                    name: layoutName,
-                                    layout: angular.copy($scope.layout)
-                                }
-                            );
-
-                        } else {
-
-                            alert("Critial Error");
-
-                        }
-
+                    var deferred = $q.defer();
+                    deferred.resolve({
+                        data: "OK"
                     });
-
-
-
-
+                    return deferred.promise;
+                    
 
                 },
                 submitValue: "Save"
@@ -530,6 +545,7 @@ angular
             $scope.gather.showForm();
 
         };
+
 
         $scope.sortableOptions = {
             connectWith: ".column-sortable",

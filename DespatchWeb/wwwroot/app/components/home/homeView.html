@@ -110,7 +110,7 @@
                             <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
                                 <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
                                 <input type="text" style="color: black;display:inline-block!important;" placeholder="gps courier (enter code)..." ng-model="$parent.$parent.courier.gpsCourier" id="gps" />
-                                <i class="fa fa-remove" ng-click="courier.gpsCourier = ''" title="Clear"></i>
+                                <i class="fa fa-remove" ng-click="clearCourierSearch();" title="Clear"></i>
                             </div>
                             <div class="btn btn-sm btn-primary box-refresh" ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
                             <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
