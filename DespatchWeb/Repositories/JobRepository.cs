@@ -321,8 +321,8 @@ namespace DespatchWeb.Repositories
                     label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (job.SizeID ?? (short)2))
                 };
                 job.RelatedJobs = (
-                    from rel in _context.TblJobs.Where(r =>
-                        r.ParentId == job.RootParentID &&  r.ClientId == job.ClientID
+                    from rel in _context.TblJobs.Where(r => 
+                        job.RootParentID.HasValue && r.ParentId == job.RootParentID &&  r.ClientId == job.ClientID
                         ).OrderBy(t=>t.Date).ThenBy(x=>x.Time)
                     select new Size()
                     {
