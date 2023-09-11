@@ -58,6 +58,7 @@ namespace DespatchWeb.Models
         public int? LP { get; set; }
         public int? LD { get; set; }
         public string ContactName { get; set; }
+        public string LoggedInContactName { get; set; }
         public string DeliverToContact { get; set; }
         public int? TrackingMethod { get; set; }
         public string TrackingMobile { get; set; }

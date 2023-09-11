@@ -156,5 +156,7 @@ namespace DespatchWeb.EntityClasses
         public bool? Reprice { get; set; }
         public bool? VanOk { get; set; }
         public int? SourceId { get; set; }
+        public int? InvoiceProcessId { get; set; }
+        public int? LoggedInContactId { get; set; }
     }
 }

@@ -112,6 +112,10 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[tblContact]",
+         "ObjectType": 3
+      },
+      {
          "Name": "[dbo].[tblCourier]",
          "ObjectType": 3
       },

@@ -368,7 +368,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.34",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.36",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1

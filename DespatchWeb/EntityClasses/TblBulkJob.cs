@@ -90,6 +90,7 @@ namespace DespatchWeb.EntityClasses
         public string StripeChargeId { get; set; }
         public DateTime? PickupReadyDateTime { get; set; }
         public string ScheduleName { get; set; }
+        public int? LoggedInContactId { get; set; }
 
         public virtual TucJobType SpeedNavigation { get; set; }
     }

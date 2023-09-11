@@ -152,6 +152,7 @@ namespace DespatchWeb.EntityClasses
         public int? SourceId { get; set; }
         public string StripeChargeId { get; set; }
         public string ScheduleName { get; set; }
+        public int? LoggedInContactId { get; set; }
 
         public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; }
         public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }

@@ -45,8 +45,9 @@ namespace DespatchWeb.Repositories
                 from to in speedJoin.DefaultIfEmpty()
                 join cl in _context.TblClients on j.UcbkClientId equals cl.ClientId into clientJoin
                 from client in clientJoin.DefaultIfEmpty()
-                
-                
+                join con in _context.TblContacts on j.LoggedInContactId equals con.ContactId into contactJoin
+                from contact in contactJoin.DefaultIfEmpty()
+
 
                 where (j.UcbkId == prebookId)
                 select new JobViewModel()
@@ -127,6 +128,7 @@ namespace DespatchWeb.Repositories
                     PreBook = true,
                     Pedal = j.UcbkCbd,
                     Reprice = j.Reprice,
+                    LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}",
                     PalletInfo = (
                         from pa in pallets
                         select new PalletInfo()
@@ -198,6 +200,8 @@ namespace DespatchWeb.Repositories
                 from schedule in scheduleJoin.DefaultIfEmpty()
                 join nationwide in _context.TucJobNationwides on j.JobId equals nationwide.UcnwJobId into nationwideJoin
                 from nw in nationwideJoin.DefaultIfEmpty()
+                join con in _context.TblContacts on j.LoggedInContactId equals con.ContactId into contactJoin
+                from contact in contactJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
                 select new JobViewModel()
@@ -248,6 +252,7 @@ namespace DespatchWeb.Repositories
                     LP = j.LatePickUp,
                     LD = j.LateDelivery,
                     ContactName = j.Contact,
+                    LoggedInContactName = $"{contact.Firstname} {contact.Surname??""}",
                     Phone = j.DeliverToPhone,
                     SpeedAccepted = os.ShortName,
                     Weight = j.Weight,
@@ -372,6 +377,8 @@ namespace DespatchWeb.Repositories
                 from leave in leaveNotHomeJoin.DefaultIfEmpty()
                 join sc in _context.TblBulkRunSchedules on j.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
                 from schedule in scheduleJoin.DefaultIfEmpty()
+                join con in _context.TblContacts on j.LoggedInContactId equals con.ContactId into contactJoin
+                from contact in contactJoin.DefaultIfEmpty()
 
 
                 where (j.BulkJobId == bulkJobId)
@@ -431,7 +438,8 @@ namespace DespatchWeb.Repositories
                     Locked = (j.RunName ?? "").Length > 1 || j.BookDate < today,
                     RunName = j.RunName,
                     Done = j.Done,
-                    ScheduleName = schedule.Name
+                    ScheduleName = schedule.Name,
+                    LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}"
 
                 });
             var jobList = await jobQuery.ToListWithNoLockAsync();
@@ -1496,7 +1504,8 @@ namespace DespatchWeb.Repositories
                             ScheduleName = j.ScheduleName,
                             ConNote = j.ConNote,
                             AirportOnly =j.AirportOnly,
-                            HasNationwide = j.HasNationwide.HasValue
+                            HasNationwide = j.HasNationwide.HasValue,
+                            LoggedInContactName = j.LoggedInContactName
 
 
                         }).ToList();

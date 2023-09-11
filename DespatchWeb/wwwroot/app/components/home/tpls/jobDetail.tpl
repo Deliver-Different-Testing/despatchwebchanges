@@ -60,7 +60,10 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Booked by Contact</label>&nbsp;<i  ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-info-circle" title="Show Client Contact List" ng-click="!currentJob.locked && jdSvc.getClientContactDetail($event, currentJob)"></i>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.contactName}}</div>
 						</div>
-						
+						<div class="field">
+							<label ng-class="disabled">Logged-in Contact</label>
+							<div ng-class="disabled" class="value">{{currentJob.loggedInContactName}}</div>
+						</div>
 						<div class="field" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'Size','Size',currentJob.size,currentJob.id, 'select', options.detail.size)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Size</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.size.label}}</div>
@@ -379,7 +382,10 @@
 							<label>Booked by Contact</label>
 							<div class="value">{{currentJob.contactName}}</div>
 						</div>
-						
+						<div class="field">
+							<label ng-class="disabled">Logged-in Contact</label>
+							<div ng-class="disabled" class="value">{{currentJob.loggedInContactName}}</div>
+						</div>
 						<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'Size','Size',currentJob.size,currentJob.id, 'select', options.detail.size)">
 							<label>Size</label>
 							<div class="value">{{currentJob.size.label}}</div>

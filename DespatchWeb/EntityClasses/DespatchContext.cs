@@ -26,6 +26,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblClient> TblClients { get; set; }
         public virtual DbSet<TblClientContact> TblClientContacts { get; set; }
         public virtual DbSet<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; }
+        public virtual DbSet<TblContact> TblContacts { get; set; }
         public virtual DbSet<TblCourier> TblCouriers { get; set; }
         public virtual DbSet<TblDespatchView> TblDespatchViews { get; set; }
         public virtual DbSet<TblInternetPermission> TblInternetPermissions { get; set; }
@@ -262,6 +263,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.JobNotes).HasMaxLength(4000);
 
                 entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
+
+                entity.Property(e => e.LoggedInContactName).HasMaxLength(101);
 
                 entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
 
@@ -552,6 +555,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.Length).HasColumnType("numeric(18, 0)");
 
                 entity.Property(e => e.LinehaulRunId).HasColumnName("LinehaulRunID");
+
+                entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
 
                 entity.Property(e => e.Manifest).HasMaxLength(50);
 
@@ -1398,6 +1403,103 @@ namespace DespatchWeb.EntityClasses
                     .HasConstraintName("FK_tblClientContactInternetPermission_tblInternetPermission");
             });
 
+            modelBuilder.Entity<TblContact>(entity =>
+            {
+                entity.HasNoKey();
+
+                entity.ToView("tblContact");
+
+                entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.ContactId).HasColumnName("ContactID");
+
+                entity.Property(e => e.ContactRoleId).HasColumnName("ContactRoleID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.DirectDial).HasMaxLength(50);
+
+                entity.Property(e => e.Email).HasMaxLength(200);
+
+                entity.Property(e => e.Fax).HasMaxLength(50);
+
+                entity.Property(e => e.Firstname).HasMaxLength(50);
+
+                entity.Property(e => e.JobTitle).HasMaxLength(50);
+
+                entity.Property(e => e.LastAccessed).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Mobile).HasMaxLength(50);
+
+                entity.Property(e => e.Notes).HasMaxLength(250);
+
+                entity.Property(e => e.ParentContactId).HasColumnName("ParentContactID");
+
+                entity.Property(e => e.Password).HasMaxLength(50);
+
+                entity.Property(e => e.Password2).HasMaxLength(200);
+
+                entity.Property(e => e.ResetKey).HasMaxLength(50);
+
+                entity.Property(e => e.Salt).HasMaxLength(64);
+
+                entity.Property(e => e.StaffId).HasColumnName("StaffID");
+
+                entity.Property(e => e.Surname).HasMaxLength(50);
+
+                entity.Property(e => e.UcctClientId).HasColumnName("ucctClientID");
+
+                entity.Property(e => e.UcctDirectDial)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctDirectDial");
+
+                entity.Property(e => e.UcctEmail)
+                    .HasMaxLength(200)
+                    .HasColumnName("ucctEmail");
+
+                entity.Property(e => e.UcctFirstname)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctFirstname");
+
+                entity.Property(e => e.UcctId).HasColumnName("ucctID");
+
+                entity.Property(e => e.UcctJobTitle)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctJobTitle");
+
+                entity.Property(e => e.UcctMobile)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctMobile");
+
+                entity.Property(e => e.UcctNotes)
+                    .HasMaxLength(250)
+                    .HasColumnName("ucctNotes");
+
+                entity.Property(e => e.UcctSurname)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucctSurname");
+
+                entity.Property(e => e.UserName).HasMaxLength(200);
+
+                entity.Property(e => e.WhenEmailNotificationSent).HasColumnType("datetime");
+
+                entity.Property(e => e.WhenEmailValidated).HasColumnType("datetime");
+
+                entity.Property(e => e.WhenEmailValidatedSent).HasColumnType("datetime");
+
+                entity.Property(e => e.WhenLastEmailNotificationReminderSent).HasColumnType("datetime");
+            });
+
             modelBuilder.Entity<TblCourier>(entity =>
             {
                 entity.HasNoKey();
@@ -1969,6 +2071,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.InternalNotes).HasMaxLength(4000);
 
+                entity.Property(e => e.InvoiceProcessId).HasColumnName("InvoiceProcessID");
+
                 entity.Property(e => e.JobId).HasColumnName("JobID");
 
                 entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
@@ -1976,6 +2080,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.JobTypeId).HasColumnName("JobTypeID");
 
                 entity.Property(e => e.LeaveNotHomeId).HasColumnName("LeaveNotHomeID");
+
+                entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
 
                 entity.Property(e => e.Notes).HasMaxLength(4000);
 
@@ -3116,6 +3222,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.InternalNotes).HasMaxLength(500);
 
                 entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
+
+                entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
 
                 entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
 
