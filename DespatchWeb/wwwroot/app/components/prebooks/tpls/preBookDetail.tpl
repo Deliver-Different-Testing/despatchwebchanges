@@ -56,7 +56,10 @@
 							<label>Booked by Contact</label>
 							<div class="value">{{currentJob.contactName}}</div>
 						</div>
-						
+						<div class="field">
+							<label ng-class="disabled">Logged-in Contact</label>
+							<div ng-class="disabled" class="value">{{currentJob.loggedInContactName}}</div>
+						</div>
 						<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'Size','Size',currentJob.size,currentJob.id, 'select', options.detail.size)">
 							<label>Size</label>
 							<div class="value">{{currentJob.size.label}}</div>

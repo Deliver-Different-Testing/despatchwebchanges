@@ -236,7 +236,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/prebooks/tpls/preBookDetail.tpl?v=1.5",
+                "tpl": "app/components/prebooks/tpls/preBookDetail.tpl?v=1.6",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },

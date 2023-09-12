@@ -252,7 +252,7 @@ namespace DespatchWeb.Repositories
                     LP = j.LatePickUp,
                     LD = j.LateDelivery,
                     ContactName = j.Contact,
-                    LoggedInContactName = $"{contact.Firstname} {contact.Surname??""}",
+                    LoggedInContactName = $"{contact.Firstname ??  ""} {contact.Surname??""}",
                     Phone = j.DeliverToPhone,
                     SpeedAccepted = os.ShortName,
                     Weight = j.Weight,
@@ -891,7 +891,8 @@ namespace DespatchWeb.Repositories
                      Reprice = j.Reprice,
                      FollowupTime = j.FollowupTime,
                      GstRate = j.Gstrate,
-                     ScheduleName = j.ScheduleName
+                     ScheduleName = j.ScheduleName,
+                     LoggedInContactName = j.LoggedInContactName
 
                  }).ToList();
             return list;
@@ -1155,7 +1156,8 @@ namespace DespatchWeb.Repositories
                             FollowupTime = j.FollowupTime,
                             Reprice = j.Reprice,
                             GstRate = j.Gstrate,
-                            ScheduleName = j.ScheduleName
+                            ScheduleName = j.ScheduleName,
+                            LoggedInContactName = j.LoggedInContactName
 
 
 
