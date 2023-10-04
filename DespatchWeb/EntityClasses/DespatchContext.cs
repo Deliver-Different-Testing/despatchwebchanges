@@ -44,6 +44,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucJobNationwide> TucJobNationwides { get; set; }
         public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
         public virtual DbSet<TucJobType> TucJobTypes { get; set; }
+        public virtual DbSet<TucSource> TucSources { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
@@ -1995,9 +1996,13 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.CourierBonus).HasColumnType("money");
 
+                entity.Property(e => e.CourierFuel).HasColumnType("money");
+
                 entity.Property(e => e.CourierId).HasColumnName("CourierID");
 
                 entity.Property(e => e.CourierPayment).HasColumnType("money");
+
+                entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
 
                 entity.Property(e => e.Date).HasColumnType("datetime");
 
@@ -3716,6 +3721,32 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcjtUnitRate)
                     .HasColumnType("money")
                     .HasColumnName("ucjtUnitRate");
+            });
+
+            modelBuilder.Entity<TucSource>(entity =>
+            {
+                entity.HasKey(e => e.SourceId)
+                    .HasName("PK__tucSourc__16E019F94E786145");
+
+                entity.ToTable("tucSource");
+
+                entity.Property(e => e.SourceId).HasColumnName("SourceID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(50);
             });
 
             modelBuilder.Entity<TucSuburb>(entity =>

@@ -242,7 +242,7 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/prebooks/tpls/map.tpl?v=1.0",
+                "tpl": "app/components/prebooks/tpls/map.tpl?v=1.1",
                 "showSearch": 0
             }
 

@@ -92,6 +92,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucSource]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucSuburb]",
          "ObjectType": 0
       },

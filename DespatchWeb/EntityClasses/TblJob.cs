@@ -135,8 +135,10 @@ namespace DespatchWeb.EntityClasses
         public byte[] DeliveryPhoto { get; set; }
         public string DeliveryGps { get; set; }
         public string RunName { get; set; }
-        public decimal? CourierPayment { get; set; }
         public decimal? RawBaseAmount { get; set; }
+        public decimal? CourierPercentage { get; set; }
+        public decimal? CourierPayment { get; set; }
+        public decimal? CourierFuel { get; set; }
         public decimal? CourierBonus { get; set; }
         public int? Duration { get; set; }
         public double? TruckHours { get; set; }

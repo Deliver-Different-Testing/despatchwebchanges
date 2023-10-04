@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Controllers
 {
@@ -34,6 +36,8 @@ namespace DespatchWeb.Controllers
             var result = await _courierRepo.ActiveCouriers();
             return Json(result);
         }
+
+        
 
         [HttpGet]
         public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
@@ -65,6 +69,13 @@ namespace DespatchWeb.Controllers
         public IActionResult Location(string code)
         {
             var result = _courierRepo.Location(code);
+            return Json(result);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Route(string code, DateTime? start, DateTime? end)
+        {
+            var result = await _courierRepo.GetCourierRoute(code, start, end);
             return Json(result);
         }
 

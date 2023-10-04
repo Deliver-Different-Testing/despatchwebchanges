@@ -284,7 +284,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.36",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.37",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -349,7 +349,7 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/home/tpls/map.tpl?v=1.18",
+                "tpl": "app/components/home/tpls/map.tpl?v=1.19",
                 "showSearch": 0,
                 "showRefresh": 1
             },

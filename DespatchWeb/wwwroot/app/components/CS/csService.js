@@ -2,8 +2,16 @@ angular
     .module('uDispatch')
     .factory('uCSData', ['$http', function ($http) {
         return {
-
-
+            allocateJobs: function (courierId, dispId, jobIds) {
+                return $http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
+                    return response;
+                });
+            },
+            addRestoreEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+                return $http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(function (response) {
+                    return response.data;
+                });
+            },
             getPodJobs: function (courierId, clientId, wild, fromDate, toDate, pageIndex, pageSize) {
                 return $http.get('/Job/PODSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
                     return response.data;
@@ -21,7 +29,11 @@ angular
                     return response.data;
                 });
             },
-
+            getCourierRoute: function (code, start, end) {
+                return $http.get('/courier/route?code=' + code + '&start=' + start.format("YYYY-MM-DDTHH:mm:ss") + '&end=' + end.format("YYYY-MM-DDTHH:mm:ss")).then(function (response) {
+                    return response.data;
+                });
+            },
             getJobDetail: function (id) {
                 return $http.get('/Job/Detail?jobId=' + id).then(function (response) {
                     return response.data;
@@ -52,6 +64,16 @@ angular
                     return response.data;
                 });
             },
+            getActiveCouriers: function () {
+                return $http.get("courier/active").then(function (response) {
+                    return response.data;
+                });
+            },
+            getAllCouriers: function () {
+                return $http.get("courier/AllActive").then(function (response) {
+                    return response.data;
+                });
+            },
             addEventNote: function (eventId, note) {
                 return $http.post('CS/AddEventNote?eventId=' + eventId + '&note=' + note + '&userName=' + ClientName).then(function (response) {
                     return response.data;
@@ -59,6 +81,16 @@ angular
             },
             validateSwapPOD: function (jobNumber) {
                 return $http.post('Job/ValidateSwapPOD?job=' + jobNumber).then(function (response) {
+                    return response.data;
+                });
+            },
+            restoreJobs: function (courierId, dispId, jobIds) {
+                return $http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
+                    return response.data;
+                });
+            },
+            restoreSplitJobs: function (courierId, dispId, jobIds) {
+                return $http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
                     return response.data;
                 });
             },

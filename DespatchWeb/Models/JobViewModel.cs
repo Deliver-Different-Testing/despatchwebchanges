@@ -26,6 +26,8 @@ namespace DespatchWeb.Models
         public string JobNo { get; set; }
         public string Speed { get; set; }
         public string SpeedName { get; set; }
+
+        public string Source { get; set;  }
         public string NotifiedName { get; set; }
         public string AcceptedName { get; set; }
         public int? SpeedID { get; set; }

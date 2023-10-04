@@ -64,6 +64,10 @@
 							<label ng-class="disabled">Logged-in Contact</label>
 							<div ng-class="disabled" class="value">{{currentJob.loggedInContactName}}</div>
 						</div>
+						<div ng-show="name=='POD'" class="field">
+							<label ng-class="disabled">Source</label>
+							<div ng-class="disabled" class="value">{{currentJob.source}}</div>
+						</div>
 						<div class="field" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'Size','Size',currentJob.size,currentJob.id, 'select', options.detail.size)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Size</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.size.label}}</div>
@@ -386,6 +390,10 @@
 							<label ng-class="disabled">Logged-in Contact</label>
 							<div ng-class="disabled" class="value">{{currentJob.loggedInContactName}}</div>
 						</div>
+						<div ng-show="name=='POD'" class="field">
+							<label ng-class="disabled">Source</label>
+							<div ng-class="disabled" class="value">{{currentJob.source}}</div>
+						</div>
 						<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'Size','Size',currentJob.size,currentJob.id, 'select', options.detail.size)">
 							<label>Size</label>
 							<div class="value">{{currentJob.size.label}}</div>
@@ -607,14 +615,7 @@
 
 	</div>
 </div>
-<!--<div ng-if="currentCourier" style="height: 100%;">
-	<div class="overlay-map-fix"></div>
-	<div id="map_canvas" style="width:100%;height:100%;"></div>
 
-	<script src="app/components/home/map.js?v=1.3"></script>
-
-</div>
--->
 <div class="no-data" ng-if="!currentJob && !currentCourier">
     <div class="text">Please select a job or courier</div>
 </div>

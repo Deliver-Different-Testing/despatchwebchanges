@@ -61,15 +61,7 @@
 			 <ng-map id="map" center="[{{jdSvc.gpsForm.data.lat || -36.850657}}, {{jdSvc.gpsForm.data.long ||  174.764660}}]" on-rightclick="jdSvc.gpsForm.moveMarker()">
 			 <marker position="{{jdSvc.gpsForm.data.lat}}, {{jdSvc.gpsForm.data.long}}" draggable="true" on-dragend="jdSvc.gpsForm.markerDragend()"></marker>
 			 </ng-map>	
-            <!--
-			<iframe
-              width="450"
-              height="250"
-              frameborder="0" style="border:0"
-              id="gpsMap"
-              data-src="https://www.google.com/maps/embed/v1/place?key=AIzaSyC9qU2-Zu7KwkO6TqtY5p-2P4czmpF98nA&q=" allowfullscreen>
-            </iframe>
-			-->
+            
           </div>
 
         <button class="btn btn-primary"  promise-btn ng-click="jdSvc.gpsForm.submit(jdSvc.gpsForm.details.geometry.location)">UPDATE</button>

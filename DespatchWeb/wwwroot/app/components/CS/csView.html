@@ -100,11 +100,15 @@
 
 
                             <div class="box-details" ng-show="box.name == 'jobDetail'">
+                                <input type="text" class="pod-DispatchField" id="pod-DispatchField" title="Dispatch to Courier Code" ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier == null" ng-model="dispatchCourier" ng-keydown="$event.keyCode === 13 && dispatchJobs(dispatchCourier, currentJob)" placeholder="dispatch" />
                                 <div class="btn-group" role="group" aria-label="Basic example">
                                     <button type="button" class="btn btn-sm btn-secondary" title="Reply" ng-show="currentEvent && !currentEvent.closedDate" ng-click="reply(currentEvent)"><i class="fa fa-reply"></i></button>
                                 </div>
                                 <div class="btn-group" role="group" aria-label="Basic example">
                                     <button type="button" class="btn btn-sm btn-secondary" title="Copy Link" ng-show="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))" ng-click="generateDirectLink(currentEvent)"><i class="fa fa-link"></i></button>
+                                </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Restore Job" ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier != null && !currentJob.done" ng-click="restoreJob(currentJob)"><i class="fa fa-undo"></i></button>
                                 </div>
                                 <div class="btn-group" role="group" aria-label="Basic example">
                                     <button type="button" class="btn btn-sm btn-secondary" title="Swap POD" ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook" ng-click="swapPOD()"><i class="fa fa-exchange"></i></button>
@@ -146,7 +150,7 @@
 
 <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.11'"></div>
+<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.12'"></div>
 
 
 

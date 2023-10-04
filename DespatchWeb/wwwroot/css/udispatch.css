@@ -805,6 +805,11 @@ table.table tr .status.ASC {
   text-align: center;
   height: 15px;
 }
+input.pod-DispatchField {
+  color: black;
+  width: 60px;
+  text-align: center;
+}
 #jobList th {
   white-space: nowrap;
   cursor: pointer;

@@ -77,6 +77,9 @@ var infoWindow = new google.maps.InfoWindow();
 
         map.flightPaths.length = 0;
     };
+
+    
+
 })();
 
 function initialize() {
@@ -95,12 +98,11 @@ function initialize() {
     google.maps.event.addListener(map, "rightclick", function (e) {
         console.log(e);
     });
-    const trafficLayer = new google.maps.TrafficLayer();
-    trafficLayer.setMap(map);
+    
 
 }
 
-google.maps.event.addDomListener(window, 'load', initialize);
+//google.maps.event.addDomListener(window, 'load', initialize);
 
 var currentDrag = null;
 

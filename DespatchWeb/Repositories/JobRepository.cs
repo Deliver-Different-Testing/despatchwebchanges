@@ -47,6 +47,8 @@ namespace DespatchWeb.Repositories
                 from client in clientJoin.DefaultIfEmpty()
                 join con in _context.TblContacts on j.LoggedInContactId equals con.ContactId into contactJoin
                 from contact in contactJoin.DefaultIfEmpty()
+                join sou in _context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
+                from source in sourceJoin.DefaultIfEmpty()
 
 
                 where (j.UcbkId == prebookId)
@@ -71,6 +73,7 @@ namespace DespatchWeb.Repositories
                     SpeedID = j.UcbkSpeed,
                     AcceptedJobTypeID = j.AcceptedJobTypeId,
                     NotifiedJobTypeID = j.NotifiedJobTypeId,
+                    Source = source.Name,
                     Client = j.UcbkClientCode,
                     ClientID = j.UcbkClientId,
                     ClientName = client.Name,
@@ -202,6 +205,8 @@ namespace DespatchWeb.Repositories
                 from nw in nationwideJoin.DefaultIfEmpty()
                 join con in _context.TblContacts on j.LoggedInContactId equals con.ContactId into contactJoin
                 from contact in contactJoin.DefaultIfEmpty()
+                join sou in _context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
+                from source in sourceJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
                 select new JobViewModel()
@@ -226,6 +231,7 @@ namespace DespatchWeb.Repositories
                     SpeedID = j.Speed,
                     Notify = no.ShortName,
                     SpeedName = to.UcjtName,
+                    Source = source.Name,
                     NotifiedName = no.UcjtName,
                     AcceptedName = os.UcjtName,
                     AcceptedJobTypeID = j.AcceptedJobTypeId,
@@ -379,7 +385,8 @@ namespace DespatchWeb.Repositories
                 from schedule in scheduleJoin.DefaultIfEmpty()
                 join con in _context.TblContacts on j.LoggedInContactId equals con.ContactId into contactJoin
                 from contact in contactJoin.DefaultIfEmpty()
-
+                join sou in _context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
+                from source in sourceJoin.DefaultIfEmpty()
 
                 where (j.BulkJobId == bulkJobId)
                 select new JobViewModel()
@@ -439,7 +446,8 @@ namespace DespatchWeb.Repositories
                     RunName = j.RunName,
                     Done = j.Done,
                     ScheduleName = schedule.Name,
-                    LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}"
+                    LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}",
+                    Source = source.Name
 
                 });
             var jobList = await jobQuery.ToListWithNoLockAsync();

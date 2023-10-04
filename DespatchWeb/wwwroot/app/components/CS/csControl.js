@@ -346,7 +346,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.36",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.37",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -372,7 +372,7 @@ angular
             },
             "map": {
                 "title": "Google Map",
-                "tpl": "app/components/CS/tpls/map.tpl?v=1.2",
+                "tpl": "app/components/CS/tpls/map.tpl?v=1.3",
                 "showSearch": 0
             }
 
@@ -792,6 +792,120 @@ angular
 
         };
 
+        $scope.restoreJob = function (job) {
+
+            var callData = {
+                "call": "restoreJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": null
+            };
+
+            var foundCourier = null;
+
+            
+            var jn = job.jobNo;
+            uCSData.addRestoreEvent(jn, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+            if (callData.courierID === null) {
+                callData.courierID = job.courierData.courierID;
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === job.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierID);
+            }
+            if (job.displaySplitJobDetail) {
+                callData.splitJobs.push(job.id);
+            } else {
+                callData.jobs.push(job.id);
+            }
+
+            if (callData.splitJobs.length > 0) {
+                uCSData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs).then(function () {
+                    return $scope.selectJobDetail(job.id);
+                });
+            }
+            if (callData.jobs.length > 0) {
+                uCSData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs).then(function () {
+                    return $scope.selectJobDetail(job.id);
+                });
+            }
+
+
+
+
+        };
+
+        $scope.dispatchJobs = function (courier, job) {
+            var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
+            if (foundCourier === undefined) {
+                $ngConfirm({
+                    title: 'Courier Offline',
+                    content: 'Dispatch anyway?',
+                    scope: $scope,
+                    buttons: {
+
+                        Yes: {
+                            btnClass: 'btn-green',
+                            action: function (scope, button) {
+                                foundCourier = $scope.pickAllCouriers.find(c => c.id === courier);
+                                //console.log(foundCourier);
+                                return $scope.dispatchJobsContinue(courier, foundCourier, true, job);
+                            }
+
+
+                        },
+                        No: {
+                            btnClass: 'btn-red',
+                            action: function (scope, button) {
+
+                            }
+                        }
+                    }
+                });
+                return;
+            };
+
+            return $scope.dispatchJobsContinue(courier, foundCourier, false, job);
+
+
+        };
+
+        $scope.dispatchJobsContinue = function (courier, foundCourier, offline, job) {
+            var callData = {
+                "call": "dispatchJobs",
+                "courier": courier,
+                "jobs": []
+            };
+
+            
+
+            var jn = job.jobNo;
+            if (job.courierData.courierID !== null) {
+                alert("restore " + jn + " prior to despatching to another courier");
+                return;
+            }
+            
+            if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
+                alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+                return;
+            }
+            if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
+                alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+                return;
+            }
+
+            //if (job.dgClass !== null && job.dgClass > 0) {
+            //    DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
+            //}
+
+            callData.jobs.push(job.id);
+
+            return uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
+                $("input.pod-DispatchField:visible").val("");
+                $scope.selectJobDetail(job.id);
+                return response;
+            });
+
+        }
+
         $scope.swapPOD = function () {
             
             $scope.gather.form = {
@@ -1180,6 +1294,64 @@ angular
                         $("#box-scanList").find(".loading").fadeOut();
                     }, 200);
                 });
+
+                if ($scope.currentJob.courier && $scope.currentJob.completedTime) { 
+                    $("#box-map").find(".loading").show();
+                    uCSData.getCourierRoute($scope.currentJob.courier, moment($scope.currentJob.completedTime).subtract(5, 'm'), moment($scope.currentJob.completedTime).add(5, 'm')).then(function (data) {
+                        var flightPathCoordinates = [];
+
+                        $("#box-map").find(".loading").fadeOut();
+                        if (data.length === 0) {
+                            return;
+                        }
+                        for (i = 0; i < data.length; i++) {
+                            var coordinatePair = new google.maps.LatLng(data[i].latitude, data[i].longitude);
+                            flightPathCoordinates.push(coordinatePair);
+                        }
+                        var flightPathPoly = new google.maps.Polyline({
+                            //map: map,
+                            path: flightPathCoordinates,
+                            strokeColor: "#FF0000",
+                            strokeOpacity: 1.0,
+                            strokeWeight: 2
+                        });
+
+                        var flightPath = flightPathPoly.getPath();
+
+                        var pathValues = [];
+                        for (var i = 0; i < flightPath.getLength(); i++) {
+                            pathValues.push(flightPath.getAt(i).toUrlValue());
+                        }
+
+                        $.get('https://roads.googleapis.com/v1/snapToRoads', {
+                            interpolate: true,
+                            key: googleMapsApiKey,
+                            path: pathValues.join('|')
+                        }, function (data) {
+                            var snappedCoordinates = [];
+                            for (var i = 0; i < data.snappedPoints.length; i++) {
+                                var latlng = new google.maps.LatLng(
+                                    data.snappedPoints[i].location.latitude,
+                                    data.snappedPoints[i].location.longitude);
+                                snappedCoordinates.push(latlng);
+                            }
+                            var snappedFlightPath = new google.maps.Polyline({
+                                map: map,
+                                path: snappedCoordinates,
+                                strokeColor: "#FF0000",
+                                strokeOpacity: 1.0,
+                                strokeWeight: 2
+                            });
+                            map.addFlightPath(snappedFlightPath);
+                        });
+
+
+                        map.addFlightPath(flightPathPoly);
+                    });
+                }
+                
+
+                
             });
  
 
@@ -1373,6 +1545,13 @@ angular
 
         // $scope.getData();
 
+        uCSData.getActiveCouriers().then(function (data) {
+            $scope.pickCouriers = data;
+        });
+
+        uCSData.getAllCouriers().then(function (data) {
+            $scope.pickAllCouriers = data;
+        });
 
         NgMap.getMap().then(function (map) {
             $scope.map = map;

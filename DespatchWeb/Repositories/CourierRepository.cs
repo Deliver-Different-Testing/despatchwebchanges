@@ -126,6 +126,17 @@ namespace DespatchWeb.Repositories
             return activeCouriers;
         }
 
+        public async Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end)
+        {
+            var result = new List<CourierPosition>();
+            await _context.LoadStoredProc("MAP_stpCourierGPS_CourierTimeTrace_New")
+                .WithSqlParam("@CourierCode", code)
+                .WithSqlParam("@StartTime", start)
+                .WithSqlParam("@EndTime", end)
+                .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<CourierPosition>().ToList(); });
+            return result;
+        }
+
         /// <summary>
         /// All active couriers regardless of logged in or not 
         /// </summary>

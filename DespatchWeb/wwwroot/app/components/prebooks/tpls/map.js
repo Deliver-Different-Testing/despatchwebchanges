@@ -77,6 +77,9 @@ var infoWindow = new google.maps.InfoWindow();
 
         map.flightPaths.length = 0;
     };
+   
+
+
 })();
 
 function initialize() {
@@ -100,7 +103,7 @@ function initialize() {
 
 }
 
-google.maps.event.addDomListener(window, 'load', initialize);
+//google.maps.event.addDomListener(window, 'load', initialize);
 
 var currentDrag = null;
 
