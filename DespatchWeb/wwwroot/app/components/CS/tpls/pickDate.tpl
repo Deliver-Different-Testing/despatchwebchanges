@@ -32,10 +32,16 @@
             <br />
 
 			<br />
+            <b>Job Number:</b> <br />
+			<input type="text" name="Job" id="Job" ng-model="pickDateService.job" class ="form-control focusMe"
+
+            <br />
+			<br />
             <b>Everything Else (JobNo, Address, Name, Refs):</b> <br />
 			<input type="text" name="Wild" id="Wild" ng-model="pickDateService.wild" class ="form-control focusMe"
 
             <br />
+
 			
 
 			<br />

@@ -25,7 +25,6 @@
       "wwwroot/lib/angular-promise-buttons.js",
       "wwwroot/app/app.js",
       "wwwroot/app/filters.js",
-      "wwwroot/app/label.js",
       "wwwroot/js/site.js",
       "wwwroot/js/Loading.js",
       "wwwroot/app/jobDetailService.js",

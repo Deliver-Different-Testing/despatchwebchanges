@@ -201,7 +201,7 @@ angular
         $scope.boxes = {
             "pickDate": {
                 "title": "Filters",
-                "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.6",
+                "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.8",
                 "showSearch": 0
             },
 
@@ -651,7 +651,7 @@ angular
                 if ($(".gatherForm").is(":visible") === true) {
                     setTimeout($scope.gather.submit(), 0);
                 }
-                if (event.srcElement.id === "Wild") {
+                if (event.srcElement.id === "Wild" || event.srcElement.id === "Job") {
                     $scope.refreshAllData(true);
                 }
                 
@@ -1033,6 +1033,7 @@ angular
             //localStorageService.set("Date", $scope.currentDate);
             if (($scope.pickDateService.client || "") === "" &&
                 ($scope.pickDateService.courier || "") === "" &&
+                ($scope.pickDateService.job || "") === "" &&
                 ($scope.pickDateService.wild || "") === "") {
                 $ngConfirm("You must use more Search Criteria");
                 $("#box-jobList").find(".loading").hide();
@@ -1044,6 +1045,7 @@ angular
             uCSData.getPodJobs($scope.pickDateService.courier,
                 $scope.pickDateService.client,
                 ($scope.pickDateService.wild || ""),
+                ($scope.pickDateService.job || ""),
                 moment($scope.currentFromDate),
                 moment($scope.currentToDate),
                 $scope.pageIndex,
@@ -1092,6 +1094,7 @@ angular
             //localStorageService.set("Date", $scope.currentDate);
             if (($scope.pickDateService.client || "") === "" &&
                 ($scope.pickDateService.courier || "") === "" &&
+                ($scope.pickDateService.job || "") === "" &&
                 ($scope.pickDateService.wild || "") === "") {
                 $ngConfirm("You must use more Search Criteria");
                 $("#box-jobList").find(".loading").hide();
@@ -1102,6 +1105,7 @@ angular
             
             uCSData.searchBulkJobs($scope.pickDateService.courier,
                 $scope.pickDateService.client,
+                ($scope.pickDateService.job || ""),
                 ($scope.pickDateService.wild || ""),
                 moment($scope.currentFromDate),
                 moment($scope.currentToDate),
@@ -1150,6 +1154,7 @@ angular
             //localStorageService.set("Date", $scope.currentDate);
             if (($scope.pickDateService.client || "") === "" &&
                 ($scope.pickDateService.courier || "") === "" &&
+                ($scope.pickDateService.job || "") === "" &&
                 ($scope.pickDateService.wild || "") === "") {
                 $ngConfirm("You must use more Search Criteria");
                 $("#box-pbList").find(".loading").hide();
@@ -1161,6 +1166,7 @@ angular
             uCSData.searchPreBookJobs($scope.pickDateService.courier,
                 $scope.pickDateService.client,
                 ($scope.pickDateService.wild || ""),
+                ($scope.pickDateService.job || ""),
                 moment($scope.currentFromDate),
                 moment($scope.currentToDate),
                 $scope.pbPageIndex,

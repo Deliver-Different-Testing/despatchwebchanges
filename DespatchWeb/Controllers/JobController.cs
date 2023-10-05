@@ -241,10 +241,10 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        public IActionResult PODSearch(int? courierId, int? clientId, string wild, DateTime fromDate, DateTime toDate,
+        public IActionResult PODSearch(int? courierId, int? clientId, string wild, string job, DateTime fromDate, DateTime toDate,
             int pageIndex, int pageSize)
         {
-            var result = _jobRepo.PODSearch(courierId, wild ?? "", fromDate.ResetTimeToStartOfDay(),
+            var result = _jobRepo.PODSearch(courierId, wild ?? "", job ?? "", fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
             return Json(result);
@@ -253,7 +253,7 @@ namespace DespatchWeb.Controllers
         public IActionResult ValidateSwapPOD(string job)
         {
             var fromDate = DateTime.Today;
-            var result = _jobRepo.PODSearch(null, job, fromDate.ResetTimeToStartOfDay(),
+            var result = _jobRepo.PODSearch(null, "", job, fromDate.ResetTimeToStartOfDay(),
                 fromDate.ResetTimeToEndOfDay(), null, 1, 5);
             if (result.Item1 == 0)
             {
@@ -272,19 +272,19 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-        public async Task<IActionResult> BulkSearch(int? courierId, int? clientId, string wild, DateTime fromDate, DateTime toDate,
+        public async Task<IActionResult> BulkSearch(int? courierId, int? clientId, string job, string wild, DateTime fromDate, DateTime toDate,
             int pageIndex, int pageSize)
         {
-            var result = await _jobRepo.BulkSearchAsync(courierId, wild ?? "", fromDate.ResetTimeToStartOfDay(),
+            var result = await _jobRepo.BulkSearchAsync(courierId, job ?? "",wild ?? "", fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
             return Json(result);
         }
 
-        public async Task<IActionResult> PreBookSearch(int? courierId, int? clientId, string wild, DateTime fromDate, DateTime toDate,
+        public async Task<IActionResult> PreBookSearch(int? courierId, int? clientId, string wild, string job, DateTime fromDate, DateTime toDate,
             int pageIndex, int pageSize)
         {
-            var result = await _jobRepo.PreBookSearchAsync(courierId, wild ?? "", fromDate.ResetTimeToStartOfDay(),
+            var result = await _jobRepo.PreBookSearchAsync(courierId, wild ?? "", job ?? "",fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
             return Json(result);

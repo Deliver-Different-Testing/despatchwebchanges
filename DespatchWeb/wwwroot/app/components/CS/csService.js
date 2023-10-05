@@ -12,20 +12,20 @@ angular
                     return response.data;
                 });
             },
-            getPodJobs: function (courierId, clientId, wild, fromDate, toDate, pageIndex, pageSize) {
-                return $http.get('/Job/PODSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
+            getPodJobs: function (courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize) {
+                return $http.get('/Job/PODSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
                     return response.data;
                 });
             },
 
-            searchBulkJobs: function (courierId, clientId, wild, fromDate, toDate, pageIndex, pageSize) {
-                return $http.get('/Job/BulkSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
+            searchBulkJobs: function (courierId, clientId, job, wild, fromDate, toDate, pageIndex, pageSize) {
+                return $http.get('/Job/BulkSearch?courierId=' + courierId + '&clientId=' + clientId + '&job=' + job + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
                     return response.data;
                 });
             },
 
-            searchPreBookJobs: function (courierId, clientId, wild, fromDate, toDate, pageIndex, pageSize) {
-                return $http.get('/Job/PreBookSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
+            searchPreBookJobs: function (courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize) {
+                return $http.get('/Job/PreBookSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(function (response) {
                     return response.data;
                 });
             },

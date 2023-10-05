@@ -469,11 +469,12 @@ namespace DespatchWeb.Repositories
             return job;
         }
 
-        public async Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(Int32? courierId, string wild, DateTime fromDate,
+        public async Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(Int32? courierId, string job, string wild, DateTime fromDate,
             DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
         {
             var clientSet = clientId.HasValue;
             var courierSet = courierId.HasValue;
+            var jobParam = $"%{job}%";
             var wildParam = $"%{wild}%";
 
             var jobsQuery = (
@@ -487,6 +488,7 @@ namespace DespatchWeb.Repositories
                 from status in statusJoin.DefaultIfEmpty()
                 where (x.BookDate >= fromDate && x.BookDate <= toDate) && (!clientSet || x.ClientId == clientId) &&
                       (!courierSet || x.CourierId == courierId) &&
+                      (job == "" || EF.Functions.Like(x.JobNumber.ToLower(), jobParam)) &&
                       (wild == "" || (EF.Functions.Like(x.FromAddress + " " + x.Contact + " " + x.FromSuburb + " " + x.ToAddress + " " + x.DeliverToContact + " " + x.ToSuburb + " " + (x.ClientRefa ?? "") + " " + (x.ClientRefb ?? "") + " " + (x.OurRef ?? "") + " " + x.JobNumber.ToLower(), wildParam)))
                 select new JobViewModel()
                 {
@@ -561,10 +563,11 @@ namespace DespatchWeb.Repositories
 
         }
 
-        public Tuple<int, List<JobViewModel>> PODSearch(Int32? courierId, string wild, DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
+        public Tuple<int, List<JobViewModel>> PODSearch(Int32? courierId, string wild, string job, DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
         {
             var clientSet = clientId.HasValue;
             var courierSet = courierId.HasValue;
+            var jobParam = $"%{job}%";
             var wildParam = $"%{wild}%";
             var jobsQuery = (
                 from x in _context.TblJobs
@@ -581,7 +584,8 @@ namespace DespatchWeb.Repositories
                 join nw in _context.TucJobNationwides on x.JobId equals nw.UcnwJobId into nationwideJoin
                 from nationwide in nationwideJoin.DefaultIfEmpty()
                 where (x.Date >= fromDate && x.Date <= toDate) && (!clientSet || x.ClientId == clientId) &&
-                      (!courierSet || x.CourierId == courierId) && 
+                      (!courierSet || x.CourierId == courierId) &&
+                      (job == "" || EF.Functions.Like(x.Number.ToLower(), jobParam)) &&
                       (wild == "" || EF.Functions.Like(nationwide.UcnwConNote, wildParam) || (EF.Functions.Like(x.FromAddress + " " + x.PickupFromContact + " " + yo.UcsuName + " " + x.ToAddress + " " + x.DeliverToContact + " " + zo.UcsuName + " " + (x.ClientReferenceA ?? "") + " " + (x.ClientReferenceB ?? "") + " "  + (x.OurRef ?? "") + " " + x.Number.ToLower(), wildParam)))
 
                 select new JobViewModel()
@@ -658,10 +662,11 @@ namespace DespatchWeb.Repositories
 
         }
 
-        public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(Int32? courierId, string wild, DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
+        public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(Int32? courierId, string wild, string job, DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
         {
             var clientSet = clientId.HasValue;
             var courierSet = courierId.HasValue;
+            var jobParam = $"%{job}%";
             var wildParam = $"%{wild}%";
             var jobsQuery = (
                 from x in _context.TucJobBookings
@@ -676,6 +681,7 @@ namespace DespatchWeb.Repositories
 
                 where (x.UcbkNextDue >= fromDate && x.UcbkNextDue <= toDate) && (!clientSet || x.UcbkClientId == clientId) &&
                       (!courierSet || x.CourierId == courierId) &&
+                      (job == "" || EF.Functions.Like(x.UcbkJobNumber.ToLower(), jobParam)) &&
                       (wild == "" || (EF.Functions.Like(x.UcbkFromAddr + " " + x.PickupFromContact + " " + yo.UcsuName + " " + x.UcbkToAddr + " " + x.DeliverToContact + " " + zo.UcsuName + " " + (x.UcbkClientRefa ?? "") + " " + (x.UcbkClientRefa ?? "") + " " + (x.UcbkOurRef ?? "") + " " + x.UcbkJobNumber.ToLower(), wildParam)))
 
                 select new JobViewModel()
