@@ -188,9 +188,9 @@
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.airportOnlyClick(currentJob)" ng-model="currentJob.airportOnly"/></div>
 						</div>
 						<div class="field" ng-if="currentJob.bulkJob" >	
-							<label ng-class="(currentJob.jobRelationshipTypeID != 19 || currentJob.done) ? 'disabled' : ''">Pushed To Live</label>
-							<div ng-class="(currentJob.jobRelationshipTypeID != 19 || currentJob.done) ? 'disabled' : ''" class="value">
-								<input type="checkbox" ng-disabled="(currentJob.jobRelationshipTypeID != 19 || currentJob.done)" ng-class="(currentJob.jobRelationshipTypeID != 19 || currentJob.done) ? 'disabled' : ''" ng-click="jdSvc.pushToLive(currentJob)" ng-model="currentJob.done"/>
+							<label ng-class="(currentJob.jobRelationshipTypeID == 20 || currentJob.done) ? 'disabled' : ''">Pushed To Live</label>
+							<div ng-class="(currentJob.jobRelationshipTypeID == 20 || currentJob.done) ? 'disabled' : ''" class="value">
+								<input type="checkbox" ng-disabled="(currentJob.jobRelationshipTypeID == 20 || currentJob.done)" ng-class="(currentJob.jobRelationshipTypeID == 20 || currentJob.done) ? 'disabled' : ''" ng-click="jdSvc.pushToLive(currentJob)" ng-model="currentJob.done"/>
 							</div>
 						</div>
 					</div>
