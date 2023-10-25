@@ -19,9 +19,9 @@ namespace DespatchWeb.Controllers
             _courierRepo = courierRepository;
 
         }
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var result = _courierRepo.ClearLists();
+            var result = await _courierRepo.ClearLists();
             return Json(result);
         }
 

@@ -49,7 +49,7 @@ namespace DespatchWeb.Controllers
                 }
             }
 
-            var result = _jobRepo.JobList(status, area, order, asc, isInternal, clientIds);
+            var result = await _jobRepo.JobListAsync(status, area, order, asc, isInternal, clientIds);
             return Json(result);
         }
 
@@ -67,7 +67,7 @@ namespace DespatchWeb.Controllers
                 }
             }
 
-            var result = _jobRepo.NationwideJobList(status, area, order, asc, isInternal, clientIds, 1);
+            var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 1);
             return Json(result);
         }
 
@@ -85,7 +85,7 @@ namespace DespatchWeb.Controllers
                 }
             }
 
-            var result = _jobRepo.NationwideJobList(status, area, order, asc, isInternal, clientIds, 2);
+            var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 2);
             return Json(result);
         }
 
@@ -103,7 +103,7 @@ namespace DespatchWeb.Controllers
                 }
             }
 
-            var result = _jobRepo.NationwideJobList(status, area, order, asc, isInternal, clientIds, 3);
+            var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 3);
             return Json(result);
         }
 
@@ -121,7 +121,7 @@ namespace DespatchWeb.Controllers
                 }
             }
 
-            var result = _jobRepo.NationwideJobList(status, area, order, asc, isInternal, clientIds, 4);
+            var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 4);
             return Json(result);
         }
 

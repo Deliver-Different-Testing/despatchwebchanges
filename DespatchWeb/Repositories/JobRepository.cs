@@ -913,7 +913,7 @@ namespace DespatchWeb.Repositories
         }
 
         
-        public List<JobViewModel> JobList(string status, string area, string order, string ascending, bool isInternal, string clientIds)
+        public async Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending, bool isInternal, string clientIds)
         {
             var orderToUse = "";
             if (isInternal == false && string.IsNullOrEmpty(clientIds))
@@ -1034,7 +1034,7 @@ namespace DespatchWeb.Repositories
             }
             var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
-            var jobs = _context.DeswebQryDespatches.FromSqlRaw(s).ToList();
+            var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
             //var pallets = _context.TucJobItems.ToList();
 
 
@@ -1192,7 +1192,7 @@ namespace DespatchWeb.Repositories
         /// <param name="clientIds"></param>
         /// <param name="windowPane"></param>
         /// <returns></returns>
-        public List<JobViewModel> NationwideJobList(string status, string area, string order, string ascending, bool isInternal, string clientIds, int windowPane)
+        public async Task<List<JobViewModel>> NationwideJobListAsync(string status, string area, string order, string ascending, bool isInternal, string clientIds, int windowPane)
         {
             var orderToUse = "";
             if (isInternal == false && string.IsNullOrEmpty(clientIds))
@@ -1383,7 +1383,7 @@ namespace DespatchWeb.Repositories
             }
             var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
-            var jobs = _context.DeswebQryDespatches.FromSqlRaw(s).ToList();
+            var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
             var pallets = _context.TucJobItems.ToList();
 
 

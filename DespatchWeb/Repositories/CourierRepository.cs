@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Models;
 using System.Linq.Dynamic.Core;
+using DespatchWeb.Controllers;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 
@@ -165,7 +166,7 @@ namespace DespatchWeb.Repositories
             return currentLocation;
         }
 
-        public ClearListViewModel ClearLists()
+        public async Task<ClearListViewModel> ClearLists()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();
             _context.LoadStoredProc("DES_qryCourierCombo_Active")
@@ -193,22 +194,22 @@ namespace DespatchWeb.Repositories
                 DeepEast = BuildClearListViewModel(activeCouriers, 3, 33)
             };
 
-            data.Central.TotalRemaining = ClearListTotalRemaining("central");
-            data.City.TotalRemaining = ClearListTotalRemaining("city");
-            data.Parnell.TotalRemaining = ClearListTotalRemaining("parnell");
-            data.Ponsonby.TotalRemaining = ClearListTotalRemaining("ponsonby");
-            data.NewMarket.TotalRemaining = ClearListTotalRemaining("newmarket");
-            data.Eden.TotalRemaining = ClearListTotalRemaining("eden");
-            data.Other.TotalRemaining = ClearListTotalRemaining("other");
-            data.WestMid.TotalRemaining = ClearListTotalRemaining("west mid");
-            data.EastMid.TotalRemaining = ClearListTotalRemaining("east mid");
-            data.ShallowWest.TotalRemaining = ClearListTotalRemaining("shallow west");
-            data.DeepWest.TotalRemaining = ClearListTotalRemaining("deep west");
-            data.ShallowShore.TotalRemaining = ClearListTotalRemaining("shallow shore");
-            data.DeepShore.TotalRemaining = ClearListTotalRemaining("deep shore");
-            data.Mangere.TotalRemaining = ClearListTotalRemaining("mangere");
-            data.DeepSouth.TotalRemaining = ClearListTotalRemaining("deep south");
-            data.DeepEast.TotalRemaining = ClearListTotalRemaining("deep east");
+            data.Central.TotalRemaining = await ClearListTotalRemainingAsync("central");
+            data.City.TotalRemaining = await ClearListTotalRemainingAsync("city");
+            data.Parnell.TotalRemaining = await ClearListTotalRemainingAsync("parnell");
+            data.Ponsonby.TotalRemaining = await ClearListTotalRemainingAsync("ponsonby");
+            data.NewMarket.TotalRemaining = await ClearListTotalRemainingAsync("newmarket");
+            data.Eden.TotalRemaining = await ClearListTotalRemainingAsync("eden");
+            data.Other.TotalRemaining = await ClearListTotalRemainingAsync("other");
+            data.WestMid.TotalRemaining = await ClearListTotalRemainingAsync("west mid");
+            data.EastMid.TotalRemaining = await ClearListTotalRemainingAsync("east mid");
+            data.ShallowWest.TotalRemaining = await ClearListTotalRemainingAsync("shallow west");
+            data.DeepWest.TotalRemaining = await ClearListTotalRemainingAsync("deep west");
+            data.ShallowShore.TotalRemaining = await ClearListTotalRemainingAsync("shallow shore");
+            data.DeepShore.TotalRemaining = await ClearListTotalRemainingAsync("deep shore");
+            data.Mangere.TotalRemaining = await ClearListTotalRemainingAsync("mangere");
+            data.DeepSouth.TotalRemaining = await ClearListTotalRemainingAsync("deep south");
+            data.DeepEast.TotalRemaining = await ClearListTotalRemainingAsync("deep east");
             return data;
         }
 
@@ -222,7 +223,7 @@ namespace DespatchWeb.Repositories
             return envelope;
         }
 
-        public int ClearListTotalRemaining(string area)
+        public async Task<int> ClearListTotalRemainingAsync(string area)
         {
             var filter =
                 _context.TblDespatchViews.FirstOrDefault(v =>
@@ -233,7 +234,7 @@ namespace DespatchWeb.Repositories
             }
             filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
             var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
-            var jobs = _context.DeswebQryDespatches.FromSqlRaw(s).ToList();
+            var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
             return jobs.Count;
         }
 
