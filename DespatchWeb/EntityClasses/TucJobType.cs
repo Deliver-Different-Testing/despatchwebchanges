@@ -48,6 +48,8 @@ namespace DespatchWeb.EntityClasses
         public bool? ZoneRated { get; set; }
         public int? ServiceTrackingId { get; set; }
         public decimal? AddonPercentage { get; set; }
+        public bool? Mfv { get; set; }
+        public bool? Faf { get; set; }
 
         public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; }

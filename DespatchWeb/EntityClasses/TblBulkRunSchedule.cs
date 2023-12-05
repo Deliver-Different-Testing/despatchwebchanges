@@ -28,6 +28,7 @@ namespace DespatchWeb.EntityClasses
         public int? PickupPostcodeGroupId { get; set; }
         public int? ParentSpeedId { get; set; }
         public int? PickupBoxDiscount { get; set; }
+        public int? DropOffLocationId { get; set; }
 
         public virtual TucClient Client { get; set; }
         public virtual TucJobType ParentSpeed { get; set; }

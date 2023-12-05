@@ -67,6 +67,8 @@ namespace DespatchWeb.Models
         public string TrackingEmail { get; set; }
         public string UDStatus { get; set; }
         public byte[] PODPhoto { get; set; }
+        public byte[] DeliverySignature { get; set; }
+        public List<byte[]> PODPhotos { get; set; }
         public string PODName { get; set; }
         public string Phone { get; set; }
         public string SpeedAccepted { get; set; }

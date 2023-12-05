@@ -261,6 +261,13 @@ namespace DespatchWeb.EntityClasses
         public bool AirNzknownShipper { get; set; }
         public decimal? AirNzmargin { get; set; }
         public bool? ShowNwflight { get; set; }
+        public int? JobNumberCounter { get; set; }
+        public int? ChilledVanHireRateCodeId { get; set; }
+        public double? ChilledVanHireStartingMinutes { get; set; }
+        public int? ChilledTruckHireRateCodeId { get; set; }
+        public double? ChilledTruckHireStartingMinutes { get; set; }
+        public int? FrozenTruckHireRateCodeId { get; set; }
+        public double? FrozenTruckHireStartingMinutes { get; set; }
         public int ClientId { get; set; }
         public string Name { get; set; }
         public string LegalName { get; set; }

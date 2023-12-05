@@ -18,6 +18,7 @@ namespace DespatchWeb.EntityClasses
         {
         }
 
+        public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
         public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
@@ -52,6 +53,21 @@ namespace DespatchWeb.EntityClasses
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.UseCollation("SQL_Latin1_General_CP1_CI_AS");
+
+            modelBuilder.Entity<DeliveryPhoto>(entity =>
+            {
+                entity.ToTable("DeliveryPhoto");
+
+                entity.HasIndex(e => e.JobId, "IX_DeliveryPhoto");
+
+                entity.Property(e => e.DeliveryPhotoId).HasColumnName("DeliveryPhotoID");
+
+                entity.Property(e => e.JobId).HasColumnName("JobID");
+
+                entity.Property(e => e.Photo)
+                    .IsRequired()
+                    .HasColumnType("image");
+            });
 
             modelBuilder.Entity<DesQryAllJobType>(entity =>
             {
@@ -535,6 +551,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.DeliveryLongitude).HasMaxLength(50);
 
+                entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
+
                 entity.Property(e => e.FromAddress).HasMaxLength(150);
 
                 entity.Property(e => e.FromCompany).HasMaxLength(150);
@@ -644,6 +662,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.Description).HasMaxLength(500);
 
+                entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
+
                 entity.Property(e => e.Name).HasMaxLength(250);
 
                 entity.HasOne(d => d.Client)
@@ -697,6 +717,10 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.BulkHomeDeliveryPickupRateId).HasColumnName("BulkHomeDeliveryPickupRateID");
 
                 entity.Property(e => e.BulkHomeDeliveryVanItemSurcharge).HasColumnType("money");
+
+                entity.Property(e => e.ChilledTruckHireRateCodeId).HasColumnName("ChilledTruckHireRateCodeID");
+
+                entity.Property(e => e.ChilledVanHireRateCodeId).HasColumnName("ChilledVanHireRateCodeID");
 
                 entity.Property(e => e.CitySurchargeRate).HasColumnType("money");
 
@@ -821,6 +845,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.FifteenMinuteRateCodeId).HasColumnName("FifteenMinuteRateCodeID");
 
                 entity.Property(e => e.FortyFiveMinuteRateCodeId).HasColumnName("FortyFiveMinuteRateCodeID");
+
+                entity.Property(e => e.FrozenTruckHireRateCodeId).HasColumnName("FrozenTruckHireRateCodeID");
 
                 entity.Property(e => e.GroupId).HasColumnName("GroupID");
 
@@ -2362,6 +2388,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.BulkHomeDeliveryVanItemSurcharge).HasColumnType("money");
 
+                entity.Property(e => e.ChilledTruckHireRateCodeId).HasColumnName("ChilledTruckHireRateCodeID");
+
+                entity.Property(e => e.ChilledVanHireRateCodeId).HasColumnName("ChilledVanHireRateCodeID");
+
                 entity.Property(e => e.CitySurchargeRate)
                     .HasColumnType("money")
                     .HasDefaultValueSql("((1.75))");
@@ -2459,6 +2489,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.FastPalletSuperRateCodeId).HasColumnName("FastPalletSuperRateCodeID");
 
                 entity.Property(e => e.FastParcelRateCodeId).HasColumnName("FastParcelRateCodeID");
+
+                entity.Property(e => e.FrozenTruckHireRateCodeId).HasColumnName("FrozenTruckHireRateCodeID");
 
                 entity.Property(e => e.GssregularPickupClient)
                     .HasColumnName("GSSRegularPickupClient")
@@ -3188,6 +3220,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
 
+                entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
+
                 entity.Property(e => e.DropoffAmount).HasColumnType("money");
 
                 entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
@@ -3269,6 +3303,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
 
                 entity.Property(e => e.RunName).HasMaxLength(50);
+
+                entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
 
                 entity.Property(e => e.ScheduleName).HasMaxLength(200);
 
@@ -3684,6 +3720,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.ExtraName).HasMaxLength(50);
 
+                entity.Property(e => e.Faf).HasColumnName("FAF");
+
                 entity.Property(e => e.JobLetter).HasMaxLength(5);
 
                 entity.Property(e => e.LastModified).HasColumnType("datetime");
@@ -3691,6 +3729,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.LastModifiedBy)
                     .IsRequired()
                     .HasMaxLength(50);
+
+                entity.Property(e => e.Mfv).HasColumnName("MFV");
 
                 entity.Property(e => e.Notes).HasColumnType("ntext");
 

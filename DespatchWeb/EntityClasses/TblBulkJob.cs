@@ -91,6 +91,8 @@ namespace DespatchWeb.EntityClasses
         public DateTime? PickupReadyDateTime { get; set; }
         public string ScheduleName { get; set; }
         public int? LoggedInContactId { get; set; }
+        public int? DropOffLocationId { get; set; }
+        public double? RunCourierPercentage { get; set; }
 
         public virtual TucJobType SpeedNavigation { get; set; }
     }

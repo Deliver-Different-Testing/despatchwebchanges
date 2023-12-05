@@ -301,7 +301,8 @@ namespace DespatchWeb.Repositories
                     //AlertLateDelivery = j.AlertLateDelivery,
                     //Minutes = j.Minutes,
                     DeliverToContact = j.DeliverToContact,
-                    PODPhoto = j.DeliveryPhoto ?? j.DeliverySignature,
+                    PODPhoto = j.DeliveryPhoto,
+                    DeliverySignature =j.DeliverySignature,
                     PODName = j.Podname,
                     TrackingMethod = j.TrackingMethod,
                     TrackingMobile = j.TrackingMobile,
@@ -341,6 +342,20 @@ namespace DespatchWeb.Repositories
                         label = rel.Number
                     }
                 ).ToList();
+                job.PODPhotos = new List<byte[]>();
+                if (job.PODPhoto != null)
+                {
+                    job.PODPhotos.Add(job.PODPhoto);
+                }
+
+                if (job.DeliverySignature != null)
+                {
+                    job.PODPhotos.Add(job.DeliverySignature);
+                }
+
+                job.PODPhotos.AddRange(
+                    from del in _context.DeliveryPhotos.Where(d => d.JobId == job.ID)
+                    select del.Photo);
                 job.Size = job.Vehicle;
                 job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
                 job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +

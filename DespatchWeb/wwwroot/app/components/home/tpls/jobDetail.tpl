@@ -251,8 +251,39 @@
 			</div>
 
 		</div>
-		<div ng-if="!currentJob.bulkJob" class="row row-no-padding row-out">
-			<img ng-src="{{'data:image/png;base64,'+currentJob.podPhoto}}" />
+		<div ng-if="!currentJob.bulkJob && currentJob.podPhotos.length > 0" class="row row-no-padding row-out">
+			<label>POD Info</label>
+			<div class="row row-no-padding row-out">
+			<!--<img ng-src="{{'data:image/png;base64,'+currentJob.podPhoto}}" />-->
+			<div id="intel-carousel-pod" class="carousel slide" data-interval="false">
+                <!-- Indicators -->
+                <ol class="carousel-indicators">
+                    <li data-target="#intel-carousel-pod" ng-repeat="img in currentJob.podPhotos track by $index" data-slide-to="{{$index}}" ng-class="{'active' :$index === 0}"></li>
+                </ol>
+
+                <!-- Wrapper for slides -->
+                <div class="carousel-inner" role="listbox">
+                    <div class="item" ng-repeat="img in currentJob.podPhotos" data-jobindex="{{$index}}" ng-class="{'active' :$index === 0}">
+                        
+                        <div style="text-align:center">
+                            <img ng-src="{{'data:image/png;base64,'+img}}" style="max-height: 600px;"  />
+                        </div>
+
+                        
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <a class="left carousel-control" ng-href="{{name=='POD' ? '/CS/#intel-carousel-pod':'#intel-carousel-pod'}}" role="button" data-slide="prev">
+                    <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="right carousel-control" ng-href="{{name=='POD' ? '/CS/#intel-carousel-pod':'#intel-carousel-pod'}}" role="button" data-slide="next">
+                    <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </div>
+		</div>
 		</div>
 		<div ng-if="!currentJob.bulkJob">
 			<div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
