@@ -793,7 +793,7 @@ angular
         };
 
         $scope.restoreJob = function (job) {
-
+            $("#box-jobDetail").find(".loading").show();
             var callData = {
                 "call": "restoreJobs",
                 "jobs": [],

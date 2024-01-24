@@ -278,13 +278,13 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.83",
+                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.88",
                 "showSearch": 1,
                 "showRefresh": 1
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.40",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.42",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -606,6 +606,21 @@ angular
 
         $scope.supportChannelChanged = function () {
             console.log($scope.pickService.channel);
+        };
+
+        $scope.isLinehaul = function (input) {
+            var hideLinehaulDelMulti = /DEL/g
+            var hideLinehaulMulti = /LH/g
+            var hideLinehaulPickMulti = /LHP/g
+            return hideLinehaulMulti.test(input) || hideLinehaulDelMulti.test(input) || hideLinehaulPickMulti.test(input);
+        };
+
+        $scope.checkLinehaul = function (input) {
+            var hideLinehaulDelMulti = /DEL-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g
+            var hideLinehaulMulti = /LH-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g
+            var hideLinehaulMulti2 = /LH([1-9]|[0-9][0-9]|[1-9][0-9][0-9])-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g
+            var hideLinehaulPickMulti = /LHP-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g
+            return hideLinehaulMulti.test(input) || hideLinehaulDelMulti.test(input) || hideLinehaulPickMulti.test(input) || hideLinehaulMulti2.test(input);
         };
 
         $scope.attention = function (job) {
@@ -1115,7 +1130,11 @@ angular
             });
         };
 
-        
+        $scope.jobClass = function(job) {
+            var classToUse = job.direct? "direct " : "";
+            classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTH" || job.speed === "FT" || job.speed === "FTH") ? "chilled" : "");
+            return classToUse;
+        }
 
         ////////////////////////////////////////
         // DISPATCH THE JOBS

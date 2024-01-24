@@ -704,6 +704,12 @@ table.table tr.direct {
 table.table tr.direct td {
   color: red;
 }
+table.table tr.chilled {
+  color: dodgerblue;
+}
+table.table tr.chilled td {
+  color: dodgerblue;
+}
 table.table tr .fa-exclamation {
   color: red;
 }
