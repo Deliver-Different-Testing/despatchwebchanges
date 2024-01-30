@@ -140,6 +140,7 @@ namespace DespatchWeb.EntityClasses
         public decimal? CourierPayment { get; set; }
         public decimal? CourierFuel { get; set; }
         public decimal? CourierBonus { get; set; }
+        public decimal? CourierPercentageOverride { get; set; }
         public int? Duration { get; set; }
         public double? TruckHours { get; set; }
         public DateTime? TruckStartTime { get; set; }

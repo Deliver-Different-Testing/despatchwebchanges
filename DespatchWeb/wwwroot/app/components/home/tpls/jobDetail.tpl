@@ -54,7 +54,7 @@
 					<div class="col-md-4">
 						<div ng-show="!currentJob.bulkJob" class="field" >
 							<label class="disabled">Status</label>
-							<div class="disabled value">{{currentJob.status}}</div>
+							<div class="disabled value">{{currentJob.statusName}}</div>
 						</div>
 						<div ng-show="!currentJob.bulkJob" class="field"  ng-click="!currentJob.locked && jdSvc.contactClick(currentJob)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Booked by Contact</label>&nbsp;<i  ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-info-circle" title="Show Client Contact List" ng-click="!currentJob.locked && jdSvc.getClientContactDetail($event, currentJob)"></i>
@@ -219,7 +219,7 @@
 						<div class="field" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'Amount','Amount',currentJob.charge,currentJob.id)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''" ng-if="!currentJob.ratedManually">Charge</label>
 							<label ng-class="currentJob.locked ? 'disabled' : ''" ng-if="currentJob.ratedManually">Charge (Manually Rated)</label>
-							<i  ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-info-circle" title="Click for Price Breakdown" ng-click="!currentJob.locked && jdSvc.displayPriceBreakdown($event, currentJob)"></i>
+							<i class="fa fa-info-circle" title="Click for Price Breakdown" ng-click="jdSvc.displayPriceBreakdown($event, currentJob)"></i>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.charge}}</div>
 						</div>
 						<div ng-if="!currentJob.bulkJob" class="field">

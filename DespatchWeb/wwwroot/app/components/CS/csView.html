@@ -45,7 +45,7 @@
             <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
                 <div class="box" ng-repeat="(boxName,box) in column.boxes" id="box-{{box.name}}" resizablelayout r-directions="['bottom']" r-flex="true" style="flex-basis: {{box.height}}">
                     <div class="box-bar">
-                        <div class="box-bar-title">
+                        <div class="box-bar-title" ng-class="{'related':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}" >
                             {{boxes[box.name].title}}
                             <span ng-show="box.name == 'scanList'">{{currentSelection}}</span>
                             <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
@@ -136,7 +136,7 @@
                             <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
                         </div>
                     </div>
-                    <div class="box-content" ng-include="boxes[box.name].tpl"></div>
+                    <div class="box-content" ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}" ng-include="boxes[box.name].tpl"></div>
                 </div>
 
             </div>

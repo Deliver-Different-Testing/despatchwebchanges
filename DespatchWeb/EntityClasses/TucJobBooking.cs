@@ -155,6 +155,7 @@ namespace DespatchWeb.EntityClasses
         public int? LoggedInContactId { get; set; }
         public int? ScheduleId { get; set; }
         public int? DropOffLocationId { get; set; }
+        public decimal? CourierPercentageOverride { get; set; }
 
         public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; }
         public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }

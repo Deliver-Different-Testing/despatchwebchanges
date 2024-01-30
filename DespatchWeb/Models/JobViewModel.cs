@@ -57,6 +57,7 @@ namespace DespatchWeb.Models
         public int? Minutes { get; set; }
         public int? StatusID { get; set; }
         public string Status { get; set; }
+        public string StatusName { get; set; }
         public int? LP { get; set; }
         public int? LD { get; set; }
         public string ContactName { get; set; }

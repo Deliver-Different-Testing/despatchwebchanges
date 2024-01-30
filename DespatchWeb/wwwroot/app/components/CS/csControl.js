@@ -346,7 +346,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.40",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.42",
                 "showSearch": 0,
                 "showDetailButtons": 1
             },
@@ -485,7 +485,7 @@ angular
         $scope.loadLayout = function (i) {
             $scope.currentLayoutName = $scope.layouts[i].name;
             $scope.layout = angular.copy($scope.layouts[i].layout);
-            setTimeout($scope.getData, 1000);
+            setTimeout($scope.initFilters, 1000);
         };
 
         $scope.saveLayout = function () {
@@ -1501,7 +1501,9 @@ angular
         $scope.currentFromDate = $scope.pickDateService.from_date;
         $scope.currentToDate = $scope.pickDateService.to_date;
 
-        setTimeout(function () {
+
+        $scope.initFilters = function () {
+            setTimeout(function () {
                 $("#FilterClient").select2({
                     ajax: {
                         url: "/home/ActiveClients",
@@ -1511,42 +1513,46 @@ angular
                             return {
                                 searchTerm: params.term
                             };
+                        },
+                        processResults: function (data) {
+                            // parse the results into the format expected by Select2
+                            return {
+                                results: data
+                            };
+                        },
+                        cache: true
                     },
-                    processResults: function (data) {
-                        // parse the results into the format expected by Select2
-                        return {
-                            results: data
-                        };
-                    },
-                    cache: true
-                },
                     placeholder: "Start typing to enter new client...",
                     allowClear: true,
-                minimumInputLength: 3
-            });
-            $("#FilterCourier").select2({
-                ajax: {
-                    url: "/courier/AllActiveSearch",
-                    dataType: 'json',
-                    delay: 250,
-                    data: function (params) {
-                        return {
-                            searchTerm: params.term
-                        };
+                    minimumInputLength: 3
+                });
+                $("#FilterCourier").select2({
+                    ajax: {
+                        url: "/courier/AllActiveSearch",
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                searchTerm: params.term
+                            };
+                        },
+                        processResults: function (data) {
+                            // parse the results into the format expected by Select2
+                            return {
+                                results: data
+                            };
+                        },
+                        cache: true
                     },
-                    processResults: function (data) {
-                        // parse the results into the format expected by Select2
-                        return {
-                            results: data
-                        };
-                    },
-                    cache: true
-                },
-                placeholder: "Start typing to enter new courier...",
-                allowClear: true,
-                minimumInputLength: 3
-            });
-        }, 400);
+                    placeholder: "Start typing to enter new courier...",
+                    allowClear: true,
+                    minimumInputLength: 3
+                });
+            }, 400);
+        }
+
+
+        $scope.initFilters();
         //$(document).everyTime("15s", "RD", function () { $scope.refreshData(); });
 
         // $scope.getData();

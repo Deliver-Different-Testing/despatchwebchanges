@@ -46,7 +46,7 @@ angular
             .state("home",
                 {
                     url: "/",
-                    templateUrl: "app/components/home/homeView.html?v=1.42",
+                    templateUrl: "app/components/home/homeView.html?v=1.44",
                     controller: "HomeControl"
 				})
 			.state('nw',
@@ -59,7 +59,7 @@ angular
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.21',
+                    templateUrl: 'app/components/CS/csView.html?v=1.22',
 					controller: 'CSControl',
                     reloadOnSearch: false
 				})

@@ -333,6 +333,11 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.SpeedShortName).HasMaxLength(50);
 
+                entity.Property(e => e.StatusName)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
                 entity.Property(e => e.SuburbFrom)
                     .IsRequired()
                     .HasMaxLength(50);
@@ -540,6 +545,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.CourierId).HasColumnName("CourierID");
 
                 entity.Property(e => e.CourierPayment).HasColumnType("money");
+
+                entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
 
                 entity.Property(e => e.DeliverToContact).HasMaxLength(100);
 
@@ -2030,6 +2037,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
 
+                entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+
                 entity.Property(e => e.Date).HasColumnType("datetime");
 
                 entity.Property(e => e.DeliverToContact).HasMaxLength(100);
@@ -3203,6 +3212,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.ContactId).HasColumnName("ContactID");
 
                 entity.Property(e => e.CourierId).HasColumnName("CourierID");
+
+                entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
 
                 entity.Property(e => e.DeliverToContact).HasMaxLength(100);
 

@@ -146,5 +146,6 @@ namespace DespatchWeb.EntityClasses
         public string OriginalName { get; set; }
         public int? HasNationwide { get; set; }
         public string LoggedInContactName { get; set; }
+        public string StatusName { get; set; }
     }
 }

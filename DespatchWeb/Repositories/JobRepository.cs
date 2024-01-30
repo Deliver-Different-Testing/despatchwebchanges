@@ -321,7 +321,8 @@ namespace DespatchWeb.Repositories
                     ScheduleName = schedule.Name,
                     ConNote = nw.UcnwConNote,
                     AirportOnly = nw.UcnwAirportOnly,
-                    HasNationwide = nw.UcnwJobId.HasValue
+                    HasNationwide = nw.UcnwJobId.HasValue,
+                    StatusName = status.UcjsName
 
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
@@ -462,7 +463,8 @@ namespace DespatchWeb.Repositories
                     Done = j.Done,
                     ScheduleName = schedule.Name,
                     LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}",
-                    Source = source.Name
+                    Source = source.Name, 
+                    StatusName = status.UcjsName
 
                 });
             var jobList = await jobQuery.ToListWithNoLockAsync();
@@ -921,7 +923,8 @@ namespace DespatchWeb.Repositories
                      FollowupTime = j.FollowupTime,
                      GstRate = j.Gstrate,
                      ScheduleName = j.ScheduleName,
-                     LoggedInContactName = j.LoggedInContactName
+                     LoggedInContactName = j.LoggedInContactName,
+                     StatusName = j.StatusName
 
                  }).ToList();
             return list;
@@ -1186,7 +1189,8 @@ namespace DespatchWeb.Repositories
                             Reprice = j.Reprice,
                             GstRate = j.Gstrate,
                             ScheduleName = j.ScheduleName,
-                            LoggedInContactName = j.LoggedInContactName
+                            LoggedInContactName = j.LoggedInContactName,
+                            StatusName = j.StatusName
 
 
 
@@ -1536,7 +1540,8 @@ namespace DespatchWeb.Repositories
                             ConNote = j.ConNote,
                             AirportOnly =j.AirportOnly,
                             HasNationwide = j.HasNationwide.HasValue,
-                            LoggedInContactName = j.LoggedInContactName
+                            LoggedInContactName = j.LoggedInContactName, 
+                            StatusName = j.StatusName
 
 
                         }).ToList();

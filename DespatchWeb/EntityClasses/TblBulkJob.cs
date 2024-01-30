@@ -92,7 +92,7 @@ namespace DespatchWeb.EntityClasses
         public string ScheduleName { get; set; }
         public int? LoggedInContactId { get; set; }
         public int? DropOffLocationId { get; set; }
-        public double? RunCourierPercentage { get; set; }
+        public decimal? CourierPercentageOverride { get; set; }
 
         public virtual TucJobType SpeedNavigation { get; set; }
     }

@@ -581,6 +581,10 @@ a.pickadate-prev {
   top: -40px;
   white-space: nowrap;
 }
+.columns .column .column-sortable .box .box-bar .related {
+  max-width: 80%;
+  overflow-x: scroll;
+}
 .columns .column .column-sortable .box .box-bar .box-bar-title span {
   font-size: 10px;
 }
@@ -668,6 +672,9 @@ a.pickadate-prev {
   overflow: auto;
   background-color: whitesmoke;
   font-size: 11px;
+}
+.columns .column .column-sortable .box .related-content {
+  top: 15px!important;
 }
 .columns .placeholder {
   height: 200px;

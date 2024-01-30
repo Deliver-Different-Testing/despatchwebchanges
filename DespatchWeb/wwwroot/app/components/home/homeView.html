@@ -69,14 +69,15 @@
             <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
                 <div class="box" ng-repeat="(boxName,box) in column.boxes" id="box-{{box.name}}" resizablelayout r-directions="['bottom']" r-flex="true" style="flex-basis: {{box.height}}">
                     <div class="box-bar">
-                        <div class="box-bar-title">
+                        <div class="box-bar-title" ng-class="{'related':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}" >
                             {{boxes[box.name].title}}
+
                             <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
                             <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
                             <span ng-show="box.name == 'supports'"> ({{supportChannel}})</span>
                             <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
                             <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
-                            <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1"  ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
+                            <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
                         </div>
                         <div class="box-buttons">
                             <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
@@ -142,7 +143,7 @@
                             <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
                         </div>
                         </div>
-                    <div class="box-content" ng-include="boxes[box.name].tpl"></div>
+                    <div class="box-content" ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}" ng-include="boxes[box.name].tpl"></div>
                 </div>  
 
             </div>
