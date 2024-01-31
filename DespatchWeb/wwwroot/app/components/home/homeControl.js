@@ -1132,7 +1132,7 @@ angular
 
         $scope.jobClass = function(job) {
             var classToUse = job.direct? "direct " : "";
-            classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTH" || job.speed === "FT" || job.speed === "FTH") ? "chilled" : "");
+            classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTHIRE" || job.speed === "FT" || job.speed === "FTHIRE" || job.speed === "HC" || job.speed === "TC") ? "chilled" : "");
             return classToUse;
         }
 
