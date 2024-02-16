@@ -1335,7 +1335,7 @@
                 }
                 return DispatchData
                     .updatePODDetail(job.jobNo,
-                        job.statusID,
+                        6,
                         job.podName,
                         job.completedTime).then(function (response) {
                             self.selectJobDetail(job.id);
