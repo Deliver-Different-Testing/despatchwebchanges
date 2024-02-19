@@ -47,6 +47,7 @@ namespace DespatchWeb.Models
         public string ToSuburbName { get; set;  }
         public string ToPostCode { get; set; }
         public string ToAddress { get; set; }
+        public string ToCity { get; set; }
         public string Courier { get; set; }
         public decimal? GstRate { get; set; }
         public int? Remain { get; set; }

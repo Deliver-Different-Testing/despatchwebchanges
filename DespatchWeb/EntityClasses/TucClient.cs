@@ -276,6 +276,7 @@ namespace DespatchWeb.EntityClasses
         public double? ChilledTruckHireStartingMinutes { get; set; }
         public int? FrozenTruckHireRateCodeId { get; set; }
         public double? FrozenTruckHireStartingMinutes { get; set; }
+        public bool? DeliverDifferent { get; set; }
 
         public virtual TucSuburb UcclSuburb { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }

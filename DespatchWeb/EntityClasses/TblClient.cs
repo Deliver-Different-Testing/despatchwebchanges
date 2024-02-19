@@ -268,6 +268,7 @@ namespace DespatchWeb.EntityClasses
         public double? ChilledTruckHireStartingMinutes { get; set; }
         public int? FrozenTruckHireRateCodeId { get; set; }
         public double? FrozenTruckHireStartingMinutes { get; set; }
+        public bool? DeliverDifferent { get; set; }
         public int ClientId { get; set; }
         public string Name { get; set; }
         public string LegalName { get; set; }

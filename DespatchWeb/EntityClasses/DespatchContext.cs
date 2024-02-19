@@ -346,6 +346,8 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(50);
 
+                entity.Property(e => e.ToCity).HasMaxLength(50);
+
                 entity.Property(e => e.ToPostCode).HasMaxLength(200);
 
                 entity.Property(e => e.ToSiteId).HasColumnName("ToSiteID");
@@ -2418,6 +2420,8 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(50);
 
                 entity.Property(e => e.DangerousServiceRateCodeId).HasColumnName("DangerousServiceRateCodeID");
+
+                entity.Property(e => e.DeliverDifferent).HasDefaultValueSql("((0))");
 
                 entity.Property(e => e.DgdryIce)
                     .HasColumnType("decimal(18, 2)")

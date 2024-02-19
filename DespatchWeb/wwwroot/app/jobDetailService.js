@@ -432,7 +432,13 @@
                         job.speedID === 44 ||
                         job.speedID === 46 ||
                         job.speedID === 51 ||
-                        job.speedID === 52)) {
+                        job.speedID === 52 ||
+                        job.speedID == 124 ||
+                        job.speedID == 125 ||
+                        job.speedID == 150 ||
+                        job.speedID == 151 ||
+                        job.speedID == 152 
+                        )) {
                         //Truck Job
                         return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
                             function(itemSummary) {
