@@ -1,0 +1,439 @@
+<div class="top-bar">
+    <img src="/images/DFRNT-logo.png" class="logo" />
+
+    <div id="status-group" class="btn-group" role="group">
+        <button type="button" class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})">All</button>
+        <button type="button" class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})">Active</button>
+        <button type="button" class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})">Done</button>
+    </div>
+
+    <div id="area-group" class="btn-group" role="group" aria-label="Basic example" ng-show="isInternal">
+        <button type="button" class="btn mainfu btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'mainfu'})">Main-FU</button>
+        <button type="button" class="btn nwakl btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwakl'})">NW-AKL</button>
+        <button type="button" class="btn baggage btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'baggage'})">Baggage</button>
+        <button type="button" class="btn chch btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'chch'})">ChCh</button>
+        <button type="button" class="btn int btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'int'})">International</button>
+        <button type="button" class="btn nwother btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwother'})">NW-Other</button>
+        <button type="button" class="btn sameday btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'sameday'})">SameDay</button>
+        <button type="button" class="btn wlg btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'wlg'})">WLG</button>
+
+    </div>
+    <div class="topbar-NavButtons" role="navigation">
+        <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
+        <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>
+        <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
+        <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks</div>
+
+    </div>
+
+    <div class="btn-group box-search chat" ng-show="showChat">
+
+        <i class="fa fa-search" ng-click="openChat()"></i>
+        <i class="fa fa-remove" ng-click="chatBox = ''" title="Clear"></i>
+        <input type="text" ng-model="chatBox" placeholder="Chat to..." ng-model-options="{debounce: 300}">
+    </div>
+
+    <div class="topbar-buttons">
+        <span ng-show="!isInternal" style="color:white;">Clients:</span>
+        <div ng-show="!isInternal" class="multi-element btn-sm topbar-active" style="display: inline-block; margin-top: -5px; padding-left: 0px; padding-right: 50px;" disabled="false" extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickClients" selected-model="pickService.clients">
+
+        </div>
+        <div class="btn topbar-button" style="color: white;"><span>hi {{userName}} - layout: {{currentLayoutName}}</span></div>
+        <div class="btn btn-sm btn-primary topbar-button" ng-click="getData()"><i class="fa fa-refresh"></i></div>
+        <div class="dropdown topbar-button">
+            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                Layout
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-right list-group w-50" aria-labelledby="dropdownMenu1">
+                <li class="list-group-item" ng-click="saveLayout()"><b>Save Layout</b></li>
+                <li ng-repeat="lo in layouts track by $index" class="list-group-item">
+                    <i ng-click="deleteLayout($index)" style="cursor: pointer" title="Delete Layout" class="fa fa-trash"></i>
+                    <span ng-click="loadLayout($index)" style="cursor: pointer">{{lo.name}}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="">
+
+    <div class="columns">
+
+        <div class="column" ng-repeat="(colKey,column) in layout.columns" id="co-{{column.id}}" resizablelayout r-directions="['right']" r-flex="true" style="flex-basis: {{column.width}}">
+            <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
+                <div class="box" ng-repeat="(boxName,box) in column.boxes" id="box-{{box.name}}" resizablelayout r-directions="['bottom']" r-flex="true" style="flex-basis: {{box.height}}">
+                    <div class="box-bar">
+                        <div class="box-bar-title">
+                            {{boxes[box.name].title}}
+                            <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
+                            <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
+                            <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
+                            <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
+                            <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
+                        </div>
+                        <div class="box-buttons">
+                            <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
+
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Truck Loading Status" ng-if="truckCourierStatus.length >0" ng-click="truckLoadingStatus()"><i class="fa fa-truck"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Restore All" ng-click="restoreAll()"><i class="fa fa-undo"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Redispatch All" ng-click="redispatchAll()"><i class="fa fa-repeat"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Resend All" ng-click="resendAll()"><i class="fa fa-send"></i></button>
+                                </div>
+
+                            </div>
+
+                            <div class="box-details" ng-show="boxes[box.name].showDetailButtons" ng-if="currentJob">
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="ADD EVENT" ng-click="createEvent()"><i class="fa fa-calendar-plus-o"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="CLOSE EVENT" ng-disabled="!currentSupport" ng-click="closeSupport(currentSupport);"><i class="fa fa-calendar-check-o"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job" ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)" ng-click="unlockJob()"><i class="fa fa-lock"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Lock Job" ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)" ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
+
+                                    <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
+            <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
+            <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
+            <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
+                                </div>
+
+                            </div>
+                            <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
+                                <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
+                                <input type="text" style="color: black;display:inline-block!important;" placeholder="gps courier (enter code)..." ng-model="$parent.$parent.courier.gpsCourier" id="gps" />
+                                <i class="fa fa-remove" ng-click="courier.gpsCourier = ''" title="Clear"></i>
+                            </div>
+                            <div class="btn btn-sm btn-primary box-refresh" ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
+                            <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
+                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-toggle="dropdown">
+                                    Trucks <span>{{truckMode}} </span>
+                                    <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a href="#" ng-click="setTruckMode('On');">On</a></li>
+                                    <li><a href="#" ng-click="setTruckMode('Off');">Off</a></li>
+                                    <li><a href="#" ng-click="setTruckMode('Only');">Only</a></li>
+                                </ul>
+                            </div>
+                            <div class="dropdown box-trucks" ng-show="box.name === 'supports'">
+                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-toggle="dropdown">
+                                    Channel <span>{{supportChannel}} </span>
+                                    <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a href="#" ng-click="setSupportChannel('City');">City</a></li>
+                                    <li><a href="#" ng-click="setSupportChannel('Main');">Main</a></li>
+                                    <li><a href="#" ng-click="setSupportChannel('Trucks');">Trucks</a></li>
+                                    <li><a href="#" ng-click="setSupportChannel('All');">All</a></li>
+                                </ul>
+                            </div>
+                            <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity">City <i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
+                            <div class="btn btn-sm box-toggle" ng-show="box.name === 'map'" ng-click="allCouriers.display = !allCouriers.display;getAvailableCourierLocation();">All <i ng-class="allCouriers.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
+                            <div class="btn btn-sm box-toggleZoom" ng-show="box.name === 'map'" ng-click="mapZoom.display = !mapZoom.display;storeMapZoomDisplay()">Auto Zoom <i ng-class="mapZoom.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
+                            <div class="btn btn-sm box-toggleUA" ng-show="box.name === 'map'" ng-click="allCouriers.includeUA = !allCouriers.includeUA;getAvailableCourierLocation();">Include UA <i ng-class="allCouriers.includeUA ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
+
+                            <div class="box-search" ng-show="boxes[box.name].showSearch">
+                                <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
+                                <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
+                                <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}">
+
+                            </div>
+
+                            <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
+                        </div>
+                    </div>
+                    <div class="box-content" ng-include="boxes[box.name].tpl"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div ng-include="'app/components/Nationwide/tpls/eventForm.tpl?v=1.1'"></div>
+
+<div ng-include="'app/components/home/tpls/truckCourierStatus.tpl?v=1.7'"></div>
+
+<div ng-include="'app/components/home/tpls/lateForm.tpl?v=1.1'"></div>
+
+<div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.14'"></div>
+
+<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
+
+<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.12'"></div>
+
+<div id='draggingItems'></div>
+
+<script>
+
+
+
+    document.onkeydown = overrideKeyboardEvent;
+    document.onkeyup = overrideKeyboardEvent;
+    var keyIsDown = {};
+
+    function overrideKeyboardEvent(e) {
+        switch (e.type) {
+            case "keydown":
+                if (!keyIsDown[e.keyCode]) {
+                    keyIsDown[e.keyCode] = true;
+                    // do key down stuff here
+                    if (e.keyCode == 82 && e.ctrlKey) {
+                        //location.reload();
+                    }
+                    if (e.keyCode === 113) {
+                        var sc = angular.element(document.getElementById('box-jobDetail')).scope();
+                        
+                        sc.gather.form = {
+                            id: "smsCustomer",
+                            title: "Enter your Message (160 chars)",
+                            fields: [
+                                {
+                                    "name": "editMessage",
+                                    "label": "Message",
+                                    "type": "sms",
+                                    "value": ""
+                                },
+                                {
+                                    "name": "courier",
+                                    "label": "Courier",
+                                    "type": "select2"
+                                }
+                            ],
+                            onSubmit: function () {
+                                console.log(sc.gather.form.fields[1]);
+                                var c = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
+                                return sc.sendSMS(c.courierID, sc.gather.form.fields[0].value).then(function (data) {
+                                    sc.gather.cancel();
+                                    alert("Message Sent");
+                                });
+                                
+
+                            },
+                            submitValue: "Send Message"
+                        };
+
+                        sc.gather.showForm();
+
+                        
+                        setTimeout(function () {
+                            sc.$apply();
+
+                            var statusOptions = {
+                                minimumInputLength: 0,
+                                data: sc.pickCouriers,
+                                placeholder: "Start typing to choose courier..."
+                            };
+
+                            $(".gatherForm #gather-courier").select2(statusOptions);
+                            $(".gatherForm #gather-courier").select2('open');
+                    
+
+                        },200);
+                    }
+                }
+                break;
+            case "keyup":
+                delete (keyIsDown[e.keyCode]);
+                // do key up stuff here
+                break;
+        }
+        disabledEventPropagation(e);
+        if (e.keyCode == 68 && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+    }
+    function disabledEventPropagation(e) {
+        if (e.keyCode == 68 && e.ctrlKey) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else if (window.event) {
+                window.event.cancelBubble = true;
+            }
+        }
+    }
+
+
+
+    $(document).on('keydown', '.dispatchField, .lateCallField', function (event) {
+        if (event.keyCode == 13) {
+            $(this).parents(".clickable-row").addClass("doing");
+        }
+    });
+
+    $(document).on('click', '.top-bar .btn-group .btn', function (event) {
+        if (!event.ctrlKey) {
+            $(this).parent().find('.topBarActive').removeClass('topBarActive');
+        }
+
+        $(this).addClass('topBarActive');
+    });
+
+
+    $(document).ready(function () {
+        const favicon = document.getElementById("favicon");
+        favicon.setAttribute("href", "/Nationwide.ico"); 
+        var isDown = false;   // Tracks status of mouse button
+
+        $(document).mousedown(function () {
+            isDown = true;      // When mouse goes down, set isDown to true
+        })
+            .mouseup(function () {
+                isDown = false;    // When mouse goes up, set isDown to false
+            });
+
+        $(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
+
+            if (event.ctrlKey) {
+                if (isDown) {        // Only change css if mouse is down
+                    $(this).addClass("active");
+                    $(this).siblings(".test").click();
+                }
+            }
+        });
+
+
+    });
+
+
+
+    var mouseDown = 0;
+
+    $(document).on('mousedown', '.clickable-row', function (event) {
+
+        if ($(".activeTable .clickable-row.active").length > 1) {
+            var jobNo = $(".activeTable .clickable-row.active").length + " Jobs";
+        } else {
+            var jobNo = $(this).attr("data-jobno");
+        }
+
+
+        if (mouseDown == 0) {
+            mouseDown = 1;
+
+            if (event.which === 1) {
+                if (event.ctrlKey) {
+                    if ($(this).hasClass("active")) {
+                        $(this).removeClass('active');
+                    } else {
+                        $(this).addClass('active');
+                    }
+                } else {
+                    if (!$(this).hasClass("active")) {
+
+                        var group = $(this).parents(".table-rows").attr("data-group");
+                        $('*[data-group="' + group + '"]').each(function () {
+                            $(this).find('.active').removeClass('active');
+                        });
+
+                        $(this).addClass('active');
+                    }
+                }
+
+                $(".activeTable").removeClass("activeTable");
+                $(this).parents(".table").addClass("activeTable");
+            }
+
+            if (!event.ctrlKey) {
+                if ($(this).hasClass("draggable-row")) {
+
+                    if (!$(this).hasClass("active")) {
+
+                        var group = $(this).parents(".table-rows").attr("data-group");
+                        $('*[data-group="' + group + '"]').each(function () {
+                            $(this).find('.active').removeClass('active');
+                        });
+                        $(this).addClass('active');
+
+                    }
+                    setTimeout(function () {
+                        if (mouseDown == 1) {
+                            $("#draggingItems").show();
+                            $("#draggingItems").html(jobNo);
+
+                            $("#draggingItems").css({ "top": event.pageY - 25, "left": event.pageX - 50 });
+                            $("#draggingItems").draggable();
+                            $("#draggingItems").trigger(event);
+                        }
+                    }, 200);
+                }
+            }
+
+        }
+
+    });
+
+    $(document).on('mouseup', '.clickable-row', function (event) {
+        if (event.which === 3) {
+
+            $(".rightActiveTable").removeClass("rightActiveTable");
+            $(this).parents(".table").addClass("rightActiveTable");
+        }
+        if (!event.ctrlKey) {
+
+            if ($(this).hasClass("active")) {
+            } else {
+                var group = $(this).parents(".table-rows").attr("data-group");
+
+                $('*[data-group="' + group + '"]').each(function () {
+                    $(this).find('.active').removeClass('active');
+                });
+                $(this).addClass('active');
+            }
+
+        }
+
+    });
+
+
+
+
+
+
+    $(document).on("mouseup", function (ev) {
+        $("#draggingItems").hide();
+        mouseDown = 0;
+    });
+
+    $(document).on("keydown", function (e) {
+        var code = (e.keyCode ? e.keyCode : e.which);
+        if (code == 40) {
+            $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+        } else if (code == 38) {
+            $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+        }
+    });
+
+
+    //var delay = 250; // delay between calls
+    //var throttled = false; // are we currently throttled?
+
+    //setTimeout(function(){ sizeHeadings($("#jobList").parents(".column")); }, 100);
+
+    function sizeHeadings(ele) {
+
+        $("body").find(".box").each(function () {
+            var box = $(this);
+            box.find(".table-headings thead tr th").each(function (index) {
+                var newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
+                $(this).outerWidth(newWidth);
+            });
+            box.find(".table-headings table").width(box.find(".table").width());
+        });
+
+        var height = $("#box-clearLists").find(".box-content").height() - 30;
+
+        $(".clearLists-list").each(function () {
+            var newHeight = $(this).data("height") * height / 100;
+            $(this).height(newHeight);
+        });
+
+    }
+
+
+
+</script>

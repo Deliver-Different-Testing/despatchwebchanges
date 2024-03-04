@@ -1,0 +1,547 @@
+[
+  {
+    "area": "Central",
+    "waiting": 10,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Shallow West",
+    "waiting": 3,
+    "late": 1,
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Deep West",
+    "waiting": 2,
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Shallow Shore",
+    "waiting": 2,
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Deep Shore",
+    "waiting": 4,
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "West Mid",
+    "waiting": 1,
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "East Mid",
+    "waiting": 0,
+    "clear":  [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Mangere",
+    "waiting": 1,
+    "clear":  [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Deep East",
+    "waiting": 3,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Deep South",
+    "waiting": 0,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Other",
+    "waiting": 0,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "City",
+    "waiting": 4,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Parnell",
+    "waiting": 2,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Newmarket",
+    "waiting": 3,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Ponsonby",
+    "waiting": 1,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  },
+  {
+    "area": "Eden Terrace",
+    "waiting": 5,
+    "clear": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }],
+    "inArea": [{
+                  "courierNo":"88",
+                  "courier": "88 Mark",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"95",
+                  "courier": "95 John",
+                  "location": "Penrose 373 Neilson St"
+                },
+                {
+                  "courierNo":"137",
+                  "courier": "137 Peter",
+                  "location": "Penrose 373 Neilson St"
+                }]
+  }
+ ]

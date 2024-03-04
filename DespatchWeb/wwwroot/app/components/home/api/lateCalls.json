@@ -1,0 +1,34 @@
+[
+  {
+    "jobNum": "D123O",
+    "puOrDel": "PU",
+    "jobType": "",
+    "lateMin": "12min",
+    "eta": "12min",
+    "lockedBy": "JohnD"
+  },
+  {
+    "jobNum": "D123O",
+    "puOrDel": "DEL",
+    "jobType": "",
+    "lateMin": "54min",
+    "eta": "54min",
+    "lockedBy": "DanielN"
+  },
+  {
+    "jobNum": "D123O",
+    "puOrDel": "DEL",
+    "jobType": "",
+    "lateMin": "18min",
+    "eta": "18min",
+    "lockedBy": "JohnD"
+  },
+  {
+    "jobNum": "D123O",
+    "puOrDel": "PU",
+    "jobType": "",
+    "lateMin": "5min",
+    "eta": "5min",
+    "lockedBy": "DanielN"
+  }
+]

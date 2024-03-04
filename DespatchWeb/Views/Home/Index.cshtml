@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<script>
+     @{
+         var contactId = ViewBag.ContactID;
+         var clientInternal = ViewBag.ClientInternal;
+         var firstName = ViewBag.FirstName;
+         var fullName = ViewBag.FullName;
+         var dispatcher = ViewBag.DispatcherName;
+         //var email = ViewBag.Email;
+
+
+      }
+    var ContactID = '@contactId';
+    var ClientInternal = '@clientInternal';
+    var FirstName = '@firstName';
+    var FullName = '@fullName';
+    var Dispatcher = '@dispatcher';
+    
+
+    rg4js('setUser', {
+        identifier: ContactID,
+        isAnonymous: false,
+        firstName: FirstName,
+        fullName: FullName
+    });
+</script>
+<div class="ui-viewer" ui-view>
+
+
+
+</div>

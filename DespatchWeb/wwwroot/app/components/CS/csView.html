@@ -1,0 +1,420 @@
+
+<link rel="stylesheet" href="/css/udispatch.css?v=8">
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.21/angular-material.min.css">
+
+
+<div class="top-bar">
+    <img src="/images/DFRNT-logo.png" class="logo" />
+
+    <!--<div class="topbar-buttons">
+        <div class="btn btn-sm btn-primary topbar-button" ng-click="refreshData(1)"><i class="fa fa-refresh"></i></div>
+
+    </div>-->
+    <div class="topbar-NavButtons" role="navigation">
+        <!--<div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
+        <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>-->
+        <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
+        <!--<div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks</div>-->
+    </div>
+    <div class="topbar-buttons">
+
+        <div class="btn topbar-button" style="color: white;"><span>hi {{userName}} - layout: {{currentLayoutName}}</span></div>
+        <div class="dropdown topbar-button">
+            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                Layout
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-right list-group w-50" aria-labelledby="dropdownMenu1">
+                <li class="list-group-item" ng-click="saveLayout()"><b>Save Layout</b></li>
+                <li ng-repeat="lo in layouts track by $index" class="list-group-item">
+                    <i ng-click="deleteLayout($index)" style="cursor: pointer" title="Delete Layout" class="fa fa-trash"></i>
+                    <span ng-click="loadLayout($index)" style="cursor: pointer">{{lo.name}}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="">
+
+    <div class="columns">
+
+        <div class="column" ng-repeat="(colKey,column) in layout.columns" id="co-{{column.id}}" resizablelayout r-directions="['right']" r-flex="true" style="flex-basis: {{column.width}}">
+            <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
+                <div class="box" ng-repeat="(boxName,box) in column.boxes" id="box-{{box.name}}" resizablelayout r-directions="['bottom']" r-flex="true" style="flex-basis: {{box.height}}">
+                    <div class="box-bar">
+                        <div class="box-bar-title" ng-class="{'related':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}" >
+                            {{boxes[box.name].title}}
+                            <span ng-show="box.name == 'scanList'">{{currentSelection}}</span>
+                            <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
+                            <span ng-show="box.name == 'jobDetail' && currentJob.locked"> - LOCKED</span>
+                            <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
+
+                        </div>
+                        <div class="searchBox" ng-show="box.name == 'eventList'">
+                            <input type="text" ng-model="searchBox" placeholder="Search Events..." />
+                            <div class="results" ng-show="searchBox">
+                                <ul>
+                                    <li class="result" ng-repeat="event in filteredEvents = ( allEvents | filter: searchBox) | limitTo:10" ng-mousedown="selectEvent(event)">{{event.jobNumber}}<br /> <small class="address">{{event.courierName}} {{event.courierCode}}</small></li>
+                                </ul>
+                                <small ng-hide="filteredEvents.length">No results</small>
+                            </div>
+                        </div>
+                        <div class="box-buttons">
+
+                            <div class="box-details" ng-show="box.name == 'eventList'">
+                                <label class="checkbox-inline">
+                                    <input type="checkbox" ng-model="pickDateService.includeClosed" ng-change="refreshData(true)" value="All">
+                                    Include Closed?
+                                </label>
+                                <label ng-show="isAdmin" class="checkbox-inline">
+                                    <input type="radio" ng-model="followupClient.name" ng-change="refreshData(true)" value="All">
+                                    All
+                                </label>
+                                <label ng-show="isAdmin" class="checkbox-inline">
+                                    <input type="radio" ng-model="followupClient.name" ng-change="refreshData(true)" value="UCL">
+                                    UCL
+                                </label>
+                                <label ng-show="isAdmin" class="checkbox-inline">
+                                    <input type="radio" ng-model="followupClient.name" ng-change="refreshData(true)" value="Client">
+                                    Client
+                                </label>
+
+
+                                <!--<span>{{currentDate | date : "dd/MM/yyyy"}}</span>-->
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    F
+                                    <!--<button type="button" class="btn btn-sm btn-secondary" title="Choose Date" ng-click="chooseDate()"><i class="fa fa-calendar-alt"></i></button>-->
+                                </div>
+
+
+                            </div>
+
+
+                            <div class="box-details" ng-show="box.name == 'runBuilder'">
+
+
+                            </div>
+
+
+                            <div class="box-details" ng-show="box.name == 'jobDetail'">
+                                <input type="text" class="pod-DispatchField" id="pod-DispatchField" title="Dispatch to Courier Code" ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier == null" ng-model="dispatchCourier" ng-keydown="$event.keyCode === 13 && dispatchJobs(dispatchCourier, currentJob)" placeholder="dispatch" />
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Reply" ng-show="currentEvent && !currentEvent.closedDate" ng-click="reply(currentEvent)"><i class="fa fa-reply"></i></button>
+                                </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Copy Link" ng-show="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))" ng-click="generateDirectLink(currentEvent)"><i class="fa fa-link"></i></button>
+                                </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Restore Job" ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier != null && !currentJob.done" ng-click="restoreJob(currentJob)"><i class="fa fa-undo"></i></button>
+                                </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Swap POD" ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook" ng-click="swapPOD()"><i class="fa fa-exchange"></i></button>
+                                </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Email Photo POD" ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook" ng-click="sendPOD()"><i class="fa fa-mail-forward"></i></button>
+                                </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job" ng-show="currentJob && !currentJob.preBook && (currentJob.locked && !currentJob.invoiced)" ng-click="unlockJob()"><i class="fa fa-lock"></i></button>
+                                </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="Lock Job" ng-show="currentJob && !currentJob.preBook && !currentJob.bulkJob && (!currentJob.locked && !currentJob.invoiced)" ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
+                                </div>
+                                <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button type="button" class="btn btn-sm btn-secondary" title="UnSplit Job" ng-show="currentJob && !currentJob.preBook && (!currentJob.locked && currentJob.jobRelationshipTypeID ==8)" ng-click="unSplitJob()"><i class="fa fa-recycle"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="box-details" ng-show="box.name == 'map'">
+
+                            </div>
+
+
+                            <div class="box-search" ng-show="boxes[box.name].showSearch"><i class="fa fa-search" ng-click="openSearch(box.name)"></i> <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}"></div>
+                            <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
+                        </div>
+                    </div>
+                    <div class="box-content" ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}" ng-include="boxes[box.name].tpl"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.6'"></div>
+
+<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
+
+<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.12'"></div>
+
+
+
+<div id='draggingItems'></div>
+
+<script>
+    document.onkeydown = overrideKeyboardEvent;
+    document.onkeyup = overrideKeyboardEvent;
+    var keyIsDown = {};
+
+
+    $(document).on('focus', '.searchBox input', function () {
+        $(".results").fadeIn(100);
+    });
+    $(document).on('blur', '.searchBox input', function () {
+        $(".results").fadeOut(100);
+    });
+
+    function overrideKeyboardEvent(e) {
+        switch (e.type) {
+            case "keydown":
+                if (!keyIsDown[e.keyCode]) {
+                    keyIsDown[e.keyCode] = true;
+                    // do key down stuff here
+                    if (e.keyCode == 82 && e.ctrlKey) {
+                        //location.reload();
+                    }
+                }
+                break;
+            case "keyup":
+                delete (keyIsDown[e.keyCode]);
+                // do key up stuff here
+                break;
+        }
+        disabledEventPropagation(e);
+        if (e.keyCode == 68 && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+        if (e.keyCode == 65 && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+    }
+
+    function disabledEventPropagation(e) {
+        if (e.keyCode == 68 && e.ctrlKey) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else if (window.event) {
+                window.event.cancelBubble = true;
+            }
+        }
+    }
+
+
+
+
+
+    $(document).on('click', '.top-bar .btn-group .btn', function (event) {
+        $(this).parent().find('.topBarActive').removeClass('topBarActive');
+        $(this).addClass('topBarActive');
+    });
+
+
+    $(document).ready(function () {
+        const favicon = document.getElementById("favicon");
+        favicon.setAttribute("href", "/POD_favicon.ico");
+        var isDown = false;   // Tracks status of mouse button
+
+        $(document).mousedown(function () {
+            isDown = true;      // When mouse goes down, set isDown to true
+        })
+            .mouseup(function () {
+                isDown = false;    // When mouse goes up, set isDown to false
+            });
+
+        var isOnRow = false;
+
+
+
+
+
+        $(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
+
+            if (event.ctrlKey) {
+                if (isDown) {        // Only change css if mouse is down
+                    $(this).addClass("active");
+                }
+            }
+
+        });
+
+        $(document).on("hover", ".activeTable .clickable-row", function (event) {
+            isOnRow = true;
+        });
+
+        $(document).on("mouseleave", ".activeTable .clickable-row", function (event) {
+            isOnRow = false;
+        });
+
+        $(document).on('click', '.box-content', function (event) {
+            event.stopPropagation();
+            if (isOnRow) {
+                $(".activeTable .active").removeClass("active");
+            }
+
+        });
+
+    });
+
+
+
+    var mouseDown = 0;
+
+    $(document).on('mousedown', '.clickable-row', function (event) {
+
+        if ($(".activeTable .clickable-row.active").length > 1) {
+            var jobNo = $(".activeTable .clickable-row.active").length + " Jobs";
+        } else {
+            var jobNo = $(this).attr("data-jobno");
+        }
+
+
+        if (mouseDown == 0) {
+            mouseDown = 1;
+
+            if (event.which === 1) {
+                if (event.ctrlKey) {
+                    if ($(this).hasClass("active")) {
+                        $(this).removeClass('active');
+                    } else {
+                        $(this).addClass('active');
+                    }
+                } else {
+                    if (!$(this).hasClass("active")) {
+
+                        var group = $(this).parents(".table-rows").attr("data-group");
+                        $('*[data-group="' + group + '"]').each(function () {
+                            $(this).find('.active').removeClass('active');
+                        });
+
+                        $(this).addClass('active');
+                    }
+                }
+
+                $(".activeTable").removeClass("activeTable");
+                $(this).parents(".table").addClass("activeTable");
+            }
+
+            if (!event.ctrlKey) {
+                if ($(this).hasClass("draggable-row")) {
+
+                    if (!$(this).hasClass("active")) {
+
+                        var group = $(this).parents(".table-rows").attr("data-group");
+                        $('*[data-group="' + group + '"]').each(function () {
+                            $(this).find('.active').removeClass('active');
+                        });
+                        $(this).addClass('active');
+
+                    }
+                    setTimeout(function () {
+                        if (mouseDown == 1) {
+                            $("#draggingItems").show();
+                            $("#draggingItems").html(jobNo);
+
+                            $("#draggingItems").css({ "top": event.pageY - 25, "left": event.pageX - 50 });
+                            $("#draggingItems").draggable();
+                            $("#draggingItems").trigger(event);
+                        }
+                    }, 200);
+                }
+            }
+
+        }
+
+    });
+
+    $(document).on('mouseup', '.clickable-row', function (event) {
+
+        if (event.which === 3) {
+
+            $(".rightActiveTable").removeClass("rightActiveTable");
+            $(this).parents(".table").addClass("rightActiveTable");
+        }
+        if (!event.ctrlKey) {
+
+            if ($(this).hasClass("active")) {
+            } else {
+                var group = $(this).parents(".table-rows").attr("data-group");
+
+                $('*[data-group="' + group + '"]').each(function () {
+                    $(this).find('.active').removeClass('active');
+                });
+                $(this).addClass('active');
+            }
+
+        }
+
+    });
+
+
+
+    $(document).on('click', '.clickable-row', function (event) {
+        event.stopPropagation();
+    });
+
+
+    $(document).on("mouseup", function (ev) {
+        $("#draggingItems").hide();
+        mouseDown = 0;
+    });
+
+    $(document).on("keydown", function (e) {
+        var code = (e.keyCode ? e.keyCode : e.which);
+        if (code == 40) {
+            $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+        } else if (code == 38) {
+            $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+        }
+    });
+
+
+    //var delay = 250; // delay between calls
+    //var throttled = false; // are we currently throttled?
+
+    //setTimeout(function(){ sizeHeadings($("#jobList").parents(".column")); }, 100);
+
+    function sizeHeadings(ele) {
+
+        $("body").find(".box").each(function () {
+            var box = $(this);
+            box.find(".table-headings thead tr th").each(function (index) {
+                var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                $(this).width(newWidth);
+            });
+            box.find(".table-headings table").width(box.find(".table").width());
+        });
+
+        $("body").find(".box").each(function () {
+            var box = $(this);
+            box.find(".table-b-headings thead tr th").each(function (index) {
+                var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                $(this).width(newWidth);
+            });
+            box.find(".table-b-headings table").width(box.find(".table").width());
+        });
+
+    }
+
+//if (window.history && history.pushState) {
+//    addEventListener('load', function() {
+//        history.pushState(null, null, null); // creates new history entry with same URL
+//        addEventListener('popstate', function() {
+//            var stayOnPage = confirm("You are about to navigate away from this page, you may lose any unsaved changes.");
+//            if (!stayOnPage) {
+//                history.pushState(null, null, null);
+//            } else {
+//                history.back()
+//            }
+//        });
+//    });
+//}
+
+
+</script>
