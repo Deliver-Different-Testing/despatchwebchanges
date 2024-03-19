@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DespatchWeb", "DespatchWeb\DespatchWeb.csproj", "{100A464D-538F-4881-8860-D78D8B8F32BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DespatchWeb", "DespatchWeb.csproj", "{100A464D-538F-4881-8860-D78D8B8F32BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
