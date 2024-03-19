@@ -1,10 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 WORKDIR /App
 
-COPY DespatchWeb/*.csproj ./
+COPY *.csproj ./
 RUN dotnet restore
 
-COPY DespatchWeb/ ./
+COPY . ./
 RUN dotnet build -c Release --property:OutputPath=/app
 RUN dotnet publish -c Release --property:PublishDir=/publish
 
