@@ -16,7 +16,6 @@ angular
         'heremaps',
         'ngAnimate',
 		'angularPromiseButtons',
-		
         'cp.ngConfirm'
 	])
 	.directive('rightClick', function () {

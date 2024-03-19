@@ -13,12 +13,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
 
     <environment exclude="Development">
-        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4&libraries=places&callback=initMap" async defer></script>
+        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4&libraries=places&loading=async&callback=initMap" async defer></script>
 
         <script type="text/javascript">googleMapsApiKey = "AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4"</script>
+
     </environment>
     <environment include="Development">
-        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg&libraries=places&callback=initMap" async defer></script>
+        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg&libraries=places&loading=async&callback=initMap" async defer></script>
 
         <script type="text/javascript">googleMapsApiKey = "AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg"</script>
     </environment>
@@ -182,41 +183,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js"></script>
     <script src="lib/angular-heremaps.js"></script>
     <script src="lib/angular-confirm/angular-confirm.min.js"></script>
-    <script src="~/lib/pickdate/angular-pickadate.js"></script>
-    @*<script src="~/lib/ui-bootstrap-tpls-2.5.0.min.js"></script>*@
+    <script src="lib/pickdate/angular-pickadate.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.3.2/ui-bootstrap-tpls.js"></script>
-    <script src="~/lib/jquery_timers.js"></script>
+    <script src="lib/jquery_timers.js"></script>
 
 
-    <environment include="Development">
-        <script src="lib/moment.js"></script>,
-        <script src="lib/sortable.js"></script>,
-        <script src="lib/contextMenu.js"></script>,
-        <script src="lib/autocomplete/angular-auto-complete.js"></script>,
-        <script src="lib/ng-map.min.js"></script>
-        <script src="lib/ng-map-autocomplete.js"></script>,
-        <script src="lib/ModernizerLocalStorage.js"></script>,
-        <script src="lib/angular-promise-buttons.js"></script>,
-        <script src="app/app.js"></script>,
-        <script src="app/filters.js"></script>,
-        <script src="js/Loading.js"></script>
-        <script src="app/jobDetailService.js" asp-append-version="true"></script>,
-        <!-- Angular home -->
-        <script src="app/components/home/homeService.js" asp-append-version="true"></script>
-        <script src="app/components/home/homeControl.js" asp-append-version="true"></script>
-        <!-- Nationwide home -->
-        <script src="app/components/Nationwide/nationwideService.js" asp-append-version="true"></script>
-        <script src="app/components/Nationwide/nationwideControl.js" asp-append-version="true"></script>
-        <!-- CS home -->
-        <script src="app/components/CS/csService.js" asp-append-version="true"></script>
-        <script src="app/components/CS/csControl.js" asp-append-version="true"></script>
-        <!--Prebooks-->
-        <script src="app/components/prebooks/prebookService.js" asp-append-version="true"></script>
-        <script src="app/components/prebooks/prebookControl.js" asp-append-version="true"></script>
-    </environment>
-    <environment exclude="Development">
-        <script src="~/js/siteScripts.min.js" asp-append-version="true"></script>
-    </environment>
+    <script src="lib/moment.js"></script>,
+    <script src="lib/sortable.js"></script>,
+    <script src="lib/contextMenu.js"></script>,
+    <script src="lib/autocomplete/angular-auto-complete.js"></script>,
+    <script src="lib/ng-map.min.js"></script>
+    <script src="lib/ng-map-autocomplete.js"></script>,
+    <script src="lib/ModernizerLocalStorage.js"></script>,
+    <script src="lib/angular-promise-buttons.js"></script>,
+    <script src="app/app.js"></script>,
+    <script src="app/filters.js"></script>,
+    <script src="js/Loading.js"></script>
+    <script src="app/jobDetailService.js" asp-append-version="true"></script>,
+    <!-- Angular home -->
+    <script src="app/components/home/homeService.js" asp-append-version="true"></script>
+    <script src="app/components/home/homeControl.js" asp-append-version="true"></script>
+    <!-- Nationwide home -->
+    <script src="app/components/Nationwide/nationwideService.js" asp-append-version="true"></script>
+    <script src="app/components/Nationwide/nationwideControl.js" asp-append-version="true"></script>
+    <!-- CS home -->
+    <script src="app/components/CS/csService.js" asp-append-version="true"></script>
+    <script src="app/components/CS/csControl.js" asp-append-version="true"></script>
+    <!--Prebooks-->
+    <script src="app/components/prebooks/prebookService.js" asp-append-version="true"></script>
+    <script src="app/components/prebooks/prebookControl.js" asp-append-version="true"></script>
 
 
 
