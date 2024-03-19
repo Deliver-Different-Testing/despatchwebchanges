@@ -5,8 +5,8 @@ COPY *.csproj ./
 RUN dotnet restore
 
 COPY . ./
-RUN dotnet build -c Release --property:OutputPath=/app
-RUN dotnet publish -c Release --property:PublishDir=/publish
+RUN dotnet build -c Debug --property:OutputPath=/app
+RUN dotnet publish -c Debug --property:PublishDir=/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 as base
 COPY --from=build-env /publish /app
