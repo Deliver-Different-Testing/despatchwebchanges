@@ -3,16 +3,19 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
-{
-    public partial class TblClientContactInternetPermission
-    {
-        public int ClientContactId { get; set; }
-        public int InternetPermissionId { get; set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; }
+namespace DespatchWeb.EntityClasses;
 
-        public virtual TblClientContact ClientContact { get; set; }
-        public virtual TblInternetPermission InternetPermission { get; set; }
-    }
+public partial class TblClientContactInternetPermission
+{
+    public int ClientContactId { get; set; }
+
+    public int InternetPermissionId { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public virtual TblClientContact ClientContact { get; set; }
+
+    public virtual TblInternetPermission InternetPermission { get; set; }
 }

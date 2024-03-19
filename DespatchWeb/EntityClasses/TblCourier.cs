@@ -3,170 +3,329 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TblCourier
 {
-    public partial class TblCourier
-    {
-        public int CourierId { get; set; }
-        public string FirstName { get; set; }
-        public string Surname { get; set; }
-        public string Email { get; set; }
-        public string VehicleType { get; set; }
-        public double? Percentage { get; set; }
-        public int? LateNightId { get; set; }
-        public string Notes { get; set; }
-        public string Address { get; set; }
-        public string HomePhone { get; set; }
-        public string Mobile { get; set; }
-        public string GstregistrationNumber { get; set; }
-        public string DriversLicenceNumber { get; set; }
-        public string PolicyNumber { get; set; }
-        public string VehicleRegistrationNumber { get; set; }
-        public string Rtserial { get; set; }
-        public string Rttype { get; set; }
-        public string GoodsServiceLicenceNumber { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? FinishDate { get; set; }
-        public string NextOfKin { get; set; }
-        public string NextOfKinPhone { get; set; }
-        public string NextOfKinAddress { get; set; }
-        public double? PagerId { get; set; }
-        public string PagerSerial { get; set; }
-        public bool Internal { get; set; }
-        public int? Team { get; set; }
-        public string Profile { get; set; }
-        public string PicturePath { get; set; }
-        public string Password { get; set; }
-        public int? ChannelId { get; set; }
-        public string Doctor { get; set; }
-        public string DoctorPhone { get; set; }
-        public string NextOfKinRelationship { get; set; }
-        public DateTime? DateOfBirth { get; set; }
-        public string VehicleModel { get; set; }
-        public int? VehicleYear { get; set; }
-        public int? VehicleMakeId { get; set; }
-        public int? InsuranceCompanyId { get; set; }
-        public int? CarrierLiabilityId { get; set; }
-        public int? PublicLiabilityId { get; set; }
-        public byte DangerousGoods { get; set; }
-        public int? BankNameId { get; set; }
-        public string BankBranch { get; set; }
-        public string BankAccountNumber { get; set; }
-        public DateTime? ContractSignedDate { get; set; }
-        public DateTime? SecurityCheckDate { get; set; }
-        public string CustomField1 { get; set; }
-        public string CustomField2 { get; set; }
-        public string CustomField3 { get; set; }
-        public bool WebEnabled { get; set; }
-        public bool ShowClientPhone { get; set; }
-        public int UccrId { get; set; }
-        public string Code { get; set; }
-        public string UccrName { get; set; }
-        public string UccrSurname { get; set; }
-        public string UccrEmail { get; set; }
-        public string UccrVehicle { get; set; }
-        public double? UccrPercentage { get; set; }
-        public int? CourierFleetId { get; set; }
-        public int? UccrLate { get; set; }
-        public string UccrNotes { get; set; }
-        public string UccrAddress { get; set; }
-        public string UccrTel { get; set; }
-        public string UccrMobile { get; set; }
-        public string UccrGst { get; set; }
-        public string UccrDlno { get; set; }
-        public string UccrPolicyNo { get; set; }
-        public string UccrReg { get; set; }
-        public string UccrRt { get; set; }
-        public string UccrRtaddress { get; set; }
-        public string UccrGsl { get; set; }
-        public DateTime? UccrStartDate { get; set; }
-        public DateTime? UccrFinishDate { get; set; }
-        public string UccrKinName { get; set; }
-        public string UccrKinTel { get; set; }
-        public string UccrKinAdd { get; set; }
-        public double? UccrPagerId { get; set; }
-        public string UccrPagerSerial { get; set; }
-        public bool UccrInternal { get; set; }
-        public int? UccrTeam { get; set; }
-        public string UccrProfile { get; set; }
-        public string UccrPicturePath { get; set; }
-        public string UccrPassword { get; set; }
-        public int? UccrChannelId { get; set; }
-        public string UccrDoctor { get; set; }
-        public string UccrDoctorPhone { get; set; }
-        public string UccrKinRelationship { get; set; }
-        public DateTime? UccrDob { get; set; }
-        public string UccrVehicleModel { get; set; }
-        public int? UccrVehicleYear { get; set; }
-        public int? UccrVehicleMakeId { get; set; }
-        public int? UccrInsuranceId { get; set; }
-        public int? UccrCarrierLiabilityId { get; set; }
-        public int? UccrPublicLiabilityId { get; set; }
-        public byte UccrDangerousGoods { get; set; }
-        public int? UccrBankNameId { get; set; }
-        public string UccrBankBranch { get; set; }
-        public string UccrBankAccountNo { get; set; }
-        public DateTime? UccrContractDate { get; set; }
-        public DateTime? UccrSecurityDate { get; set; }
-        public string UccrCustomField1 { get; set; }
-        public string UccrCustomField2 { get; set; }
-        public string UccrCustomField3 { get; set; }
-        public bool UccrWebEnabled { get; set; }
-        public bool UccrShowClientPh { get; set; }
-        public int? SiteId { get; set; }
-        public decimal? MobileInsurance { get; set; }
-        public decimal? MobileRental { get; set; }
-        public bool? Podreqd { get; set; }
-        public bool Active { get; set; }
-        public string Blurb { get; set; }
-        public bool DisplayWeb { get; set; }
-        public bool SendJobsViaSms { get; set; }
-        public bool SendAlertSms { get; set; }
-        public bool VodafoneNetwork { get; set; }
-        public DateTime? ExpectedStartTime { get; set; }
-        public DateTime? ExpectedEndTime { get; set; }
-        public int? CourierGpsid { get; set; }
-        public int? CourierLogInOutId { get; set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime LastModified { get; set; }
-        public string LastModifiedBy { get; set; }
-        public bool JobPaperPrintOut { get; set; }
-        public int? AccountProfileId { get; set; }
-        public bool Macourier { get; set; }
-        public DateTime? TaxSavingsStart { get; set; }
-        public DateTime? TaxSavingsEnd { get; set; }
-        public DateTime? CarSavingsStart { get; set; }
-        public DateTime? CarSavingsEnd { get; set; }
-        public decimal? CarSavingsAmount { get; set; }
-        public bool AutoDespatch { get; set; }
-        public bool? AfterHoursWeb { get; set; }
-        public string PersonalMobile { get; set; }
-        public bool? Gender { get; set; }
-        public DateTime? DriversLicenseExpiry { get; set; }
-        public DateTime? DglicenseExpiry { get; set; }
-        public bool? LowEmissionVehicle { get; set; }
-        public string TrainingHrFu { get; set; }
-        public string TrainingHr { get; set; }
-        public decimal? MobileAdAmount { get; set; }
-        public DateTime? MobileAdEnd { get; set; }
-        public DateTime? MobileAdStart { get; set; }
-        public int? DeviceTypeId { get; set; }
-        public bool? DeviceAdmin { get; set; }
-        public int? MaxPallets { get; set; }
-        public double? MaxPayLoad { get; set; }
-        public bool? HeavyTransportEndorcement { get; set; }
-        public double? TareWeight { get; set; }
-        public double? Rucweight { get; set; }
-        public double? Ruckms { get; set; }
-        public DateTime? Wofexpiry { get; set; }
-        public DateTime? RegistrationExpiry { get; set; }
-        public double? Height { get; set; }
-        public double? Width { get; set; }
-        public double? Length { get; set; }
-        public double? Rucpayload { get; set; }
-        public decimal? WithholdingTaxPercentage { get; set; }
-        public bool? PaydayFileRegistration { get; set; }
-        public bool? CommercialInsurance { get; set; }
-    }
+    public int CourierId { get; set; }
+
+    public string FirstName { get; set; }
+
+    public string Surname { get; set; }
+
+    public string Email { get; set; }
+
+    public string VehicleType { get; set; }
+
+    public double? Percentage { get; set; }
+
+    public int? LateNightId { get; set; }
+
+    public string Notes { get; set; }
+
+    public string Address { get; set; }
+
+    public string HomePhone { get; set; }
+
+    public string Mobile { get; set; }
+
+    public string GstregistrationNumber { get; set; }
+
+    public string DriversLicenceNumber { get; set; }
+
+    public string PolicyNumber { get; set; }
+
+    public string VehicleRegistrationNumber { get; set; }
+
+    public string Rtserial { get; set; }
+
+    public string Rttype { get; set; }
+
+    public string GoodsServiceLicenceNumber { get; set; }
+
+    public DateTime? StartDate { get; set; }
+
+    public DateTime? FinishDate { get; set; }
+
+    public string NextOfKin { get; set; }
+
+    public string NextOfKinPhone { get; set; }
+
+    public string NextOfKinAddress { get; set; }
+
+    public double? PagerId { get; set; }
+
+    public string PagerSerial { get; set; }
+
+    public bool Internal { get; set; }
+
+    public int? Team { get; set; }
+
+    public string Profile { get; set; }
+
+    public string PicturePath { get; set; }
+
+    public string Password { get; set; }
+
+    public int? ChannelId { get; set; }
+
+    public string Doctor { get; set; }
+
+    public string DoctorPhone { get; set; }
+
+    public string NextOfKinRelationship { get; set; }
+
+    public DateTime? DateOfBirth { get; set; }
+
+    public string VehicleModel { get; set; }
+
+    public int? VehicleYear { get; set; }
+
+    public int? VehicleMakeId { get; set; }
+
+    public int? InsuranceCompanyId { get; set; }
+
+    public int? CarrierLiabilityId { get; set; }
+
+    public int? PublicLiabilityId { get; set; }
+
+    public byte DangerousGoods { get; set; }
+
+    public int? BankNameId { get; set; }
+
+    public string BankBranch { get; set; }
+
+    public string BankAccountNumber { get; set; }
+
+    public DateTime? ContractSignedDate { get; set; }
+
+    public DateTime? SecurityCheckDate { get; set; }
+
+    public string CustomField1 { get; set; }
+
+    public string CustomField2 { get; set; }
+
+    public string CustomField3 { get; set; }
+
+    public bool WebEnabled { get; set; }
+
+    public bool ShowClientPhone { get; set; }
+
+    public int UccrId { get; set; }
+
+    public string Code { get; set; }
+
+    public string UccrName { get; set; }
+
+    public string UccrSurname { get; set; }
+
+    public string UccrEmail { get; set; }
+
+    public string UccrVehicle { get; set; }
+
+    public double? UccrPercentage { get; set; }
+
+    public int? CourierFleetId { get; set; }
+
+    public int? UccrLate { get; set; }
+
+    public string UccrNotes { get; set; }
+
+    public string UccrAddress { get; set; }
+
+    public string UccrTel { get; set; }
+
+    public string UccrMobile { get; set; }
+
+    public string UccrGst { get; set; }
+
+    public string UccrDlno { get; set; }
+
+    public string UccrPolicyNo { get; set; }
+
+    public string UccrReg { get; set; }
+
+    public string UccrRt { get; set; }
+
+    public string UccrRtaddress { get; set; }
+
+    public string UccrGsl { get; set; }
+
+    public DateTime? UccrStartDate { get; set; }
+
+    public DateTime? UccrFinishDate { get; set; }
+
+    public string UccrKinName { get; set; }
+
+    public string UccrKinTel { get; set; }
+
+    public string UccrKinAdd { get; set; }
+
+    public double? UccrPagerId { get; set; }
+
+    public string UccrPagerSerial { get; set; }
+
+    public bool UccrInternal { get; set; }
+
+    public int? UccrTeam { get; set; }
+
+    public string UccrProfile { get; set; }
+
+    public string UccrPicturePath { get; set; }
+
+    public string UccrPassword { get; set; }
+
+    public int? UccrChannelId { get; set; }
+
+    public string UccrDoctor { get; set; }
+
+    public string UccrDoctorPhone { get; set; }
+
+    public string UccrKinRelationship { get; set; }
+
+    public DateTime? UccrDob { get; set; }
+
+    public string UccrVehicleModel { get; set; }
+
+    public int? UccrVehicleYear { get; set; }
+
+    public int? UccrVehicleMakeId { get; set; }
+
+    public int? UccrInsuranceId { get; set; }
+
+    public int? UccrCarrierLiabilityId { get; set; }
+
+    public int? UccrPublicLiabilityId { get; set; }
+
+    public byte UccrDangerousGoods { get; set; }
+
+    public int? UccrBankNameId { get; set; }
+
+    public string UccrBankBranch { get; set; }
+
+    public string UccrBankAccountNo { get; set; }
+
+    public DateTime? UccrContractDate { get; set; }
+
+    public DateTime? UccrSecurityDate { get; set; }
+
+    public string UccrCustomField1 { get; set; }
+
+    public string UccrCustomField2 { get; set; }
+
+    public string UccrCustomField3 { get; set; }
+
+    public bool UccrWebEnabled { get; set; }
+
+    public bool UccrShowClientPh { get; set; }
+
+    public int? SiteId { get; set; }
+
+    public decimal? MobileInsurance { get; set; }
+
+    public decimal? MobileRental { get; set; }
+
+    public bool? Podreqd { get; set; }
+
+    public bool Active { get; set; }
+
+    public string Blurb { get; set; }
+
+    public bool DisplayWeb { get; set; }
+
+    public bool SendJobsViaSms { get; set; }
+
+    public bool SendAlertSms { get; set; }
+
+    public bool VodafoneNetwork { get; set; }
+
+    public DateTime? ExpectedStartTime { get; set; }
+
+    public DateTime? ExpectedEndTime { get; set; }
+
+    public int? CourierGpsid { get; set; }
+
+    public int? CourierLogInOutId { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string LastModifiedBy { get; set; }
+
+    public bool JobPaperPrintOut { get; set; }
+
+    public int? AccountProfileId { get; set; }
+
+    public bool Macourier { get; set; }
+
+    public DateTime? TaxSavingsStart { get; set; }
+
+    public DateTime? TaxSavingsEnd { get; set; }
+
+    public DateTime? CarSavingsStart { get; set; }
+
+    public DateTime? CarSavingsEnd { get; set; }
+
+    public decimal? CarSavingsAmount { get; set; }
+
+    public bool AutoDespatch { get; set; }
+
+    public bool? AfterHoursWeb { get; set; }
+
+    public string PersonalMobile { get; set; }
+
+    public bool? Gender { get; set; }
+
+    public DateTime? DriversLicenseExpiry { get; set; }
+
+    public DateTime? DglicenseExpiry { get; set; }
+
+    public bool? LowEmissionVehicle { get; set; }
+
+    public string TrainingHrFu { get; set; }
+
+    public string TrainingHr { get; set; }
+
+    public decimal? MobileAdAmount { get; set; }
+
+    public DateTime? MobileAdEnd { get; set; }
+
+    public DateTime? MobileAdStart { get; set; }
+
+    public int? DeviceTypeId { get; set; }
+
+    public bool? DeviceAdmin { get; set; }
+
+    public int? MaxPallets { get; set; }
+
+    public double? MaxPayLoad { get; set; }
+
+    public bool? HeavyTransportEndorcement { get; set; }
+
+    public double? TareWeight { get; set; }
+
+    public double? Rucweight { get; set; }
+
+    public double? Ruckms { get; set; }
+
+    public DateTime? Wofexpiry { get; set; }
+
+    public DateTime? RegistrationExpiry { get; set; }
+
+    public double? Height { get; set; }
+
+    public double? Width { get; set; }
+
+    public double? Length { get; set; }
+
+    public double? Rucpayload { get; set; }
+
+    public decimal? WithholdingTaxPercentage { get; set; }
+
+    public bool? PaydayFileRegistration { get; set; }
+
+    public bool? CommercialInsurance { get; set; }
 }

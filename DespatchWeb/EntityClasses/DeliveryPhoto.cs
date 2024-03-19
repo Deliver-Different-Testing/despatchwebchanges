@@ -3,12 +3,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class DeliveryPhoto
 {
-    public partial class DeliveryPhoto
-    {
-        public int DeliveryPhotoId { get; set; }
-        public int JobId { get; set; }
-        public byte[] Photo { get; set; }
-    }
+    public int DeliveryPhotoId { get; set; }
+
+    public int JobId { get; set; }
+
+    public byte[] Photo { get; set; }
 }

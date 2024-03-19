@@ -3,21 +3,31 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TblJobLeaveNotHome
 {
-    public partial class TblJobLeaveNotHome
-    {
-        public int LeaveNotHomeId { get; set; }
-        public string Name { get; set; }
-        public string Smsname { get; set; }
-        public bool RequireCourierNotes { get; set; }
-        public bool? AllowLeave { get; set; }
-        public int Sequence { get; set; }
-        public string Category { get; set; }
-        public DateTime LastModified { get; set; }
-        public string LastModifiedBy { get; set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; }
-        public string Notes { get; set; }
-    }
+    public int LeaveNotHomeId { get; set; }
+
+    public string Name { get; set; }
+
+    public string Smsname { get; set; }
+
+    public bool RequireCourierNotes { get; set; }
+
+    public bool AllowLeave { get; set; }
+
+    public int Sequence { get; set; }
+
+    public string Category { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string LastModifiedBy { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public string Notes { get; set; }
 }

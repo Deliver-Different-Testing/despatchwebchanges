@@ -3,45 +3,67 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TucSuburb
 {
-    public partial class TucSuburb
-    {
-        public TucSuburb()
-        {
-            TucClients = new HashSet<TucClient>();
-        }
+    public int UcsuId { get; set; }
 
-        public int UcsuId { get; set; }
-        public int UcsuArea { get; set; }
-        public string UcsuName { get; set; }
-        public int? UcsuRegion { get; set; }
-        public int UcsuBaseRegion { get; set; }
-        public int? UcsuKm { get; set; }
-        public int? SiteId { get; set; }
-        public int? DeliveryStandardId { get; set; }
-        public int? SamedayRegion { get; set; }
-        public string Smsname { get; set; }
-        public int? Priority { get; set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime LastModified { get; set; }
-        public string LastModifiedBy { get; set; }
-        public string Alias { get; set; }
-        public string OurRefCode { get; set; }
-        public int? BaggageArea { get; set; }
-        public decimal? FreightForwardAmount { get; set; }
-        public decimal? Sdamount { get; set; }
-        public string City { get; set; }
-        public int? AirportId { get; set; }
-        public string Gsssuburb { get; set; }
-        public decimal? SdrawAmount { get; set; }
-        public int? AirportKm { get; set; }
-        public string GoogleSuburbAlias { get; set; }
-        public string PostCode { get; set; }
-        public string PrefixRunName { get; set; }
-        public string Gsscity { get; set; }
+    public int UcsuArea { get; set; }
 
-        public virtual ICollection<TucClient> TucClients { get; set; }
-    }
+    public string UcsuName { get; set; }
+
+    public int? UcsuRegion { get; set; }
+
+    public int UcsuBaseRegion { get; set; }
+
+    public int? UcsuKm { get; set; }
+
+    public int? SiteId { get; set; }
+
+    public int? DeliveryStandardId { get; set; }
+
+    public int? SamedayRegion { get; set; }
+
+    public string Smsname { get; set; }
+
+    public int? Priority { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string LastModifiedBy { get; set; }
+
+    public string Alias { get; set; }
+
+    public string OurRefCode { get; set; }
+
+    public int? BaggageArea { get; set; }
+
+    public decimal? FreightForwardAmount { get; set; }
+
+    public decimal? Sdamount { get; set; }
+
+    public string City { get; set; }
+
+    public int? AirportId { get; set; }
+
+    public string Gsssuburb { get; set; }
+
+    public decimal? SdrawAmount { get; set; }
+
+    public int? AirportKm { get; set; }
+
+    public string GoogleSuburbAlias { get; set; }
+
+    public string PostCode { get; set; }
+
+    public string PrefixRunName { get; set; }
+
+    public string Gsscity { get; set; }
+
+    public virtual ICollection<TucClient> TucClients { get; set; } = new List<TucClient>();
 }

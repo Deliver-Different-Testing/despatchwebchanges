@@ -43,19 +43,19 @@ angular
 		$urlRouterProvider.otherwise("/");
 
         $stateProvider
-   //         .state("home",
-   //             {
-   //                 url: "/",
-   //                 templateUrl: "app/components/home/homeView.html?v=1.45",
-   //                 controller: "HomeControl"
-			//	})
-			//.state('nw',
-   //             {
-   //                 url: '/Nationwide',
-   //                 templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.8',
-   //                 controller: 'NationwideControl',
-   //                 reloadOnSearch: false
-   //             })
+            .state("home",
+                {
+                    url: "/",
+                    templateUrl: "app/components/home/homeView.html?v=1.45",
+                    controller: "HomeControl"
+				})
+			.state('nw',
+                {
+                    url: '/Nationwide',
+                    templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.8',
+                    controller: 'NationwideControl',
+                    reloadOnSearch: false
+                })
             .state('cs',
                 {
                     url: '/CS',
@@ -63,13 +63,13 @@ angular
 					controller: 'CSControl',
                     reloadOnSearch: false
 				})
-            //.state('prebooks',
-            //    {
-            //        url: '/prebooks',
-            //        templateUrl: 'app/components/prebooks/prebookView.html?v=1.2',
-            //        controller: 'PBControl',
-            //        reloadOnSearch: false
-            //    });
+            .state('prebooks',
+                {
+                    url: '/prebooks',
+                    templateUrl: 'app/components/prebooks/prebookView.html?v=1.2',
+                    controller: 'PBControl',
+                    reloadOnSearch: false
+                });
 
 
     }]);

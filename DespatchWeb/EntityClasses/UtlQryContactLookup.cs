@@ -3,57 +3,103 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class UtlQryContactLookup
 {
-    public partial class UtlQryContactLookup
-    {
-        public int ContactId { get; set; }
-        public int? ClientId { get; set; }
-        public string Firstname { get; set; }
-        public string Surname { get; set; }
-        public string Email { get; set; }
-        public string JobTitle { get; set; }
-        public string DirectDial { get; set; }
-        public string Mobile { get; set; }
-        public string Notes { get; set; }
-        public int UcctId { get; set; }
-        public int? UcctClientId { get; set; }
-        public string UcctFirstname { get; set; }
-        public string UcctSurname { get; set; }
-        public string UcctEmail { get; set; }
-        public bool HasEmail { get; set; }
-        public bool ValidatedEmail { get; set; }
-        public string UcctJobTitle { get; set; }
-        public string UcctDirectDial { get; set; }
-        public string UcctMobile { get; set; }
-        public string UcctNotes { get; set; }
-        public string Fax { get; set; }
-        public string UserName { get; set; }
-        public string Password { get; set; }
-        public bool Active { get; set; }
-        public bool AllowCookieLogin { get; set; }
-        public DateTime? LastAccessed { get; set; }
-        public int? ContactRoleId { get; set; }
-        public int? ParentContactId { get; set; }
-        public bool SharedComputer { get; set; }
-        public bool MustSelectChildForJob { get; set; }
-        public bool EmailNotificationHasBeenSent { get; set; }
-        public DateTime? WhenEmailNotificationSent { get; set; }
-        public int NumberOfEmailNotificationReminderSent { get; set; }
-        public DateTime? WhenLastEmailNotificationReminderSent { get; set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime LastModified { get; set; }
-        public string LastModifiedBy { get; set; }
-        public DateTime? WhenEmailValidated { get; set; }
-        public DateTime? WhenEmailValidatedSent { get; set; }
-        public bool PromptForEmailAddress { get; set; }
-        public bool SendAdhocEmail { get; set; }
-        public int? MasterBooker { get; set; }
-        public string ResetKey { get; set; }
-        public string Password2 { get; set; }
-        public string Salt { get; set; }
-        public int? StaffId { get; set; }
-        public string Name { get; set; }
-    }
+    public int ContactId { get; set; }
+
+    public int? ClientId { get; set; }
+
+    public string Firstname { get; set; }
+
+    public string Surname { get; set; }
+
+    public string Email { get; set; }
+
+    public string JobTitle { get; set; }
+
+    public string DirectDial { get; set; }
+
+    public string Mobile { get; set; }
+
+    public string Notes { get; set; }
+
+    public int UcctId { get; set; }
+
+    public int? UcctClientId { get; set; }
+
+    public string UcctFirstname { get; set; }
+
+    public string UcctSurname { get; set; }
+
+    public string UcctEmail { get; set; }
+
+    public bool HasEmail { get; set; }
+
+    public bool ValidatedEmail { get; set; }
+
+    public string UcctJobTitle { get; set; }
+
+    public string UcctDirectDial { get; set; }
+
+    public string UcctMobile { get; set; }
+
+    public string UcctNotes { get; set; }
+
+    public string Fax { get; set; }
+
+    public string UserName { get; set; }
+
+    public string Password { get; set; }
+
+    public bool Active { get; set; }
+
+    public bool AllowCookieLogin { get; set; }
+
+    public DateTime? LastAccessed { get; set; }
+
+    public int? ContactRoleId { get; set; }
+
+    public int? ParentContactId { get; set; }
+
+    public bool SharedComputer { get; set; }
+
+    public bool MustSelectChildForJob { get; set; }
+
+    public bool EmailNotificationHasBeenSent { get; set; }
+
+    public DateTime? WhenEmailNotificationSent { get; set; }
+
+    public int NumberOfEmailNotificationReminderSent { get; set; }
+
+    public DateTime? WhenLastEmailNotificationReminderSent { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string LastModifiedBy { get; set; }
+
+    public DateTime? WhenEmailValidated { get; set; }
+
+    public DateTime? WhenEmailValidatedSent { get; set; }
+
+    public bool PromptForEmailAddress { get; set; }
+
+    public bool SendAdhocEmail { get; set; }
+
+    public int? MasterBooker { get; set; }
+
+    public string ResetKey { get; set; }
+
+    public string Password2 { get; set; }
+
+    public string Salt { get; set; }
+
+    public int? StaffId { get; set; }
+
+    public string Name { get; set; }
 }

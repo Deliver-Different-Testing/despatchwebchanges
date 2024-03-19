@@ -3,163 +3,315 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TblJob
 {
-    public partial class TblJob
-    {
-        public int JobId { get; set; }
-        public string Number { get; set; }
-        public int? ClientId { get; set; }
-        public string ClientCode { get; set; }
-        public int? CourierId { get; set; }
-        public DateTime? Date { get; set; }
-        public DateTime? Time { get; set; }
-        public int? JobTypeId { get; set; }
-        public int? FromSuburbId { get; set; }
-        public int? ToSuburbId { get; set; }
-        public decimal? Amount { get; set; }
-        public int? Locked { get; set; }
-        public int? Month { get; set; }
-        public int? Year { get; set; }
-        public string OurRef { get; set; }
-        public bool JobDone { get; set; }
-        public bool Void { get; set; }
-        public string Podname { get; set; }
-        public int? Speed { get; set; }
-        public int? LatePickUp { get; set; }
-        public int? LateDelivery { get; set; }
-        public DateTime? CompletedTime { get; set; }
-        public DateTime? DispatchDate { get; set; }
-        public DateTime? DispatchTime { get; set; }
-        public int? DispatcherId { get; set; }
-        public int? ZoneCount { get; set; }
-        public bool RtnJob { get; set; }
-        public DateTime? PickUpTime { get; set; }
-        public int? Status { get; set; }
-        public decimal? Rebate { get; set; }
-        public double? Weight { get; set; }
-        public short? Quantity { get; set; }
-        public string FromAddress { get; set; }
-        public string ToAddress { get; set; }
-        public string Notes { get; set; }
-        public string ClientReferenceA { get; set; }
-        public string ClientReferenceB { get; set; }
-        public string Recipient { get; set; }
-        public short? Size { get; set; }
-        public string ClientNotes { get; set; }
-        public string InternalNotes { get; set; }
-        public int? OperatorId { get; set; }
-        public double? ChargeType { get; set; }
-        public decimal FuelSurchargeAmount { get; set; }
-        public double? Km { get; set; }
-        public bool SaturdayDelivery { get; set; }
-        public double? Type { get; set; }
-        public string Contact { get; set; }
-        public string ToSpecial { get; set; }
-        public bool Cbd { get; set; }
-        public string FlightDetails { get; set; }
-        public bool Van { get; set; }
-        public bool Attention { get; set; }
-        public short? PickupFrom { get; set; }
-        public int? RefJobId { get; set; }
-        public string ContactPhone { get; set; }
-        public bool Return { get; set; }
-        public bool RemoteJob { get; set; }
-        public int? InvoiceNo { get; set; }
-        public int? ContactId { get; set; }
-        public bool LatePickupNotificationHasBeenSent { get; set; }
-        public DateTime? WhenLatePickupNotificationSent { get; set; }
-        public bool LateDeliveryNotificationHasBeenSent { get; set; }
-        public DateTime? WhenLateDeliveryNotificationSent { get; set; }
-        public int? ProofOfDelivery { get; set; }
-        public string ProofOfDeliveryEmail { get; set; }
-        public string ProofOfDeliveryMobile { get; set; }
-        public bool PodnotificationHasBeenSent { get; set; }
-        public DateTime? WhenPodnotificationSent { get; set; }
-        public string PickupFromContact { get; set; }
-        public string PickupFromPhone { get; set; }
-        public string DeliverToContact { get; set; }
-        public string DeliverToPhone { get; set; }
-        public int? DeliverToPrivateBusiness { get; set; }
-        public int? LeaveNotHomeId { get; set; }
-        public bool RuralDelivery { get; set; }
-        public byte[] PickUpSignature { get; set; }
-        public byte[] DeliverySignature { get; set; }
-        public decimal? PickUpLongitude { get; set; }
-        public decimal? PickUpLatitude { get; set; }
-        public decimal? DeliveryLongitude { get; set; }
-        public decimal? DeliveryLatitude { get; set; }
-        public int? WaitedPickUp { get; set; }
-        public int? WaitedDelivery { get; set; }
-        public int? DesiredJobTypeId { get; set; }
-        public int? AcceptedJobTypeId { get; set; }
-        public bool Direct { get; set; }
-        public int? OriginalSpeedId { get; set; }
-        public int? NotifiedJobTypeId { get; set; }
-        public int? UndeliverableLocationId { get; set; }
-        public int? JobRelationshipTypeId { get; set; }
-        public int? ParentId { get; set; }
-        public int? InformationParentId { get; set; }
-        public int? RootParentId { get; set; }
-        public int? Sequence { get; set; }
-        public bool? MobileSend { get; set; }
-        public DateTime? SendTime { get; set; }
-        public int? ExternalCodingId { get; set; }
-        public int? ExternalCourierCodingId { get; set; }
-        public decimal? Ppdexclusiveamount { get; set; }
-        public decimal? Gstrate { get; set; }
-        public bool Truck { get; set; }
-        public int? Dgclass { get; set; }
-        public bool? Dgdocument { get; set; }
-        public string TextRef1 { get; set; }
-        public string TextRef2 { get; set; }
-        public string TextRef3 { get; set; }
-        public string TextRef4 { get; set; }
-        public string FromAddressExtras { get; set; }
-        public string FromAddressStreetName { get; set; }
-        public string FromAddressExtras2 { get; set; }
-        public string ToAddressExtras { get; set; }
-        public string ToAddressStreetName { get; set; }
-        public string ToAddressExtras2 { get; set; }
-        public string ClientReferenceC { get; set; }
-        public decimal? Gssamount { get; set; }
-        public decimal? RawAmount { get; set; }
-        public string Gssconnote { get; set; }
-        public string GsstrackingUrl { get; set; }
-        public bool? JobTrackingNotificationHasBeenSent { get; set; }
-        public DateTime? WhenJobTrackingNotificationSent { get; set; }
-        public int? TrackingMethod { get; set; }
-        public string TrackingEmail { get; set; }
-        public string TrackingMobile { get; set; }
-        public bool RatedManually { get; set; }
-        public byte[] DeliveryPhoto { get; set; }
-        public string DeliveryGps { get; set; }
-        public string RunName { get; set; }
-        public decimal? RawBaseAmount { get; set; }
-        public decimal? CourierPercentage { get; set; }
-        public decimal? CourierPayment { get; set; }
-        public decimal? CourierFuel { get; set; }
-        public decimal? CourierBonus { get; set; }
-        public decimal? CourierPercentageOverride { get; set; }
-        public int? Duration { get; set; }
-        public double? TruckHours { get; set; }
-        public DateTime? TruckStartTime { get; set; }
-        public int? ShopId { get; set; }
-        public string ShopRef1 { get; set; }
-        public string ShopRef2 { get; set; }
-        public string ShopRef3 { get; set; }
-        public string ShopRef4 { get; set; }
-        public string ShopRef5 { get; set; }
-        public int? DepotId { get; set; }
-        public string Barcode { get; set; }
-        public int? StorageState { get; set; }
-        public int? DeliveryState { get; set; }
-        public int? InternalStatus { get; set; }
-        public DateTime? FollowupTime { get; set; }
-        public bool? Reprice { get; set; }
-        public bool? VanOk { get; set; }
-        public int? SourceId { get; set; }
-        public int? InvoiceProcessId { get; set; }
-        public int? LoggedInContactId { get; set; }
-    }
+    public int JobId { get; set; }
+
+    public string Number { get; set; }
+
+    public int? ClientId { get; set; }
+
+    public string ClientCode { get; set; }
+
+    public int? CourierId { get; set; }
+
+    public DateTime? Date { get; set; }
+
+    public DateTime? Time { get; set; }
+
+    public int? JobTypeId { get; set; }
+
+    public int? FromSuburbId { get; set; }
+
+    public int? ToSuburbId { get; set; }
+
+    public decimal? Amount { get; set; }
+
+    public int? Locked { get; set; }
+
+    public int? Month { get; set; }
+
+    public int? Year { get; set; }
+
+    public string OurRef { get; set; }
+
+    public bool JobDone { get; set; }
+
+    public bool Void { get; set; }
+
+    public string Podname { get; set; }
+
+    public int? Speed { get; set; }
+
+    public int? LatePickUp { get; set; }
+
+    public int? LateDelivery { get; set; }
+
+    public DateTime? CompletedTime { get; set; }
+
+    public DateTime? DispatchDate { get; set; }
+
+    public DateTime? DispatchTime { get; set; }
+
+    public int? DispatcherId { get; set; }
+
+    public int? ZoneCount { get; set; }
+
+    public bool RtnJob { get; set; }
+
+    public DateTime? PickUpTime { get; set; }
+
+    public int? Status { get; set; }
+
+    public decimal? Rebate { get; set; }
+
+    public double? Weight { get; set; }
+
+    public short? Quantity { get; set; }
+
+    public string FromAddress { get; set; }
+
+    public string ToAddress { get; set; }
+
+    public string Notes { get; set; }
+
+    public string ClientReferenceA { get; set; }
+
+    public string ClientReferenceB { get; set; }
+
+    public string Recipient { get; set; }
+
+    public short? Size { get; set; }
+
+    public string ClientNotes { get; set; }
+
+    public string InternalNotes { get; set; }
+
+    public int? OperatorId { get; set; }
+
+    public double? ChargeType { get; set; }
+
+    public decimal FuelSurchargeAmount { get; set; }
+
+    public double? Km { get; set; }
+
+    public bool SaturdayDelivery { get; set; }
+
+    public double? Type { get; set; }
+
+    public string Contact { get; set; }
+
+    public string ToSpecial { get; set; }
+
+    public bool Cbd { get; set; }
+
+    public string FlightDetails { get; set; }
+
+    public bool Van { get; set; }
+
+    public bool Attention { get; set; }
+
+    public short? PickupFrom { get; set; }
+
+    public int? RefJobId { get; set; }
+
+    public string ContactPhone { get; set; }
+
+    public bool Return { get; set; }
+
+    public bool RemoteJob { get; set; }
+
+    public int? InvoiceNo { get; set; }
+
+    public int? ContactId { get; set; }
+
+    public bool LatePickupNotificationHasBeenSent { get; set; }
+
+    public DateTime? WhenLatePickupNotificationSent { get; set; }
+
+    public bool LateDeliveryNotificationHasBeenSent { get; set; }
+
+    public DateTime? WhenLateDeliveryNotificationSent { get; set; }
+
+    public int? ProofOfDelivery { get; set; }
+
+    public string ProofOfDeliveryEmail { get; set; }
+
+    public string ProofOfDeliveryMobile { get; set; }
+
+    public bool PodnotificationHasBeenSent { get; set; }
+
+    public DateTime? WhenPodnotificationSent { get; set; }
+
+    public string PickupFromContact { get; set; }
+
+    public string PickupFromPhone { get; set; }
+
+    public string DeliverToContact { get; set; }
+
+    public string DeliverToPhone { get; set; }
+
+    public int? DeliverToPrivateBusiness { get; set; }
+
+    public int? LeaveNotHomeId { get; set; }
+
+    public bool RuralDelivery { get; set; }
+
+    public byte[] PickUpSignature { get; set; }
+
+    public byte[] DeliverySignature { get; set; }
+
+    public decimal? PickUpLongitude { get; set; }
+
+    public decimal? PickUpLatitude { get; set; }
+
+    public decimal? DeliveryLongitude { get; set; }
+
+    public decimal? DeliveryLatitude { get; set; }
+
+    public int? WaitedPickUp { get; set; }
+
+    public int? WaitedDelivery { get; set; }
+
+    public int? DesiredJobTypeId { get; set; }
+
+    public int? AcceptedJobTypeId { get; set; }
+
+    public bool Direct { get; set; }
+
+    public int? OriginalSpeedId { get; set; }
+
+    public int? NotifiedJobTypeId { get; set; }
+
+    public int? UndeliverableLocationId { get; set; }
+
+    public int? JobRelationshipTypeId { get; set; }
+
+    public int? ParentId { get; set; }
+
+    public int? InformationParentId { get; set; }
+
+    public int? RootParentId { get; set; }
+
+    public int? Sequence { get; set; }
+
+    public bool? MobileSend { get; set; }
+
+    public DateTime? SendTime { get; set; }
+
+    public int? ExternalCodingId { get; set; }
+
+    public int? ExternalCourierCodingId { get; set; }
+
+    public decimal? Ppdexclusiveamount { get; set; }
+
+    public decimal? Gstrate { get; set; }
+
+    public bool Truck { get; set; }
+
+    public int? Dgclass { get; set; }
+
+    public bool? Dgdocument { get; set; }
+
+    public string TextRef1 { get; set; }
+
+    public string TextRef2 { get; set; }
+
+    public string TextRef3 { get; set; }
+
+    public string TextRef4 { get; set; }
+
+    public string FromAddressExtras { get; set; }
+
+    public string FromAddressStreetName { get; set; }
+
+    public string FromAddressExtras2 { get; set; }
+
+    public string ToAddressExtras { get; set; }
+
+    public string ToAddressStreetName { get; set; }
+
+    public string ToAddressExtras2 { get; set; }
+
+    public string ClientReferenceC { get; set; }
+
+    public decimal? Gssamount { get; set; }
+
+    public decimal? RawAmount { get; set; }
+
+    public string Gssconnote { get; set; }
+
+    public string GsstrackingUrl { get; set; }
+
+    public bool? JobTrackingNotificationHasBeenSent { get; set; }
+
+    public DateTime? WhenJobTrackingNotificationSent { get; set; }
+
+    public int? TrackingMethod { get; set; }
+
+    public string TrackingEmail { get; set; }
+
+    public string TrackingMobile { get; set; }
+
+    public bool RatedManually { get; set; }
+
+    public byte[] DeliveryPhoto { get; set; }
+
+    public string DeliveryGps { get; set; }
+
+    public string RunName { get; set; }
+
+    public decimal? RawBaseAmount { get; set; }
+
+    public decimal? CourierPercentage { get; set; }
+
+    public decimal? CourierPayment { get; set; }
+
+    public decimal? CourierFuel { get; set; }
+
+    public decimal? CourierBonus { get; set; }
+
+    public decimal? CourierPercentageOverride { get; set; }
+
+    public int? Duration { get; set; }
+
+    public double? TruckHours { get; set; }
+
+    public DateTime? TruckStartTime { get; set; }
+
+    public int? ShopId { get; set; }
+
+    public string ShopRef1 { get; set; }
+
+    public string ShopRef2 { get; set; }
+
+    public string ShopRef3 { get; set; }
+
+    public string ShopRef4 { get; set; }
+
+    public string ShopRef5 { get; set; }
+
+    public int? DepotId { get; set; }
+
+    public string Barcode { get; set; }
+
+    public int? StorageState { get; set; }
+
+    public int? DeliveryState { get; set; }
+
+    public int? InternalStatus { get; set; }
+
+    public DateTime? FollowupTime { get; set; }
+
+    public bool? Reprice { get; set; }
+
+    public bool? VanOk { get; set; }
+
+    public int? SourceId { get; set; }
+
+    public int? InvoiceProcessId { get; set; }
+
+    public int? LoggedInContactId { get; set; }
 }

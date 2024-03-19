@@ -3,13 +3,15 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TucJobStatus
 {
-    public partial class TucJobStatus
-    {
-        public int UcjsId { get; set; }
-        public string UcjsReplyCode { get; set; }
-        public string UcjsName { get; set; }
-        public string UcjsCode { get; set; }
-    }
+    public int UcjsId { get; set; }
+
+    public string UcjsReplyCode { get; set; }
+
+    public string UcjsName { get; set; }
+
+    public string UcjsCode { get; set; }
 }

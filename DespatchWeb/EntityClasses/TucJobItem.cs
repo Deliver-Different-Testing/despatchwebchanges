@@ -3,20 +3,29 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TucJobItem
 {
-    public partial class TucJobItem
-    {
-        public int JobId { get; set; }
-        public int ItemId { get; set; }
-        public int Items { get; set; }
-        public double Weight { get; set; }
-        public double Length { get; set; }
-        public double Height { get; set; }
-        public double Depth { get; set; }
-        public bool? Pu { get; set; }
-        public bool? Do { get; set; }
-        public int? Dgclass { get; set; }
-        public string Notes { get; set; }
-    }
+    public int JobId { get; set; }
+
+    public int ItemId { get; set; }
+
+    public int Items { get; set; }
+
+    public double Weight { get; set; }
+
+    public double Length { get; set; }
+
+    public double Height { get; set; }
+
+    public double Depth { get; set; }
+
+    public bool? Pu { get; set; }
+
+    public bool? Do { get; set; }
+
+    public int? Dgclass { get; set; }
+
+    public string Notes { get; set; }
 }

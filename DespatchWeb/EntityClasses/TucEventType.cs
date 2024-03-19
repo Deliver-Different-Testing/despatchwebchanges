@@ -3,12 +3,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TucEventType
 {
-    public partial class TucEventType
-    {
-        public int UcetId { get; set; }
-        public string UcetGroup { get; set; }
-        public string UcetName { get; set; }
-    }
+    public int UcetId { get; set; }
+
+    public string UcetGroup { get; set; }
+
+    public string UcetName { get; set; }
 }

@@ -3,53 +3,95 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class DesQrySupportEventsCustomerAndCourier
 {
-    public partial class DesQrySupportEventsCustomerAndCourier
-    {
-        public string UcclName { get; set; }
-        public string UcclCode { get; set; }
-        public string OriginalSpeed { get; set; }
-        public string Speed { get; set; }
-        public int UcclId { get; set; }
-        public string UcclPhone { get; set; }
-        public string Code { get; set; }
-        public int? RemainTime { get; set; }
-        public int UcevId { get; set; }
-        public string UcevJobNumber { get; set; }
-        public int? UcevClientId { get; set; }
-        public string UcevContact { get; set; }
-        public DateTime? UcevDate { get; set; }
-        public DateTime? UcevTime { get; set; }
-        public double? UcevType { get; set; }
-        public double? UcevLateTime { get; set; }
-        public DateTime? UcevEtatime { get; set; }
-        public double? UcevStaffIdin { get; set; }
-        public string UcstWindowsLogonName { get; set; }
-        public double? UcevStaffIdout { get; set; }
-        public DateTime? UcevResponseTime { get; set; }
-        public string UcevNotes { get; set; }
-        public bool UcevPageCourier { get; set; }
-        public bool UcevClosed { get; set; }
-        public int? UcevOriginator { get; set; }
-        public string UcevDescription { get; set; }
-        public int? UcevCourierId { get; set; }
-        public int? UcevJobId { get; set; }
-        public string UcevDespatcher { get; set; }
-        public int? UcevJobType { get; set; }
-        public int? SpeedId { get; set; }
-        public string EventDescription { get; set; }
-        public DateTime? JobTime { get; set; }
-        public string DisplayNote { get; set; }
-        public int? CourierFleetId { get; set; }
-        public bool? RemoteJob { get; set; }
-        public int? RegionFromId { get; set; }
-        public int? RegionToId { get; set; }
-        public int? IsParentJob { get; set; }
-        public bool? Truck { get; set; }
-        public bool? VanOk { get; set; }
-        public short? UcjbSize { get; set; }
-        public int? UcjbSpeed { get; set; }
-        public bool? UcjbVan { get; set; }
-    }
+    public string UcclName { get; set; }
+
+    public string UcclCode { get; set; }
+
+    public string OriginalSpeed { get; set; }
+
+    public string Speed { get; set; }
+
+    public int UcclId { get; set; }
+
+    public string UcclPhone { get; set; }
+
+    public string Code { get; set; }
+
+    public int? RemainTime { get; set; }
+
+    public int UcevId { get; set; }
+
+    public string UcevJobNumber { get; set; }
+
+    public int? UcevClientId { get; set; }
+
+    public string UcevContact { get; set; }
+
+    public DateTime? UcevDate { get; set; }
+
+    public DateTime? UcevTime { get; set; }
+
+    public double? UcevType { get; set; }
+
+    public double? UcevLateTime { get; set; }
+
+    public DateTime? UcevEtatime { get; set; }
+
+    public double? UcevStaffIdin { get; set; }
+
+    public string UcstWindowsLogonName { get; set; }
+
+    public double? UcevStaffIdout { get; set; }
+
+    public DateTime? UcevResponseTime { get; set; }
+
+    public string UcevNotes { get; set; }
+
+    public bool UcevPageCourier { get; set; }
+
+    public bool UcevClosed { get; set; }
+
+    public int? UcevOriginator { get; set; }
+
+    public string UcevDescription { get; set; }
+
+    public int? UcevCourierId { get; set; }
+
+    public int? UcevJobId { get; set; }
+
+    public string UcevDespatcher { get; set; }
+
+    public int? UcevJobType { get; set; }
+
+    public int? SpeedId { get; set; }
+
+    public string EventDescription { get; set; }
+
+    public DateTime? JobTime { get; set; }
+
+    public string DisplayNote { get; set; }
+
+    public int? CourierFleetId { get; set; }
+
+    public bool? RemoteJob { get; set; }
+
+    public int? RegionFromId { get; set; }
+
+    public int? RegionToId { get; set; }
+
+    public int? IsParentJob { get; set; }
+
+    public bool? Truck { get; set; }
+
+    public bool? VanOk { get; set; }
+
+    public short? UcjbSize { get; set; }
+
+    public int? UcjbSpeed { get; set; }
+
+    public bool? UcjbVan { get; set; }
 }

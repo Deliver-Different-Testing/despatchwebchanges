@@ -3,22 +3,31 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
-{
-    public partial class TblUndeliverableLocation
-    {
-        public int UndeliverableLocationId { get; set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime LastModified { get; set; }
-        public string LastModifiedBy { get; set; }
-        public string Notes { get; set; }
-        public string Name { get; set; }
-        public string Podname { get; set; }
-        public int JobTypeId { get; set; }
-        public string Message { get; set; }
-        public string WebDeliveredTimeLabel { get; set; }
+namespace DespatchWeb.EntityClasses;
 
-        public virtual TucJobType JobType { get; set; }
-    }
+public partial class TblUndeliverableLocation
+{
+    public int UndeliverableLocationId { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string LastModifiedBy { get; set; }
+
+    public string Notes { get; set; }
+
+    public string Name { get; set; }
+
+    public string Podname { get; set; }
+
+    public int JobTypeId { get; set; }
+
+    public string Message { get; set; }
+
+    public string WebDeliveredTimeLabel { get; set; }
+
+    public virtual TucJobType JobType { get; set; }
 }

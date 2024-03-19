@@ -3,34 +3,55 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
-{
-    public partial class TucEvent
-    {
-        public int UcevId { get; set; }
-        public string UcevJobNumber { get; set; }
-        public int? UcevClientId { get; set; }
-        public string UcevContact { get; set; }
-        public DateTime? UcevDate { get; set; }
-        public DateTime? UcevTime { get; set; }
-        public double? UcevType { get; set; }
-        public double? UcevLateTime { get; set; }
-        public DateTime? UcevEtatime { get; set; }
-        public double? UcevStaffIdin { get; set; }
-        public double? UcevStaffIdout { get; set; }
-        public DateTime? UcevResponseTime { get; set; }
-        public string UcevNotes { get; set; }
-        public bool UcevPageCourier { get; set; }
-        public bool UcevClosed { get; set; }
-        public int? UcevOriginator { get; set; }
-        public string UcevDescription { get; set; }
-        public int? UcevCourierId { get; set; }
-        public int? UcevJobId { get; set; }
-        public string UcevDespatcher { get; set; }
-        public int? UcevJobType { get; set; }
-        public int? SpeedId { get; set; }
+namespace DespatchWeb.EntityClasses;
 
-        public virtual TucJobType Speed { get; set; }
-        public virtual TucClient UcevClient { get; set; }
-    }
+public partial class TucEvent
+{
+    public int UcevId { get; set; }
+
+    public string UcevJobNumber { get; set; }
+
+    public int? UcevClientId { get; set; }
+
+    public string UcevContact { get; set; }
+
+    public DateTime? UcevDate { get; set; }
+
+    public DateTime? UcevTime { get; set; }
+
+    public double? UcevType { get; set; }
+
+    public double? UcevLateTime { get; set; }
+
+    public DateTime? UcevEtatime { get; set; }
+
+    public double? UcevStaffIdin { get; set; }
+
+    public double? UcevStaffIdout { get; set; }
+
+    public DateTime? UcevResponseTime { get; set; }
+
+    public string UcevNotes { get; set; }
+
+    public bool UcevPageCourier { get; set; }
+
+    public bool UcevClosed { get; set; }
+
+    public int? UcevOriginator { get; set; }
+
+    public string UcevDescription { get; set; }
+
+    public int? UcevCourierId { get; set; }
+
+    public int? UcevJobId { get; set; }
+
+    public string UcevDespatcher { get; set; }
+
+    public int? UcevJobType { get; set; }
+
+    public int? SpeedId { get; set; }
+
+    public virtual TucJobType Speed { get; set; }
+
+    public virtual TucClient UcevClient { get; set; }
 }

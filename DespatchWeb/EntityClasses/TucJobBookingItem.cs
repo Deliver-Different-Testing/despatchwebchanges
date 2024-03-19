@@ -3,22 +3,31 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
-{
-    public partial class TucJobBookingItem
-    {
-        public int BookingId { get; set; }
-        public int ItemId { get; set; }
-        public int Items { get; set; }
-        public double Weight { get; set; }
-        public double Length { get; set; }
-        public double Height { get; set; }
-        public double Depth { get; set; }
-        public bool? Pu { get; set; }
-        public bool? Do { get; set; }
-        public int? Dgclass { get; set; }
-        public string Notes { get; set; }
+namespace DespatchWeb.EntityClasses;
 
-        public virtual TucJobBooking Booking { get; set; }
-    }
+public partial class TucJobBookingItem
+{
+    public int BookingId { get; set; }
+
+    public int ItemId { get; set; }
+
+    public int Items { get; set; }
+
+    public double Weight { get; set; }
+
+    public double Length { get; set; }
+
+    public double Height { get; set; }
+
+    public double Depth { get; set; }
+
+    public bool? Pu { get; set; }
+
+    public bool? Do { get; set; }
+
+    public int? Dgclass { get; set; }
+
+    public string Notes { get; set; }
+
+    public virtual TucJobBooking Booking { get; set; }
 }

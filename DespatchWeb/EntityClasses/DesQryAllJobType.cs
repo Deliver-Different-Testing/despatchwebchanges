@@ -3,11 +3,11 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class DesQryAllJobType
 {
-    public partial class DesQryAllJobType
-    {
-        public int JobTypeId { get; set; }
-        public string Name { get; set; }
-    }
+    public int JobTypeId { get; set; }
+
+    public string Name { get; set; }
 }

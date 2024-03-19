@@ -3,35 +3,57 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
-{
-    public partial class TblBulkRunSchedule
-    {
-        public int BulkRunScheduleId { get; set; }
-        public string Name { get; set; }
-        public short DayOfWeek { get; set; }
-        public TimeSpan StartTime { get; set; }
-        public TimeSpan EndTime { get; set; }
-        public int MaxJobs { get; set; }
-        public int Region { get; set; }
-        public int? ClientId { get; set; }
-        public int? SpeedId { get; set; }
-        public int CutoffHours { get; set; }
-        public string Description { get; set; }
-        public bool? AutoBook { get; set; }
-        public int? PostcodeGroupId { get; set; }
-        public bool? BookPickup { get; set; }
-        public int? PickupDepotId { get; set; }
-        public int? StorageState { get; set; }
-        public int? DeliveryState { get; set; }
-        public int? PickupRatingSpeed { get; set; }
-        public int? PickupPostcodeGroupId { get; set; }
-        public int? ParentSpeedId { get; set; }
-        public int? PickupBoxDiscount { get; set; }
-        public int? DropOffLocationId { get; set; }
+namespace DespatchWeb.EntityClasses;
 
-        public virtual TucClient Client { get; set; }
-        public virtual TucJobType ParentSpeed { get; set; }
-        public virtual TucJobType Speed { get; set; }
-    }
+public partial class TblBulkRunSchedule
+{
+    public int BulkRunScheduleId { get; set; }
+
+    public string Name { get; set; }
+
+    public short DayOfWeek { get; set; }
+
+    public TimeSpan StartTime { get; set; }
+
+    public TimeSpan EndTime { get; set; }
+
+    public int MaxJobs { get; set; }
+
+    public int Region { get; set; }
+
+    public int? ClientId { get; set; }
+
+    public int? SpeedId { get; set; }
+
+    public int CutoffHours { get; set; }
+
+    public string Description { get; set; }
+
+    public bool? AutoBook { get; set; }
+
+    public int? PostcodeGroupId { get; set; }
+
+    public bool? BookPickup { get; set; }
+
+    public int? PickupDepotId { get; set; }
+
+    public int? StorageState { get; set; }
+
+    public int? DeliveryState { get; set; }
+
+    public int? PickupRatingSpeed { get; set; }
+
+    public int? PickupPostcodeGroupId { get; set; }
+
+    public int? ParentSpeedId { get; set; }
+
+    public int? PickupBoxDiscount { get; set; }
+
+    public int? DropOffLocationId { get; set; }
+
+    public virtual TucClient Client { get; set; }
+
+    public virtual TucJobType ParentSpeed { get; set; }
+
+    public virtual TucJobType Speed { get; set; }
 }
