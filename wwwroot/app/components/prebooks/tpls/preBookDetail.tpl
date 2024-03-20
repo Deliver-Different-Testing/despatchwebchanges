@@ -282,14 +282,7 @@
 	</div>
 </div>
 
-<!--<div ng-if="currentCourier" style="height: 100%;">
-	<div class="overlay-map-fix"></div>
-	<div id="map_canvas" style="width:100%;height:100%;"></div>
 
-	<script src="app/components/home/map.js?v=1.3"></script>
-
-</div>
--->
 <div class="no-data" ng-if="!currentJob && !currentCourier">
     <div class="text">Please select a job or courier</div>
 </div>
