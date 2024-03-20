@@ -4,8 +4,8 @@ angular
     .module("uDispatch")
     .config(["HereMapsConfigProvider", function (HereMapsConfigProvider) {
         HereMapsConfigProvider.setOptions({
-            'app_id': 'bBPfh2x8Cauun3ygLMAx',
-            'app_code': 'yjfwTdkin_R2rGXYTrwWVg',
+            'app_id': HMID,
+            'app_code': HMCD,
             'useHTTPS': true,
             'useCIT': true,
             'mapTileConfig': {

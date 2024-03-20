@@ -13,17 +13,31 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
 
     <environment exclude="Development">
-        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4&libraries=places&loading=async&callback=initMap" async defer></script>
+        @{
+            var googleMapsApiKey = "https://maps.googleapis.com/maps/api/js?&libraries=places&loading=async&callback=initMap&key=" + Environment.GetEnvironmentVariable("GoogleMapsKey");
+            <script type="text/javascript" async defer src='@googleMapsApiKey' ></script>
 
-        <script type="text/javascript">googleMapsApiKey = "AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4"</script>
-
+        
+        }
     </environment>
     <environment include="Development">
-        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg&libraries=places&loading=async&callback=initMap" async defer></script>
+        @{
 
-        <script type="text/javascript">googleMapsApiKey = "AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg"</script>
+            var googleMapsApiKey = "https://maps.googleapis.com/maps/api/js?&libraries=places&loading=async&callback=initMap&key=" + Environment.GetEnvironmentVariable("GoogleMapsDevKey");
+            <script type="text/javascript" async defer src='@googleMapsApiKey'></script>
+        }
     </environment>
-
+    <script type="text/javascript">
+        @{ 
+            var hmid = Environment.GetEnvironmentVariable("HereMapsID");
+            var hmcd = Environment.GetEnvironmentVariable("HereMapsCode");
+        }
+    
+            var HMID = '@hmid';
+            var HMCD = '@hmcd';
+    </script>
+       
+    
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
