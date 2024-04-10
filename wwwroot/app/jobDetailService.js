@@ -614,7 +614,7 @@
 
                             if (fieldName === "SpeedID") {
                                 callData.value = gather.form.fields[0].value;
-                                job.speedID = gather.form.fields[0].value;
+                                job.speedID = parseInt(gather.form.fields[0].value);
                                 job.speed = $("#gather-SpeedID").find(':selected').text();
                                 rerate = true;
                             }
@@ -634,13 +634,13 @@
                             }
                             if (fieldName === "NotifiedJobTypeID") {
                                 callData.value = gather.form.fields[0].value;
-                                job.notifiedJobTypeID = gather.form.fields[0].value;
+                                job.notifiedJobTypeID = parseInt(gather.form.fields[0].value);
                                 job.notify = $("#gather-NotifiedJobTypeID").find(':selected').text();
                                 rerate = true;
                             }
                             if (fieldName === "AcceptedJobTypeID") {
                                 callData.value = gather.form.fields[0].value;
-                                job.acceptedJobTypeID = gather.form.fields[0].value;
+                                job.acceptedJobTypeID = parseInt(gather.form.fields[0].value);
                                 job.speedAccepted = $("#gather-AcceptedJobTypeID").find(':selected').text();
                                 rerate = true;
                             }
