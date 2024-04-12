@@ -8,17 +8,9 @@ namespace DespatchWeb.Attributes
     // Multiuse attribute.  
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true)  // Multiuse attribute.  
     ]
-    public class PropName : System.Attribute
+    public class PropName(string name) : System.Attribute
     {
-        string name;
-
-
-        public PropName(string name)
-        {
-            this.name = name;
-
-            
-        }
+        string name = name;
 
         public string GetName()
         {

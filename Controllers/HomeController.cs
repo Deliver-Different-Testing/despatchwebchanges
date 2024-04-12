@@ -1,35 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using DespatchWeb.Models;
+using DespatchWeb.Repositories;
+using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using DespatchWeb.Models;
-using System.Security.Cryptography;
-using System.IO;
-using System.Net;
-using System.Net.Mail;
-using Microsoft.Extensions.Configuration;
-using DespatchWeb.Repositories;
-using Microsoft.AspNetCore.Hosting;
-using System.Security.Claims;
-using System.Web;
-using Microsoft.Extensions.Hosting;
 
 namespace DespatchWeb.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController(ClientRepository clientRepository) : Controller
     {
-        private IConfiguration _configuration;
-        private readonly ClientRepository _clientRepository;
-        private readonly IWebHostEnvironment _hostingEnvironment;
-
-        public HomeController(ClientRepository clientRepository, IConfiguration configuration, IWebHostEnvironment hostingEnvironment)
-        {
-            _clientRepository = clientRepository;
-            _configuration = configuration;
-            _hostingEnvironment = hostingEnvironment;
-        }
 
         public async Task<IActionResult> Index([FromQuery] string login)
         {
@@ -40,7 +20,7 @@ namespace DespatchWeb.Controllers
             {
 
 
-                var clientDetail = await _clientRepository.ValidateClientAsync(Convert.ToInt32(cid));
+                var clientDetail = await clientRepository.ValidateClientAsync(Convert.ToInt32(cid));
                 ViewBag.FirstName = clientDetail.FirstName;
                 ViewBag.FullName = clientDetail.FullName;
                 ViewBag.Email = clientDetail.Email;
@@ -61,60 +41,17 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> ActiveClients(string searchTerm)
         {
-            var result = await _clientRepository.ActiveClients(searchTerm);
+            var result = await clientRepository.ActiveClients(searchTerm);
             return Json(result);
         }
 
         public async Task<IActionResult> ClientContacts(int contactId)
         {
-            var result = await _clientRepository.ClientContacts(contactId);
+            var result = await clientRepository.ClientContacts(contactId);
             return Json(result);
         }
         
 
-        private string DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
-        {
-            // Check arguments.
-            if (cipherText == null || cipherText.Length <= 0)
-                throw new ArgumentNullException("cipherText");
-            if (Key == null || Key.Length <= 0)
-                throw new ArgumentNullException("Key");
-            if (IV == null || IV.Length <= 0)
-                throw new ArgumentNullException("IV");
-
-            // Declare the string used to hold
-            // the decrypted text.
-            string plaintext = null;
-
-            // Create an Aes object
-            // with the specified key and IV.
-            using (var aesAlg = Aes.Create())
-            {
-                aesAlg.Key = Key;
-                aesAlg.IV = IV;
-
-                // Create a decrytor to perform the stream transform.
-                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
-
-                // Create the streams used for decryption.
-                using (var msDecrypt = new MemoryStream(cipherText))
-                {
-                    using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                    {
-                        using (var srDecrypt = new StreamReader(csDecrypt))
-                        {
-
-                            // Read the decrypted bytes from the decrypting stream and place them in a string.
-                            plaintext = srDecrypt.ReadToEnd();
-                        }
-                    }
-                }
-
-            }
-
-            return plaintext;
-
-        }
 
         public IActionResult About()
         {

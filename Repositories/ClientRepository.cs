@@ -9,23 +9,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories
 {
-    public class ClientRepository
+    public class ClientRepository(DespatchContext context)
     {
-        private readonly DespatchContext _context;
-
-        public ClientRepository(DespatchContext context)
-        {
-            _context = context;
-        }
-
         public async Task<ClientViewModel> ValidateClientAsync(int contactId)
         {
-            var contact = await _context.TucClientContacts.FirstOrDefaultAsync(c=>c.UcctId == contactId);
+            var contact = await context.TucClientContacts.FirstOrDefaultAsync(c=>c.UcctId == contactId);
             if (contact == null)
             {
                 return null;
             }
-            var client = await _context.TblClients.FirstOrDefaultAsync(x=>x.ClientId == contact.UcctClientId);
+            var client = await context.TblClients.FirstOrDefaultAsync(x=>x.ClientId == contact.UcctClientId);
             if (client == null)
             {
                 return null;
@@ -44,9 +37,9 @@ namespace DespatchWeb.Repositories
 
         public async Task<List<ClientContactViewModel>> ClientContacts(int contactId)
         {
-            var clientContacts = from c in _context.TblClientContacts
-                join cip in _context.TblClientContactInternetPermissions on c.ClientContactId equals cip.ClientContactId
-                join ip in _context.TblInternetPermissions on cip.InternetPermissionId equals ip.InternetPermissionId
+            var clientContacts = from c in context.TblClientContacts
+                join cip in context.TblClientContactInternetPermissions on c.ClientContactId equals cip.ClientContactId
+                join ip in context.TblInternetPermissions on cip.InternetPermissionId equals ip.InternetPermissionId
                 where (c.ContactId == contactId && ip.SystemName == "DespatchWeb")
                 orderby (c.IsDefaultAccount)
                 select new ClientContactViewModel()
@@ -61,7 +54,7 @@ namespace DespatchWeb.Repositories
         public async Task<DispatcherViewModel> ValidateDispatcherLogin(string name)
         {
             var result = new List<DispatcherViewModel>();
-            await _context.LoadStoredProc("INT_stpIsValidLogin_Despatch")
+            await context.LoadStoredProc("INT_stpIsValidLogin_Despatch")
                 .WithSqlParam("@WindowsLogonUserName", name)
                 .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DispatcherViewModel>().ToList(); });
             return result.FirstOrDefault();
@@ -71,7 +64,7 @@ namespace DespatchWeb.Repositories
         public async Task<List<ClientActiveViewModel>> ActiveClients(string searchTerm)
         {
             var activeCouriers = new List<ClientActiveViewModel>();
-            await _context.LoadStoredProc("DESWEB_qryClientsActive")
+            await context.LoadStoredProc("DESWEB_qryClientsActive")
                 .WithSqlParam("@SearchTerm", searchTerm)
                 .ExecuteStoredProcAsync(handle =>
                 {

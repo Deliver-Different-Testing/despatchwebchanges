@@ -103,17 +103,11 @@ namespace DespatchWebContextExtensions
             return cmd;
         }
 
-        public class SprocResults
+        public class SprocResults(DbDataReader reader)
         {
 
             //  private DbCommand _command;
-            private DbDataReader _reader;
-
-            public SprocResults(DbDataReader reader)
-            {
-                // _command = command;
-                _reader = reader;
-            }
+            private DbDataReader _reader = reader;
 
             public IList<T> ReadToList<T>()
             {

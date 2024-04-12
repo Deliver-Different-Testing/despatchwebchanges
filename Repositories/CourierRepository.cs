@@ -15,18 +15,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories
 {
-    public class CourierRepository
+    public class CourierRepository(DespatchContext context)
     {
-        private readonly DespatchContext _context;
-
-        public CourierRepository(DespatchContext context)
-        {
-            _context = context;
-        }
-
         public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId)
         {
-            var result = await _context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
+            var result = await context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
             return result;
         }
 
@@ -41,7 +34,7 @@ namespace DespatchWeb.Repositories
             var time = DateTime.Now;
 
 
-            await _context.LoadStoredProc("DES_qdfEvent_Insert")
+            await context.LoadStoredProc("DES_qdfEvent_Insert")
                 .WithSqlParam("@JobNo", jobNo)
                 .WithSqlParam("@ClientID", clientId)
                 .WithSqlParam("@Contact", contact)
@@ -71,7 +64,7 @@ namespace DespatchWeb.Repositories
         public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
         {
             var result = new List<AvailableCourierPosition>();
-            _context.LoadStoredProc("DESWEB_stpMapEnvelope")
+            context.LoadStoredProc("DESWEB_stpMapEnvelope")
                 .WithSqlParam("@MinimumLongitude", minLng)
                 .WithSqlParam("@MinimumLatitude", minLat)
                 .WithSqlParam("@MaximumLongitude", maxLng)
@@ -86,7 +79,7 @@ namespace DespatchWeb.Repositories
         public List<PotentialCouriersViewModel> GetPotentialCouriers(int jobId)
         {
             var result = new List<PotentialCouriersViewModel>();
-            _context.LoadStoredProc("DESWEB_qryPotentialCouriers")
+            context.LoadStoredProc("DESWEB_qryPotentialCouriers")
                 .WithSqlParam("@JobID", jobId)
 
                 .ExecuteStoredProc(handle =>
@@ -103,7 +96,7 @@ namespace DespatchWeb.Repositories
         public async Task<List<ActiveCouriersViewModel>> ActiveCouriers()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();
-            await _context.LoadStoredProc("DES_qryCourierCombo_Active")
+            await context.LoadStoredProc("DES_qryCourierCombo_Active")
                 .ExecuteStoredProcAsync(handle =>
                 {
                     activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
@@ -118,7 +111,7 @@ namespace DespatchWeb.Repositories
         public async Task<List<AllCourierActiveViewModel>> AllActiveCouriers(string searchTerm)
         {
             var activeCouriers = new List<AllCourierActiveViewModel>();
-            await _context.LoadStoredProc("DESWEB_qryCourierCombo")
+            await context.LoadStoredProc("DESWEB_qryCourierCombo")
                 .WithSqlParam("@SearchTerm", searchTerm)
                 .ExecuteStoredProcAsync(handle =>
                 {
@@ -130,7 +123,7 @@ namespace DespatchWeb.Repositories
         public async Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end)
         {
             var result = new List<CourierPosition>();
-            await _context.LoadStoredProc("MAP_stpCourierGPS_CourierTimeTrace_New")
+            await context.LoadStoredProc("MAP_stpCourierGPS_CourierTimeTrace_New")
                 .WithSqlParam("@CourierCode", code)
                 .WithSqlParam("@StartTime", start)
                 .WithSqlParam("@EndTime", end)
@@ -145,7 +138,7 @@ namespace DespatchWeb.Repositories
         public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();
-            await _context.LoadStoredProc("DESWEB_qryCourierActive")
+            await context.LoadStoredProc("DESWEB_qryCourierActive")
                 .ExecuteStoredProcAsync(handle =>
                 {
                     activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
@@ -157,7 +150,7 @@ namespace DespatchWeb.Repositories
         public CourierLocation Location(string code)
         {
             var currentLocation = new CourierLocation();
-            _context.LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
+            context.LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
                 .WithSqlParam("@CourierCode", code)
                 .ExecuteStoredProc(handle =>
                     {
@@ -169,7 +162,7 @@ namespace DespatchWeb.Repositories
         public async Task<ClearListViewModel> ClearLists()
         {
             var activeCouriers = new List<ActiveCouriersViewModel>();
-            _context.LoadStoredProc("DES_qryCourierCombo_Active")
+            context.LoadStoredProc("DES_qryCourierCombo_Active")
                 .ExecuteStoredProc(handle =>
                 {
                     activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
@@ -216,7 +209,7 @@ namespace DespatchWeb.Repositories
         internal ClearListEnvelopeViewModel ClearListEnvelope(int id)
         {
             var envelope = new ClearListEnvelopeViewModel();
-            _context.LoadStoredProc("MAP_stpClearListArea_Envelope")
+            context.LoadStoredProc("MAP_stpClearListArea_Envelope")
                 .WithSqlParam("@ClearListAreaID", id)
                 .WithSqlParam("@IncludeCouriers", false)
                 .ExecuteStoredProc(handle => { envelope = handle.ReadToList<ClearListEnvelopeViewModel>().FirstOrDefault(); });
@@ -226,7 +219,7 @@ namespace DespatchWeb.Repositories
         public async Task<int> ClearListTotalRemainingAsync(string area)
         {
             var filter =
-                _context.TblDespatchViews.FirstOrDefault(v =>
+                context.TblDespatchViews.FirstOrDefault(v =>
                         (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
             if (string.IsNullOrEmpty(filter))
             {
@@ -234,7 +227,7 @@ namespace DespatchWeb.Repositories
             }
             filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
             var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
-            var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
+            var jobs = await context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
             return jobs.Count;
         }
 
@@ -242,7 +235,7 @@ namespace DespatchWeb.Repositories
         private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers, int clearListId, int percentHeight)
         {
             var result = new List<CourierClearListViewModel>();
-            _context.LoadStoredProc("DES_qdfCourier_ClearLists")
+            context.LoadStoredProc("DES_qdfCourier_ClearLists")
                 .WithSqlParam("@ClearListAreaID", clearListId)
                 .ExecuteStoredProc(handle => { result = handle.ReadToList<CourierClearListViewModel>().ToList(); });
 

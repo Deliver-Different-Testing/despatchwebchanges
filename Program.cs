@@ -1,6 +1,5 @@
 ﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Repositories;
-using EntityFrameworkCore.UseRowNumberForPaging;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
