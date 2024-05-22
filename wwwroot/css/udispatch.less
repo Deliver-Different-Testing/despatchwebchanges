@@ -53,7 +53,6 @@ a.pickadate-prev {
             color: #FFF;
             padding: 5px;
             position: relative;
-            z-index: 7;
             cursor: pointer;
         }
 
@@ -77,7 +76,6 @@ a.pickadate-prev {
         }
 
         .clearLists-list-items {
-            z-index: 6;
             position: relative;
             overflow: auto;
             height: 100%;
@@ -334,8 +332,9 @@ a.pickadate-prev {
     -khtml-user-select: none; /* Konqueror HTML */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
-    user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+    user-select: none;
+    /* Non-prefixed version, currently
+                                     supported by Chrome and Opera */
 }
 
 #draggingItems {
@@ -359,7 +358,7 @@ a.pickadate-prev {
     right: 0;
     bottom: 0;
     z-index: 200;
-    background-color: rgba(255,255,255, 0.9);
+    background-color: rgba(255, 255, 255, 0.9);
     border: 1px solid #CCC;
     padding: 20px;
     display: none;
@@ -393,7 +392,7 @@ a.pickadate-prev {
     right: 0;
     bottom: 0;
     z-index: 200;
-    background-color: rgba(255,255,255, 0.9);
+    background-color: rgba(255, 255, 255, 0.9);
     border: 1px solid #CCC;
     padding: 20px;
     display: none;
@@ -432,7 +431,7 @@ a.pickadate-prev {
     right: 0;
     bottom: 0;
     z-index: 200;
-    background-color: rgba(255,255,255, 0.9);
+    background-color: rgba(255, 255, 255, 0.9);
     border: 1px solid #CCC;
     padding: 20px;
     display: none;
@@ -466,7 +465,7 @@ a.pickadate-prev {
     right: 0;
     bottom: 0;
     z-index: 200;
-    background-color: rgba(255,255,255, 0.9);
+    background-color: rgba(255, 255, 255, 0.9);
     border: 1px solid #CCC;
     padding: 20px;
     display: none;
@@ -502,7 +501,7 @@ a.pickadate-prev {
     right: 0;
     bottom: 0;
     z-index: 200;
-    background-color: rgba(255,255,255, 0.7);
+    background-color: rgba(255, 255, 255, 0.7);
     border: 1px solid #CCC;
     padding: 20px;
     display: none;
@@ -535,7 +534,7 @@ a.pickadate-prev {
     right: 0;
     bottom: 0;
     z-index: 200;
-    background-color: rgba(255,255,255, 0.7);
+    background-color: rgba(255, 255, 255, 0.7);
     border: 1px solid #CCC;
     padding: 20px;
     text-align: center;
@@ -627,7 +626,7 @@ a.pickadate-prev {
         height: 100vh;
         border: 7px solid #fff;
         padding-top: 40px;
-        min-width: 5 0;
+        min-width: 50px;
 
         &:last-child {
             flex: 1;
@@ -647,11 +646,12 @@ a.pickadate-prev {
             min-width: 50px;
 
             .box {
+                display: flex;
+                flex-direction: column;
                 min-height: 50px;
                 margin-bottom: 15px;
                 background-color: #CCC;
                 border: 1px solid #5d5d5d;
-                margin-top: 40px;
 
                 &:nth-last-child(2) {
                     flex: 0;
@@ -672,12 +672,13 @@ a.pickadate-prev {
                 }
 
                 .box-bar {
+                    display: flex;
+                    justify-content: space-between;
                     background: #5d5d5d;
                     color: #FFF;
                     padding: 10px;
                     position: relative;
                     z-index: 2;
-                    top: -40px;
                     white-space: nowrap;
 
                     .related {
@@ -686,64 +687,52 @@ a.pickadate-prev {
                     }
 
                     .box-bar-title {
+                        overflow-x: auto;
+                        flex-grow: 1;
+                        margin-right: 10px;
+
                         span {
                             font-size: 10px;
                         }
+
+                        /* For Chrome and Safari */
+
+                        ::-webkit-scrollbar {
+                            width: 12px;
+                        }
+
+                        ::-webkit-scrollbar-track {
+                            background: #f7f7f7;
+                        }
+
+                        ::-webkit-scrollbar-thumb {
+                            background: #888;
+                            border-radius: 2px;
+                        }
+
+                        /* For Firefox */
+                        scrollbar-color: #888 #f7f7f7;
+                        scrollbar-width: thin;
                     }
 
                     .box-buttons {
-                        position: absolute;
-                        right: 0;
-                        top: 0;
+                        display: flex;
+                        flex-basis: auto;
+                        flex-shrink: 0;
 
                         .box-handle {
                             padding: 10px;
                             background-color: #000;
                             cursor: move;
-                            display: inline-block;
+                            display: inline-flex;
                             vertical-align: top;
-                        }
-
-                        .box-refresh {
-                            display: inline-block;
-                            top: 5px;
-                            position: absolute;
-                            left: -59px
-                        }
-
-                        .box-toggle {
-                            display: inline-block;
-                            top: 5px;
-                            position: absolute;
-                            left: -130px
-                        }
-
-                        .box-toggleZoom {
-                            display: inline-block;
-                            top: 5px;
-                            position: absolute;
-                            left: -250px
-                        }
-
-                        .box-toggleUA {
-                            display: inline-block;
-                            top: 5px;
-                            position: absolute;
-                            left: -350px
-                        }
-
-                        .box-trucks {
-                            display: inline-block;
-                            top: 5px;
-                            position: absolute;
-                            left: -150px
                         }
 
                         .box-search {
                             padding: 4px;
                             background-color: #000;
                             cursor: pointer;
-                            display: inline-block;
+                            display: inline-flex;
                             vertical-align: top;
                             height: 40px;
 
@@ -764,9 +753,7 @@ a.pickadate-prev {
                         }
 
                         .box-details {
-                            display: inline-block;
-                            position: relative;
-                            top: 5px;
+                            display: inline-flex;
 
                             .btn {
                                 background-color: #000;
@@ -781,18 +768,15 @@ a.pickadate-prev {
                 }
 
                 .box-content {
-                    position: absolute;
-                    top: 0;
                     width: 100%;
                     height: 100%;
-                    z-index: 1;
                     overflow: auto;
                     background-color: whitesmoke;
                     font-size: 11px;
                 }
 
                 .related-content {
-                    top:15px!important;
+                    top: 15px !important;
                 }
             }
         }
@@ -826,12 +810,7 @@ a.pickadate-prev {
 }
 
 table.table {
-    margin-top: 28px;
-
     tr {
-
-
-
         &.late {
             background-color: #ffecec;
         }
@@ -923,8 +902,7 @@ table.table {
 }
 
 .table-headings {
-    position: absolute;
-    top: 0px;
+    top: 0;
     z-index: 15;
 
     thead {
@@ -960,9 +938,7 @@ table.table {
     }
 
     tr {
-        border: 1px solid rgba(0,0,0,0.5);
-
-
+        border: 1px solid rgba(0, 0, 0, 0.5);
 
 
         &.O {
@@ -979,7 +955,7 @@ table.table {
     }
 
     td {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
     }
 
     .doing {
@@ -1000,8 +976,8 @@ table.table {
 }
 
 input.pod-DispatchField {
-    color:black;
-    width:60px;
+    color: black;
+    width: 60px;
     text-align: center;
 }
 
@@ -1012,9 +988,7 @@ input.pod-DispatchField {
     }
 
     tr {
-        border: 1px solid rgba(0,0,0,0.5);
-
-
+        border: 1px solid rgba(0, 0, 0, 0.5);
 
 
         &.O {
@@ -1031,7 +1005,7 @@ input.pod-DispatchField {
     }
 
     td {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
     }
 
     .doing {
@@ -1058,9 +1032,7 @@ input.pod-DispatchField {
     }
 
     tr {
-        border: 1px solid rgba(0,0,0,0.5);
-
-
+        border: 1px solid rgba(0, 0, 0, 0.5);
 
 
         &.O {
@@ -1077,7 +1049,7 @@ input.pod-DispatchField {
     }
 
     td {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
     }
 
     .doing {
@@ -1104,25 +1076,25 @@ input.pod-DispatchField {
     }
 
     tr {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
 
 
         &.O {
-            background-color: @s-orange!important;
+            background-color: @s-orange !important;
         }
 
         &.B {
-            background-color: @s-blue!important;
+            background-color: @s-blue !important;
         }
 
         &.G {
-            background-color: @s-green!important;
+            background-color: @s-green !important;
         }
-        
+
     }
 
     td {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
     }
 
     .doing {
@@ -1149,7 +1121,7 @@ input.pod-DispatchField {
     }
 
     tr {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
 
         &.O {
             background-color: @s-orange !important;
@@ -1165,7 +1137,7 @@ input.pod-DispatchField {
     }
 
     td {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
     }
 
     .doing {
@@ -1192,7 +1164,7 @@ input.pod-DispatchField {
     }
 
     tr {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
 
 
         &.O {
@@ -1209,7 +1181,7 @@ input.pod-DispatchField {
     }
 
     td {
-        border: 1px solid rgba(0,0,0,0.5);
+        border: 1px solid rgba(0, 0, 0, 0.5);
     }
 
     .doing {
@@ -1247,8 +1219,9 @@ input.pod-DispatchField {
     -khtml-user-select: none; /* Konqueror HTML */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
-    user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+    user-select: none;
+    /* Non-prefixed version, currently
+                                     supported by Chrome and Opera */
 }
 
 .overlay-map-fix {
@@ -1474,7 +1447,6 @@ span.courier {
 }
 
 
-
 .marker {
     position: relative;
     top: -30px;
@@ -1510,6 +1482,6 @@ span.courierRed {
 
 #SupportChannels {
     .dropdown-menu {
-        z-index:99999;
+        z-index: 99999;
     }
 }

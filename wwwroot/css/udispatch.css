@@ -38,7 +38,6 @@ a.pickadate-prev {
   color: #FFF;
   padding: 5px;
   position: relative;
-  z-index: 7;
   cursor: pointer;
 }
 #clearLists .clearLists-list .listActive {
@@ -57,7 +56,6 @@ a.pickadate-prev {
   width: 100%;
 }
 #clearLists .clearLists-list .clearLists-list-items {
-  z-index: 6;
   position: relative;
   overflow: auto;
   height: 100%;
@@ -273,7 +271,7 @@ a.pickadate-prev {
   /* Internet Explorer/Edge */
   user-select: none;
   /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+                                     supported by Chrome and Opera */
 }
 #draggingItems {
   border: 3px dotted #CCC;
@@ -534,7 +532,7 @@ a.pickadate-prev {
   height: 100vh;
   border: 7px solid #fff;
   padding-top: 40px;
-  min-width: 5 0;
+  min-width: 50px;
 }
 .columns .column:last-child {
   flex: 1;
@@ -552,11 +550,12 @@ a.pickadate-prev {
   min-width: 50px;
 }
 .columns .column .column-sortable .box {
+  display: flex;
+  flex-direction: column;
   min-height: 50px;
   margin-bottom: 15px;
   background-color: #CCC;
   border: 1px solid #5d5d5d;
-  margin-top: 40px;
 }
 .columns .column .column-sortable .box:nth-last-child(2) {
   flex: 0;
@@ -573,68 +572,58 @@ a.pickadate-prev {
   display: none;
 }
 .columns .column .column-sortable .box .box-bar {
+  display: flex;
+  justify-content: space-between;
   background: #5d5d5d;
   color: #FFF;
   padding: 10px;
   position: relative;
   z-index: 2;
-  top: -40px;
   white-space: nowrap;
 }
 .columns .column .column-sortable .box .box-bar .related {
   max-width: 80%;
   overflow-x: scroll;
 }
+.columns .column .column-sortable .box .box-bar .box-bar-title {
+  overflow-x: auto;
+  flex-grow: 1;
+  margin-right: 10px;
+  /* For Chrome and Safari */
+  /* For Firefox */
+  scrollbar-color: #888 #f7f7f7;
+  scrollbar-width: thin;
+}
 .columns .column .column-sortable .box .box-bar .box-bar-title span {
   font-size: 10px;
 }
+.columns .column .column-sortable .box .box-bar .box-bar-title ::-webkit-scrollbar {
+  width: 12px;
+}
+.columns .column .column-sortable .box .box-bar .box-bar-title ::-webkit-scrollbar-track {
+  background: #f7f7f7;
+}
+.columns .column .column-sortable .box .box-bar .box-bar-title ::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 2px;
+}
 .columns .column .column-sortable .box .box-bar .box-buttons {
-  position: absolute;
-  right: 0;
-  top: 0;
+  display: flex;
+  flex-basis: auto;
+  flex-shrink: 0;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-handle {
   padding: 10px;
   background-color: #000;
   cursor: move;
-  display: inline-block;
+  display: inline-flex;
   vertical-align: top;
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-refresh {
-  display: inline-block;
-  top: 5px;
-  position: absolute;
-  left: -59px;
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-toggle {
-  display: inline-block;
-  top: 5px;
-  position: absolute;
-  left: -130px;
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-toggleZoom {
-  display: inline-block;
-  top: 5px;
-  position: absolute;
-  left: -250px;
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-toggleUA {
-  display: inline-block;
-  top: 5px;
-  position: absolute;
-  left: -350px;
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-trucks {
-  display: inline-block;
-  top: 5px;
-  position: absolute;
-  left: -150px;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-search {
   padding: 4px;
   background-color: #000;
   cursor: pointer;
-  display: inline-block;
+  display: inline-flex;
   vertical-align: top;
   height: 40px;
 }
@@ -652,9 +641,7 @@ a.pickadate-prev {
   padding-left: 4px;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-details {
-  display: inline-block;
-  position: relative;
-  top: 5px;
+  display: inline-flex;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-details .btn {
   background-color: #000;
@@ -664,17 +651,14 @@ a.pickadate-prev {
   background-color: #222;
 }
 .columns .column .column-sortable .box .box-content {
-  position: absolute;
-  top: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
   overflow: auto;
   background-color: whitesmoke;
   font-size: 11px;
 }
 .columns .column .column-sortable .box .related-content {
-  top: 15px!important;
+  top: 15px !important;
 }
 .columns .placeholder {
   height: 200px;
@@ -689,9 +673,6 @@ a.pickadate-prev {
 }
 .table-striped > tbody > tr:nth-child(2n+1) {
   background-color: #d9d9d9;
-}
-table.table {
-  margin-top: 28px;
 }
 table.table tr.late {
   background-color: #ffecec;
@@ -760,8 +741,7 @@ table.table tr .status.ASC {
   background-color: #DDD;
 }
 .table-headings {
-  position: absolute;
-  top: 0px;
+  top: 0;
   z-index: 15;
 }
 .table-headings thead {
@@ -1006,7 +986,7 @@ input.pod-DispatchField {
   /* Internet Explorer/Edge */
   user-select: none;
   /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+                                     supported by Chrome and Opera */
 }
 .overlay-map-fix {
   position: absolute;
