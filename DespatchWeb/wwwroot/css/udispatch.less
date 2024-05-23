@@ -54,6 +54,7 @@ a.pickadate-prev {
             padding: 5px;
             position: relative;
             cursor: pointer;
+            min-height: 40px;
         }
 
         .listActive {
@@ -83,72 +84,17 @@ a.pickadate-prev {
             padding-top: 22px;
             -ms-overflow-style: none;
             scrollbar-width: none;
+            display: flex; // Flex container
+            flex-direction: column; // Stack the flex children vertically
 
             &::-webkit-scrollbar {
                 display: none; // Safari and Chrome
             }
 
-            .clearLists-list-items-top {
-                background-color: #bae1ff;
-                border-bottom: 1px solid #a4d2f5;
-
-                .clearLists-list-items-item-number {
-                    padding: 2px;
-                    background: #94c5ea;
-                    text-align: center;
-                    font-weight: 700;
-                }
-
-                &.active {
-                    background-color: lighten(#bae1ff, 10);
-
-                    .clearLists-list-items-item-number {
-                        background-color: lighten(#94c5ea, 10);
-                    }
-                }
-            }
-
-            .clearLists-list-items-middle {
-                background-color: #d4c7ff;
-                border-bottom: 1px solid #c6b6fd;
-
-                .clearLists-list-items-item-number {
-                    padding: 2px;
-                    background: #bdaeef;
-                    text-align: center;
-                    font-weight: 700;
-                }
-
-                &.active {
-                    background-color: lighten(#d4c7ff, 10);
-
-                    .clearLists-list-items-item-number {
-                        background-color: lighten(#bdaeef, 10);
-                    }
-                }
-            }
-
-            .clearLists-list-items-bottom {
-                background-color: #ffdfba;
-                border-bottom: 1px solid #efcea9;
-
-                .clearLists-list-items-item-number {
-                    padding: 2px;
-                    background: #ffc888;
-                    text-align: center;
-                    font-weight: 700;
-                }
-
-                &.active {
-                    background-color: lighten(#ffdfba, 10);
-
-                    .clearLists-list-items-item-number {
-                        background-color: lighten(#ffc888, 10);
-                    }
-                }
-            }
-
             .clearLists-list-items-item {
+                display:flex; // Flex container
+                align-items: center; // Align items vertically in the center
+
                 .clearLists-list-items-item-number {
                     padding: 2px;
                     width: 33px;
@@ -163,12 +109,12 @@ a.pickadate-prev {
                     margin-bottom: 1px;
                     margin-left: 1px;
                     border-radius: 1px;
+                    flex-grow: 1; // It takes remaining space
                 }
             }
         }
     }
 }
-
 .pickadate {
     text-align: left;
     background-color: #FFF;
@@ -1318,6 +1264,7 @@ a.uline {
 
     .fields {
         padding: 3px;
+        overflow-y: auto;
 
         .field {
             background-color: #f3f2f2;
