@@ -73,10 +73,21 @@ a.pickadate-prev {
 #clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item {
   display: flex;
   align-items: center;
+  background-color: #ffdfba;
+  border-bottom: 1px solid #efcea9;
+}
+#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item.active {
+  background-color: #fff7ed;
 }
 #clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item .clearLists-list-items-item-number {
   padding: 2px;
   width: 33px;
+  background: #ffc888;
+  text-align: center;
+  font-weight: 700;
+}
+#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item .clearLists-list-items-item-number.active {
+  background-color: #ffe0bb;
 }
 #clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item .clearLists-list-items-item-dest {
   padding: 1px;
@@ -88,6 +99,32 @@ a.pickadate-prev {
   margin-left: 1px;
   border-radius: 1px;
   flex-grow: 1;
+}
+#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-middle {
+  background-color: #d4c7ff;
+  border-bottom: 1px solid #c6b6fd;
+}
+#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-middle .clearLists-list-items-item-number {
+  padding: 2px;
+  background: #bdaeef;
+  text-align: center;
+  font-weight: 700;
+}
+#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-middle .clearLists-list-items-item-number.active {
+  background-color: #e0d9f7;
+}
+#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-bottom {
+  background-color: #ffdfba;
+  border-bottom: 1px solid #efcea9;
+}
+#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-bottom .clearLists-list-items-item-number {
+  padding: 2px;
+  background: #ffc888;
+  text-align: center;
+  font-weight: 700;
+}
+#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-bottom .clearLists-list-items-item-number.active {
+  background-color: #ffe0bb;
 }
 .pickadate {
   text-align: left;
@@ -1052,6 +1089,14 @@ a.uline.disabled {
   padding: 0;
   margin: 0;
   background: transparent;
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -o-pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 300px;
 }
 #jobDetail .fields .field:hover {
   border-top: 3px solid #5d5d5d;
@@ -1066,6 +1111,8 @@ a.uline.disabled {
 }
 #jobDetail .notes {
   min-height: 100px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 #jobDetail .palletInfo {
   position: relative;

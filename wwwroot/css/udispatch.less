@@ -84,20 +84,33 @@ a.pickadate-prev {
             padding-top: 22px;
             -ms-overflow-style: none;
             scrollbar-width: none;
-            display: flex; // Flex container
-            flex-direction: column; // Stack the flex children vertically
+            display: flex;
+            flex-direction: column;
 
             &::-webkit-scrollbar {
                 display: none; // Safari and Chrome
             }
 
             .clearLists-list-items-item {
-                display:flex; // Flex container
-                align-items: center; // Align items vertically in the center
+                display:flex;
+                align-items: center;
+                background-color: #ffdfba;
+                border-bottom: 1px solid #efcea9;
+
+                &.active {
+                    background-color: lighten(#ffdfba, 10);
+                }
 
                 .clearLists-list-items-item-number {
                     padding: 2px;
                     width: 33px;
+                    background: #ffc888;
+                    text-align: center;
+                    font-weight: 700;
+
+                    &.active {
+                        background-color: lighten(#ffc888, 10);
+                    }
                 }
 
                 .clearLists-list-items-item-dest {
@@ -110,6 +123,38 @@ a.pickadate-prev {
                     margin-left: 1px;
                     border-radius: 1px;
                     flex-grow: 1; // It takes remaining space
+                }
+            }
+
+            .clearLists-list-items-middle {
+                background-color: #d4c7ff;
+                border-bottom: 1px solid #c6b6fd;
+
+                .clearLists-list-items-item-number {
+                    padding: 2px;
+                    background: #bdaeef;
+                    text-align: center;
+                    font-weight: 700;
+
+                    &.active {
+                        background-color: lighten(#bdaeef, 10);
+                    }
+                }
+            }
+
+            .clearLists-list-items-bottom {
+                background-color: #ffdfba;
+                border-bottom: 1px solid #efcea9;
+
+                .clearLists-list-items-item-number {
+                    padding: 2px;
+                    background: #ffc888;
+                    text-align: center;
+                    font-weight: 700;
+
+                    &.active {
+                        background-color: lighten(#ffc888, 10);
+                    }
                 }
             }
         }
@@ -1315,6 +1360,14 @@ a.uline {
                     padding: 0;
                     margin: 0;
                     background: transparent;
+                    white-space: pre-wrap;
+                    white-space: -moz-pre-wrap;
+                    white-space: -o-pre-wrap;
+                    word-break: break-word;
+                    overflow-wrap: break-word;
+                    overflow-x: auto;
+                    overflow-y: auto;
+                    max-height: 300px;
                 }
             }
 
@@ -1336,6 +1389,8 @@ a.uline {
 
     .notes {
         min-height: 100px;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     .palletInfo {
