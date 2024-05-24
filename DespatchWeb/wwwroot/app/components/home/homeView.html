@@ -108,12 +108,16 @@
                                 </div>
 
                             </div>
+
+
+                            <div class="btn btn-sm btn-primary box-refresh" style="margin-right: 10px;" ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
+
                             <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
                                 <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
                                 <input type="text" style="color: black;display:inline-block!important;" placeholder="gps courier (enter code)..." ng-model="$parent.$parent.courier.gpsCourier" id="gps" />
                                 <i class="fa fa-remove" ng-click="clearCourierSearch();" title="Clear"></i>
                             </div>
-                            <div class="btn btn-sm btn-primary box-refresh" ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
+
                             <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
                                 <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-toggle="dropdown">
                                     Trucks <span>{{truckMode}} </span>
@@ -125,7 +129,7 @@
                                     <li><a href="#" ng-click="setTruckMode('Only');">Only</a></li>
                                 </ul>
                             </div>
-                           
+
                             <div ng-show="box.name === 'supports'" id="SupportChannels" translation-texts="pickService.channelTexts" events="pickService.channelEvents" class="multi-element btn-sm btn-primary dropdown-toggle" style="background-color: inherit; display: inline-block;" extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickChannels" selected-model="pickService.channel"></div>
                             <div class="btn btn-sm btn-primary box-refresh" style="margin-left: 8px;" ng-show="box.name == 'supports'" ng-click="getSupports()"><i class="fa fa-refresh"></i></div>
                             <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity">City <i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
@@ -144,7 +148,7 @@
                         </div>
                         </div>
                     <div class="box-content" ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}" ng-include="boxes[box.name].tpl"></div>
-                </div>  
+                </div>
 
             </div>
         </div>

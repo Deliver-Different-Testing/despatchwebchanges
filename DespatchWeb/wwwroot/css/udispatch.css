@@ -571,6 +571,7 @@ a.pickadate-prev {
   display: flex;
   flex-basis: auto;
   flex-shrink: 0;
+  gap: 5px;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-handle {
   padding: 10px;
