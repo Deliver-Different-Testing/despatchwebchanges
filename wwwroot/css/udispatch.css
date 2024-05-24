@@ -1010,7 +1010,6 @@ a.uline.disabled {
 }
 #jobDetail .fields {
   padding: 3px;
-  overflow-y: auto;
 }
 #jobDetail .fields .field {
   background-color: #f3f2f2;
