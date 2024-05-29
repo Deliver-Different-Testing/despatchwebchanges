@@ -154,12 +154,14 @@ a.pickadate-prev {
   width: 100%;
   background: #191919;
   z-index: 100;
-  height: 40px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .top-bar .topbar-NavButtons {
-  position: absolute;
-  top: 5px;
-  left: 1150px;
+  margin-right: auto;
+  margin-left: 10px;
 }
 .top-bar .topbar-NavButtons .topbar-button {
   display: inline-block;
@@ -182,20 +184,17 @@ a.pickadate-prev {
   border-color: #a18d00;
 }
 .top-bar .topbar-buttons {
-  position: absolute;
-  top: 5px;
-  right: 8px;
+  margin-left: auto;
 }
 .top-bar .topbar-buttons .topbar-button {
   display: inline-block;
 }
 .top-bar .logo {
+  margin-left: auto;
   height: 26px;
-  position: relative;
-  top: 5px;
-  left: 12px;
 }
 .top-bar .box-search {
+  margin-left: auto;
   color: #FFF;
 }
 .top-bar .box-search input {
@@ -209,10 +208,7 @@ a.pickadate-prev {
   padding-left: 4px;
 }
 .top-bar .btn-group {
-  position: relative;
-  top: 5px;
-  left: 37px;
-  padding-right: 25px;
+  margin-left: auto;
 }
 .top-bar .btn-group .btn-secondary {
   background: #5d5d5d;
@@ -531,6 +527,7 @@ a.pickadate-prev {
   flex-flow: row nowrap;
   justify-content: space-around;
   align-content: space-around;
+  margin-top: 20px;
 }
 .columns .column {
   box-sizing: border-box;

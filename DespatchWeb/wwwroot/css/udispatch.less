@@ -190,12 +190,14 @@ a.pickadate-prev {
     width: 100%;
     background: #191919;
     z-index: 100;
-    height: 40px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; // One of the way to distribute objects horizontally
 
     .topbar-NavButtons {
-        position: absolute;
-        top: 5px;
-        left: 1150px;
+        margin-right: auto;  // To align items to the right
+        margin-left: 10px;
 
         .topbar-button {
             display: inline-block;
@@ -223,9 +225,7 @@ a.pickadate-prev {
     }
 
     .topbar-buttons {
-        position: absolute;
-        top: 5px;
-        right: 8px;
+        margin-left: auto;  // To align items to the right
 
         .topbar-button {
             display: inline-block;
@@ -233,13 +233,12 @@ a.pickadate-prev {
     }
 
     .logo {
+        margin-left: auto;  // To align items to the right
         height: 26px;
-        position: relative;
-        top: 5px;
-        left: 12px;
     }
 
     .box-search {
+        margin-left: auto;  // To align items to the right
         color: #FFF;
 
         input {
@@ -255,10 +254,7 @@ a.pickadate-prev {
     }
 
     .btn-group {
-        position: relative;
-        top: 5px;
-        left: 37px;
-        padding-right: 25px;
+        margin-left: auto;  // To align items to the right
 
         .btn-secondary {
             background: #5d5d5d;
@@ -620,6 +616,7 @@ a.pickadate-prev {
     flex-flow: row nowrap;
     justify-content: space-around;
     align-content: space-around;
+    margin-top: 20px;
 
     .column {
         box-sizing: border-box;
