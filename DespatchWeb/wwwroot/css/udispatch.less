@@ -4,13 +4,24 @@
 
 .btn-primary {
     background-color: @yellow;
-    border-color: darken(@yellow, 10%);
+    border: none;
     color: #000;
+    padding: 3px 10px;  /* Adjust the padding here */
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 2px;
 
     &:hover {
-        color: #000;
         background-color: darken(@yellow, 10%);
-        border-color: darken(@yellow, 18%);
+    }
+
+    &:active {
+        box-shadow: 0 5px #666;
+        transform: translateY(4px);
     }
 }
 
