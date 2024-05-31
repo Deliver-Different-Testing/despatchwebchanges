@@ -6,22 +6,26 @@
     background-color: @yellow;
     border: none;
     color: #000;
-    padding: 3px 10px;  /* Adjust the padding here */
+    padding: 6px 12px; // Half the Padding
     text-align: center;
     text-decoration: none;
     display: inline-block;
     font-size: 16px;
-    margin: 4px 2px;
+    margin: 2px 1px; // Half the Margin
     cursor: pointer;
-    border-radius: 2px;
+    border-radius: 25px; // Half the Border Radius
+    transition: all 0.3s ease-out; // Smooth Transition
+
+    box-shadow: 0px 1px 1.5px rgba(0, 0, 0, 0.2); // Half the Box Shadow
 
     &:hover {
         background-color: darken(@yellow, 10%);
+        box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.2); // Enhanced Shadow on Hover
     }
 
     &:active {
-        box-shadow: 0 5px #666;
-        transform: translateY(4px);
+        box-shadow: 0 2.5px #666; // Half the Active Box Shadow
+        transform: translateY(1px); // Half the Button Pressure Effect
     }
 }
 
@@ -197,7 +201,7 @@ a.pickadate-prev {
 
     .topbar-NavButtons {
         margin-right: auto;  // To align items to the right
-        margin-left: 10px;
+        margin-left: 40px;
 
         .topbar-button {
             display: inline-block;
@@ -225,7 +229,8 @@ a.pickadate-prev {
     }
 
     .topbar-buttons {
-        margin-left: auto;  // To align items to the right
+        margin-left: auto;
+        margin-right: 5px;
 
         .topbar-button {
             display: inline-block;
@@ -233,23 +238,31 @@ a.pickadate-prev {
     }
 
     .logo {
-        margin-left: auto;  // To align items to the right
+        margin-left: 10px;
         height: 26px;
     }
 
     .box-search {
-        margin-left: auto;  // To align items to the right
+        margin-left: auto;
+        margin-right: auto;
         color: #FFF;
 
         input {
             display: none;
             width: 161px;
-            margin-left: 2px;
-            height: 29px;
+            height: 40px;
             border: 0;
             color: #656565;
-            font-size: 11px;
-            padding-left: 4px;
+            font-size: 16px;
+            padding-left: 8px;
+            border-radius: 20px;
+            box-shadow: 0 1.5px 3px rgba(0, 0, 0, .15);
+            transition: all .3s ease;
+
+            &:focus {
+                padding-left: 12px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+            }
         }
     }
 
@@ -616,14 +629,14 @@ a.pickadate-prev {
     flex-flow: row nowrap;
     justify-content: space-around;
     align-content: space-around;
-    margin-top: 20px;
+    margin-top: 35px;
 
     .column {
         box-sizing: border-box;
         flex: 0;
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        height: calc(100vh - 45px);
         border: 7px solid #fff;
         padding-top: 40px;
         min-width: 50px;
