@@ -291,7 +291,7 @@ a.pickadate-prev {
   /* Internet Explorer/Edge */
   user-select: none;
   /* Non-prefixed version, currently
-                                     supported by Chrome and Opera */
+                                   supported by Chrome and Opera */
 }
 #draggingItems {
   border: 3px dotted #CCC;
@@ -607,6 +607,7 @@ a.pickadate-prev {
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
   z-index: 2;
   white-space: nowrap;
+  max-height: 73px;
 }
 .columns .column .column-sortable .box .box-bar .related {
   max-width: 80%;
@@ -1023,7 +1024,7 @@ input.pod-DispatchField {
   /* Internet Explorer/Edge */
   user-select: none;
   /* Non-prefixed version, currently
-                                     supported by Chrome and Opera */
+                                   supported by Chrome and Opera */
 }
 .overlay-map-fix {
   position: absolute;
