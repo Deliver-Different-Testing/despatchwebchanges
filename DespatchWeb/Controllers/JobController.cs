@@ -813,7 +813,7 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-        private static string FormatNote(string note) => $"\n- {note}";
+        private static string FormatNote(string note) => $"\n{note}";
 
         [HttpPost]
         public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId,string currentSpeed)
