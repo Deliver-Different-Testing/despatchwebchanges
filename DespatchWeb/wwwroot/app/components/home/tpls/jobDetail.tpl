@@ -623,7 +623,7 @@
 				<div class="palletInfo">
 
 					<label>Pallet Info</label>
-					<div class="btn btn-sml addPallet" ng-click="jdSvc.newPallet()">Add Pallet</div>
+					<div class="mat-button" ng-click="jdSvc.newPallet()">Add Pallet</div>
 					<div class="value">
 						<table class="table table-striped table-responsive">
 							<thead>
