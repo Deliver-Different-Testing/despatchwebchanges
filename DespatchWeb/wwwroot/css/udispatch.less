@@ -1037,7 +1037,7 @@ input.pod-DispatchField {
   text-align: center;
 }
 
-#jobList {
+#jobList, #jobListReprice, #jobListPOD, #jobListDelivery {
   th {
     white-space: nowrap;
     cursor: pointer;
@@ -1048,7 +1048,6 @@ input.pod-DispatchField {
   }
 
   tr {
-    border-bottom: 1px solid #d6d6d6;
     transition: background-color 0.2s;
 
     &.O {
@@ -1065,7 +1064,7 @@ input.pod-DispatchField {
   }
 
   td {
-    border: none;
+    border: 1px solid #d6d6d6;
     padding: 10px;
     transition: background-color 0.2s;
     color: #212121;
@@ -1095,143 +1094,11 @@ input.pod-DispatchField {
   }
 
   input.lateCallField {
-    .inputStyle(21px); // mixin usage
+    .inputStyle(21px);
   }
 }
 
 #pbList {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
-}
-
-#jobListPOD {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
-}
-
-#jobListDelivery {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
-}
-
-#jobListReprice {
   th {
     white-space: nowrap;
     cursor: pointer;
