@@ -2,32 +2,43 @@
 @spacing: 14px;
 @yellow: #fddd00;
 
-.btn-primary {
-  background-color: @yellow;
-  border: none;
+.primary-style-mixin(@bgColor) {
+  background-color: @bgColor;
   color: #000;
-  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
   text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  margin: 2px 1px;
-  cursor: pointer;
-  border-radius: 25px;
-  transition: all 0.3s ease-out;
-  box-shadow: 0px 1px 1.5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14),
+  0px 1px 3px 0px rgba(0,0,0,0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
 
   &:hover {
-    background-color: darken(@yellow, 10%);
-    box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.2);
+    background-color: darken(@bgColor, 5%);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
   }
 
   &:active {
-    box-shadow: 0 2.5px #666;
-    transform: translateY(1px);
+    transform: translateY(2px);
+    transition: all 0.1s cubic-bezier(0.4, 0.0, 0.2, 1);
   }
 }
 
+.btn-primary {
+  .primary-style-mixin(@yellow);
+  padding: 6px 12px;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+  margin: 2px 1px;
+  cursor: pointer;
+  transition: all 0.3s ease-out;
+}
+
+.mat-button {
+  .primary-style-mixin(@yellow);
+  text-transform: uppercase;
+  transition: background-color 0.3s ease;
+}
 
 body {
   overflow: hidden;
@@ -69,12 +80,12 @@ a.pickadate-prev {
       position: relative;
       cursor: pointer;
       min-height: 48px;
-      box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
       transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
         background-color: #707070;
-        box-shadow: 0px 8px 10px -5px rgba(0, 0, 0, 0.2), 0px 16px 20px 0px rgba(0, 0, 0, 0.14), 0px 6px 30px 5px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 8px 10px -5px rgba(0, 0, 0, 0.2), 0px 16px 20px 0px rgba(0, 0, 0, 0.14), 0px 6px 30px 5px rgba(0, 0, 0, 0.12);
       }
     }
 
@@ -1484,7 +1495,7 @@ span.courier {
   font-weight: normal;
   height: 12px;
   width: 36px;
-  margin: 0px 0px 0px 0px;
+  margin: 0 0 0 0;
   padding: 1px 2px;
 }
 
@@ -1503,11 +1514,11 @@ span.courier {
   left: -29%;
   white-space: nowrap;
   border: 1px solid black;
-  padding: 0px;
+  padding: 0;
   font-family: Arial;
   font-weight: bold;
   font-size: 8px;
-  margin: 0px 0px 0px 0px;
+  margin: 0 0 0 0;
 }
 
 .courierMarker {

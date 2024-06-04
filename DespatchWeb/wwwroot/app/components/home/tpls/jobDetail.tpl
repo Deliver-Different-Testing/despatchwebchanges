@@ -53,7 +53,7 @@
 				<div class="notes-add"></div>
 				<div class="notes field">
 					<label>Notes</label>
-					<button class="btn-primary" style="float: right;" ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
+					<button class="mat-button" style="float: right;" ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
 						Add New
 					</button>
 					<div class="value"><pre>{{currentJob.internalNotes}}</pre></div>
@@ -418,7 +418,7 @@
 				<div class="notes-add"></div>
 				<div class="notes field">
 					<label>Notes</label>
-					<button class="btn-primary" style="float: right;" ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
+					<button class="mat-button" style="float: right;" ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
 						Add New
 					</button>
 					<div class="value"><pre>{{currentJob.internalNotes}}</pre></div>
