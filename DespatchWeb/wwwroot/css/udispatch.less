@@ -956,24 +956,24 @@ table.table {
 
 .table-headings {
   top: 0;
-  z-index: 15;
+  z-index: 3; // suggest high for material styles
 
   thead {
     display: block;
-    background: #FFF;
-    border-bottom: 1px solid #CCC;
-  }
+    background: #FFFFFF; // known as Surface color in Material Design
+    border-bottom: 1px solid #BDBDBD; // lighter shades for borders/dividers
 
-  tr {
-    th {
-      padding: 2px;
-      white-space: nowrap;
-      cursor: pointer;
-      position: relative;
+    tr {
+      th {
+        padding: 8px; // equivalent to the Material Design default
+        white-space: nowrap;
+        cursor: pointer;
+        position: relative;
 
-      .fa {
-        position: absolute;
-        left: -2px;
+        .fa {
+          position: absolute;
+          left: -2px; // retain current
+        }
       }
     }
   }
@@ -1038,11 +1038,15 @@ input.pod-DispatchField {
   th {
     white-space: nowrap;
     cursor: pointer;
+    padding: 14px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
+    border-bottom: 1px solid #d6d6d6;
+    transition: background-color 0.2s;
 
     &.O {
       background-color: @s-orange !important;
@@ -1058,7 +1062,10 @@ input.pod-DispatchField {
   }
 
   td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
+    border: none;
+    padding: 10px;
+    transition: background-color 0.2s;
+    color: #212121;
   }
 
   .doing {
@@ -1069,6 +1076,15 @@ input.pod-DispatchField {
     width: 29px;
     text-align: center;
     height: 15px;
+    border: 1px solid #757575;
+    border-radius: 4px;
+    background-color: white;
+    color: black;
+
+    &:focus {
+      outline: none;
+      border-color: @yellow;
+    }
   }
 
   input.lateCallField {

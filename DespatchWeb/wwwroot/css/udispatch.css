@@ -803,20 +803,20 @@ table.table tr .status.ASC {
 }
 .table-headings {
   top: 0;
-  z-index: 15;
+  z-index: 3;
 }
 .table-headings thead {
   display: block;
-  background: #FFF;
-  border-bottom: 1px solid #CCC;
+  background: #FFFFFF;
+  border-bottom: 1px solid #BDBDBD;
 }
-.table-headings tr th {
-  padding: 2px;
+.table-headings thead tr th {
+  padding: 8px;
   white-space: nowrap;
   cursor: pointer;
   position: relative;
 }
-.table-headings tr th .fa {
+.table-headings thead tr th .fa {
   position: absolute;
   left: -2px;
 }
@@ -867,9 +867,14 @@ input.pod-DispatchField {
 #jobList th {
   white-space: nowrap;
   cursor: pointer;
+  padding: 14px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 #jobList tr {
-  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid #d6d6d6;
+  transition: background-color 0.2s;
 }
 #jobList tr.O {
   background-color: #ffdfba !important;
@@ -881,7 +886,10 @@ input.pod-DispatchField {
   background-color: #b0f57b !important;
 }
 #jobList td {
-  border: 1px solid rgba(0, 0, 0, 0.5);
+  border: none;
+  padding: 10px;
+  transition: background-color 0.2s;
+  color: #212121;
 }
 #jobList .doing {
   background-color: #d7f3ce !important;
@@ -890,6 +898,14 @@ input.pod-DispatchField {
   width: 29px;
   text-align: center;
   height: 15px;
+  border: 1px solid #757575;
+  border-radius: 4px;
+  background-color: white;
+  color: black;
+}
+#jobList input.dispatchField:focus {
+  outline: none;
+  border-color: #fddd00;
 }
 #jobList input.lateCallField {
   width: 21px;
