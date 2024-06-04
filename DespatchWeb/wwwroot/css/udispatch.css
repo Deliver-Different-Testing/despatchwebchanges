@@ -500,14 +500,17 @@ a.pickadate-prev {
   border-radius: 4px;
 }
 .gatherForm .gatherFields {
-  display: block;
-  margin-bottom: 16px;
-  width: 559px;
-  transform: translate(-50%, -55%);
-  position: relative;
-  left: 50%;
+  background: #FFFFFF;
+  margin: 0 auto;
+  width: 80%;
+  max-width: 600px;
+  position: absolute;
   top: 50%;
-  background-color: grey;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  padding: 20px;
+  border-radius: 8px;
 }
 .gatherForm .gatherFields .gatherField {
   width: 100%;
@@ -520,7 +523,6 @@ a.pickadate-prev {
   font-weight: 500;
   color: rgba(0, 0, 0, 0.87);
   padding-bottom: 16px;
-  background-color: #fddd00;
   font-size: 20px;
   line-height: 24px;
   letter-spacing: 0.15px;
