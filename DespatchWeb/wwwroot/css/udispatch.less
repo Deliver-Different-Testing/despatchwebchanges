@@ -736,6 +736,7 @@ a.pickadate-prev {
 
             span {
               font-size: 15px;
+              font-size: 15px;
             }
 
             /* For Chrome and Safari */
@@ -957,26 +958,26 @@ table.table {
   }
 }
 
-.table-headings {
+table-headings {
   top: 0;
-  z-index: 3; // suggest high for material styles
+  z-index: 15;
 
   thead {
     display: block;
-    background: #FFFFFF; // known as Surface color in Material Design
-    border-bottom: 1px solid #BDBDBD; // lighter shades for borders/dividers
+    background: #FFF;
+    border-bottom: 1px solid #CCC;
+  }
 
-    tr {
-      th {
-        padding: 8px; // equivalent to the Material Design default
-        white-space: nowrap;
-        cursor: pointer;
-        position: relative;
+  tr {
+    th {
+      padding: 2px;
+      white-space: nowrap;
+      cursor: pointer;
+      position: relative;
 
-        .fa {
-          position: absolute;
-          left: -2px; // retain current
-        }
+      .fa {
+        position: absolute;
+        left: -2px;
       }
     }
   }
@@ -1037,18 +1038,16 @@ input.pod-DispatchField {
   text-align: center;
 }
 
-#jobList, #jobListReprice, #jobListPOD, #jobListDelivery {
+
+#jobList {
   th {
     white-space: nowrap;
     cursor: pointer;
-    padding: 14px;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
   }
 
   tr {
-    transition: background-color 0.2s;
+    border: 1px solid rgba(0, 0, 0, 0.5);
+
 
     &.O {
       background-color: @s-orange !important;
@@ -1064,37 +1063,23 @@ input.pod-DispatchField {
   }
 
   td {
-    border: 1px solid #d6d6d6;
-    padding: 10px;
-    transition: background-color 0.2s;
-    color: #212121;
+    border: 1px solid rgba(0, 0, 0, 0.5);
   }
 
   .doing {
     background-color: #d7f3ce !important;
   }
 
-  .inputStyle(@width) {
-    width: @width;
+  input.dispatchField {
+    width: 29px;
     text-align: center;
     height: 15px;
   }
 
-  input.dispatchField {
-    .inputStyle(29px);
-    border: 1px solid #757575;
-    border-radius: 4px;
-    background-color: white;
-    color: black;
-
-    &:focus {
-      outline: none;
-      border-color: @yellow;
-    }
-  }
-
   input.lateCallField {
-    .inputStyle(21px);
+    width: 21px;
+    text-align: center;
+    height: 15px;
   }
 }
 
@@ -1141,6 +1126,139 @@ input.pod-DispatchField {
     height: 15px;
   }
 }
+
+#jobListPOD {
+  th {
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  tr {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+
+
+    &.O {
+      background-color: @s-orange !important;
+    }
+
+    &.B {
+      background-color: @s-blue !important;
+    }
+
+    &.G {
+      background-color: @s-green !important;
+    }
+
+  }
+
+  td {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+  }
+
+  .doing {
+    background-color: #d7f3ce !important;
+  }
+
+  input.dispatchField {
+    width: 29px;
+    text-align: center;
+    height: 15px;
+  }
+
+  input.lateCallField {
+    width: 21px;
+    text-align: center;
+    height: 15px;
+  }
+}
+
+#jobListDelivery {
+  th {
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  tr {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+
+    &.O {
+      background-color: @s-orange !important;
+    }
+
+    &.B {
+      background-color: @s-blue !important;
+    }
+
+    &.G {
+      background-color: @s-green !important;
+    }
+  }
+
+  td {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+  }
+
+  .doing {
+    background-color: #d7f3ce !important;
+  }
+
+  input.dispatchField {
+    width: 29px;
+    text-align: center;
+    height: 15px;
+  }
+
+  input.lateCallField {
+    width: 21px;
+    text-align: center;
+    height: 15px;
+  }
+}
+
+#jobListReprice {
+  th {
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  tr {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+
+
+    &.O {
+      background-color: @s-orange !important;
+    }
+
+    &.B {
+      background-color: @s-blue !important;
+    }
+
+    &.G {
+      background-color: @s-green !important;
+    }
+  }
+
+  td {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+  }
+
+  .doing {
+    background-color: #d7f3ce !important;
+  }
+
+  input.dispatchField {
+    width: 29px;
+    text-align: center;
+    height: 15px;
+  }
+
+  input.lateCallField {
+    width: 21px;
+    text-align: center;
+    height: 15px;
+  }
+}
+
 
 #map_canvas_container {
   position: relative;
