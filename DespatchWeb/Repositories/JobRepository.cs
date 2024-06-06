@@ -281,7 +281,7 @@ namespace DespatchWeb.Repositories
                     DeliveryLongitude = j.DeliveryLongitude,
                     //CourierLatitude = j.CourierLatitude,
                     //CourierLongitude = j.CourierLongitude,
-                    //RunOrder = j.PickRunOrder,
+                    RunName = j.RunName,
                     CourierData = new CourierData()
                     {
                         Courier = co.Code + " " + co.FirstName + " " + co.Surname,
@@ -326,8 +326,8 @@ namespace DespatchWeb.Repositories
                     ConNote = nw.UcnwConNote,
                     AirportOnly = nw.UcnwAirportOnly,
                     HasNationwide = nw.UcnwJobId.HasValue,
-                    StatusName = status.UcjsName
-
+                    StatusName = status.UcjsName,
+                    ContactNote = j.Gssconnote
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
             if (job != null)
