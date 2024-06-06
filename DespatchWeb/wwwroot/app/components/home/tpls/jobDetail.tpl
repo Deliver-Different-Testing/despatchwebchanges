@@ -183,6 +183,21 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Courier</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''"  class="value">{{currentJob.courier}}</div>
 						</div>
+
+						<!-- New courier details here-->
+
+						<div  class="field" >
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Courier Name</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''"  class="value">{{currentJob.courierData.courierName}}</div>
+						</div>
+
+	<div  class="field" >
+							<label ng-class="currentJob.locked ? 'disabled' : ''">Courier Mobile</label>
+							<div ng-class="currentJob.locked ? 'disabled' : ''"  class="value">{{currentJob.courierData.courierMobile}}</div>
+						</div>
+
+
+
 						<div ng-if="!currentJob.bulkJob" class="field" >
 							<label ng-class="currentJob.locked ? 'disabled' : ''">Reprice</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><input type="checkbox"  ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.repriceClick(currentJob)" ng-model="currentJob.reprice"/></div>

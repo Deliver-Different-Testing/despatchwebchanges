@@ -10,7 +10,7 @@
 							<div class="value"><a class="uline" src="#" ng-click="jdSvc.clientClick(currentJob)">{{currentJob.client}} {{currentJob.clientName}}</a></div>
 						</div>
 						<div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="fromAddress" ng-click="jdSvc.updateGPS(currentJob, 'fromAddress')">
-							<label>From: {{currentJob.from}}</label>
+							<label>From Address:</label>
 							<div class="value">{{currentJob.fromAddress}}</div>
 						</div>
 						<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'FromContactName','From Contact Name',currentJob.fromContactName,currentJob.id)">
@@ -29,7 +29,7 @@
 						</div>
 
 						<div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="toAddress" ng-click="jdSvc.updateGPS(currentJob,'toAddress')">
-							<label>To: {{currentJob.to}}</label>
+							<label>To Address:</label>
 							<div class="value">{{currentJob.toAddress}}</div>
 						</div>
 						<div class="field contact" ng-click="jdSvc.editDetailField(currentJob, 'ToContactName','To Contact Name',currentJob.deliverToContact,currentJob.id)">
