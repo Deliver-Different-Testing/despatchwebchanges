@@ -13,6 +13,11 @@
 							<label ng-class="currentJob.locked ? 'disabled' : ''">From: {{currentJob.from}} {{currentJob.fromPostCode}}</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.fromAddress}}</div>
 						</div>
+						<div class="field"  data-field="fromSuburb">
+						<label class="disabled">From Suburb:</label>
+						<div class="disabled" class="value">{{currentJob.fromSuburbName}}</div>
+					</div>
+
 						<div class="field" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'FromContactName','From Contact Name',currentJob.fromContactName,currentJob.id)">
 							<label ng-class="currentJob.locked ? 'disabled' : ''">From Contact:</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.fromContactName}}</div>
@@ -28,7 +33,7 @@
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.jobNo}}</div>
 						</div>
 						<div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="toAddress" ng-click="!currentJob.locked && jdSvc.updateGPS(currentJob,'toAddress')">
-							<label ng-class="currentJob.locked ? 'disabled' : ''">To: {{currentJob.to}} {{currentJob.toPostCode}}</label>
+							<label ng-class="currentJob.locked ? 'disabled' : ''">To Address:</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.toAddress}}</div>
 						</div>
 						<div class="field"  data-field="toSuburb">
