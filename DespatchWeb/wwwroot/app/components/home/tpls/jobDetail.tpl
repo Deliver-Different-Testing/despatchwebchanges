@@ -10,7 +10,7 @@
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a  ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#" ng-click="!currentJob.locked && jdSvc.clientClick(currentJob)">{{currentJob.client}} {{currentJob.clientName}}</a></div>
 						</div>
 						<div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="fromAddress" ng-click="!currentJob.locked && jdSvc.updateGPS(currentJob, 'fromAddress')">
-							<label ng-class="currentJob.locked ? 'disabled' : ''">From: {{currentJob.from}} {{currentJob.fromPostCode}}</label>
+							<label ng-class="currentJob.locked ? 'disabled' : ''">From Address:</label>
 							<div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.fromAddress}}</div>
 						</div>
 						<div class="field"  data-field="fromSuburb">
