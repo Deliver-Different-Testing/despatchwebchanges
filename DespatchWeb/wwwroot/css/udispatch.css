@@ -1117,7 +1117,7 @@ a.uline.disabled {
 }
 #jobDetail .fields .field {
   background-color: #f3f2f2;
-  margin: 5px;
+  margin: 3px;
   border-radius: 4px;
   padding: 5px;
 }
@@ -1134,7 +1134,7 @@ a.uline.disabled {
 }
 #jobDetail .fields .field label {
   height: 6px;
-  color: #9c9c9c;
+  color: black;
   text-transform: uppercase;
   font-size: 11px;
   font-weight: bold;
@@ -1142,6 +1142,7 @@ a.uline.disabled {
 #jobDetail .fields .field .value {
   min-height: 15px;
   font-size: 13px;
+  color: black;
 }
 #jobDetail .fields .field .value.disabled {
   color: #9c9c9c;
