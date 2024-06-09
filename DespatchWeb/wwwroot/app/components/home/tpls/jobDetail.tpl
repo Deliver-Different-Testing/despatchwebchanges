@@ -151,9 +151,9 @@
                         </div>
                         <div class="field"
                              ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ContactNote','ContactNote',currentJob.contactNote,currentJob.id)">
-                            <label ng-class="currentJob.locked ? 'disabled' : ''">Contact Note</label>
+                            <label ng-class="currentJob.locked ? 'disabled' : ''">Con Note</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
-                                {{currentJob.contactNote}}
+                                {{currentJob.conNote}}
                             </div>
                         </div>
                         <div class="field"

@@ -327,7 +327,6 @@ namespace DespatchWeb.Repositories
                     AirportOnly = nw.UcnwAirportOnly,
                     HasNationwide = nw.UcnwJobId.HasValue,
                     StatusName = status.UcjsName,
-                    ContactNote = j.Gssconnote,
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
             if (job != null)
