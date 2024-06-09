@@ -1117,9 +1117,10 @@ a.uline.disabled {
 }
 #jobDetail .fields .field {
   background-color: #f3f2f2;
-  margin: 3px;
+  margin: 5px;
   border-radius: 4px;
-  padding: 5px;
+  padding: 4px;
+  border-bottom: 2px solid #c7c7c7;
 }
 #jobDetail .fields .field.red {
   border-color: 3px solid #ffb3ba;
