@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <None Include="compilerconfig.json" />
+    <None Include="efpt.config.json.user" />
   </ItemGroup>
 
   <ItemGroup>

@@ -46,6 +46,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucJobStatus> TucJobStatuses { get; set; }
         public virtual DbSet<TucJobType> TucJobTypes { get; set; }
         public virtual DbSet<TucSource> TucSources { get; set; }
+        public virtual DbSet<TucStaff> TucStaffs { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
@@ -218,6 +219,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.Cdt).HasColumnName("CDT");
 
                 entity.Property(e => e.ChildNotes).HasMaxLength(4000);
+
+                entity.Property(e => e.ClientItemIds).HasMaxLength(100);
 
                 entity.Property(e => e.ClientName)
                     .IsRequired()
@@ -532,11 +535,15 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.BookTime).HasColumnType("datetime");
 
+                entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
+
                 entity.Property(e => e.BulkRunId).HasColumnName("BulkRunID");
 
                 entity.Property(e => e.ClientCode).HasMaxLength(5);
 
                 entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.ClientItemIds).HasMaxLength(100);
 
                 entity.Property(e => e.ClientRefa).HasMaxLength(20);
 
@@ -727,7 +734,11 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.BulkHomeDeliveryVanItemSurcharge).HasColumnType("money");
 
+                entity.Property(e => e.ChilledTruckExcessZoneRateCodeId).HasColumnName("ChilledTruckExcessZoneRateCodeID");
+
                 entity.Property(e => e.ChilledTruckHireRateCodeId).HasColumnName("ChilledTruckHireRateCodeID");
+
+                entity.Property(e => e.ChilledTruckRateCodeId).HasColumnName("ChilledTruckRateCodeID");
 
                 entity.Property(e => e.ChilledVanHireRateCodeId).HasColumnName("ChilledVanHireRateCodeID");
 
@@ -855,7 +866,11 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.FortyFiveMinuteRateCodeId).HasColumnName("FortyFiveMinuteRateCodeID");
 
+                entity.Property(e => e.FrozenTruckExcessZoneRateCodeId).HasColumnName("FrozenTruckExcessZoneRateCodeID");
+
                 entity.Property(e => e.FrozenTruckHireRateCodeId).HasColumnName("FrozenTruckHireRateCodeID");
+
+                entity.Property(e => e.FrozenTruckRateCodeId).HasColumnName("FrozenTruckRateCodeID");
 
                 entity.Property(e => e.GroupId).HasColumnName("GroupID");
 
@@ -1999,6 +2014,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.Barcode).HasMaxLength(300);
 
+                entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
+
                 entity.Property(e => e.Cbd).HasColumnName("CBD");
 
                 entity.Property(e => e.ClientCode)
@@ -2399,7 +2416,11 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.BulkHomeDeliveryVanItemSurcharge).HasColumnType("money");
 
+                entity.Property(e => e.ChilledTruckExcessZoneRateCodeId).HasColumnName("ChilledTruckExcessZoneRateCodeID");
+
                 entity.Property(e => e.ChilledTruckHireRateCodeId).HasColumnName("ChilledTruckHireRateCodeID");
+
+                entity.Property(e => e.ChilledTruckRateCodeId).HasColumnName("ChilledTruckRateCodeID");
 
                 entity.Property(e => e.ChilledVanHireRateCodeId).HasColumnName("ChilledVanHireRateCodeID");
 
@@ -2503,7 +2524,11 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.FastParcelRateCodeId).HasColumnName("FastParcelRateCodeID");
 
+                entity.Property(e => e.FrozenTruckExcessZoneRateCodeId).HasColumnName("FrozenTruckExcessZoneRateCodeID");
+
                 entity.Property(e => e.FrozenTruckHireRateCodeId).HasColumnName("FrozenTruckHireRateCodeID");
+
+                entity.Property(e => e.FrozenTruckRateCodeId).HasColumnName("FrozenTruckRateCodeID");
 
                 entity.Property(e => e.GssregularPickupClient)
                     .HasColumnName("GSSRegularPickupClient")
@@ -3211,6 +3236,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.BookingRootParentId).HasColumnName("BookingRootParentID");
 
+                entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
+
+                entity.Property(e => e.ClientItemIds).HasMaxLength(100);
+
                 entity.Property(e => e.ClientNotes).HasMaxLength(500);
 
                 entity.Property(e => e.ContactId).HasColumnName("ContactID");
@@ -3802,6 +3831,152 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.Name)
                     .IsRequired()
                     .HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<TucStaff>(entity =>
+            {
+                entity.HasKey(e => e.UcstId)
+                    .IsClustered(false);
+
+                entity.ToTable("tucStaff");
+
+                entity.HasIndex(e => new { e.UcstFirstName, e.UcstLastName }, "Name")
+                    .IsUnique();
+
+                entity.HasIndex(e => e.StaffTitleId, "StaffTitleID");
+
+                entity.Property(e => e.UcstId).HasColumnName("ucstID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ExsalerateEmail).HasMaxLength(4000);
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
+                entity.Property(e => e.StaffBlurb).HasMaxLength(1000);
+
+                entity.Property(e => e.StaffDegree).HasMaxLength(100);
+
+                entity.Property(e => e.StaffTitleId).HasColumnName("StaffTitleID");
+
+                entity.Property(e => e.UcstActive).HasColumnName("ucstActive");
+
+                entity.Property(e => e.UcstAddress)
+                    .HasMaxLength(150)
+                    .HasColumnName("ucstAddress");
+
+                entity.Property(e => e.UcstCode)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstCode");
+
+                entity.Property(e => e.UcstDepartment)
+                    .HasColumnName("ucstDepartment")
+                    .HasDefaultValueSql("(0)");
+
+                entity.Property(e => e.UcstDob)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucstDOB");
+
+                entity.Property(e => e.UcstDoctor)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstDoctor");
+
+                entity.Property(e => e.UcstDoctorPhone)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstDoctorPhone");
+
+                entity.Property(e => e.UcstEndDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucstEndDate");
+
+                entity.Property(e => e.UcstExtension)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstExtension");
+
+                entity.Property(e => e.UcstFirstName)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstFirstName");
+
+                entity.Property(e => e.UcstInActiveDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucstInActiveDate");
+
+                entity.Property(e => e.UcstInActiveSetBy)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstInActiveSetBy");
+
+                entity.Property(e => e.UcstIrdnumber)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstIRDNumber");
+
+                entity.Property(e => e.UcstLastName)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstLastName");
+
+                entity.Property(e => e.UcstMobile)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstMobile");
+
+                entity.Property(e => e.UcstNextKin)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstNextKin");
+
+                entity.Property(e => e.UcstNkaddress)
+                    .HasMaxLength(150)
+                    .HasColumnName("ucstNKAddress");
+
+                entity.Property(e => e.UcstNkphone)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstNKPhone");
+
+                entity.Property(e => e.UcstPassword)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstPassword");
+
+                entity.Property(e => e.UcstPhone)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstPhone");
+
+                entity.Property(e => e.UcstPicturePath)
+                    .HasMaxLength(100)
+                    .HasColumnName("ucstPicturePath");
+
+                entity.Property(e => e.UcstProfile)
+                    .HasMaxLength(255)
+                    .HasColumnName("ucstProfile");
+
+                entity.Property(e => e.UcstStartDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ucstStartDate");
+
+                entity.Property(e => e.UcstSuburbId).HasColumnName("ucstSuburbID");
+
+                entity.Property(e => e.UcstTeam).HasColumnName("ucstTeam");
+
+                entity.Property(e => e.UcstUclcode)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstUCLCode");
+
+                entity.Property(e => e.UcstWindowsLogonName)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucstWindowsLogonName");
+
+                entity.HasOne(d => d.UcstSuburb)
+                    .WithMany(p => p.TucStaffs)
+                    .HasForeignKey(d => d.UcstSuburbId)
+                    .HasConstraintName("FK_tucStaff_tucSuburb");
             });
 
             modelBuilder.Entity<TucSuburb>(entity =>

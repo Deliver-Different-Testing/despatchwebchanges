@@ -1120,7 +1120,7 @@ a.uline.disabled {
   margin: 5px;
   border-radius: 4px;
   padding: 4px;
-  border-bottom: 2px solid #c7c7c7;
+  border-top: 2px solid #c7c7c7;
 }
 #jobDetail .fields .field.red {
   border-color: 3px solid #ffb3ba;

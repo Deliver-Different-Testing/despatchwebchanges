@@ -208,6 +208,8 @@ namespace DespatchWeb.Repositories
                 from contact in contactJoin.DefaultIfEmpty()
                 join sou in _context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
                 from source in sourceJoin.DefaultIfEmpty()
+                join st in _context.TucStaffs on j.DispatcherId equals st.UcstId into staffJoin
+                from staff in staffJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
                 select new JobViewModel()
@@ -260,7 +262,7 @@ namespace DespatchWeb.Repositories
                     LP = j.LatePickUp,
                     LD = j.LateDelivery,
                     ContactName = j.Contact,
-                    LoggedInContactName = $"{contact.Firstname ??  ""} {contact.Surname??""}",
+                    LoggedInContactName = $"{contact.Firstname ??  ""} {contact.Surname ?? ""}",
                     Phone = j.DeliverToPhone,
                     SpeedAccepted = os.ShortName,
                     Weight = j.Weight,
@@ -327,6 +329,7 @@ namespace DespatchWeb.Repositories
                     AirportOnly = nw.UcnwAirportOnly,
                     HasNationwide = nw.UcnwJobId.HasValue,
                     StatusName = status.UcjsName,
+                    DispatcherName = $"{staff.UcstFirstName ??  string.Empty} {staff.UcstLastName ?? string.Empty}"
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
             if (job != null)
