@@ -473,7 +473,6 @@ a.pickadate-prev {
     left: 50%;
     transform: translate(-50%, -50%);
     top: 50%;
-    /* box-shadow: 0px 0px 10px #CCC; */
     padding: 40px;
     border: 7px solid #666;
     border-radius: 16PX;
@@ -1027,7 +1026,7 @@ table-headings {
   }
 
   input.dispatchField {
-    width: 29px;
+    width: 40px;
     text-align: center;
     height: 15px;
   }
@@ -1045,16 +1044,21 @@ input.pod-DispatchField {
   text-align: center;
 }
 
+#jobList, #jobListReprice, #jobListPOD, #jobListDelivery {
+  border-radius: 8px;
 
-#jobList {
   th {
     white-space: nowrap;
     cursor: pointer;
+    padding: 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: #FFFFFF;
   }
 
   tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
+    transition: background-color 0.2s;
 
     &.O {
       background-color: @s-orange !important;
@@ -1070,26 +1074,43 @@ input.pod-DispatchField {
   }
 
   td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
+    border: 1px solid #d6d6d6;
+    border-radius: 4px;
+    padding: 8px;
+    transition: background-color 0.2s;
+    color: #212121;
   }
 
   .doing {
     background-color: #d7f3ce !important;
   }
 
-  input.dispatchField {
-    width: 29px;
+  .inputStyle(@width) {
+    width: @width;
     text-align: center;
     height: 15px;
+    border-radius: 8px
+  }
+
+  input.dispatchField {
+    .inputStyle(29px);
+    border: 1px solid #757575;
+    border-radius: 4px;
+    background-color: white;
+    color: #212121;
+    padding: 6px;
+
+    &:focus {
+      outline: none;
+      border-color: @yellow;
+    }
   }
 
   input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
+    .inputStyle(21px);
+    padding: 6px;  // reduced padding
   }
 }
-
 #pbList {
   th {
     white-space: nowrap;
@@ -1133,139 +1154,6 @@ input.pod-DispatchField {
     height: 15px;
   }
 }
-
-#jobListPOD {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
-}
-
-#jobListDelivery {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
-}
-
-#jobListReprice {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
-}
-
 
 #map_canvas_container {
   position: relative;
@@ -1360,7 +1248,6 @@ a.uline {
 
         pre {
           white-space: pre-wrap;
-          font-family: sans-serif;
           padding: 0;
           border: 0;
           background: transparent;
@@ -1382,7 +1269,6 @@ a.uline {
       margin: 5px;
       border-radius: 4px;
       padding: 4px;
-      border-top: 2px solid #c7c7c7;
 
       &.red {
         border-color: 3px solid @s-red;
@@ -1522,7 +1408,6 @@ span.courier {
   white-space: nowrap;
   border: 1px solid black;
   padding: 0;
-  font-family: Arial;
   font-weight: bold;
   font-size: 8px;
   margin: 0 0 0 0;
