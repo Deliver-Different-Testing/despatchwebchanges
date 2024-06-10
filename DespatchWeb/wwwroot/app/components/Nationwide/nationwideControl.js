@@ -188,7 +188,7 @@ angular
             submit: function () {
                 return $scope.gather.form.onSubmit().then(function (response) {
                     //console.log("pointer 3");
-                    
+
                     $(".gatherForm").hide();
                     //var j = $scope.currentJob;
                     $scope.getData().then(function () {
@@ -215,7 +215,7 @@ angular
                         //}, 1000);
 
                     });
-                    
+
                 });
 
             },
@@ -458,7 +458,7 @@ angular
         $scope.pickEventTypes = [];
 
         ///////////////////////////////
-        // LAYOUT 
+        // LAYOUT
         ///////////////////////////////
         var layoutsObject = null;
         if (Modernizr.localstorage) {
@@ -508,7 +508,7 @@ angular
                                 {
                                     "name": "map"
                                 }
-                            ] 
+                            ]
                         }//,
                         //{
                         //    "id": "col4",
@@ -561,15 +561,23 @@ angular
             }
         }
 
+        $scope.setLastActiveLayoutName = function (layoutName) {
+            if (Modernizr.localstorage) {
+                localStorage.setItem("lastActiveLayoutNW-" + ContactID, layoutName);
+            }
+        };
+
         $scope.loadLayout = function (i) {
             $scope.currentLayoutName = $scope.layouts[i].name;
             $scope.layout = angular.copy($scope.layouts[i].layout);
+
+            // save layout as last active
+            $scope.setLastActiveLayoutName($scope.currentLayoutName);
+
             setTimeout($scope.getData, 1000);
         };
 
         $scope.saveLayout = function () {
-
-
             angular.forEach($scope.layout.columns,
                 function (column, colKey) {
                     column.width = $("#co-" + column.id).css("flex-basis");
@@ -608,6 +616,9 @@ angular
                                 layout: angular.copy($scope.layout)
                             });
                         localStorage.setItem("layoutsNW-" + ContactID, JSON.stringify($scope.layouts));
+
+                        // save last active layout
+                        $scope.setLastActiveLayoutName(layoutName);
                     }
 
                     var deferred = $q.defer();
@@ -786,7 +797,7 @@ angular
         };
 
         ///////////////////////////
-        // HOTKEYS 
+        // HOTKEYS
         //////////////////////////
 
         hotkeys.add({
@@ -1880,7 +1891,7 @@ angular
         ];
 
 
-        
+
 
 
         //ACTIVATE DROP
@@ -2247,7 +2258,7 @@ angular
                     setMapBounds();
                     map.setZoom(12);
                 }
-                
+
             });
 
 
@@ -2269,7 +2280,7 @@ angular
             setTimeout(function () {
                 var jobRow = null;
                 $scope.selectedJobs = [];
-                $scope.currentSupport = null;   
+                $scope.currentSupport = null;
 
                 $(".activeTable .active").each(function () {
 
@@ -2776,14 +2787,14 @@ angular
                 setTimeout(function () {
                     $("#box-jobsListPOD .loading").fadeOut();
                     sizeHeadings($("#jobListPOD").parents(".column"));
-                    
+
                 }, 200);
 
             });
 
             NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal).then(function (data) {
                 $scope.jobList = data;
-                
+
                 setTimeout(function () {
                     $("#box-jobsList .loading").fadeOut();
                     sizeHeadings($("#jobList").parents(".column"));
@@ -2843,7 +2854,7 @@ angular
             $("#box-supports").find(".loading").show();
             return NWData.getSupports($scope.supportChannel).then(function (data) {
                 $scope.supports = data;
-                
+
 
                 $scope.supportMenu = [
                     // NEW IMPLEMENTATION
@@ -3007,7 +3018,7 @@ angular
                 },
                 escapeMarkup: function (markup) { return markup; }
             };
-            
+
             $("#location").select2(options).on("select2:select", function (e) {
                 $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json", {
                     app_id: "bBPfh2x8Cauun3ygLMAx",
@@ -3049,7 +3060,7 @@ angular
         };
 
         //$scope.onMapReady();
-        
+
 
         $scope.setSplitJobMeetingPoint = function () {
 
@@ -3201,7 +3212,7 @@ angular
                 $('#location').select2('open');
                 var search = $('#location').data('select2').dropdown.$search;
                 if ($scope.gpsForm.data.address.indexOf(',') > 0) {
-                    var parts = $scope.gpsForm.data.address.split(','); 
+                    var parts = $scope.gpsForm.data.address.split(',');
                     search.val(parts[1].split());
                     $scope.gpsForm.data.extras = parts[0];
                 } else {
@@ -3213,7 +3224,7 @@ angular
 
         };
 
-        
+
         //$scope.rateJob = function (job) {
         //    var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
         //    if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
@@ -3221,7 +3232,7 @@ angular
         //        return NWData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
         //            return NWData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff,
         //                job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2)
-                    
+
         //        });
         //    }
         //    else {
@@ -3233,7 +3244,7 @@ angular
 
 
         $scope.createEvent = function () {
-            
+
             var time = new Date();
             time.setSeconds(0);
             time.setMilliseconds(0);
@@ -3280,7 +3291,7 @@ angular
                             $(".eventForm").hide();
                             $scope.getData();
                         });
-                        
+
                     },
                     cancel: function () {
                         $(".eventForm").hide(0);
@@ -3298,11 +3309,11 @@ angular
 
                         $(".eventForm #event-type").select2(statusOptions);
                         $(".eventForm #event-type").select2('open');
-                        
+
 
                     },200);
                 }); }, 300);
-            
+
 
 
         };
@@ -3323,6 +3334,29 @@ angular
 
 
         };
+
+        // Load custom layout
+        $scope.init = function () {
+            if (Modernizr.localstorage) {
+                const storedLayouts = localStorage.getItem("layoutsNW-" + ContactID);
+                const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutNW-" + ContactID);
+
+                if (storedLayouts) {
+                    $scope.layouts = JSON.parse(storedLayouts);
+                    if (lastActiveLayoutName) {
+                        const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
+
+                        // if the last active layout is found among stored layouts
+                        if (lastActiveLayoutIndex !== -1) {
+                            $scope.loadLayout(lastActiveLayoutIndex);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Call the init function when the controller loads
+        $scope.init();
 
     }]);
 
@@ -3358,4 +3392,3 @@ function closestLocation(latitude, longitude, locations) {
     var closestLocation = (locations[closest]);
     return closestLocation;
 }
-
