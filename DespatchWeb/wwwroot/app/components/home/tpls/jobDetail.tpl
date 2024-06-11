@@ -500,8 +500,20 @@
                 </div>
             </div>
         </div>
+
         <div ng-if="!currentJob.bulkJob">
             <div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
+
+                <!-- POD requested changes-->
+                <button style="position: absolute; right: 0; top: 0;" class="mat-button" ng-click="sendPOD()">Send POD
+                </button>
+                <div>
+                    <img ng-src="{{currentJob.pODPhoto}}" style="display: block; margin: auto;"/>
+
+                    <a ng-click="currentIndex=currentIndex-1<0?images.length-1:currentIndex-1;"
+                       style="position: absolute; left: 0;">Prev</a>
+                    <a ng-click="currentIndex=(currentIndex+1)%images.length;" style="position: absolute; right: 0;">Next</a>
+                </div>
 
                 <label>Pallet Info</label>
                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="btn btn-sml addPallet"
@@ -542,6 +554,8 @@
 
             </div>
         </div>
+
+
         <div ng-if="!currentJob.bulkJob && currentJob.contactList">
             <div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
 
@@ -883,6 +897,17 @@
 
         <div>
             <div class="palletInfo">
+
+                <!-- POD requested changes-->
+                <button style="position: absolute; right: 0; top: 0;" class="mat-button" ng-click="sendPOD()">Send POD
+                </button>
+                <div>
+                    <img ng-src="{{currentJob.pODPhoto}}" style="display: block; margin: auto;"/>
+
+                    <a ng-click="currentIndex=currentIndex-1<0?images.length-1:currentIndex-1;"
+                       style="position: absolute; left: 0;">Prev</a>
+                    <a ng-click="currentIndex=(currentIndex+1)%images.length;" style="position: absolute; right: 0;">Next</a>
+                </div>
 
                 <label>Pallet Info</label>
                 <div class="mat-button" ng-click="jdSvc.newPallet()">Add Pallet</div>
