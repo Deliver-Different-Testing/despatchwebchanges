@@ -3666,10 +3666,7 @@ angular
 
 
         };
-
-
-        const formDetails = { id: "sendPOD", title: "Email the photo POD", fields: [ { "name": "email", "label": "Email Address", "type": "email" } ], submitValue: "Send", onSubmit: onSubmit }
-
+        
 
         $scope.sendPOD = () => {
             if (!$scope.currentJob.podPhoto) {
