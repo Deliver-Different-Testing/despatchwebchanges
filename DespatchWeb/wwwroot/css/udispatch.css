@@ -834,6 +834,11 @@ table-headings tr th .fa {
   padding: 1px;
   min-width: 15px;
 }
+input.pod-DispatchField {
+  color: black;
+  width: 60px;
+  text-align: center;
+}
 #currentWork th {
   white-space: nowrap;
   cursor: pointer;
@@ -857,7 +862,7 @@ table-headings tr th .fa {
   background-color: #d7f3ce !important;
 }
 #currentWork input.dispatchField {
-  width: 40px;
+  width: 29px;
   text-align: center;
   height: 15px;
 }
@@ -865,11 +870,6 @@ table-headings tr th .fa {
   width: 21px;
   text-align: center;
   height: 15px;
-}
-input.pod-DispatchField {
-  color: black;
-  width: 60px;
-  text-align: center;
 }
 #jobList th {
   white-space: nowrap;
