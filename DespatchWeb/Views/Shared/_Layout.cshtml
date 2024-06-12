@@ -204,7 +204,6 @@
         ("lib/ng-map-autocomplete.js", false),
         ("lib/ModernizerLocalStorage.js", false),
         ("lib/angular-promise-buttons.js", false),
-        ("js/Loading.js", false),
     };
 
     foreach (var (src, versioning) in scripts) CreateScriptTag(src, versioning);
@@ -214,6 +213,7 @@
     @{
         var devScripts = new[]
         {
+            ("js/Loading.js", false),
             ("app/app.js", false),
             ("app/filters.js", false),
             ("app/jobDetailService.js", true),
@@ -235,7 +235,7 @@
     @{
         var minScripts = new[]
         {
-
+            ("js/Loading.min.js", false),
             ("app/app.min.js", false),
             ("app/filters.min.js", false),
             ("app/jobDetailService.min.js", true),
