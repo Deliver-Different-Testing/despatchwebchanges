@@ -1003,7 +1003,6 @@ table-headings {
   tr {
     border: 1px solid rgba(0, 0, 0, 0.5);
 
-
     &.O {
       background-color: @s-orange !important;
     }
@@ -1044,74 +1043,7 @@ input.pod-DispatchField {
   text-align: center;
 }
 
-#jobList, #jobListReprice, #jobListPOD, #jobListDelivery {
-  border-radius: 8px;
-
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-    padding: 12px;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    background: #FFFFFF;
-  }
-
-  tr {
-    transition: background-color 0.2s;
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid #d6d6d6;
-    border-radius: 4px;
-    padding: 8px;
-    transition: background-color 0.2s;
-    color: #212121;
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  .inputStyle(@width) {
-    width: @width;
-    text-align: center;
-    height: 15px;
-    border-radius: 8px
-  }
-
-  input.dispatchField {
-    .inputStyle(29px);
-    border: 1px solid #757575;
-    border-radius: 4px;
-    background-color: white;
-    color: #212121;
-    padding: 6px;
-
-    &:focus {
-      outline: none;
-      border-color: @yellow;
-    }
-  }
-
-  input.lateCallField {
-    .inputStyle(21px);
-    padding: 6px;  // reduced padding
-  }
-}
-#pbList {
+.tableStyle() {
   th {
     white-space: nowrap;
     cursor: pointer;
@@ -1153,6 +1085,26 @@ input.pod-DispatchField {
     text-align: center;
     height: 15px;
   }
+}
+
+#jobList {
+  .tableStyle();
+}
+
+#pbList {
+  .tableStyle();
+}
+
+#jobListPOD {
+  .tableStyle();
+}
+
+#jobListDelivery {
+  .tableStyle();
+}
+
+#jobListReprice {
+  .tableStyle();
 }
 
 #map_canvas_container {
