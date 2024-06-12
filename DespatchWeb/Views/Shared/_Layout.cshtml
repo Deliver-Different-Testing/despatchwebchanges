@@ -29,27 +29,28 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
-
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/css/select2.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/css/select2.css" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css">
-    <link rel="stylesheet" href="~/lib/pickdate/angular-pickadate.css" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/pickdate/angular-pickadate.css"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">
+
     <environment include="Development">
-        <link rel="stylesheet" href="~/css/udispatch.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/promiseButton.css" asp-append-version="true" />
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">
+        <link rel="stylesheet" href="~/css/udispatch.css" asp-append-version="true"/>
+        <link rel="stylesheet" href="~/css/promiseButton.css" asp-append-version="true"/>
     </environment>
     <environment exclude="Development">
-        <link rel="stylesheet" href="~/css/udispatch.min.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/udispatch.min.css" asp-append-version="true"/>
+        <link rel="stylesheet" href="~/css/promiseButton.min.css" asp-append-version="true"/>
     </environment>
 
     <!-- My CSS -->
     <link rel="stylesheet" href="lib/resizable/angular-resizable.min.css">
     <link rel="stylesheet" href="lib/hotkeys/hotkeys.min.css">
     <link rel="stylesheet" href="lib/autocomplete/angular-auto-complete.css">
-    <link rel="stylesheet" href="lib/angular-confirm/angular-confirm.min.css" />
+    <link rel="stylesheet" href="lib/angular-confirm/angular-confirm.min.css"/>
 
     <script type="text/javascript">
         !function (a, b, c, d, e, f, g, h) {
@@ -187,61 +188,68 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.3.2/ui-bootstrap-tpls.js"></script>
 <script src="~/lib/jquery_timers.js"></script>
 
+@{
+     void CreateScriptTag(string src, bool versioning)
+    {
+        <script src="@src" @(versioning ? "asp-append-version=\"true\"" : string.Empty)></script>
+    }
+
+    var scripts = new[]
+    {
+        ("lib/moment.js", false),
+        ("lib/sortable.js", false),
+        ("lib/contextMenu.js", false),
+        ("lib/autocomplete/angular-auto-complete.js", false),
+        ("lib/ng-map.min.js", false),
+        ("lib/ng-map-autocomplete.js", false),
+        ("lib/ModernizerLocalStorage.js", false),
+        ("lib/angular-promise-buttons.js", false),
+        ("js/Loading.js", false),
+    };
+
+    foreach (var (src, versioning) in scripts) CreateScriptTag(src, versioning);
+}
 
 <environment include="Development">
-    <script src="lib/moment.js"></script>,
-    <script src="lib/sortable.js"></script>,
-    <script src="lib/contextMenu.js"></script>,
-    <script src="lib/autocomplete/angular-auto-complete.js"></script>,
-    <script src="lib/ng-map.min.js"></script>
-    <script src="lib/ng-map-autocomplete.js"></script>,
-    <script src="lib/ModernizerLocalStorage.js"></script>,
-    <script src="lib/angular-promise-buttons.js"></script>,
-    <script src="app/app.js"></script>,
-    <script src="app/filters.js"></script>,
-    <script src="js/Loading.js"></script>
-    <script src="app/jobDetailService.js" asp-append-version="true"></script>,
-    <!-- Angular home -->
-    <script src="app/components/home/homeService.js" asp-append-version="true"></script>
-    <script src="app/components/home/homeControl.js" asp-append-version="true"></script>
-    <!-- Nationwide home -->
-    <script src="app/components/Nationwide/nationwideService.js" asp-append-version="true"></script>
-    <script src="app/components/Nationwide/nationwideControl.js" asp-append-version="true"></script>
-    <!-- CS home -->
-    <script src="app/components/CS/csService.js" asp-append-version="true"></script>
-    <script src="app/components/CS/csControl.js" asp-append-version="true"></script>
-    <!--Prebooks-->
-    <script src="app/components/prebooks/prebookService.js" asp-append-version="true"></script>
-    <script src="app/components/prebooks/prebookControl.js" asp-append-version="true"></script>
+    @{
+        var devScripts = new[]
+        {
+            ("app/app.js", false),
+            ("app/filters.js", false),
+            ("app/jobDetailService.js", true),
+            ("app/components/home/homeService.js", true),
+            ("app/components/home/homeControl.js", true),
+            ("app/components/Nationwide/nationwideService.js", true),
+            ("app/components/Nationwide/nationwideControl.js", true),
+            ("app/components/CS/csService.js", true),
+            ("app/components/CS/csControl.js", true),
+            ("app/components/prebooks/prebookService.js", true),
+            ("app/components/prebooks/prebookControl.js", true)
+        };
+        foreach (var (src, versioning) in devScripts) CreateScriptTag(src, versioning);
+    }
 </environment>
 
-@* Minified files for production*@
+@* Minified files for production *@
 <environment exclude="Development">
-    <script src="lib/moment.js"></script>,
-    <script src="lib/sortable.js"></script>,
-    <script src="lib/contextMenu.js"></script>,
-    <script src="lib/autocomplete/angular-auto-complete.js"></script>,
-    <script src="lib/ng-map.min.js"></script>
-    <script src="lib/ng-map-autocomplete.js"></script>,
-    <script src="lib/ModernizerLocalStorage.js"></script>,
-    <script src="lib/angular-promise-buttons.js"></script>,
-    <script src="app/app.min.js"></script>,
-    <script src="app/filters.min.js"></script>,
-    <script src="js/Loading.js"></script>
-    <script src="app/jobDetailService.min.js" asp-append-version="true"></script>,
-    <!-- Angular home -->
-    <script src="app/components/home/homeService.min.js" asp-append-version="true"></script>
-    <script src="app/components/home/homeControl.min.js" asp-append-version="true"></script>
-    <!-- Nationwide home -->
-    <script src="app/components/Nationwide/nationwideService.min.js" asp-append-version="true"></script>
-    <script src="app/components/Nationwide/nationwideControl.min.js" asp-append-version="true"></script>
-    <!-- CS home -->
-    <script src="app/components/CS/csService.min.js" asp-append-version="true"></script>
-    <script src="app/components/CS/csControl.min.js" asp-append-version="true"></script>
-    <!--Prebooks-->
-    <script src="app/components/prebooks/prebookService.min.js" asp-append-version="true"></script>
-    <script src="app/components/prebooks/prebookControl.min.js" asp-append-version="true"></script>
-</environment>
+    @{
+        var minScripts = new[]
+        {
 
+            ("app/app.min.js", false),
+            ("app/filters.min.js", false),
+            ("app/jobDetailService.min.js", true),
+            ("app/components/home/homeService.min.js", true),
+            ("app/components/home/homeControl.min.js", true),
+            ("app/components/Nationwide/nationwideService.min.js", true),
+            ("app/components/Nationwide/nationwideControl.min.js", true),
+            ("app/components/CS/csService.min.js", true),
+            ("app/components/CS/csControl.min.js", true),
+            ("app/components/prebooks/prebookService.min.js", true),
+            ("app/components/prebooks/prebookControl.min.js", true)
+        };
+        foreach (var (src, versioning) in minScripts) CreateScriptTag(src, versioning);
+    }
+</environment>
 </body>
 </html>
