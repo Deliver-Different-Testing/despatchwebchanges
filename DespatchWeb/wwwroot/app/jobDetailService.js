@@ -320,7 +320,7 @@
                 };
 
                 self.frequencyChanged = function() {
-                    
+
                 };
 
                 self.getTrackingMethod = function(tm) {
@@ -437,7 +437,7 @@
                         job.speedID == 125 ||
                         job.speedID == 150 ||
                         job.speedID == 151 ||
-                        job.speedID == 152 
+                        job.speedID == 152
                         )) {
                         //Truck Job
                         return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
@@ -913,11 +913,11 @@
                                     self.gpsForm.data.long,
                                     FirstName).then(function () {
                                     $(".gpsForm").hide(0);
-                                    
+
 
                                 });
                             }
-                            
+
                             //if (!job.bulkJob && job.fromSuburbID.toString() !== self.gpsForm.data.our_suburb) {
                             //    //ToDo create change event
                             //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
@@ -1051,11 +1051,11 @@
                         });
 
                     };
-                      
+
 
 
                 self.gpsForm.showForm(fromRightClick);
-                
+
 
 
 
@@ -1378,7 +1378,7 @@
                             return response;
                         });
             };
-            
+
             self.leaveClick = function(job) {
                 this.editDetailField(job, 'DeliverToLeaveID', 'Leave Parcel', '', job.id, 'select2');
                 setTimeout(function() {
@@ -1748,7 +1748,7 @@
                             });
 
                             newP["id"] = self.currentJob.id;
-                            
+
 
                             return DispatchData.addPallet(newP, self.currentJob.preBook, FirstName).then(function (response) {
 
@@ -1773,7 +1773,7 @@
                                             //    self.currentJob.id,
                                             //    self.currentJob.jobType,
                                             //    FirstName);
-                                        
+
                                             return DispatchData
                                                 .updateJobDetail(self.currentJob.id,
                                                     "rate",
@@ -1801,11 +1801,11 @@
                         submitValue: "Add Pallet"
                     };
                     setTimeout(function () {
-                        
+
                         gather.showForm();
                     },
                         200);
-                    
+
 
                 };
 
@@ -1957,6 +1957,5 @@
 
         }
 
-        
+
     ]);
-        

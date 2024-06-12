@@ -260,7 +260,7 @@ angular
                     getCourierPosition: function (code) {
                         return $http.get("courier/location?code=" + code).then(function (response) {
                             return response.data;
-                        }); 
+                        });
 
                     },
                     getAvailableCourierLocation: function (minLng, minLat, maxLng, maxLat) {
@@ -467,4 +467,4 @@ angular
                     }
                 };
             }
-        ]);   
+        ]);

@@ -141,11 +141,11 @@ angular
                 });
             },
 
-            
+
             doAPI: function (path, data) {
                 return $http.post(path, data).then(function (response) {
                     return response.data;
                 });
             }
         };
-    }]);   
+    }]);

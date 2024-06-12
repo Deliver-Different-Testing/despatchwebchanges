@@ -1269,6 +1269,7 @@ a.uline {
       margin: 5px;
       border-radius: 4px;
       padding: 4px;
+      border-top: 3px solid darken(#f3f2f2, 20%);
 
       &.red {
         border-color: 3px solid @s-red;
@@ -1355,13 +1356,11 @@ a.uline {
     }
 
     .addPallet {
-      position: absolute;
+      .primary-style-mixin(#000);
+      color: white;
       right: 0;
       top: -20px;
-      background: #000;
-      color: #FFF;
       padding: 3px 7px;
-      border: 0;
       font-size: 10px;
     }
 

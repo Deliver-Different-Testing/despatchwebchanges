@@ -460,7 +460,10 @@
             </div>
 
         </div>
+
         <div ng-if="!currentJob.bulkJob && currentJob.podPhotos.length > 0" class="row row-no-padding row-out">
+            <button style="position: absolute; right: 0; top: 0;" class="mat-button" ng-click="sendPOD()">Send POD
+            </button>
             <label>POD Info</label>
             <div class="row row-no-padding row-out">
                 <!--<img ng-src="{{'data:image/png;base64,'+currentJob.podPhoto}}" />-->
@@ -504,17 +507,6 @@
         <div ng-if="!currentJob.bulkJob">
             <div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
 
-                <!-- POD requested changes-->
-                <button style="position: absolute; right: 0; top: 0;" class="mat-button" ng-click="sendPOD()">Send POD
-                </button>
-                <div>
-                    <img ng-src="{{currentJob.pODPhoto}}" style="display: block; margin: auto;"/>
-
-                    <a ng-click="currentIndex=currentIndex-1<0?images.length-1:currentIndex-1;"
-                       style="position: absolute; left: 0;">Prev</a>
-                    <a ng-click="currentIndex=(currentIndex+1)%images.length;" style="position: absolute; right: 0;">Next</a>
-                </div>
-
                 <label>Pallet Info</label>
                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="btn btn-sml addPallet"
                      ng-click="!currentJob.locked && jdSvc.newPallet()">Add Pallet
@@ -523,15 +515,15 @@
                     <table class="table table-striped table-responsive">
                         <thead>
                         <tr class="pallet-table-head no select">
-                            <th>#</td>
-                            <th>W</td>
-                            <th>L</td>
-                            <th>D</td>
-                            <th>H</td>
-                            <th>PU</td>
-                            <th>DO</td>
-                            <th>DG Class</td>
-                            <th>Notes</td>
+                            <td>#</td>
+                            <td>W</td>
+                            <td>L</td>
+                            <td>D</td>
+                            <td>H</td>
+                            <td>PU</td>
+                            <td>DO</td>
+                            <td>DG Class</td>
+                            <td>Notes</td>
                         </tr>
                         </thead>
                         <tbody>
@@ -564,11 +556,11 @@
                 <table class="table table-striped table-responsive">
                     <thead>
                     <tr class="pallet-table-head no select">
-                        <th>Name</td>
-                        <th>Title</td>
-                        <th>Direct Dial</td>
-                        <th>Mobile</td>
-                        <th>Email</td>
+                        <td>Name</td>
+                        <td>Title</td>
+                        <td>Direct Dial</td>
+                        <td>Mobile</td>
+                        <td>Email</td>
 
                     </tr>
                     </thead>
@@ -915,15 +907,15 @@
                     <table class="table table-striped table-responsive">
                         <thead>
                         <tr class="pallet-table-head no select">
-                            <th>#</td>
-                            <th>W</td>
-                            <th>L</td>
-                            <th>D</td>
-                            <th>H</td>
-                            <th>PU</td>
-                            <th>DO</td>
-                            <th>DG Class</td>
-                            <th>Notes</td>
+                            <td>#</td>
+                            <td>W</td>
+                            <td>L</td>
+                            <td>D</td>
+                            <td>H</td>
+                            <td>PU</td>
+                            <td>DO</td>
+                            <td>DG Class</td>
+                            <td>Notes</td>
                         </tr>
                         </thead>
                         <tbody>

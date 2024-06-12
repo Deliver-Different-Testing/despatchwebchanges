@@ -29,22 +29,27 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/css/select2.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/css/select2.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css">
-    <link rel="stylesheet" href="~/lib/pickdate/angular-pickadate.css"/>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.css" rel="stylesheet"/>
-
-    <link rel="stylesheet" href="~/css/udispatch.min.css" asp-append-version="true"/>
-    <link rel="stylesheet" href="~/css/promiseButton.min.css" asp-append-version="true"/>
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">
+    <link rel="stylesheet" href="~/lib/pickdate/angular-pickadate.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.css" rel="stylesheet" />
+    <environment include="Development">
+        <link rel="stylesheet" href="~/css/udispatch.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/promiseButton.css" asp-append-version="true" />
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css">
+    </environment>
+    <environment exclude="Development">
+        <link rel="stylesheet" href="~/css/udispatch.min.css" asp-append-version="true" />
+    </environment>
 
     <!-- My CSS -->
     <link rel="stylesheet" href="lib/resizable/angular-resizable.min.css">
     <link rel="stylesheet" href="lib/hotkeys/hotkeys.min.css">
     <link rel="stylesheet" href="lib/autocomplete/angular-auto-complete.css">
-    <link rel="stylesheet" href="lib/angular-confirm/angular-confirm.min.css"/>
+    <link rel="stylesheet" href="lib/angular-confirm/angular-confirm.min.css" />
 
     <script type="text/javascript">
         !function (a, b, c, d, e, f, g, h) {
@@ -52,10 +57,10 @@
                 (a[e].o = a[e].o || []).push(arguments)
             }, f = b.createElement(c), g = b.getElementsByTagName(c)[0],
                 f.async = 1, f.src = d, g.parentNode.insertBefore(f, g), h = a.onerror, a.onerror = function (b, c, d, f, g) {
-                    h && h(b, c, d, f, g), g || (g = new Error(b)), a[e].q = a[e].q || [], a[e].q.push({
-                        e: g
-                    })
-                }
+                h && h(b, c, d, f, g), g || (g = new Error(b)), a[e].q = a[e].q || [], a[e].q.push({
+                    e: g
+                })
+            }
         }(window, document, "script", "//cdn.raygun.io/raygun4js/raygun.min.js", "rg4js");
     </script>
 
@@ -64,98 +69,98 @@
 
 @RenderBody()
 <script>
-        // Define the overlay, derived from google.maps.OverlayView
-        function Label(opt_options) {
-            // Initialization
-            this.setValues(opt_options);
+    // Define the overlay, derived from google.maps.OverlayView
+    function Label(opt_options) {
+        // Initialization
+        this.setValues(opt_options);
 
-            // Label specific
-            var span = this.span_ = document.createElement('span');
-            span.className = 'marker ' + this.cssClass;
+        // Label specific
+        var span = this.span_ = document.createElement('span');
+        span.className = 'marker ' + this.cssClass;
 
-            var div = this.div_ = document.createElement('div');
-            div.appendChild(span);
-            div.style.cssText = 'position: absolute; display: none; border 1px solid red;';
-        }
-
-
-
-        function initMap() {
-            console.log("Maps Loaded");
-            Label.prototype = new google.maps.OverlayView;
-
-            Label.prototype.setVisible = function (visible) {
-                var div = this.div_;
-                if (div === null) return;
-                if (visible) {
-                    div.style.display = 'block';
-                    this.isVisible = true;
-                }
-                else {
-                    div.style.display = 'none';
-                    this.isVisible = false;
-                }
-            };
+        var div = this.div_ = document.createElement('div');
+        div.appendChild(span);
+        div.style.cssText = 'position: absolute; display: none; border 1px solid red;';
+    }
 
 
-            // Implement onAdd
-            Label.prototype.onAdd = function () {
-                var pane = this.getPanes().overlayLayer;
-                pane.appendChild(this.div_);
 
-                // Ensures the label is redrawn if the text or position is changed.
-                var me = this;
+    function initMap() {
+        console.log("Maps Loaded");
+        Label.prototype = new google.maps.OverlayView;
 
-                this.listeners_ = [
-                    google.maps.event.addListener(this, 'position_changed',
-                        function () { me.draw(); }),
-                    google.maps.event.addListener(this, 'text_changed',
-                        function () { me.draw(); })
-                ];
-
-
-            };
-
-            // Implement onRemove
-            Label.prototype.onRemove = function () {
-                if (this.div_.parentNode === null) {
-                    this.div_ = null;
-                    return false;
-                }
-
-                this.div_.parentNode.removeChild(this.div_);
-
-                // Label is removed from the map, stop updating its position/text.
-                for (var i = 0, I = this.listeners_.length; i < I; ++i) {
-                    google.maps.event.removeListener(this.listeners_[i]);
-                }
-                return true;
-            };
-
-            // Implement draw
-            Label.prototype.draw = function () {
-                var projection = this.getProjection();
-                var position = projection.fromLatLngToDivPixel(this.get('position'));
-
-                var div = this.div_;
-                div.style.left = position.x + 'px';
-                div.style.top = position.y + 'px';
-                //div.style.display = 'block';
-                if (this.isVisible)
-                    div.style.display = 'block';
-                else
-                    div.style.display = 'none';
-                var clickable = this.get('clickable');
-                this.span_.style.cursor = clickable ? 'pointer' : '';
+        Label.prototype.setVisible = function (visible) {
+            var div = this.div_;
+            if (div === null) return;
+            if (visible) {
+                div.style.display = 'block';
+                this.isVisible = true;
+            }
+            else {
+                div.style.display = 'none';
+                this.isVisible = false;
+            }
+        };
 
 
-                this.span_.innerHTML = this.get('text').toString();
-            };
+        // Implement onAdd
+        Label.prototype.onAdd = function () {
+            var pane = this.getPanes().overlayLayer;
+            pane.appendChild(this.div_);
+
+            // Ensures the label is redrawn if the text or position is changed.
+            var me = this;
+
+            this.listeners_ = [
+                google.maps.event.addListener(this, 'position_changed',
+                    function () { me.draw(); }),
+                google.maps.event.addListener(this, 'text_changed',
+                    function () { me.draw(); })
+            ];
 
 
-        }
-        rg4js('apiKey', 'iAbyCH3AlUySXlZxGuH0HQ');
-        rg4js('enableCrashReporting', true);
+        };
+
+        // Implement onRemove
+        Label.prototype.onRemove = function () {
+            if (this.div_.parentNode === null) {
+                this.div_ = null;
+                return false;
+            }
+
+            this.div_.parentNode.removeChild(this.div_);
+
+            // Label is removed from the map, stop updating its position/text.
+            for (var i = 0, I = this.listeners_.length; i < I; ++i) {
+                google.maps.event.removeListener(this.listeners_[i]);
+            }
+            return true;
+        };
+
+        // Implement draw
+        Label.prototype.draw = function () {
+            var projection = this.getProjection();
+            var position = projection.fromLatLngToDivPixel(this.get('position'));
+
+            var div = this.div_;
+            div.style.left = position.x + 'px';
+            div.style.top = position.y + 'px';
+            //div.style.display = 'block';
+            if (this.isVisible)
+                div.style.display = 'block';
+            else
+                div.style.display = 'none';
+            var clickable = this.get('clickable');
+            this.span_.style.cursor = clickable ? 'pointer' : '';
+
+
+            this.span_.innerHTML = this.get('text').toString();
+        };
+
+
+    }
+    rg4js('apiKey', 'iAbyCH3AlUySXlZxGuH0HQ');
+    rg4js('enableCrashReporting', true);
 
 
 
@@ -183,30 +188,60 @@
 <script src="~/lib/jquery_timers.js"></script>
 
 
-<script src="lib/moment.js"></script>,
-<script src="lib/sortable.js"></script>,
-<script src="lib/contextMenu.js"></script>,
-<script src="lib/autocomplete/angular-auto-complete.js"></script>,
-<script src="lib/ng-map.min.js"></script>
-<script src="lib/ng-map-autocomplete.js"></script>,
-<script src="lib/ModernizerLocalStorage.js"></script>,
-<script src="lib/angular-promise-buttons.js"></script>,
-<script src="app/app.js"></script>,
-<script src="app/filters.js"></script>,
-<script src="js/Loading.js"></script>
-<script src="app/jobDetailService.js" asp-append-version="true"></script>,
-<!-- Angular home -->
-<script src="app/components/home/homeService.js" asp-append-version="true"></script>
-<script src="app/components/home/homeControl.js" asp-append-version="true"></script>
-<!-- Nationwide home -->
-<script src="app/components/Nationwide/nationwideService.js" asp-append-version="true"></script>
-<script src="app/components/Nationwide/nationwideControl.js" asp-append-version="true"></script>
-<!-- CS home -->
-<script src="app/components/CS/csService.js" asp-append-version="true"></script>
-<script src="app/components/CS/csControl.js" asp-append-version="true"></script>
-<!--Prebooks-->
-<script src="app/components/prebooks/prebookService.js" asp-append-version="true"></script>
-<script src="app/components/prebooks/prebookControl.js" asp-append-version="true"></script>
+<environment include="Development">
+    <script src="lib/moment.js"></script>,
+    <script src="lib/sortable.js"></script>,
+    <script src="lib/contextMenu.js"></script>,
+    <script src="lib/autocomplete/angular-auto-complete.js"></script>,
+    <script src="lib/ng-map.min.js"></script>
+    <script src="lib/ng-map-autocomplete.js"></script>,
+    <script src="lib/ModernizerLocalStorage.js"></script>,
+    <script src="lib/angular-promise-buttons.js"></script>,
+    <script src="app/app.js"></script>,
+    <script src="app/filters.js"></script>,
+    <script src="js/Loading.js"></script>
+    <script src="app/jobDetailService.js" asp-append-version="true"></script>,
+    <!-- Angular home -->
+    <script src="app/components/home/homeService.js" asp-append-version="true"></script>
+    <script src="app/components/home/homeControl.js" asp-append-version="true"></script>
+    <!-- Nationwide home -->
+    <script src="app/components/Nationwide/nationwideService.js" asp-append-version="true"></script>
+    <script src="app/components/Nationwide/nationwideControl.js" asp-append-version="true"></script>
+    <!-- CS home -->
+    <script src="app/components/CS/csService.js" asp-append-version="true"></script>
+    <script src="app/components/CS/csControl.js" asp-append-version="true"></script>
+    <!--Prebooks-->
+    <script src="app/components/prebooks/prebookService.js" asp-append-version="true"></script>
+    <script src="app/components/prebooks/prebookControl.js" asp-append-version="true"></script>
+</environment>
+
+@* Minified files for production*@
+<environment exclude="Development">
+    <script src="lib/moment.js"></script>,
+    <script src="lib/sortable.js"></script>,
+    <script src="lib/contextMenu.js"></script>,
+    <script src="lib/autocomplete/angular-auto-complete.js"></script>,
+    <script src="lib/ng-map.min.js"></script>
+    <script src="lib/ng-map-autocomplete.js"></script>,
+    <script src="lib/ModernizerLocalStorage.js"></script>,
+    <script src="lib/angular-promise-buttons.js"></script>,
+    <script src="app/app.min.js"></script>,
+    <script src="app/filters.min.js"></script>,
+    <script src="js/Loading.js"></script>
+    <script src="app/jobDetailService.min.js" asp-append-version="true"></script>,
+    <!-- Angular home -->
+    <script src="app/components/home/homeService.min.js" asp-append-version="true"></script>
+    <script src="app/components/home/homeControl.min.js" asp-append-version="true"></script>
+    <!-- Nationwide home -->
+    <script src="app/components/Nationwide/nationwideService.min.js" asp-append-version="true"></script>
+    <script src="app/components/Nationwide/nationwideControl.min.js" asp-append-version="true"></script>
+    <!-- CS home -->
+    <script src="app/components/CS/csService.min.js" asp-append-version="true"></script>
+    <script src="app/components/CS/csControl.min.js" asp-append-version="true"></script>
+    <!--Prebooks-->
+    <script src="app/components/prebooks/prebookService.min.js" asp-append-version="true"></script>
+    <script src="app/components/prebooks/prebookControl.min.js" asp-append-version="true"></script>
+</environment>
 
 </body>
 </html>

@@ -3667,6 +3667,43 @@ angular
 
         };
 
+
+        const formDetails = { id: "sendPOD", title: "Email the photo POD", fields: [ { "name": "email", "label": "Email Address", "type": "email" } ], submitValue: "Send", onSubmit: onSubmit }
+
+
+        $scope.sendPOD = () => {
+            if (!$scope.currentJob.podPhoto) {
+                alert("Sorry no photo for this Job");
+                return;
+            }
+
+            $scope.gather.form = {
+                id: "sendPOD",
+                title: "Email the photo POD",
+                fields: [
+                    {
+                        "name": "email",
+                        "label": "Email Address",
+                        "type": "email"
+                    }
+                ],
+                onSubmit: () => {
+                    uCSData.sendPOD($scope.currentJob.id, $scope.gather.form.fields[0].value)
+                        .then((_) => {
+                            alert("Email sent!");
+                        })
+                        .catch((error) => {
+                            console.error("An error occurred:", error);
+                            alert("Sorry, there was an error sending the email.");
+                        });
+                },
+                submitValue: "Send"
+            };
+
+            $scope.gather.showForm();
+        }
+
+
         // Load custom layout
         $scope.init = function () {
             if (Modernizr.localstorage) {
