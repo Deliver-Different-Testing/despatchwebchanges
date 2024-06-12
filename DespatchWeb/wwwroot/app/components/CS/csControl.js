@@ -669,69 +669,42 @@ angular
             }
         });
 
-        $scope.chooseFromDate = function () {
+        $scope.createForm = (fieldName, fieldType) => ({
+            id: "chooseDate",
+            title: "Choose Date",
+            fields: [
+                {
+                    name: fieldName,
+                    type: fieldType
+                }
+            ],
+            onSubmit: () => $scope.onFormSubmit(fieldName),
+            submitValue: "Choose"
+        });
 
-            $scope.gather.form = {
-                id: "chooseDate",
-                title: "Choose Date",
-                fields: [
-                    {
-                        "name": "fromdatepicker",
-                        "type": "fromdatepicker"
-                    }
-                ],
-                onSubmit: function () {
+        $scope.onFormSubmit = (dateKey) => {
+            $scope.gather.cancel();
+            const {[dateKey]: pdsDate, [dateKey]: scopeDate} = $scope;
 
-                    $scope.gather.cancel();
-                    if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
+            if (scopeDate !== pdsDate) {
+                $scope[dateKey] = pdsDate;
+                dateChanged = true;
+            }
 
-                        $scope.currentFromDate = $scope.pickDateService.from_date;
-                        dateChanged = true;
-                    }
-                    if ($scope.currentToDate !== $scope.pickDateService.to_date) {
-
-                        $scope.currentToDate = $scope.pickDateService.to_date;
-                        dateChanged = true;
-                    }
-                    //$scope.refreshData(true);
-
-                },
-                submitValue: "Choose"
-            };
-            $scope.gather.showForm();
-
-
+            // $scope.refreshData(true);
         };
 
-        $scope.chooseToDate = function () {
-
-            $scope.gather.form = {
-                id: "chooseDate",
-                title: "Choose Date",
-                fields: [
-                    {
-                        "name": "todatepicker",
-                        "type": "todatepicker"
-                    }
-                ],
-                onSubmit: function () {
-
-                    $scope.gather.cancel();
-
-                    if ($scope.currentToDate !== $scope.pickDateService.to_date) {
-
-                        $scope.currentToDate = $scope.pickDateService.to_date;
-                        dateChanged = true;
-                    }
-                    //$scope.refreshData(true);
-
-                },
-                submitValue: "Choose"
-            };
+        $scope.chooseFromDate = () => {
+            $scope.gather.form = $scope.createForm("fromdatepicker", "fromdatepicker");
             $scope.gather.showForm();
-
-
         };
+
+        $scope.chooseToDate = () => {
+            $scope.gather.form = $scope.createForm("todatepicker", "todatepicker");
+            $scope.gather.showForm();
+        };
+
+
 
         $scope.filterRegion = function (region) {
             var sr = $scope.pickRegions.find(obj => {
