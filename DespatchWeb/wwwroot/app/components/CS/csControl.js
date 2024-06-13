@@ -201,7 +201,7 @@ angular
         $scope.boxes = {
             "pickDate": {
                 "title": "Filters",
-                "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.8",
+                "tpl": "app/components/CS/tpls/pickDate.tpl",
                 "showSearch": 0
             },
 
