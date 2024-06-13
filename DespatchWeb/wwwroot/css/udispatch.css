@@ -207,7 +207,7 @@ a.pickadate-prev:active {
   transform: scale(1.03);
 }
 .top-bar {
-  position: absolute;
+  position: relative;
   top: 0;
   left: 0;
   width: 100%;
@@ -510,7 +510,6 @@ a.pickadate-prev:active {
   flex-flow: row nowrap;
   justify-content: space-around;
   align-content: space-around;
-  margin-top: 35px;
 }
 .columns .column {
   box-sizing: border-box;
@@ -519,8 +518,8 @@ a.pickadate-prev:active {
   flex-direction: column;
   height: calc(100vh - 45px);
   border: 7px solid #fff;
-  padding-top: 40px;
   min-width: 50px;
+  padding-bottom: 20px;
 }
 .columns .column:last-child {
   flex: 1;

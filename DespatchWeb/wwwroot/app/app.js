@@ -6,7 +6,7 @@ angular
 		"ui.sortable",
 		"ui.bootstrap",
 		"ui.bootstrap.pagination",
-		"ui.bootstrap.contextMenu", 
+		"ui.bootstrap.contextMenu",
 		"cfp.hotkeys",
 		"ui.timepicker",
         'pickadate',
@@ -15,8 +15,10 @@ angular
         'angularjs-dropdown-multiselect',
         'heremaps',
         'ngAnimate',
+        'ngMessages',
+        'ngSanitize',
+        'ngMaterial',
 		'angularPromiseButtons',
-		
         'cp.ngConfirm'
 	])
 	.directive('rightClick', function () {
