@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <_ContentIncludedByDefault Remove="compilerconfig.json" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\angular\angular-material.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\angular\angular.min.js" />
   </ItemGroup>
 
   <ItemGroup>
