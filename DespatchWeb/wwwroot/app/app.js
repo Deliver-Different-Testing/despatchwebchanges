@@ -21,6 +21,45 @@ angular
 		'angularPromiseButtons',
         'cp.ngConfirm'
 	])
+	.config(function($mdThemingProvider) {
+		$mdThemingProvider.definePalette('urgent', {
+			'50': 'fffbe0',
+			'100': 'fef5b3',
+			'200': 'feee80',
+			'300': 'fee74d',
+			'400': 'fde226',
+			'500': 'fddd00',
+			'600': 'fdd900',
+			'700': 'fcd400',
+			'800': 'fccf00',
+			'900': 'fcc700',
+			'A100': 'ffffff',
+			'A200': 'fffbef',
+			'A400': 'ffefbc',
+			'A700': 'ffe9a2',
+			'contrastDefaultColor': 'light',
+			'contrastDarkColors': [
+				'50',
+				'100',
+				'200',
+				'300',
+				'400',
+				'500',
+				'600',
+				'700',
+				'800',
+				'900',
+				'A100',
+				'A200',
+				'A400',
+				'A700'
+			],
+			'contrastLightColors': []
+		});
+
+		$mdThemingProvider.theme('default')
+			.primaryPalette('urgent')
+	})
 	.directive('rightClick', function () {
 
 		document.oncontextmenu = function (e) {
@@ -61,7 +100,7 @@ angular
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.22',
+                    templateUrl: 'app/components/CS/csView.html',
 					controller: 'CSControl',
                     reloadOnSearch: false
 				})
