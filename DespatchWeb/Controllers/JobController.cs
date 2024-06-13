@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
@@ -128,13 +126,18 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddPallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
         {
+            if (palletInfo == null) return BadRequest("PalletInfo is empty!");
+            palletInfo.Notes = FormatNote(palletInfo.Notes);
             await _jobRepo.AddPalletInfo(palletInfo, preBook, despatcher);
+
             return Ok("OK");
         }
 
         [HttpPost]
         public async Task<IActionResult> EditPallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
         {
+            if (palletInfo == null) return BadRequest("PalletInfo is empty!");
+            palletInfo.Notes = FormatNote(palletInfo.Notes);
             await _jobRepo.EditPalletInfo(palletInfo, preBook, despatcher);
             return Ok("OK");
         }
@@ -527,7 +530,7 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> AddOtherEvent(string jobNo, int clientId, string contact, int staffId,
             int? courierId, int jobId, int jobType, string despatcherName, string notes)
         {
-
+            notes = FormatNote(notes);
             await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null, notes,
                 66);
 
@@ -550,6 +553,7 @@ namespace DespatchWeb.Controllers
             var un = _configuration["ExsalerateAPIUsername"];
             var pw = _configuration["ExsalerateAPIPW"];
 
+            notes = FormatNote(notes);
 
             var rco = new RestClientOptions() { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl)};
             var client = new RestClient(rco);
@@ -566,16 +570,12 @@ namespace DespatchWeb.Controllers
 
             var request = new RestRequest("activity", Method.Post).AddJsonBody(body);
 
-
-
             var restResponse = await client.PostAsync(request);
 
-            if (restResponse.StatusCode != System.Net.HttpStatusCode.OK)
-            {
-                var e = new ApplicationException($"Exsalerate Activity Failed {restResponse.Content} {Environment.NewLine} CurrentBody= {body}");
-                var key = _configuration["RaygunSettings:ApiKey"];
-                var rc = new RaygunClient(key).SendInBackground(e);
-            }
+            if (restResponse.StatusCode == System.Net.HttpStatusCode.OK) return Json("OK");
+            var e = new ApplicationException($"Exsalerate Activity Failed {restResponse.Content} {Environment.NewLine} CurrentBody= {body}");
+            var key = _configuration["RaygunSettings:ApiKey"];
+            var rc = new RaygunClient(key).SendInBackground(e);
 
             return Json("OK");
         }
