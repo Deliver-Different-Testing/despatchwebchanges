@@ -1,6 +1,9 @@
 <div class="gatherForm" id="{{gather.form.id}}" ng-if="gather.form.tpl != 'multi'">
     <div class="gatherFields">
-        <div class="gatherTitle">{{gather.form.title}}</div>
+        <md-toolbar>
+            <h2>{{gather.form.title}}</h2>
+        </md-toolbar>
+
         <div ng-repeat="field in gather.form.fields" class="gatherField" style="display:inline-block; {{field.cssExtras}}">
           <div ng-switch="field.type">
             <div ng-switch-default>
@@ -43,11 +46,13 @@
           </div>
 
         </div>
-        <div class="gatherSubmit btn btn-primary promise-btn" style="margin-bottom: 10px;"
-             ng-click="gather.submit()">{{gather.form.submitValue}}</div>
 
-        <button class="btn btn-cancel" style="margin-bottom: 10px;"
-                ng-click="gather.cancel()">Cancel</button>
+
+        <md-button class="md-raised md-primary"
+             ng-click="gather.submit()">{{gather.form.submitValue}}</md-button>
+
+        <md-button class="md-raised md-accent"
+                ng-click="gather.cancel()">Cancel</md-button>
     </div>
 
 
