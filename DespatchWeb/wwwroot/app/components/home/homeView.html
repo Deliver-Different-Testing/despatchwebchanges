@@ -106,11 +106,12 @@
     <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
     <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
                                 </div>
-
                             </div>
 
-
-                            <div class="btn btn-sm btn-primary box-refresh" style="margin-right: 10px;" ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
+                            <md-button class="md-fab md-mini md-primary"
+                                 ng-show="boxes[box.name].showRefresh" ng-click="getData()">
+                                <i class="fa fa-refresh"></i>
+                            </md-button>
 
                             <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
                                 <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
@@ -130,8 +131,10 @@
                                 </ul>
                             </div>
 
-                            <div ng-show="box.name === 'supports'" id="SupportChannels" translation-texts="pickService.channelTexts" events="pickService.channelEvents" class="multi-element btn-sm btn-primary dropdown-toggle" style="background-color: inherit; display: inline-block;" extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickChannels" selected-model="pickService.channel"></div>
-                            <div class="btn btn-sm btn-primary box-refresh" style="margin-left: 8px;" ng-show="box.name == 'supports'" ng-click="getSupports()"><i class="fa fa-refresh"></i></div>
+                            <div ng-show="box.name === 'supports'" id="SupportChannels" translation-texts="pickService.channelTexts"
+                                 events="pickService.channelEvents" class="multi-element btn-sm btn-primary dropdown-toggle" style="background-color: inherit; display: inline-block;"
+                                 extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickChannels" selected-model="pickService.channel"></div>
+                            <md-button class="md-fab md-mini md-primary" style="margin-left: 8px;" ng-show="box.name == 'supports'" ng-click="getSupports()"><i class="fa fa-refresh"></i></md-button>
                             <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity">City <i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggle" ng-show="box.name === 'map'" ng-click="allCouriers.display = !allCouriers.display;getAvailableCourierLocation();">All <i ng-class="allCouriers.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggleZoom" ng-show="box.name === 'map'" ng-click="mapZoom.display = !mapZoom.display;storeMapZoomDisplay()">Auto Zoom <i ng-class="mapZoom.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
@@ -158,17 +161,17 @@
 </div>
 
 
-<div ng-include="'app/components/home/tpls/eventForm.tpl?v=1.1'"></div>
+<div ng-include="'app/components/home/tpls/eventForm.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/truckCourierStatus.tpl?v=1.7'"></div>
+<div ng-include="'app/components/home/tpls/truckCourierStatus.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/lateForm.tpl?v=1.1'"></div>
+<div ng-include="'app/components/home/tpls/lateForm.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.13'"></div>
+<div ng-include="'app/components/home/tpls/gatherForm.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
+<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.12'"></div>
+<div ng-include="'app/components/home/tpls/gpsForm.tpl'"></div>
 
 <div id='draggingItems'></div>
 

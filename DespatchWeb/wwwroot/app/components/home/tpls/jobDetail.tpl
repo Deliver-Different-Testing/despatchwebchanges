@@ -9,10 +9,10 @@
                                                     title="Change Client Code"
                                                     ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
 
-                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a
+                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#"
                                     ng-click="!currentJob.locked && jdSvc.clientClick(currentJob)">{{currentJob.client}}
-                                {{currentJob.clientName}}</a></div>
+                                {{currentJob.clientName}}</div>
                         </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
                              context-menu="detailAddressMenu" data-field="fromAddress"
@@ -80,10 +80,10 @@
                 <div class="notes-add"></div>
                 <div class="notes field">
                     <label>Notes</label>
-                    <button class="mat-button" style="float: right;"
+                    <md-button class="md-raised md-primary" style="float: right;"
                             ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
                         Add New
-                    </button>
+                    </md-button>
                     <div class="value">
                         <pre>{{currentJob.internalNotes}}</pre>
                     </div>
