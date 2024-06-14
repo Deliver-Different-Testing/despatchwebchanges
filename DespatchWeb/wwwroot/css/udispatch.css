@@ -195,6 +195,11 @@ md-divider {
 #clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-bottom .clearLists-list-items-item-number.active {
   background-color: #ffe0bb;
 }
+.pickadate-controls {
+  display: flex;
+  justify-content: space-between;
+  margin: -15px;
+}
 .pickadate {
   text-align: left;
   background-color: #FFF;
