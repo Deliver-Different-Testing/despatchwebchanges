@@ -1,9 +1,6 @@
 <div class="gatherForm" id="{{gather.form.id}}" ng-if="gather.form.tpl != 'multi'">
     <div class="gatherFields">
-        <md-toolbar>
-            <h2>{{gather.form.title}}</h2>
-        </md-toolbar>
-
+        <div class="gatherTitle">{{gather.form.title}}</div>
         <div ng-repeat="field in gather.form.fields" class="gatherField" style="display:inline-block; {{field.cssExtras}}">
           <div ng-switch="field.type">
             <div ng-switch-default>
