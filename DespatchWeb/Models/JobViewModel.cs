@@ -138,6 +138,7 @@ namespace DespatchWeb.Models
         public bool? AirportOnly { get; set; }
         public bool HasNationwide { get; set; }
         public string? DispatcherName { get; set; }
+        public DateTime? CreatedDate { get; set; }
     }
 
     public class Vehicle

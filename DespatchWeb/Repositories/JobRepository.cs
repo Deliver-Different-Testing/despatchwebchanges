@@ -212,7 +212,7 @@ namespace DespatchWeb.Repositories
                 from staff in staffJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
-                select new JobViewModel()
+                select new JobViewModel
                 {
                     ID = j.JobId,
                     JobRelationshipTypeID = j.JobRelationshipTypeId,
@@ -329,7 +329,8 @@ namespace DespatchWeb.Repositories
                     AirportOnly = nw.UcnwAirportOnly,
                     HasNationwide = nw.UcnwJobId.HasValue,
                     StatusName = status.UcjsName,
-                    DispatcherName = $"{staff.UcstFirstName ??  string.Empty} {staff.UcstLastName ?? string.Empty}"
+                    DispatcherName = $"{staff.UcstFirstName ??  string.Empty} {staff.UcstLastName ?? string.Empty}",
+                    CreatedDate = j.Date
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
             if (job != null)

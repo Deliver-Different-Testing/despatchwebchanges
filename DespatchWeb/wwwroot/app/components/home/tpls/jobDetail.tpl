@@ -310,6 +310,14 @@
                                 "dd/MM/yyyy"}}
                             </div>
                         </div>
+
+                         <div class="field">
+                            <label ng-class="currentJob.locked ? 'disabled' : ''">Created Date</label>
+                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.createdDate | date :
+                                "dd/MM/yyyy"}}
+                            </div>
+                        </div>
+
                         <div class="field"
                              ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'Time','Time',currentJob.time,currentJob.id,'time')">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Log time</label>
