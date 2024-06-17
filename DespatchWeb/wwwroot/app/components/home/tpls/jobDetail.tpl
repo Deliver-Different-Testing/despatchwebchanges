@@ -4,7 +4,6 @@
             <div class="col-md-6">
                 <div class="row row-no-padding addresses">
                     <div class="col-md-6">
-                        <div class="field">
                             <div class="field">
                                 <label>Client</label><i  ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-edit" title="Change Client Code" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a  ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#" ng-click="!currentJob.locked && jdSvc.clientClick(currentJob)">{{currentJob.client}} {{currentJob.clientName}}</a></div>
@@ -75,7 +74,7 @@
                 <div class="notes-add"></div>
                 <div class="notes field">
                     <label>Notes</label>
-                    <md-button class="md-raised md-primary" style="float: right;"
+                    <md-button class="md-raised md-dense" style="float: right;"
                             ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
                         Add New
                     </md-button>
