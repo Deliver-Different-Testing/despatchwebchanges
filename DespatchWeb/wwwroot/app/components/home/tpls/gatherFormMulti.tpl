@@ -44,7 +44,8 @@
         <div class="col-md-12">
 
         <button class="btn btn-primary" ng-click="gather.submit()">{{gather.form.submitValue}}</button>
-          <button class="btn btn-cancel" ng-click="gather.cancel()">Cancel</button>
+        <button class="btn btn-default" ng-click="gather.cancel()">Cancel</button>
+
         </div>
       </div>
     </div>

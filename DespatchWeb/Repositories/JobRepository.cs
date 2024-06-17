@@ -212,7 +212,7 @@ namespace DespatchWeb.Repositories
                 from staff in staffJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
-                select new JobViewModel
+                select new JobViewModel()
                 {
                     ID = j.JobId,
                     JobRelationshipTypeID = j.JobRelationshipTypeId,
@@ -262,7 +262,7 @@ namespace DespatchWeb.Repositories
                     LP = j.LatePickUp,
                     LD = j.LateDelivery,
                     ContactName = j.Contact,
-                    LoggedInContactName = $"{contact.Firstname ??  ""} {contact.Surname ?? ""}",
+                    LoggedInContactName = $"{contact.Firstname ??  ""} {contact.Surname??""}",
                     Phone = j.DeliverToPhone,
                     SpeedAccepted = os.ShortName,
                     Weight = j.Weight,

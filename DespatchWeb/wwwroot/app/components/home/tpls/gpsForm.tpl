@@ -2,9 +2,7 @@
 <div class="gpsForm">
 
   <div class="gps-box">
-
-    <span class="gps-title">UPDATE ADDRESS & GPS</span>
-
+    UPDATE ADDRESS & GPS
     <div class="container-fluid">
       <div class="row">
         <div class="col-md-12">
