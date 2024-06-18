@@ -1028,7 +1028,7 @@ angular
                 $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
-                        .textContent('You must use more Search Criteria')
+                        .title('You must use more Search Criteria')
                         .ok('OK')
                 ).then(function() {
                     $("#box-jobList").find(".loading").hide();
@@ -1096,7 +1096,7 @@ angular
                 $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
-                        .textContent('You must use more Search Criteria')
+                        .title('You must use more Search Criteria')
                         .ok('OK')
                 ).then(function() {
                     $("#box-jobList").find(".loading").hide();
@@ -1162,7 +1162,7 @@ angular
                 $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
-                        .textContent('You must use more Search Criteria')
+                        .title('You must use more Search Criteria')
                         .ok('OK')
                 ).then(function() {
                     $("#box-jobList").find(".loading").hide();
