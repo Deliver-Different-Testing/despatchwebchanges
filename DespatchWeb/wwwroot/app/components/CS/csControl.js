@@ -1,6 +1,8 @@
 angular
     .module('uDispatch')
-    .controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", "$q", 'NgMap', 'GeoCoder', '$ngConfirm', function ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys, $location, $q, NgMap, GeoCoder, $ngConfirm) {
+    .controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state", "$stateParams", "$filter", '$parse', "hotkeys",
+        "$location", "$q", 'NgMap', 'GeoCoder', '$ngConfirm', '$mdDialog',
+        function ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys, $location, $q, NgMap, GeoCoder, $ngConfirm, $mdDialog) {
 
         $scope.isAdmin = (ClientInternal === "True");
         $scope.mapSetting = {
@@ -204,7 +206,7 @@ angular
         $scope.boxes = {
             "pickDate": {
                 "title": "Filters",
-                "tpl": "app/components/CS/tpls/pickDate.tpl",
+                "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.8",
                 "showSearch": 0
             },
 
@@ -1022,8 +1024,15 @@ angular
                 ($scope.pickDateService.courier || "") === "" &&
                 ($scope.pickDateService.job || "") === "" &&
                 ($scope.pickDateService.wild || "") === "") {
-                $ngConfirm("You must use more Search Criteria");
-                $("#box-jobList").find(".loading").hide();
+
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .clickOutsideToClose(true)
+                        .textContent('You must use more Search Criteria')
+                        .ok('OK')
+                ).then(function() {
+                    $("#box-jobList").find(".loading").hide();
+                });
                 return;
             }
 
@@ -1083,8 +1092,15 @@ angular
                 ($scope.pickDateService.courier || "") === "" &&
                 ($scope.pickDateService.job || "") === "" &&
                 ($scope.pickDateService.wild || "") === "") {
-                $ngConfirm("You must use more Search Criteria");
-                $("#box-jobList").find(".loading").hide();
+
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .clickOutsideToClose(true)
+                        .textContent('You must use more Search Criteria')
+                        .ok('OK')
+                ).then(function() {
+                    $("#box-jobList").find(".loading").hide();
+                });
                 return;
             }
 
@@ -1113,9 +1129,9 @@ angular
         };
 
         $scope.refreshPreBookData = function (wait) {
-
-            var goTop = $("#pbList").offset().top;
-            var $parentDiv = $("#pbList").parents(".box-content");
+            const pbList = $("#pbList");
+            let goTop = pbList.offset().top;
+            const $parentDiv = pbList.parents(".box-content");
 
             try {
                 goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
@@ -1143,8 +1159,14 @@ angular
                 ($scope.pickDateService.courier || "") === "" &&
                 ($scope.pickDateService.job || "") === "" &&
                 ($scope.pickDateService.wild || "") === "") {
-                $ngConfirm("You must use more Search Criteria");
-                $("#box-pbList").find(".loading").hide();
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .clickOutsideToClose(true)
+                        .textContent('You must use more Search Criteria')
+                        .ok('OK')
+                ).then(function() {
+                    $("#box-jobList").find(".loading").hide();
+                });
                 return;
             }
 
@@ -1897,33 +1919,22 @@ angular
         // Call the init function when the controller loads
         $scope.init();
 
-
         $scope.onSearchRangeChange = function(newValue) {
             const now = moment().format("YYYY-MM-DD");
             const firstDayOfMonth = moment().startOf('month').format("YYYY-MM-DD");
             const lastDayOfMonth = moment().endOf('month').format("YYYY-MM-DD");
 
-            console.log('Search range:', newValue)
-            console.log('Now:', now);
-            console.log('First day of month:', firstDayOfMonth);
-            console.log('Last day of month:', lastDayOfMonth);
-
             switch(newValue) {
                 case 'Today':
                     $scope.currentFromDate = now;
                     $scope.currentToDate = now;
-                    console.log('Today selected. From Date:', $scope.currentFromDate);
-                    console.log('Today selected. To Date:', $scope.currentToDate);
                     break;
                 case 'Month':
                     $scope.currentFromDate = firstDayOfMonth;
                     $scope.currentToDate = lastDayOfMonth;
-                    console.log('Month selected. From Date:', $scope.currentFromDate);
-                    console.log('Month selected. To Date:', $scope.currentToDate);
                     break;
                 case 'Custom':
                     // This option is empty as ng-if is used on the page to show custom date range options
-                    console.log('Custom range selected.');
                     break;
             }
         }
