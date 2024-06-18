@@ -281,7 +281,7 @@ angular
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl?v=2.46",
+                "tpl": "app/components/home/tpls/jobDetail.tpl",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1
@@ -334,7 +334,7 @@ angular
             },
             "supports": {
                 "title": "Supports",
-                "tpl": "app/components/home/tpls/supports.tpl?v=1.11",
+                "tpl": "app/components/home/tpls/supports.tpl",
                 "showSearch": 0,
                 "showRefresh": 0
             },

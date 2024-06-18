@@ -131,21 +131,22 @@
                                 </ul>
                             </div>
 
-                            <div ng-show="box.name === 'supports'" id="SupportChannels" translation-texts="pickService.channelTexts"
-                                 events="pickService.channelEvents" class="multi-element btn-sm btn-primary dropdown-toggle" style="background-color: inherit; display: inline-block;"
-                                 extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickChannels" selected-model="pickService.channel"></div>
+                            <md-input-container>
+                                <label>Select Channels</label>
+                                <md-select ng-show="box.name === 'supports'" id="SupportChannels" translation-texts="pickService.channelTexts" events="pickService.channelEvents"
+                                           ng-model="pickService.channel" style="background-color: inherit; display: inline-block;" multiple>
+                                    <md-option ng-repeat="channel in pickChannels" ng-value="channel">
+                                        {{ channel.label }}
+                                    </md-option>
+                                </md-select>
+                            </md-input-container>
+
+
                             <md-button class="md-fab md-mini md-primary" style="margin-left: 8px;" ng-show="box.name == 'supports'" ng-click="getSupports()"><i class="fa fa-refresh"></i></md-button>
                             <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity">City <i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggle" ng-show="box.name === 'map'" ng-click="allCouriers.display = !allCouriers.display;getAvailableCourierLocation();">All <i ng-class="allCouriers.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggleZoom" ng-show="box.name === 'map'" ng-click="mapZoom.display = !mapZoom.display;storeMapZoomDisplay()">Auto Zoom <i ng-class="mapZoom.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggleUA" ng-show="box.name === 'map'" ng-click="allCouriers.includeUA = !allCouriers.includeUA;getAvailableCourierLocation();">Include UA <i ng-class="allCouriers.includeUA ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
-
-                            <div class="box-search" ng-show="boxes[box.name].showSearch">
-                                <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
-                                <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
-                                <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}">
-
-                            </div>
 
                             <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
                         </div>
