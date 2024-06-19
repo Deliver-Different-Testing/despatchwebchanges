@@ -355,6 +355,14 @@ md-divider {
   /* Non-prefixed version, currently
                                    supported by Chrome and Opera */
 }
+.channelSelect {
+  background-color: lightgrey;
+  color: #EEE;
+  display: inline-block;
+}
+.md-select-menu-container .md-option {
+  color: white !important;
+}
 #draggingItems {
   border: 3px dotted #CCC;
   width: 100px;
