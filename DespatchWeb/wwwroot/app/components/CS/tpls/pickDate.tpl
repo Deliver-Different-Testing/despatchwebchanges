@@ -8,6 +8,7 @@
             <md-radio-button value="Custom">Custom</md-radio-button>
         </md-radio-group>
         <md-divider></md-divider>
+
         <div ng-if="dateSearchRange == 'Custom'" class="space">
             <label>From: </label><span>{{currentFromDate | date: DEFAULT_DATE_FORMAT}}</span>
             <div class="btn-group" role="group" aria-label="Basic example">
@@ -20,20 +21,47 @@
                         ng-click="chooseToDate()"><i class="fa fa-calendar"></i></button>
             </div>
         </div>
+
         <div class="space">
-            <b>Client:</b>
-            <select name="FilterClient" id="FilterClient" allow-clear="true" ng-model="pickDateService.client"
-                    class="form-control focusMe">
-                <option value=""></option>
-            </select>
+            <label id="clientLabel">Client:</label>
+            <md-autocomplete
+                md-selected-item="clientSelectedItem"
+                md-search-text="clientSearchText"
+                md-selected-item-change="selectedClientChange(item)"
+                md-items="item in clientQuerySearch(clientSearchText)"
+                md-item-text="item.text"
+                md-min-length="3"
+                placeholder="Start typing to enter new client..."
+                input-aria-labelledby="clientLabel">
+            <md-item-template>
+                    <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
+                </md-item-template>
+                <md-not-found>
+                    No clients matching "{{searchText}}" were found.
+                </md-not-found>
+            </md-autocomplete>
         </div>
+
         <div class="space">
-            <b>Courier:</b>
-            <select name="FilterCourier" id="FilterCourier" allow-clear="true" ng-model="pickDateService.courier"
-                    class="form-control focusMe">
-                <option value=""></option>
-            </select>
+            <label id="courierLabel">Courier:</label>
+            <md-autocomplete
+                    md-selected-item="courierSelectedItem"
+                    md-search-text="courierSearchText"
+                    md-selected-item-change="selectedCourierChange(item)"
+                    md-items="item in courierQuerySearch(courierSearchText)"
+                    md-item-text="item.text"
+                    md-min-length="3"
+                    placeholder="Start typing to enter new courier..."
+                    input-aria-labelledby="courierLabel">
+                <md-item-template>
+                    <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
+                </md-item-template>
+                <md-not-found>
+                    No couriers matching "{{searchText}}" were found.
+                </md-not-found>
+            </md-autocomplete>
         </div>
+
         <div class="space">
             <b>Job Number:</b>
             <input type="text" name="Job" id="Job" ng-model="pickDateService.job" class="form-control focusMe"/>
