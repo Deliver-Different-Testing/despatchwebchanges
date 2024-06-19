@@ -173,7 +173,7 @@
 
                             <md-button class="md-fab md-mini md-primary"
                                        ng-show="boxes[box.name].showRefresh" ng-click="getData()">
-                                <i class="fa fa-refresh"></i>
+                                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                             </md-button>
 
                             <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
@@ -197,26 +197,20 @@
                                 </ul>
                             </div>
 
-                            <md-input-container>
-                                <label ng-show="!pickService.channel || (Array.isArray(pickService.channel) && pickService.channel.length === 0)">Select
-                                    Channels</label>
-                                <md-select ng-show="box.name === 'supports'" id="SupportChannels"
-                                           translation-texts="pickService.channelTexts"
-                                           events="pickService.channelEvents"
-                                           ng-model="pickService.channel" class="channelSelect" multiple>
-                                    <md-option ng-repeat="channel in pickChannels" ng-value="channel">
-                                        {{ channel.label }}
-                                    </md-option>
-                                </md-select>
-                            </md-input-container>
+                            <div ng-show="box.name === 'supports'" id="SupportChannels"
+                                 translation-texts="pickService.channelTexts" events="pickService.channelEvents"
+                                 class="multi-element btn-sm btn-primary dropdown-toggle"
+                                 style="background-color: inherit; display: inline-block; box-shadow: none; z-index: 100000"
+                                 extra-settings="pickService.settings" ng-dropdown-multiselect=""
+                                 options="pickChannels" selected-model="pickService.channel"></div>
 
                             <md-button class="md-fab md-mini md-primary" style="margin-left: 8px;"
-                                       ng-show="box.name == 'supports'" ng-click="getSupports()"><i
-                                    class="fa fa-refresh"></i></md-button>
+                                       ng-show="box.name == 'supports'" ng-click="getSupports()">
+                                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                            </md-button>
 
 
-                            <div layout="row" ng-show="box.name === 'map'" style="overflow-x: auto;">
-
+                            <div layout="row" ng-show="box.name === 'map'">
                                 <md-switch ng-show="box.name === 'clearLists'" ng-model="areaListCity" class="md-primary">
                                     City
                                 </md-switch>
@@ -233,6 +227,7 @@
                                     Include UA
                                 </md-switch>
                             </div>
+
                             <div class="box-handle"><i class="fa fa-ellipsis-v"></i></div>
                         </div>
                     </div>
