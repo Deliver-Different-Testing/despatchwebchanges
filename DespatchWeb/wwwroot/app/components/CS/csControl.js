@@ -11,7 +11,7 @@ angular
                 "allRuns": false
             };
 
-            $scope.dateSearchRange = 'Today';
+            $scope.dateSearchRange = 'Fortnight';
             $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
             $scope.searchBox = "";
@@ -1852,11 +1852,17 @@ angular
                 const now = moment().format("YYYY-MM-DD");
                 const firstDayOfMonth = moment().startOf('month').format("YYYY-MM-DD");
                 const lastDayOfMonth = moment().endOf('month').format("YYYY-MM-DD");
+                const oneWeekAgo = moment().subtract(1, 'weeks').format("YYYY-MM-DD");
+                const oneWeekAhead = moment().add(1, 'weeks').format("YYYY-MM-DD");
 
                 switch (newValue) {
                     case 'Today':
                         $scope.currentFromDate = now;
                         $scope.currentToDate = now;
+                        break;
+                    case 'Fortnight':
+                        $scope.currentFromDate = oneWeekAgo;
+                        $scope.currentToDate = oneWeekAhead;
                         break;
                     case 'Month':
                         $scope.currentFromDate = firstDayOfMonth;
