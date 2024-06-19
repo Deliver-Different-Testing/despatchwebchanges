@@ -2684,16 +2684,15 @@ angular
                 map.clearFlags();
                 return;
             }
-            var areas = $scope.jobFilters.area.split(",");
-            var channels = [];
-            var trucks = false;
-            for (var i = 0; i < areas.length; i++) {
+
+            const areas = $scope.jobFilters.area.split(",");
+            const channels = [];
+            let trucks = false;
+
+            for (let i = 0; i < areas.length; i++) {
+
                 switch (areas[i]) {
                     case "main1":
-                        if (!channels.includes(1)) {
-                            channels.push(1);
-                        }
-                        break;
                     case "main2":
                         if (!channels.includes(1)) {
                             channels.push(1);
@@ -2708,12 +2707,19 @@ angular
                         trucks = true;
                         break;
                     default:
-                    // code block
+                        console.log("Default case reached");
                 }
             }
-            DispatchData.getAvailableCourierLocation(map.getBounds().getSouthWest().lng(), map.getBounds().getSouthWest().lat(), map.getBounds().getNorthEast().lng(), map.getBounds().getNorthEast().lat())
+
+            const southWestLng = map.getBounds().getSouthWest().lng();
+            const southWestLat = map.getBounds().getSouthWest().lat();
+            const northEastLng = map.getBounds().getNorthEast().lng();
+            const northEastLat = map.getBounds().getNorthEast().lat();
+
+            DispatchData.getAvailableCourierLocation(southWestLng, southWestLat, northEastLng, northEastLat)
                 .then(function (returnData) {
-                    displayAvailableCouriers(returnData, $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
+                    const courierId = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
+                    displayAvailableCouriers(returnData, courierId, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
                 });
         };
 
