@@ -125,6 +125,7 @@
                                     ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
                                     style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
                         </div>
+
                         <div class="box-buttons">
                             <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
 
@@ -226,6 +227,12 @@
                                            ng-change="getAvailableCourierLocation()" class="md-primary">
                                     Include UA
                                 </md-switch>
+                            </div>
+
+                            <div class="box-search" ng-show="boxes[box.name].showSearch">
+                                <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
+                                <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
+                                <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}">
                             </div>
 
                             <div class="box-handle"><i class="fa fa-ellipsis-v"></i></div>
