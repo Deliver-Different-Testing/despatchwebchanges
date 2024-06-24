@@ -1,6 +1,9 @@
 body {
   overflow: hidden;
 }
+md-dialog {
+  min-width: 400px;
+}
 .btn-primary {
   background-color: #fddd00;
   color: #000;
