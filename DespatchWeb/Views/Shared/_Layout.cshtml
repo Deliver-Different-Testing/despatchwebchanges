@@ -8,7 +8,7 @@
 
     @* Material *@
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.2.5/angular-material.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
 
     <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
     <script src='https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
@@ -55,7 +55,7 @@
     <link rel="stylesheet" href="lib/resizable/angular-resizable.min.css">
     <link rel="stylesheet" href="lib/hotkeys/hotkeys.min.css">
     <link rel="stylesheet" href="lib/autocomplete/angular-auto-complete.css">
-    <link rel="stylesheet" href="lib/angular-confirm/angular-confirm.min.css" />
+    <link rel="stylesheet" href="lib/angular-confirm/angular-confirm.min.css"/>
 
     <script type="text/javascript">
         !function (a, b, c, d, e, f, g, h) {
@@ -73,7 +73,7 @@
 </head>
 <body ng-app="uDispatch">
 
-    @RenderBody()
+@RenderBody()
 <script>
         // Define the overlay, derived from google.maps.OverlayView
         function Label(opt_options) {
@@ -199,7 +199,7 @@
 <script src="~/lib/jquery_timers.js"></script>
 
 @{
-     void CreateScriptTag(string src, bool versioning)
+    void CreateScriptTag(string src, bool versioning)
     {
         <script src="@src" @(versioning ? "asp-append-version=\"true\"" : string.Empty)></script>
     }
@@ -234,7 +234,9 @@
             ("app/components/CS/csService.js", true),
             ("app/components/CS/csControl.js", true),
             ("app/components/prebooks/prebookService.js", true),
-            ("app/components/prebooks/prebookControl.js", true)
+            ("app/components/prebooks/prebookControl.js", true),
+            ("app/services/loadingDialogService.js", true),
+            ("app/services/toastrService.js", true)
         };
         foreach (var (src, versioning) in devScripts) CreateScriptTag(src, versioning);
     }
@@ -255,7 +257,9 @@
             ("app/components/CS/csService.min.js", true),
             ("app/components/CS/csControl.min.js", true),
             ("app/components/prebooks/prebookService.min.js", true),
-            ("app/components/prebooks/prebookControl.min.js", true)
+            ("app/components/prebooks/prebookControl.min.js", true),
+            ("app/services/loadingDialogService.min.js", true),
+            ("app/services/toastrService.min.js", true)
         };
         foreach (var (src, versioning) in minScripts) CreateScriptTag(src, versioning);
     }
