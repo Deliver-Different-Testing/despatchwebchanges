@@ -815,7 +815,7 @@
                             });
                         });
 
-                    var suburbOptions = {
+                    const suburbOptions = {
                         minimumInputLength: 1,
                         data: self.pickSuburbs
                     };
@@ -1420,7 +1420,7 @@
                         const callData = {
                             "call": "updateDetailField",
                             "field": this.fieldName,
-                            "value": value,
+                            "value": value.id,
                             "jobID": this.job.id
                         };
 
