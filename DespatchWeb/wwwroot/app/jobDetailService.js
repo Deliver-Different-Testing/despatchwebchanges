@@ -1,8 +1,8 @@
 ﻿angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData", "$ngConfirm",
-            function (DispatchData, $ngConfirm) {
+        ["DispatchData", "$ngConfirm", "$mdDialog",
+            function (DispatchData, $ngConfirm, $mdDialog) {
                 var self = this;
                 const options = {
                     "detail": {
@@ -91,48 +91,46 @@
                 var pickSpeeds = [];
                 var pickContacts = [];
 
-                var gather = {
-                };
-                self.gpsForm = {
-                };
+                var gather = {};
+                self.gpsForm = {};
 
 
-                DispatchData.getLeaveList().then(function(data) {
+                DispatchData.getLeaveList().then(function (data) {
                     pickLeaveList = data;
                 });
 
-                DispatchData.getUndeliverableList().then(function(data) {
+                DispatchData.getUndeliverableList().then(function (data) {
                     pickUndeliverableList = data;
                 });
 
-                DispatchData.getSpeedList().then(function(data) {
+                DispatchData.getSpeedList().then(function (data) {
                     pickSpeeds = data;
                 });
 
-                DispatchData.getSuburbList().then(function(data) {
+                DispatchData.getSuburbList().then(function (data) {
                     self.pickSuburbs = data;
                 });
 
-                DispatchData.getInternalStatusList().then(function(data) {
+                DispatchData.getInternalStatusList().then(function (data) {
                     self.pickInternalStatus = data;
                 });
 
 
-                self.setGather = function(g) {
+                self.setGather = function (g) {
                     gather = g;
                 };
 
-                self.setGPSForm = function(g) {
+                self.setGPSForm = function (g) {
                     self.gpsForm = g;
                     //self.setupAutoComplete();
                 };
-                self.setSelectJobDetail = function(f) {
+                self.setSelectJobDetail = function (f) {
                     self.selectJobDetail = f;
                 };
                 self.setSelectBulkJobDetail = function (f) {
                     self.selectBulkJobDetail = f;
                 };
-                self.setJob = function(job) {
+                self.setJob = function (job) {
                     self.currentJob = job;
                     DispatchData.getContactList(job.clientID).then(function (data) {
                         pickContacts = data;
@@ -225,7 +223,7 @@
                 self.combos = {
                     "frequency": [],
                     "frequencyEvents": {
-                        onSelectionChanged: function(item) {
+                        onSelectionChanged: function (item) {
                             console.log("Freq =");
                             console.log(self.combos.frequency);
                             if (self.combos.frequency.length > 0 &&
@@ -245,8 +243,8 @@
                                         FirstName,
                                         ContactID,
                                         self.currentJob.preBook).then(function (response) {
-                                            self.selectJobDetail(self.currentJob.id);
-                                            return response;
+                                        self.selectJobDetail(self.currentJob.id);
+                                        return response;
                                     });
                             } else {
                                 console.log("invalid data");
@@ -275,8 +273,8 @@
                                         FirstName,
                                         ContactID,
                                         self.currentJob.preBook).then(function (response) {
-                                            self.selectJobDetail(self.currentJob.id);
-                                            return response;
+                                        self.selectJobDetail(self.currentJob.id);
+                                        return response;
                                     });
                             } else {
                                 console.log("invalid data");
@@ -305,8 +303,8 @@
                                         FirstName,
                                         ContactID,
                                         self.currentJob.preBook).then(function (response) {
-                                            self.selectJobDetail(self.currentJob.id);
-                                            return response;
+                                        self.selectJobDetail(self.currentJob.id);
+                                        return response;
                                     });
                             } else {
                                 console.log("invalid data");
@@ -315,33 +313,33 @@
                     }
                 };
 
-                String.prototype.replaceAt = function(index, replacement) {
+                String.prototype.replaceAt = function (index, replacement) {
                     return this.substring(0, index) + replacement + this.substring(index + replacement.length);
                 };
 
-                self.frequencyChanged = function() {
+                self.frequencyChanged = function () {
 
                 };
 
-                self.getTrackingMethod = function(tm) {
+                self.getTrackingMethod = function (tm) {
                     switch (tm || 0) {
-                    case 1:
-                        return "Email";
-                    case 2:
-                        return "Mobile";
-                    case 3:
-                        return "Email & Mobile";
-                    default:
-                        return "";
+                        case 1:
+                            return "Email";
+                        case 2:
+                            return "Mobile";
+                        case 3:
+                            return "Email & Mobile";
+                        default:
+                            return "";
                     }
                 };
 
-                self.getInternalStatus = function(is) {
-                    var selected = self.pickInternalStatus.find(({ id }) => id === is);
+                self.getInternalStatus = function (is) {
+                    var selected = self.pickInternalStatus.find(({id}) => id === is);
                     return selected !== undefined ? selected.text : "";
                 }
 
-                self.hasDGDocs = function(job) {
+                self.hasDGDocs = function (job) {
                     if (job.dgClass) {
                         return ((job.dgDocumentation || 0) === 1) || ((job.dgDocumentation || false) === true)
                             ? "Yes"
@@ -352,7 +350,7 @@
 
                 };
 
-                self.ppdExclusiveAmount = function(clientId, amount) {
+                self.ppdExclusiveAmount = function (clientId, amount) {
                     return DispatchData.ppdExclusiveAmount(clientId, amount);
                 };
 
@@ -389,9 +387,9 @@
                                     itemSummary.dgClass,
                                     job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
                                     job.truckHours || 2,
-                                    job.gstRate).then(function(description) {
-                                        alert(description);
-                                    });
+                                    job.gstRate).then(function (description) {
+                                    alert(description);
+                                });
 
                             });
 
@@ -416,32 +414,32 @@
                             job.booked,
                             job.gstRate,
                             job.charge.replace("$", "")).then(function (description) {
-                                alert(description);
-                            });
+                            alert(description);
+                        });
                     }
                 };
 
-                self.rateJob = function(job) {
+                self.rateJob = function (job) {
                     var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
                         job.fromSuburbID === 112 && job.toSuburbID === 112 ||
                         job.fromSuburbID === 480 && job.toSuburbID === 480;
                     if (job.size.id === 4 &&
-                    (job.speedID === 41 ||
-                        job.speedID === 42 ||
-                        job.speedID === 43 ||
-                        job.speedID === 44 ||
-                        job.speedID === 46 ||
-                        job.speedID === 51 ||
-                        job.speedID === 52 ||
-                        job.speedID == 124 ||
-                        job.speedID == 125 ||
-                        job.speedID == 150 ||
-                        job.speedID == 151 ||
-                        job.speedID == 152
+                        (job.speedID === 41 ||
+                            job.speedID === 42 ||
+                            job.speedID === 43 ||
+                            job.speedID === 44 ||
+                            job.speedID === 46 ||
+                            job.speedID === 51 ||
+                            job.speedID === 52 ||
+                            job.speedID == 124 ||
+                            job.speedID == 125 ||
+                            job.speedID == 150 ||
+                            job.speedID == 151 ||
+                            job.speedID == 152
                         )) {
                         //Truck Job
                         return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
-                            function(itemSummary) {
+                            function (itemSummary) {
                                 return DispatchData.rateTruckJob(job.clientID,
                                     job.fromSuburbID,
                                     job.toSuburbID,
@@ -481,7 +479,7 @@
                     }
                 };
 
-                self.editDetailField = function(job, fieldName, label, value, jobID, type, options) {
+                self.editDetailField = function (job, fieldName, label, value, jobID, type, options) {
 
                     if (type === "time" || type === "date") {
 
@@ -499,32 +497,32 @@
                     var valueToUse = options ? options[value] : value;
 
                     switch (fieldName) {
-                    case "RefA":
-                        max = "20";
-                        break;
-                    case "RefB":
-                        max = "12";
-                        break;
-                    case "OurRef":
-                        max = "20";
-                        break;
-                    case "TrackingMobile":
-                        max = "500";
-                        break;
-                    case "TrackingEmail":
-                        max = "500";
+                        case "RefA":
+                            max = "20";
                             break;
-                    case "ConNote":
-                        max = "50";
-                        break;
-                    case "Size":
-                        valueToUse = options[value.id - 1];
-                        break;
-                    case "TrackingMethod":
-                        valueToUse = options[value - 1];
-                        break;
-                    default:
-                        break;
+                        case "RefB":
+                            max = "12";
+                            break;
+                        case "OurRef":
+                            max = "20";
+                            break;
+                        case "TrackingMobile":
+                            max = "500";
+                            break;
+                        case "TrackingEmail":
+                            max = "500";
+                            break;
+                        case "ConNote":
+                            max = "50";
+                            break;
+                        case "Size":
+                            valueToUse = options[value.id - 1];
+                            break;
+                        case "TrackingMethod":
+                            valueToUse = options[value - 1];
+                            break;
+                        default:
+                            break;
                     }
 
 
@@ -551,37 +549,37 @@
                                 }
                             ]
                             : fieldName === "DGClass"
-                            ? [
-                                {
-                                    "name": fieldName,
-                                    "label": label + "...",
-                                    "value": options[value],
-                                    "jobID": jobID,
-                                    "type": type,
-                                    "options": options,
-                                    "maxLength": max
-                                },
-                                {
-                                    "name": "Documentation",
-                                    "label": "Has Documentation?",
-                                    "value": job.dgDocumentation,
-                                    "jobID": jobID,
-                                    "type": "checkbox",
-                                    "options": options
-                                }
-                            ]
-                            : [
-                                {
-                                    "name": fieldName,
-                                    "label": label + "...",
-                                    "value": valueToUse,
-                                    "jobID": jobID,
-                                    "type": type,
-                                    "options": options,
-                                    "maxLength": max
-                                }
-                            ],
-                        onSubmit: function() {
+                                ? [
+                                    {
+                                        "name": fieldName,
+                                        "label": label + "...",
+                                        "value": options[value],
+                                        "jobID": jobID,
+                                        "type": type,
+                                        "options": options,
+                                        "maxLength": max
+                                    },
+                                    {
+                                        "name": "Documentation",
+                                        "label": "Has Documentation?",
+                                        "value": job.dgDocumentation,
+                                        "jobID": jobID,
+                                        "type": "checkbox",
+                                        "options": options
+                                    }
+                                ]
+                                : [
+                                    {
+                                        "name": fieldName,
+                                        "label": label + "...",
+                                        "value": valueToUse,
+                                        "jobID": jobID,
+                                        "type": type,
+                                        "options": options,
+                                        "maxLength": max
+                                    }
+                                ],
+                        onSubmit: function () {
                             var rerate = false;
 
                             var callData = {
@@ -624,7 +622,7 @@
                                 return DispatchData
                                     .updateJobType(callData.jobID,
                                         callData.value,
-                                        FirstName).then(function(response) {
+                                        FirstName).then(function (response) {
 
                                     });
                             }
@@ -690,7 +688,7 @@
                                     });
                             }
                             if (rerate && !job.bulkJob) {
-                                return self.rateJob(job).then(function(rate) {
+                                return self.rateJob(job).then(function (rate) {
                                     //console.log(rate);
                                     //if (rate !== job.charge) {
                                     //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
@@ -714,23 +712,23 @@
                                         });
                                 });
                             } else {
-                                return job.bulkJob ?  DispatchData
-                                    .updateBulkJobDetail(job.id,
-                                        callData.field,
-                                        callData.value,
-                                        job.charge,
-                                        FirstName,
-                                        ContactID).then(function (response) {
-                                        return response;
-                                    }) :
+                                return job.bulkJob ? DispatchData
+                                        .updateBulkJobDetail(job.id,
+                                            callData.field,
+                                            callData.value,
+                                            job.charge,
+                                            FirstName,
+                                            ContactID).then(function (response) {
+                                            return response;
+                                        }) :
                                     DispatchData
-                                    .updateJobDetail(callData.jobID,
-                                        callData.field,
-                                        callData.value,
-                                        job.charge,
-                                        FirstName,
-                                        ContactID,
-                                        job.preBook).then(function(response) {
+                                        .updateJobDetail(callData.jobID,
+                                            callData.field,
+                                            callData.value,
+                                            job.charge,
+                                            FirstName,
+                                            ContactID,
+                                            job.preBook).then(function (response) {
                                         return response;
                                     });
                             }
@@ -739,7 +737,7 @@
                         submitValue: "Update Field"
                     };
 
-                    setTimeout(function() {
+                    setTimeout(function () {
                             console.log(gather);
                             gather.showForm();
                         },
@@ -748,7 +746,7 @@
 
                 };
 
-                self.setupAutoComplete = function() {
+                self.setupAutoComplete = function () {
                     console.log("setup autocomplete");
                     var options = {
                         minimumInputLength: 1,
@@ -756,7 +754,7 @@
                             url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
                             delay: 250,
                             dataType: "json",
-                            data: function(params) {
+                            data: function (params) {
                                 return {
                                     query: params.term,
                                     app_id: "bBPfh2x8Cauun3ygLMAx",
@@ -766,10 +764,10 @@
                                     country: "NZL"
                                 };
                             },
-                            processResults: function(data) {
+                            processResults: function (data) {
                                 return {
                                     results: $.map(data.suggestions,
-                                        function(obj) {
+                                        function (obj) {
                                             return {
                                                 id: obj.locationId,
                                                 text: obj.label.split(", ").reverse().join(", ")
@@ -778,17 +776,19 @@
                                 };
                             }
                         },
-                        escapeMarkup: function(markup) { return markup; }
+                        escapeMarkup: function (markup) {
+                            return markup;
+                        }
                     };
 
                     $("#location").select2(options).on("select2:select",
-                        function(e) {
+                        function (e) {
                             $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json",
                                 {
                                     app_id: "bBPfh2x8Cauun3ygLMAx",
                                     app_code: "yjfwTdkin_R2rGXYTrwWVg",
                                     locationId: e.params.data.id
-                                }).done(function(data) {
+                                }).done(function (data) {
                                 var locn = data.Response.View[0].Result[0].Location;
                                 console.log("Suburb = " + locn.Address.District);
                                 console.log("PostCode = " + locn.Address.PostalCode);
@@ -825,7 +825,7 @@
                     //waitingDialog.hide();
                 };
 
-                self.updateGPS = function(currentJob, field, fromRightClick) {
+                self.updateGPS = function (currentJob, field, fromRightClick) {
                     waitingDialog.show();
                     var lat;
                     var long;
@@ -852,13 +852,13 @@
                         } else {
                             lat = "";
                             long = "";
-                           //q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.fromAddress);
+                            //q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.fromAddress);
                         }
                     }
 
                     console.log(currentJob.pickUpLatitude);
                     //console.log(q);
-                   // $("#gpsMap").attr("src", q);
+                    // $("#gpsMap").attr("src", q);
 
 
                     self.gpsForm.data = {
@@ -866,14 +866,13 @@
                         "lat": lat,
                         "long": long
                     };
-                    self.gpsForm.onSubmit = function(location) {
+                    self.gpsForm.onSubmit = function (location) {
 
                         var job = currentJob;
                         if (self.gpsForm.data.our_suburb === undefined) {
                             alert("You must pick one of our suburbs to map this address to");
                             return self.gpsFormPromise;
                         }
-
 
 
                         if (field === "toAddress") {
@@ -886,7 +885,7 @@
                                     self.gpsForm.data.lat,
                                     self.gpsForm.data.long,
                                     FirstName).then(function () {
-                                        $(".gpsForm").hide(0);
+                                    $(".gpsForm").hide(0);
 
                                 });
                             }
@@ -935,7 +934,7 @@
                             job.fromSuburbID === 112 && job.toSuburbID === 112 ||
                             job.fromSuburbID === 480 && job.toSuburbID === 480;
 
-                        return self.rateJob(job).then(function(rate) {
+                        return self.rateJob(job).then(function (rate) {
                             //console.log(rate);
                             //if (rate !== job.charge) {
                             //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
@@ -994,10 +993,10 @@
 
 
                     };
-                    self.gpsForm.cancel = function() {
+                    self.gpsForm.cancel = function () {
                         $(".gpsForm").hide(0);
                     };
-                    self.gpsForm.placeChanged = function(place) {
+                    self.gpsForm.placeChanged = function (place) {
                         if (place !== null) {
                             self.place = place;
                         } else {
@@ -1013,7 +1012,7 @@
                         }
                         self.map.setCenter(self.place.geometry.location);
                     };
-                    self.gpsForm.moveMarker = function(event) {
+                    self.gpsForm.moveMarker = function (event) {
                         var latlng = event.latLng;
                         //GeoCoder.geocode({ location: latlng })
                         //    .then(function (result) {
@@ -1021,7 +1020,7 @@
                         //        self.gpsForm.placeChanged(result[0]);
                         //    });
                     };
-                    self.gpsForm.markerDragend = function() {
+                    self.gpsForm.markerDragend = function () {
                         //Geo coder for drag marker
                         var location = self.marker.getPosition();
                         $.getJSON("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json",
@@ -1030,7 +1029,7 @@
                                 app_code: "yjfwTdkin_R2rGXYTrwWVg",
                                 mode: "retrieveAddresses",
                                 prox: location.lat().toString() + "," + location.lng().toString() + "," + "250"
-                            }).done(function(data) {
+                            }).done(function (data) {
                             var locn = data.Response.View[0].Result[0].Location;
                             self.gpsForm.data.address = locn.Address.Label;
                             console.log("Suburb = " + locn.Address.District);
@@ -1053,27 +1052,24 @@
                     };
 
 
-
-                self.gpsForm.showForm(fromRightClick);
-
+                    self.gpsForm.showForm(fromRightClick);
 
 
-
-                self.copyGpsAddress = function () {
-                    $('#location').select2('open');
-                    var search = $('#location').data('select2').dropdown.$search;
-                    if (self.gpsForm.data.address.indexOf(',') > 0) {
-                        search.val(self.gpsForm.data.address.split(',')[1].split());
-                    } else {
-                        search.val(self.gpsForm.data.address);
-                    }
-                    search.trigger("input");
-                };
+                    self.copyGpsAddress = function () {
+                        $('#location').select2('open');
+                        var search = $('#location').data('select2').dropdown.$search;
+                        if (self.gpsForm.data.address.indexOf(',') > 0) {
+                            search.val(self.gpsForm.data.address.split(',')[1].split());
+                        } else {
+                            search.val(self.gpsForm.data.address);
+                        }
+                        search.trigger("input");
+                    };
 
 
                 };
 
-                self.unlockJob = function(job) {
+                self.unlockJob = function (job) {
                     return DispatchData
                         .updateJobDetail(job.id,
                             "Locked",
@@ -1082,7 +1078,7 @@
                             FirstName,
                             ContactID,
                             job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
+                            self.selectJobDetail(job.id);
                             return response;
                         });
                 }
@@ -1096,410 +1092,402 @@
                             FirstName,
                             ContactID,
                             job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
+                            self.selectJobDetail(job.id);
                             return response;
                         });
                 }
 
-                self.preBookDirectClick = function(job) {
+                self.preBookDirectClick = function (job) {
                     return DispatchData
-                    .updateJobDetail(job.id,
-                        "Direct",
-                        job.direct,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                        .updateJobDetail(job.id,
+                            "Direct",
+                            job.direct,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
                             self.selectJobDetail(job.id);
                             return response;
                         });
                 };
 
-            self.repriceClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Reprice",
-                        job.reprice,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                self.repriceClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Reprice",
+                            job.reprice,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
                             self.selectJobDetail(job.id);
                             return response;
                         });
-            };
+                };
 
-            self.pushToLive = function (job) {
-                return DispatchData
-                    .releaseBulkJob(job.jobNo, job.bookedDate).then(function (response) {
-                        self.selectBulkJobDetail(job.id);
-                        return response;
-                    });
-            };
+                self.pushToLive = function (job) {
+                    return DispatchData
+                        .releaseBulkJob(job.jobNo, job.bookedDate).then(function (response) {
+                            self.selectBulkJobDetail(job.id);
+                            return response;
+                        });
+                };
 
-            self.vanOkClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "VanOK",
-                        job.vanOK,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                self.vanOkClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "VanOK",
+                            job.vanOK,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
                             self.selectJobDetail(job.id);
-                        return response;
-                    });
-            };
-
-
-            self.vanClick = function (job) {
-                return self.rateJob(job).then(function (rate) {
-                    console.log(rate);
-                    return DispatchData
-                        .updateJobDetail(job.id,
-                            "Van",
-                            job.van,
-                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
-                                return response;
-                        });
-                });
-
-            };
-
-            self.pedalClick = function (job) {
-                return self.rateJob(job).then(function (rate) {
-                    console.log(rate);
-                    return DispatchData
-                        .updateJobDetail(job.id,
-                            "Pedal",
-                            job.pedal,
-                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
                             return response;
                         });
-                });
+                };
 
-            };
 
-            self.truckClick = function (job) {
-                return self.rateJob(job).then(function (rate) {
-                    console.log(rate);
-                    return DispatchData
-                        .updateJobDetail(job.id,
-                            "Truck",
-                            job.truck,
-                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
-                            return response;
-                        });
-                });
-
-            };
-
-            self.directClick = function(job) {
-                if (!job.direct) {
-                    return DispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
-                } else {
-                    return self.rateJob(job).then(function(rate) {
+                self.vanClick = function (job) {
+                    return self.rateJob(job).then(function (rate) {
                         console.log(rate);
                         return DispatchData
                             .updateJobDetail(job.id,
-                                "Direct",
-                                job.direct,
+                                "Van",
+                                job.van,
                                 Number(rate.replace(/[^0-9.-]+/g, "")),
                                 FirstName,
                                 ContactID,
                                 job.preBook).then(function (response) {
-                                    self.selectJobDetail(job.id);
-                                    return response;
+                                self.selectJobDetail(job.id);
+                                return response;
                             });
                     });
 
-                }
-
-            };
-
-            self.attentionClick = function(job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Attention",
-                        job.attention,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                    });
                 };
 
-            self.repriceClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Reprice",
-                        job.reprice,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
-            };
-
-
-            self.preBookReturnClick = function(job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Return",
-                        job.return,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
-            };
-
-
-
-
-            self.oneOffClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "OneOff",
-                        job.oneOff,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                        return response;
+                self.pedalClick = function (job) {
+                    return self.rateJob(job).then(function (rate) {
+                        console.log(rate);
+                        return DispatchData
+                            .updateJobDetail(job.id,
+                                "Pedal",
+                                job.pedal,
+                                Number(rate.replace(/[^0-9.-]+/g, "")),
+                                FirstName,
+                                ContactID,
+                                job.preBook).then(function (response) {
+                                self.selectJobDetail(job.id);
+                                return response;
+                            });
                     });
 
                 };
 
-            self.activeClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Active",
-                        job.active,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                self.truckClick = function (job) {
+                    return self.rateJob(job).then(function (rate) {
+                        console.log(rate);
+                        return DispatchData
+                            .updateJobDetail(job.id,
+                                "Truck",
+                                job.truck,
+                                Number(rate.replace(/[^0-9.-]+/g, "")),
+                                FirstName,
+                                ContactID,
+                                job.preBook).then(function (response) {
+                                self.selectJobDetail(job.id);
+                                return response;
+                            });
+                    });
+
+                };
+
+                self.directClick = function (job) {
+                    if (!job.direct) {
+                        return DispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
+                    } else {
+                        return self.rateJob(job).then(function (rate) {
+                            console.log(rate);
+                            return DispatchData
+                                .updateJobDetail(job.id,
+                                    "Direct",
+                                    job.direct,
+                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                    FirstName,
+                                    ContactID,
+                                    job.preBook).then(function (response) {
+                                    self.selectJobDetail(job.id);
+                                    return response;
+                                });
+                        });
+
+                    }
+
+                };
+
+                self.attentionClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Attention",
+                            job.attention,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+                };
+
+                self.repriceClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Reprice",
+                            job.reprice,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+                };
+
+
+                self.preBookReturnClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Return",
+                            job.return,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+                };
+
+
+                self.oneOffClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "OneOff",
+                            job.oneOff,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
                             self.selectJobDetail(job.id);
                             return response;
                         });
 
-            };
+                };
 
-            self.voidClick = function (job) {
-                return job.bulkJob ? DispatchData
-                    .updateBulkJobDetail(job.id,
-                        "Void",
-                        job.void,
-                        job.charge,
-                        FirstName,
-                        ContactID).then(function (response) {
+                self.activeClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Active",
+                            job.active,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+
+                };
+
+                self.voidClick = function (job) {
+                    return job.bulkJob ? DispatchData
+                        .updateBulkJobDetail(job.id,
+                            "Void",
+                            job.void,
+                            job.charge,
+                            FirstName,
+                            ContactID).then(function (response) {
                             self.selectBulkJobDetail(job.id);
-                        return response;
-                    }) : DispatchData
-                    .updateJobDetail(job.id,
-                        "Void",
-                        job.void,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                            return response;
+                        }) : DispatchData
+                        .updateJobDetail(job.id,
+                            "Void",
+                            job.void,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+
+                };
+                self.doneClick = function (job) {
+                    if (!job.completedTime) {
+                        $ngConfirm("You must set completed time (POD Time) first");
+                        job.done = false;
+                        return false;
+                    }
+                    if (!job.podName) {
+                        $ngConfirm("You must set POD Name first");
+                        job.done = false;
+                        return false;
+                    }
+                    return DispatchData
+                        .updatePODDetail(job.jobNo,
+                            6,
+                            job.podName,
+                            job.completedTime).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
+
+                };
+
+
+                self.deliveredClick = function (job) {
+                    DispatchData
+                        .updateJobDetail(job.id,
+                            "Delivered",
+                            job.done,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
                         self.selectJobDetail(job.id);
                         return response;
                     });
-
-            };
-            self.doneClick = function (job) {
-                if (!job.completedTime) {
-                    $ngConfirm("You must set completed time (POD Time) first");
-                    job.done = false;
-                    return false;
-                }
-                if (!job.podName) {
-                    $ngConfirm("You must set POD Name first");
-                    job.done = false;
-                    return false;
-                }
-                return DispatchData
-                    .updatePODDetail(job.jobNo,
-                        6,
-                        job.podName,
-                        job.completedTime).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
-
                 };
 
-
-            self.deliveredClick = function (job) {
-                DispatchData
-                    .updateJobDetail(job.id,
-                        "Delivered",
-                        job.done,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                self.airportOnlyClick = function (job) {
+                    DispatchData
+                        .updateJobDetail(job.id,
+                            "AirportOnly",
+                            job.airportOnly,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                        self.selectJobDetail(job.id);
+                        return response;
+                    });
                 };
 
-            self.airportOnlyClick = function (job) {
-                DispatchData
-                    .updateJobDetail(job.id,
-                        "AirportOnly",
-                        job.airportOnly,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
-            };
-
-            self.leaveClick = function(job) {
-                this.editDetailField(job, 'DeliverToLeaveID', 'Leave Parcel', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickLeaveList,
-                            placeholder: "Start typing to enter new location..."
-                        };
-
-                        $("#gather-DeliverToLeaveID").select2(speedOptions);
-                        $("#gather-DeliverToLeaveID").select2('open');
-                        $("#gather-DeliverToLeaveID").select2().dropdown.$search;
-
-                    },
-                    400);
-            };
-
-            self.undeliverableClick = function(job) {
-                this.editDetailField(job, 'UndeliverableLocationID', 'Undeliverable Location', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickUndeliverableList,
-                            placeholder: "Start typing to enter new location..."
-                        };
-
-                        $("#gather-UndeliverableLocationID").select2(speedOptions);
-                        $("#gather-UndeliverableLocationID").select2('open').val(job.udStatus).trigger('change');
-                        $("#gather-UndeliverableLocationID").select2().dropdown.$search;
-
-                    },
-                    400);
-            };
-
-
-            self.notifyClick = function(job) {
-                this.editDetailField(job, 'NotifiedJobTypeID', 'Notified', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickSpeeds,
-                            placeholder: "Start typing to enter new speed..."
-                        };
-
-                    $("#gather-NotifiedJobTypeID").select2(speedOptions);
-                    $("#gather-NotifiedJobTypeID").select2('open').val(job.notifiedJobTypeID).trigger('change');
-                    $("#gather-NotifiedJobTypeID").select2().dropdown.$search;
-
-                    },
-                    400);
-            };
-
-            self.acceptedClick = function(job) {
-                this.editDetailField(job, 'AcceptedJobTypeID', 'Accepted', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickSpeeds,
-                            placeholder: "Start typing to enter new speed..."
-                        };
-
-                        $("#gather-AcceptedJobTypeID").select2(speedOptions);
-
-                    },
-                    400);
-            };
-
-            self.speedClick = function(job) {
-                this.editDetailField(job, 'SpeedID', 'Speed', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickSpeeds,
-                            placeholder: "Start typing to enter new speed..."
-                        };
-
-                        $("#gather-SpeedID").select2(speedOptions);
-                        $("#gather-SpeedID").select2('open').val(job.speedID).trigger('change');
-                        $("#gather-SpeedID").select2().dropdown.$search;
-
-                    },
-                    200);
+                self.leaveClick = function(event, job) {
+                    self.showSelectDialog(event, job, pickLeaveList, "DeliverToLeaveID", "Edit Leave Parcel", "Select location..");
                 };
 
-            self.contactClick = function (job) {
-                this.editDetailField(job, 'ContactID', 'Contact', '', job.id, 'select2');
-                setTimeout(function () {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickContacts,
-                            placeholder: "Start typing to enter new contact..."
-                        };
+                self.undeliverableClick = function(event, job) {
+                    self.showSelectDialog(event, job, pickUndeliverableList, "UndeliverableLocationID", "Edit Undeliverable Location", "Select location..");
+                };
 
-                        $("#gather-ContactID").select2(speedOptions);
-                        $("#gather-ContactID").select2('open').val(job.contactID).trigger('change');
-                        $("#gather-ContactID").select2().dropdown.$search;
-
-                    },
-                    200);
-            };
-
-            self.getJobTypeDescription = function(jobTypeID) {
-                switch (jobTypeID||1) {
-                case 1:
-                        return "Pickup";
-                case 2:
-                        return "Delivery";
-                case 3:
-                    return "3rd-Party";
-
-                    default:
-                        return "Pickup";
-                }
-            };
-
-            self.jobTypeClick = function (job) {
-                this.editDetailField(job, 'JobTypeID', 'Job Type', '', job.id, 'select2');
-                setTimeout(function() {
-                    var jtOptions = {
+                self.showSelectDialog = function(event, job, data, fieldName, title, placeholder, id = "editField") {
+                    const options = {
                         minimumInputLength: 1,
-                        data: [
+                        items: data,
+                        placeholder: placeholder
+                    };
+
+                    $mdDialog.show({
+                        parent: angular.element(document.body),
+                        targetEvent: event,
+                        templateUrl: 'app/components/home/tpls/dialogs/selectDialog.tpl',
+                        clickOutsideToClose: true,
+                        fullscreen: true,
+                        locals: {
+                            id: id,
+                            fieldName: fieldName,
+                            title: title,
+                            job: job,
+                            options: options
+                        },
+                        controller: DialogController
+                    }).then(function (answer) {
+                        console.log(answer);
+                    }, function () {
+                        console.log('Closed!')
+                    });
+                };
+
+                function DialogController($scope, $mdDialog, id, fieldName, title, job, options) {
+                    $scope.title = title;
+                    $scope.job = job;
+                    $scope.fieldName = fieldName;
+                    $scope.field = {value: null, options: options};
+
+                    $scope.submit = function (value) {
+                        const reRate = false;
+                        const callData = {
+                            "call": "updateDetailField",
+                            "field": this.fieldName,
+                            "value": value,
+                            "jobID": this.job.id
+                        };
+
+                        if (callData.field === "Notes") {
+                            this.job.bulkJob ?
+                                DispatchData.addBulkJobNote(this.job.id, callData.value, this.FirstName, this.job.preBook) :
+                                DispatchData.addNote(this.job.id, callData.value, this.FirstName, this.job.preBook);
+                        }
+
+                        if (reRate && !this.job.bulkJob) {
+                            return self.rateJob(job).then(function (rate) {
+                                DispatchData
+                                    .updateJobDetail(callData.jobID,
+                                        callData.field,
+                                        callData.value,
+                                        Number(rate.replace(/[^0-9.-]+/g, "")),
+                                        FirstName,
+                                        ContactID,
+                                        job.preBook).then(function (response) {
+                                        return response;
+                                    });
+                            });
+                        } else {
+                            this.job.bulkJob ?
+                                DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID) :
+                                DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID);
+                        }
+
+                        $mdDialog.hide();
+                    };
+
+                    $scope.cancel = function () {
+                        $mdDialog.cancel();
+                    };
+                }
+
+                self.notifyClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickSpeeds, "NotifiedJobTypeID", "Edit Notified", "Select new speed....");
+                };
+
+                self.acceptedClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
+                };
+
+                self.speedClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
+                };
+
+                self.contactClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickSpeeds, "ContactID", "Contact", "Select new contact....");
+                };
+
+                self.getJobTypeDescription = function (jobTypeID) {
+                    switch (jobTypeID || 1) {
+                        case 1:
+                            return "Pickup";
+                        case 2:
+                            return "Delivery";
+                        case 3:
+                            return "3rd-Party";
+                        default:
+                            return "Pickup";
+                    }
+                };
+
+                self.jobTypeClick = function (event, job) {
+                    const data = [
                             {
                                 id: 1,
                                 text: 'Pickup'
@@ -1512,86 +1500,70 @@
                                 id: 3,
                                 text: '3rd-Party'
                             }
-                        ],
-                        placeholder: "Start typing to enter new speed..."
-                    };
+                        ];
 
-                    $("#gather-JobTypeID").select2(jtOptions);
-                    $("#gather-JobTypeID").select2('open').val(job.jobType).trigger('change');
-                    $("#gather-JobTypeID").select2().dropdown.$search;
-                },200);
-            };
+                    self.showSelectDialog(event, job, data, "JobTypeID", "Job Type", "Select new speed....");
+                };
 
-            self.internalStatusClick = function(job) {
-                this.editDetailField(job, 'InternalStatusID', 'Job FollowUp', '', job.id, 'select2');
-                setTimeout(function() {
-                        var statusOptions = {
-                            minimumInputLength: 1,
-                            data: self.pickInternalStatus,
-                            placeholder: "Start typing to enter new status..."
-                        };
+                self.internalStatusClick = function (event, job) {
+                    self.showSelectDialog(event, job, self.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
+                };
 
-                        $("#gather-InternalStatusID").select2(statusOptions);
-
-                    },
-                    200);
-            };
-
-            self.clientClick = function(job) {
-                this.editDetailField(job, 'ClientID', 'Client', '', job.id, 'select2');
-                setTimeout(function() {
-                        $("#gather-ClientID").select2({
-                            ajax: {
-                                url: "/home/ActiveClients",
-                                dataType: 'json',
-                                delay: 250,
-                                data: function(params) {
-                                    return {
-                                        searchTerm: params.term
-                                    };
+                self.clientClick = function (job) {
+                    this.editDetailField(job, 'ClientID', 'Client', '', job.id, 'select2');
+                    setTimeout(function () {
+                            $("#gather-ClientID").select2({
+                                ajax: {
+                                    url: "/home/ActiveClients",
+                                    dataType: 'json',
+                                    delay: 250,
+                                    data: function (params) {
+                                        return {
+                                            searchTerm: params.term
+                                        };
+                                    },
+                                    processResults: function (data) {
+                                        // parse the results into the format expected by Select2
+                                        return {
+                                            results: data
+                                        };
+                                    },
+                                    cache: true
                                 },
-                                processResults: function(data) {
-                                    // parse the results into the format expected by Select2
-                                    return {
-                                        results: data
-                                    };
-                                },
-                                cache: true
-                            },
-                            placeholder: "Start typing to enter new client...",
-                            minimumInputLength: 3
-                        });
+                                placeholder: "Start typing to enter new client...",
+                                minimumInputLength: 3
+                            });
 
-                    },
-                    200);
+                        },
+                        200);
                 };
 
                 self.courierClick = function (job) {
                     this.editDetailField(job, 'CourierID', 'Courier', '', job.id, 'select2');
                     setTimeout(function () {
-                        $("#gather-CourierID").select2({
-                            ajax: {
-                                url: "/courier/AllActiveSearch",
-                                dataType: 'json',
-                                delay: 250,
-                                data: function (params) {
-                                    return {
-                                        searchTerm: params.term
-                                    };
+                            $("#gather-CourierID").select2({
+                                ajax: {
+                                    url: "/courier/AllActiveSearch",
+                                    dataType: 'json',
+                                    delay: 250,
+                                    data: function (params) {
+                                        return {
+                                            searchTerm: params.term
+                                        };
+                                    },
+                                    processResults: function (data) {
+                                        // parse the results into the format expected by Select2
+                                        return {
+                                            results: data
+                                        };
+                                    },
+                                    cache: true
                                 },
-                                processResults: function (data) {
-                                    // parse the results into the format expected by Select2
-                                    return {
-                                        results: data
-                                    };
-                                },
-                                cache: true
-                            },
-                            placeholder: "Start typing to search courier...",
-                            minimumInputLength: 3
-                        });
+                                placeholder: "Start typing to search courier...",
+                                minimumInputLength: 3
+                            });
 
-                    },
+                        },
                         200);
                 };
 
@@ -1633,9 +1605,9 @@
                                                     FirstName,
                                                     ContactID,
                                                     self.currentJob.preBook).then(function (response) {
-                                                        self.selectJobDetail(self.currentJob.id);
-                                                        return response;
-                                                    });
+                                                    self.selectJobDetail(self.currentJob.id);
+                                                    return response;
+                                                });
                                         }
 
                                     });
@@ -1647,8 +1619,6 @@
                                 }
 
                             });
-
-
 
 
                         }
@@ -1782,9 +1752,9 @@
                                                     FirstName,
                                                     ContactID,
                                                     self.currentJob.preBook).then(function (response) {
-                                                        self.selectJobDetail(self.currentJob.id);
-                                                        return response;
-                                                    });
+                                                    self.selectJobDetail(self.currentJob.id);
+                                                    return response;
+                                                });
                                         }
 
                                     });
@@ -1802,8 +1772,8 @@
                     };
                     setTimeout(function () {
 
-                        gather.showForm();
-                    },
+                            gather.showForm();
+                        },
                         200);
 
 
@@ -1878,11 +1848,11 @@
                                 "value": pallet.notes
                             }
                         ],
-                        onSubmit: function() {
+                        onSubmit: function () {
 
                             var newP = {};
 
-                            gather.form.fields.forEach(function(field) {
+                            gather.form.fields.forEach(function (field) {
                                 if (field.name === "amount") {
                                     newP["Quantity"] = field.value;
                                 }
@@ -1915,8 +1885,8 @@
                             newP["id"] = self.currentPallet.id;
                             newP["itemId"] = self.currentPallet.itemID;
 
-                            return DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function() {
-                                return self.rateJob(self.currentJob).then(function(rate) {
+                            return DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function () {
+                                return self.rateJob(self.currentJob).then(function (rate) {
                                     console.log(rate);
                                     if (rate !== self.currentJob.charge) {
                                         //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
@@ -1935,8 +1905,8 @@
                                                 FirstName,
                                                 ContactID,
                                                 self.currentJob.preBook).then(function (response) {
-                                                    self.selectJobDetail(self.currentJob.id);
-                                                    return response;
+                                                self.selectJobDetail(self.currentJob.id);
+                                                return response;
                                             });
                                     }
 
@@ -1945,7 +1915,7 @@
                         },
                         submitValue: "Edit Pallet"
                     };
-                    setTimeout(function() {
+                    setTimeout(function () {
 
                             gather.showForm();
                         },
@@ -1953,9 +1923,9 @@
 
                 };
 
-            return self;
+                return self;
 
-        }
+            }
 
 
-    ]);
+        ]);
