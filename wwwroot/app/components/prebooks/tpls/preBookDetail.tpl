@@ -27,7 +27,7 @@
 							<label>Job #</label>
 							<div class="value">{{currentJob.jobNo}}</div>
 						</div>
-						
+
 						<div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'" context-menu="detailAddressMenu" data-field="toAddress" ng-click="jdSvc.updateGPS(currentJob,'toAddress')">
 							<label>To: {{currentJob.to}}</label>
 							<div class="value">{{currentJob.toAddress}}</div>
@@ -42,9 +42,13 @@
 						</div>
 					</div>
 				</div>
+
 				<div class="notes-add"></div>
-				<div class="notes field"  ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
+				<div class="notes field">
 					<label>Notes</label>
+					<button class="mat-button" style="float: right;" ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
+						Add New
+					</button>
 					<div class="value"><pre>{{currentJob.internalNotes}}</pre></div>
 				</div>
 
@@ -96,27 +100,27 @@
 							<label>Tracing Email</label>
 							<div class="value">{{currentJob.trackingEmail}}</div>
 						</div>
-					
+
 				<br />
 
 					</div>
 					<div class="col-md-6">
-						
+
 						<div class="field"  ng-click="jdSvc.speedClick(currentJob)">
 							<label>Speed</label>
 							<div class="value">{{currentJob.speedName}}</div>
 						</div>
-						
+
 						<div class="field" >
 							<label>Direct</label>
 							<div class="value"><input type="checkbox" ng-click="jdSvc.preBookDirectClick(currentJob)" ng-model="currentJob.direct"/></div>
 						</div>
-						
+
 						<div class="field" ng-click="jdSvc.leaveClick(currentJob)" >
 							<label>Leave Parcel</label>
 							<div class="value">{{currentJob.sigNotRequired || "Signature Required"}}</div>
 						</div>
-						
+
 						<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'DGClass','DG Class',currentJob.dgClass,currentJob.id, 'select', options.detail.DGClass)">
 							<label>DG# / Docs</label>
 							<div class="value">{{currentJob.dgClass}} / {{jdSvc.hasDGDocs(currentJob)}} </div>
@@ -141,7 +145,7 @@
 							<div class="multi-element" ng-dropdown-multiselect="" options="jdSvc.pickHolidays" extra-settings="{selectionLimit:1, showUncheckAll:false, closeOnSelect:true}"  events="jdSvc.combos.holidaysEvents" selected-model="jdSvc.combos.holidays"></div>
 						</div>
 					</div>
-					
+
 				</div>
 			</div>
 			<div class="col-md-4">
@@ -160,7 +164,7 @@
 								<div class="value">{{currentJob.inActiveBy}}</div>
 							</div>
 							<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'InActiveDate','InActive Date',currentJob.inActiveDate,currentJob.id, 'date')">
-								<label>InActive Date</label>	
+								<label>InActive Date</label>
 								<div class="value">{{currentJob.inActiveDate | date: "dd/MM/yyyy"}}</div>
 							</div>
 							<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'FirstDue','First Due',currentJob.firstDue,currentJob.id, 'date')">
@@ -189,8 +193,8 @@
 							</div>
 					</div>
 					<div class="col-md-6">
-						
-						
+
+
 						<div class="field" ng-click="jdSvc.editDetailField(currentJob, 'Date','Date',currentJob.date,currentJob.id, 'date')">
 							<label>Date</label>
 							<div class="value">{{currentJob.date | date : "dd/MM/yyyy"}}</div>
@@ -238,12 +242,12 @@
 			</div>
 
 		</div>
-		
+
 			<div>
 				<div class="palletInfo">
-					
+
 					<label>Pallet Info</label>
-					<div class="btn btn-sml addPallet" ng-click="jdSvc.newPallet()">Add Pallet</div>
+					<div class="mat-button" ng-click="jdSvc.newPallet()">Add Pallet</div>
 					<div class="value">
 						<table class="table table-striped table-responsive">
 							<thead>

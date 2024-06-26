@@ -1,5 +1,3 @@
-
-
 angular
     .module("uDispatch")
     .config(["HereMapsConfigProvider", function (HereMapsConfigProvider) {
@@ -19,6 +17,7 @@ angular
         $scope.isInternal = (ClientInternal === "True");
         $scope.name = "Home";
         $scope.jdSvc = jdSvc;
+
         var gpsForm = {
             submit: function () {
                 return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
@@ -54,7 +53,7 @@ angular
                     if (fromRightClick) {
                         $scope.$apply();
                     }
-                    
+
 
                 });
                 setTimeout(function () {
@@ -71,7 +70,7 @@ angular
                     }
                     waitingDialog.hide();
                     search.trigger("input");
-                    
+
                 }, 150);
             }
         };
@@ -121,7 +120,7 @@ angular
             submit: function () {
                 return $scope.gather.form.onSubmit().then(function (response) {
                     console.log("pointer 3");
-                    
+
                     $(".gatherForm").hide();
                     var j = $scope.currentJob;
                     $scope.getData().then(function () {
@@ -148,7 +147,7 @@ angular
                         }, 1000);
 
                     });
-                    
+
                 });
 
             },
@@ -158,7 +157,9 @@ angular
             showForm: function () {
                 $(".gatherForm").show(0,
                     function () {
-                        setTimeout(function () { $(".gatherForm .focusMe").focus(); }, 100);
+                        setTimeout(function () {
+                            $(".gatherForm .focusMe").focus();
+                        }, 100);
                     });
             },
             submitValue: "Save",
@@ -166,9 +167,9 @@ angular
         };
 
         $scope.jdSvc.setGather($scope.gather);
-        $scope.allCouriers = { display: false, includeUA: false };
-        $scope.mapZoom = { display: true };
-        $scope.supportSettings = { autoRefresh: true };
+        $scope.allCouriers = {display: false, includeUA: false};
+        $scope.mapZoom = {display: true};
+        $scope.supportSettings = {autoRefresh: true};
 
         $scope.options = {
             "detail": {
@@ -256,19 +257,18 @@ angular
         $scope.truckCourierStatus = [];
         $scope.getJobStyle = function (assigned) {
             var normal =
-            {
-                "font-weight": "normal"
+                {
+                    "font-weight": "normal"
 
-            };
+                };
             var bold =
-            {
-                "font-weight": "bold"
+                {
+                    "font-weight": "bold"
 
-            };
+                };
             if (assigned) {
                 return bold;
-            }
-            else {
+            } else {
                 return normal;
             }
         };
@@ -278,7 +278,7 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                    "tpl": "app/components/home/tpls/jobList.tpl?v=1.88",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=1.88",
                 "showSearch": 1,
                 "showRefresh": 1
             },
@@ -371,7 +371,7 @@ angular
                     const temp = $scope.pickService.channel.map(el => el.label);
 
                     $scope.setSupportChannel(String(temp) || "All");
-                    
+
                 }
             },
             "settings": {
@@ -399,12 +399,12 @@ angular
         ];
 
         ///////////////////////////////
-        // LAYOUT 
+        // LAYOUT
         ///////////////////////////////
         var layoutsObject = null;
         if (Modernizr.localstorage) {
             layoutsObject = JSON.parse(localStorage.getItem("layouts-" + ContactID));
-            $scope.mapZoom = JSON.parse(localStorage.getItem("mapZoom-" + ContactID)) || { display: true };
+            $scope.mapZoom = JSON.parse(localStorage.getItem("mapZoom-" + ContactID)) || {display: true};
         }
         var defaultLayout = [
             {
@@ -519,15 +519,23 @@ angular
             }
         }
 
+        $scope.setLastActiveLayoutName = function (layoutName) {
+            if (Modernizr.localstorage) {
+                localStorage.setItem("lastActiveLayout-" + ContactID, layoutName);
+            }
+        };
+
         $scope.loadLayout = function (i) {
             $scope.currentLayoutName = $scope.layouts[i].name;
             $scope.layout = angular.copy($scope.layouts[i].layout);
+
+            // save layout as last active
+            $scope.setLastActiveLayoutName($scope.currentLayoutName);
+
             setTimeout($scope.getData, 1000);
         };
 
         $scope.saveLayout = function () {
-
-
             angular.forEach($scope.layout.columns,
                 function (column, colKey) {
                     column.width = $("#co-" + column.id).css("flex-basis");
@@ -558,7 +566,6 @@ angular
                         "layout": $scope.layout
                     };
 
-
                     if (Modernizr.localstorage) {
                         $scope.layouts = $scope.layouts.concat(
                             {
@@ -566,6 +573,9 @@ angular
                                 layout: angular.copy($scope.layout)
                             });
                         localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
+
+                        // save last active layout
+                        $scope.setLastActiveLayoutName(layoutName);
                     }
 
                     var deferred = $q.defer();
@@ -689,9 +699,9 @@ angular
                     var box = $("#" + ui.item.context.id);
                     var parent = box.parent();
                     parent.find(".box").each(function () {
-                        $(this).css({ "flex-basis": $(this).attr("data-height") });
+                        $(this).css({"flex-basis": $(this).attr("data-height")});
                     });
-                    parent.find(".box").last().css({ "flex-basis": "0" });
+                    parent.find(".box").last().css({"flex-basis": "0"});
                 }, 0);
             }
         };
@@ -703,13 +713,13 @@ angular
                 $("#box-" + boxID).find(".box-search input").fadeOut(function () {
 
                     $("#box-" + boxID).find(".box-search").removeClass("open");
-                    $("#box-" + boxID).find(".box-search").animate({ "width": "31px" }, 500);
+                    $("#box-" + boxID).find(".box-search").animate({"width": "31px"}, 500);
 
                 });
 
             } else {
 
-                $("#box-" + boxID).find(".box-search").animate({ "width": "200px" },
+                $("#box-" + boxID).find(".box-search").animate({"width": "200px"},
                     500,
                     function () {
                         $("#box-" + boxID).find(".box-search").addClass("open");
@@ -725,10 +735,10 @@ angular
             if ($(".chat").hasClass("open")) {
                 $(".chat input").fadeOut(function () {
                     $(".chat").removeClass("open");
-                    $(".chat").animate({ "width": "31px" }, 500);
+                    $(".chat").animate({"width": "31px"}, 500);
                 });
             } else {
-                $(".chat").animate({ "width": "250px" }, 500, function () {
+                $(".chat").animate({"width": "250px"}, 500, function () {
                     $(".chat").addClass("open");
                     $(".chat").find("input").fadeIn();
                 });
@@ -757,13 +767,13 @@ angular
             }
 
             if (serverOrder) {
-                $scope.setFilters({ "order": prop });
+                $scope.setFilters({"order": prop});
             }
 
         };
 
         ///////////////////////////
-        // HOTKEYS 
+        // HOTKEYS
         //////////////////////////
 
         hotkeys.add({
@@ -823,8 +833,8 @@ angular
             if ($("#clearLists").find('.listActive').length <= 1) {
                 $scope.getClearListEnvelope(id);
             }
-            
-            $scope.setFilters({ 'clearList': area });
+
+            $scope.setFilters({'clearList': area});
         };
 
         $scope.selectForDispatch = function (job) {
@@ -868,10 +878,10 @@ angular
                                                         $scope.getData();
                                                     });
                                                 });
-                                                
+
 
                                             });
-                                            
+
                                         }
                                     },
                                     No: {
@@ -946,20 +956,19 @@ angular
             $(".eventForm").show(0);
 
 
-
         };
 
 
-        $scope.getSupportColorClass = function(support) {
+        $scope.getSupportColorClass = function (support) {
             switch (support.eventType) {
-            case 73:
+                case 73:
                     return "Yel";
                 case 1:
                     return "Gre";
-            case 2:
-                return "Gre";
-            default:
-                break;
+                case 2:
+                    return "Gre";
+                default:
+                    break;
             }
         }
 
@@ -1069,13 +1078,12 @@ angular
                                     //$("#box-jobDetail").find(".loading").show();
                                     $("#box-map").find(".loading").show();
 
-                                    $scope.courier = { gpsCourier: foundCourier.id };
+                                    $scope.courier = {gpsCourier: foundCourier.id};
                                     $scope.searchCourier();
 
 
                                 });
                             });
-
 
 
                         }
@@ -1124,14 +1132,13 @@ angular
                 $scope.getData().then(function () {
 
 
-
                 });
                 return response;
             });
         };
 
-        $scope.jobClass = function(job) {
-            var classToUse = job.direct? "direct " : "";
+        $scope.jobClass = function (job) {
+            var classToUse = job.direct ? "direct " : "";
             classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTHIRE" || job.speed === "FT" || job.speed === "FTHIRE" || job.speed === "HC" || job.speed === "TC") ? "chilled" : "");
             return classToUse;
         }
@@ -1142,7 +1149,7 @@ angular
         $scope.dispatchJobs = function (courier) {
             var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
             if (foundCourier === undefined) {
-               $ngConfirm({
+                $ngConfirm({
                     title: 'Courier Offline',
                     content: 'Dispatch anyway?',
                     scope: $scope,
@@ -1155,19 +1162,20 @@ angular
                                 //console.log(foundCourier);
                                 return $scope.dispatchJobsContinue(courier, foundCourier, true);
                             }
-                            
+
 
                         },
                         No: {
                             btnClass: 'btn-red',
                             action: function (scope, button) {
-                                
+
                             }
                         }
                     }
-               });
-               return;
-            };
+                });
+                return;
+            }
+            ;
 
             return $scope.dispatchJobsContinue(courier, foundCourier, false);
 
@@ -1224,7 +1232,7 @@ angular
                     //$("#box-jobDetail").find(".loading").show();
                     $("#box-map").find(".loading").show();
 
-                    $scope.courier = { gpsCourier: foundCourier.id };
+                    $scope.courier = {gpsCourier: foundCourier.id};
                     if (!offline) {
                         $scope.searchCourier();
                     } else {
@@ -1297,7 +1305,7 @@ angular
                     //$("#box-jobDetail").find(".loading").show();
                     $("#box-map").find(".loading").show();
 
-                    $scope.courier = { gpsCourier: foundCourier.id };
+                    $scope.courier = {gpsCourier: foundCourier.id};
                     $scope.searchCourier();
 
 
@@ -1344,12 +1352,11 @@ angular
             }
 
 
-
             $scope.getData().then(function () {
                 //$("#box-jobDetail").find(".loading").show();
                 $("#box-map").find(".loading").show();
 
-                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
 
 
@@ -1388,7 +1395,7 @@ angular
             $scope.getData().then(function () {
                 $("#box-map").find(".loading").show();
 
-                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
 
 
@@ -1408,7 +1415,6 @@ angular
             };
 
 
-
             $("#jobList .active").each(function () {
                 var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
@@ -1422,7 +1428,7 @@ angular
             $scope.getData().then(function () {
                 $("#box-map").find(".loading").show();
 
-                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
 
 
@@ -1525,7 +1531,7 @@ angular
                             $scope.getData().then(function () {
                                 $("#box-map").find(".loading").show();
 
-                                $scope.courier = { gpsCourier: foundCourier.id };
+                                $scope.courier = {gpsCourier: foundCourier.id};
                                 $scope.searchCourier();
 
 
@@ -1575,7 +1581,7 @@ angular
                             $scope.getData().then(function () {
                                 $("#box-map").find(".loading").show();
 
-                                $scope.courier = { gpsCourier: foundCourier.id };
+                                $scope.courier = {gpsCourier: foundCourier.id};
                                 $scope.searchCourier();
 
 
@@ -1617,7 +1623,7 @@ angular
             $scope.getData().then(function () {
                 $("#box-map").find(".loading").show();
 
-                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
 
 
@@ -1650,7 +1656,7 @@ angular
             $scope.getData().then(function () {
                 $("#box-map").find(".loading").show();
 
-                $scope.courier = { gpsCourier: foundCourier.id };
+                $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
 
 
@@ -1700,7 +1706,6 @@ angular
             }, 1000);
 
 
-
         };
 
         $scope.setFirstJob = function (job) {
@@ -1733,7 +1738,7 @@ angular
         //  SPLIT JOB //
         /////////////////////////////
         $scope.splitJob = function (job) {
-            
+
             if (!job.allowSplit) {
                 alert("Can not split " + job.JobNo + ".");
                 return;
@@ -1762,8 +1767,6 @@ angular
 
                 }
             });
-            
-
 
 
         };
@@ -1788,52 +1791,49 @@ angular
         ];
 
 
-        
-
-
         //ACTIVATE DROP
         $scope.activateDrop = function () {
             setTimeout(function () {
 
-                $(document).ready(function (event) {
-                    $(".droppable-row").droppable({
-                        classes: {
-                            "ui-droppable-hover": "active"
-                        },
-                        drop: function (event, ui) {
-                            //$(this).addClass("active");
+                    $(document).ready(function (event) {
+                        $(".droppable-row").droppable({
+                            classes: {
+                                "ui-droppable-hover": "active"
+                            },
+                            drop: function (event, ui) {
+                                //$(this).addClass("active");
 
 
-                            //STOP DROPPABLE FIRING OUTSIDE ITS CONTAINER & HIDDEN
-                            var parent = $(this).parents(".box");
-                            var parentOffset = parent.offset();
-                            var parentTop = parentOffset.top;
-                            var parentBottom = parentTop + parent.outerHeight();
+                                //STOP DROPPABLE FIRING OUTSIDE ITS CONTAINER & HIDDEN
+                                var parent = $(this).parents(".box");
+                                var parentOffset = parent.offset();
+                                var parentTop = parentOffset.top;
+                                var parentBottom = parentTop + parent.outerHeight();
 
-                            var row = $(this);
-                            var rowOffset = row.offset();
-                            var rowTop = rowOffset.top;
-                            var rowBottom = rowTop + row.outerHeight();
+                                var row = $(this);
+                                var rowOffset = row.offset();
+                                var rowTop = rowOffset.top;
+                                var rowBottom = rowTop + row.outerHeight();
 
-                            if (rowTop < parentBottom && rowBottom > parentTop) {
+                                if (rowTop < parentBottom && rowBottom > parentTop) {
 
-                                //YAY ITS VISABLE
-                                $(this).css({ "background-color": "#c6dfad" });
-                                $(this).animate({ backgroundColor: "inherit" },
-                                    300,
-                                    function () {
-                                        $(this).removeAttr("style");
-                                    });
-                                $scope.dispatchJobs($(this).attr("data-courier").replace(/[^\d.-]/g, ''));
-                                $scope.getClearListsData();
+                                    //YAY ITS VISABLE
+                                    $(this).css({"background-color": "#c6dfad"});
+                                    $(this).animate({backgroundColor: "inherit"},
+                                        300,
+                                        function () {
+                                            $(this).removeAttr("style");
+                                        });
+                                    $scope.dispatchJobs($(this).attr("data-courier").replace(/[^\d.-]/g, ''));
+                                    $scope.getClearListsData();
+
+                                }
+
 
                             }
-
-
-                        }
+                        });
                     });
-                });
-            },
+                },
                 0);
         };
 
@@ -1848,8 +1848,12 @@ angular
                 $scope.potentialCouriers = data;
 
                 //Set headings
-                setTimeout(function () { sizeHeadings($("#potentialCouriers").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#potentialCouriers").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#potentialCouriers").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#potentialCouriers").parents(".column"));
+                }, 2000);
 
                 $("#box-potentialCouriers .loading").fadeOut();
 
@@ -1858,7 +1862,6 @@ angular
             });
 
         };
-
 
 
         // Search Courier GPS
@@ -1885,7 +1888,7 @@ angular
             DispatchData.truckCourierStatus(ac.courierID).then(function (result) {
                 $scope.truckCourierStatus = result.data;
             });
-            
+
         };
 
         // Select the courier
@@ -1910,11 +1913,11 @@ angular
             //$scope.currentSelection = " for Courier " + + courier.courier;
 
             setTimeout(function () {
-                $(document).ready(function (event) {
-                    $("#box-jobDetail").find(".loading").fadeOut();
-                    $("#box-map").find(".loading").fadeOut();
-                });
-            },
+                    $(document).ready(function (event) {
+                        $("#box-jobDetail").find(".loading").fadeOut();
+                        $("#box-map").find(".loading").fadeOut();
+                    });
+                },
                 100);
 
             DispatchData.truckCourierStatus(courier.courierID).then(function (result) {
@@ -1952,14 +1955,18 @@ angular
                     displayRoutePointsOnly(data, false, $scope.mapZoom.display);
                 }
                 $scope.activateDrop();
-                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#currentWork").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#currentWork").parents(".column"));
+                }, 2000);
                 //$scope.getAvailableCourierLocation();
             });
             $scope.currentWorkSelection = " for Courier " + courier.label;
 
 
-            $scope.currentSelection = " for Courier " + + courier.label;
+            $scope.currentSelection = " for Courier " + +courier.label;
 
             setTimeout(function () {
                 $(document).ready(function (event) {
@@ -2010,15 +2017,19 @@ angular
                     });
                 }
                 $scope.activateDrop();
-                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#currentWork").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#currentWork").parents(".column"));
+                }, 2000);
                 $scope.getAvailableCourierLocation();
             });
             $scope.currentWorkSelection = " for Courier " + courier.courier;
 
             $scope.currentCourier = courier;
 
-            $scope.currentSelection = " for Courier " + + courier.courier;
+            $scope.currentSelection = " for Courier " + +courier.courier;
 
             setTimeout(function () {
                 $(document).ready(function (event) {
@@ -2048,8 +2059,12 @@ angular
 
                 $scope.jobGroups = data;
 
-                setTimeout(function () { sizeHeadings($("#jobGroups").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#jobGroups").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#jobGroups").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#jobGroups").parents(".column"));
+                }, 2000);
 
             });
 
@@ -2080,8 +2095,12 @@ angular
                     });
                 }
                 $scope.activateDrop();
-                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#currentWork").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#currentWork").parents(".column"));
+                }, 2000);
             });
 
         };
@@ -2090,7 +2109,7 @@ angular
         if (Modernizr.localstorage) {
             filtersObject = JSON.parse(localStorage.getItem("disp-filters-" + ContactID));
         }
-        $scope.jobFilters = filtersObject || { "status": "nda", "area": "main1", "order": "remain", "asc": "asc" };
+        $scope.jobFilters = filtersObject || {"status": "nda", "area": "main1", "order": "remain", "asc": "asc"};
         var f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
         $(f).addClass("topBarActive");
         var areas = $scope.jobFilters.area.split(',');
@@ -2106,7 +2125,6 @@ angular
             $scope.setFilters(data);
         };
 
-        
 
         $scope.setFilters = function (data) {
             setTimeout(function () {
@@ -2119,8 +2137,7 @@ angular
                     var selected = $("#area-group > .btn.topBarActive").length;
                     if (selected > 1) {
                         $scope.jobFilters.area += "," + data.area;
-                    }
-                    else {
+                    } else {
                         $scope.jobFilters.area = data.area;
                     }
 
@@ -2130,8 +2147,7 @@ angular
                     var clSelected = $("#clearLists").find('.listActive').length;
                     if (clSelected > 1) {
                         $scope.jobFilters.area += "," + data.clearList;
-                    }
-                    else {
+                    } else {
                         $scope.jobFilters.area = data.clearList;
                     }
                 }
@@ -2193,9 +2209,8 @@ angular
                         $scope.currentJob.relatedJobs = data;
                     });
                 }
-                
-            });
 
+            });
 
 
         };
@@ -2204,72 +2219,72 @@ angular
         $scope.selectJob = function (job, clear) {
 
             setTimeout(function () {
-                var jobRow = null;
-                $scope.selectedJobs = [];
-                $scope.currentSupport = null;   
+                    var jobRow = null;
+                    $scope.selectedJobs = [];
+                    $scope.currentSupport = null;
 
-                $(".activeTable .active").each(function () {
+                    $(".activeTable .active").each(function () {
 
-                    //$(this).hide();
-                    $(this).find(".selectjob").click();
+                        //$(this).hide();
+                        $(this).find(".selectjob").click();
 
-                    $scope.selectedJobs.push($scope.jobForDispatch.ID);
-                    jobRow = $(this);
-                });
-                console.log("selectJob");
-                $scope.currentJob = job;
-                $scope.$apply();
-
-                console.log(job);
-
-                jdSvc.setJob($scope.currentJob);
-
-                DispatchData.getActiveCouriers().then(function (data) {
-                    $scope.pickCouriers = data;
-                });
-
-                if ($scope.currentJob.rootParentID) {
-                    DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                        //data = data.filter(item => item.id !== $scope.currentJob.id);
-                        $scope.currentJob.relatedJobs = data;
+                        $scope.selectedJobs.push($scope.jobForDispatch.ID);
+                        jobRow = $(this);
                     });
-                }
-                
+                    console.log("selectJob");
+                    $scope.currentJob = job;
+                    $scope.$apply();
 
-                if (job.courier === null) {
+                    console.log(job);
 
-                    $scope.jobGroups = false;   
-                    //$scope.jobsCurrentList = false;
-                    $scope.getPotentialCouriers(job.id);
-                    $scope.potentialCouriersSelection = " for Job " + job.jobNo;
-                    //$scope.getGroupedJobs();
-                    //$scope.groupJobsSelection = " for Job " + job.jobNo;
-                    //$scope.currentWorkSelection = "";
+                    jdSvc.setJob($scope.currentJob);
 
+                    DispatchData.getActiveCouriers().then(function (data) {
+                        $scope.pickCouriers = data;
+                    });
 
-                } else {
-                    $scope.potentialCouriers = false;
-                }
-                $scope.currentCourier = null;
-                $scope.currentSelection = " for Job " + job.jobNo;
-
-                var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                displayPickupPoints(undespatchedData, true, job);
-
-                if (job.courier !== null) {
-                    $scope.selectCourier(job.courierData);
-                } else {
-                    var jobs = [job];
-
-                    //highlightJobPoints(jobs);
-                    displayRoutePoints(jobs, false, $scope.mapZoom.display);
-                }
-                if (!document.activeElement.classList.contains("lateCallField")) {
-                    $(jobRow).find(".dispatchField").focus();
-                }
+                    if ($scope.currentJob.rootParentID) {
+                        DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                            //data = data.filter(item => item.id !== $scope.currentJob.id);
+                            $scope.currentJob.relatedJobs = data;
+                        });
+                    }
 
 
-            },
+                    if (job.courier === null) {
+
+                        $scope.jobGroups = false;
+                        //$scope.jobsCurrentList = false;
+                        $scope.getPotentialCouriers(job.id);
+                        $scope.potentialCouriersSelection = " for Job " + job.jobNo;
+                        //$scope.getGroupedJobs();
+                        //$scope.groupJobsSelection = " for Job " + job.jobNo;
+                        //$scope.currentWorkSelection = "";
+
+
+                    } else {
+                        $scope.potentialCouriers = false;
+                    }
+                    $scope.currentCourier = null;
+                    $scope.currentSelection = " for Job " + job.jobNo;
+
+                    var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    displayPickupPoints(undespatchedData, true, job);
+
+                    if (job.courier !== null) {
+                        $scope.selectCourier(job.courierData);
+                    } else {
+                        var jobs = [job];
+
+                        //highlightJobPoints(jobs);
+                        displayRoutePoints(jobs, false, $scope.mapZoom.display);
+                    }
+                    if (!document.activeElement.classList.contains("lateCallField")) {
+                        $(jobRow).find(".dispatchField").focus();
+                    }
+
+
+                },
                 0);
 
 
@@ -2316,7 +2331,7 @@ angular
                     // this is right click
                     waitingDialog.show();
                     setTimeout(function () {
-                        $scope.jdSvc.updateGPS($scope.currentJob,'fromAddress', true);
+                        $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
                     }, 100);
 
                     break;
@@ -2367,7 +2382,7 @@ angular
                         var items = [];
                         for (var i = 1; i < 37; i++) {
                             if (parseInt(dueTime) < (i * 5))
-                                items.push({ "id": (i * 5), "text": ((i * 5).toString() + " mins away") });
+                                items.push({"id": (i * 5), "text": ((i * 5).toString() + " mins away")});
                         }
 
                         $scope.lateForm = {
@@ -2504,7 +2519,7 @@ angular
                         text: "Void Job",
                         click: function ($itemScope, $event, modelValue, text, $li) {
                             $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
-                        } 
+                        }
                     },
 
                     {
@@ -2743,14 +2758,14 @@ angular
             });
         };
 
-        $scope.closeSupport = function(support) {
+        $scope.closeSupport = function (support) {
             DispatchData.closeSupport(support.eventId, ContactID).then(function (data) {
                 $scope.getSupports();
                 $scope.currentSupport = null;
             });
         }
 
-        $scope.lockSupport = function(support) {
+        $scope.lockSupport = function (support) {
             console.log(support);
             if (support.lockedBy === Dispatcher) {
                 DispatchData.unLockSupport(support.eventId, Dispatcher).then(function (data) {
@@ -2772,7 +2787,7 @@ angular
             $scope.pickService.channel.push(sr);
         }
 
-        $scope.getSupports = function() {
+        $scope.getSupports = function () {
             ////////////////////////////
             // SUPPORTS
             ////////////////////////////
@@ -2785,7 +2800,7 @@ angular
                 if (first) {
                     $scope.supportChannel.split(',').forEach(SetSelectedChannels);
                 }
-                $("#box-supports").find(".loading").fadeOut();  
+                $("#box-supports").find(".loading").fadeOut();
 
                 $scope.supportMenu = [
                     // NEW IMPLEMENTATION
@@ -2819,19 +2834,23 @@ angular
 
 
                 setTimeout(function () {
-                    $(document).ready(function (event) {
-                        //$("#box-supports").find(".loading").fadeOut();
-                        if ($scope.currentSupport) {
-                            $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
-                        }
-                    });
+                        $(document).ready(function (event) {
+                            //$("#box-supports").find(".loading").fadeOut();
+                            if ($scope.currentSupport) {
+                                $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
+                            }
+                        });
 
-                },
+                    },
                     100);
 
 
-                setTimeout(function () { sizeHeadings($("#supports").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#supports").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#supports").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#supports").parents(".column"));
+                }, 2000);
             });
         }
 
@@ -2860,8 +2879,6 @@ angular
                 $scope.currentWorkSelection = "";
                 $scope.currentSelection = "";
             }
-            
-
 
 
             $scope.getClearListEnvelope = function (id) {
@@ -2877,7 +2894,9 @@ angular
             $scope.getClearListsData = function () {
                 DispatchData.getClearLists().then(function (data) {
                     $scope.clearLists = data;
-                    setTimeout(function () { $("#clearLists .loading").fadeOut(); }, 0);
+                    setTimeout(function () {
+                        $("#clearLists .loading").fadeOut();
+                    }, 0);
                     console.log($scope.clearLists);
                     $scope.activateDrop();
                 });
@@ -2894,8 +2913,6 @@ angular
                 $scope.pickAllCouriers = data;
             });
 
-            
-            
 
             //DispatchData.getActiveClients().then(function (data) {
             //    $scope.pickClients = data;
@@ -2922,11 +2939,17 @@ angular
                     }
                 ];
                 $scope.activateDrop();
-                setTimeout(function () { $("#box-couriersMoveThrough").find(".loading").fadeOut(); }, 100);
+                setTimeout(function () {
+                    $("#box-couriersMoveThrough").find(".loading").fadeOut();
+                }, 100);
 
 
-                setTimeout(function () { sizeHeadings($("#couriersThrough").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#couriersThrough").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#couriersThrough").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#couriersThrough").parents(".column"));
+                }, 2000);
 
             });
 
@@ -2959,9 +2982,9 @@ angular
 
                                 if (data.response === "Success") {
 
-                                    $(".rightActiveTable .active").css({ "background-color": "#c6dfad" });
+                                    $(".rightActiveTable .active").css({"background-color": "#c6dfad"});
 
-                                    $(".rightActiveTable .active").animate({ backgroundColor: "inherit" },
+                                    $(".rightActiveTable .active").animate({backgroundColor: "inherit"},
                                         300,
                                         function () {
                                             $(this).removeAttr("style");
@@ -2994,9 +3017,9 @@ angular
 
                                 if (data.response === "Success") {
 
-                                    $(".rightActiveTable .active").css({ "background-color": "#c6dfad" });
+                                    $(".rightActiveTable .active").css({"background-color": "#c6dfad"});
 
-                                    $(".rightActiveTable .active").animate({ backgroundColor: "inherit" },
+                                    $(".rightActiveTable .active").animate({backgroundColor: "inherit"},
                                         300,
                                         function () {
                                             $(this).removeAttr("style");
@@ -3021,14 +3044,18 @@ angular
                 ];
 
                 setTimeout(function () {
-                    $(document).ready(function (event) {
-                        $("#box-courierMovePickedUp").find(".loading").fadeOut();
-                    });
-                },
+                        $(document).ready(function (event) {
+                            $("#box-courierMovePickedUp").find(".loading").fadeOut();
+                        });
+                    },
                     100);
 
-                setTimeout(function () { sizeHeadings($("#couriersPicked").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#couriersPicked").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#couriersPicked").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#couriersPicked").parents(".column"));
+                }, 2000);
 
             });
 
@@ -3060,9 +3087,9 @@ angular
 
                                 if (data.response === "Success") {
 
-                                    $(".rightActiveTable .active").css({ "background-color": "#c6dfad" });
+                                    $(".rightActiveTable .active").css({"background-color": "#c6dfad"});
 
-                                    $(".rightActiveTable .active").animate({ backgroundColor: "inherit" },
+                                    $(".rightActiveTable .active").animate({backgroundColor: "inherit"},
                                         300,
                                         function () {
                                             $(this).removeAttr("style");
@@ -3093,9 +3120,9 @@ angular
 
                                 if (data.response === "Success") {
 
-                                    $(".rightActiveTable .active").css({ "background-color": "#c6dfad" });
+                                    $(".rightActiveTable .active").css({"background-color": "#c6dfad"});
 
-                                    $(".rightActiveTable .active").animate({ backgroundColor: "inherit" },
+                                    $(".rightActiveTable .active").animate({backgroundColor: "inherit"},
                                         300,
                                         function () {
                                             $(this).removeAttr("style");
@@ -3121,14 +3148,18 @@ angular
                 ];
 
                 setTimeout(function () {
-                    $(document).ready(function (event) {
-                        $("#box-courierMoveClear").find(".loading").fadeOut();
-                    });
-                },
+                        $(document).ready(function (event) {
+                            $("#box-courierMoveClear").find(".loading").fadeOut();
+                        });
+                    },
                     100);
 
-                setTimeout(function () { sizeHeadings($("#couriersClear").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#couriersClear").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#couriersClear").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#couriersClear").parents(".column"));
+                }, 2000);
 
             });
 
@@ -3142,14 +3173,18 @@ angular
                 $scope.areaList = data;
 
                 setTimeout(function () {
-                    $(document).ready(function (event) {
-                        $("#box-areaList").find(".loading").fadeOut();
-                    });
-                },
+                        $(document).ready(function (event) {
+                            $("#box-areaList").find(".loading").fadeOut();
+                        });
+                    },
                     100);
 
-                setTimeout(function () { sizeHeadings($("#areaList").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#areaList").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#areaList").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#areaList").parents(".column"));
+                }, 2000);
 
             });
 
@@ -3160,64 +3195,63 @@ angular
             // $("#box-jobUpdates").find(".loading").show();
             /* DispatchData.getJobUpdates().then(function (data) {
                  $scope.jobUpdates = data;
- 
+
                  $scope.jobUpdatesMenu = [
                      // NEW IMPLEMENTATION
                      {
                          text: "Dismiss",
                          click: function ($itemScope, $event, modelValue, text, $li) {
- 
+
                              var callData = {
                                  "call": "dismissSupport",
                                  "support": $itemScope.support
                              };
- 
+
                              DispatchData.doAPI(callData).then(function (data) {
                                  console.log(data);
- 
+
                                  if (data.response === "Success") {
- 
+
                                      $(".rightActiveTable .active").fadeOut();
- 
+
                                  } else {
- 
+
                                      console.log("Critical Error");
- 
+
                                  }
- 
+
                              });
- 
+
                          }
                      },
                      {
                          text: "Support",
                          click: function ($itemScope, $event, modelValue, text, $li) {
                              //$scope.items.splice($itemScope.$index, 1);
- 
- 
+
+
                              //BRING UP CURRENT EVENT FORM TO ENTER A SUPPORT
- 
+
                          }
                      }
                  ];
- 
- 
+
+
                  setTimeout(function () {
                      $(document).ready(function (event) {
                          $("#box-jobUpdates").find(".loading").fadeOut();
                      });
                  },
                      100);
- 
- 
+
+
                  setTimeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 1000);
                  setTimeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 2000);
- 
- 
+
+
              });
  */
 
-            
 
             ////////////////////////////
             // LATE CALLS
@@ -3272,14 +3306,18 @@ angular
                 ];
 
                 setTimeout(function () {
-                    $(document).ready(function (event) {
-                        $("#box-lateCalls").find(".loading").fadeOut();
-                    });
-                },
+                        $(document).ready(function (event) {
+                            $("#box-lateCalls").find(".loading").fadeOut();
+                        });
+                    },
                     100);
 
-                setTimeout(function () { sizeHeadings($("#getLastCalls").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#getLastCalls").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#getLastCalls").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#getLastCalls").parents(".column"));
+                }, 2000);
             });
 
             ///////////////////////////
@@ -3299,7 +3337,9 @@ angular
 
         $scope.getData();
 
-        $(document).everyTime("30s", "SP", function () { $scope.getSupports(); });
+        $(document).everyTime("30s", "SP", function () {
+            $scope.getSupports();
+        });
         $scope.getSupports();
 
         // on first focus (bubbles up to document), open the menu
@@ -3361,14 +3401,16 @@ angular
                     processResults: function (data) {
                         return {
                             results: $.map(data.suggestions, function (obj) {
-                                return { id: obj.locationId, text: obj.label.split(", ").reverse().join(", ") };
+                                return {id: obj.locationId, text: obj.label.split(", ").reverse().join(", ")};
                             })
                         };
                     }
                 },
-                escapeMarkup: function (markup) { return markup; }
+                escapeMarkup: function (markup) {
+                    return markup;
+                }
             };
-            
+
             $("#location").select2(options).on("select2:select", function (e) {
                 $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json", {
                     app_id: "bBPfh2x8Cauun3ygLMAx",
@@ -3383,8 +3425,7 @@ angular
                     if (mappedSub !== undefined) {
                         console.log(mappedSub);
                         $('#our_suburb').val(mappedSub.id).trigger('change');
-                    }
-                    else {
+                    } else {
                         $('#our_suburb').val(null).trigger('change');
                     }
 
@@ -3410,7 +3451,7 @@ angular
         };
 
         //$scope.onMapReady();
-        
+
 
         $scope.setSplitJobMeetingPoint = function () {
 
@@ -3468,7 +3509,7 @@ angular
                             });
                         });
                     });
-                    
+
 
                     //Set Toaddress/tosuburb/togps of Child Job 1
                     //Set Fromaddress/Fromsuburb/Fromgps of Child Job 2
@@ -3476,7 +3517,6 @@ angular
                     //DES_stpJob_ColsolidateMarsInformation
                     //DES_stpJob_DisplayInDespatch parentJobID
                     //Close Form and Refresh, scroll to child jobs
-
 
 
                 },
@@ -3527,8 +3567,7 @@ angular
                         if (mappedSub !== undefined) {
                             console.log(mappedSub);
                             $('#our_suburb').val(mappedSub.id).trigger('change');
-                        }
-                        else {
+                        } else {
                             $('#our_suburb').val(null).trigger('change');
                         }
 
@@ -3569,12 +3608,11 @@ angular
             });
 
 
-
             $scope.copyGpsAddress = function () {
                 $('#location').select2('open');
                 var search = $('#location').data('select2').dropdown.$search;
                 if ($scope.gpsForm.data.address.indexOf(',') > 0) {
-                    var parts = $scope.gpsForm.data.address.split(','); 
+                    var parts = $scope.gpsForm.data.address.split(',');
                     search.val(parts[1].split());
                     $scope.gpsForm.data.extras = parts[0];
                 } else {
@@ -3585,8 +3623,6 @@ angular
 
 
         };
-
-        
 
 
         $scope.addEvent = function () {
@@ -3633,6 +3669,30 @@ angular
 
         };
 
+        // Load custom layout
+        $scope.init = function () {
+            if (Modernizr.localstorage) {
+                const storedLayouts = localStorage.getItem("layouts-" + ContactID);
+                const lastActiveLayoutName = localStorage.getItem("lastActiveLayout-" + ContactID);
+
+                if (storedLayouts) {
+                    $scope.layouts = JSON.parse(storedLayouts);
+
+                    if (lastActiveLayoutName) {
+                        const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
+
+                        // if the last active layout is found among stored layouts
+                        if (lastActiveLayoutIndex !== -1) {
+                            $scope.loadLayout(lastActiveLayoutIndex);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Call the init function when the controller loads
+        $scope.init();
+
     }]);
 
 function Deg2Rad(deg) {
@@ -3667,4 +3727,3 @@ function closestLocation(latitude, longitude, locations) {
     var closestLocation = (locations[closest]);
     return closestLocation;
 }
-

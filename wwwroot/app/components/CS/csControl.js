@@ -10,15 +10,15 @@ angular
 
         $scope.searchBox = "";
         $scope.selectedEvents = [];
-        $scope.maxSize = 5;     // Limit number for pagination display number.  
-        $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero  
-        $scope.pageIndex = 1;   // Current page number. First page is 1.-->  
+        $scope.maxSize = 5;     // Limit number for pagination display number.
+        $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero
+        $scope.pageIndex = 1;   // Current page number. First page is 1.-->
         $scope.pageSizeSelected = 50; // Maximum number of items per page.
-        $scope.bulkTotalCount = 0;  // Total number of items in all pages. initialize as a zero  
-        $scope.bulkPageIndex = 1;   // Current page number. First page is 1.-->  
+        $scope.bulkTotalCount = 0;  // Total number of items in all pages. initialize as a zero
+        $scope.bulkPageIndex = 1;   // Current page number. First page is 1.-->
         $scope.bulkPageSizeSelected = 50; // Maximum number of items per page.
-        $scope.pbTotalCount = 0;  // Total number of items in all pages. initialize as a zero  
-        $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->  
+        $scope.pbTotalCount = 0;  // Total number of items in all pages. initialize as a zero
+        $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->
         $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
         //$(document).stopTime("CL");
         //$(document).stopTime("RD");
@@ -35,7 +35,7 @@ angular
                     } else {
                         $scope.selectJobDetail($scope.currentJob.id);
                     }
-                    
+
                 });
             }
         };
@@ -95,11 +95,11 @@ angular
                     if ($scope.currentJob) {
                         $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
                     }
-                    
+
                 });
-                
+
                 //setTimeout(function () {  }, 1000);
-                
+
 
             },
             cancel: function () {
@@ -450,7 +450,7 @@ angular
 
         $scope.layouts = layoutsObject || defaultLayout;
         $scope.userName = FirstName;
-        
+
 
         $scope.pickDateService = {
             "couriers": [],
@@ -482,15 +482,23 @@ angular
             }
         }
 
+        $scope.setLastActiveLayoutName = function (layoutName) {
+            if (Modernizr.localstorage) {
+                localStorage.setItem("lastActiveLayoutCS-" + ContactID, layoutName);
+            }
+        };
+
         $scope.loadLayout = function (i) {
             $scope.currentLayoutName = $scope.layouts[i].name;
             $scope.layout = angular.copy($scope.layouts[i].layout);
+
+            // save layout as last active
+            $scope.setLastActiveLayoutName($scope.currentLayoutName);
+
             setTimeout($scope.initFilters, 1000);
         };
 
         $scope.saveLayout = function () {
-
-
             angular.forEach($scope.layout.columns,
                 function (column, colKey) {
                     column.width = $("#co-" + column.id).css("flex-basis");
@@ -529,6 +537,9 @@ angular
                                 layout: angular.copy($scope.layout)
                             });
                         localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
+
+                        // save last active layout
+                        $scope.setLastActiveLayoutName(layoutName);
                     }
 
                     var deferred = $q.defer();
@@ -536,7 +547,7 @@ angular
                         data: "OK"
                     });
                     return deferred.promise;
-                    
+
 
                 },
                 submitValue: "Save"
@@ -619,7 +630,7 @@ angular
         };
 
         ///////////////////////////
-        // HOTKEYS 
+        // HOTKEYS
         //////////////////////////
 
 
@@ -654,7 +665,7 @@ angular
                 if (event.srcElement.id === "Wild" || event.srcElement.id === "Job") {
                     $scope.refreshAllData(true);
                 }
-                
+
             }
         });
 
@@ -706,7 +717,7 @@ angular
                 onSubmit: function () {
 
                     $scope.gather.cancel();
-                    
+
                     if ($scope.currentToDate !== $scope.pickDateService.to_date) {
 
                         $scope.currentToDate = $scope.pickDateService.to_date;
@@ -738,7 +749,7 @@ angular
         $scope.unlockJob = function() {
             return $scope.jdSvc
                 .unlockJob($scope.currentJob);
-                    
+
         };
 
         $scope.lockJob = function () {
@@ -776,7 +787,7 @@ angular
                                     });
                                 }
                             });
-                            
+
                         }
                     },
                     No: {
@@ -788,7 +799,7 @@ angular
 
                 }
             });
-            
+
 
         };
 
@@ -804,7 +815,7 @@ angular
 
             var foundCourier = null;
 
-            
+
             var jn = job.jobNo;
             uCSData.addRestoreEvent(jn, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
             if (callData.courierID === null) {
@@ -875,14 +886,14 @@ angular
                 "jobs": []
             };
 
-            
+
 
             var jn = job.jobNo;
             if (job.courierData.courierID !== null) {
                 alert("restore " + jn + " prior to despatching to another courier");
                 return;
             }
-            
+
             if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
                 alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
                 return;
@@ -907,7 +918,7 @@ angular
         }
 
         $scope.swapPOD = function () {
-            
+
             $scope.gather.form = {
                 id: "swapPOD",
                 title: "Enter the other job number",
@@ -942,11 +953,11 @@ angular
                                                         $scope.refreshData(true);
                                                     });
                                                 });
-                                                
+
 
                                             });
-                                            
-                                            
+
+
                                         }
                                     },
                                     No: {
@@ -958,10 +969,10 @@ angular
 
                                 }
                             });
-                            
+
                         }
                     });
-                    
+
                 },
                 submitValue: "Submit"
             };
@@ -1016,7 +1027,7 @@ angular
                 //ignore
             }
             $("#box-jobList").find(".loading").show();
-        
+
 
             var dateChanged = false;
             if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
@@ -1102,7 +1113,7 @@ angular
             }
 
             console.log("about to call bulk data - page " + $scope.bulkPageIndex);
-            
+
             uCSData.searchBulkJobs($scope.pickDateService.courier,
                 $scope.pickDateService.client,
                 ($scope.pickDateService.job || ""),
@@ -1202,7 +1213,7 @@ angular
         };
 
 
-      
+
 
 
         $scope.showItems = function (job) {
@@ -1272,9 +1283,9 @@ angular
             //$("#jobList").find(".active").removeClass("active");
             clearTimeout($scope.myTimer);
             //$scope.currentEvent = event;
-            
+
             $("#box-jobDetail").find(".loading").show();
-            
+
             uCSData.getJobDetail(id).then(function (data) {
                 $scope.currentJob = data;
                 jdSvc.setJob($scope.currentJob);
@@ -1294,14 +1305,14 @@ angular
                 $("#box-scanList").find(".loading").show();
                 uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
                     $scope.scanList = data;
-                    
+
                     setTimeout(function () {
                         sizeHeadings($("#scanList").parents(".column"));
                         $("#box-scanList").find(".loading").fadeOut();
                     }, 200);
                 });
 
-                if ($scope.currentJob.courier && $scope.currentJob.completedTime) { 
+                if ($scope.currentJob.courier && $scope.currentJob.completedTime) {
                     $("#box-map").find(".loading").show();
                     uCSData.getCourierRoute($scope.currentJob.courier, moment($scope.currentJob.completedTime).subtract(5, 'm'), moment($scope.currentJob.completedTime).add(5, 'm')).then(function (data) {
                         var flightPathCoordinates = [];
@@ -1355,11 +1366,11 @@ angular
                         map.addFlightPath(flightPathPoly);
                     });
                 }
-                
 
-                
+
+
             });
- 
+
 
 
         };
@@ -1452,22 +1463,22 @@ angular
         $scope.jdSvc.setSelectJobDetail($scope.selectJobDetail);
         $scope.jdSvc.setSelectBulkJobDetail($scope.selectBulkJobDetail);
 
-        //This method is calling from pagination number  
+        //This method is calling from pagination number
         $scope.pageChanged = function (i) {
 
             $scope.pageIndex = i;
             $scope.refreshData();
-          
+
         };
 
-        //This method is calling from dropDown  
+        //This method is calling from dropDown
         $scope.changeBulkPageSize = function (i) {
             $scope.bulkPageIndex = i;
             $scope.bulkPageSizeSelected = i;
             $scope.refreshBulkData();
         };
 
-        //This method is calling from pagination number  
+        //This method is calling from pagination number
         $scope.pbPageChanged = function (i) {
 
             $scope.pbPageIndex = i;
@@ -1481,7 +1492,7 @@ angular
             $scope.refreshPreBookData();
         };
 
-        //This method is calling from pagination number  
+        //This method is calling from pagination number
         $scope.bulkPageChanged = function (i) {
 
             $scope.bulkPageIndex = i;
@@ -1489,7 +1500,7 @@ angular
 
         };
 
-        //This method is calling from dropDown  
+        //This method is calling from dropDown
         $scope.changePageSize = function (i) {
             $scope.pageIndex = i;
             $scope.pageSizeSelected = i;
@@ -1886,6 +1897,29 @@ angular
         };
 
 
+        // Load custom layout
+        $scope.init = function () {
+            if (Modernizr.localstorage) {
+                const storedLayouts = localStorage.getItem("layoutsCS-" + ContactID);
+                const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutCS-" + ContactID);
+
+                if (storedLayouts) {
+                    $scope.layouts = JSON.parse(storedLayouts);
+
+                    if (lastActiveLayoutName) {
+                        const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
+
+                        // if the last active layout is found among stored layouts
+                        if (lastActiveLayoutIndex !== -1) {
+                            $scope.loadLayout(lastActiveLayoutIndex);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Call the init function when the controller loads
+        $scope.init();
 
     }]);
 
@@ -1934,5 +1968,3 @@ function inStruct(val, structure) {
     }
     return false;
 }
-
-

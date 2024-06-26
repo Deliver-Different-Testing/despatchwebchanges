@@ -534,7 +534,7 @@ namespace DespatchWeb.Controllers
             var un = Environment.GetEnvironmentVariable("ExsalerateAPIUsername");
             var pw = Environment.GetEnvironmentVariable("ExsalerateAPIPW");
 
-            
+
             var rco = new RestClientOptions() { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl)};
             var client = new RestClient(rco);
 
@@ -775,6 +775,7 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddNote(int jobId, string note, string despatcher)
         {
+            note = FormatNote(note);
             await jobRepository.AddNote(jobId, note, despatcher);
             return Json("OK");
         }
@@ -782,6 +783,7 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddBulkJobNote(int bulkJobId, string note, string despatcher)
         {
+            note = FormatNote(note);
             await jobRepository.AddBulkJobNote(bulkJobId, note, despatcher);
             return Json("OK");
         }
@@ -789,12 +791,12 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddJobBookingNote(int jobId, string note, string despatcher)
         {
+            note = FormatNote(note);
             await jobRepository.AddJobBookingNote(jobId, note, despatcher);
             return Json("OK");
         }
 
-
-
+        private static string FormatNote(string note) => $"\n{note}";
 
         [HttpPost]
         public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId,string currentSpeed)
@@ -828,9 +830,9 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-    
 
-   
+
+
 
     private string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
     {

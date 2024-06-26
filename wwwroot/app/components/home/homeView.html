@@ -125,9 +125,9 @@
                                     <li><a href="#" ng-click="setTruckMode('Only');">Only</a></li>
                                 </ul>
                             </div>
-                           
-                            <div ng-show="box.name === 'supports'" id="SupportChannels" translation-texts="pickService.channelTexts" events="pickService.channelEvents" class="multi-element btn-sm btn-primary dropdown-toggle" style="background-color: inherit; display: inline-block;" extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickChannels" selected-model="pickService.channel"></div>
-                            <div class="btn btn-sm btn-primary box-refresh" style="margin-left: 8px;" ng-show="box.name == 'supports'" ng-click="getSupports()"><i class="fa fa-refresh"></i></div>
+
+                            <div ng-show="box.name === 'supports'" id="SupportChannels" translation-texts="pickService.channelTexts" events="pickService.channelEvents" class="multi-element btn-sm btn-primary dropdown-toggle" style="background-color: transparent; display: inline-block; box-shadow: none;" extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickChannels" selected-model="pickService.channel"></div>
+                            <div class="btn btn-sm btn-primary box-refresh"ng-show="box.name == 'supports'" ng-click="getSupports()"><i class="fa fa-refresh"></i></div>
                             <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity">City <i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggle" ng-show="box.name === 'map'" ng-click="allCouriers.display = !allCouriers.display;getAvailableCourierLocation();">All <i ng-class="allCouriers.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
                             <div class="btn btn-sm box-toggleZoom" ng-show="box.name === 'map'" ng-click="mapZoom.display = !mapZoom.display;storeMapZoomDisplay()">Auto Zoom <i ng-class="mapZoom.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
