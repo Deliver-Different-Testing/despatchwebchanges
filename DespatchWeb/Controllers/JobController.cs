@@ -550,7 +550,7 @@ namespace DespatchWeb.Controllers
             var un = _configuration["ExsalerateAPIUsername"];
             var pw = _configuration["ExsalerateAPIPW"];
 
-            
+
             var rco = new RestClientOptions() { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl)};
             var client = new RestClient(rco);
 
@@ -656,7 +656,7 @@ namespace DespatchWeb.Controllers
             bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
             string ourRef, string refA, string refB, int quantity, DateTime booked, decimal gstRate, decimal amount)
         {
-            
+
             var currentRateAmount = await _jobRepo.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
                 includeFuelSurcharge, direct, acceptedJobTypeId,
                 ourRef, refA, refB, quantity, booked);
@@ -671,7 +671,7 @@ namespace DespatchWeb.Controllers
             if (currentRateAmount != amount)
             {
                 var fs = includeFuelSurcharge ? await _jobRepo.FuelSurchargeInclusiveAmount(clientId, amount, fromId, toId, booked, size) : 0;
-                var ppd = includeFuelSurcharge ? await _jobRepo.PPDInclusiveAmount(clientId, amount) : 0; 
+                var ppd = includeFuelSurcharge ? await _jobRepo.PPDInclusiveAmount(clientId, amount) : 0;
                 finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}" );
                 if (fs > 0)
                 {
@@ -792,6 +792,7 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddNote(int jobId, string note, string despatcher)
         {
+            note = FormatNote(note);
             await _jobRepo.AddNote(jobId, note, despatcher);
             return Json("OK");
         }
@@ -799,6 +800,7 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddBulkJobNote(int bulkJobId, string note, string despatcher)
         {
+            note = FormatNote(note);
             await _jobRepo.AddBulkJobNote(bulkJobId, note, despatcher);
             return Json("OK");
         }
@@ -806,12 +808,12 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddJobBookingNote(int jobId, string note, string despatcher)
         {
+            note = FormatNote(note);
             await _jobRepo.AddJobBookingNote(jobId, note, despatcher);
             return Json("OK");
         }
 
-
-
+        private static string FormatNote(string note) => $"\n{note}";
 
         [HttpPost]
         public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId,string currentSpeed)
@@ -845,9 +847,9 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-    
 
-   
+
+
 
     private string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
     {
