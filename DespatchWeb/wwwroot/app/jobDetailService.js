@@ -1,8 +1,8 @@
 ﻿angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData", "$ngConfirm", "$mdDialog", 'loadingService',
-            function (DispatchData, $ngConfirm, $mdDialog, loadingService) {
+        ["DispatchData", "$ngConfirm", "$mdDialog",
+            function (DispatchData, $ngConfirm, $mdDialog) {
                 const self = this;
                 const options = {
                     "detail": {
@@ -1427,7 +1427,7 @@
                     });
                 };
 
-                function DialogController($scope, $mdDialog, loadingService, id, fieldName, title, job, options) {
+                function DialogController($scope, $mdDialog, id, fieldName, title, job, options) {
                     $scope.title = title;
                     $scope.job = job;
                     $scope.fieldName = fieldName;
