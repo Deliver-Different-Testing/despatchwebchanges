@@ -1443,12 +1443,12 @@
                         };
 
                         if (callData.field === "Notes") {
-                            this.job.bulkJob ?
-                                await DispatchData.addBulkJobNote(this.job.id, callData.value, this.FirstName, this.job.preBook) :
-                                await DispatchData.addNote(this.job.id, callData.value, this.FirstName, this.job.preBook);
+                            job.bulkJob ?
+                                await DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) :
+                                await DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
                         }
 
-                        if (reRate && !this.job.bulkJob) {
+                        if (reRate && !job.bulkJob) {
                             const rate = await self.rateJob(job);
                             return await DispatchData
                                 .updateJobDetail(callData.jobID,
@@ -1459,13 +1459,13 @@
                                     ContactID,
                                     job.preBook);
                         } else {
-                            this.job.bulkJob ?
-                                await DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID) :
-                                await DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID);
+                            job.bulkJob ?
+                                await DispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID) :
+                                await DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID);
                         }
 
                         $mdDialog.hide();
-                        self.selectJobDetail(this.job.id);
+                        self.selectJobDetail(job.id);
                     };
 
                     $scope.cancel = function () {
@@ -1474,7 +1474,7 @@
                 }
 
                 self.notifyClick = function (event, job) {
-                    self.showSelectDialog(event, job, pickSpeeds, "NotifiedJobTypeID", "Edit Notified", "Select new speed....");
+                    self.showSelectDialog(event, job, pickSpeeds, "NotifiedJobTypeID", "Notified", "Select new speed....");
                 };
 
                 self.acceptedClick = function (event, job) {
