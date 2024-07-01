@@ -740,7 +740,7 @@
                     </div>
                     <div class="col-md-6">
 
-                        <div class="field" ng-click="jdSvc.speedClick(currentJob)">
+                        <div class="field" ng-click="jdSvc.speedClick($event, currentJob)">
                             <label>Speed</label>
                             <div class="value">{{currentJob.speedName}}</div>
                         </div>

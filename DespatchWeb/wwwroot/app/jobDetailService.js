@@ -1466,7 +1466,7 @@
                 };
 
                 self.speedClick = function (event, job) {
-                    self.showSelectDialog(event, job, pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
+                    self.showSelectDialog(event, job, pickSpeeds, "SpeedID", "Speed", "Select new speed....");
                 };
 
                 self.contactClick = function (event, job) {
