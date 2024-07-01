@@ -1,6 +1,6 @@
 class ToastrService {
     constructor($mdToast) {
-        this.showErrorToast = function (errorMessage) {
+        this.showToast = function (errorMessage) {
             console.error(errorMessage);
 
             $mdToast.show(
@@ -9,18 +9,6 @@ class ToastrService {
                     .position('top right')
                     .hideDelay(5000)
                     .toastClass('md-warn')
-            );
-        };
-
-        this.showSuccessToast = function (message) {
-            console.error(message);
-
-            $mdToast.show(
-                $mdToast.simple()
-                    .textContent(message)
-                    .position('top right')
-                    .hideDelay(5000)
-                    .toastClass('md-success')
             );
         };
     }

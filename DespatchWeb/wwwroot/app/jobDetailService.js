@@ -1,9 +1,9 @@
 ﻿angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData", "$ngConfirm", "$mdDialog",
-            function (DispatchData, $ngConfirm, $mdDialog) {
-                var self = this;
+        ["DispatchData", "$ngConfirm", "$mdDialog", 'loadingService',
+            function (DispatchData, $ngConfirm, $mdDialog, loadingService) {
+                const self = this;
                 const options = {
                     "detail": {
                         "size": [
@@ -124,8 +124,8 @@
                     self.gpsForm = g;
                     //self.setupAutoComplete();
                 };
-                self.setSelectJobDetail = function (f) {
-                    self.selectJobDetail = f;
+                self.setSelectJobDetail = function (jobId) {
+                    self.selectJobDetail = jobId;
                 };
                 self.setSelectBulkJobDetail = function (f) {
                     self.selectBulkJobDetail = f;
@@ -1065,72 +1065,69 @@
                         }
                         search.trigger("input");
                     };
-
-
                 };
 
-                self.unlockJob = function (job) {
-                    return DispatchData
+                self.unlockJob = async function (job) {
+                    const response = await DispatchData
                         .updateJobDetail(job.id,
                             "Locked",
                             false,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            job.preBook);
+
+                    self.selectJobDetail(job.id);
+                    return response;
                 }
 
-                self.lockJob = function (job) {
-                    return DispatchData
+                self.lockJob = async function (job) {
+                    const response = await DispatchData
                         .updateJobDetail(job.id,
                             "Locked",
                             true,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            job.preBook);
+
+                    self.selectJobDetail(job.id);
+                    return response;
                 }
 
-                self.preBookDirectClick = function (job) {
-                    return DispatchData
+                self.preBookDirectClick = async function (job) {
+                    const response = await DispatchData
                         .updateJobDetail(job.id,
                             "Direct",
                             job.direct,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            job.preBook);
+
+                    self.selectJobDetail(job.id);
+                    return response;
                 };
 
-                self.repriceClick = function (job) {
-                    return DispatchData
+                self.repriceClick = async function (job) {
+                    const response = await DispatchData
                         .updateJobDetail(job.id,
                             "Reprice",
                             job.reprice,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            job.preBook);
+
+                    self.selectJobDetail(job.id);
+                    return response;
                 };
 
-                self.pushToLive = function (job) {
-                    return DispatchData
-                        .releaseBulkJob(job.jobNo, job.bookedDate).then(function (response) {
-                            self.selectBulkJobDetail(job.id);
-                            return response;
-                        });
+                self.pushToLive = async function (job) {
+                    const response = DispatchData
+                        .releaseBulkJob(job.jobNo, job.bookedDate);
+                    self.selectBulkJobDetail(job.id);
+                    return response;
                 };
 
                 self.vanOkClick = function (job) {
@@ -1148,22 +1145,21 @@
                 };
 
 
-                self.vanClick = function (job) {
-                    return self.rateJob(job).then(function (rate) {
-                        console.log(rate);
-                        return DispatchData
-                            .updateJobDetail(job.id,
-                                "Van",
-                                job.van,
-                                Number(rate.replace(/[^0-9.-]+/g, "")),
-                                FirstName,
-                                ContactID,
-                                job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
-                                return response;
-                            });
-                    });
+                self.vanClick = async function (job) {
+                    const rate = await self.rateJob(job);
+                    console.log(rate);
 
+                    const response = await DispatchData
+                        .updateJobDetail(job.id,
+                            "Van",
+                            job.van,
+                            Number(rate.replace(/[^0-9.-]+/g, "")),
+                            FirstName,
+                            ContactID,
+                            job.preBook);
+
+                    self.selectJobDetail(job.id);
+                    return response;
                 };
 
                 self.pedalClick = function (job) {
@@ -1184,22 +1180,21 @@
 
                 };
 
-                self.truckClick = function (job) {
-                    return self.rateJob(job).then(function (rate) {
+                self.truckClick = async function (job) {
+                   const  rate = await self.rateJob(job);
+
                         console.log(rate);
-                        return DispatchData
+                        const response = await DispatchData
                             .updateJobDetail(job.id,
                                 "Truck",
                                 job.truck,
                                 Number(rate.replace(/[^0-9.-]+/g, "")),
                                 FirstName,
                                 ContactID,
-                                job.preBook).then(function (response) {
+                                job.preBook);
+
                                 self.selectJobDetail(job.id);
                                 return response;
-                            });
-                    });
-
                 };
 
                 self.directClick = function (job) {
@@ -1254,134 +1249,159 @@
                 };
 
 
-                self.preBookReturnClick = function (job) {
-                    return DispatchData
+                self.preBookReturnClick = async function (job) {
+                    const response = await DispatchData
                         .updateJobDetail(job.id,
                             "Return",
                             job.return,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            job.preBook);
+
+                    self.selectJobDetail(job.id);
+                    return response;
                 };
 
-
-                self.oneOffClick = function (job) {
-                    return DispatchData
+                self.oneOffClick = async function (job) {
+                    const response = await DispatchData
                         .updateJobDetail(job.id,
                             "OneOff",
                             job.oneOff,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            job.preBook);
 
+                    self.selectJobDetail(job.id);
+                    return response;
                 };
 
-                self.activeClick = function (job) {
-                    return DispatchData
+                self.activeClick = async function (job) {
+                    const response = await DispatchData
                         .updateJobDetail(job.id,
                             "Active",
                             job.active,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            job.preBook);
 
+                    self.selectJobDetail(job.id);
+
+                    return response;
                 };
 
-                self.voidClick = function (job) {
-                    return job.bulkJob ? DispatchData
-                        .updateBulkJobDetail(job.id,
-                            "Void",
-                            job.void,
-                            job.charge,
-                            FirstName,
-                            ContactID).then(function (response) {
-                            self.selectBulkJobDetail(job.id);
-                            return response;
-                        }) : DispatchData
-                        .updateJobDetail(job.id,
-                            "Void",
-                            job.void,
-                            job.charge,
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                self.voidClick = async function (job) {
 
+                    if (job.bulkJob) {
+                        const response = await DispatchData
+                            .updateBulkJobDetail(job.id,
+                                "Void",
+                                job.void,
+                                job.charge,
+                                FirstName,
+                                ContactID);
+
+                        self.selectBulkJobDetail(job.id);
+
+                        return response;
+                    } else {
+                        const response = await DispatchData
+                            .updateJobDetail(job.id,
+                                "Void",
+                                job.void,
+                                job.charge,
+                                FirstName,
+                                ContactID,
+                                job.preBook);
+
+                        self.selectJobDetail(job.id);
+
+                        return response;
+                    }
                 };
-                self.doneClick = function (job) {
+
+                self.doneClick = async function (event, job) {
                     if (!job.completedTime) {
-                        $ngConfirm("You must set completed time (POD Time) first");
-                        job.done = false;
-                        return false;
+                        const confirm = $mdDialog.confirm()
+                            .title('You must set completed time (POD Time) first')
+                            .ariaLabel('Lucky day')
+                            .targetEvent(event)
+                            .ok('OK');
+
+                        $mdDialog.show(confirm).then(function () {
+                            job.done = false;
+                            return false;
+                        });
                     }
+
                     if (!job.podName) {
-                        $ngConfirm("You must set POD Name first");
-                        job.done = false;
-                        return false;
+                        const confirm = $mdDialog.confirm()
+                            .title('You must set POD Name first')
+                            .ariaLabel('Lucky day')
+                            .targetEvent(event)
+                            .ok('OK');
+
+                        $mdDialog.show(confirm).then(function () {
+                            job.done = false;
+                            return false;
+                        });
                     }
-                    return DispatchData
+
+                    const response = await DispatchData
                         .updatePODDetail(job.jobNo,
                             6,
                             job.podName,
-                            job.completedTime).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            job.completedTime);
 
+                    self.selectJobDetail(job.id);
+                    return response;
                 };
 
+                self.deliveredClick = async function (job) {
 
-                self.deliveredClick = function (job) {
-                    DispatchData
+                    const response = DispatchData
                         .updateJobDetail(job.id,
                             "Delivered",
                             job.done,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                        self.selectJobDetail(job.id);
-                        return response;
-                    });
+                            job.preBook);
+
+                    self.selectJobDetail(job.id);
+                    return response;
                 };
 
-                self.airportOnlyClick = function (job) {
-                    DispatchData
+                self.airportOnlyClick = async function (job) {
+
+                    const response = await DispatchData
                         .updateJobDetail(job.id,
                             "AirportOnly",
                             job.airportOnly,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                        self.selectJobDetail(job.id);
-                        return response;
-                    });
+                            job.preBook);
+
+                    self.selectJobDetail(job.id);
+                    return response;
                 };
 
-                self.leaveClick = function(event, job) {
-                    self.showSelectDialog(event, job, pickLeaveList, "DeliverToLeaveID", "Edit Leave Parcel", "Select new location..");
+                self.trackingMethodClick = function (event, job) {
+                    self.showSelectDialog(event, job, options.detail.tracking, "TrackingMethod", "Tracking Method", "Select new tracking method..");
                 };
 
-                self.undeliverableClick = function(event, job) {
-                    self.showSelectDialog(event, job, pickUndeliverableList, "UndeliverableLocationID", "Edit Undeliverable Location", "Select new location..");
+                self.leaveClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickLeaveList, "DeliverToLeaveID", "Leave Parcel", "Select new location..");
                 };
 
-                self.showSelectDialog = function(event, job, data, fieldName, title, placeholder, id = "editField") {
+                self.undeliverableClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", "Select new location..");
+                };
+
+                self.showSelectDialog = function (event, job, data, fieldName, title, placeholder, id = "editField") {
                     const options = {
                         minimumInputLength: 1,
                         items: data,
@@ -1414,8 +1434,6 @@
                     $scope.field = {value: null, options: options};
 
                     $scope.submit = async function (value) {
-                        loadingService.showLoadingDialog();
-
                         const reRate = false;
                         const callData = {
                             "call": "updateDetailField",
@@ -1433,21 +1451,21 @@
                         if (reRate && !this.job.bulkJob) {
                             const rate = await self.rateJob(job);
                             return await DispatchData
-                                        .updateJobDetail(callData.jobID,
-                                            callData.field,
-                                            callData.value,
-                                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                                            FirstName,
-                                            ContactID,
-                                            job.preBook);
+                                .updateJobDetail(callData.jobID,
+                                    callData.field,
+                                    callData.value,
+                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                    FirstName,
+                                    ContactID,
+                                    job.preBook);
                         } else {
                             this.job.bulkJob ?
                                 await DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID) :
                                 await DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID);
                         }
 
-                        loadingService.closeLoadingDialog();
                         $mdDialog.hide();
+                        self.selectJobDetail(this.job.id);
                     };
 
                     $scope.cancel = function () {
@@ -1486,19 +1504,19 @@
 
                 self.jobTypeClick = function (event, job) {
                     const data = [
-                            {
-                                id: 1,
-                                text: 'Pickup'
-                            },
-                            {
-                                id: 2,
-                                text: 'Delivery'
-                            },
-                            {
-                                id: 3,
-                                text: '3rd-Party'
-                            }
-                        ];
+                        {
+                            id: 1,
+                            text: 'Pickup'
+                        },
+                        {
+                            id: 2,
+                            text: 'Delivery'
+                        },
+                        {
+                            id: 3,
+                            text: '3rd-Party'
+                        }
+                    ];
 
                     self.showSelectDialog(event, job, data, "JobTypeID", "Job Type", "Select new speed....");
                 };

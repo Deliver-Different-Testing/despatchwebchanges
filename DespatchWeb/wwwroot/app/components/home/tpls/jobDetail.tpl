@@ -4,10 +4,15 @@
             <div class="col-md-6">
                 <div class="row row-no-padding addresses">
                     <div class="col-md-6">
-                            <div class="field">
-                                <label>Client</label><i  ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-edit" title="Change Client Code" ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
-                                <div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a  ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#" ng-click="!currentJob.locked && jdSvc.clientClick(currentJob)">{{currentJob.client}} {{currentJob.clientName}}</a></div>
-                            </div>
+                        <div class="field">
+                            <label>Client</label><i ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-edit"
+                                                    title="Change Client Code"
+                                                    ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
+                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a
+                                    ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#"
+                                    ng-click="!currentJob.locked && jdSvc.clientClick(currentJob)">{{currentJob.client}}
+                                {{currentJob.clientName}}</a></div>
+                        </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
                              context-menu="detailAddressMenu" data-field="fromAddress"
                              ng-click="!currentJob.locked && jdSvc.updateGPS(currentJob, 'fromAddress')">
@@ -75,7 +80,7 @@
                 <div class="notes field">
                     <label>Notes</label>
                     <md-button class="md-raised md-primary" style="float: right;"
-                            ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
+                               ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
                         Add New
                     </md-button>
                     <div class="value">
@@ -190,7 +195,7 @@
                             <label ng-class="currentJob.locked || currentJob.internalStatusID ===1 || currentJob.internalStatusID ===4 ? 'disabled' : ''">FollowUp
                                 Time</label>
                             <div ng-class="currentJob.locked || currentJob.internalStatusID ===1 || currentJob.internalStatusID ===4  ? 'disabled' : ''"
-                                 class="value">{{currentJob.followupTime | date : "dd/MM/yyyy h:mm a"}}
+                                 class="value">{{currentJob.followupTime | date: "dd/MM/yyyy h:mm a"}}
                             </div>
                         </div>
 
@@ -302,42 +307,43 @@
                         <div class="field"
                              ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'Date','Date',currentJob.date,currentJob.id, 'date')">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Date</label>
-                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.date | date :
-                                "dd/MM/yyyy"}}
+                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.date | date:
+                                    "dd/MM/yyyy"}}
                             </div>
                         </div>
 
-                         <div class="field">
+                        <div class="field">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Created Date</label>
-                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.createdDate | date :
-                                "dd/MM/yyyy"}}
+                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
+                                {{currentJob.createdDate | date:
+                                    "dd/MM/yyyy"}}
                             </div>
                         </div>
 
                         <div class="field"
                              ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'Time','Time',currentJob.time,currentJob.id,'time')">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Log time</label>
-                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.time | date :
-                                "h:mm a"}}
+                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.time | date:
+                                    "h:mm a"}}
                             </div>
                         </div>
                         <div ng-if="!currentJob.bulkJob" class="field">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Dispatch time</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.dispatchTime
-                                | date : "h:mm a"}}
+                            | date: "h:mm a"}}
                             </div>
                         </div>
                         <div ng-if="!currentJob.bulkJob" class="field">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">PU time</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.puTime | date
-                                : "h:mm a"}}
+                                    : "h:mm a"}}
                             </div>
                         </div>
                         <div ng-if="!currentJob.bulkJob" class="field"
                              ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'CompletedTime','Completed Time',currentJob.completedTime,currentJob.id,'time')">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">POD Time</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.completedTime
-                                | date : "h:mm a"}}
+                            | date: "h:mm a"}}
                             </div>
                         </div>
                         <div ng-if="!currentJob.bulkJob" class="field"
@@ -469,9 +475,10 @@
                                     To Live</label>
                                 <div ng-class="(currentJob.jobRelationshipTypeID == 20 || currentJob.done) ? 'disabled' : ''"
                                      class="value">
-                                    <md-checkbox ng-disabled="(currentJob.jobRelationshipTypeID == 20 || currentJob.done)"
-                                                 ng-click="jdSvc.pushToLive(currentJob)"
-                                                 ng-model="currentJob.done">
+                                    <md-checkbox
+                                            ng-disabled="(currentJob.jobRelationshipTypeID == 20 || currentJob.done)"
+                                            ng-click="jdSvc.pushToLive(currentJob)"
+                                            ng-model="currentJob.done">
                                     </md-checkbox>
                                 </div>
                             </div>
@@ -599,11 +606,11 @@
                 </table>
             </div>
 
-			</div>
-		</div>
+        </div>
+    </div>
 
 
-	</md-content>
+</md-content>
 </div>
 
 <div class="container-fluid" id="jobDetail" style="padding:0" ng-if="currentJob && currentJob.preBook">
@@ -616,7 +623,8 @@
                             <label>Client</label><i class="fa fa-edit" title="Change Client Code"
                                                     ng-click="jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
 
-                            <div class="value"><a class="uline" src="#" ng-click="jdSvc.clientClick(currentJob)">{{currentJob.client}}
+                            <div class="value"><a class="uline" src="#"
+                                                  ng-click="jdSvc.clientClick(currentJob)">{{currentJob.client}}
                                 {{currentJob.clientName}}</a></div>
                         </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
@@ -677,7 +685,8 @@
             <div class="col-md-4">
                 <div class="row row-no-padding">
                     <div class="col-md-6">
-                        <div ng-show="!currentJob.bulkJob" class="field" ng-click="jdSvc.contactClick($event, currentJob)">
+                        <div ng-show="!currentJob.bulkJob" class="field"
+                             ng-click="jdSvc.contactClick($event, currentJob)">
                             <label>Booked by Contact</label>
                             <div class="value">{{currentJob.contactName}}</div>
                         </div>
@@ -720,7 +729,7 @@
                             <div class="value">{{currentJob.ourRef}}</div>
                         </div>
                         <div class="field"
-                             ng-click="jdSvc.editDetailField(currentJob, 'TrackingMethod','Tracking Method',currentJob.trackingMethod,currentJob.id, 'select', options.detail.tracking)">
+                             ng-click="jdSvc.editDetailField($event, currentJob)">
                             <label>Tracking Method</label>
                             <div class="value">{{jdSvc.getTrackingMethod(currentJob.trackingMethod)}}</div>
                         </div>
@@ -751,7 +760,7 @@
                                                       ng-model="currentJob.direct"/></div>
                         </div>
 
-                        <div class="field" ng-click="jdSvc.leaveClick(currentJob)">
+                        <div class="field" ng-click="jdSvc.leaveClick($event, currentJob)">
                             <label>Leave Parcel</label>
                             <div class="value">{{currentJob.sigNotRequired || "Signature Required"}}</div>
                         </div>
@@ -843,7 +852,7 @@
                         </div>
                         <div class="field">
                             <label>Done</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.doneClick(currentJob)"
+                            <div class="value"><input type="checkbox" ng-click="jdSvc.doneClick($event, currentJob)"
                                                       ng-model="currentJob.done"/></div>
                         </div>
                     </div>
@@ -852,12 +861,12 @@
                         <div class="field"
                              ng-click="jdSvc.editDetailField(currentJob, 'Date','Date',currentJob.date,currentJob.id, 'date')">
                             <label>Date</label>
-                            <div class="value">{{currentJob.date | date : "dd/MM/yyyy"}}</div>
+                            <div class="value">{{currentJob.date | date: "dd/MM/yyyy"}}</div>
                         </div>
                         <div class="field"
                              ng-click="jdSvc.editDetailField(currentJob, 'Time','Time',currentJob.time,currentJob.id,'time')">
                             <label>Log time</label>
-                            <div class="value">{{currentJob.time | date : "h:mm a"}}</div>
+                            <div class="value">{{currentJob.time | date: "h:mm a"}}</div>
                         </div>
 
                         <div class="field"
@@ -976,5 +985,10 @@
 </div>
 
 <div style="display:none">
-{"ID":1,"Time":"9:30","Direct":"","JobNo":"AP68E","Speed":"Eco","Notify":"","Vehicle":"Car","Client":"UCL Ailsa Perkins","From":"Papatoetoe","To":"Ellerslie","ToAddress":"Ailsa Perkins, 28 Michaels Avenue","CourierNum":21,"Remain":55,"Status":"C","LP":"","LD":"","ContactName":"Ailsa","Phone":"","SpeedAccepted":"Eco","Size":"Car","Weight":"","Items":1,"RefA":"Personal","RefB":"","OurRef":"L664E","SigNotRequired":"Callout","Charge":"$5.81","Date":"11/04/2018","DispatchTime":"01/01/1900 10:04:00 AM","PUTime":"","ClientNotes":"","InternalNotes":"","PalletNums":"","Length":"","Height":"","Depth":"","TailLift PU":"","TailLiftDO":"","DGClass":"","Notes":""}
+    {"ID":1,"Time":"9:30","Direct":"","JobNo":"AP68E","Speed":"Eco","Notify":"","Vehicle":"Car","Client":"UCL Ailsa
+    Perkins","From":"Papatoetoe","To":"Ellerslie","ToAddress":"Ailsa Perkins, 28 Michaels
+    Avenue","CourierNum":21,"Remain":55,"Status":"C","LP":"","LD":"","ContactName":"Ailsa","Phone":"","SpeedAccepted":"Eco","Size":"Car","Weight":"","Items":1,"RefA":"Personal","RefB":"","OurRef":"L664E","SigNotRequired":"Callout","Charge":"$5.81","Date":"11/04/2018","DispatchTime":"01/01/1900
+    10:04:00
+    AM","PUTime":"","ClientNotes":"","InternalNotes":"","PalletNums":"","Length":"","Height":"","Depth":"","TailLift
+    PU":"","TailLiftDO":"","DGClass":"","Notes":""}
 </div>
