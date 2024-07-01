@@ -1,10 +1,7 @@
-angular
-    .module("uDispatch")
-    .service('loadingService', function ($mdDialog) {
-        const dialogs = [];
-
+class LoadingService {
+    constructor($mdDialog) {
         this.showLoadingDialog = function () {
-            const dialog = $mdDialog.show({
+            $mdDialog.show({
                 template:
                     '<md-dialog id="plz_wait" style="width: 15%; height: 15%; overflow:hidden; background-color: rgba(0, 0, 0, 0.48); border-color: transparent;"' +
                     ' layout="row" layout-sm="column" layout-align="center center" aria-label="wait">' +
@@ -15,14 +12,12 @@ angular
                 clickOutsideToClose: false,
                 fullscreen: false
             });
-            dialogs.push(dialog);
-            return dialog;
-        };
+        }
 
         this.closeLoadingDialog = function () {
-            if (dialogs.length > 0) {
-                const dialog = dialogs.pop();
-                $mdDialog.hide(dialog);
-            }
-        };
-    })
+            $mdDialog.hide();
+        }
+    }
+}
+
+angular.module("uDispatch").service("loadingService", LoadingService);

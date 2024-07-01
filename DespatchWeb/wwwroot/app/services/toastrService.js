@@ -1,6 +1,5 @@
-angular
-    .module("uDispatch")
-    .service('toastrService', function ($mdToast) {
+class ToastrService {
+    constructor($mdToast) {
         this.showErrorToast = function (errorMessage) {
             console.error(errorMessage);
 
@@ -24,4 +23,7 @@ angular
                     .toastClass('md-success')
             );
         };
-    });
+    }
+}
+
+angular.module("uDispatch").service("toastrService", ToastrService);
