@@ -1374,11 +1374,11 @@
                 };
 
                 self.leaveClick = function(event, job) {
-                    self.showSelectDialog(event, job, pickLeaveList, "DeliverToLeaveID", "Edit Leave Parcel", "Select location..");
+                    self.showSelectDialog(event, job, pickLeaveList, "DeliverToLeaveID", "Edit Leave Parcel", "Select new location..");
                 };
 
                 self.undeliverableClick = function(event, job) {
-                    self.showSelectDialog(event, job, pickUndeliverableList, "UndeliverableLocationID", "Edit Undeliverable Location", "Select location..");
+                    self.showSelectDialog(event, job, pickUndeliverableList, "UndeliverableLocationID", "Edit Undeliverable Location", "Select new location..");
                 };
 
                 self.showSelectDialog = function(event, job, data, fieldName, title, placeholder, id = "editField") {
@@ -1402,20 +1402,20 @@
                             options: options
                         },
                         controller: DialogController
-                    }).then(function (answer) {
-                        console.log(answer);
-                    }, function () {
-                        console.log('Closed!')
+                    }).then(function () {
+                        console.log('Dialog closed!')
                     });
                 };
 
-                function DialogController($scope, $mdDialog, id, fieldName, title, job, options) {
+                function DialogController($scope, $mdDialog, loadingService, id, fieldName, title, job, options) {
                     $scope.title = title;
                     $scope.job = job;
                     $scope.fieldName = fieldName;
                     $scope.field = {value: null, options: options};
 
-                    $scope.submit = function (value) {
+                    $scope.submit = async function (value) {
+                        loadingService.showLoadingDialog();
+
                         const reRate = false;
                         const callData = {
                             "call": "updateDetailField",
@@ -1426,29 +1426,29 @@
 
                         if (callData.field === "Notes") {
                             this.job.bulkJob ?
-                                DispatchData.addBulkJobNote(this.job.id, callData.value, this.FirstName, this.job.preBook) :
-                                DispatchData.addNote(this.job.id, callData.value, this.FirstName, this.job.preBook);
+                                await DispatchData.addBulkJobNote(this.job.id, callData.value, this.FirstName, this.job.preBook) :
+                                await DispatchData.addNote(this.job.id, callData.value, this.FirstName, this.job.preBook);
                         }
 
                         if (reRate && !this.job.bulkJob) {
-                            return self.rateJob(job).then(function (rate) {
-                                DispatchData
-                                    .updateJobDetail(callData.jobID,
-                                        callData.field,
-                                        callData.value,
-                                        Number(rate.replace(/[^0-9.-]+/g, "")),
-                                        FirstName,
-                                        ContactID,
-                                        job.preBook).then(function (response) {
-                                        return response;
-                                    });
-                            });
+                            const rate = await self.rateJob(job);
+                            return await DispatchData
+                                .updateJobDetail(callData.jobID,
+                                    callData.field,
+                                    callData.value,
+                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                    FirstName,
+                                    ContactID,
+                                    job.preBook).then(function (response) {
+                                    return response;
+                                });
                         } else {
                             this.job.bulkJob ?
-                                DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID) :
-                                DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID);
+                                await DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID) :
+                                await DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID);
                         }
 
+                        loadingService.closeLoadingDialog();
                         $mdDialog.hide();
                     };
 
