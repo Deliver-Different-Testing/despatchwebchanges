@@ -1433,15 +1433,13 @@
                         if (reRate && !this.job.bulkJob) {
                             const rate = await self.rateJob(job);
                             return await DispatchData
-                                .updateJobDetail(callData.jobID,
-                                    callData.field,
-                                    callData.value,
-                                    Number(rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName,
-                                    ContactID,
-                                    job.preBook).then(function (response) {
-                                    return response;
-                                });
+                                        .updateJobDetail(callData.jobID,
+                                            callData.field,
+                                            callData.value,
+                                            Number(rate.replace(/[^0-9.-]+/g, "")),
+                                            FirstName,
+                                            ContactID,
+                                            job.preBook);
                         } else {
                             this.job.bulkJob ?
                                 await DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, this.FirstName, this.ContactID) :
