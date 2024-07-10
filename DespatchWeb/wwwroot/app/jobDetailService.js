@@ -1,8 +1,8 @@
 ﻿angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData", "$ngConfirm", "$mdDialog",
-            function (DispatchData, $ngConfirm, $mdDialog) {
+        ["DispatchData", "$ngConfirm", "$mdDialog", "toastrService",
+            function (DispatchData, $ngConfirm, $mdDialog, toastrService) {
                 const self = this;
                 const options = {
                     "detail": {
@@ -689,17 +689,6 @@
                             }
                             if (rerate && !job.bulkJob) {
                                 return self.rateJob(job).then(function (rate) {
-                                    //console.log(rate);
-                                    //if (rate !== job.charge) {
-                                    //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                                    //        job.clientID,
-                                    //        job.contactName,
-                                    //        ContactID,
-                                    //        job.courierData.courierID,
-                                    //        job.id,
-                                    //        job.jobType,
-                                    //        FirstName);
-                                    //}
                                     return DispatchData
                                         .updateJobDetail(callData.jobID,
                                             callData.field,
@@ -1180,21 +1169,27 @@
 
                 };
 
-                self.truckClick = async function (job) {
-                   const  rate = await self.rateJob(job);
-
-                        console.log(rate);
-                        const response = await DispatchData
-                            .updateJobDetail(job.id,
+                self.truckClick = function (job) {
+                    self.rateJob(job)
+                        .then(rate => {
+                            console.log(rate);
+                            return DispatchData.updateJobDetail(
+                                job.id,
                                 "Truck",
                                 job.truck,
                                 Number(rate.replace(/[^0-9.-]+/g, "")),
                                 FirstName,
                                 ContactID,
-                                job.preBook);
-
-                                self.selectJobDetail(job.id);
-                                return response;
+                                job.preBook
+                            );
+                        })
+                        .then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        })
+                        .catch(() => {
+                            toastrService.showToast("Error updating job detail");
+                        });
                 };
 
                 self.directClick = function (job) {
@@ -1249,80 +1244,73 @@
                 };
 
 
-                self.preBookReturnClick = async function (job) {
-                    const response = await DispatchData
+                self.preBookReturnClick = function (job) {
+                    return DispatchData
                         .updateJobDetail(job.id,
                             "Return",
                             job.return,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook);
-
-                    self.selectJobDetail(job.id);
-                    return response;
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
                 };
 
-                self.oneOffClick = async function (job) {
-                    const response = await DispatchData
+                self.oneOffClick = function (job) {
+                    return DispatchData
                         .updateJobDetail(job.id,
                             "OneOff",
                             job.oneOff,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook);
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
 
-                    self.selectJobDetail(job.id);
-                    return response;
                 };
 
-                self.activeClick = async function (job) {
-                    const response = await DispatchData
+                self.activeClick = function (job) {
+                    return DispatchData
                         .updateJobDetail(job.id,
                             "Active",
                             job.active,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook);
-
-                    self.selectJobDetail(job.id);
-
-                    return response;
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
                 };
 
-                self.voidClick = async function (job) {
-
-                    if (job.bulkJob) {
-                        const response = await DispatchData
-                            .updateBulkJobDetail(job.id,
-                                "Void",
-                                job.void,
-                                job.charge,
-                                FirstName,
-                                ContactID);
-
-                        self.selectBulkJobDetail(job.id);
-
-                        return response;
-                    } else {
-                        const response = await DispatchData
-                            .updateJobDetail(job.id,
-                                "Void",
-                                job.void,
-                                job.charge,
-                                FirstName,
-                                ContactID,
-                                job.preBook);
-
-                        self.selectJobDetail(job.id);
-
-                        return response;
-                    }
+                self.voidClick = function (job) {
+                    return job.bulkJob ? DispatchData
+                        .updateBulkJobDetail(job.id,
+                            "Void",
+                            job.void,
+                            job.charge,
+                            FirstName,
+                            ContactID).then(function (response) {
+                            self.selectBulkJobDetail(job.id);
+                            return response;
+                        }) : DispatchData
+                        .updateJobDetail(job.id,
+                            "Void",
+                            job.void,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
                 };
 
-                self.doneClick = async function (event, job) {
+                self.doneClick = function (event, job) {
                     if (!job.completedTime) {
                         const confirm = $mdDialog.confirm()
                             .title('You must set completed time (POD Time) first')
@@ -1330,8 +1318,8 @@
                             .targetEvent(event)
                             .ok('OK');
 
-                        $mdDialog.show(confirm).then(function () {
-                            job.done = false;
+                        $mdDialog.show(onfirm).then(function () {
+                            job.done = fcalse;
                             return false;
                         });
                     }
@@ -1349,44 +1337,42 @@
                         });
                     }
 
-                    const response = await DispatchData
+                    return DispatchData
                         .updatePODDetail(job.jobNo,
                             6,
                             job.podName,
-                            job.completedTime);
-
-                    self.selectJobDetail(job.id);
-                    return response;
+                            job.completedTime).then(function () {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        });
                 };
 
-                self.deliveredClick = async function (job) {
-
-                    const response = DispatchData
+                self.deliveredClick = function (job) {
+                    DispatchData
                         .updateJobDetail(job.id,
                             "Delivered",
                             job.done,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook);
-
-                    self.selectJobDetail(job.id);
-                    return response;
+                            job.preBook).then(function (response) {
+                        self.selectJobDetail(job.id);
+                        return response;
+                    });
                 };
 
-                self.airportOnlyClick = async function (job) {
-
-                    const response = await DispatchData
+                self.airportOnlyClick = function (job) {
+                    DispatchData
                         .updateJobDetail(job.id,
                             "AirportOnly",
                             job.airportOnly,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook);
-
-                    self.selectJobDetail(job.id);
-                    return response;
+                            job.preBook).then(function (response) {
+                        self.selectJobDetail(job.id);
+                        return response;
+                    });
                 };
 
                 self.trackingMethodClick = function (event, job) {
@@ -1518,7 +1504,7 @@
                         }
                     ];
 
-                    self.showSelectDialog(event, job, data, "JobTypeID", "Job Type", "Select new speed....");
+                    self.showSelectDialog(event, job, data, "JobTypeID", "Job Type", "Select new job type....");
                 };
 
                 self.internalStatusClick = function (event, job) {
@@ -1604,15 +1590,6 @@
                                     return self.rateJob(self.currentJob).then(function (rate) {
                                         console.log(rate);
                                         if (rate !== self.currentJob.charge) {
-                                            //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
-                                            //    self.currentJob.clientID,
-                                            //    self.currentJob.contactName,
-                                            //    ContactID,
-                                            //    self.currentJob.courierData.courierID,
-                                            //    self.currentJob.id,
-                                            //    self.currentJob.jobType,
-                                            //    FirstName);
-
                                             return DispatchData
                                                 .updateJobDetail(self.currentJob.id,
                                                     "rate",

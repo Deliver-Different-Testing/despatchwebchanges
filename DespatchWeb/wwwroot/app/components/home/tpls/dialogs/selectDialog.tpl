@@ -23,7 +23,7 @@
         </md-dialog-content>
 
         <md-dialog-actions>
-            <md-button class="md-raised" ng-click="submit(field.value)">Update Field</md-button>
+            <md-button class="md-raised md-primary" ng-click="submit(field.value)">Update Field</md-button>
         </md-dialog-actions>
     </form>
 </md-dialog>
