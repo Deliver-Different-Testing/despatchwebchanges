@@ -79,7 +79,7 @@
                 <div class="notes-add"></div>
                 <div class="notes field">
                     <label>Notes</label>
-                    <md-button class="md-raised md-primary" style="float: right;"
+                    <md-button class="md-raised" style="float: right;"
                                ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
                         Add New
                     </md-button>
@@ -232,7 +232,7 @@
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 <md-checkbox
                                         ng-disabled="currentJob.locked"
-                                        ng-click="jdSvc.directClick(currentJob)"
+                                        ng-click="currentJob.direct = !currentJob.direct; jdSvc.directClick(currentJob)"
                                         ng-model="currentJob.direct">
                                 </md-checkbox>
                             </div>
@@ -245,7 +245,7 @@
                             </div>
                         </div>
                         <div ng-if="!currentJob.bulkJob" class="field"
-                             ng-click="!currentJob.locked && jdSvc.undeliverableClick($event, pcurrentJob)">
+                             ng-click="!currentJob.locked && jdSvc.undeliverableClick($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">UD status</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.udStatus}}
                             </div>
@@ -421,7 +421,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Reprice</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="currentJob.reprice = !currentJob.reprice; jdSvc.repriceClick(currentJob)"
+                                                 ng-click="currentJob.reprice = !currentJob.reprice; jdSvc.(currentJob)"
                                                  ng-model="currentJob.reprice">
                                     </md-checkbox>
                                 </div>
@@ -465,7 +465,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Airport Only</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="jdSvc.airportOnlyClick(currentJob)"
+                                                 ng-click="currentJob.airportOnly = !currentJob.airportOnly; jdSvc.airportOnlyClick(currentJob)"
                                                  ng-model="currentJob.airportOnly">
                                     </md-checkbox>
                                 </div>
@@ -477,7 +477,7 @@
                                      class="value">
                                     <md-checkbox
                                             ng-disabled="(currentJob.jobRelationshipTypeID == 20 || currentJob.done)"
-                                            ng-click="jdSvc.pushToLive(currentJob)"
+                                            ng-click="currentJob.done = !currentJob.done; jdSvc.pushToLive(currentJob)"
                                             ng-model="currentJob.done">
                                     </md-checkbox>
                                 </div>
@@ -672,10 +672,10 @@
                 <div class="notes-add"></div>
                 <div class="notes field">
                     <label>Notes</label>
-                    <button class="mat-button" style="float: right;"
+                    <md-button class="md-fab md-mini md-primary" style="float: right;"
                             ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
-                        Add New
-                    </button>
+                        <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                    </md-button>
                     <div class="value">
                         <pre>{{currentJob.internalNotes}}</pre>
                     </div>

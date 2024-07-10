@@ -52,13 +52,12 @@ angular
                     if (fromRightClick) {
                         $scope.$apply();
                     }
-
-
                 });
                 setTimeout(function () {
                     $scope.onMapReady();
-                    $('#location').select2('open').val(null).trigger('change');
-                    var search = $('#location').data('select2').dropdown.$search;
+                    const $location = $('#location');
+                    $location.select2('open').val(null).trigger('change');
+                    var search = $location.data('select2').dropdown.$search;
                     if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {
                         var parts = $scope.jdSvc.gpsForm.data.address.split(',');
                         search.val(parts[1].split());
@@ -275,13 +274,13 @@ angular
         $scope.boxes = {
             "jobsList": {
                 "title": "Jobs List",
-                "tpl": "app/components/home/tpls/jobList.tpl?v=1.88",
+                "tpl": "app/components/home/tpls/jobList.tpl?v=2.0",
                 "showSearch": 1,
                 "showRefresh": 1
             },
             "jobDetail": {
                 "title": "Detail",
-                "tpl": "app/components/home/tpls/jobDetail.tpl",
+                "tpl": "app/components/home/tpls/jobDetail.tpl?v=3.0",
                 "showSearch": 0,
                 "showRefresh": 0,
                 "showDetailButtons": 1

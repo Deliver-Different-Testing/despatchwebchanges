@@ -1045,8 +1045,9 @@
 
 
                     self.copyGpsAddress = function () {
-                        $('#location').select2('open');
-                        var search = $('#location').data('select2').dropdown.$search;
+                        const $location = $('#location');
+                        $location.select2('open');
+                        let search = $location.data('select2').dropdown.$search;
                         if (self.gpsForm.data.address.indexOf(',') > 0) {
                             search.val(self.gpsForm.data.address.split(',')[1].split());
                         } else {
@@ -1056,67 +1057,59 @@
                     };
                 };
 
-                self.unlockJob = async function (job) {
-                    const response = await DispatchData
-                        .updateJobDetail(job.id,
-                            "Locked",
-                            false,
-                            job.charge,
-                            FirstName,
-                            ContactID,
-                            job.preBook);
-
-                    self.selectJobDetail(job.id);
-                    return response;
+                self.unlockJob = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id, "Locked", false, job.charge, FirstName, ContactID, job.preBook)
+                        .then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch((_) => {
+                            toastrService.showErrorToast();
+                        });
                 }
 
-                self.lockJob = async function (job) {
-                    const response = await DispatchData
-                        .updateJobDetail(job.id,
-                            "Locked",
-                            true,
-                            job.charge,
-                            FirstName,
-                            ContactID,
-                            job.preBook);
-
-                    self.selectJobDetail(job.id);
-                    return response;
+                self.lockJob = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id, "Locked", true, job.charge, FirstName, ContactID, job.preBook)
+                        .then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch((_) => {
+                            toastrService.showErrorToast();
+                        });
                 }
 
-                self.preBookDirectClick = async function (job) {
-                    const response = await DispatchData
-                        .updateJobDetail(job.id,
-                            "Direct",
-                            job.direct,
-                            job.charge,
-                            FirstName,
-                            ContactID,
-                            job.preBook);
+                self.preBookDirectClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id, "Direct", job.direct, job.charge, FirstName, ContactID, job.preBook)
+                        .then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch((_) => {
+                            toastrService.showErrorToast();
+                        });
+                }
 
-                    self.selectJobDetail(job.id);
-                    return response;
+                self.repriceClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id, "Reprice", job.reprice, job.charge, FirstName, ContactID, job.preBook)
+                        .then(function (response) {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch((_) => {
+                            toastrService.showErrorToast();
+                        });
                 };
 
-                self.repriceClick = async function (job) {
-                    const response = await DispatchData
-                        .updateJobDetail(job.id,
-                            "Reprice",
-                            job.reprice,
-                            job.charge,
-                            FirstName,
-                            ContactID,
-                            job.preBook);
-
-                    self.selectJobDetail(job.id);
-                    return response;
-                };
-
-                self.pushToLive = async function (job) {
-                    const response = DispatchData
-                        .releaseBulkJob(job.jobNo, job.bookedDate);
-                    self.selectBulkJobDetail(job.id);
-                    return response;
+                self.pushToLive = function (job) {
+                    return DispatchData
+                        .releaseBulkJob(job.jobNo, job.bookedDate)
+                        .then(function (response) {
+                            self.selectBulkJobDetail(job.id);
+                            return response;
+                        }).catch((_) => {
+                            toastrService.showErrorToast();
+                        });
                 };
 
                 self.vanOkClick = function (job) {
@@ -1130,25 +1123,36 @@
                             job.preBook).then(function (response) {
                             self.selectJobDetail(job.id);
                             return response;
+                        }).catch((_) => {
+                            toastrService.showErrorToast();
                         });
                 };
 
 
-                self.vanClick = async function (job) {
-                    const rate = await self.rateJob(job);
-                    console.log(rate);
+                self.vanClick = function (job) {
+                    return self.rateJob(job)
+                        .then(rate => {
+                            console.log(rate);
 
-                    const response = await DispatchData
-                        .updateJobDetail(job.id,
-                            "Van",
-                            job.van,
-                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                            FirstName,
-                            ContactID,
-                            job.preBook);
-
-                    self.selectJobDetail(job.id);
-                    return response;
+                            return DispatchData
+                                .updateJobDetail(
+                                    job.id,
+                                    "Van",
+                                    job.van,
+                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                    FirstName,
+                                    ContactID,
+                                    job.preBook
+                                )
+                                .then(response => {
+                                    self.selectJobDetail(job.id);
+                                    return response;
+                                }).catch((_) => {
+                                    toastrService.showErrorToast();
+                                });
+                        }).catch((_) => {
+                            toastrService.showErrorToast();
+                        });
                 };
 
                 self.pedalClick = function (job) {
@@ -1210,9 +1214,7 @@
                                     return response;
                                 });
                         });
-
                     }
-
                 };
 
                 self.attentionClick = function (job) {
@@ -1266,7 +1268,7 @@
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
                         });
@@ -1281,7 +1283,7 @@
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
                         });
@@ -1294,7 +1296,7 @@
                             job.void,
                             job.charge,
                             FirstName,
-                            ContactID).then(function (response) {
+                            ContactID).then(response => {
                             self.selectBulkJobDetail(job.id);
                             return response;
                         }) : DispatchData
@@ -1304,7 +1306,7 @@
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
                         });
@@ -1318,8 +1320,8 @@
                             .targetEvent(event)
                             .ok('OK');
 
-                        $mdDialog.show(onfirm).then(function () {
-                            job.done = fcalse;
+                        $mdDialog.show(confirm).then(() => {
+                            job.done = false;
                             return false;
                         });
                     }
@@ -1331,7 +1333,7 @@
                             .targetEvent(event)
                             .ok('OK');
 
-                        $mdDialog.show(confirm).then(function () {
+                        $mdDialog.show(confirm).then(() => {
                             job.done = false;
                             return false;
                         });
@@ -1604,16 +1606,10 @@
                                         }
 
                                     });
-
                                 } else {
-
                                     console.log("Critical Error Add Pallet");
-
                                 }
-
                             });
-
-
                         }
                     }
                 ];

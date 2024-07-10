@@ -1,16 +1,28 @@
 class ToastrService {
     constructor($mdToast) {
-        this.showToast = function (errorMessage) {
-            console.error(errorMessage);
+        this.$mdToast = $mdToast;
+    }
 
-            $mdToast.show(
-                $mdToast.simple()
-                    .textContent(errorMessage)
-                    .position('top right')
-                    .hideDelay(5000)
-                    .toastClass('md-warn')
-            );
-        };
+    showErrorToast(errorMessage) {
+        if (!errorMessage) {
+            errorMessage = "An unexpected error occurred. Please try again";
+        }
+        console.error(errorMessage);
+        this.showToast(errorMessage);
+    }
+
+    showSuccessToast(message) {
+        console.log(message);
+        this.showToast(message);
+    }
+
+    showToast(message) {
+        this.$mdToast.show(
+            this.$mdToast.simple()
+                .textContent(message)
+                .position('top right')
+                .hideDelay(5000)
+        );
     }
 }
 
