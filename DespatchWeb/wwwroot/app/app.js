@@ -53,30 +53,28 @@ angular
             .state("home",
                 {
                     url: "/",
-                    templateUrl: "app/components/home/homeView.html?v=1.44",
+					templateUrl: "app/components/home/homeView.html",
                     controller: "HomeControl"
 				})
 			.state('nw',
                 {
                     url: '/Nationwide',
-                    templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.7',
+					templateUrl: 'app/components/Nationwide/nationwideView.html',
                     controller: 'NationwideControl',
                     reloadOnSearch: false
                 })
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.22',
+					templateUrl: 'app/components/CS/csView.html',
 					controller: 'CSControl',
                     reloadOnSearch: false
 				})
             .state('prebooks',
                 {
                     url: '/prebooks',
-                    templateUrl: 'app/components/prebooks/prebookView.html?v=1.1',
+					templateUrl: 'app/components/prebooks/prebookView.html',
                     controller: 'PBControl',
                     reloadOnSearch: false
                 });
-
-
     }]);

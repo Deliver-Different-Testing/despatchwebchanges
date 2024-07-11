@@ -79,9 +79,9 @@
                 <div class="notes-add"></div>
                 <div class="notes field">
                     <label>Notes</label>
-                    <md-button class="md-raised" style="float: right;"
+                    <md-button class="md-fab md-raised md-mini" style="float: right;"
                                ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
-                        Add New
+                        <md-icon md-font-icon="material-symbols-rounded">add</md-icon>
                     </md-button>
                     <div class="value">
                         <pre>{{currentJob.internalNotes}}</pre>
@@ -375,7 +375,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Van</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="currentJob.van = !currentJob.van; jdSvc.vanClick(currentJob)"
+                                                 ng-click="jdSvc.vanClick(currentJob)"
                                                  ng-model="currentJob.van">
                                     </md-checkbox>
                                 </div>
@@ -384,7 +384,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Truck</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="currentJob.truck = !currentJob.truck; jdSvc.truckClick(currentJob)"
+                                                 ng-click="jdSvc.truckClick(currentJob)"
                                                  ng-model="currentJob.truck">
                                     </md-checkbox>
                                 </div>
@@ -393,7 +393,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Pedal</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="currentJob.pedal = !currentJob.pedal; jdSvc.pedalClick(currentJob)"
+                                                 ng-click="jdSvc.pedalClick(currentJob)"
                                                  ng-model="currentJob.pedal">
                                     </md-checkbox>
                                 </div>
@@ -402,7 +402,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Attention</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="currentJob.attention = !currentJob.attention; jdSvc.attentionClick(currentJob)"
+                                                 ng-click="jdSvc.attentionClick(currentJob)"
                                                  ng-model="currentJob.attention">
                                     </md-checkbox>
                                 </div>
@@ -411,7 +411,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Van OK?</label>
                                 <div class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="currentJob.vanOK = !currentJob.vanOK; jdSvc.vanOkClick(currentJob)"
+                                                 ng-click="jdSvc.vanOkClick(currentJob)"
                                                  ng-model="currentJob.vanOK">
                                     </md-checkbox>
                                 </div>
@@ -421,7 +421,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Reprice</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="currentJob.reprice = !currentJob.reprice; jdSvc.(currentJob)"
+                                                 ng-click="jdSvc.repriceClick(currentJob)"
                                                  ng-model="currentJob.reprice">
                                     </md-checkbox>
                                 </div>
@@ -432,7 +432,7 @@
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox
                                             ng-disabled="currentJob.locked"
-                                            ng-click="currentJob.void = !currentJob.void; jdSvc.voidClick(currentJob)"
+                                            ng-click="jdSvc.voidClick(currentJob)"
                                             ng-model="currentJob.void">
                                     </md-checkbox>
                                 </div>
@@ -443,7 +443,7 @@
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox
                                             ng-disabled="currentJob.locked"
-                                            ng-click="currentJob.done = !currentJob.done; jdSvc.doneClick(currentJob)"
+                                            ng-click="jdSvc.doneClick(event, currentJob)"
                                             ng-model="currentJob.done">
                                     </md-checkbox>
                                 </div>
@@ -454,7 +454,7 @@
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox
                                             ng-disabled="currentJob.locked"
-                                            ng-click="currentJob.done = !currentJob.done; jdSvc.deliveredClick(currentJob)"
+                                            ng-click="jdSvc.deliveredClick(currentJob)"
                                             ng-model="currentJob.done">
                                     </md-checkbox>
                                 </div>
@@ -465,7 +465,7 @@
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Airport Only</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox ng-disabled="currentJob.locked"
-                                                 ng-click="currentJob.airportOnly = !currentJob.airportOnly; jdSvc.airportOnlyClick(currentJob)"
+                                                 ng-click="jdSvc.airportOnlyClick(currentJob)"
                                                  ng-model="currentJob.airportOnly">
                                     </md-checkbox>
                                 </div>
@@ -477,7 +477,7 @@
                                      class="value">
                                     <md-checkbox
                                             ng-disabled="(currentJob.jobRelationshipTypeID == 20 || currentJob.done)"
-                                            ng-click="currentJob.done = !currentJob.done; jdSvc.pushToLive(currentJob)"
+                                            ng-click="jdSvc.pushToLive(currentJob)"
                                             ng-model="currentJob.done">
                                     </md-checkbox>
                                 </div>
