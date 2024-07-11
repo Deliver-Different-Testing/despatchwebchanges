@@ -1060,7 +1060,7 @@
                 self.unlockJob = function (job) {
                     return DispatchData
                         .updateJobDetail(job.id, "Locked", false, job.charge, FirstName, ContactID, job.preBook)
-                        .then(function (response) {
+                        .then(response => {
                             self.selectJobDetail(job.id);
                             return response;
                         }).catch((_) => {
@@ -1071,65 +1071,60 @@
                 self.lockJob = function (job) {
                     return DispatchData
                         .updateJobDetail(job.id, "Locked", true, job.charge, FirstName, ContactID, job.preBook)
-                        .then(function (response) {
+                        .then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        }).catch((_) => {
-                            toastrService.showErrorToast();
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 }
 
                 self.preBookDirectClick = function (job) {
                     return DispatchData
                         .updateJobDetail(job.id, "Direct", job.direct, job.charge, FirstName, ContactID, job.preBook)
-                        .then(function (response) {
+                        .then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        }).catch((_) => {
-                            toastrService.showErrorToast();
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 }
 
                 self.repriceClick = function (job) {
                     return DispatchData
                         .updateJobDetail(job.id, "Reprice", job.reprice, job.charge, FirstName, ContactID, job.preBook)
-                        .then(function (response) {
+                        .then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        }).catch((_) => {
-                            toastrService.showErrorToast();
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.pushToLive = function (job) {
+                    job.done = !job.done;
+
                     return DispatchData
                         .releaseBulkJob(job.jobNo, job.bookedDate)
-                        .then(function (response) {
+                        .then(response => {
                             self.selectBulkJobDetail(job.id);
                             return response;
-                        }).catch((_) => {
-                            toastrService.showErrorToast();
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.vanOkClick = function (job) {
+                    const vanOkValue = !job.vanOk;
+
                     return DispatchData
                         .updateJobDetail(job.id,
                             "VanOK",
-                            job.vanOK,
+                            vanOkValue,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        }).catch((_) => {
-                            toastrService.showErrorToast();
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
-
                 self.vanClick = function (job) {
+                    const vanValue = !job.van;
+
                     return self.rateJob(job)
                         .then(rate => {
                             console.log(rate);
@@ -1138,7 +1133,7 @@
                                 .updateJobDetail(
                                     job.id,
                                     "Van",
-                                    job.van,
+                                    vanValue,
                                     Number(rate.replace(/[^0-9.-]+/g, "")),
                                     FirstName,
                                     ContactID,
@@ -1147,40 +1142,40 @@
                                 .then(response => {
                                     self.selectJobDetail(job.id);
                                     return response;
-                                }).catch((_) => {
-                                    toastrService.showErrorToast();
-                                });
-                        }).catch((_) => {
-                            toastrService.showErrorToast();
-                        });
+                                }).catch(() => toastrService.showErrorToast());
+                        }).catch(() => toastrService.showErrorToast());
+
                 };
 
                 self.pedalClick = function (job) {
-                    return self.rateJob(job).then(function (rate) {
+                    const pedalValue = !job.pedal;
+
+                    return self.rateJob(job).then(rate => {
                         console.log(rate);
                         return DispatchData
                             .updateJobDetail(job.id,
                                 "Pedal",
-                                job.pedal,
+                                pedalValue,
                                 Number(rate.replace(/[^0-9.-]+/g, "")),
                                 FirstName,
                                 ContactID,
                                 job.preBook).then(function (response) {
                                 self.selectJobDetail(job.id);
                                 return response;
-                            });
-                    });
-
+                            }).catch(() => toastrService.showErrorToast());
+                    }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.truckClick = function (job) {
-                    self.rateJob(job)
+                    const truckValue = !job.truck;
+
+                    return self.rateJob(job)
                         .then(rate => {
                             console.log(rate);
                             return DispatchData.updateJobDetail(
                                 job.id,
                                 "Truck",
-                                job.truck,
+                                truckValue,
                                 Number(rate.replace(/[^0-9.-]+/g, "")),
                                 FirstName,
                                 ContactID,
@@ -1190,61 +1185,64 @@
                         .then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        })
-                        .catch(() => {
-                            toastrService.showToast("Error updating job detail");
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.directClick = function (job) {
-                    if (!job.direct) {
+                    const directValue = !job.direct;
+
+                    if (!directValue) {
                         return DispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
                     } else {
-                        return self.rateJob(job).then(function (rate) {
+                        return self.rateJob(job).then(rate => {
                             console.log(rate);
                             return DispatchData
                                 .updateJobDetail(job.id,
                                     "Direct",
-                                    job.direct,
+                                    directValue,
                                     Number(rate.replace(/[^0-9.-]+/g, "")),
                                     FirstName,
                                     ContactID,
-                                    job.preBook).then(function (response) {
+                                    job.preBook).then(response => {
                                     self.selectJobDetail(job.id);
                                     return response;
-                                });
-                        });
+                                }).catch(() => toastrService.showErrorToast());
+                        }).catch(() => toastrService.showErrorToast());
                     }
                 };
 
                 self.attentionClick = function (job) {
+                    const attentionValue = !job.attention;
+
                     return DispatchData
                         .updateJobDetail(job.id,
                             "Attention",
-                            job.attention,
+                            attentionValue,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
+
                 self.repriceClick = function (job) {
+                    const repriceValue = !job.reprice;
+
                     return DispatchData
                         .updateJobDetail(job.id,
                             "Reprice",
-                            job.reprice,
+                            repriceValue,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
-
 
                 self.preBookReturnClick = function (job) {
                     return DispatchData
@@ -1254,10 +1252,10 @@
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.oneOffClick = function (job) {
@@ -1271,7 +1269,7 @@
                             job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
 
                 };
 
@@ -1286,37 +1284,41 @@
                             job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.voidClick = function (job) {
+                    const voidValue = !job.void;
+
                     return job.bulkJob ? DispatchData
-                        .updateBulkJobDetail(job.id,
-                            "Void",
-                            job.void,
-                            job.charge,
-                            FirstName,
-                            ContactID).then(response => {
-                            self.selectBulkJobDetail(job.id);
-                            return response;
-                        }) : DispatchData
-                        .updateJobDetail(job.id,
-                            "Void",
-                            job.void,
-                            job.charge,
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(response => {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
+                            .updateBulkJobDetail(job.id,
+                                "Void",
+                                voidValue,
+                                job.charge,
+                                FirstName,
+                                ContactID).then(response => {
+                                self.selectBulkJobDetail(job.id);
+                                return response;
+                            }).catch(() => toastrService.showErrorToast())
+                        : DispatchData
+                            .updateJobDetail(job.id,
+                                "Void",
+                                voidValue,
+                                job.charge,
+                                FirstName,
+                                ContactID,
+                                job.preBook).then(response => {
+                                self.selectJobDetail(job.id);
+                                return response;
+                            }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.doneClick = function (event, job) {
+                    job.done = !job.done;
+
                     if (!job.completedTime) {
                         const confirm = $mdDialog.confirm()
                             .title('You must set completed time (POD Time) first')
-                            .ariaLabel('Lucky day')
                             .targetEvent(event)
                             .ok('OK');
 
@@ -1329,52 +1331,55 @@
                     if (!job.podName) {
                         const confirm = $mdDialog.confirm()
                             .title('You must set POD Name first')
-                            .ariaLabel('Lucky day')
                             .targetEvent(event)
                             .ok('OK');
 
                         $mdDialog.show(confirm).then(() => {
                             job.done = false;
                             return false;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                     }
 
                     return DispatchData
                         .updatePODDetail(job.jobNo,
                             6,
                             job.podName,
-                            job.completedTime).then(function () {
+                            job.completedTime).then(() => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.deliveredClick = function (job) {
-                    DispatchData
+                    const doneValue = !job.done;
+
+                    return DispatchData
                         .updateJobDetail(job.id,
                             "Delivered",
-                            job.done,
+                            doneValue,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                        self.selectJobDetail(job.id);
-                        return response;
-                    });
+                            job.preBook).then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.airportOnlyClick = function (job) {
-                    DispatchData
+                    const airportOnlyValue = !job.airportOnly;
+
+                    return DispatchData
                         .updateJobDetail(job.id,
                             "AirportOnly",
-                            job.airportOnly,
+                            airportOnlyValue,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                        self.selectJobDetail(job.id);
-                        return response;
-                    });
+                            job.preBook).then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
                 self.trackingMethodClick = function (event, job) {

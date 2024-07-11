@@ -81,7 +81,7 @@
                     <label>Notes</label>
                     <md-button class="md-fab md-raised md-mini" style="float: right;"
                                ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
-                        <md-icon md-font-icon="material-symbols-rounded">add</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
                     </md-button>
                     <div class="value">
                         <pre>{{currentJob.internalNotes}}</pre>
@@ -232,7 +232,7 @@
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 <md-checkbox
                                         ng-disabled="currentJob.locked"
-                                        ng-click="currentJob.direct = !currentJob.direct; jdSvc.directClick(currentJob)"
+                                        ng-click="jdSvc.directClick(currentJob)"
                                         ng-model="currentJob.direct">
                                 </md-checkbox>
                             </div>
