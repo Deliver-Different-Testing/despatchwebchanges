@@ -849,11 +849,8 @@ angular
                     });
                     return;
                 }
-                ;
 
                 return $scope.dispatchJobsContinue(courier, foundCourier, false, job);
-
-
             };
 
             $scope.dispatchJobsContinue = function (courier, foundCourier, offline, job) {
@@ -910,8 +907,8 @@ angular
                             if (!data) {
                                 $ngConfirm("Invalid Job");
                             } else {
-                                var secondJobId = data;
-                                var firstJobId = $scope.currentJob.id;
+                                const secondJobId = data;
+                                const firstJobId = $scope.currentJob.id;
                                 $ngConfirm({
                                     title: 'Swap Delivery Info',
                                     content: `Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`,
@@ -995,7 +992,8 @@ angular
                     $mdDialog.show(
                         $mdDialog.alert()
                             .clickOutsideToClose(true)
-                            .title('Please provide more detailed search criteria.')
+                            .title('Missing Criteria')
+                            .textContent('Please provide more detailed search criteria.')
                             .ok('Understood')
                     ).then(function () {
                         console.log("Search operation cancelled due to insufficient criteria.")
@@ -1480,6 +1478,9 @@ angular
             };
 
             $scope.selectedClientChange = function (item) {
+                if (!item) {
+                    $scope.pickDateService.client = null;
+                }
                 $scope.pickDateService.client = item.id;
             };
 
@@ -1488,9 +1489,10 @@ angular
             };
 
             $scope.selectedCourierChange = function (item) {
-                if(item){
-                    $scope.pickDateService.couriers[0] = item.id;
+                if (!item) {
+                    $scope.pickDateService.couriers[0] = null;
                 }
+                $scope.pickDateService.couriers[0] = item.id;
             };
 
             uCSData.getActiveCouriers().then(function (data) {
