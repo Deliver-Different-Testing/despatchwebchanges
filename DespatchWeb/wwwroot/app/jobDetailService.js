@@ -431,11 +431,11 @@
                             job.speedID === 46 ||
                             job.speedID === 51 ||
                             job.speedID === 52 ||
-                            job.speedID == 124 ||
-                            job.speedID == 125 ||
-                            job.speedID == 150 ||
-                            job.speedID == 151 ||
-                            job.speedID == 152
+                            job.speedID === 124 ||
+                            job.speedID === 125 ||
+                            job.speedID === 150 ||
+                            job.speedID === 151 ||
+                            job.speedID === 152
                         )) {
                         //Truck Job
                         return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
@@ -731,260 +731,263 @@
                             gather.showForm();
                         },
                         200);
-
-
                 };
 
-                self.setupAutoComplete = function () {
-                    console.log("setup autocomplete");
-                    var options = {
-                        minimumInputLength: 1,
-                        ajax: {
-                            url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
-                            delay: 250,
-                            dataType: "json",
-                            data: function (params) {
-                                return {
-                                    query: params.term,
-                                    app_id: "bBPfh2x8Cauun3ygLMAx",
-                                    app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                                    beginHighlight: "<b>",
-                                    endHighlight: "</b>",
-                                    country: "NZL"
-                                };
-                            },
-                            processResults: function (data) {
-                                return {
-                                    results: $.map(data.suggestions,
-                                        function (obj) {
-                                            return {
-                                                id: obj.locationId,
-                                                text: obj.label.split(", ").reverse().join(", ")
-                                            };
-                                        })
-                                };
-                            }
-                        },
-                        escapeMarkup: function (markup) {
-                            return markup;
-                        }
-                    };
 
-                    $("#location").select2(options).on("select2:select",
-                        function (e) {
-                            $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json",
-                                {
-                                    app_id: "bBPfh2x8Cauun3ygLMAx",
-                                    app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                                    locationId: e.params.data.id
-                                }).done(function (data) {
-                                var locn = data.Response.View[0].Result[0].Location;
-                                console.log("Suburb = " + locn.Address.District);
-                                console.log("PostCode = " + locn.Address.PostalCode);
-                                $("#suburb").val(locn.Address.District);
-                                var mappedSub = self.pickSuburbs.find(obj => obj.text === locn.Address.District ||
-                                    obj.alias === locn.Address.District);
-                                if (mappedSub !== undefined) {
-                                    console.log(mappedSub);
-                                    $('#our_suburb').val(mappedSub.id).trigger('change');
-                                } else {
-                                    $('#our_suburb').val(null).trigger('change');
+                self.updateGPS = function (event, currentJob, field) {
+                    // Get coordinates
+                    const getDeliveryLocation = currentJob => currentJob.deliveryLongitude
+                        ? {lat: currentJob.deliveryLatitude, long: currentJob.deliveryLongitude}
+                        : {lat: "", long: ""};
+                    const getPickupLocation = currentJob => currentJob.pickUpLongitude
+                        ? {lat: currentJob.pickUpLatitude, long: currentJob.pickUpLongitude}
+                        : {lat: "", long: ""};
+                    const location = field === "toAddress" ? getDeliveryLocation(currentJob) : getPickupLocation(currentJob);
+                    const {lat, long} = location;
+
+                    const suburbText = field === "toAddress" ? currentJob.toSuburbName : currentJob.fromSuburbName;
+                    console.log("Retrieved job coordinates!");
+
+                    // Dialog
+                    $mdDialog.show({
+                        parent: angular.element(document.body),
+                        targetEvent: event,
+                        templateUrl: "app/components/home/tpls/gpsForm.tpl",
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            currentJob,
+                            addressDetails: {
+                                address: currentJob[field],
+                                lat,
+                                long,
+                                suburb: suburbText,
+                                postCode: currentJob.postCode,
+                                extras: currentJob.extras
+                            },
+                            suburbOptions: self.pickSuburbs
+                        },
+                        controller: GpsDialogController
+                    }).then(_ => console.log('Dialog closed!'));
+
+                    function GpsDialogController($scope, $mdDialog, currentJob, addressDetails, suburbOptions) {
+                        // Functions
+                        const findSuburbByDistrict = district => {
+                            let lowerCaseDistrict = district.toLowerCase();
+                            return self.pickSuburbs.find(localSuburb =>
+                                localSuburb.text.toLowerCase() === lowerCaseDistrict ||
+                                (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
+                            );
+                        };
+
+                        const transformSuggestions = data => data.suggestions.map(obj => ({
+                            id: obj.locationId,
+                            text: obj.label.split(", ").reverse().join(", ")
+                        }));
+
+                        $scope.title = "Update Address and GPS";
+                        $scope.addressDetails = addressDetails;
+                        $scope.ourSuburbSearchText = "";
+                        $scope.addressSearchText = "";
+                        $scope.ourSuburbSelectedItem = findSuburbByDistrict(addressDetails.suburb);
+
+                        $scope.ourSuburbSearch = function (query) {
+                            return query ? suburbOptions.filter(suburb => (suburb.text.toLowerCase()
+                                .indexOf(query.toLowerCase()) !== -1)) : suburbOptions;
+                        };
+
+                        $scope.addressSearchAutocomplete = function (text) {
+                            try {
+                                return DispatchData.autocompleteAddressSearch(text).then(data => {
+                                    return transformSuggestions(data)
+                                });
+                            } catch (error) {
+                                toastrService.showErrorToast(error.message);
+                            }
+                        }
+
+                        $scope.addressSearchItemSelected = function (item) {
+                            try {
+                                DispatchData.getGeoCodeInfomation(item).then(data => {
+                                    const returnedLocation = data.Response.View[0].Result[0].Location;
+
+                                    console.log("Suburb = " + returnedLocation.Address.District);
+                                    console.log("PostCode = " + returnedLocation.Address.PostalCode);
+
+                                    const mappedSub = findSuburbByDistrict(returnedLocation.Address.District);
+
+                                    if (mappedSub !== undefined) {
+                                        console.log(mappedSub);
+                                        $scope.addressDetails.ourSuburbSelectedItem = mappedSub;
+                                    } else {
+                                        $scope.addressDetails.ourSuburbSelectedItem = null;
+                                        toastrService.showWarningToast("Matching suburb could not be found from this address." +
+                                            "Please select manually.")
+                                    }
+
+                                    $scope.addressDetails.filledAddress = returnedLocation.Address.Label;
+                                    $scope.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
+                                    $scope.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+                                    $scope.addressDetails.address = returnedLocation.Address.Label;
+                                    $scope.addressDetails.suburb = returnedLocation.Address.District;
+                                    $scope.addressDetails.postCode = returnedLocation.Address.PostalCode;
+                                });
+                            } catch (error) {
+                                toastrService.showErrorToast(error.message);
+                            }
+                        }
+
+                        $scope.submit = function (addressDetails) {
+                            try {
+                                const job = currentJob;
+
+                                // Assign variable it's autocomplete has been used
+                                if ($scope.ourSuburbSelectedItem.id !== undefined) {
+                                    addressDetails.our_suburb = $scope.ourSuburbSelectedItem.id;
                                 }
 
+                                if (addressDetails.our_suburb === undefined) {
+                                    // Alert the user
+                                    const alert = $mdDialog.alert({
+                                        title: 'Courier Suburb Not Mapped',
+                                        textContent: 'You must pick one of our suburbs to map this address to',
+                                        ok: 'Close'
+                                    });
 
-                                self.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                                self.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                                self.gpsForm.data.address = locn.Address.Label;
-                                self.gpsForm.data.suburb = locn.Address.District;
-                                self.gpsForm.data.postCode = locn.Address.PostalCode;
-                                //var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
-                                //self.map.setCenter(ll);
-                                //self.marker.setPosition(ll);
+                                    // Show the alert dialog
+                                    $mdDialog.show(alert).then(_ => $mdDialog.close());
+                                }
 
-                            });
-                        });
+                                if (field === "toAddress") {
+                                    job.toAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
+                                    if (job.bulkJob) {
+                                        return DispatchData.updateBulkDeliveryAddress(job.id,
+                                            addressDetails.suburb,
+                                            addressDetails.postCode,
+                                            job.toAddress,
+                                            addressDetails.lat,
+                                            addressDetails.long,
+                                            FirstName).then(() => {
+                                            $mdDialog.hide();
+                                        });
+                                    }
 
-                    const suburbOptions = {
-                        minimumInputLength: 1,
-                        data: self.pickSuburbs
-                    };
+                                    job.toSuburbID = parseInt(addressDetails.our_suburb);
+                                } else {
+                                    job.fromAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
+                                    if (job.bulkJob) {
+                                        return DispatchData.updateBulkPickupAddress(job.id,
+                                            addressDetails.suburb,
+                                            addressDetails.postCode,
+                                            job.fromAddress,
+                                            addressDetails.lat,
+                                            addressDetails.long,
+                                            FirstName).then(() => {
+                                            $mdDialog.hide();
+                                        });
+                                    }
 
-                    $("#our_suburb").select2(suburbOptions);
+                                    job.fromSuburbID = parseInt(addressDetails.our_suburb);
+                                }
 
-                    //waitingDialog.hide();
-                };
+                                const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
+                                    job.fromSuburbID === 112 && job.toSuburbID === 112 ||
+                                    job.fromSuburbID === 480 && job.toSuburbID === 480;
 
-                self.updateGPS = function (currentJob, field, fromRightClick) {
-                    waitingDialog.show();
-                    var lat;
-                    var long;
-                    var q;
-                    if (field === "toAddress") {
+                                return self.rateJob(job).then(rate => {
+                                    const callData = {
+                                        "call": "updateJobData",
+                                        "addressField": field,
+                                        "lat": addressDetails.lat,
+                                        "long": addressDetails.long,
+                                        "fromSuburbId": job.fromSuburbID,
+                                        "toSuburbId": job.toSuburbID,
+                                        "fromAddress": job.fromAddress,
+                                        "toAddress": job.toAddress,
+                                        "rate": rate,
+                                        "jobID": job.id,
+                                        "CBD": pedal
+                                    };
 
+                                    console.log(callData);
 
-                        if (currentJob.deliveryLongitude) {
-
-                            lat = currentJob.deliveryLatitude;
-                            long = currentJob.deliveryLongitude;
-                            //q = $("#gpsMap").attr("data-src") + lat + "," + long;
-                        } else {
-                            lat = "";
-                            long = "";
-                            //q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.toAddress);
+                                    if (field === "toAddress") {
+                                        DispatchData.updateDeliveryAddress(callData.jobID,
+                                            callData.toSuburbId,
+                                            callData.toAddress,
+                                            callData.lat,
+                                            callData.long,
+                                            callData.CBD,
+                                            Number(callData.rate.replace(/[^0-9.-]+/g, "")),
+                                            FirstName,
+                                            job.preBook).then(() => {
+                                            $mdDialog.hide();
+                                        });
+                                    } else {
+                                        return DispatchData.updatePickupAddress(callData.jobID,
+                                            callData.fromSuburbId,
+                                            callData.fromAddress,
+                                            callData.lat,
+                                            callData.long,
+                                            callData.CBD,
+                                            Number(callData.rate.replace(/[^0-9.-]+/g, "")),
+                                            FirstName,
+                                            job.preBook).then(() => {
+                                            $mdDialog.hide();
+                                        });
+                                    }
+                                });
+                            } catch (error) {
+                                toastrService.showErrorToast(error.message)
+                            }
                         }
-                    } else {
 
-                        if (currentJob.pickUpLongitude) {
-                            lat = currentJob.pickUpLatitude;
-                            long = currentJob.pickUpLongitude;
-                            //q = $("#gpsMap").attr("data-src") + lat + "," + long;
-                        } else {
-                            lat = "";
-                            long = "";
-                            //q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.fromAddress);
-                        }
+                        $scope.copyGpsAddress = address => $scope.addressSearchText = address;
+
+                        $scope.moveMarker = function (event) {
+                            var latlng = event.latLng;
+                            //GeoCoder.geocode({ location: latlng })
+                            //    .then(function (result) {
+                            //        $scope.marker.setPosition(latlng);
+                            //        self.gpsForm.placeChanged(result[0]);
+                            //    });
+                        };
+
+                        $scope.markerDragend = () => {
+                            //Geo coder for drag marker
+                            const location = self.marker.getPosition();
+
+                            try {
+                                DispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
+                                    const returnedLocation = data.Response.View[0].Result[0].Location;
+                                    $scope.addressDetails.address = returnedLocation.Address.Label;
+
+                                    console.log("Suburb = " + returnedLocation.Address.District);
+                                    console.log("PostCode = " + returnedLocation.Address.PostalCode);
+
+                                    $scope.addressDetails.suburb = returnedLocation.Address.District;
+
+                                    const mappedSub =
+                                        self.pickSuburbs.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
+
+                                    if (mappedSub !== undefined) {
+                                        console.log(mappedSub);
+                                        $scope.ourSuburbSelectedItem = mappedSub;
+                                    } else {
+                                        $scope.ourSuburbSelectedItem = null;
+                                    }
+
+                                    $scope.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
+                                    $scope.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+                                });
+                            } catch (error) {
+                                toastrService.showErrorToast(error.message);
+                            }
+                        };
+
+                        $scope.cancel = () => $mdDialog.cancel();
                     }
 
-                    console.log(currentJob.pickUpLatitude);
-                    //console.log(q);
-                    // $("#gpsMap").attr("src", q);
-
-
-                    self.gpsForm.data = {
-                        "address": currentJob[field],
-                        "lat": lat,
-                        "long": long
-                    };
-                    self.gpsForm.onSubmit = function (location) {
-
-                        var job = currentJob;
-                        if (self.gpsForm.data.our_suburb === undefined) {
-                            alert("You must pick one of our suburbs to map this address to");
-                            return self.gpsFormPromise;
-                        }
-
-
-                        if (field === "toAddress") {
-                            job.toAddress = (self.gpsForm.data.extras || '').length > 1 ? self.gpsForm.data.extras + ',' + self.gpsForm.data.address : self.gpsForm.data.address;
-                            if (job.bulkJob) {
-                                return DispatchData.updateBulkDeliveryAddress(job.id,
-                                    self.gpsForm.data.suburb,
-                                    self.gpsForm.data.postCode,
-                                    job.toAddress,
-                                    self.gpsForm.data.lat,
-                                    self.gpsForm.data.long,
-                                    FirstName).then(function () {
-                                    $(".gpsForm").hide(0);
-
-                                });
-                            }
-                            //if (!job.bulkJob && job.toSuburbID.toString() !== self.gpsForm.data.our_suburb) {
-                            //    //ToDo create change event
-                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                            //        job.clientID,
-                            //        job.contactName,
-                            //        ContactID,
-                            //        job.courierData.courierID,
-                            //        job.id,
-                            //        job.jobType,
-                            //        FirstName);
-                            //}
-                            job.toSuburbID = parseInt(self.gpsForm.data.our_suburb);
-                        } else {
-                            job.fromAddress = (self.gpsForm.data.extras || '').length > 1 ? self.gpsForm.data.extras + ',' + self.gpsForm.data.address : self.gpsForm.data.address;
-                            if (job.bulkJob) {
-                                return DispatchData.updateBulkPickupAddress(job.id,
-                                    self.gpsForm.data.suburb,
-                                    self.gpsForm.data.postCode,
-                                    job.fromAddress,
-                                    self.gpsForm.data.lat,
-                                    self.gpsForm.data.long,
-                                    FirstName).then(function () {
-                                    $(".gpsForm").hide(0);
-
-
-                                });
-                            }
-
-                            //if (!job.bulkJob && job.fromSuburbID.toString() !== self.gpsForm.data.our_suburb) {
-                            //    //ToDo create change event
-                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                            //        job.clientID,
-                            //        job.contactName,
-                            //        ContactID,
-                            //        job.courierData.courierID,
-                            //        job.id,
-                            //        job.jobType,
-                            //        FirstName);
-                            //}
-                            job.fromSuburbID = parseInt(self.gpsForm.data.our_suburb);
-                        }
-                        var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
-                            job.fromSuburbID === 112 && job.toSuburbID === 112 ||
-                            job.fromSuburbID === 480 && job.toSuburbID === 480;
-
-                        return self.rateJob(job).then(function (rate) {
-                            //console.log(rate);
-                            //if (rate !== job.charge) {
-                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                            //        job.clientID,
-                            //        job.contactName,
-                            //        ContactID,
-                            //        job.courierData.courierID,
-                            //        job.id,
-                            //        job.jobType,
-                            //        FirstName);
-                            //}
-                            var callData = {
-                                "call": "updateJobData",
-                                "addressField": field,
-                                "lat": self.gpsForm.data.lat,
-                                "long": self.gpsForm.data.long,
-                                "fromSuburbId": job.fromSuburbID,
-                                "toSuburbId": job.toSuburbID,
-                                "fromAddress": job.fromAddress,
-                                "toAddress": job.toAddress,
-                                "rate": rate,
-                                "jobID": currentJob.id,
-                                "CBD": pedal
-                            };
-                            console.log(callData);
-                            if (field === "toAddress") {
-                                return DispatchData.updateDeliveryAddress(callData.jobID,
-                                    callData.toSuburbId,
-                                    callData.toAddress,
-                                    callData.lat,
-                                    callData.long,
-                                    callData.CBD,
-                                    Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName,
-                                    job.preBook).then(function () {
-                                    $(".gpsForm").hide(0);
-
-                                });
-                            } else {
-                                return DispatchData.updatePickupAddress(callData.jobID,
-                                    callData.fromSuburbId,
-                                    callData.fromAddress,
-                                    callData.lat,
-                                    callData.long,
-                                    callData.CBD,
-                                    Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName,
-                                    job.preBook).then(function () {
-                                    $(".gpsForm").hide(0);
-                                    var j = currentJob;
-
-                                });
-                            }
-
-                        });
-
-
-                    };
-                    self.gpsForm.cancel = function () {
-                        $(".gpsForm").hide(0);
-                    };
                     self.gpsForm.placeChanged = function (place) {
                         if (place !== null) {
                             self.place = place;
@@ -999,61 +1002,8 @@
                             self.gpsForm.data.postCode = self.place.address_components
                                 .find(x => x.types[0] === "postal_code").long_name;
                         }
+
                         self.map.setCenter(self.place.geometry.location);
-                    };
-                    self.gpsForm.moveMarker = function (event) {
-                        var latlng = event.latLng;
-                        //GeoCoder.geocode({ location: latlng })
-                        //    .then(function (result) {
-                        //        $scope.marker.setPosition(latlng);
-                        //        self.gpsForm.placeChanged(result[0]);
-                        //    });
-                    };
-                    self.gpsForm.markerDragend = function () {
-                        //Geo coder for drag marker
-                        var location = self.marker.getPosition();
-                        $.getJSON("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json",
-                            {
-                                app_id: "bBPfh2x8Cauun3ygLMAx",
-                                app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                                mode: "retrieveAddresses",
-                                prox: location.lat().toString() + "," + location.lng().toString() + "," + "250"
-                            }).done(function (data) {
-                            var locn = data.Response.View[0].Result[0].Location;
-                            self.gpsForm.data.address = locn.Address.Label;
-                            console.log("Suburb = " + locn.Address.District);
-                            console.log("PostCode = " + locn.Address.PostalCode);
-                            $("#suburb").val(locn.Address.District);
-                            var mappedSub =
-                                self.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
-                            if (mappedSub !== undefined) {
-                                console.log(mappedSub);
-                                $('#our_suburb').val(mappedSub.id).trigger('change');
-                            } else {
-                                $('#our_suburb').val(null).trigger('change');
-                            }
-
-
-                            self.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                            self.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                        });
-
-                    };
-
-
-                    self.gpsForm.showForm(fromRightClick);
-
-
-                    self.copyGpsAddress = function () {
-                        const $location = $('#location');
-                        $location.select2('open');
-                        let search = $location.data('select2').dropdown.$search;
-                        if (self.gpsForm.data.address.indexOf(',') > 0) {
-                            search.val(self.gpsForm.data.address.split(',')[1].split());
-                        } else {
-                            search.val(self.gpsForm.data.address);
-                        }
-                        search.trigger("input");
                     };
                 };
 
@@ -1414,13 +1364,11 @@
                             job: job,
                             options: options
                         },
-                        controller: DialogController
-                    }).then(function () {
-                        console.log('Dialog closed!')
-                    });
+                        controller: SelectDialogController
+                    }).then(_ => console.log('Dialog closed!'));
                 };
 
-                function DialogController($scope, $mdDialog, id, fieldName, title, job, options) {
+                function SelectDialogController($scope, $mdDialog, id, fieldName, title, job, options) {
                     $scope.title = title;
                     $scope.job = job;
                     $scope.fieldName = fieldName;

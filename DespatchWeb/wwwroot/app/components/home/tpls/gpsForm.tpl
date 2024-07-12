@@ -1,74 +1,101 @@
-
-<div class="gpsForm">
-
-  <div class="gps-box">
-    UPDATE ADDRESS & GPS
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-md-12">
-          <div class="form-group">
-            <label for="jobNum">Listed Address:</label>
-            <div class="input-group">
-              <input type="text" ng-model="jdSvc.gpsForm.data.address" class="form-control" />
-              <div class="input-group-btn">
-                <button class="btn btn-default" type="button" ng-click="jdSvc.copyGpsAddress()">Copy to search</button>
-              </div>
+<md-dialog aria-label="Update Address and GPS" style="width: 50%;">
+    <form ng-cloak>
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <h2>{{ title }}</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="cancel()">
+                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                        close
+                    </md-icon>
+                </md-button>
             </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-              <label for="jobNum">Latitude:</label>
-              <input type="text" ng-model="jdSvc.gpsForm.data.lat" class="form-control" />
+        </md-toolbar>
+
+        <md-dialog-content>
+            <div class="md-dialog-content">
+
+                <div layout-gt-xs="row">
+                    <md-input-container class="md-block" flex-gt-xs>
+                        <label for="address">Address</label>
+                        <input id="address" ng-model="addressDetails.address">
+                    </md-input-container>
+
+                    <md-button class="md-fab md-mini md-raised" ng-click="copyGpsAddress(addressDetails.address)">
+                        <md-icon md-font-set="material-symbols-outlined">content_copy</md-icon>
+                        <md-tooltip md-direction="bottom">Copy To Search</md-tooltip>
+                    </md-button>
+                </div>
+
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="lat">Latitude</label>
+                        <input id="lat" ng-model="addressDetails.lat">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="long">Longtitude</label>
+                        <input id="long" ng-model="addressDetails.long">
+                    </md-input-container>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="suburb">Suburb</label>
+                        <input id="suburb" ng-model="addressDetails.suburb">
+                    </md-input-container>
+
+                    <md-autocomplete class="md-block" flex-gt-sm
+                                     md-floating-label="Our Suburb"
+                                     md-item-text="item.text"
+                                     md-items="item in ourSuburbSearch(ourSuburbSearchText)"
+                                     md-search-text="ourSuburbSearchText"
+                                     md-selected-item="ourSuburbSelectedItem">
+                        <md-item-template>
+                            <span md-highlight-flags="^i" md-highlight-text="searchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No matches found for "{{searchText}}" in Suburb.
+                        </md-not-found>
+                    </md-autocomplete>
+                </div>
+
+                <md-input-container class="md-block">
+                    <label for="extras">Address Extras</label>
+                    <input id="extras" ng-model="addressDetails.extras">
+                </md-input-container>
+
+                <md-autocomplete class="md-block" flex-gt-sm
+                                 md-floating-label="Search Address"
+                                 md-item-text="item.text"
+                                 md-items="item in addressSearchAutocomplete(addressSearchText)"
+                                 md-min-length="3"
+                                 md-search-text="addressSearchText"
+                                 md-selected-item="addressDetails.filledAddress"
+                                 md-selected-item-change="addressSearchItemSelected(item)">
+                    <md-item-template>
+                        <span md-highlight-flags="^i" md-highlight-text="addressSearchText">{{item.text}}</span>
+                    </md-item-template>
+                    <md-not-found>
+                        No addresses matching "{{addressSearchText}}" were found.
+                    </md-not-found>
+                </md-autocomplete>
+
+                <label>Map</label>
+                <ng-map center="[{{addressDetails.lat || -36.850657}}, {{addressDetails.long ||  174.764660}}]"
+                        id="map"
+                        on-rightclick="moveMarker()">
+                    <marker draggable="true" on-dragend="markerDragend()"
+                            position="{{addressDetails.lat}}, {{addressDetails.long}}"></marker>
+                </ng-map>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-              <label for="jobNum">Longtitude:</label>
-              <input type="text" ng-model="jdSvc.gpsForm.data.long" class="form-control" />
-            </div>
-        </div>
-		<div class="col-md-6">
-            <div class="form-group">
-              <label>Suburb:</label>
-              <input type="text" id="suburb" ng-model="jdSvc.gpsForm.data.suburb" class="form-control" />
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-              <label>Mapped to (our Suburb):</label><i ng-if="jdSvc.gpsForm.data.our_suburb === undefined" class="fa fa-exclamation"></i>
-              <select id="our_suburb" data-width="100%" ng-model="jdSvc.gpsForm.data.our_suburb" ng-required="true"></select>
-            </div>
-        </div>
-        <div class="col-md-12">
-            <label>Address Extras:</label>
-            <input type="text" id="extras" ng-model="jdSvc.gpsForm.data.extras" class="form-control" />
-        </div>
-        <div class="col-md-12">
+        </md-dialog-content>
 
-          <div class="form-group">
-            <label for="jobNum">Search Address:</label>
-            <!--<input type="text" id="gpsSearch" ng-map-autocomplete ng-model="jdSvc.gpsForm.search" options='{"watchEnter":true}' ng-model-options='{"debounce": 1000}' details="jdSvc.gpsForm.details" class="form-control" />-->
-			<select id="location" data-placeholder="Enter your address" data-width="100%"></select>
-          </div>
-
-        </div>
-
-        <div class="col-md-12">
-
-          <div class="form-group">
-            <label for="type">Map:</label>/
-			 <ng-map id="map" center="[{{jdSvc.gpsForm.data.lat || -36.850657}}, {{jdSvc.gpsForm.data.long ||  174.764660}}]" on-rightclick="jdSvc.gpsForm.moveMarker()">
-			 <marker position="{{jdSvc.gpsForm.data.lat}}, {{jdSvc.gpsForm.data.long}}" draggable="true" on-dragend="jdSvc.gpsForm.markerDragend()"></marker>
-			 </ng-map>
-
-          </div>
-
-        <button class="btn btn-primary"  promise-btn ng-click="jdSvc.gpsForm.submit(jdSvc.gpsForm.details.geometry.location)">UPDATE</button>
-        <button class="btn btn-default" ng-click="jdSvc.gpsForm.cancel()">Cancel</button>
-
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+        <md-dialog-actions layout="row" layout-align="center center">
+            <md-button class="md-raised md-primary" ng-click="submit(addressDetails)">
+                Update
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

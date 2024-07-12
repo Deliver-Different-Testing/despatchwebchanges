@@ -155,7 +155,9 @@ angular
             showForm: function () {
                 $(".gatherForm").show(0,
                     function () {
-                        setTimeout(function () { $(".gatherForm .focusMe").focus(); }, 100);
+                        setTimeout(function () {
+                            $(".gatherForm .focusMe").focus();
+                        }, 100);
                     });
             },
             submitValue: "Save",
@@ -163,9 +165,9 @@ angular
         };
 
         $scope.jdSvc.setGather($scope.gather);
-        $scope.allCouriers = { display: false, includeUA: false };
-        $scope.mapZoom = { display: true };
-        $scope.supportSettings = { autoRefresh: true };
+        $scope.allCouriers = {display: false, includeUA: false};
+        $scope.mapZoom = {display: true};
+        $scope.supportSettings = {autoRefresh: true};
 
         $scope.options = {
             "detail": {
@@ -830,7 +832,7 @@ angular
                 $scope.getClearListEnvelope(id);
             }
 
-            $scope.setFilters({ 'clearList': area });
+            $scope.setFilters({'clearList': area});
         };
 
         $scope.selectForDispatch = function (job) {
@@ -2122,7 +2124,6 @@ angular
         };
 
 
-
         $scope.setFilters = function (data) {
             setTimeout(function () {
                 if (data.status) {
@@ -2134,8 +2135,7 @@ angular
                     var selected = $("#area-group > .btn.topBarActive").length;
                     if (selected > 1) {
                         $scope.jobFilters.area += "," + data.area;
-                    }
-                    else {
+                    } else {
                         $scope.jobFilters.area = data.area;
                     }
 
@@ -2145,8 +2145,7 @@ angular
                     var clSelected = $("#clearLists").find('.listActive').length;
                     if (clSelected > 1) {
                         $scope.jobFilters.area += "," + data.clearList;
-                    }
-                    else {
+                    } else {
                         $scope.jobFilters.area = data.clearList;
                     }
                 }
@@ -2212,79 +2211,78 @@ angular
             });
 
 
-
         };
 
         //Select Job
         $scope.selectJob = function (job, clear) {
 
             setTimeout(function () {
-                var jobRow = null;
-                $scope.selectedJobs = [];
-                $scope.currentSupport = null;
+                    var jobRow = null;
+                    $scope.selectedJobs = [];
+                    $scope.currentSupport = null;
 
-                $(".activeTable .active").each(function () {
+                    $(".activeTable .active").each(function () {
 
-                    //$(this).hide();
-                    $(this).find(".selectjob").click();
+                        //$(this).hide();
+                        $(this).find(".selectjob").click();
 
-                    $scope.selectedJobs.push($scope.jobForDispatch.ID);
-                    jobRow = $(this);
-                });
-                console.log("selectJob");
-                $scope.currentJob = job;
-                $scope.$apply();
-
-                console.log(job);
-
-                jdSvc.setJob($scope.currentJob);
-
-                DispatchData.getActiveCouriers().then(function (data) {
-                    $scope.pickCouriers = data;
-                });
-
-                if ($scope.currentJob.rootParentID) {
-                    DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                        //data = data.filter(item => item.id !== $scope.currentJob.id);
-                        $scope.currentJob.relatedJobs = data;
+                        $scope.selectedJobs.push($scope.jobForDispatch.ID);
+                        jobRow = $(this);
                     });
-                }
+                    console.log("selectJob");
+                    $scope.currentJob = job;
+                    $scope.$apply();
+
+                    console.log(job);
+
+                    jdSvc.setJob($scope.currentJob);
+
+                    DispatchData.getActiveCouriers().then(function (data) {
+                        $scope.pickCouriers = data;
+                    });
+
+                    if ($scope.currentJob.rootParentID) {
+                        DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                            //data = data.filter(item => item.id !== $scope.currentJob.id);
+                            $scope.currentJob.relatedJobs = data;
+                        });
+                    }
 
 
-                if (job.courier === null) {
+                    if (job.courier === null) {
 
-                    $scope.jobGroups = false;
-                    //$scope.jobsCurrentList = false;
-                    $scope.getPotentialCouriers(job.id);
-                    $scope.potentialCouriersSelection = " for Job " + job.jobNo;
-                    //$scope.getGroupedJobs();
-                    //$scope.groupJobsSelection = " for Job " + job.jobNo;
-                    //$scope.currentWorkSelection = "";
-
-
-                } else {
-                    $scope.potentialCouriers = false;
-                }
-                $scope.currentCourier = null;
-                $scope.currentSelection = " for Job " + job.jobNo;
-
-                var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                displayPickupPoints(undespatchedData, true, job);
-
-                if (job.courier !== null) {
-                    $scope.selectCourier(job.courierData);
-                } else {
-                    var jobs = [job];
-
-                    //highlightJobPoints(jobs);
-                    displayRoutePoints(jobs, false, $scope.mapZoom.display);
-                }
-                if (!document.activeElement.classList.contains("lateCallField")) {
-                    $(jobRow).find(".dispatchField").focus();
-                }
+                        $scope.jobGroups = false;
+                        //$scope.jobsCurrentList = false;
+                        $scope.getPotentialCouriers(job.id);
+                        $scope.potentialCouriersSelection = " for Job " + job.jobNo;
+                        //$scope.getGroupedJobs();
+                        //$scope.groupJobsSelection = " for Job " + job.jobNo;
+                        //$scope.currentWorkSelection = "";
 
 
-            },
+                    } else {
+                        $scope.potentialCouriers = false;
+                    }
+                    $scope.currentCourier = null;
+                    $scope.currentSelection = " for Job " + job.jobNo;
+
+                    var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    displayPickupPoints(undespatchedData, true, job);
+
+                    if (job.courier !== null) {
+                        $scope.selectCourier(job.courierData);
+                    } else {
+                        var jobs = [job];
+
+                        //highlightJobPoints(jobs);
+                        displayRoutePoints(jobs, false, $scope.mapZoom.display);
+                    }
+                    if (!document.activeElement.classList.contains("lateCallField")) {
+                        $(jobRow).find(".dispatchField").focus();
+                    }
+
+
+                },
                 0);
 
 
@@ -2840,19 +2838,23 @@ angular
 
 
                 setTimeout(function () {
-                    $(document).ready(function (event) {
-                        //$("#box-supports").find(".loading").fadeOut();
-                        if ($scope.currentSupport) {
-                            $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
-                        }
-                    });
+                        $(document).ready(function (event) {
+                            //$("#box-supports").find(".loading").fadeOut();
+                            if ($scope.currentSupport) {
+                                $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
+                            }
+                        });
 
-                },
+                    },
                     100);
 
 
-                setTimeout(function () { sizeHeadings($("#supports").parents(".column")); }, 1000);
-                setTimeout(function () { sizeHeadings($("#supports").parents(".column")); }, 2000);
+                setTimeout(function () {
+                    sizeHeadings($("#supports").parents(".column"));
+                }, 1000);
+                setTimeout(function () {
+                    sizeHeadings($("#supports").parents(".column"));
+                }, 2000);
             });
         }
 
@@ -3424,6 +3426,7 @@ angular
                     var mappedSub = $scope.jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
                     if (mappedSub !== undefined) {
                         console.log(mappedSub);
+                        $scope.jdSvc.gpsForm.data.our_suburb.id = mappedSub;
                         $('#our_suburb').val(mappedSub.id).trigger('change');
                     } else {
                         $('#our_suburb').val(null).trigger('change');
@@ -3440,10 +3443,11 @@ angular
                 });
             });
 
-            var suburbOptions = {
+
+            const suburbOptions = {
                 minimumInputLength: 1,
                 data: $scope.jdSvc.pickSuburbs
-            };
+            }
 
             $("#our_suburb").select2(suburbOptions);
 
@@ -3451,6 +3455,51 @@ angular
         };
 
         //$scope.onMapReady();
+
+        $scope.suburbOptions = {
+            minimumInputLength: 1,
+            data: $scope.jdSvc.pickSuburbs
+        }
+
+        $scope.selectedItemChange = function (item) {
+            DispatchData.getGeoCode(item).then(data => {
+                const location = data.Response.View[0].Result[0].Location;
+
+                console.log("Suburb = " + location.Address.District);
+                console.log("PostCode = " + location.Address.PostalCode);
+
+                $("#suburb").val(location.Address.District);
+
+                const mappedSub = $scope.jdSvc.pickSuburbs.find(obj => obj.text === location.Address.District || obj.alias === location.Address.District);
+                if (mappedSub !== undefined) {
+                    console.log(mappedSub);
+                    $scope.jdSvc.gpsForm.data.our_suburb.id = mappedSub;
+                    $('#our_suburb').val(mappedSub.id).trigger('change');
+                } else {
+                    $('#our_suburb').val(null).trigger('change');
+                }
+
+                $scope.jdSvc.gpsForm.data.lat = location.DisplayPosition.Latitude;
+                $scope.jdSvc.gpsForm.data.long = location.DisplayPosition.Longitude;
+
+                $scope.jdSvc.gpsForm.data.address = location.Address.Label;
+                const latLng = new google.maps.LatLng(location.DisplayPosition.Latitude, location.DisplayPosition.Longitude);
+                $scope.map.setCenter(latLng);
+                $scope.marker.setPosition(latLng);
+
+            });
+        }
+
+
+        $scope.querySearch = function (query) {
+            return DispatchData.autocompleteDecoder(query).then(result => {
+                const data = result.data;
+                return data.suggestions.map(obj => ({
+                    id: obj.locationId,
+                    display: obj.label.split(", ").reverse().join(", ")
+                }));
+            });
+        }
 
 
         $scope.setSplitJobMeetingPoint = function () {

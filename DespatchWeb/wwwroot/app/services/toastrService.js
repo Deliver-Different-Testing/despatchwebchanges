@@ -7,13 +7,19 @@ class ToastrService {
         if (!errorMessage) {
             errorMessage = "An unexpected error occurred. Please try again";
         }
-        console.error(errorMessage);
+
+        console.log('Error:', errorMessage);
         this.showToast(errorMessage);
     }
 
-    showSuccessToast(message) {
-        console.log(message);
-        this.showToast(message);
+    showSuccessToast(successMessage) {
+        console.log('Success:', successMessage);
+        this.showToast(successMessage);
+    }
+
+    showWarningToast(warningMessage) {
+        console.log('Warning:', warningMessage);
+        this.showToast(warningMessage);
     }
 
     showToast(message) {

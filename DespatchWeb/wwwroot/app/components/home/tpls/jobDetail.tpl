@@ -15,7 +15,7 @@
                         </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
                              context-menu="detailAddressMenu" data-field="fromAddress"
-                             ng-click="!currentJob.locked && jdSvc.updateGPS(currentJob, 'fromAddress')">
+                             ng-click="!currentJob.locked && jdSvc.updateGPS($event, currentJob, 'fromAddress')">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">From Address:</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 {{currentJob.fromAddress}}
@@ -48,7 +48,7 @@
                         </div>
                         <div class="field" ng-class="currentJob.deliveryLongitude ? '' : 'red'"
                              context-menu="detailAddressMenu" data-field="toAddress"
-                             ng-click="!currentJob.locked && jdSvc.updateGPS(currentJob,'toAddress')">
+                             ng-click="!currentJob.locked && jdSvc.updateGPS($event, currentJob,'toAddress')">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">To Address:</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.toAddress}}
                             </div>
