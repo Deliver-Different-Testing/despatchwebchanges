@@ -763,7 +763,7 @@
                                 long,
                                 suburb: suburbText,
                                 postCode: currentJob.postCode,
-                                extras: currentJob.extras
+                                extras: currentJob[field] && currentJob[field].includes(',') ? currentJob[field].split(',')[0] : ''
                             },
                             suburbOptions: self.pickSuburbs
                         },
