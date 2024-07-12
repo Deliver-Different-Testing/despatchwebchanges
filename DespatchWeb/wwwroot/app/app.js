@@ -22,9 +22,15 @@ angular
         'cp.ngConfirm'
 	])
 	.config(function($mdThemingProvider) {
+		// Material Theme
 		$mdThemingProvider.theme('default')
 			.primaryPalette('yellow')
 			.accentPalette('grey');
+
+		// Register Toast themes
+		$mdThemingProvider.theme("success-toast")
+		$mdThemingProvider.theme("warning-toast")
+		$mdThemingProvider.theme("error-toast")
 	})
 	.directive('rightClick', function () {
 

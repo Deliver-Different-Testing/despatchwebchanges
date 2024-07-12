@@ -9,25 +9,26 @@ class ToastrService {
         }
 
         console.log('Error:', errorMessage);
-        this.showToast(errorMessage);
+        this.showToast(errorMessage, "error");
     }
 
     showSuccessToast(successMessage) {
         console.log('Success:', successMessage);
-        this.showToast(successMessage);
+        this.showToast(successMessage, "success");
     }
 
     showWarningToast(warningMessage) {
         console.log('Warning:', warningMessage);
-        this.showToast(warningMessage);
+        this.showToast(warningMessage, "warning");
     }
 
-    showToast(message) {
+    showToast(message, theme) {
         this.$mdToast.show(
             this.$mdToast.simple()
                 .textContent(message)
                 .position('top right')
-                .hideDelay(5000)
+                .hideDelay(10000)
+                .theme(theme + "-toast")
         );
     }
 }
