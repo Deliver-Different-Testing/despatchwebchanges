@@ -420,7 +420,7 @@
                 };
 
                 self.rateJob = function (job) {
-                    var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
+                    const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
                         job.fromSuburbID === 112 && job.toSuburbID === 112 ||
                         job.fromSuburbID === 480 && job.toSuburbID === 480;
                     if (job.size.id === 4 &&
@@ -869,6 +869,7 @@
                                             addressDetails.long,
                                             FirstName).then(() => {
                                             $mdDialog.hide();
+                                            toastrService.showSuccessToast("Address successfully updated")
                                         });
                                     }
 
@@ -884,6 +885,7 @@
                                             addressDetails.long,
                                             FirstName).then(() => {
                                             $mdDialog.hide();
+                                            toastrService.showSuccessToast("Address successfully updated")
                                         });
                                     }
 
@@ -922,6 +924,7 @@
                                             FirstName,
                                             job.preBook).then(() => {
                                             $mdDialog.hide();
+                                            toastrService.showSuccessToast("Address successfully updated")
                                         });
                                     } else {
                                         return DispatchData.updatePickupAddress(callData.jobID,
@@ -934,6 +937,7 @@
                                             FirstName,
                                             job.preBook).then(() => {
                                             $mdDialog.hide();
+                                            toastrService.showSuccessToast("Address successfully updated")
                                         });
                                     }
                                 });
@@ -985,26 +989,23 @@
                             }
                         };
 
+                        $scope.placeChanged = function (place) {
+                            try {
+                                $scope.addressDetailsa.lat = place.geometry.location.lat();
+                                $scope.addressDetails.long = place.geometry.location.lng();
+                                if (place.address_components.find(x => x.types[0] === "postal_code")) {
+                                    self.gpsForm.data.postCode = place.address_components
+                                        .find(x => x.types[0] === "postal_code").long_name;
+                                }
+
+                                $scope.map.setCenter(place.geometry.location);
+                            } catch (error) {
+                                toastrService.showErrorToast(error.message);
+                            }
+                        };
+
                         $scope.cancel = () => $mdDialog.cancel();
                     }
-
-                    self.gpsForm.placeChanged = function (place) {
-                        if (place !== null) {
-                            self.place = place;
-                        } else {
-                            self.place = this.getPlace();
-                        }
-
-                        //self.gpsForm.address = $scope.place.formatted_address;
-                        self.gpsForm.data.lat = self.place.geometry.location.lat();
-                        self.gpsForm.data.long = self.place.geometry.location.lng();
-                        if (self.place.address_components.find(x => x.types[0] === "postal_code")) {
-                            self.gpsForm.data.postCode = self.place.address_components
-                                .find(x => x.types[0] === "postal_code").long_name;
-                        }
-
-                        self.map.setCenter(self.place.geometry.location);
-                    };
                 };
 
                 self.unlockJob = function (job) {
