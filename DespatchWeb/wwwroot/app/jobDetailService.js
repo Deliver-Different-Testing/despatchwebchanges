@@ -755,14 +755,18 @@
                                 long,
                                 suburb: suburbText,
                                 postCode: currentJob.postCode,
-                                extras: currentJob[field] && currentJob[field].includes(',') ? currentJob[field].split(',')[0] : ''
                             },
                             suburbOptions: self.pickSuburbs
                         },
                         controller: GpsDialogController
                     }).then(_ => console.log('Dialog closed!'));
 
-                    function GpsDialogController($scope, $mdDialog, NgMap, currentJob, addressDetails, suburbOptions) {
+                    function GpsDialogController($scope, $timeout, $mdDialog, NgMap, currentJob, addressDetails, suburbOptions) {
+                        // Timeout to display map
+                        $timeout(() => {
+                            $scope.mapDisplay = true;
+                        }, 500);
+
                         // Functions
                         const findSuburbByDistrict = district => {
                             let lowerCaseDistrict = district.toLowerCase();

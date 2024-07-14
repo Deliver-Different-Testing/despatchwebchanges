@@ -1,4 +1,4 @@
-<md-dialog aria-label="Update Address and GPS" style="width: 50%;">
+<md-dialog aria-label="Update Address and GPS" style="width: 50%; height: 80%;">
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
@@ -85,6 +85,7 @@
                 <label>Map</label>
                 <ng-map center="{{addressDetails.lat}}, {{addressDetails.long}}"
                         id="map"
+                        ng-if="mapDisplay"
                         on-rightclick="moveMarker($event)">
                     <marker draggable="true" on-dragend="markerDragend($event)"
                             position="{{addressDetails.lat}}, {{addressDetails.long}}"></marker>
