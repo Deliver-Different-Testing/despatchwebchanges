@@ -1068,7 +1068,7 @@
                 };
 
                 self.vanOkClick = function (job) {
-                    const vanOkValue = !job.vanOk;
+                    const vanOkValue = !job.vanOK;
 
                     return DispatchData
                         .updateJobDetail(job.id,
