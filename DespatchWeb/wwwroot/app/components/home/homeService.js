@@ -473,7 +473,7 @@ angular
                         }
                     }).then(response => response.data);
                 },
-                getGeoCodeInfomation: function (item) {
+                getGeoCodeInformation: function (item) {
                     return $http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
                         params: {
                             app_id: "bBPfh2x8Cauun3ygLMAx",

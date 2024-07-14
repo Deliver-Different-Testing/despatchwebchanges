@@ -83,10 +83,10 @@
                 </md-autocomplete>
 
                 <label>Map</label>
-                <ng-map center="[{{addressDetails.lat || -36.850657}}, {{addressDetails.long ||  174.764660}}]"
+                <ng-map center="{{addressDetails.lat}}, {{addressDetails.long}}"
                         id="map"
-                        on-rightclick="moveMarker()">
-                    <marker draggable="true" on-dragend="markerDragend()"
+                        on-rightclick="moveMarker($event)">
+                    <marker draggable="true" on-dragend="markerDragend($event)"
                             position="{{addressDetails.lat}}, {{addressDetails.long}}"></marker>
                 </ng-map>
             </div>

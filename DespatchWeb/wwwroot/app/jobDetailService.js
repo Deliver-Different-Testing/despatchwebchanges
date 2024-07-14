@@ -668,7 +668,7 @@
                                         job.charge,
                                         FirstName,
                                         ContactID,
-                                        job.preBook).then(function (response) {
+                                        job.preBook).then(response => {
                                         if (job.dgDocumentation !== dgdocs) {
                                             job.dgDocumentation = dgdocs;
                                             return DispatchData
@@ -678,9 +678,7 @@
                                                     job.charge,
                                                     FirstName,
                                                     ContactID,
-                                                    job.preBook).then(function (response) {
-                                                    return response;
-                                                });
+                                                    job.preBook).then(response => response);
                                         } else {
                                             return response;
                                         }
@@ -696,9 +694,7 @@
                                             Number(rate.replace(/[^0-9.-]+/g, "")),
                                             FirstName,
                                             ContactID,
-                                            job.preBook).then(function (response) {
-                                            return response;
-                                        });
+                                            job.preBook).then(response => response);
                                 });
                             } else {
                                 return job.bulkJob ? DispatchData
@@ -707,9 +703,7 @@
                                             callData.value,
                                             job.charge,
                                             FirstName,
-                                            ContactID).then(function (response) {
-                                            return response;
-                                        }) :
+                                            ContactID).then(response => response) :
                                     DispatchData
                                         .updateJobDetail(callData.jobID,
                                             callData.field,
@@ -717,9 +711,7 @@
                                             job.charge,
                                             FirstName,
                                             ContactID,
-                                            job.preBook).then(function (response) {
-                                        return response;
-                                    });
+                                            job.preBook).then(response => response);
                             }
 
                         },
@@ -770,7 +762,7 @@
                         controller: GpsDialogController
                     }).then(_ => console.log('Dialog closed!'));
 
-                    function GpsDialogController($scope, $mdDialog, currentJob, addressDetails, suburbOptions) {
+                    function GpsDialogController($scope, $mdDialog, NgMap, currentJob, addressDetails, suburbOptions) {
                         // Functions
                         const findSuburbByDistrict = district => {
                             let lowerCaseDistrict = district.toLowerCase();
@@ -784,6 +776,13 @@
                             id: obj.locationId,
                             text: obj.label.split(", ").reverse().join(", ")
                         }));
+
+                        NgMap.getMap().then(map => {
+                            console.log("Loading Map!")
+                            $scope.map = map;
+                            $scope.marker = map.markers[0];
+                            $scope.addressSearchAutocomplete(addressDetails.address);
+                        });
 
                         $scope.title = "Update Address and GPS";
                         $scope.addressDetails = addressDetails;
@@ -808,7 +807,7 @@
 
                         $scope.addressSearchItemSelected = function (item) {
                             try {
-                                DispatchData.getGeoCodeInfomation(item).then(data => {
+                                DispatchData.getGeoCodeInformation(item).then(data => {
                                     const returnedLocation = data.Response.View[0].Result[0].Location;
 
                                     console.log("Suburb = " + returnedLocation.Address.District);
@@ -831,6 +830,12 @@
                                     $scope.addressDetails.address = returnedLocation.Address.Label;
                                     $scope.addressDetails.suburb = returnedLocation.Address.District;
                                     $scope.addressDetails.postCode = returnedLocation.Address.PostalCode;
+
+                                    const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude,
+                                        returnedLocation.DisplayPosition.Longitude);
+                                    $scope.map.setCenter(latLng);
+                                    $scope.marker.setPosition(latLng);
+
                                 });
                             } catch (error) {
                                 toastrService.showErrorToast(error.message);
@@ -949,30 +954,33 @@
                         $scope.copyGpsAddress = address => $scope.addressSearchText = address;
 
                         $scope.moveMarker = function (event) {
-                            var latlng = event.latLng;
-                            //GeoCoder.geocode({ location: latlng })
-                            //    .then(function (result) {
-                            //        $scope.marker.setPosition(latlng);
-                            //        self.gpsForm.placeChanged(result[0]);
-                            //    });
+                            $scope.addressDetails.lat = event.latLng.lat();
+                            $scope.addressDetails.long = event.latLng.lng();
+                            $scope.$apply();
                         };
 
-                        $scope.markerDragend = () => {
-                            //Geo coder for drag marker
-                            const location = self.marker.getPosition();
+                        $scope.markerDragend = function (event) {
+                            // Get the marker's new position
+                            const location = event.latLng;
 
                             try {
+                                // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
+                                // that return the latitude and longitude values of your location
                                 DispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
                                     const returnedLocation = data.Response.View[0].Result[0].Location;
-                                    $scope.addressDetails.address = returnedLocation.Address.Label;
 
+                                    // Updating scope variables with new data
+                                    $scope.addressDetails.address = returnedLocation.Address.Label;
+                                    $scope.addressDetails.suburb = returnedLocation.Address.District;
+                                    $scope.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
+                                    $scope.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+
+                                    // Log output
                                     console.log("Suburb = " + returnedLocation.Address.District);
                                     console.log("PostCode = " + returnedLocation.Address.PostalCode);
 
-                                    $scope.addressDetails.suburb = returnedLocation.Address.District;
-
-                                    const mappedSub =
-                                        self.pickSuburbs.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
+                                    // Updating suburb selection
+                                    const mappedSub = self.pickSuburbs.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
 
                                     if (mappedSub !== undefined) {
                                         console.log(mappedSub);
@@ -981,8 +989,6 @@
                                         $scope.ourSuburbSelectedItem = null;
                                     }
 
-                                    $scope.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                                    $scope.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
                                 });
                             } catch (error) {
                                 toastrService.showErrorToast(error.message);
