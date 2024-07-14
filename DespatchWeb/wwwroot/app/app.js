@@ -22,10 +22,82 @@ angular
         'cp.ngConfirm'
 	])
 	.config(function($mdThemingProvider) {
+		$mdThemingProvider.definePalette('urgentPrimary', {
+			'50': 'fffbe0',
+			'100': 'fef5b3',
+			'200': 'feee80',
+			'300': 'fee74d',
+			'400': 'fde226',
+			'500': 'fddd00',
+			'600': 'fdd900',
+			'700': 'fcd400',
+			'800': 'fccf00',
+			'900': 'fcc700',
+			'A100': 'ffffff',
+			'A200': 'fffbef',
+			'A400': 'ffefbc',
+			'A700': 'ffe9a2',
+			'contrastDefaultColor': 'light',
+			'contrastDarkColors': [
+				'50',
+				'100',
+				'200',
+				'300',
+				'400',
+				'500',
+				'600',
+				'700',
+				'800',
+				'900',
+				'A100',
+				'A200',
+				'A400',
+				'A700'
+			],
+			'contrastLightColors': []
+		});
+
+		$mdThemingProvider.definePalette('urgentAccent', {
+			'50': 'e7e7e7',
+			'100': 'c2c2c2',
+			'200': '999999',
+			'300': '707070',
+			'400': '525252',
+			'500': '333333',
+			'600': '2e2e2e',
+			'700': '272727',
+			'800': '202020',
+			'900': '141414',
+			'A100': 'ef6e6e',
+			'A200': 'ea4040',
+			'A400': 'f60000',
+			'A700': 'dd0000',
+			'contrastDefaultColor': 'light',
+			'contrastDarkColors': [
+				'50',
+				'100',
+				'200',
+				'A100'
+			],
+			'contrastLightColors': [
+				'300',
+				'400',
+				'500',
+				'600',
+				'700',
+				'800',
+				'900',
+				'A200',
+				'A400',
+				'A700'
+			]
+		});
+
+
 		// Material Theme
 		$mdThemingProvider.theme('default')
-			.primaryPalette('yellow')
-			.accentPalette('grey');
+			.primaryPalette('urgentPrimary')
+			.accentPalette('urgentAccent');
 
 		// Register Toast themes
 		$mdThemingProvider.theme("success-toast")
