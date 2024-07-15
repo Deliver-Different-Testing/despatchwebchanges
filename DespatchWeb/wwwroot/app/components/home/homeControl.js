@@ -3406,9 +3406,9 @@ angular
 
                                 if (mappedSub !== undefined) {
                                     console.log(mappedSub);
-                                    $scope.addressDetails.ourSuburbSelectedItem = mappedSub;
+                                    $scope.ourSuburbSelectedItem = mappedSub;
                                 } else {
-                                    $scope.addressDetails.ourSuburbSelectedItem = null;
+                                    $scope.ourSuburbSelectedItem = null;
                                     toastrService.showWarningToast("Matching suburb could not be found from this address." +
                                         "Please select manually.")
                                 }
@@ -3513,7 +3513,6 @@ angular
                                 } else {
                                     $scope.ourSuburbSelectedItem = null;
                                 }
-
                             });
                         } catch (error) {
                             toastrService.showErrorToast(error.message);
