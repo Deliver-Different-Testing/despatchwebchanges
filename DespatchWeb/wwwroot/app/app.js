@@ -57,47 +57,10 @@ angular
 			'contrastLightColors': []
 		});
 
-		$mdThemingProvider.definePalette('urgentAccent', {
-			'50': 'e7e7e7',
-			'100': 'c2c2c2',
-			'200': '999999',
-			'300': '707070',
-			'400': '525252',
-			'500': '333333',
-			'600': '2e2e2e',
-			'700': '272727',
-			'800': '202020',
-			'900': '141414',
-			'A100': 'ef6e6e',
-			'A200': 'ea4040',
-			'A400': 'f60000',
-			'A700': 'dd0000',
-			'contrastDefaultColor': 'light',
-			'contrastDarkColors': [
-				'50',
-				'100',
-				'200',
-				'A100'
-			],
-			'contrastLightColors': [
-				'300',
-				'400',
-				'500',
-				'600',
-				'700',
-				'800',
-				'900',
-				'A200',
-				'A400',
-				'A700'
-			]
-		});
-
-
 		// Material Theme
 		$mdThemingProvider.theme('default')
 			.primaryPalette('urgentPrimary')
-			.accentPalette('urgentAccent');
+			.accentPalette('grey');
 
 		// Register Toast themes
 		$mdThemingProvider.theme("success-toast")

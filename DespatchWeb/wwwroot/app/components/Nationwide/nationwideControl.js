@@ -15,16 +15,23 @@ angular
             }
         });
     }])
-    .controller("NationwideControl", ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "$ngConfirm", function ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm) {
+    .controller("NationwideControl", ["$scope",
+        'JobDetailService',
+        "NWData",
+        "$state",
+        "$filter",
+        "$parse",
+        "hotkeys",
+        "NgMap",
+        "$q",
+        "$timeout",
+        "$ngConfirm",
+        function ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm) {
         $scope.isInternal = (ClientInternal === "True");
         $scope.jdSvc = jdSvc;
         $scope.name = "Nationwide";
 
         $scope.updateGPS = function (currentJob, field, fromRightClick) {
-            $scope.gpsForm = null;
-            $scope.jdSvc.gpsForm = null;
-            $scope.gpsForm = gpsForm;
-            $scope.jdSvc.setGPSForm($scope.gpsForm);
             $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
         };
 
