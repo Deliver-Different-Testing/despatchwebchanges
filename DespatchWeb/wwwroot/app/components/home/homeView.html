@@ -159,7 +159,8 @@
                                             ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Split Job"
                                             ng-show="currentJob && (currentJob.allowSplit)"
-                                            ng-click="splitJob(currentJob)"><i class="fa fa-random"></i></button>
+                                            ng-click="splitJob($event, currentJob)"><i class="fa fa-random"></i>
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Swap POD"
                                             ng-show="currentJob && currentJob.done && !currentJob.bulkJob && !currentJob.preBook"
                                             ng-click="swapPOD()"><i class="fa fa-exchange"></i></button>

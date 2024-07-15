@@ -120,10 +120,6 @@
                     gather = g;
                 };
 
-                self.setGPSForm = function (g) {
-                    self.gpsForm = g;
-                    //self.setupAutoComplete();
-                };
                 self.setSelectJobDetail = function (jobId) {
                     self.selectJobDetail = jobId;
                 };
