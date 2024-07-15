@@ -3390,7 +3390,7 @@ angular
                                 return transformSuggestions(data)
                             });
                         } catch (error) {
-                            toastrService.showErrorToast(error.message);
+                            console.log(error.message);
                         }
                     }
 
@@ -3426,7 +3426,7 @@ angular
                                 $scope.marker.setPosition(latLng);
                             });
                         } catch (error) {
-                            toastrService.showErrorToast(error.message);
+                            console.log(error.message);
                         }
                     }
 
@@ -3515,7 +3515,7 @@ angular
                                 }
                             });
                         } catch (error) {
-                            toastrService.showErrorToast(error.message);
+                            console.log(error.message);
                         }
                     };
 
@@ -3530,7 +3530,7 @@ angular
 
                             $scope.map.setCenter(place.geometry.location);
                         } catch (error) {
-                            toastrService.showErrorToast(error.message);
+                            console.log(error.message);
                         }
                     };
 

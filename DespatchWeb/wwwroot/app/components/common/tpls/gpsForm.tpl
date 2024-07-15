@@ -53,10 +53,10 @@
                                      md-search-text="ourSuburbSearchText"
                                      md-selected-item="ourSuburbSelectedItem">
                         <md-item-template>
-                            <span md-highlight-flags="^i" md-highlight-text="searchText">{{item.text}}</span>
+                            <span md-highlight-flags="^i" md-highlight-text="ourSuburbSearchText">{{item.text}}</span>
                         </md-item-template>
                         <md-not-found>
-                            No matches found for "{{searchText}}" in Suburb.
+                            No matches found for "{{ourSuburbSearchText}}" in Suburb.
                         </md-not-found>
                     </md-autocomplete>
                 </div>
