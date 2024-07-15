@@ -16,58 +16,7 @@ angular
         $scope.pageSizeSelected = 50; // Maximum number of items per page.
 
         $scope.jdSvc = jdSvc;
-        $scope.gpsForm = {
-            submit: function() {
-                return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
-                    $scope.selectJobDetail($scope.currentJob.id);
-                });
-            }
-        };
-
-        $scope.jdSvc.setGPSForm($scope.gpsForm);
-
-
-        $scope.jdSvc = jdSvc;
-        var gpsForm = {
-            submit: function () {
-                return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
-                    $scope.selectJobDetail($scope.currentJob.id);
-                });
-            },
-            showForm: function (fromRightClick) {
-
-                $(".gpsForm").show(0, function () {
-                    if (fromRightClick) {
-                        $scope.$apply();
-                    }
-                    waitingDialog.hide();
-
-                });
-                setTimeout(function () {
-                    $scope.onMapReady();
-                    $('#location').select2('open').val(null).trigger('change');
-                    var search = $('#location').data('select2').dropdown.$search;
-                    if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {
-                        var parts = $scope.jdSvc.gpsForm.data.address.split(',');
-                        search.val(parts[1].split());
-                        $scope.jdSvc.gpsForm.data.extras = parts[0];
-                    } else {
-                        search.val($scope.jdSvc.gpsForm.data.address);
-                    }
-                    search.trigger("input");
-                }, 150);
-            }
-        };
-
-        $scope.gpsForm = gpsForm;
-        $scope.jdSvc.setGPSForm($scope.gpsForm);
-
-
         $scope.updateGPS = function (currentJob, field, fromRightClick) {
-            $scope.gpsForm = null;
-            $scope.jdSvc.gpsForm = null;
-            $scope.gpsForm = gpsForm;
-            $scope.jdSvc.setGPSForm($scope.gpsForm);
             $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
         };
 
