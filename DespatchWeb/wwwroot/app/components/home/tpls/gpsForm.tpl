@@ -1,4 +1,4 @@
-<md-dialog aria-label="Update Address and GPS" style="width: 50%; height: 80%;">
+<md-dialog aria-label="Update Address and GPS" style="width: 50%;">
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
