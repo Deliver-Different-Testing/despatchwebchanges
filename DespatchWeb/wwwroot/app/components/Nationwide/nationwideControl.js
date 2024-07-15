@@ -19,63 +19,6 @@ angular
         $scope.isInternal = (ClientInternal === "True");
         $scope.jdSvc = jdSvc;
         $scope.name = "Nationwide";
-        var gpsForm = {
-            submit: function () {
-                return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
-                    var j = $scope.currentJob;
-                    $scope.getData().then(function () {
-                        if (j === null || j === undefined || j === false) {
-                            return;
-                        }
-
-                        var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
-                        $scope.selectJob(refreshedJob);
-                        $timeout(function () {
-                            $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
-
-                            var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                            var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
-
-
-                            try {
-                                goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                                $parentDiv.scrollTop(goTop);
-
-                            } catch (e) {
-                                //ignore
-                            }
-                        }, 1000);
-                    });
-                });
-            },
-            showForm: function (fromRightClick) {
-
-                $(".gpsForm").show(0, function () {
-                    if (fromRightClick) {
-                        $scope.$apply();
-                    }
-                    waitingDialog.hide();
-
-                });
-                setTimeout(function () {
-                    $scope.onMapReady();
-                    $('#location').select2('open').val(null).trigger('change');
-                    var search = $('#location').data('select2').dropdown.$search;
-                    if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {
-                        var parts = $scope.jdSvc.gpsForm.data.address.split(',');
-                        search.val(parts[1].split());
-                        $scope.jdSvc.gpsForm.data.extras = parts[0];
-                    } else {
-                        search.val($scope.jdSvc.gpsForm.data.address);
-                    }
-                    search.trigger("input");
-                }, 150);
-            }
-        };
-
-        $scope.gpsForm = gpsForm;
-        $scope.jdSvc.setGPSForm($scope.gpsForm);
-
 
         $scope.updateGPS = function (currentJob, field, fromRightClick) {
             $scope.gpsForm = null;
