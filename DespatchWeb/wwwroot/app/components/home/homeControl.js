@@ -26,7 +26,8 @@ angular
         "$ngConfirm",
         "$mdDialog",
         "toastrService",
-        function ($scope, jdSvc, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm, $mdDialog, toastrService) {
+        "loadingService",
+        function ($scope, jdSvc, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm, $mdDialog, toastrService, loadingService) {
             $scope.isInternal = (ClientInternal === "True");
             $scope.name = "Home";
             $scope.jdSvc = jdSvc;
@@ -1706,7 +1707,9 @@ angular
                     .cancel('No');
 
                 $mdDialog.show(confirm).then(() => {
+                    loadingService.showLoader();
                     DispatchData.splitJob(job.id, FirstName).then(response => {
+                        loadingService.closeLoader();
                         $scope.setSplitJobMeetingPoint(event, job);
                     }).catch(error => toastrService.showErrorToast(error.message));
                 }, () => {
@@ -2276,7 +2279,6 @@ angular
                         setTimeout(function () {
                             $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
                         }, 100);
-
                         break;
                     default:
                         console.log("you have a strange mouse!");
@@ -2789,7 +2791,6 @@ angular
                                     $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
                                 }
                             });
-
                         },
                         100);
 
@@ -3337,11 +3338,15 @@ angular
                             },
                             controller: GpsDialogController
                         }).then(() => {
-                            console.log('Dialog closed!');
+                            $scope.getData().then(_ => {
+                                loadingService.closeLoader();
+                                console.log("Job splitting complete!");
+                                console.log('Dialog closed!');
+                            });
                         });
                     });
 
-                function GpsDialogController($scope, $timeout, $mdDialog, NgMap, currentJob, addressDetails, suburbOptions) {
+                function GpsDialogController($scope, $timeout, $mdDialog, NgMap, toastrService, loadingService, currentJob, addressDetails, suburbOptions) {
                     // Timeout to display map
                     $timeout(() => {
                         $scope.mapDisplay = true;
@@ -3427,6 +3432,7 @@ angular
 
                     $scope.submit = function (addressDetails) {
                         try {
+                            loadingService.showLoader();
                             const job = currentJob;
 
                             // Assign variable it's autocomplete has been used
@@ -3443,6 +3449,7 @@ angular
                                 });
 
                                 // Show the alert dialog
+                                loadingService.closeLoader();
                                 $mdDialog.show(alert);
                             }
 
@@ -3461,11 +3468,11 @@ angular
                             return DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long)
                                 .then(_ => DispatchData.reRateSplitJob(callData.jobID)
                                     .then(_ => DispatchData.finishSplitJobProcess(callData.jobID, FirstName)
-                                        .then(_ => {
-                                            $scope.getData();
-                                        })));
+                                        .then(_ => console.log("Submit complete"))));
                         } catch (error) {
                             toastrService.showErrorToast(error.message)
+                        } finally {
+                            loadingService.closeLoader();
                         }
                     }
 

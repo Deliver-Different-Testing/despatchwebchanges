@@ -239,7 +239,8 @@
             ("app/components/CS/csControl.js", true),
             ("app/components/prebooks/prebookService.js", true),
             ("app/components/prebooks/prebookControl.js", true),
-            ("app/services/toastrService.js", true)
+            ("app/services/toastrService.js", true),
+            ("app/services/loadingService.js", true)
         };
         foreach (var (src, versioning) in devScripts) CreateScriptTag(src, versioning);
     }
@@ -261,7 +262,8 @@
             ("app/components/CS/csControl.min.js", true),
             ("app/components/prebooks/prebookService.min.js", true),
             ("app/components/prebooks/prebookControl.min.js", true),
-            ("app/services/toastrService.min.js", true)
+            ("app/services/toastrService.min.js", true),
+            ("app/services/loadingService.min.js", true)
         };
         foreach (var (src, versioning) in minScripts) CreateScriptTag(src, versioning);
     }
