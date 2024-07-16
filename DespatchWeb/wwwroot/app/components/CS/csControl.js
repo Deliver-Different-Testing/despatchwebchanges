@@ -11,7 +11,7 @@ angular
                 "allRuns": false
             };
 
-            $scope.dateSearchRange = 'Fortnight';
+            $scope.dateSearchRange = 1; // Set to fortnight
             $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
             $scope.searchBox = "";
@@ -40,12 +40,7 @@ angular
                         if ($scope.currentJob) {
                             $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
                         }
-
                     });
-
-                    //setTimeout(function () {  }, 1000);
-
-
                 },
                 cancel: function () {
                     $(".gatherForm").hide();
