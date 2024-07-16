@@ -23,7 +23,9 @@
                         </div>
                         <div class="field" data-field="fromSuburb">
                             <label class="disabled">From Suburb:</label>
-                            <div class="disabled" class="value">{{currentJob.fromSuburbName}}</div>
+                            <div class="disabled" class="value">{{currentJob.fromSuburbName}} {{ currentJob.fromPostCode
+                                }}
+                            </div>
                         </div>
 
                         <div class="field"
@@ -55,7 +57,9 @@
                         </div>
                         <div class="field" data-field="toSuburb">
                             <label class="disabled">To Suburb:</label>
-                            <div class="disabled" class="value">{{currentJob.toSuburbName}}</div>
+                            <div class="disabled" class="value">{{currentJob.toSuburbName}} {{ currentJob.toPostCode
+                                }}
+                            </div>
                         </div>
                         <div class="field" data-field="toCity">
                             <label class="disabled">To City:</label>
@@ -443,7 +447,7 @@
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox
                                             ng-disabled="currentJob.locked"
-                                            ng-click="jdSvc.doneClick(event, currentJob)"
+                                            ng-click="jdSvc.doneClick($event, currentJob)"
                                             ng-model="currentJob.done">
                                     </md-checkbox>
                                 </div>
@@ -673,7 +677,7 @@
                 <div class="notes field">
                     <label>Notes</label>
                     <md-button class="md-fab md-mini md-primary" style="float: right;"
-                            ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
+                               ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
                         <md-icon md-font-set="material-symbols-outlined">add</md-icon>
                     </md-button>
                     <div class="value">
@@ -756,8 +760,11 @@
 
                         <div class="field">
                             <label>Direct</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.preBookDirectClick(currentJob)"
-                                                      ng-model="currentJob.direct"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.preBookDirectClick(currentJob)"
+                                    ng-disabled="currentJob.locked"
+                                    ng-model="currentJob.direct">
+                            </md-checkbox>
                         </div>
 
                         <div class="field" ng-click="jdSvc.leaveClick($event, currentJob)">
@@ -842,18 +849,24 @@
                         </div>
                         <div class="field">
                             <label>One Off</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.oneOffClick(currentJob)"
-                                                      ng-model="currentJob.oneOff"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.oneOffClick(currentJob)"
+                                    ng-model="currentJob.oneOff">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Active</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.activeClick(currentJob)"
-                                                      ng-model="currentJob.active"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.activeClick(currentJob)"
+                                    ng-model="currentJob.active">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Done</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.doneClick($event, currentJob)"
-                                                      ng-model="currentJob.done"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.doneClick($event, currentJob)"
+                                    ng-model="currentJob.done">
+                            </md-checkbox>
                         </div>
                     </div>
 
@@ -881,33 +894,45 @@
                         </div>
                         <div class="field">
                             <label>Van</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.vanClick(currentJob)"
-                                                      ng-model="currentJob.van"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.vanClick(currentJob)"
+                                    ng-model="currentJob.van">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Truck</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.truckClick(currentJob)"
-                                                      ng-model="currentJob.truck"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.truckClick(currentJob)"
+                                    ng-model="currentJob.truck">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Pedal</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.pedalClick(currentJob)"
-                                                      ng-model="currentJob.pedal"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.pedalClick(currentJob)"
+                                    ng-model="currentJob.pedal">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Attention</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.attentionClick(currentJob)"
-                                                      ng-model="currentJob.attention"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.attentionClick(currentJob)"
+                                    ng-model="currentJob.attention">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Return</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.preBookReturnClick(currentJob)"
-                                                      ng-model="currentJob.return"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.preBookReturnClick(currentJob)"
+                                    ng-model="currentJob.return">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Reprice</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.repriceClick(currentJob)"
-                                                      ng-model="currentJob.reprice"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.repriceClick(currentJob)"
+                                    ng-model="currentJob.reprice">
+                            </md-checkbox>
                         </div>
 
 
