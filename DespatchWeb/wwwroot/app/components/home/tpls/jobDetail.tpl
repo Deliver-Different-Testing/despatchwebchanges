@@ -956,7 +956,6 @@
 
         <div>
             <div class="palletInfo">
-                <!-- POD requested changes-->
                 <md-button class="md-fab md-mini md-raised"
                            ng-click="sendPOD()"
                            style="position: absolute; right: 0; top: 0;">
