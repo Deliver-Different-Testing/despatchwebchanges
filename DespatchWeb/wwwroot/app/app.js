@@ -21,7 +21,7 @@ angular
 		'angularPromiseButtons',
         'cp.ngConfirm'
 	])
-	.config(function($mdThemingProvider) {
+	.config($mdThemingProvider => {
 		$mdThemingProvider.definePalette('urgentPrimary', {
 			'50': 'fffbe0',
 			'100': 'fef5b3',
@@ -67,16 +67,15 @@ angular
 		$mdThemingProvider.theme("warning-toast")
 		$mdThemingProvider.theme("error-toast")
 	})
-	.directive('rightClick', function () {
-
-		document.oncontextmenu = function (e) {
+	.directive('rightClick', () => {
+		document.oncontextmenu = e => {
             if (e.target.hasAttribute('right-click')) {
                 e.stopPropagation();
 				return false;
 			}
 		};
-		return function (scope, el, attrs) {
-			el.bind('contextmenu', function (e) {
+		return (scope, el, attrs) => {
+			el.bind('contextmenu', e => {
 				scope.$apply(
 					scope.$eval(attrs.action, {
 						'event': e
@@ -87,7 +86,7 @@ angular
 			});
 		}
 	})
-	.config(["$urlRouterProvider", "$stateProvider", function($urlRouterProvider, $stateProvider) {
+	.config(["$urlRouterProvider", "$stateProvider", ($urlRouterProvider, $stateProvider) => {
 		$urlRouterProvider.otherwise("/");
 
         $stateProvider
