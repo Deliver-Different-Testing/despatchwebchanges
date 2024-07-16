@@ -740,7 +740,7 @@
                     $mdDialog.show({
                         parent: angular.element(document.body),
                         targetEvent: event,
-                        templateUrl: "app/components/common/tpls/gpsForm.tpl",
+                        templateUrl: "app/components/home/tpls/gpsForm.tpl",
                         clickOutsideToClose: false,
                         fullscreen: true,
                         locals: {
@@ -1361,7 +1361,7 @@
                     $mdDialog.show({
                         parent: angular.element(document.body),
                         targetEvent: event,
-                        templateUrl: 'app/components/home/tpls/dialogs/selectDialog.tpl',
+                        templateUrl: 'app/components/home/tpls/selectDialog.tpl',
                         clickOutsideToClose: true,
                         fullscreen: true,
                         locals: {

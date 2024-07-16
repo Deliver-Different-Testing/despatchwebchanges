@@ -2239,7 +2239,7 @@ angular
             $scope.setCurrentWorkMenu = function () {
                 var multiple = $(".activeTable .active").length > 1;
 
-                var menu = [
+                return [
                     {
                         text: "Restore",
                         click: function ($itemScope, $event, modelValue, text, $li) {
@@ -2260,8 +2260,6 @@ angular
                     }
 
                 ];
-
-                return menu;
             };
 
 
@@ -2275,8 +2273,8 @@ angular
                         break;
                     case 3:
                         // this is right click
-                        waitingDialog.show();
-                        setTimeout(function () {
+                        loadingService.showLoader();
+                        setTimeout(() => {
                             $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
                         }, 100);
                         break;
@@ -3322,7 +3320,7 @@ angular
                         $mdDialog.show({
                             parent: angular.element(document.body),
                             targetEvent: event,
-                            templateUrl: "app/components/common/tpls/gpsForm.tpl",
+                            templateUrl: "app/components/home/tpls/gpsForm.tpl",
                             clickOutsideToClose: false,
                             fullscreen: true,
                             locals: {

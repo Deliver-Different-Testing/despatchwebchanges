@@ -1223,15 +1223,12 @@ span.courierRed {
 #SupportChannels .dropdown-menu {
   z-index: 99999;
 }
-
 md-toast.md-success-toast-theme .md-toast-content {
   background-color: green;
 }
-
 md-toast.md-error-toast-theme .md-toast-content {
   background-color: red;
 }
-
 md-toast.md-warning-toast-theme .md-toast-content {
   background-color: yellow;
 }
