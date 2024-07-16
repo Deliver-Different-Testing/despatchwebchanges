@@ -76,7 +76,10 @@
         </div>
 
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">
-            <md-button class="md-raised md-primary" ng-click="refreshAllData(true)">Search</md-button>
+            <md-button class="md-raised md-primary" ng-click="refreshAllData(true)">
+                Search
+                <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+            </md-button>
         </section>
     </div>
 </div>
