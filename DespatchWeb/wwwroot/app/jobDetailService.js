@@ -1035,8 +1035,10 @@
                 }
 
                 self.preBookDirectClick = function (job) {
+                    const directValue = !job.direct;
+
                     return DispatchData
-                        .updateJobDetail(job.id, "Direct", job.direct, job.charge, FirstName, ContactID, job.preBook)
+                        .updateJobDetail(job.id, "Direct", directValue, job.charge, FirstName, ContactID, job.preBook)
                         .then(response => {
                             self.selectJobDetail(job.id);
                             return response;
@@ -1202,10 +1204,12 @@
                 };
 
                 self.preBookReturnClick = function (job) {
+                    returnValue = !job.return;
+
                     return DispatchData
                         .updateJobDetail(job.id,
                             "Return",
-                            job.return,
+                            returnValue,
                             job.charge,
                             FirstName,
                             ContactID,
@@ -1216,10 +1220,12 @@
                 };
 
                 self.oneOffClick = function (job) {
+                    const oneoffValue = !job.oneOff;
+
                     return DispatchData
                         .updateJobDetail(job.id,
                             "OneOff",
-                            job.oneOff,
+                            oneoffValue,
                             job.charge,
                             FirstName,
                             ContactID,
@@ -1231,10 +1237,12 @@
                 };
 
                 self.activeClick = function (job) {
+                    const activeValue = !job.active;
+
                     return DispatchData
                         .updateJobDetail(job.id,
                             "Active",
-                            job.active,
+                            activeValue,
                             job.charge,
                             FirstName,
                             ContactID,
