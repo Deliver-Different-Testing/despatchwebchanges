@@ -549,7 +549,7 @@
                     <md-button
                             class="md-fab md-mini md-raised"
                             ng-click="jdSvc.newPallet()"
-                            ng-disabled="!currentJob.locked">
+                            ng-disabled="currentJob.locked">
                         <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
                         <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>
                     </md-button>
