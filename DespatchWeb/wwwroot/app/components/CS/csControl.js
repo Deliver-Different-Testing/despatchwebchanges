@@ -401,7 +401,7 @@ angular
 
             $scope.pickDateService = {
                 "client": '',
-                "couriers": [],
+                "courier": "",
                 "date": moment().format("YYYY-MM-DD"),
                 "from_date": moment().subtract(7, 'days').format("YYYY-MM-DD"),
                 "to_date": moment().add(7, 'days').format("YYYY-MM-DD"),
@@ -815,10 +815,6 @@ angular
                     return;
                 }
 
-                //if (job.dgClass !== null && job.dgClass > 0) {
-                //    DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
-                //}
-
                 callData.jobs.push(job.id);
 
                 return uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
@@ -830,7 +826,6 @@ angular
             }
 
             $scope.swapPOD = function () {
-
                 $scope.gather.form = {
                     id: "swapPOD",
                     title: "Enter the other job number",
@@ -841,61 +836,67 @@ angular
                             "type": "text"
                         }
                     ],
-                    onSubmit: function () {
+                    onSubmit: function (event) {
                         return uCSData.validateSwapPOD($scope.gather.form.fields[0].value).then(function (data) {
                             if (!data) {
-                                $ngConfirm("Invalid Job");
+                                $mdDialog.show(
+                                    $mdDialog.alert()
+                                        .clickOutsideToClose(true)
+                                        .title('Invalid Job')
+                                        .textContent('This job is invalid.')
+                                        .ok('OK')
+                                ).then(_ => console.log("Alert closed."));
                             } else {
                                 const secondJobId = data;
                                 const firstJobId = $scope.currentJob.id;
-                                $ngConfirm({
-                                    title: 'Swap Delivery Info',
-                                    content: `Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`,
-                                    scope: $scope,
-                                    buttons: {
 
-                                        Yes: {
-                                            btnClass: 'btn-green',
-                                            action: function (scope, button) {
-                                                return uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(function (data) {
-                                                    $ngConfirm("POD Swap Completed Successfully");
-                                                    uCSData.reSendJobs(secondJobId);
-                                                    uCSData.reAssignJobs(firstJobId).then(function (data) {
-                                                        uCSData.reSendJobs(firstJobId).then(function (data) {
-                                                            $scope.refreshData(true);
-                                                        });
-                                                    });
+                                const confirm = $mdDialog.confirm()
+                                    .title('Swap Delivery Info?')
+                                    .textContent(`Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`)
+                                    .ariaLabel('Lucky day')
+                                    .targetEvent(event)
+                                    .ok('Yes')
+                                    .cancel('No');
 
+                                $mdDialog.show(confirm).then(() => uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(_ => {
 
-                                                });
+                                    $mdDialog.show(
+                                        $mdDialog.alert()
+                                            .clickOutsideToClose(true)
+                                            .title('Successful')
+                                            .textContent('POD Swap Completed Successfully')
+                                            .ok('OK')
+                                    ).then(_ => console.log("Alert closed."));
 
-
-                                            }
-                                        },
-                                        No: {
-                                            btnClass: 'btn-red',
-                                            action: function (scope, button) {
-
-                                            }
-                                        }
-
-                                    }
+                                    $ngConfirm("POD Swap Completed Successfully");
+                                    uCSData.reSendJobs(secondJobId);
+                                    uCSData.reAssignJobs(firstJobId).then(_ => {
+                                        uCSData.reSendJobs(firstJobId).then(_ => {
+                                            $scope.refreshData(true);
+                                        });
+                                    });
+                                }), () => {
+                                    console.log("POD Swap Canceled");
                                 });
-
                             }
                         });
 
                     },
                     submitValue: "Submit"
                 };
+
                 $scope.gather.showForm();
-
-
             }
 
             $scope.sendPOD = function () {
                 if (!$scope.currentJob.podPhoto) {
-                    alert("Sorry no photo for this Job");
+                    $mdDialog.show(
+                        $mdDialog.alert()
+                            .clickOutsideToClose(true)
+                            .title('No Photo')
+                            .textContent('Sorry no photo for this job.')
+                            .ok('OK')
+                    ).then(_ => console.log("Alert closed."));
                     return;
                 }
                 $scope.gather.form = {
@@ -909,9 +910,17 @@ angular
                         }
                     ],
                     onSubmit: function () {
-                        uCSData.sendPOD($scope.currentJob.id, $scope.gather.form.fields[0].value).then(function (data) {
-
+                        uCSData.sendPOD($scope.currentJob.id, $scope.gather.form.fields[0].value).then(data => {
                         });
+
+                        $mdDialog.show(
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Email Sent')
+                                .textContent('POD email has been sent')
+                                .ok('OK')
+                        ).then(_ => console.log("Alert closed."));
+
                         alert("Email sent!");
                     },
                     submitValue: "Send"
@@ -934,7 +943,7 @@ angular
                             .title('Missing Criteria')
                             .textContent('Please provide more detailed search criteria.')
                             .ok('Understood')
-                    ).then(function () {
+                    ).then(() => {
                         console.log("Search operation cancelled due to insufficient criteria.")
                     });
                     return;
@@ -946,9 +955,9 @@ angular
             }
 
             $scope.refreshData = function (wait) {
-
-                var goTop = $("#jobList").offset().top;
-                var $parentDiv = $("#jobList").parents(".box-content");
+                const $jobList = $("#jobList");
+                let goTop = $jobList.offset().top;
+                const $parentDiv = $jobList.parents(".box-content");
 
                 try {
                     goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
@@ -1429,12 +1438,12 @@ angular
 
             $scope.selectedCourierChange = function (item) {
                 if (!item) {
-                    $scope.pickDateService.couriers[0] = null;
+                    $scope.pickDateService.courier = null;
                 }
-                $scope.pickDateService.couriers[0] = item.id;
+                $scope.pickDateService.courier = item.id;
             };
 
-            uCSData.getActiveCouriers().then(function (data) {
+            uCSData.getActiveCouriers().then(data => {
                 $scope.pickCouriers = data;
             });
 

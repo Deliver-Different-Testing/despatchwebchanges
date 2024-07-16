@@ -67,10 +67,12 @@
             <b>Job Number:</b>
             <input type="text" name="Job" id="Job" ng-model="pickDateService.job" class="form-control focusMe"/>
         </div>
+
         <div class="space">
             <b>Everything Else (JobNo, Address, Name, Refs):</b>
             <input type="text" name="Wild" id="Wild" ng-model="pickDateService.wild" class="form-control focusMe"/>
         </div>
+
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">
             <md-button class="md-raised md-primary" ng-click="refreshAllData(true)">Search</md-button>
         </section>
