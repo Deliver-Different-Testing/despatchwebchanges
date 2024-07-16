@@ -823,8 +823,6 @@ angular
                                                             $scope.getData();
                                                         });
                                                     });
-
-
                                                 });
 
                                             }

@@ -16,8 +16,8 @@ md-dialog {
   border: none;
   border-radius: 4px;
   text-align: center;
-  box-shadow: 0 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14),
-  0px 1px 3px 0px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+  0px 1px 3px 0px rgba(0, 0, 0, 0.12);
   transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
 
   &:hover {
@@ -447,7 +447,7 @@ md-divider {
 }
 
 .gatherForm, .gatherFormMulti {
-  .fullScreenFormBase(200, rgba(250, 250, 250, 0.97), 4px, 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22));
+  .fullScreenFormBase(200, rgba(250, 250, 250, 0.97), 4px, 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22));
 
   .gatherFields, .gather-box {
     .boxBase(50%, 30px, 4px);
@@ -456,6 +456,7 @@ md-divider {
 
 .gpsForm {
   .fullScreenFormBase(200, rgba(255, 255, 255, 0.9), 4px, 0, 0 0 0 rgba(0, 0, 0, 0));
+
   .gps-box {
     .boxBase(900px, 40px, 4px);
   }
@@ -514,7 +515,7 @@ md-divider {
 }
 
 .pickadate-active {
-    background-color: @yellow;
+  background-color: @yellow;
 }
 
 .columns {
@@ -1231,6 +1232,10 @@ md-toast.md-error-toast-theme {
 
 md-toast.md-warning-toast-theme {
   .md-toast-content {
-    background-color: yellow;
+    background-color: @yellow;
   }
+}
+
+.mfb-component__button--child, .mfb-component__button--main {
+  background-color: @yellow;
 }

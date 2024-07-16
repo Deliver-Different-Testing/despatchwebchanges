@@ -81,7 +81,6 @@
         </div>
         <div class="btn topbar-button" style="color: white;">
             <span>hi {{userName}} - layout: {{currentLayoutName}}</span></div>
-        <div class="btn btn-sm btn-primary topbar-button" ng-click="getData()"><i class="fa fa-refresh"></i></div>
         <div class="dropdown topbar-button">
             <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenu1"
                     data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
@@ -173,11 +172,6 @@
                                 </div>
                             </div>
 
-                            <md-button class="md-fab md-mini md-primary"
-                                       ng-show="boxes[box.name].showRefresh" ng-click="getData()">
-                                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                            </md-button>
-
                             <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
                                 <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
                                 <input type="text" style="color: black;display:inline-block!important;"
@@ -206,14 +200,9 @@
                                  extra-settings="pickService.settings" ng-dropdown-multiselect=""
                                  options="pickChannels" selected-model="pickService.channel"></div>
 
-                            <md-button class="md-fab md-mini md-primary" style="margin-left: 8px;"
-                                       ng-show="box.name == 'supports'" ng-click="getSupports()">
-                                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                            </md-button>
-
-
                             <div layout="row" ng-show="box.name === 'map'">
-                                <md-switch ng-show="box.name === 'clearLists'" ng-model="areaListCity" class="md-primary">
+                                <md-switch class="md-primary" ng-model="areaListCity"
+                                           ng-show="box.name === 'clearLists'">
                                     City
                                 </md-switch>
                                 <md-switch ng-show="box.name === 'map'" ng-model="allCouriers.display"
@@ -233,7 +222,8 @@
                             <div class="box-search" ng-show="boxes[box.name].showSearch">
                                 <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
                                 <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
-                                <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}">
+                                <input ng-model="box.searchBox" ng-model-options="{debounce: 300}" placeholder="Search..."
+                                       type="text">
                             </div>
 
                             <div class="box-handle"><i class="fa fa-ellipsis-v"></i></div>
@@ -243,35 +233,45 @@
                          ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}"
                          ng-include="boxes[box.name].tpl"></div>
                 </div>
-
             </div>
         </div>
-
     </div>
-
 </div>
 
+<ul active-icon="menu"
+    effect="slidein"
+    label="Refresh"
+    main-action="getData()"
+    mfb-menu
+    position="br"
+    resting-icon="refresh"
+    template-url="ng-mfb-menu-md.tpl.html"
+    toggling-method="hover">
+    <mfb-button
+            icon="dashboard"
+            label="Layouts"
+            template-url="ng-mfb-button-md.tpl.html">
+    </mfb-button>
+    <mfb-button
+            icon="add"
+            label="Create New Job"
+            template-url="ng-mfb-button-md.tpl.html">
+    </mfb-button>
+</ul>
 
 <div ng-include="'app/components/home/tpls/eventForm.tpl'"></div>
-
 <div ng-include="'app/components/home/tpls/truckCourierStatus.tpl'"></div>
-
 <div ng-include="'app/components/home/tpls/lateForm.tpl'"></div>
-
 <div ng-include="'app/components/home/tpls/gatherForm.tpl'"></div>
-
 <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
-
 <div ng-include="'app/components/home/tpls/gpsForm.tpl'"></div>
 
 <div id='draggingItems'></div>
 
 <script>
-
-
     document.onkeydown = overrideKeyboardEvent;
     document.onkeyup = overrideKeyboardEvent;
-    var keyIsDown = {};
+    let keyIsDown = {};
 
     function overrideKeyboardEvent(e) {
         switch (e.type) {
@@ -279,11 +279,11 @@
                 if (!keyIsDown[e.keyCode]) {
                     keyIsDown[e.keyCode] = true;
                     // do key down stuff here
-                    if (e.keyCode == 82 && e.ctrlKey) {
+                    if (e.keyCode === 82 && e.ctrlKey) {
                         //location.reload();
                     }
                     if (e.keyCode === 113) {
-                        var sc = angular.element(document.getElementById('box-jobDetail')).scope();
+                        let sc = angular.element(document.getElementById('box-jobDetail')).scope();
 
                         sc.gather.form = {
                             id: "smsCustomer",
@@ -301,35 +301,31 @@
                                     "type": "select2"
                                 }
                             ],
-                            onSubmit: function () {
+                            onSubmit: () => {
                                 console.log(sc.gather.form.fields[1]);
-                                var c = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
-                                return sc.sendSMS(c.courierID, sc.gather.form.fields[0].value).then(function (data) {
+                                const c = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
+                                return sc.sendSMS(c.courierID, sc.gather.form.fields[0].value).then(data => {
                                     sc.gather.cancel();
                                     alert("Message Sent");
                                 });
-
-
                             },
                             submitValue: "Send Message"
                         };
 
                         sc.gather.showForm();
 
-
-                        setTimeout(function () {
+                        setTimeout(() => {
                             sc.$apply();
 
-                            var statusOptions = {
+                            const statusOptions = {
                                 minimumInputLength: 0,
                                 data: sc.pickCouriers,
                                 placeholder: "Start typing to choose courier..."
                             };
 
-                            $(".gatherForm #gather-courier").select2(statusOptions);
-                            $(".gatherForm #gather-courier").select2('open');
-
-
+                            const $gatherFromCourier = $(".gatherForm #gather-courier");
+                            $gatherFromCourier.select2(statusOptions);
+                            $gatherFromCourier.select2('open');
                         }, 200);
                     }
                 }
@@ -340,14 +336,14 @@
                 break;
         }
         disabledEventPropagation(e);
-        if (e.keyCode == 68 && e.ctrlKey) {
+        if (e.keyCode === 68 && e.ctrlKey) {
             e.preventDefault();
             return false;
         }
     }
 
     function disabledEventPropagation(e) {
-        if (e.keyCode == 68 && e.ctrlKey) {
+        if (e.keyCode === 68 && e.ctrlKey) {
             if (e.stopPropagation) {
                 e.stopPropagation();
             } else if (window.event) {
@@ -358,7 +354,7 @@
 
 
     $(document).on('keydown', '.dispatchField, .lateCallField', function (event) {
-        if (event.keyCode == 13) {
+        if (event.keyCode === 13) {
             $(this).parents(".clickable-row").addClass("doing");
         }
     });
@@ -380,14 +376,12 @@
     });
 
 
-    $(document).ready(function () {
-
-        var isDown = false;   // Tracks status of mouse button
-
-        $(document).mousedown(function () {
+    $(document).ready(() => {
+        let isDown = false;   // Tracks status of mouse button
+        $(document).mousedown(() => {
             isDown = true;      // When mouse goes down, set isDown to true
         })
-            .mouseup(function () {
+            .mouseup(() => {
                 isDown = false;    // When mouse goes up, set isDown to false
             });
 
@@ -400,25 +394,21 @@
                 }
             }
         });
-
-
     });
 
-
-    var mouseDown = 0;
-
+    let mouseDown = 0;
     $(document).on('mousedown', '.clickable-row', function (event) {
-
-        if ($(".activeTable .clickable-row.active").length > 1) {
-            var jobNo = $(".activeTable .clickable-row.active").length + " Jobs";
+        let group;
+        let jobNo;
+        const activeTableClickActive = $(".activeTable .clickable-row.active");
+        if (activeTableClickActive.length > 1) {
+            jobNo = activeTableClickActive.length + " Jobs";
         } else {
-            var jobNo = $(this).attr("data-jobno");
+            jobNo = $(this).attr("data-jobno");
         }
 
-
-        if (mouseDown == 0) {
+        if (mouseDown === 0) {
             mouseDown = 1;
-
             if (event.which === 1) {
                 if (event.ctrlKey) {
                     if ($(this).hasClass("active")) {
@@ -429,7 +419,7 @@
                 } else {
                     if (!$(this).hasClass("active")) {
 
-                        var group = $(this).parents(".table-rows").attr("data-group");
+                        group = $(this).parents(".table-rows").attr("data-group");
                         $('*[data-group="' + group + '"]').each(function () {
                             $(this).find('.active').removeClass('active');
                         });
@@ -447,33 +437,31 @@
 
                     if (!$(this).hasClass("active")) {
 
-                        var group = $(this).parents(".table-rows").attr("data-group");
+                        group = $(this).parents(".table-rows").attr("data-group");
                         $('*[data-group="' + group + '"]').each(function () {
                             $(this).find('.active').removeClass('active');
                         });
                         $(this).addClass('active');
-
                     }
-                    setTimeout(function () {
-                        if (mouseDown == 1) {
-                            $("#draggingItems").show();
-                            $("#draggingItems").html(jobNo);
 
-                            $("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
-                            $("#draggingItems").draggable();
-                            $("#draggingItems").trigger(event);
+                    setTimeout(() => {
+                        if (mouseDown === 1) {
+                            const $draggingItems = $("#draggingItems")
+                            $draggingItems.show();
+                            $draggingItems.html(jobNo);
+
+                            $draggingItems.css({"top": event.pageY - 25, "left": event.pageX - 50});
+                            $draggingItems.draggable();
+                            $draggingItems.trigger(event);
                         }
                     }, 200);
                 }
             }
-
         }
-
     });
 
     $(document).on('mouseup', '.clickable-row', function (event) {
         if (event.which === 3) {
-
             $(".rightActiveTable").removeClass("rightActiveTable");
             $(this).parents(".table").addClass("rightActiveTable");
         }
@@ -481,58 +469,44 @@
 
             if ($(this).hasClass("active")) {
             } else {
-                var group = $(this).parents(".table-rows").attr("data-group");
-
+                const group = $(this).parents(".table-rows").attr("data-group");
                 $('*[data-group="' + group + '"]').each(function () {
                     $(this).find('.active').removeClass('active');
                 });
                 $(this).addClass('active');
             }
-
         }
-
     });
 
 
-    $(document).on("mouseup", function (ev) {
+    $(document).on("mouseup", ev => {
         $("#draggingItems").hide();
         mouseDown = 0;
     });
 
-    $(document).on("keydown", function (e) {
-        var code = (e.keyCode ? e.keyCode : e.which);
-        if (code == 40) {
+    $(document).on("keydown", e => {
+        const code = (e.keyCode ? e.keyCode : e.which);
+        if (code === 40) {
             $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
-        } else if (code == 38) {
+        } else if (code === 38) {
             $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
         }
     });
 
-
-    //var delay = 250; // delay between calls
-    //var throttled = false; // are we currently throttled?
-
-    //setTimeout(function(){ sizeHeadings($("#jobList").parents(".column")); }, 100);
-
     function sizeHeadings(ele) {
-
         $("body").find(".box").each(function () {
-            var box = $(this);
+            const box = $(this);
             box.find(".table-headings thead tr th").each(function (index) {
-                var newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
+                const newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
                 $(this).outerWidth(newWidth);
             });
             box.find(".table-headings table").width(box.find(".table").width());
         });
 
-        var height = $("#box-clearLists").find(".box-content").height() - 30;
-
+        const height = $("#box-clearLists").find(".box-content").height() - 30;
         $(".clearLists-list").each(function () {
-            var newHeight = $(this).data("height") * height / 100;
+            const newHeight = $(this).data("height") * height / 100;
             $(this).height(newHeight);
         });
-
     }
-
-
 </script>

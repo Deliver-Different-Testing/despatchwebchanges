@@ -1230,6 +1230,11 @@ md-toast.md-error-toast-theme .md-toast-content {
   background-color: red;
 }
 md-toast.md-warning-toast-theme .md-toast-content {
-  background-color: yellow;
+    background-color: #fddd00;
+}
+
+.mfb-component__button--child,
+.mfb-component__button--main {
+    background-color: #fddd00;
 }
 /*# sourceMappingURL=udispatch.css.map */
