@@ -3,10 +3,10 @@
         <label id="dateRange" class="label-padding">Quick Search: </label>
         <md-radio-group ng-model="dateSearchRange" ng-change="onSearchRangeChange(dateSearchRange)"
                         aria-labelledby="dateRange" layout="row" layout-align="center center">
-            <md-radio-button value="Fortnight">Fortnight</md-radio-button>
-            <md-radio-button value="Today">Today</md-radio-button>
-            <md-radio-button value="Month">Month</md-radio-button>
-            <md-radio-button value="Custom">Custom</md-radio-button>
+            <md-radio-button value="1">Fortnight</md-radio-button>
+            <md-radio-button value="2">Today</md-radio-button>
+            <md-radio-button value="3">Month</md-radio-button>
+            <md-radio-button value="4">Custom</md-radio-button>
         </md-radio-group>
         <md-divider></md-divider>
 

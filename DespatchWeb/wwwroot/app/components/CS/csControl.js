@@ -1725,27 +1725,27 @@ angular
             // Call the init function when the controller loads
             $scope.init();
 
-            $scope.onSearchRangeChange = function (newValue) {
+            $scope.onSearchRangeChange = function (selectedDateRange) {
                 const now = moment().format("YYYY-MM-DD");
                 const firstDayOfMonth = moment().startOf('month').format("YYYY-MM-DD");
                 const lastDayOfMonth = moment().endOf('month').format("YYYY-MM-DD");
                 const oneWeekAgo = moment().subtract(1, 'weeks').format("YYYY-MM-DD");
                 const oneWeekAhead = moment().add(1, 'weeks').format("YYYY-MM-DD");
 
-                switch (newValue) {
-                    case 'Today':
+                switch (selectedDateRange) {
+                    case '2':
                         $scope.currentFromDate = now;
                         $scope.currentToDate = now;
                         break;
-                    case 'Fortnight':
+                    case '1':
                         $scope.currentFromDate = oneWeekAgo;
                         $scope.currentToDate = oneWeekAhead;
                         break;
-                    case 'Month':
+                    case '3':
                         $scope.currentFromDate = firstDayOfMonth;
                         $scope.currentToDate = lastDayOfMonth;
                         break;
-                    case 'Custom':
+                    case '4':
                         // This option is empty as ng-if is used on the page to show custom date range options
                         break;
                 }
