@@ -86,6 +86,7 @@
                     <md-button class="md-fab md-raised md-mini" style="float: right;"
                                ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
                         <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
+                        <md-tooltip md-direction="bottom">Add New Note</md-tooltip>
                     </md-button>
                     <div class="value">
                         <pre>{{currentJob.internalNotes}}</pre>
@@ -494,8 +495,13 @@
         </div>
 
         <div ng-if="!currentJob.bulkJob && currentJob.podPhotos.length > 0" class="row row-no-padding row-out">
-            <button style="position: absolute; right: 0; top: 0;" class="mat-button" ng-click="sendPOD()">Send POD
-            </button>
+            <md-button class="md-fab md-mini md-raised"
+                       ng-click="sendPOD()"
+                       style="position: absolute; right: 0; top: 0;">
+                <md-icon md-font-set="material-symbols-outlined">package</md-icon>
+                <md-tooltip md-direction="bottom">Send POD</md-tooltip>
+            </md-button>
+
             <label>POD Info</label>
             <div class="row row-no-padding row-out">
                 <!--<img ng-src="{{'data:image/png;base64,'+currentJob.podPhoto}}" />-->
@@ -539,10 +545,17 @@
         <div ng-if="!currentJob.bulkJob">
             <div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
 
-                <label>Pallet Info</label>
-                <div ng-class="currentJob.locked ? 'disabled' : ''" class="btn btn-sml addPallet"
-                     ng-click="!currentJob.locked && jdSvc.newPallet()">Add Pallet
+                <div style="display: flex; justify-content: space-between;">
+                    <label>Pallet Info</label>
+                    <md-button
+                            class="md-fab md-mini md-raised"
+                            ng-click="jdSvc.newPallet()"
+                            ng-disabled="!currentJob.locked">
+                        <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
+                        <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>
+                    </md-button>
                 </div>
+
                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                     <table class="table table-striped table-responsive">
                         <thead>
@@ -944,10 +957,14 @@
 
         <div>
             <div class="palletInfo">
-
                 <!-- POD requested changes-->
-                <button style="position: absolute; right: 0; top: 0;" class="mat-button" ng-click="sendPOD()">Send POD
-                </button>
+                <md-button class="md-fab md-mini md-raised"
+                           ng-click="sendPOD()"
+                           style="position: absolute; right: 0; top: 0;">
+                    <md-icon md-font-set="material-symbols-outlined">package</md-icon>
+                    <md-tooltip md-direction="bottom">Send POD</md-tooltip>
+                </md-button>
+
                 <div>
                     <img ng-src="{{currentJob.pODPhoto}}" style="display: block; margin: auto;"/>
 
@@ -957,7 +974,11 @@
                 </div>
 
                 <label>Pallet Info</label>
-                <div class="mat-button" ng-click="jdSvc.newPallet()">Add Pallet</div>
+                <md-button class="md-fab md-mini md-raised" ng-click="jdSvc.newPallet()">
+                    <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
+                    <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>
+                </md-button>
+
                 <div class="value">
                     <table class="table table-striped table-responsive">
                         <thead>
