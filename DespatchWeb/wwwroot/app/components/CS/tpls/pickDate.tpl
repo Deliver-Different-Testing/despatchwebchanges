@@ -33,7 +33,8 @@
                 md-item-text="item.text"
                 md-min-length="3"
                 placeholder="Start typing to enter new client..."
-                input-aria-labelledby="clientLabel">
+                input-aria-labelledby="clientLabel"
+                md-clear-button="true">
             <md-item-template>
                     <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
                 </md-item-template>
@@ -53,7 +54,8 @@
                     md-item-text="item.text"
                     md-min-length="3"
                     placeholder="Start typing to enter new courier..."
-                    input-aria-labelledby="courierLabel">
+                    input-aria-labelledby="courierLabel"
+                    md-clear-button="true">
                 <md-item-template>
                     <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
                 </md-item-template>
