@@ -2264,50 +2264,54 @@ angular
 
 
             $scope.fromColumnClick = function (evt) {
-                switch (evt.which) {
-                    case 1:
-                        // this is left click
-                        break;
-                    case 2:
-                        // in case you need some middle click things
-                        break;
-                    case 3:
-                        // this is right click
-                        loadingService.showLoader();
-                        setTimeout(() => {
-                            $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
-                        }, 100);
-                        break;
-                    default:
-                        console.log("you have a strange mouse!");
-                        break;
-
-                }
+                // Temp disabled to prevent endless loading
                 return false;
+                /*  switch (evt.which) {
+                      case 1:
+                          // this is left click
+                          break;
+                      case 2:
+                          // in case you need some middle click things
+                          break;
+                      case 3:
+                          // this is right click
+                          loadingService.showLoader();
+                          setTimeout(() => {
+                              $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
+                          }, 100);
+                          break;
+                      default:
+                          console.log("you have a strange mouse!");
+                          break;
+
+                  }
+                  return false;*/
             };
 
             $scope.toColumnClick = function (evt) {
-                switch (evt.which) {
-                    case 1:
-                        // this is left click
-                        break;
-                    case 2:
-                        // in case you need some middle click things
-                        break;
-                    case 3:
-                        // this is right click
-                        waitingDialog.show();
-                        setTimeout(function () {
-                            $scope.jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
-                        }, 100);
-
-                        break;
-                    default:
-                        console.log("you have a strange mouse!");
-                        break;
-
-                }
+                // Temp disabled to prevent endless loading
                 return false;
+                /*     switch (evt.which) {
+                         case 1:
+                             // this is left click
+                             break;
+                         case 2:
+                             // in case you need some middle click things
+                             break;
+                         case 3:
+                             // this is right click
+                             waitingDialog.show();
+                             setTimeout(function () {
+                                 $scope.jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
+                             }, 100);
+
+                             break;
+                         default:
+                             console.log("you have a strange mouse!");
+                             break;
+
+                     }
+                     return false;*/
             };
 
             $scope.latePickColumnClick = function (evt) {
