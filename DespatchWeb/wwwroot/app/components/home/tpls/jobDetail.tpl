@@ -501,7 +501,6 @@
                 <md-icon md-font-set="material-symbols-outlined">package</md-icon>
                 <md-tooltip md-direction="bottom">Send POD</md-tooltip>
             </md-button>
-
             <label>POD Info</label>
             <div class="row row-no-padding row-out">
                 <!--<img ng-src="{{'data:image/png;base64,'+currentJob.podPhoto}}" />-->
