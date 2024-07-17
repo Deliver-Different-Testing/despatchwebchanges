@@ -10,7 +10,7 @@
         </md-radio-group>
         <md-divider></md-divider>
 
-        <div ng-if="dateSearchRange == 'Custom'" class="space">
+        <div class="space" ng-if="dateSearchRange == 4">
             <label>From: </label><span>{{currentFromDate | date: DEFAULT_DATE_FORMAT}}</span>
             <div class="btn-group" role="group" aria-label="Basic example">
                 <button type="button" class="btn btn-sm btn-secondary" title="Choose From Date"
@@ -26,16 +26,16 @@
         <div class="space">
             <label id="clientLabel">Client:</label>
             <md-autocomplete
-                md-selected-item="clientSelectedItem"
-                md-search-text="clientSearchText"
-                md-selected-item-change="selectedClientChange(item)"
-                md-items="item in clientQuerySearch(clientSearchText)"
-                md-item-text="item.text"
-                md-min-length="3"
-                placeholder="Start typing to enter new client..."
-                input-aria-labelledby="clientLabel"
-                md-clear-button="true">
-            <md-item-template>
+                    input-aria-labelledby="clientLabel"
+                    md-clear-button="true"
+                    md-item-text="item.text"
+                    md-items="item in clientQuerySearch(clientSearchText)"
+                    md-min-length="3"
+                    md-search-text="clientSearchText"
+                    md-selected-item="clientSelectedItem"
+                    md-selected-item-change="selectedClientChange(item)"
+                    placeholder="Start typing to enter new client...">
+                <md-item-template>
                     <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
                 </md-item-template>
                 <md-not-found>
