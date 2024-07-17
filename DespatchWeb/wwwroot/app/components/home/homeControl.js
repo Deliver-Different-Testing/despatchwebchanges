@@ -32,6 +32,21 @@ angular
             $scope.name = "Home";
             $scope.jdSvc = jdSvc;
 
+            $scope.greetUser = function () {
+                let currentHour = new Date().getHours();
+                let greeting;
+
+                if (currentHour < 12) {
+                    greeting = "Good morning";
+                } else if (currentHour < 18) {
+                    greeting = "Good afternoon";
+                } else {
+                    greeting = "Good evening";
+                }
+
+                return `${greeting}, ${$scope.userName}`
+            }
+
             $scope.jdSvc.setSelectJobDetail(function () {
                 var currentJob = $scope.currentJob;
                 jdSvc.setJob($scope.currentJob);
@@ -457,11 +472,23 @@ angular
 
             $scope.layout = angular.copy($scope.layouts[0].layout);
 
-            $scope.deleteLayout = function (i) {
-                $scope.layouts.splice(i, 1);
-                if (Modernizr.localstorage) {
-                    localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
-                }
+            $scope.deleteLayout = function (event, index) {
+                const deleteConfirm = $mdDialog.confirm()
+                    .title('Delete Layout?')
+                    .textContent('Are you sure you would like to delete this layout?')
+                    .ariaLabel('delete layout')
+                    .targetEvent(event)
+                    .ok('Delete')
+                    .cancel('Cancel');
+
+                $mdDialog.show(deleteConfirm).then(() => {
+                    $scope.layouts.splice(index, 1);
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
+                    }
+                }, () => {
+                    console.log("Delete layout canceled!");
+                });
             }
 
             $scope.setLastActiveLayoutName = function (layoutName) {
@@ -470,9 +497,9 @@ angular
                 }
             };
 
-            $scope.loadLayout = function (i) {
-                $scope.currentLayoutName = $scope.layouts[i].name;
-                $scope.layout = angular.copy($scope.layouts[i].layout);
+            $scope.loadLayout = function (index) {
+                $scope.currentLayoutName = $scope.layouts[index].name;
+                $scope.layout = angular.copy($scope.layouts[index].layout);
 
                 // save layout as last active
                 $scope.setLastActiveLayoutName($scope.currentLayoutName);
@@ -480,83 +507,52 @@ angular
                 setTimeout($scope.getData, 1000);
             };
 
-            $scope.saveLayout = function () {
+            $scope.saveLayout = function (event) {
                 angular.forEach($scope.layout.columns,
-                    function (column, colKey) {
+                    (column, colKey) => {
                         column.width = $("#co-" + column.id).css("flex-basis");
                         angular.forEach(column.boxes,
-                            function (box, boxKey) {
+                            (box, boxKey) => {
                                 box.height = $("#box-" + box.name).css("flex-basis");
                             });
                     });
 
+                const saveLayoutPrompt = $mdDialog.prompt()
+                    .title('Save Layout')
+                    .textContent('Please enter a name for this layout.')
+                    .ariaLabel('Layout name')
+                    .targetEvent(event)
+                    .required(true)
+                    .ok('Save')
+                    .cancel('Cancel');
 
-                $scope.gather.form = {
-                    id: "saveLayout",
-                    title: "Save Layout",
-                    fields: [
-                        {
-                            "name": "layoutName",
-                            "label": "Layout Name",
-                            "value": ""
-                        }
-                    ],
-                    onSubmit: function () {
+                $mdDialog.show(saveLayoutPrompt).then(layoutName => {
+                    const callData = {
+                        "call": "saveLayout",
+                        "layoutName": layoutName,
+                        "layout": $scope.layout
+                    };
 
-                        var layoutName = $("#saveLayout").find("input").val();
+                    if (Modernizr.localstorage) {
+                        $scope.layouts = $scope.layouts.concat(
+                            {
+                                name: layoutName,
+                                layout: angular.copy($scope.layout)
+                            });
+                        localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
 
-                        var callData = {
-                            "call": "saveLayout",
-                            "layoutName": layoutName,
-                            "layout": $scope.layout
-                        };
+                        // save last active layout
+                        $scope.setLastActiveLayoutName(layoutName);
+                    }
 
-                        if (Modernizr.localstorage) {
-                            $scope.layouts = $scope.layouts.concat(
-                                {
-                                    name: layoutName,
-                                    layout: angular.copy($scope.layout)
-                                });
-                            localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
-
-                            // save last active layout
-                            $scope.setLastActiveLayoutName(layoutName);
-                        }
-
-                        var deferred = $q.defer();
-                        deferred.resolve({
-                            data: "OK"
-                        });
-                        return deferred.promise;
-                        //DO THE API CALL
-                        //DispatchData.doAPI(callData).then(function (data) {
-
-                        //    console.log(data);
-
-                        //    if (data.response === "Success") {
-
-                        //        $scope.layouts = $scope.layouts.concat(
-                        //            {
-                        //                name: layoutName,
-                        //                layout: angular.copy($scope.layout)
-                        //            }
-                        //        );
-
-                        //    } else {
-
-                        //        alert("Critical Error");
-
-                        //    }
-
-                        //});
-
-
-                    },
-                    submitValue: "Save"
-                };
-
-                $scope.gather.showForm();
-
+                    const deferred = $q.defer();
+                    deferred.resolve({
+                        data: "OK"
+                    });
+                    return deferred.promise;
+                }, () => {
+                    console.log("Save Layout Cancelled!")
+                });
             };
 
             $scope.supportChannelChanged = function () {
