@@ -1115,56 +1115,12 @@
                         placeholder: placeholder
                     };
 
-                    function SelectDialogController($scope, $mdDialog, id, fieldName, title, job, options) {
-                        $scope.title = title;
-                        $scope.job = job;
-                        $scope.fieldName = fieldName;
-                        $scope.field = {value: null, options: options};
-
-                        $scope.submit = async function (value) {
-                            const reRate = false;
-                            const callData = {
-                                "call": "updateDetailField",
-                                "field": this.fieldName,
-                                "value": value.id,
-                                "jobID": this.job.id
-                            };
-
-                            if (callData.field === "Notes") {
-                                job.bulkJob ?
-                                    await DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) :
-                                    await DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
-                            }
-
-                            if (reRate && !job.bulkJob) {
-                                const rate = await self.rateJob(job);
-                                return await DispatchData
-                                    .updateJobDetail(callData.jobID,
-                                        callData.field,
-                                        callData.value,
-                                        Number(rate.replace(/[^0-9.-]+/g, "")),
-                                        FirstName,
-                                        ContactID,
-                                        job.preBook);
-                            } else {
-                                job.bulkJob ?
-                                    await DispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID) :
-                                    await DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID);
-                            }
-
-                            $mdDialog.hide();
-                            self.selectJobDetail(job.id);
-                        };
-
-                        $scope.cancel = function () {
-                            $mdDialog.cancel();
-                        };
-                    }
-
                     $mdDialog.show({
+                        controller: SelectDialogController,
+                        controllerAs: 'ctrl',
                         parent: angular.element(document.body),
                         targetEvent: event,
-                        templateUrl: 'app/components/home/tpls/selectDialog.tpl',
+                        templateUrl: 'app/components/common/selectDialog/selectDialog.html',
                         clickOutsideToClose: true,
                         fullscreen: true,
                         locals: {
@@ -1174,8 +1130,10 @@
                             job: job,
                             options: options
                         },
-                        controller: SelectDialogController
-                    }).then(_ => console.log('Dialog closed!'));
+                    }).then(_ => {
+                        self.selectJobDetail(job.id);
+                        console.log('Dialog closed!');
+                    });
                 };
 
 

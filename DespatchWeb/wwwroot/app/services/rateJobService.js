@@ -6,7 +6,7 @@ class RateJobService {
         this.DispatchData = DispatchData;
     }
 
-    rateJob(job) {
+    async rateJob(job) {
         const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
             job.fromSuburbID === 112 && job.toSuburbID === 112 ||
             job.fromSuburbID === 480 && job.toSuburbID === 480;
@@ -26,25 +26,23 @@ class RateJobService {
                 job.speedID === 152
             )) {
             //Truck Job
-            return this.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
-                (itemSummary) => {
-                    return this.DispatchData.rateTruckJob(job.clientID,
-                        job.fromSuburbID,
-                        job.toSuburbID,
-                        itemSummary.weight,
-                        job.size.id,
-                        job.speedID,
-                        itemSummary.quantity,
-                        job.booked,
-                        itemSummary.pickUp,
-                        itemSummary.dropOff,
-                        job.privateRes,
-                        itemSummary.overSize,
-                        itemSummary.overWeight,
-                        itemSummary.dgClass,
-                        job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
-                        job.truckHours || 2);
-                });
+            const itemSummary = await this.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit);
+            return this.DispatchData.rateTruckJob(job.clientID,
+                job.fromSuburbID,
+                job.toSuburbID,
+                itemSummary.weight,
+                job.size.id,
+                job.speedID,
+                itemSummary.quantity,
+                job.booked,
+                itemSummary.pickUp,
+                itemSummary.dropOff,
+                job.privateRes,
+                itemSummary.overSize,
+                itemSummary.overWeight,
+                itemSummary.dgClass,
+                job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
+                job.truckHours || 2);
         } else {
             return this.DispatchData.rateJob(job.clientID,
                 job.fromSuburbID,
@@ -64,7 +62,7 @@ class RateJobService {
                 job.items,
                 job.booked);
         }
-    };
+    }
 }
 
 angular.module("uDispatch").service("rateJobService", RateJobService);
