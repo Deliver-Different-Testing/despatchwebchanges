@@ -874,8 +874,29 @@ angular
 
             };
 
-            $scope.otherEventForm = function (jobNumber) {
+            $scope.messageClick = function (event, job) {
+                const title = "Send Message";
 
+                $mdDialog.show({
+                    controller: SendMessageDialogController,
+                    controllerAs: 'ctrl',
+                    parent: angular.element(document.body),
+                    targetEvent: event,
+                    templateUrl: 'app/components/common/sendMessageDialog/sendMessageDialog.html',
+                    clickOutsideToClose: true,
+                    fullscreen: true,
+                    locals: {
+                        title,
+                        job,
+                        selectedCourierId: job.courierId,
+                    },
+                }).then(_ => {
+                    self.selectJobDetail(job.id);
+                    console.log('Dialog closed!')
+                });
+            }
+
+            $scope.otherEventForm = function (jobNumber) {
                 var time = new Date();
                 time.setSeconds(0);
                 time.setMilliseconds(0);
@@ -1875,10 +1896,6 @@ angular
                 DispatchData.truckCourierStatus($scope.currentCourier.courierID).then(function (result) {
                     $scope.truckCourierStatus = result.data;
                 });
-            };
-
-            $scope.sendSMS = function (courierId, message) {
-                return DispatchData.sendSMS(courierId, ContactID, FirstName, message);
             };
 
             $scope.selectMapCourier = function (courier) {
@@ -3324,7 +3341,7 @@ angular
                         $mdDialog.show({
                             parent: angular.element(document.body),
                             targetEvent: event,
-                            templateUrl: "app/components/home/tpls/gpsForm.tpl",
+                            templateUrl: "app/components/common/gpsForm/gpsForm.html",
                             clickOutsideToClose: false,
                             fullscreen: true,
                             locals: {

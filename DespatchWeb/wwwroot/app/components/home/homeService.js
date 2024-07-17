@@ -498,6 +498,13 @@ angular
                             searchTerm: searchTerm
                         }
                     }).then(response => response.data);
+                },
+                getSingleCourier: function (courierId) {
+                    return $http.get("courier/GetSingleCourier", {
+                        params: {
+                            courierId
+                        }
+                    }).then(response => response.data);
                 }
             };
         }

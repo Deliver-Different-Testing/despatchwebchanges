@@ -145,6 +145,10 @@
 
                             <div class="box-details" ng-show="boxes[box.name].showDetailButtons" ng-if="currentJob">
                                 <div class="btn-group" role="group" aria-label="Basic example">
+                                    <button class="btn btn-sm btn-secondary" ng-click="messageClick($event, currentJob)" title="Send Message"
+                                            type="button"><i
+                                            class="material-symbols-outlined">send</i></button>
+
                                     <button type="button" class="btn btn-sm btn-secondary" title="ADD EVENT"
                                             ng-click="otherEventForm(currentJob.jobNo)"><i
                                             class="fa fa-calendar-plus-o"></i></button>
@@ -262,8 +266,6 @@
 
 <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
 
-<div ng-include="'app/components/home/tpls/gpsForm.tpl'"></div>
-
 <div id='draggingItems'></div>
 
 <script>
@@ -279,58 +281,8 @@
                 if (!keyIsDown[e.keyCode]) {
                     keyIsDown[e.keyCode] = true;
                     // do key down stuff here
-                    if (e.keyCode == 82 && e.ctrlKey) {
+                    if (e.keyCode === 82 && e.ctrlKey) {
                         //location.reload();
-                    }
-                    if (e.keyCode === 113) {
-                        var sc = angular.element(document.getElementById('box-jobDetail')).scope();
-
-                        sc.gather.form = {
-                            id: "smsCustomer",
-                            title: "Enter your Message (160 chars)",
-                            fields: [
-                                {
-                                    "name": "editMessage",
-                                    "label": "Message",
-                                    "type": "sms",
-                                    "value": ""
-                                },
-                                {
-                                    "name": "courier",
-                                    "label": "Courier",
-                                    "type": "select2"
-                                }
-                            ],
-                            onSubmit: function () {
-                                console.log(sc.gather.form.fields[1]);
-                                var c = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
-                                return sc.sendSMS(c.courierID, sc.gather.form.fields[0].value).then(function (data) {
-                                    sc.gather.cancel();
-                                    alert("Message Sent");
-                                });
-
-
-                            },
-                            submitValue: "Send Message"
-                        };
-
-                        sc.gather.showForm();
-
-
-                        setTimeout(function () {
-                            sc.$apply();
-
-                            var statusOptions = {
-                                minimumInputLength: 0,
-                                data: sc.pickCouriers,
-                                placeholder: "Start typing to choose courier..."
-                            };
-
-                            $(".gatherForm #gather-courier").select2(statusOptions);
-                            $(".gatherForm #gather-courier").select2('open');
-
-
-                        }, 200);
                     }
                 }
                 break;
@@ -340,14 +292,14 @@
                 break;
         }
         disabledEventPropagation(e);
-        if (e.keyCode == 68 && e.ctrlKey) {
+        if (e.keyCode === 68 && e.ctrlKey) {
             e.preventDefault();
             return false;
         }
     }
 
     function disabledEventPropagation(e) {
-        if (e.keyCode == 68 && e.ctrlKey) {
+        if (e.keyCode === 68 && e.ctrlKey) {
             if (e.stopPropagation) {
                 e.stopPropagation();
             } else if (window.event) {
@@ -358,7 +310,7 @@
 
 
     $(document).on('keydown', '.dispatchField, .lateCallField', function (event) {
-        if (event.keyCode == 13) {
+        if (event.keyCode === 13) {
             $(this).parents(".clickable-row").addClass("doing");
         }
     });
@@ -416,7 +368,7 @@
         }
 
 
-        if (mouseDown == 0) {
+        if (mouseDown === 0) {
             mouseDown = 1;
 
             if (event.which === 1) {
@@ -455,7 +407,7 @@
 
                     }
                     setTimeout(function () {
-                        if (mouseDown == 1) {
+                        if (mouseDown === 1) {
                             $("#draggingItems").show();
                             $("#draggingItems").html(jobNo);
 
@@ -501,9 +453,9 @@
 
     $(document).on("keydown", function (e) {
         var code = (e.keyCode ? e.keyCode : e.which);
-        if (code == 40) {
+        if (code === 40) {
             $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
-        } else if (code == 38) {
+        } else if (code === 38) {
             $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
         }
     });

@@ -742,7 +742,7 @@
                         controllerAs: 'ctrl',
                         parent: angular.element(document.body),
                         targetEvent: event,
-                        templateUrl: "app/components/common/gpsForm/gpsForm.tpl",
+                        templateUrl: "app/components/common/gpsForm/gpsForm.html",
                         clickOutsideToClose: false,
                         fullscreen: true,
                         locals: {
@@ -1231,7 +1231,6 @@
                     self.showSelectDialog(event, job, self.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
                 };
 
-
                 self.showAutocompleteDialog = function (event, job, url, placeholder, fieldName, title, id = "editField", existingItem, showRerateOption) {
                     const options = {
                         placeholder,
@@ -1244,7 +1243,7 @@
                         controllerAs: 'ctrl',
                         parent: angular.element(document.body),
                         targetEvent: event,
-                        templateUrl: 'app/components/common/autocompleteDialog/autoCompleteDialog.tpl',
+                        templateUrl: 'app/components/common/autocompleteDialog/autoCompleteDialog.html',
                         clickOutsideToClose: true,
                         fullscreen: true,
                         locals: {

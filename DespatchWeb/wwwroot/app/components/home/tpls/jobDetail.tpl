@@ -5,9 +5,10 @@
                 <div class="row row-no-padding addresses">
                     <div class="col-md-6">
                         <div class="field">
-                            <label>Client</label><i ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-edit"
+                            <label>Client</label><i class="material-symbols-outlined"
+                                                    ng-class="currentJob.locked ? 'disabled' : ''"
                                                     title="Change Client Code"
-                                                    ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
+                                                    ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)">edit</i>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a
                                     ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#"
                                     ng-click="!currentJob.locked && jdSvc.clientClick($event, currentJob)">{{currentJob.client}}
