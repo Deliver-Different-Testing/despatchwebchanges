@@ -108,22 +108,6 @@
                 </md-menu-content>
             </md-menu>
         </div>
-
-        <!-- <div class="dropdown topbar-button">
-             <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenu1"
-                     data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                 Layout
-                 <span class="caret"></span>
-             </button>
-             <ul class="dropdown-menu dropdown-menu-right list-group w-50" aria-labelledby="dropdownMenu1">
-                 <li class="list-group-item" ng-click="saveLayout()"><b>Save Layout</b></li>
-                 <li ng-repeat="lo in layouts track by $index" class="list-group-item">
-                     <i ng-click="deleteLayout($index)" style="cursor: pointer" title="Delete Layout"
-                        class="fa fa-trash"></i>
-                     <span ng-click="loadLayout($index)" style="cursor: pointer">{{lo.name}}</span>
-                 </li>
-             </ul>
-         </div>-->
     </div>
 </div>
 
@@ -226,11 +210,13 @@
                             </div>
 
                             <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
-                                <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
+                                <i class="material-symbols-outlined small-icon" ng-click="searchCourier()"
+                                   title="GPS Courier">search</i>
                                 <input type="text" style="color: black;display:inline-block!important;"
                                        placeholder="gps courier (enter code)..."
                                        ng-model="$parent.$parent.courier.gpsCourier" id="gps"/>
-                                <i class="fa fa-remove" ng-click="clearCourierSearch();" title="Clear"></i>
+                                <i class="material-symbols-outlined small-icon" ng-click="clearCourierSearch();"
+                                   title="Clear">close</i>
                             </div>
 
                             <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
@@ -273,14 +259,17 @@
                             </div>
 
                             <div class="box-search" ng-show="boxes[box.name].showSearch">
-                                <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
-                                <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
+                                <i class="material-symbols-outlined small-icon"
+                                   ng-click="openSearch(box.name)">search</i>
+                                <i class="material-symbols-outlined small-icon" ng-click="box.searchBox = ''"
+                                   title="Clear">close</i>
                                 <input ng-model="box.searchBox" ng-model-options="{debounce: 300}"
                                        placeholder="Search..."
                                        type="text">
                             </div>
 
-                            <div class="box-handle"><i class="fa fa-ellipsis-v"></i></div>
+                            <div class="box-handle"><i class="material-symbols-outlined small-icon">drag_indicator</i>
+                            </div>
                         </div>
                     </div>
                     <div class="box-content"
