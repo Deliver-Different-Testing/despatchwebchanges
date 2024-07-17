@@ -1230,11 +1230,14 @@ md-toast.md-error-toast-theme .md-toast-content {
   background-color: red;
 }
 md-toast.md-warning-toast-theme .md-toast-content {
-    background-color: #fddd00;
+  background-color: yellow;
 }
-
-.mfb-component__button--child,
-.mfb-component__button--main {
-    background-color: #fddd00;
+.small-icon {
+  font-size: 16px;
+}
+.resizeable-checkbox-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 /*# sourceMappingURL=udispatch.css.map */

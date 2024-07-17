@@ -5,7 +5,7 @@
                 <div class="row row-no-padding addresses">
                     <div class="col-md-6">
                         <div class="field">
-                            <label>Client</label><i class="material-symbols-outlined"
+                            <label>Client</label><i class="material-symbols-outlined small-icon"
                                                     ng-class="currentJob.locked ? 'disabled' : ''"
                                                     title="Change Client Code"
                                                     ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)">edit</i>
@@ -376,7 +376,7 @@
                         </div>
 
                         <!-- Checkbox flex view -->
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <div class="resizeable-checkbox-container">
                             <div ng-if="!currentJob.bulkJob" class="field" style="flex: 1;">
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Van</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
