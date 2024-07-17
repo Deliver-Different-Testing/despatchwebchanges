@@ -5,7 +5,7 @@
                 <div class="row row-no-padding addresses">
                     <div class="col-md-6">
                         <div class="field">
-                            <label>Client</label><i class="material-symbols-outlined"
+                            <label>Client</label><i class="material-symbols-outlined small-icon"
                                                     ng-class="currentJob.locked ? 'disabled' : ''"
                                                     title="Change Client Code"
                                                     ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)">edit</i>

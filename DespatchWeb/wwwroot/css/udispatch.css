@@ -1232,4 +1232,7 @@ md-toast.md-error-toast-theme .md-toast-content {
 md-toast.md-warning-toast-theme .md-toast-content {
   background-color: yellow;
 }
+.small-icon {
+  font-size: 16px;
+}
 /*# sourceMappingURL=udispatch.css.map */
