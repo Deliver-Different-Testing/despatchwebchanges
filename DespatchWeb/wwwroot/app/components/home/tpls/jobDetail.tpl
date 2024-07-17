@@ -376,7 +376,7 @@
                         </div>
 
                         <!-- Checkbox flex view -->
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <div class="resizeable-checkbox-container">
                             <div ng-if="!currentJob.bulkJob" class="field" style="flex: 1;">
                                 <label ng-class="currentJob.locked ? 'disabled' : ''">Van</label>
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">

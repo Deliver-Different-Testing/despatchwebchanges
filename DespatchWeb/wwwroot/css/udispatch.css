@@ -1235,4 +1235,9 @@ md-toast.md-warning-toast-theme .md-toast-content {
 .small-icon {
   font-size: 16px;
 }
+.resizeable-checkbox-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 /*# sourceMappingURL=udispatch.css.map */
