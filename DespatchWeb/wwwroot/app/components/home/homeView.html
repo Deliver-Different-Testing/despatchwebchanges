@@ -129,40 +129,64 @@
                             <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
 
                                 <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Truck Loading Status"
-                                            ng-if="truckCourierStatus.length >0" ng-click="truckLoadingStatus()"><i
-                                            class="fa fa-truck"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Restore All"
-                                            ng-click="restoreAll()"><i class="fa fa-undo"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Redispatch All"
-                                            ng-click="redispatchAll()"><i class="fa fa-repeat"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Resend All"
-                                            ng-click="resendAll()"><i class="fa fa-send"></i></button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="truckLoadingStatus()"
+                                            ng-if="truckCourierStatus.length >0"
+                                            title="Truck Loading Status" type="button">
+                                        <i class="material-symbols-outlined small-icon">local_shipping</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="restoreAll()"
+                                            title="Restore All"
+                                            type="button">
+                                        <i class="material-symbols-outlined small-icon">undo</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="redispatchAll()"
+                                            title="Redispatch All"
+                                            type="button">
+                                        <i class="material-symbols-outlined small-icon">repeat</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="resendAll()" title="Resend All Jobs"
+                                            type="button">
+                                        <i class="material-symbols-outlined small-icon">send</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="messageClick($event, currentJob)"
+                                            title="Send Message"
+                                            type="button">
+                                        <i class="material-symbols-outlined small-icon">sms</i>
+                                    </button>
                                 </div>
 
                             </div>
 
                             <div class="box-details" ng-show="boxes[box.name].showDetailButtons" ng-if="currentJob">
                                 <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="ADD EVENT"
-                                            ng-click="otherEventForm(currentJob.jobNo)"><i
-                                            class="fa fa-calendar-plus-o"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="CLOSE EVENT"
-                                            ng-disabled="!currentSupport" ng-click="closeSupport(currentSupport);"><i
-                                            class="fa fa-calendar-check-o"></i></button>
+                                    <button class="btn btn-sm btn-secondary" title="Add Event" type="button"
+                                            ng-click="otherEventForm(currentJob.jobNo)">
+                                        <i class="material-symbols-outlined small-icon">edit_calendar</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" title="Close Event" type="button"
+                                            ng-click="closeSupport(currentSupport);" ng-disabled="!currentSupport">
+                                        <i class="material-symbols-outlined small-icon">event_available</i>
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job"
                                             ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)"
-                                            ng-click="unlockJob()"><i class="fa fa-lock"></i></button>
+                                            ng-click="unlockJob()">
+                                        <i class="material-symbols-outlined small-icon">lock_open</i>
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Lock Job"
                                             ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)"
-                                            ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
+                                            ng-click="lockJob()">
+                                        <i class="material-symbols-outlined small-icon">lock</i>
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Split Job"
                                             ng-show="currentJob && (currentJob.allowSplit)"
-                                            ng-click="splitJob($event, currentJob)"><i class="fa fa-random"></i>
+                                            ng-click="splitJob($event, currentJob)">
+                                        <i class="material-symbols-outlined small-icon">shuffle</i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-secondary" title="Swap POD"
                                             ng-show="currentJob && currentJob.done && !currentJob.bulkJob && !currentJob.preBook"
-                                            ng-click="swapPOD()"><i class="fa fa-exchange"></i></button>
+                                            ng-click="swapPOD()">
+                                        <i class="fa fa-exchange"></i>
+                                    </button>
 
 
                                     <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
@@ -222,7 +246,8 @@
                             <div class="box-search" ng-show="boxes[box.name].showSearch">
                                 <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
                                 <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
-                                <input ng-model="box.searchBox" ng-model-options="{debounce: 300}" placeholder="Search..."
+                                <input ng-model="box.searchBox" ng-model-options="{debounce: 300}"
+                                       placeholder="Search..."
                                        type="text">
                             </div>
 
@@ -264,7 +289,6 @@
 <div ng-include="'app/components/home/tpls/lateForm.tpl'"></div>
 <div ng-include="'app/components/home/tpls/gatherForm.tpl'"></div>
 <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
-<div ng-include="'app/components/home/tpls/gpsForm.tpl'"></div>
 
 <div id='draggingItems'></div>
 
@@ -281,52 +305,6 @@
                     // do key down stuff here
                     if (e.keyCode === 82 && e.ctrlKey) {
                         //location.reload();
-                    }
-                    if (e.keyCode === 113) {
-                        let sc = angular.element(document.getElementById('box-jobDetail')).scope();
-
-                        sc.gather.form = {
-                            id: "smsCustomer",
-                            title: "Enter your Message (160 chars)",
-                            fields: [
-                                {
-                                    "name": "editMessage",
-                                    "label": "Message",
-                                    "type": "sms",
-                                    "value": ""
-                                },
-                                {
-                                    "name": "courier",
-                                    "label": "Courier",
-                                    "type": "select2"
-                                }
-                            ],
-                            onSubmit: () => {
-                                console.log(sc.gather.form.fields[1]);
-                                const c = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
-                                return sc.sendSMS(c.courierID, sc.gather.form.fields[0].value).then(data => {
-                                    sc.gather.cancel();
-                                    alert("Message Sent");
-                                });
-                            },
-                            submitValue: "Send Message"
-                        };
-
-                        sc.gather.showForm();
-
-                        setTimeout(() => {
-                            sc.$apply();
-
-                            const statusOptions = {
-                                minimumInputLength: 0,
-                                data: sc.pickCouriers,
-                                placeholder: "Start typing to choose courier..."
-                            };
-
-                            const $gatherFromCourier = $(".gatherForm #gather-courier");
-                            $gatherFromCourier.select2(statusOptions);
-                            $gatherFromCourier.select2('open');
-                        }, 200);
                     }
                 }
                 break;
@@ -406,6 +384,7 @@
         } else {
             jobNo = $(this).attr("data-jobno");
         }
+
 
         if (mouseDown === 0) {
             mouseDown = 1;
@@ -510,3 +489,9 @@
         });
     }
 </script>
+
+<style>
+    .small-icon {
+        font-size: 16px;
+    }
+</style>

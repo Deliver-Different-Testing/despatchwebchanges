@@ -3,14 +3,14 @@
         <label id="dateRange" class="label-padding">Quick Search: </label>
         <md-radio-group ng-model="dateSearchRange" ng-change="onSearchRangeChange(dateSearchRange)"
                         aria-labelledby="dateRange" layout="row" layout-align="center center">
-            <md-radio-button value="Fortnight">Fortnight</md-radio-button>
-            <md-radio-button value="Today">Today</md-radio-button>
-            <md-radio-button value="Month">Month</md-radio-button>
-            <md-radio-button value="Custom">Custom</md-radio-button>
+            <md-radio-button value="1">Fortnight</md-radio-button>
+            <md-radio-button value="2">Today</md-radio-button>
+            <md-radio-button value="3">Month</md-radio-button>
+            <md-radio-button value="4">Custom</md-radio-button>
         </md-radio-group>
         <md-divider></md-divider>
 
-        <div ng-if="dateSearchRange == 'Custom'" class="space">
+        <div class="space" ng-if="dateSearchRange == 4">
             <label>From: </label><span>{{currentFromDate | date: DEFAULT_DATE_FORMAT}}</span>
             <div class="btn-group" role="group" aria-label="Basic example">
                 <button type="button" class="btn btn-sm btn-secondary" title="Choose From Date"
@@ -26,15 +26,16 @@
         <div class="space">
             <label id="clientLabel">Client:</label>
             <md-autocomplete
-                md-selected-item="clientSelectedItem"
-                md-search-text="clientSearchText"
-                md-selected-item-change="selectedClientChange(item)"
-                md-items="item in clientQuerySearch(clientSearchText)"
-                md-item-text="item.text"
-                md-min-length="3"
-                placeholder="Start typing to enter new client..."
-                input-aria-labelledby="clientLabel">
-            <md-item-template>
+                    input-aria-labelledby="clientLabel"
+                    md-clear-button="true"
+                    md-item-text="item.text"
+                    md-items="item in clientQuerySearch(clientSearchText)"
+                    md-min-length="3"
+                    md-search-text="clientSearchText"
+                    md-selected-item="clientSelectedItem"
+                    md-selected-item-change="selectedClientChange(item)"
+                    placeholder="Start typing to enter new client...">
+                <md-item-template>
                     <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
                 </md-item-template>
                 <md-not-found>
@@ -53,7 +54,8 @@
                     md-item-text="item.text"
                     md-min-length="3"
                     placeholder="Start typing to enter new courier..."
-                    input-aria-labelledby="courierLabel">
+                    input-aria-labelledby="courierLabel"
+                    md-clear-button="true">
                 <md-item-template>
                     <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
                 </md-item-template>
@@ -67,12 +69,17 @@
             <b>Job Number:</b>
             <input type="text" name="Job" id="Job" ng-model="pickDateService.job" class="form-control focusMe"/>
         </div>
+
         <div class="space">
             <b>Everything Else (JobNo, Address, Name, Refs):</b>
             <input type="text" name="Wild" id="Wild" ng-model="pickDateService.wild" class="form-control focusMe"/>
         </div>
+
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">
-            <md-button class="md-raised md-primary" ng-click="refreshAllData(true)">Search</md-button>
+            <md-button class="md-raised md-primary" ng-click="refreshAllData(true)">
+                <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                Search
+            </md-button>
         </section>
     </div>
 </div>

@@ -872,8 +872,29 @@ angular
 
             };
 
-            $scope.otherEventForm = function (jobNumber) {
+            $scope.messageClick = function (event, job) {
+                const title = "Send Message";
 
+                $mdDialog.show({
+                    controller: SendMessageDialogController,
+                    controllerAs: 'ctrl',
+                    parent: angular.element(document.body),
+                    targetEvent: event,
+                    templateUrl: 'app/components/common/sendMessageDialog/sendMessageDialog.html',
+                    clickOutsideToClose: true,
+                    fullscreen: true,
+                    locals: {
+                        title,
+                        job,
+                        selectedCourierId: job.courierId,
+                    },
+                }).then(_ => {
+                    self.selectJobDetail(job.id);
+                    console.log('Dialog closed!')
+                });
+            }
+
+            $scope.otherEventForm = function (jobNumber) {
                 var time = new Date();
                 time.setSeconds(0);
                 time.setMilliseconds(0);
@@ -1875,10 +1896,6 @@ angular
                 });
             };
 
-            $scope.sendSMS = function (courierId, message) {
-                return DispatchData.sendSMS(courierId, ContactID, FirstName, message);
-            };
-
             $scope.selectMapCourier = function (courier) {
                 $("#box-jobDetail").find(".loading").show();
                 $("#box-map").find(".loading").show();
@@ -2262,50 +2279,54 @@ angular
 
 
             $scope.fromColumnClick = function (evt) {
-                switch (evt.which) {
-                    case 1:
-                        // this is left click
-                        break;
-                    case 2:
-                        // in case you need some middle click things
-                        break;
-                    case 3:
-                        // this is right click
-                        loadingService.showLoader();
-                        setTimeout(() => {
-                            $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
-                        }, 100);
-                        break;
-                    default:
-                        console.log("you have a strange mouse!");
-                        break;
-
-                }
+                // Temp disabled to prevent endless loading
                 return false;
+                /*  switch (evt.which) {
+                      case 1:
+                          // this is left click
+                          break;
+                      case 2:
+                          // in case you need some middle click things
+                          break;
+                      case 3:
+                          // this is right click
+                          loadingService.showLoader();
+                          setTimeout(() => {
+                              $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
+                          }, 100);
+                          break;
+                      default:
+                          console.log("you have a strange mouse!");
+                          break;
+
+                  }
+                  return false;*/
             };
 
             $scope.toColumnClick = function (evt) {
-                switch (evt.which) {
-                    case 1:
-                        // this is left click
-                        break;
-                    case 2:
-                        // in case you need some middle click things
-                        break;
-                    case 3:
-                        // this is right click
-                        waitingDialog.show();
-                        setTimeout(function () {
-                            $scope.jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
-                        }, 100);
-
-                        break;
-                    default:
-                        console.log("you have a strange mouse!");
-                        break;
-
-                }
+                // Temp disabled to prevent endless loading
                 return false;
+                /*     switch (evt.which) {
+                         case 1:
+                             // this is left click
+                             break;
+                         case 2:
+                             // in case you need some middle click things
+                             break;
+                         case 3:
+                             // this is right click
+                             waitingDialog.show();
+                             setTimeout(function () {
+                                 $scope.jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
+                             }, 100);
+
+                             break;
+                         default:
+                             console.log("you have a strange mouse!");
+                             break;
+
+                     }
+                     return false;*/
             };
 
             $scope.latePickColumnClick = function (evt) {
@@ -3318,7 +3339,7 @@ angular
                         $mdDialog.show({
                             parent: angular.element(document.body),
                             targetEvent: event,
-                            templateUrl: "app/components/home/tpls/gpsForm.tpl",
+                            templateUrl: "app/components/common/gpsForm/gpsForm.html",
                             clickOutsideToClose: false,
                             fullscreen: true,
                             locals: {

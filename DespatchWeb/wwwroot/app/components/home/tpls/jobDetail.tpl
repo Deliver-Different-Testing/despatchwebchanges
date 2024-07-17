@@ -5,12 +5,13 @@
                 <div class="row row-no-padding addresses">
                     <div class="col-md-6">
                         <div class="field">
-                            <label>Client</label><i ng-class="currentJob.locked ? 'disabled' : ''" class="fa fa-edit"
+                            <label>Client</label><i class="material-symbols-outlined"
+                                                    ng-class="currentJob.locked ? 'disabled' : ''"
                                                     title="Change Client Code"
-                                                    ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
+                                                    ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)">edit</i>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a
                                     ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#"
-                                    ng-click="!currentJob.locked && jdSvc.clientClick(currentJob)">{{currentJob.client}}
+                                    ng-click="!currentJob.locked && jdSvc.clientClick($event, currentJob)">{{currentJob.client}}
                                 {{currentJob.clientName}}</a></div>
                         </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
@@ -23,7 +24,8 @@
                         </div>
                         <div class="field" data-field="fromSuburb">
                             <label class="disabled">From Suburb:</label>
-                            <div class="disabled" class="value">{{currentJob.fromSuburbName}}</div>
+                            <div class="disabled" class="value">{{currentJob.fromSuburbName}} {{currentJob.fromPostCode}}
+                            </div>
                         </div>
 
                         <div class="field"
@@ -55,7 +57,9 @@
                         </div>
                         <div class="field" data-field="toSuburb">
                             <label class="disabled">To Suburb:</label>
-                            <div class="disabled" class="value">{{currentJob.toSuburbName}}</div>
+                            <div class="disabled" class="value">{{currentJob.toSuburbName}} {{ currentJob.toPostCode
+                                }}
+                            </div>
                         </div>
                         <div class="field" data-field="toCity">
                             <label class="disabled">To City:</label>
@@ -82,6 +86,7 @@
                     <md-button class="md-fab md-raised md-mini" style="float: right;"
                                ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
                         <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
+                        <md-tooltip md-direction="bottom">Add New Note</md-tooltip>
                     </md-button>
                     <div class="value">
                         <pre>{{currentJob.internalNotes}}</pre>
@@ -259,7 +264,8 @@
                         </div>
                         <div class="field">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Courier</label>
-                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.courier}}
+                            <div class="value" ng-class="currentJob.locked ? 'disabled' : ''"
+                                 ng-click="courierClick($event, job)">{{currentJob.courier}}
                             </div>
                         </div>
                         <div class="field">
@@ -443,7 +449,7 @@
                                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                     <md-checkbox
                                             ng-disabled="currentJob.locked"
-                                            ng-click="jdSvc.doneClick(event, currentJob)"
+                                            ng-click="jdSvc.doneClick($event, currentJob)"
                                             ng-model="currentJob.done">
                                     </md-checkbox>
                                 </div>
@@ -490,8 +496,12 @@
         </div>
 
         <div ng-if="!currentJob.bulkJob && currentJob.podPhotos.length > 0" class="row row-no-padding row-out">
-            <button style="position: absolute; right: 0; top: 0;" class="mat-button" ng-click="sendPOD()">Send POD
-            </button>
+            <md-button class="md-fab md-mini md-raised"
+                       ng-click="sendPOD()"
+                       style="position: absolute; right: 0; top: 0;">
+                <md-icon md-font-set="material-symbols-outlined">package</md-icon>
+                <md-tooltip md-direction="bottom">Send POD</md-tooltip>
+            </md-button>
             <label>POD Info</label>
             <div class="row row-no-padding row-out">
                 <!--<img ng-src="{{'data:image/png;base64,'+currentJob.podPhoto}}" />-->
@@ -535,10 +545,17 @@
         <div ng-if="!currentJob.bulkJob">
             <div ng-class="currentJob.locked ? 'disabled' : ''" class="palletInfo">
 
-                <label>Pallet Info</label>
-                <div ng-class="currentJob.locked ? 'disabled' : ''" class="btn btn-sml addPallet"
-                     ng-click="!currentJob.locked && jdSvc.newPallet()">Add Pallet
+                <div style="display: flex; justify-content: space-between;">
+                    <label>Pallet Info</label>
+                    <md-button
+                            class="md-fab md-mini md-raised"
+                            ng-click="jdSvc.newPallet()"
+                            ng-disabled="currentJob.locked">
+                        <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
+                        <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>
+                    </md-button>
                 </div>
+
                 <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                     <table class="table table-striped table-responsive">
                         <thead>
@@ -589,7 +606,6 @@
                         <td>Direct Dial</td>
                         <td>Mobile</td>
                         <td>Email</td>
-
                     </tr>
                     </thead>
                     <tbody>
@@ -608,10 +624,7 @@
 
         </div>
     </div>
-
-
 </md-content>
-</div>
 
 <div class="container-fluid" id="jobDetail" style="padding:0" ng-if="currentJob && currentJob.preBook">
     <div class="fields">
@@ -624,7 +637,7 @@
                                                     ng-click="jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
 
                             <div class="value"><a class="uline" src="#"
-                                                  ng-click="jdSvc.clientClick(currentJob)">{{currentJob.client}}
+                                                  ng-click="jdSvc.clientClick($event, currentJob)">{{currentJob.client}}
                                 {{currentJob.clientName}}</a></div>
                         </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
@@ -673,8 +686,9 @@
                 <div class="notes field">
                     <label>Notes</label>
                     <md-button class="md-fab md-mini md-primary" style="float: right;"
-                            ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
-                        <md-icon md-font-set="material-symbols-outlined">add</md-icon>
+                               ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')">
+                        <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
+                        <md-tooltip md-direction="bottom">Add New Note</md-tooltip>
                     </md-button>
                     <div class="value">
                         <pre>{{currentJob.internalNotes}}</pre>
@@ -756,8 +770,11 @@
 
                         <div class="field">
                             <label>Direct</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.preBookDirectClick(currentJob)"
-                                                      ng-model="currentJob.direct"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.preBookDirectClick(currentJob)"
+                                    ng-disabled="currentJob.locked"
+                                    ng-model="currentJob.direct">
+                            </md-checkbox>
                         </div>
 
                         <div class="field" ng-click="jdSvc.leaveClick($event, currentJob)">
@@ -772,7 +789,9 @@
                         </div>
                         <div class="field">
                             <label>Courier</label>
-                            <div class="value" ng-click="jdSvc.courierClick(currentJob)">{{currentJob.courier}}</div>
+                            <div class="value" ng-click="jdSvc.courierClick($event, currentJob)">
+                                {{currentJob.courier}}
+                            </div>
                         </div>
                         <div class="field" ng-class="jdSvc.combos.frequency.length > 0 ? '' : 'red'">
                             <b>Frequency:</b>&nbsp;<i ng-if="jdSvc.combos.frequency.length === 0"
@@ -842,18 +861,24 @@
                         </div>
                         <div class="field">
                             <label>One Off</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.oneOffClick(currentJob)"
-                                                      ng-model="currentJob.oneOff"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.oneOffClick(currentJob)"
+                                    ng-model="currentJob.oneOff">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Active</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.activeClick(currentJob)"
-                                                      ng-model="currentJob.active"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.activeClick(currentJob)"
+                                    ng-model="currentJob.active">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Done</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.doneClick($event, currentJob)"
-                                                      ng-model="currentJob.done"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.doneClick($event, currentJob)"
+                                    ng-model="currentJob.done">
+                            </md-checkbox>
                         </div>
                     </div>
 
@@ -881,33 +906,45 @@
                         </div>
                         <div class="field">
                             <label>Van</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.vanClick(currentJob)"
-                                                      ng-model="currentJob.van"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.vanClick(currentJob)"
+                                    ng-model="currentJob.van">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Truck</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.truckClick(currentJob)"
-                                                      ng-model="currentJob.truck"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.truckClick(currentJob)"
+                                    ng-model="currentJob.truck">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Pedal</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.pedalClick(currentJob)"
-                                                      ng-model="currentJob.pedal"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.pedalClick(currentJob)"
+                                    ng-model="currentJob.pedal">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Attention</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.attentionClick(currentJob)"
-                                                      ng-model="currentJob.attention"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.attentionClick(currentJob)"
+                                    ng-model="currentJob.attention">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Return</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.preBookReturnClick(currentJob)"
-                                                      ng-model="currentJob.return"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.preBookReturnClick(currentJob)"
+                                    ng-model="currentJob.return">
+                            </md-checkbox>
                         </div>
                         <div class="field">
                             <label>Reprice</label>
-                            <div class="value"><input type="checkbox" ng-click="jdSvc.repriceClick(currentJob)"
-                                                      ng-model="currentJob.reprice"/></div>
+                            <md-checkbox
+                                    ng-click="jdSvc.repriceClick(currentJob)"
+                                    ng-model="currentJob.reprice">
+                            </md-checkbox>
                         </div>
 
 
@@ -919,10 +956,13 @@
 
         <div>
             <div class="palletInfo">
+                <md-button class="md-fab md-mini md-raised"
+                           ng-click="sendPOD()"
+                           style="position: absolute; right: 0; top: 0;">
+                    <md-icon md-font-set="material-symbols-outlined">package</md-icon>
+                    <md-tooltip md-direction="bottom">Send POD</md-tooltip>
+                </md-button>
 
-                <!-- POD requested changes-->
-                <button style="position: absolute; right: 0; top: 0;" class="mat-button" ng-click="sendPOD()">Send POD
-                </button>
                 <div>
                     <img ng-src="{{currentJob.pODPhoto}}" style="display: block; margin: auto;"/>
 
@@ -932,7 +972,11 @@
                 </div>
 
                 <label>Pallet Info</label>
-                <div class="mat-button" ng-click="jdSvc.newPallet()">Add Pallet</div>
+                <md-button class="md-fab md-mini md-raised" ng-click="jdSvc.newPallet()">
+                    <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
+                    <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>
+                </md-button>
+
                 <div class="value">
                     <table class="table table-striped table-responsive">
                         <thead>

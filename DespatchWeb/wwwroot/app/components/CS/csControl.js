@@ -11,7 +11,7 @@ angular
                 "allRuns": false
             };
 
-            $scope.dateSearchRange = 'Fortnight';
+            $scope.dateSearchRange = 1; // Set to fortnight
             $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
             $scope.searchBox = "";
@@ -40,12 +40,7 @@ angular
                         if ($scope.currentJob) {
                             $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
                         }
-
                     });
-
-                    //setTimeout(function () {  }, 1000);
-
-
                 },
                 cancel: function () {
                     $(".gatherForm").hide();
@@ -148,7 +143,7 @@ angular
             $scope.boxes = {
                 "pickDate": {
                     "title": "Filters",
-                    "tpl": "app/components/CS/tpls/pickDate.tpl?v=2",
+                    "tpl": "app/components/CS/tpls/pickDate.tpl",
                     "showSearch": 0
                 },
 
@@ -401,7 +396,7 @@ angular
 
             $scope.pickDateService = {
                 "client": '',
-                "couriers": [],
+                "courier": "",
                 "date": moment().format("YYYY-MM-DD"),
                 "from_date": moment().subtract(7, 'days').format("YYYY-MM-DD"),
                 "to_date": moment().add(7, 'days').format("YYYY-MM-DD"),
@@ -815,10 +810,6 @@ angular
                     return;
                 }
 
-                //if (job.dgClass !== null && job.dgClass > 0) {
-                //    DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
-                //}
-
                 callData.jobs.push(job.id);
 
                 return uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
@@ -830,7 +821,6 @@ angular
             }
 
             $scope.swapPOD = function () {
-
                 $scope.gather.form = {
                     id: "swapPOD",
                     title: "Enter the other job number",
@@ -841,61 +831,67 @@ angular
                             "type": "text"
                         }
                     ],
-                    onSubmit: function () {
+                    onSubmit: function (event) {
                         return uCSData.validateSwapPOD($scope.gather.form.fields[0].value).then(function (data) {
                             if (!data) {
-                                $ngConfirm("Invalid Job");
+                                $mdDialog.show(
+                                    $mdDialog.alert()
+                                        .clickOutsideToClose(true)
+                                        .title('Invalid Job')
+                                        .textContent('This job is invalid.')
+                                        .ok('OK')
+                                ).then(_ => console.log("Alert closed."));
                             } else {
                                 const secondJobId = data;
                                 const firstJobId = $scope.currentJob.id;
-                                $ngConfirm({
-                                    title: 'Swap Delivery Info',
-                                    content: `Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`,
-                                    scope: $scope,
-                                    buttons: {
 
-                                        Yes: {
-                                            btnClass: 'btn-green',
-                                            action: function (scope, button) {
-                                                return uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(function (data) {
-                                                    $ngConfirm("POD Swap Completed Successfully");
-                                                    uCSData.reSendJobs(secondJobId);
-                                                    uCSData.reAssignJobs(firstJobId).then(function (data) {
-                                                        uCSData.reSendJobs(firstJobId).then(function (data) {
-                                                            $scope.refreshData(true);
-                                                        });
-                                                    });
+                                const confirm = $mdDialog.confirm()
+                                    .title('Swap Delivery Info?')
+                                    .textContent(`Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`)
+                                    .ariaLabel('Lucky day')
+                                    .targetEvent(event)
+                                    .ok('Yes')
+                                    .cancel('No');
 
+                                $mdDialog.show(confirm).then(() => uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(_ => {
 
-                                                });
+                                    $mdDialog.show(
+                                        $mdDialog.alert()
+                                            .clickOutsideToClose(true)
+                                            .title('Successful')
+                                            .textContent('POD Swap Completed Successfully')
+                                            .ok('OK')
+                                    ).then(_ => console.log("Alert closed."));
 
-
-                                            }
-                                        },
-                                        No: {
-                                            btnClass: 'btn-red',
-                                            action: function (scope, button) {
-
-                                            }
-                                        }
-
-                                    }
+                                    $ngConfirm("POD Swap Completed Successfully");
+                                    uCSData.reSendJobs(secondJobId);
+                                    uCSData.reAssignJobs(firstJobId).then(_ => {
+                                        uCSData.reSendJobs(firstJobId).then(_ => {
+                                            $scope.refreshData(true);
+                                        });
+                                    });
+                                }), () => {
+                                    console.log("POD Swap Canceled");
                                 });
-
                             }
                         });
 
                     },
                     submitValue: "Submit"
                 };
+
                 $scope.gather.showForm();
-
-
             }
 
             $scope.sendPOD = function () {
                 if (!$scope.currentJob.podPhoto) {
-                    alert("Sorry no photo for this Job");
+                    $mdDialog.show(
+                        $mdDialog.alert()
+                            .clickOutsideToClose(true)
+                            .title('No Photo')
+                            .textContent('Sorry no photo for this job.')
+                            .ok('OK')
+                    ).then(_ => console.log("Alert closed."));
                     return;
                 }
                 $scope.gather.form = {
@@ -909,9 +905,17 @@ angular
                         }
                     ],
                     onSubmit: function () {
-                        uCSData.sendPOD($scope.currentJob.id, $scope.gather.form.fields[0].value).then(function (data) {
-
+                        uCSData.sendPOD($scope.currentJob.id, $scope.gather.form.fields[0].value).then(data => {
                         });
+
+                        $mdDialog.show(
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Email Sent')
+                                .textContent('POD email has been sent')
+                                .ok('OK')
+                        ).then(_ => console.log("Alert closed."));
+
                         alert("Email sent!");
                     },
                     submitValue: "Send"
@@ -934,7 +938,7 @@ angular
                             .title('Missing Criteria')
                             .textContent('Please provide more detailed search criteria.')
                             .ok('Understood')
-                    ).then(function () {
+                    ).then(() => {
                         console.log("Search operation cancelled due to insufficient criteria.")
                     });
                     return;
@@ -946,9 +950,9 @@ angular
             }
 
             $scope.refreshData = function (wait) {
-
-                var goTop = $("#jobList").offset().top;
-                var $parentDiv = $("#jobList").parents(".box-content");
+                const $jobList = $("#jobList");
+                let goTop = $jobList.offset().top;
+                const $parentDiv = $jobList.parents(".box-content");
 
                 try {
                     goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
@@ -1429,12 +1433,12 @@ angular
 
             $scope.selectedCourierChange = function (item) {
                 if (!item) {
-                    $scope.pickDateService.couriers[0] = null;
+                    $scope.pickDateService.courier = null;
                 }
-                $scope.pickDateService.couriers[0] = item.id;
+                $scope.pickDateService.courier = item.id;
             };
 
-            uCSData.getActiveCouriers().then(function (data) {
+            uCSData.getActiveCouriers().then(data => {
                 $scope.pickCouriers = data;
             });
 
@@ -1447,79 +1451,6 @@ angular
                 $scope.marker = map.markers[0];
                 $scope.onMapReady();
             });
-
-            $scope.onMapReady = function () {
-                //$scope.heremaps = heremaps;
-
-                var options = {
-                    minimumInputLength: 1,
-                    ajax: {
-                        url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
-                        delay: 250,
-                        dataType: "json",
-                        data: function (params) {
-                            return {
-                                query: params.term,
-                                app_id: "bBPfh2x8Cauun3ygLMAx",
-                                app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                                beginHighlight: "<b>",
-                                endHighlight: "</b>",
-                                country: "NZL"
-                            };
-                        },
-                        processResults: function (data) {
-                            return {
-                                results: $.map(data.suggestions, function (obj) {
-                                    return {id: obj.locationId, text: obj.label.split(", ").reverse().join(", ")};
-                                })
-                            };
-                        }
-                    },
-                    escapeMarkup: function (markup) {
-                        return markup;
-                    }
-                };
-
-                $("#location").select2(options).on("select2:select", function (e) {
-                    $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json", {
-                        app_id: "bBPfh2x8Cauun3ygLMAx",
-                        app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                        locationId: e.params.data.id
-                    }).done(function (data) {
-                        var locn = data.Response.View[0].Result[0].Location;
-                        console.log("Suburb = " + locn.Address.District);
-                        console.log("PostCode = " + locn.Address.PostalCode);
-                        $("#suburb").val(locn.Address.District);
-                        var mappedSub = $scope.jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
-                        if (mappedSub !== undefined) {
-                            console.log(mappedSub);
-                            $('#our_suburb').val(mappedSub.id).trigger('change');
-                        } else {
-                            $('#our_suburb').val(null).trigger('change');
-                        }
-
-
-                        $scope.jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                        $scope.jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                        $scope.jdSvc.gpsForm.data.address = locn.Address.Label;
-                        $scope.jdSvc.gpsForm.data.suburb = locn.Address.District;
-                        $scope.jdSvc.gpsForm.data.postCode = locn.Address.PostalCode;
-                        var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
-                        $scope.map.setCenter(ll);
-                        $scope.marker.setPosition(ll);
-
-                    });
-                });
-
-                var suburbOptions = {
-                    minimumInputLength: 1,
-                    data: $scope.jdSvc.pickSuburbs
-                };
-
-                $("#our_suburb").select2(suburbOptions);
-
-                waitingDialog.hide();
-            };
 
             $scope.highlightEvent = function () {
                 $("#jobList .active").each(function () {
@@ -1789,27 +1720,27 @@ angular
             // Call the init function when the controller loads
             $scope.init();
 
-            $scope.onSearchRangeChange = function (newValue) {
+            $scope.onSearchRangeChange = function (selectedDateRange) {
                 const now = moment().format("YYYY-MM-DD");
                 const firstDayOfMonth = moment().startOf('month').format("YYYY-MM-DD");
                 const lastDayOfMonth = moment().endOf('month').format("YYYY-MM-DD");
                 const oneWeekAgo = moment().subtract(1, 'weeks').format("YYYY-MM-DD");
                 const oneWeekAhead = moment().add(1, 'weeks').format("YYYY-MM-DD");
 
-                switch (newValue) {
-                    case 'Today':
+                switch (selectedDateRange) {
+                    case '2':
                         $scope.currentFromDate = now;
                         $scope.currentToDate = now;
                         break;
-                    case 'Fortnight':
+                    case '1':
                         $scope.currentFromDate = oneWeekAgo;
                         $scope.currentToDate = oneWeekAhead;
                         break;
-                    case 'Month':
+                    case '3':
                         $scope.currentFromDate = firstDayOfMonth;
                         $scope.currentToDate = lastDayOfMonth;
                         break;
-                    case 'Custom':
+                    case '4':
                         // This option is empty as ng-if is used on the page to show custom date range options
                         break;
                 }

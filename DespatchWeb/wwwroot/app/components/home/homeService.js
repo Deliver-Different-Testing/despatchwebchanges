@@ -491,6 +491,20 @@ angular
                             prox: lat.toString() + "," + long.toString() + "," + "250"
                         }
                     }).then(response => response.data);
+                },
+                autocompleteSearch: function (searchTerm, url) {
+                    return $http.get(url, {
+                        params: {
+                            searchTerm: searchTerm
+                        }
+                    }).then(response => response.data);
+                },
+                getSingleCourier: function (courierId) {
+                    return $http.get("courier/GetSingleCourier", {
+                        params: {
+                            courierId
+                        }
+                    }).then(response => response.data);
                 }
             };
         }
