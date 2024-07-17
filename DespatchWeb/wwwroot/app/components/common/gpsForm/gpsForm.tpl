@@ -12,7 +12,7 @@
             </div>
         </md-toolbar>
 
-        <md-dialog-content>
+        <md-dialog-content ng-cloak>
             <div class="md-dialog-content">
 
                 <div layout-gt-xs="row">

@@ -9,7 +9,7 @@ class ToastrService {
         }
 
         console.log('Error:', errorMessage);
-        this.showToast(errorMessage, "error");
+        this.showToast("Oops an unexpected error occured. Please try again or contact support.", "error");
     }
 
     showSuccessToast(successMessage) {

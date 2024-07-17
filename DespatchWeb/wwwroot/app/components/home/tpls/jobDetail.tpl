@@ -10,7 +10,7 @@
                                                     ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value"><a
                                     ng-class="currentJob.locked ? 'disabled' : ''" class="uline" src="#"
-                                    ng-click="!currentJob.locked && jdSvc.clientClick(currentJob)">{{currentJob.client}}
+                                    ng-click="!currentJob.locked && jdSvc.clientClick($event, currentJob)">{{currentJob.client}}
                                 {{currentJob.clientName}}</a></div>
                         </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
@@ -23,8 +23,7 @@
                         </div>
                         <div class="field" data-field="fromSuburb">
                             <label class="disabled">From Suburb:</label>
-                            <div class="disabled" class="value">{{currentJob.fromSuburbName}} {{ currentJob.fromPostCode
-                                }}
+                            <div class="disabled" class="value">{{currentJob.fromSuburbName}} {{currentJob.fromPostCode}}
                             </div>
                         </div>
 
@@ -264,7 +263,8 @@
                         </div>
                         <div class="field">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Courier</label>
-                            <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.courier}}
+                            <div class="value" ng-class="currentJob.locked ? 'disabled' : ''"
+                                 ng-click="courierClick($event, job)">{{currentJob.courier}}
                             </div>
                         </div>
                         <div class="field">
@@ -605,7 +605,6 @@
                         <td>Direct Dial</td>
                         <td>Mobile</td>
                         <td>Email</td>
-
                     </tr>
                     </thead>
                     <tbody>
@@ -624,10 +623,7 @@
 
         </div>
     </div>
-
-
 </md-content>
-</div>
 
 <div class="container-fluid" id="jobDetail" style="padding:0" ng-if="currentJob && currentJob.preBook">
     <div class="fields">
@@ -640,7 +636,7 @@
                                                     ng-click="jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"></i>
 
                             <div class="value"><a class="uline" src="#"
-                                                  ng-click="jdSvc.clientClick(currentJob)">{{currentJob.client}}
+                                                  ng-click="jdSvc.clientClick($event, currentJob)">{{currentJob.client}}
                                 {{currentJob.clientName}}</a></div>
                         </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
@@ -792,7 +788,9 @@
                         </div>
                         <div class="field">
                             <label>Courier</label>
-                            <div class="value" ng-click="jdSvc.courierClick(currentJob)">{{currentJob.courier}}</div>
+                            <div class="value" ng-click="jdSvc.courierClick($event, currentJob)">
+                                {{currentJob.courier}}
+                            </div>
                         </div>
                         <div class="field" ng-class="jdSvc.combos.frequency.length > 0 ? '' : 'red'">
                             <b>Frequency:</b>&nbsp;<i ng-if="jdSvc.combos.frequency.length === 0"

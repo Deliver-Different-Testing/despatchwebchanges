@@ -757,7 +757,10 @@
                             field,
                             suburbOptions: self.pickSuburbs
                         },
-                    }).then(_ => console.log('Dialog closed!'));
+                    }).then(_ => {
+                        self.selectJobDetail(currentJob.id);
+                        console.log('Dialog closed!')
+                    });
                 };
 
                 self.unlockJob = function (job) {
@@ -1229,11 +1232,11 @@
                 };
 
 
-                self.showAutocompleteDialog = function (event, job, searchUrl, fieldName, title, placeholder, id = "editField") {
+                self.showAutocompleteDialog = function (event, job, url, placeholder, fieldName, title, id = "editField", existingItem, showRerateOption) {
                     const options = {
+                        placeholder,
                         minimumInputLength: 3,
-                        searchUrl: searchUrl,
-                        placeholder: placeholder
+                        searchUrl: url
                     };
 
                     $mdDialog.show({
@@ -1245,72 +1248,38 @@
                         clickOutsideToClose: true,
                         fullscreen: true,
                         locals: {
-                            id: id,
-                            fieldName: fieldName,
-                            title: title,
-                            job: job,
-                            options: options
+                            id,
+                            fieldName,
+                            title,
+                            job,
+                            options,
+                            existingItem,
+                            showRerateOption
                         },
-                    }).then(_ => console.log('Dialog closed!'));
+                    }).then(_ => {
+                        self.selectJobDetail(job.id);
+                        console.log('Dialog closed!')
+                    });
                 }
 
 
-                self.clientClick = function (job) {
-                    this.editDetailField(job, 'ClientID', 'Client', '', job.id, 'select2');
-                    setTimeout(function () {
-                            $("#gather-ClientID").select2({
-                                ajax: {
-                                    url: "/home/ActiveClients",
-                                    dataType: 'json',
-                                    delay: 250,
-                                    data: function (params) {
-                                        return {
-                                            searchTerm: params.term
-                                        };
-                                    },
-                                    processResults: function (data) {
-                                        // parse the results into the format expected by Select2
-                                        return {
-                                            results: data
-                                        };
-                                    },
-                                    cache: true
-                                },
-                                placeholder: "Start typing to enter new client...",
-                                minimumInputLength: 3
-                            });
+                self.clientClick = function (event, job) {
+                    const url = "/home/ActiveClients";
+                    const placeholder = "Start typing to enter new client...";
 
-                        },
-                        200);
+                    const existingItem = {
+                        id: job.clientID,
+                        text: job.clientName
+                    }
+
+                    this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
                 };
 
-                self.courierClick = function (job) {
-                    this.editDetailField(job, 'CourierID', 'Courier', '', job.id, 'select2');
-                    setTimeout(function () {
-                            $("#gather-CourierID").select2({
-                                ajax: {
-                                    url: "/courier/AllActiveSearch",
-                                    dataType: 'json',
-                                    delay: 250,
-                                    data: function (params) {
-                                        return {
-                                            searchTerm: params.term
-                                        };
-                                    },
-                                    processResults: function (data) {
-                                        // parse the results into the format expected by Select2
-                                        return {
-                                            results: data
-                                        };
-                                    },
-                                    cache: true
-                                },
-                                placeholder: "Start typing to search courier...",
-                                minimumInputLength: 3
-                            });
+                self.courierClick = function (event, job) {
+                    const url = "/courier/AllActiveSearch";
+                    const placeholder = "Start typing to search courier...";
 
-                        },
-                        200);
+                    this.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
                 };
 
                 //////////////////////////////
