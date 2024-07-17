@@ -43,9 +43,9 @@
           </div>
 
         </div>
-        <div class="gatherSubmit btn btn-primary promise-btn" ng-click="gather.submit()">{{gather.form.submitValue}}</div>
-        
-        <button class="btn btn-default" ng-click="gather.cancel()">Cancel</button>
+
+        <md-button class="gatherSubmit md-primary md-raised" ng-click="gather.submit()">{{gather.form.submitValue}}</md-button>
+        <md-button class="md-warn md-raised" ng-click="gather.cancel()">Cancel</md-button>
     </div>
 
 

@@ -148,5 +148,6 @@ namespace DespatchWeb.EntityClasses
         public string LoggedInContactName { get; set; }
         public string StatusName { get; set; }
         public string ToCity { get; set; }
+        public string ClientItemIds { get; set; }
     }
 }

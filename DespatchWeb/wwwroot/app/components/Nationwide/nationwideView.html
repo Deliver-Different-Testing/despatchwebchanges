@@ -163,8 +163,6 @@
 
 <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
 
-<div ng-include="'app/components/home/tpls/gpsForm.tpl?v=1.12'"></div>
-
 <div id='draggingItems'></div>
 
 <script>
@@ -186,7 +184,7 @@
                     }
                     if (e.keyCode === 113) {
                         var sc = angular.element(document.getElementById('box-jobDetail')).scope();
-                        
+
                         sc.gather.form = {
                             id: "smsCustomer",
                             title: "Enter your Message (160 chars)",
@@ -210,7 +208,7 @@
                                     sc.gather.cancel();
                                     alert("Message Sent");
                                 });
-                                
+
 
                             },
                             submitValue: "Send Message"
@@ -218,7 +216,7 @@
 
                         sc.gather.showForm();
 
-                        
+
                         setTimeout(function () {
                             sc.$apply();
 
@@ -230,7 +228,7 @@
 
                             $(".gatherForm #gather-courier").select2(statusOptions);
                             $(".gatherForm #gather-courier").select2('open');
-                    
+
 
                         },200);
                     }
@@ -276,7 +274,7 @@
 
     $(document).ready(function () {
         const favicon = document.getElementById("favicon");
-        favicon.setAttribute("href", "/Nationwide.ico"); 
+        favicon.setAttribute("href", "/Nationwide.ico");
         var isDown = false;   // Tracks status of mouse button
 
         $(document).mousedown(function () {

@@ -161,5 +161,6 @@ namespace DespatchWeb.EntityClasses
         public int? SourceId { get; set; }
         public int? InvoiceProcessId { get; set; }
         public int? LoggedInContactId { get; set; }
+        public int? BulkParentId { get; set; }
     }
 }

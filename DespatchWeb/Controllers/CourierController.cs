@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using DespatchWeb.EntityClasses;
-using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Controllers
 {
@@ -17,8 +13,8 @@ namespace DespatchWeb.Controllers
         public CourierController(CourierRepository courierRepository)
         {
             _courierRepo = courierRepository;
-
         }
+
         public async Task<IActionResult> Index()
         {
             var result = await _courierRepo.ClearLists();
@@ -37,7 +33,6 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        
 
         [HttpGet]
         public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
@@ -55,7 +50,7 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> AllActiveSearch(string searchTerm)
         {
-            var result =  await _courierRepo.AllActiveCouriers(searchTerm);
+            var result = await _courierRepo.AllActiveCouriers(searchTerm);
             return Json(result);
         }
 
@@ -81,16 +76,32 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> TruckCourierStatus(string courierId)
         {
-            var result =  await _courierRepo.TruckCourierStatus(courierId);
+            var result = await _courierRepo.TruckCourierStatus(courierId);
             return Json(result);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddFollowupEvent(string jobNo, int clientId, string contact, int staffId, int courierId, int jobId, int jobType, string despatcherName)
+        public async Task<IActionResult> AddFollowupEvent(string jobNo, int clientId, string contact, int staffId,
+            int courierId, int jobId, int jobType, string despatcherName)
         {
-            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, "Follow up dangerous goods license with courier", 69);
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
+                despatcherName, "Follow up dangerous goods license with courier", 69);
             return Json("OK");
         }
-        
+
+        [HttpGet]
+        public async Task<IActionResult> GetSingleCourier(int courierId)
+        {
+            var result = await _courierRepo.ActiveCouriers();
+            var currentCourier = result.FirstOrDefault(c => c.CourierID == courierId);
+
+            var courier = new
+            {
+                id = currentCourier.CourierID,
+                text = currentCourier.Text
+            };
+
+            return Json(courier);
+        }
     }
 }

@@ -30,6 +30,6 @@ angular
                     return response.data;
                 });
             }
-            
+
         };
-    }]);   
+    }]);

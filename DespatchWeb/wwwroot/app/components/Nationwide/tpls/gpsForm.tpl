@@ -2,7 +2,8 @@
 <div class="gpsForm">
 
   <div class="gps-box">
-    UPDATE ADDRESS & GPS
+    <span class="gps-title">UPDATE ADDRESS & GPS</span>
+
     <div class="container-fluid">
       <div class="row">
         <div class="col-md-12">
@@ -46,16 +47,16 @@
             <label for="jobNum">Search Address:</label>
 			<select id="location" data-placeholder="Enter your address" data-width="100%"></select>
           </div>
-          
+
         </div>
 
         <div class="col-md-12">
-            
+
           <div class="form-group">
             <label for="type">Map:</label>/
 			 <ng-map id="map" center="[{{jdSvc.gpsForm.data.lat || -36.850657}}, {{jdSvc.gpsForm.data.long ||  174.764660}}]" on-rightclick="jdSvc.gpsForm.moveMarker()">
 			 <marker position="{{jdSvc.gpsForm.data.lat}}, {{jdSvc.gpsForm.data.long}}" draggable="true" on-dragend="jdSvc.gpsForm.markerDragend()"></marker>
-			 </ng-map>	
+			 </ng-map>
           </div>
 
         <button class="btn btn-primary"  promise-btn ng-click="jdSvc.gpsForm.submit(jdSvc.gpsForm.details.geometry.location)">UPDATE</button>
@@ -66,4 +67,3 @@
     </div>
   </div>
 </div>
-
