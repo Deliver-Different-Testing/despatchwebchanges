@@ -738,9 +738,11 @@
 
                     // Dialog
                     $mdDialog.show({
+                        controller: GpsFormController,
+                        controllerAs: 'ctrl',
                         parent: angular.element(document.body),
                         targetEvent: event,
-                        templateUrl: "app/components/home/tpls/gpsForm.tpl",
+                        templateUrl: "app/components/common/gpsForm/gpsForm.tpl",
                         clickOutsideToClose: false,
                         fullscreen: true,
                         locals: {
@@ -752,266 +754,10 @@
                                 suburb: suburbText,
                                 postCode: currentJob.postCode,
                             },
+                            field,
                             suburbOptions: self.pickSuburbs
                         },
-                        controller: GpsDialogController
                     }).then(_ => console.log('Dialog closed!'));
-
-                    function GpsDialogController($scope, $timeout, $mdDialog, NgMap, currentJob, addressDetails, suburbOptions) {
-                        // Timeout to display map
-                        $timeout(() => {
-                            $scope.mapDisplay = true;
-                        }, 500);
-
-                        // Functions
-                        const findSuburbByDistrict = district => {
-                            let lowerCaseDistrict = district.toLowerCase();
-                            return self.pickSuburbs.find(localSuburb =>
-                                localSuburb.text.toLowerCase() === lowerCaseDistrict ||
-                                (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
-                            );
-                        };
-
-                        const transformSuggestions = data => data.suggestions.map(obj => ({
-                            id: obj.locationId,
-                            text: obj.label.split(", ").reverse().join(", ")
-                        }));
-
-                        NgMap.getMap().then(map => {
-                            console.log("Loading Map!")
-                            $scope.map = map;
-                            $scope.marker = map.markers[0];
-                            $scope.addressSearchAutocomplete(addressDetails.address);
-                        });
-
-                        $scope.title = "Update Address and GPS";
-                        $scope.addressDetails = addressDetails;
-                        $scope.ourSuburbSearchText = "";
-                        $scope.addressSearchText = "";
-                        $scope.ourSuburbSelectedItem = findSuburbByDistrict(addressDetails.suburb);
-
-                        $scope.ourSuburbSearch = function (query) {
-                            return query ? suburbOptions.filter(suburb => (suburb.text.toLowerCase()
-                                .indexOf(query.toLowerCase()) !== -1)) : suburbOptions;
-                        };
-
-                        $scope.addressSearchAutocomplete = function (text) {
-                            try {
-                                return DispatchData.autocompleteAddressSearch(text).then(data => {
-                                    return transformSuggestions(data)
-                                });
-                            } catch (error) {
-                                toastrService.showErrorToast(error.message);
-                            }
-                        }
-
-                        $scope.addressSearchItemSelected = function (item) {
-                            try {
-                                DispatchData.getGeoCodeInformation(item).then(data => {
-                                    const returnedLocation = data.Response.View[0].Result[0].Location;
-
-                                    console.log("Suburb = " + returnedLocation.Address.District);
-                                    console.log("PostCode = " + returnedLocation.Address.PostalCode);
-
-                                    const mappedSub = findSuburbByDistrict(returnedLocation.Address.District);
-
-                                    if (mappedSub !== undefined) {
-                                        console.log(mappedSub);
-                                        $scope.addressDetails.ourSuburbSelectedItem = mappedSub;
-                                    } else {
-                                        $scope.addressDetails.ourSuburbSelectedItem = null;
-                                        toastrService.showWarningToast("Matching suburb could not be found from this address." +
-                                            "Please select manually.")
-                                    }
-
-                                    $scope.addressDetails.filledAddress = returnedLocation.Address.Label;
-                                    $scope.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                                    $scope.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
-                                    $scope.addressDetails.address = returnedLocation.Address.Label;
-                                    $scope.addressDetails.suburb = returnedLocation.Address.District;
-                                    $scope.addressDetails.postCode = returnedLocation.Address.PostalCode;
-
-                                    const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude,
-                                        returnedLocation.DisplayPosition.Longitude);
-                                    $scope.map.setCenter(latLng);
-                                    $scope.marker.setPosition(latLng);
-
-                                });
-                            } catch (error) {
-                                toastrService.showErrorToast(error.message);
-                            }
-                        }
-
-                        $scope.submit = function (addressDetails) {
-                            try {
-                                const job = currentJob;
-
-                                // Assign variable it's autocomplete has been used
-                                if ($scope.ourSuburbSelectedItem.id !== undefined) {
-                                    addressDetails.our_suburb = $scope.ourSuburbSelectedItem.id;
-                                }
-
-                                if (addressDetails.our_suburb === undefined) {
-                                    // Alert the user
-                                    const alert = $mdDialog.alert({
-                                        title: 'Courier Suburb Not Mapped',
-                                        textContent: 'You must pick one of our suburbs to map this address to',
-                                        ok: 'Close'
-                                    });
-
-                                    // Show the alert dialog
-                                    $mdDialog.show(alert).then(_ => $mdDialog.close());
-                                }
-
-                                if (field === "toAddress") {
-                                    job.toAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
-                                    if (job.bulkJob) {
-                                        return DispatchData.updateBulkDeliveryAddress(job.id,
-                                            addressDetails.suburb,
-                                            addressDetails.postCode,
-                                            job.toAddress,
-                                            addressDetails.lat,
-                                            addressDetails.long,
-                                            FirstName).then(() => {
-                                            $mdDialog.hide();
-                                            toastrService.showSuccessToast("Address successfully updated")
-                                        });
-                                    }
-
-                                    job.toSuburbID = parseInt(addressDetails.our_suburb);
-                                } else {
-                                    job.fromAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
-                                    if (job.bulkJob) {
-                                        return DispatchData.updateBulkPickupAddress(job.id,
-                                            addressDetails.suburb,
-                                            addressDetails.postCode,
-                                            job.fromAddress,
-                                            addressDetails.lat,
-                                            addressDetails.long,
-                                            FirstName).then(() => {
-                                            $mdDialog.hide();
-                                            toastrService.showSuccessToast("Address successfully updated")
-                                        });
-                                    }
-
-                                    job.fromSuburbID = parseInt(addressDetails.our_suburb);
-                                }
-
-                                const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
-                                    job.fromSuburbID === 112 && job.toSuburbID === 112 ||
-                                    job.fromSuburbID === 480 && job.toSuburbID === 480;
-
-                                return self.rateJob(job).then(rate => {
-                                    const callData = {
-                                        "call": "updateJobData",
-                                        "addressField": field,
-                                        "lat": addressDetails.lat,
-                                        "long": addressDetails.long,
-                                        "fromSuburbId": job.fromSuburbID,
-                                        "toSuburbId": job.toSuburbID,
-                                        "fromAddress": job.fromAddress,
-                                        "toAddress": job.toAddress,
-                                        "rate": rate,
-                                        "jobID": job.id,
-                                        "CBD": pedal
-                                    };
-
-                                    console.log(callData);
-
-                                    if (field === "toAddress") {
-                                        DispatchData.updateDeliveryAddress(callData.jobID,
-                                            callData.toSuburbId,
-                                            callData.toAddress,
-                                            callData.lat,
-                                            callData.long,
-                                            callData.CBD,
-                                            Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-                                            FirstName,
-                                            job.preBook).then(() => {
-                                            $mdDialog.hide();
-                                            toastrService.showSuccessToast("Address successfully updated")
-                                        });
-                                    } else {
-                                        return DispatchData.updatePickupAddress(callData.jobID,
-                                            callData.fromSuburbId,
-                                            callData.fromAddress,
-                                            callData.lat,
-                                            callData.long,
-                                            callData.CBD,
-                                            Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-                                            FirstName,
-                                            job.preBook).then(() => {
-                                            $mdDialog.hide();
-                                            toastrService.showSuccessToast("Address successfully updated")
-                                        });
-                                    }
-                                });
-                            } catch (error) {
-                                toastrService.showErrorToast(error.message)
-                            }
-                        }
-
-                        $scope.copyGpsAddress = address => $scope.addressSearchText = address;
-
-                        $scope.moveMarker = function (event) {
-                            $scope.addressDetails.lat = event.latLng.lat();
-                            $scope.addressDetails.long = event.latLng.lng();
-                            $scope.$apply();
-                        };
-
-                        $scope.markerDragend = function (event) {
-                            // Get the marker's new position
-                            const location = event.latLng;
-
-                            try {
-                                // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
-                                // that return the latitude and longitude values of your location
-                                DispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
-                                    const returnedLocation = data.Response.View[0].Result[0].Location;
-
-                                    // Updating scope variables with new data
-                                    $scope.addressDetails.address = returnedLocation.Address.Label;
-                                    $scope.addressDetails.suburb = returnedLocation.Address.District;
-                                    $scope.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                                    $scope.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
-
-                                    // Log output
-                                    console.log("Suburb = " + returnedLocation.Address.District);
-                                    console.log("PostCode = " + returnedLocation.Address.PostalCode);
-
-                                    // Updating suburb selection
-                                    const mappedSub = self.pickSuburbs.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
-
-                                    if (mappedSub !== undefined) {
-                                        console.log(mappedSub);
-                                        $scope.ourSuburbSelectedItem = mappedSub;
-                                    } else {
-                                        $scope.ourSuburbSelectedItem = null;
-                                    }
-
-                                });
-                            } catch (error) {
-                                toastrService.showErrorToast(error.message);
-                            }
-                        };
-
-                        $scope.placeChanged = function (place) {
-                            try {
-                                $scope.addressDetailsa.lat = place.geometry.location.lat();
-                                $scope.addressDetails.long = place.geometry.location.lng();
-                                if (place.address_components.find(x => x.types[0] === "postal_code")) {
-                                    self.gpsForm.data.postCode = place.address_components
-                                        .find(x => x.types[0] === "postal_code").long_name;
-                                }
-
-                                $scope.map.setCenter(place.geometry.location);
-                            } catch (error) {
-                                toastrService.showErrorToast(error.message);
-                            }
-                        };
-
-                        $scope.cancel = () => $mdDialog.cancel();
-                    }
                 };
 
                 self.unlockJob = function (job) {
@@ -1366,6 +1112,52 @@
                         placeholder: placeholder
                     };
 
+                    function SelectDialogController($scope, $mdDialog, id, fieldName, title, job, options) {
+                        $scope.title = title;
+                        $scope.job = job;
+                        $scope.fieldName = fieldName;
+                        $scope.field = {value: null, options: options};
+
+                        $scope.submit = async function (value) {
+                            const reRate = false;
+                            const callData = {
+                                "call": "updateDetailField",
+                                "field": this.fieldName,
+                                "value": value.id,
+                                "jobID": this.job.id
+                            };
+
+                            if (callData.field === "Notes") {
+                                job.bulkJob ?
+                                    await DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) :
+                                    await DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
+                            }
+
+                            if (reRate && !job.bulkJob) {
+                                const rate = await self.rateJob(job);
+                                return await DispatchData
+                                    .updateJobDetail(callData.jobID,
+                                        callData.field,
+                                        callData.value,
+                                        Number(rate.replace(/[^0-9.-]+/g, "")),
+                                        FirstName,
+                                        ContactID,
+                                        job.preBook);
+                            } else {
+                                job.bulkJob ?
+                                    await DispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID) :
+                                    await DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID);
+                            }
+
+                            $mdDialog.hide();
+                            self.selectJobDetail(job.id);
+                        };
+
+                        $scope.cancel = function () {
+                            $mdDialog.cancel();
+                        };
+                    }
+
                     $mdDialog.show({
                         parent: angular.element(document.body),
                         targetEvent: event,
@@ -1383,51 +1175,6 @@
                     }).then(_ => console.log('Dialog closed!'));
                 };
 
-                function SelectDialogController($scope, $mdDialog, id, fieldName, title, job, options) {
-                    $scope.title = title;
-                    $scope.job = job;
-                    $scope.fieldName = fieldName;
-                    $scope.field = {value: null, options: options};
-
-                    $scope.submit = async function (value) {
-                        const reRate = false;
-                        const callData = {
-                            "call": "updateDetailField",
-                            "field": this.fieldName,
-                            "value": value.id,
-                            "jobID": this.job.id
-                        };
-
-                        if (callData.field === "Notes") {
-                            job.bulkJob ?
-                                await DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) :
-                                await DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
-                        }
-
-                        if (reRate && !job.bulkJob) {
-                            const rate = await self.rateJob(job);
-                            return await DispatchData
-                                .updateJobDetail(callData.jobID,
-                                    callData.field,
-                                    callData.value,
-                                    Number(rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName,
-                                    ContactID,
-                                    job.preBook);
-                        } else {
-                            job.bulkJob ?
-                                await DispatchData.updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID) :
-                                await DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID);
-                        }
-
-                        $mdDialog.hide();
-                        self.selectJobDetail(job.id);
-                    };
-
-                    $scope.cancel = function () {
-                        $mdDialog.cancel();
-                    };
-                }
 
                 self.notifyClick = function (event, job) {
                     self.showSelectDialog(event, job, pickSpeeds, "NotifiedJobTypeID", "Notified", "Select new speed....");
@@ -1480,6 +1227,33 @@
                 self.internalStatusClick = function (event, job) {
                     self.showSelectDialog(event, job, self.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
                 };
+
+
+                self.showAutocompleteDialog = function (event, job, searchUrl, fieldName, title, placeholder, id = "editField") {
+                    const options = {
+                        minimumInputLength: 3,
+                        searchUrl: searchUrl,
+                        placeholder: placeholder
+                    };
+
+                    $mdDialog.show({
+                        controller: AutoCompleteDialogController,
+                        controllerAs: 'ctrl',
+                        parent: angular.element(document.body),
+                        targetEvent: event,
+                        templateUrl: 'app/components/common/autocompleteDialog/autoCompleteDialog.tpl',
+                        clickOutsideToClose: true,
+                        fullscreen: true,
+                        locals: {
+                            id: id,
+                            fieldName: fieldName,
+                            title: title,
+                            job: job,
+                            options: options
+                        },
+                    }).then(_ => console.log('Dialog closed!'));
+                }
+
 
                 self.clientClick = function (job) {
                     this.editDetailField(job, 'ClientID', 'Client', '', job.id, 'select2');

@@ -2,9 +2,9 @@
     <form ng-cloak>
         <md-toolbar>
             <div class="md-toolbar-tools">
-                <h2>{{ title }}</h2>
+                <h2>{{ ctrl.title }}</h2>
                 <span flex></span>
-                <md-button class="md-icon-button" ng-click="cancel()">
+                <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                     <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
                         close
                     </md-icon>
@@ -18,10 +18,11 @@
                 <div layout-gt-xs="row">
                     <md-input-container class="md-block" flex-gt-xs>
                         <label for="address">Address</label>
-                        <input id="address" ng-model="addressDetails.address">
+                        <input id="address" ng-model="ctrl.addressDetails.address">
                     </md-input-container>
 
-                    <md-button class="md-fab md-mini md-raised" ng-click="copyGpsAddress(addressDetails.address)">
+                    <md-button class="md-fab md-mini md-raised"
+                               ng-click="ctrl.copyGpsAddress(ctrl.addressDetails.address)">
                         <md-icon md-font-set="material-symbols-outlined">content_copy</md-icon>
                         <md-tooltip md-direction="bottom">Copy To Search</md-tooltip>
                     </md-button>
@@ -31,70 +32,72 @@
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="lat">Latitude</label>
-                        <input id="lat" ng-model="addressDetails.lat">
+                        <input id="lat" ng-model="ctrl.addressDetails.lat">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="long">Longtitude</label>
-                        <input id="long" ng-model="addressDetails.long">
+                        <input id="long" ng-model="ctrl.addressDetails.long">
                     </md-input-container>
                 </div>
 
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="suburb">Suburb</label>
-                        <input id="suburb" ng-model="addressDetails.suburb">
+                        <input id="suburb" ng-model="ctrl.addressDetails.suburb">
                     </md-input-container>
 
                     <md-autocomplete class="md-block" flex-gt-sm
                                      md-floating-label="Our Suburb"
                                      md-item-text="item.text"
-                                     md-items="item in ourSuburbSearch(ourSuburbSearchText)"
-                                     md-search-text="ourSuburbSearchText"
-                                     md-selected-item="ourSuburbSelectedItem">
+                                     md-items="item in ctrl.ourSuburbSearch(ctrl.ourSuburbSearchText)"
+                                     md-search-text="ctrl.ourSuburbSearchText"
+                                     md-selected-item="ctrl.ourSuburbSelectedItem">
                         <md-item-template>
-                            <span md-highlight-flags="^i" md-highlight-text="ourSuburbSearchText">{{item.text}}</span>
+                            <span md-highlight-flags="^i"
+                                  md-highlight-text="ctrl.ourSuburbSearchText">{{item.text}}</span>
                         </md-item-template>
                         <md-not-found>
-                            No matches found for "{{ourSuburbSearchText}}" in Suburb.
+                            No matches found for "{{ctrl.ourSuburbSearchText}}" in Suburb.
                         </md-not-found>
                     </md-autocomplete>
                 </div>
 
                 <md-input-container class="md-block">
                     <label for="extras">Address Extras</label>
-                    <input id="extras" ng-model="addressDetails.extras">
+                    <input id="extras" ng-model="ctrl.addressDetails.extras">
                 </md-input-container>
 
                 <md-autocomplete class="md-block" flex-gt-sm
                                  md-floating-label="Search Address"
                                  md-item-text="item.text"
-                                 md-items="item in addressSearchAutocomplete(addressSearchText)"
+                                 md-items="item in ctrl.addressSearchAutocomplete(ctrl.addressSearchText)"
                                  md-min-length="3"
-                                 md-search-text="addressSearchText"
-                                 md-selected-item="addressDetails.filledAddress"
-                                 md-selected-item-change="addressSearchItemSelected(item)">
+                                 md-search-text="ctrl.addressSearchText"
+                                 md-selected-item="ctrl.addressDetails.filledAddress"
+                                 md-selected-item-change="ctrl.addressSearchItemSelected(item)">
                     <md-item-template>
-                        <span md-highlight-flags="^i" md-highlight-text="addressSearchText">{{item.text}}</span>
+                        <span md-highlight-flags="^i" md-highlight-text="ctrl.addressSearchText">{{item.text}}</span>
                     </md-item-template>
                     <md-not-found>
-                        No addresses matching "{{addressSearchText}}" were found.
+                        No addresses matching "{{ctrl.addressSearchText}}" were found.
                     </md-not-found>
                 </md-autocomplete>
 
                 <label>Map</label>
-                <ng-map center="{{addressDetails.lat}}, {{addressDetails.long}}"
+                <ng-map center="{{ctrl.addressDetails.lat}}, {{ctrl.addressDetails.long}}"
                         id="map"
-                        ng-if="mapDisplay"
-                        on-rightclick="moveMarker($event)">
-                    <marker draggable="true" on-dragend="markerDragend($event)"
-                            position="{{addressDetails.lat}}, {{addressDetails.long}}"></marker>
+                        ng-if="ctrl.mapDisplay"
+                        on-rightclick="ctrl.moveMarker($event)">
+                    <marker draggable="true" on-dragend="ctrl.markerDragend($event)"
+                            position="{{ctrl.addressDetails.lat}}, {{ctrl.addressDetails.long}}"></marker>
                 </ng-map>
             </div>
         </md-dialog-content>
 
         <md-dialog-actions layout="row" layout-align="center center">
-            <md-button class="md-raised md-primary" ng-click="submit(addressDetails)">
+            <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.addressDetails)">
+                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
                 Update
             </md-button>
         </md-dialog-actions>
