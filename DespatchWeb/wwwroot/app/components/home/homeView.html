@@ -130,31 +130,41 @@
                             <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
 
                                 <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Truck Loading Status"
-                                            ng-if="truckCourierStatus.length >0" ng-click="truckLoadingStatus()"><i
-                                            class="fa fa-truck"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Restore All"
-                                            ng-click="restoreAll()"><i class="fa fa-undo"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Redispatch All"
-                                            ng-click="redispatchAll()"><i class="fa fa-repeat"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Resend All"
-                                            ng-click="resendAll()"><i class="fa fa-send"></i></button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="truckLoadingStatus()"
+                                            ng-if="truckCourierStatus.length >0"
+                                            title="Truck Loading Status" type="button">
+                                        <i class="material-symbols-outlined small-icon">local_shipping</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="restoreAll()"
+                                            title="Restore All"
+                                            type="button">
+                                        <i class="material-symbols-outlined small-icon">undo</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="redispatchAll()"
+                                            title="Redispatch All"
+                                            type="button">
+                                        <i class="material-symbols-outlined small-icon">repeat</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="resendAll()" title="Resend All Jobs"
+                                            type="button">
+                                        <i class="material-symbols-outlined small-icon">send</i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" ng-click="messageClick($event, currentJob)"
+                                            title="Send Message"
+                                            type="button">
+                                        <i class="material-symbols-outlined small-icon">sms</i>
+                                    </button>
                                 </div>
 
                             </div>
 
                             <div class="box-details" ng-show="boxes[box.name].showDetailButtons" ng-if="currentJob">
                                 <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button class="btn btn-sm btn-secondary" ng-click="messageClick($event, currentJob)"
-                                            title="Send Message"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">send</i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="ADD EVENT"
+                                    <button class="btn btn-sm btn-secondary" title="Add Event" type="button"
                                             ng-click="otherEventForm(currentJob.jobNo)">
                                         <i class="material-symbols-outlined small-icon">edit_calendar</i>
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="CLOSE EVENT"
+                                    <button class="btn btn-sm btn-secondary" title="Close Event" type="button"
                                             ng-click="closeSupport(currentSupport);" ng-disabled="!currentSupport">
                                         <i class="material-symbols-outlined small-icon">event_available</i>
                                     </button>
@@ -248,7 +258,8 @@
                             <div class="box-search" ng-show="boxes[box.name].showSearch">
                                 <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
                                 <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
-                                <input ng-model="box.searchBox" ng-model-options="{debounce: 300}" placeholder="Search..."
+                                <input ng-model="box.searchBox" ng-model-options="{debounce: 300}"
+                                       placeholder="Search..."
                                        type="text">
                             </div>
 
