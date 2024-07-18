@@ -9,12 +9,10 @@
                                                     ng-class="currentJob.locked ? 'disabled' : ''"
                                                     title="Change Client Code"
                                                     ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)">edit</i>
-                            <div class="value" ng-class="currentJob.locked ? 'disabled' : ''">
-                                <a class="uline" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.clientClick($event, currentJob)"
-                                   src="#">
-                                    {{currentJob.client}} {{currentJob.clientName}}
-                                </a>
-                            </div>
+                            <div class="value" ng-class="currentJob.locked ? 'disabled' : ''"><a
+                                    class="uline" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.clientClick($event, currentJob)"
+                                    src="#">{{currentJob.client}}
+                                {{currentJob.clientName}}</a></div>
                         </div>
                         <div class="field" ng-class="currentJob.pickUpLongitude ? '' : 'red'"
                              context-menu="detailAddressMenu" data-field="fromAddress"
