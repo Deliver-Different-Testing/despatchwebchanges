@@ -27,7 +27,9 @@ angular
         "$mdDialog",
         "toastrService",
         "loadingService",
-        function ($scope, jdSvc, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm, $mdDialog, toastrService, loadingService) {
+        "$document",
+        function ($scope, jdSvc, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm, $mdDialog,
+                  toastrService, loadingService, $document) {
             $scope.isInternal = (ClientInternal === "True");
             $scope.name = "Home";
             $scope.jdSvc = jdSvc;
@@ -117,7 +119,7 @@ angular
                 showForm: function () {
                     $(".gatherForm").show(0,
                         function () {
-                            setTimeout(function () {
+                            $timeout(function () {
                                 $(".gatherForm .focusMe").focus();
                             }, 100);
                         });
@@ -504,7 +506,7 @@ angular
                 // save layout as last active
                 $scope.setLastActiveLayoutName($scope.currentLayoutName);
 
-                setTimeout($scope.getData, 1000);
+                $timeout($scope.getData, 1000);
             };
 
             $scope.saveLayout = function (event) {
@@ -636,7 +638,7 @@ angular
                     });
                 },
                 update: function (e, ui) {
-                    setTimeout(function () {
+                    $timeout(function () {
                         var box = $("#" + ui.item.context.id);
                         var parent = box.parent();
                         parent.find(".box").each(function () {
@@ -747,7 +749,7 @@ angular
                 allowIn: ["INPUT", "SELECT", "TEXTAREA"],
                 callback: function (event, hk) {
                     if ($(".gatherForm").is(":visible") === true) {
-                        setTimeout($scope.gather.submit(), 0);
+                        $timeout($scope.gather.submit(), 0);
                     }
                     if (event.srcElement.id === "gps") {
                         $scope.searchCourier(event.srcElement.value);
@@ -1198,7 +1200,7 @@ angular
                         } else {
                             $scope.getCurrentJobs(foundCourier.id);
                         }
-                        setTimeout(function () {
+                        $timeout(function () {
                             $("#jobList tr").first().addClass('active');
                             $("#jobList tr").first().find(".dispatchField").focus()
                         }, 200);
@@ -1754,9 +1756,8 @@ angular
 
             //ACTIVATE DROP
             $scope.activateDrop = function () {
-                setTimeout(function () {
-
-                        $(document).ready(function (event) {
+                $timeout(function () {
+                        $document.ready(function (event) {
                             $(".droppable-row").droppable({
                                 classes: {
                                     "ui-droppable-hover": "active"
@@ -1809,10 +1810,10 @@ angular
                     $scope.potentialCouriers = data;
 
                     //Set headings
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#potentialCouriers").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#potentialCouriers").parents(".column"));
                     }, 2000);
 
@@ -1873,8 +1874,8 @@ angular
 
                 //$scope.currentSelection = " for Courier " + + courier.courier;
 
-                setTimeout(function () {
-                        $(document).ready(function (event) {
+                $timeout(function () {
+                        $document.ready(function (event) {
                             $("#box-jobDetail").find(".loading").fadeOut();
                             $("#box-map").find(".loading").fadeOut();
                         });
@@ -1912,10 +1913,10 @@ angular
                         displayRoutePointsOnly(data, false, $scope.mapZoom.display);
                     }
                     $scope.activateDrop();
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#currentWork").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#currentWork").parents(".column"));
                     }, 2000);
                     //$scope.getAvailableCourierLocation();
@@ -1925,8 +1926,8 @@ angular
 
                 $scope.currentSelection = " for Courier " + +courier.label;
 
-                setTimeout(function () {
-                    $(document).ready(function (event) {
+                $timeout(function () {
+                    $document.ready(function (event) {
                         $("#box-jobDetail").find(".loading").fadeOut();
                         $("#box-map").find(".loading").fadeOut();
                     });
@@ -1974,10 +1975,10 @@ angular
                         });
                     }
                     $scope.activateDrop();
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#currentWork").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#currentWork").parents(".column"));
                     }, 2000);
                     $scope.getAvailableCourierLocation();
@@ -1988,8 +1989,8 @@ angular
 
                 $scope.currentSelection = " for Courier " + +courier.courier;
 
-                setTimeout(function () {
-                    $(document).ready(function (event) {
+                $timeout(function () {
+                    $document.ready(function (event) {
                         $("#box-jobDetail").find(".loading").fadeOut();
                         $("#box-map").find(".loading").fadeOut();
                         //        var jid = $("#jobList .active").last().data("jobid");
@@ -2016,10 +2017,10 @@ angular
 
                     $scope.jobGroups = data;
 
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#jobGroups").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#jobGroups").parents(".column"));
                     }, 2000);
 
@@ -2052,10 +2053,10 @@ angular
                         });
                     }
                     $scope.activateDrop();
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#currentWork").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#currentWork").parents(".column"));
                     }, 2000);
                 });
@@ -2084,7 +2085,7 @@ angular
 
 
             $scope.setFilters = function (data) {
-                setTimeout(function () {
+                $timeout(function () {
                     if (data.status) {
                         $scope.jobFilters.status = data.status;
                     }
@@ -2175,7 +2176,7 @@ angular
             //Select Job
             $scope.selectJob = function (job, clear) {
 
-                setTimeout(function () {
+                $timeout(function () {
                         var jobRow = null;
                         $scope.selectedJobs = [];
                         $scope.currentSupport = null;
@@ -2287,7 +2288,7 @@ angular
                       case 3:
                           // this is right click
                           loadingService.showLoader();
-                          setTimeout(() => {
+                          $timeout(() => {
                               $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
                           }, 100);
                           break;
@@ -2312,7 +2313,7 @@ angular
                          case 3:
                              // this is right click
                              waitingDialog.show();
-                             setTimeout(function () {
+                             $timeout(function () {
                                  $scope.jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
                              }, 100);
 
@@ -2335,7 +2336,7 @@ angular
                         break;
                     case 3:
                         // this is right click
-                        setTimeout(function () {
+                        $timeout(function () {
                             var dueTime = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
                             var items = [];
                             for (var i = 1; i < 37; i++) {
@@ -2376,7 +2377,7 @@ angular
                             $scope.$apply();
                             $(".lateForm").show(0);
 
-                            setTimeout(function () {
+                            $timeout(function () {
 
                                 var dueOptions = {
                                     minimumInputLength: 0,
@@ -2408,7 +2409,7 @@ angular
                         break;
                     case 3:
                         // this is right click
-                        setTimeout(function () {
+                        $timeout(function () {
                             $scope.jdSvc.speedClick($scope.currentJob);
                             $scope.$apply();
                         }, 400);
@@ -2432,7 +2433,7 @@ angular
                         break;
                     case 3:
                         // this is right click
-                        setTimeout(function () {
+                        $timeout(function () {
                             $scope.jdSvc.clientClick($scope.currentJob);
                             $scope.$apply();
                         }, 400);
@@ -2456,7 +2457,7 @@ angular
                         break;
                     case 3:
                         // this is right click
-                        setTimeout(function () {
+                        $timeout(function () {
                             $scope.jdSvc.notifyClick($scope.currentJob);
                             $scope.$apply();
                         }, 400);
@@ -2709,7 +2710,7 @@ angular
                 return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(function (data) {
                     $scope.jobList = data;
                     $("#box-jobsList .loading").fadeOut();
-                    setTimeout(function () {
+                    $timeout(function () {
 
                         sizeHeadings($("#jobList").parents(".column"));
                         if (data.length > 0) {
@@ -2797,8 +2798,8 @@ angular
                     ];
 
 
-                    setTimeout(function () {
-                            $(document).ready(function (event) {
+                    $timeout(function () {
+                            $document.ready(function (event) {
                                 //$("#box-supports").find(".loading").fadeOut();
                                 if ($scope.currentSupport) {
                                     $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
@@ -2808,10 +2809,10 @@ angular
                         100);
 
 
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#supports").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#supports").parents(".column"));
                     }, 2000);
                 });
@@ -2855,7 +2856,7 @@ angular
                 $scope.getClearListsData = function () {
                     DispatchData.getClearLists().then(function (data) {
                         $scope.clearLists = data;
-                        setTimeout(function () {
+                        $timeout(function () {
                             $("#clearLists .loading").fadeOut();
                         }, 0);
                         console.log($scope.clearLists);
@@ -2900,15 +2901,15 @@ angular
                         }
                     ];
                     $scope.activateDrop();
-                    setTimeout(function () {
+                    $timeout(function () {
                         $("#box-couriersMoveThrough").find(".loading").fadeOut();
                     }, 100);
 
 
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#couriersThrough").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#couriersThrough").parents(".column"));
                     }, 2000);
 
@@ -3004,17 +3005,17 @@ angular
                         }
                     ];
 
-                    setTimeout(function () {
-                            $(document).ready(function (event) {
+                    $timeout(function () {
+                            $document.ready(function (event) {
                                 $("#box-courierMovePickedUp").find(".loading").fadeOut();
                             });
                         },
                         100);
 
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#couriersPicked").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#couriersPicked").parents(".column"));
                     }, 2000);
 
@@ -3108,17 +3109,17 @@ angular
                         }
                     ];
 
-                    setTimeout(function () {
-                            $(document).ready(function (event) {
+                    $timeout(function () {
+                            $document.ready(function (event) {
                                 $("#box-courierMoveClear").find(".loading").fadeOut();
                             });
                         },
                         100);
 
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#couriersClear").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#couriersClear").parents(".column"));
                     }, 2000);
 
@@ -3133,17 +3134,17 @@ angular
                 DispatchData.getAreaList().then(function (data) {
                     $scope.areaList = data;
 
-                    setTimeout(function () {
-                            $(document).ready(function (event) {
+                    $timeout(function () {
+                            $document.ready(function (event) {
                                 $("#box-areaList").find(".loading").fadeOut();
                             });
                         },
                         100);
 
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#areaList").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#areaList").parents(".column"));
                     }, 2000);
 
@@ -3198,16 +3199,16 @@ angular
                      ];
 
 
-                     setTimeout(function () {
-                         $(document).ready(function (event) {
+                     $timeout(function () {
+                         $document.ready(function (event) {
                              $("#box-jobUpdates").find(".loading").fadeOut();
                          });
                      },
                          100);
 
 
-                     setTimeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 1000);
-                     setTimeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 2000);
+                     $timeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 1000);
+                     $timeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 2000);
 
 
                  });
@@ -3266,17 +3267,17 @@ angular
                         }
                     ];
 
-                    setTimeout(function () {
-                            $(document).ready(function (event) {
+                    $timeout(function () {
+                            $document.ready(function (event) {
                                 $("#box-lateCalls").find(".loading").fadeOut();
                             });
                         },
                         100);
 
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#getLastCalls").parents(".column"));
                     }, 1000);
-                    setTimeout(function () {
+                    $timeout(function () {
                         sizeHeadings($("#getLastCalls").parents(".column"));
                     }, 2000);
                 });
@@ -3298,13 +3299,13 @@ angular
 
             $scope.getData();
 
-            $(document).everyTime("30s", "SP", function () {
+            $document.everyTime("30s", "SP", function () {
                 $scope.getSupports();
             });
             $scope.getSupports();
 
             // on first focus (bubbles up to document), open the menu
-            $(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
+            $document.on('focus', '.select2-selection.select2-selection--single', function (e) {
                 $(this).closest(".select2-container").siblings('select:enabled').select2('open');
             });
 
