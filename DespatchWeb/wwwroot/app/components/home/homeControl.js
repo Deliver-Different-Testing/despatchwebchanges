@@ -28,25 +28,15 @@ angular
         "toastrService",
         "loadingService",
         "$document",
+        "greetingService",
         function ($scope, jdSvc, DispatchData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm, $mdDialog,
-                  toastrService, loadingService, $document) {
+                  toastrService, loadingService, $document, greetingService) {
             $scope.isInternal = (ClientInternal === "True");
             $scope.name = "Home";
             $scope.jdSvc = jdSvc;
 
             $scope.greetUser = function () {
-                let currentHour = new Date().getHours();
-                let greeting;
-
-                if (currentHour < 12) {
-                    greeting = "Good morning";
-                } else if (currentHour < 18) {
-                    greeting = "Good afternoon";
-                } else {
-                    greeting = "Good evening";
-                }
-
-                return `${greeting}, ${$scope.userName}`
+                return greetingService.greetUser($scope.userName);
             }
 
             $scope.jdSvc.setSelectJobDetail(function () {
@@ -529,12 +519,6 @@ angular
                     .cancel('Cancel');
 
                 $mdDialog.show(saveLayoutPrompt).then(layoutName => {
-                    const callData = {
-                        "call": "saveLayout",
-                        "layoutName": layoutName,
-                        "layout": $scope.layout
-                    };
-
                     if (Modernizr.localstorage) {
                         $scope.layouts = $scope.layouts.concat(
                             {
@@ -3685,6 +3669,5 @@ function closestLocation(latitude, longitude, locations) {
     }
 
     // return the nearest location
-    var closestLocation = (locations[closest]);
-    return closestLocation;
+    return (locations[closest]);
 }

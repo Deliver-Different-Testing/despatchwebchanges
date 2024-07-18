@@ -1,8 +1,8 @@
 angular
     .module('uDispatch')
     .controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state", "$stateParams", "$filter", '$parse', "hotkeys",
-        "$location", "$q", 'NgMap', 'GeoCoder', '$ngConfirm', '$mdDialog',
-        function ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys, $location, $q, NgMap, GeoCoder, $ngConfirm, $mdDialog) {
+        "$location", "$q", 'NgMap', 'GeoCoder', '$ngConfirm', '$mdDialog', 'greetingService', '$timeout',
+        function ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys, $location, $q, NgMap, GeoCoder, $ngConfirm, $mdDialog, greetingService, $timeout) {
 
 
             $scope.isAdmin = (ClientInternal === "True");
@@ -29,6 +29,10 @@ angular
             $scope.name = "POD";
             $scope.jdSvc = jdSvc;
 
+            $scope.greetUser = function () {
+                return greetingService.greetUser($scope.userName);
+            }
+
             $scope.updateGPS = function (currentJob, field, fromRightClick) {
                 $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
             };
@@ -47,7 +51,7 @@ angular
                 },
                 showForm: function () {
                     $(".gatherForm").show(0, function () {
-                        setTimeout(function () {
+                        $timeout(function () {
                             $(".gatherForm .focusMe").focus();
                         }, 100);
                     });
@@ -418,11 +422,23 @@ angular
             $scope.layout = layoutToUse;
             $scope.currentLayoutName = $scope.layouts[0].name;
 
-            $scope.deleteLayout = function (i) {
-                $scope.layouts.splice(i, 1);
-                if (Modernizr.localstorage) {
-                    localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
-                }
+            $scope.deleteLayout = function (event, index) {
+                const deleteConfirm = $mdDialog.confirm()
+                    .title('Delete Layout?')
+                    .textContent('Are you sure you would like to delete this layout?')
+                    .ariaLabel('delete layout')
+                    .targetEvent(event)
+                    .ok('Delete')
+                    .cancel('Cancel');
+
+                $mdDialog.show(deleteConfirm).then(() => {
+                    $scope.layouts.splice(index, 1);
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
+                    }
+                }, () => {
+                    console.log("Delete layout canceled!");
+                });
             }
 
             $scope.setLastActiveLayoutName = function (layoutName) {
@@ -431,73 +447,56 @@ angular
                 }
             };
 
-            $scope.loadLayout = function (i) {
-                $scope.currentLayoutName = $scope.layouts[i].name;
-                $scope.layout = angular.copy($scope.layouts[i].layout);
+            $scope.loadLayout = function (index) {
+                $scope.currentLayoutName = $scope.layouts[index].name;
+                $scope.layout = angular.copy($scope.layouts[index].layout);
 
                 // save layout as last active
                 $scope.setLastActiveLayoutName($scope.currentLayoutName);
 
-                setTimeout($scope.initFilters, 1000);
+                $timeout($scope.initFilters, 1000);
             };
 
-            $scope.saveLayout = function () {
+            $scope.saveLayout = function (event) {
                 angular.forEach($scope.layout.columns,
-                    function (column, colKey) {
+                    (column, colKey) => {
                         column.width = $("#co-" + column.id).css("flex-basis");
                         angular.forEach(column.boxes,
-                            function (box, boxKey) {
+                            (box, boxKey) => {
                                 box.height = $("#box-" + box.name).css("flex-basis");
                             });
                     });
 
+                const saveLayoutPrompt = $mdDialog.prompt()
+                    .title('Save Layout')
+                    .textContent('Please enter a name for this layout.')
+                    .ariaLabel('Layout name')
+                    .targetEvent(event)
+                    .required(true)
+                    .ok('Save')
+                    .cancel('Cancel');
 
-                $scope.gather.form = {
-                    id: "saveLayout",
-                    title: "Save Layout",
-                    fields: [
-                        {
-                            "name": "layoutName",
-                            "label": "Layout Name",
-                            "value": ""
-                        }
-                    ],
-                    onSubmit: function () {
+                $mdDialog.show(saveLayoutPrompt).then(layoutName => {
+                    if (Modernizr.localstorage) {
+                        $scope.layouts = $scope.layouts.concat(
+                            {
+                                name: layoutName,
+                                layout: angular.copy($scope.layout)
+                            });
+                        localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
 
-                        var layoutName = $("#saveLayout").find("input").val();
+                        // save last active layout
+                        $scope.setLastActiveLayoutName(layoutName);
+                    }
 
-                        var callData = {
-                            "call": "saveLayout",
-                            "layoutName": layoutName,
-                            "layout": $scope.layout
-                        };
-
-
-                        if (Modernizr.localstorage) {
-                            $scope.layouts = $scope.layouts.concat(
-                                {
-                                    name: layoutName,
-                                    layout: angular.copy($scope.layout)
-                                });
-                            localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
-
-                            // save last active layout
-                            $scope.setLastActiveLayoutName(layoutName);
-                        }
-
-                        var deferred = $q.defer();
-                        deferred.resolve({
-                            data: "OK"
-                        });
-                        return deferred.promise;
-
-
-                    },
-                    submitValue: "Save"
-                };
-
-                $scope.gather.showForm();
-
+                    const deferred = $q.defer();
+                    deferred.resolve({
+                        data: "OK"
+                    });
+                    return deferred.promise;
+                }, () => {
+                    console.log("Save Layout Cancelled!")
+                });
             };
 
 
@@ -517,7 +516,7 @@ angular
                     });
                 },
                 update: function (e, ui) {
-                    setTimeout(function () {
+                    $timeout(function () {
                         var box = $("#" + ui.item.context.id);
                         var parent = box.parent();
                         parent.find(".box").each(function () {
@@ -602,7 +601,7 @@ angular
                 allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
                 callback: function () {
                     if ($(".gatherForm").is(":visible") === true) {
-                        setTimeout($scope.gather.submit(), 0);
+                        $timeout($scope.gather.submit(), 0);
                     }
                     if (event.srcElement.id === "Wild" || event.srcElement.id === "Job") {
                         $scope.refreshAllData(true);
@@ -990,7 +989,7 @@ angular
                         $scope.jobList = data.item2;
                         $scope.totalCount = data.item1;
                         $("#box-jobList").find(".loading").hide();
-                        setTimeout(function () {
+                        $timeout(function () {
                             sizeHeadings($("#jobList").parents(".column"));
 
                         }, 1000);
@@ -1041,7 +1040,7 @@ angular
                         $scope.bulkJobList = data.item2;
                         $scope.bulkTotalCount = data.item1;
                         $("#box-bulkJobList").find(".loading").hide();
-                        setTimeout(function () {
+                        $timeout(function () {
                             sizeHeadings($("#bulkJobList").parents(".column"));
 
                         }, 1000);
@@ -1091,7 +1090,7 @@ angular
                         $scope.pbList = data.item2;
                         $scope.pbTotalCount = data.item1;
                         $("#box-pbList").find(".loading").hide();
-                        setTimeout(function () {
+                        $timeout(function () {
                             sizeHeadings($("#pbList").parents(".column"));
 
                         }, 1000);
@@ -1150,7 +1149,7 @@ angular
 
                 $("#box-jobsList").find(".loading").show();
                 $scope.jobList = group.jobs;
-                setTimeout(function () {
+                $timeout(function () {
                     sizeHeadings($("#jobList").parents(".column"));
                 }, 1000);
                 $("#box-jobsList .loading").fadeOut();
@@ -1209,7 +1208,7 @@ angular
                     uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
                         $scope.scanList = data;
 
-                        setTimeout(function () {
+                        $timeout(function () {
                             sizeHeadings($("#scanList").parents(".column"));
                             $("#box-scanList").find(".loading").fadeOut();
                         }, 200);
@@ -1316,7 +1315,7 @@ angular
                     uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
                         $scope.scanList = data;
 
-                        setTimeout(function () {
+                        $timeout(function () {
                             sizeHeadings($("#scanList").parents(".column"));
                             $("#box-scanList").find(".loading").fadeOut();
                         }, 200);
@@ -1349,7 +1348,7 @@ angular
                     uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
                         $scope.scanList = data;
 
-                        setTimeout(function () {
+                        $timeout(function () {
                             sizeHeadings($("#scanList").parents(".column"));
                             $("#box-scanList").find(".loading").fadeOut();
                         }, 200);
@@ -1458,7 +1457,7 @@ angular
                 });
                 //loop actives
 
-                setTimeout(function () {
+                $timeout(function () {
                     $scope.selectedEvents = [];
                     $("#jobList .active").each(function () {
                         var eventIndex = $(this).data("index");
@@ -1469,7 +1468,7 @@ angular
                 }, 10);
 
 
-                setTimeout(function () {
+                $timeout(function () {
                     sizeHeadings($("#jobList").parents(".column"));
                 }, 1000);
 

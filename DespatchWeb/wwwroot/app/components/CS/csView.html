@@ -11,22 +11,40 @@
         <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
         <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks</div>
     </div>
+
     <div class="topbar-buttons">
 
-        <div class="btn topbar-button" style="color: white;"><span>hi {{userName}} - layout: {{currentLayoutName}}</span></div>
-        <div class="dropdown topbar-button">
-            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                Layout
-                <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-right list-group w-50" aria-labelledby="dropdownMenu1">
-                <li class="list-group-item" ng-click="saveLayout()"><b>Save Layout</b></li>
-                <li ng-repeat="lo in layouts track by $index" class="list-group-item">
-                    <i ng-click="deleteLayout($index)" style="cursor: pointer" title="Delete Layout" class="fa fa-trash"></i>
-                    <span ng-click="loadLayout($index)" style="cursor: pointer">{{lo.name}}</span>
-                </li>
-            </ul>
+        <div style="display: flex; align-items: center;">
+            <div class="btn topbar-button" style="color: white;">
+                <span>{{greetUser()}}</span>
+            </div>
+            <md-menu md-position-mode="target-right target">
+                <md-button aria-label="Open layout options menu"
+                           class="md-fab md-mini md-primary"
+                           ng-click="$mdMenu.open($event)">
+                    <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
+                    <md-tooltip md-direction="bottom">Layouts</md-tooltip>
+                </md-button>
+                <md-menu-content width="2">
+                    <md-menu-item>
+                        <md-button ng-click="saveLayout($event)">
+                            <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                            Save Layout
+                        </md-button>
+                    </md-menu-item>
+                    <md-menu-item ng-repeat="lo in layouts track by $index">
+                        <md-button>
+                            <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($event, $index)">
+                                delete
+                            </md-icon>
+                            <span ng-click="loadLayout($index)"
+                                  ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                        </md-button>
+                    </md-menu-item>
+                </md-menu-content>
+            </md-menu>
         </div>
+
     </div>
 </div>
 
