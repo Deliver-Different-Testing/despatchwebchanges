@@ -7,12 +7,11 @@ class GpsFormController {
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
         this.NgMap = NgMap;
-        this.addressDetails = addressDetails;
-        this.suburbOptions = suburbOptions;
 
         this.title = title;
-        this.submitLabel = submitLabel
         this.addressDetails = addressDetails;
+        this.suburbOptions = suburbOptions;
+        this.submitLabel = submitLabel
         this.ourSuburbSearchText = "";
         this.addressSearchText = "";
         this.ourSuburbSelectedItem = this.findSuburbByDistrict(addressDetails.suburb);
