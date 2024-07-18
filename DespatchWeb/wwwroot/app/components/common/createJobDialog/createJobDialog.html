@@ -18,6 +18,7 @@
                 <div layout-gt-sm="row">
                     <md-autocomplete
                             flex-gt-sm
+                            md-no-asterisk
                             md-autofocus
                             md-autoselect
                             md-escape-options="clear"
@@ -26,7 +27,7 @@
                             md-items="item in ctrl.clientSearch(ctrl.searchClientText)"
                             md-min-length="3"
                             md-search-text="ctrl.searchClientText"
-                            md-selected-item="ctrl.selectedClient"
+                            md-selected-item="ctrl.job.client"
                             placeholder="Start typing to search clients"
                             required>
                         <md-item-template>
@@ -39,7 +40,7 @@
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="delivery-contact">Delivery Contact</label>
-                        <input id="delivery-contact" ng-model="ctrl.job.deliveryContact" required>
+                        <input id="delivery-contact" md-no-asterisk ng-model="ctrl.job.deliveryContact" required>
                     </md-input-container>
                 </div>
 
@@ -56,6 +57,7 @@
                             md-search-text="ctrl.fromAddressSearchText"
                             md-selected-item="ctrl.job.fromAddress"
                             placeholder="Start typing to search clients"
+                            md-no-asterisk
                             required>
                         <md-item-template>
                             <span md-highlight-flags="^i"
@@ -68,7 +70,8 @@
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label>Job Date</label>
-                        <md-datepicker aria-label="Enter date" ng-model="user.job.date" required></md-datepicker>
+                        <md-datepicker aria-label="Enter job date" md-no-asterisk ng-model="ctrl.job.date"
+                                       required></md-datepicker>
                     </md-input-container>
                 </div>
 
@@ -85,33 +88,19 @@
                             md-search-text="ctrl.toAddressSearchText"
                             md-selected-item="ctrl.job.toAddress"
                             placeholder="Start typing to search clients"
-                            required>
+                            md-no-asterisk required>
                         <md-item-template>
                             <span md-highlight-flags="^i"
                                   md-highlight-text="ctrl.toAddressSearchText">{{item.text}}</span>
                         </md-item-template>
                         <md-not-found>
-                            No couriers matching "{{ctrl.toAddressSearchText}}" were found.
+                            No addresses matching "{{ctrl.toAddressSearchText}}" were found.
                         </md-not-found>
                     </md-autocomplete>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="pickup-contact">Pickup Contact</label>
-                        <input id="pickup-contact" ng-model="ctrl.job.pickUpContact" required>
-                    </md-input-container>
-                </div>
-
-                <div layout-gt-sm="row">
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label>Delivery Notes</label>
-                        <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.deliveryNotes"
-                                  rows="5"></textarea>
-                    </md-input-container>
-
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label>Pickup Notes</label>
-                        <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.pickupNotes"
-                                  rows="5"></textarea>
+                        <input id="pickup-contact" md-no-asterisk ng-model="ctrl.job.pickUpContact" required>
                     </md-input-container>
                 </div>
 
@@ -131,9 +120,7 @@
                     <md-checkbox ng-model="ctrl.job.attention">
                         Attention
                     </md-checkbox>
-                </div>
 
-                <div layout="row" layout-wrap>
                     <md-checkbox ng-model="ctrl.job.vanOk">
                         Van OK?
                     </md-checkbox>
@@ -154,9 +141,24 @@
                 <md-input-container class="md-icon-float md-icon-right md-block">
                     <label for="charge-amount">Charge Amount</label>
                     <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
-                    <input id="charge-amount" ng-model="ctrl.job.chargeAmount" required step="0.01" type="number">
+                    <input id="charge-amount" md-no-asteriskng-model="ctrl.job.chargeAmount" required step="0.01"
+                           type="number">
                     <md-icon md-font-set="material-symbols-outlined">paid</md-icon>
                 </md-input-container>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label>Delivery Notes</label>
+                        <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.deliveryNotes"
+                                  rows="3"></textarea>
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label>Pickup Notes</label>
+                        <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.pickupNotes"
+                                  rows="3"></textarea>
+                    </md-input-container>
+                </div>
             </div>
         </md-dialog-content>
 

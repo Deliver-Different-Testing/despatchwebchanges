@@ -8,6 +8,10 @@ class CreateJobDialog {
         this.toastrService = toastrService;
         this.loadingService = loadingService;
 
+        this.fromAddressSearchText = "";
+        this.toAddressSearchText = "";
+        this.searchClientText = "";
+
         // Define job form
         this.job = {
             selectedClient: {
@@ -15,15 +19,9 @@ class CreateJobDialog {
                 text: ""
             },
             deliveryContact: "",
-            fromAddress: {
-                id: "",
-                text: ""
-            },
-            toAddress: {
-                id: "",
-                text: ""
-            },
-            date: new Date().toISOString(),
+            fromAddress: null,
+            toAddress: null,
+            date: new Date(),
             pickUpContact: "",
             deliveryNotes: "",
             pickupNotes: "",
