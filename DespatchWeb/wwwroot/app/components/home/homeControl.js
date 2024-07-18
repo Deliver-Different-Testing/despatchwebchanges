@@ -1729,12 +1729,15 @@ angular
 
                 $mdDialog.show(confirm).then(() => {
                     loadingService.showLoader();
-                    DispatchData.splitJob(job.id, FirstName).then(response => {
+                    DispatchData.splitJob(job.id, FirstName).then(() => {
                         loadingService.closeLoader();
                         $scope.setSplitJobMeetingPoint(event, job);
-                    }).catch(error => toastrService.showErrorToast(error.message));
+                    }).catch(error => {
+                        toastrService.showErrorToast(error.message);
+                        loadingService.closeLoader();
+                    });
                 }, () => {
-                    // User cancelled the dialog
+                    console.log("Splitting job canceled!")
                 });
             };
 
@@ -3339,13 +3342,14 @@ angular
                 DispatchData.getSuburbList()
                     .then(selectedSuburbs => {
                         $mdDialog.show({
+                            controller: GpsFormController,
+                            controllerAs: 'ctrl',
                             parent: angular.element(document.body),
                             targetEvent: event,
                             templateUrl: "app/components/common/gpsForm/gpsForm.html",
                             clickOutsideToClose: false,
                             fullscreen: true,
                             locals: {
-                                currentJob: currentJob,
                                 addressDetails: {
                                     address: currentJob.toAddress,
                                     lat: lat,
@@ -3353,208 +3357,43 @@ angular
                                     suburb: suburbText,
                                     postCode: currentJob.postCode,
                                 },
-                                suburbOptions: selectedSuburbs
+                                suburbOptions: selectedSuburbs,
+                                title: "Split Job Address and GPS",
+                                submitLabel: "Split Job",
                             },
-                            controller: GpsDialogController
-                        }).then(() => {
-                            $scope.getData().then(_ => {
-                                loadingService.closeLoader();
-                                console.log("Job splitting complete!");
-                                console.log('Dialog closed!');
-                            });
-                        });
+                        }).then(addressDetails => {
+                            try {
+                                loadingService.showLoader();
+                                const job = currentJob;
+
+                                job.toAddress = addressDetails.address;
+                                job.toSuburbID = parseInt(addressDetails.our_suburb);
+
+                                const callData = {
+                                    "call": "updateSplitJobData",
+                                    "lat": addressDetails.lat,
+                                    "long": addressDetails.long,
+                                    "toSuburbId": job.toSuburbID,
+                                    "toAddress": job.toAddress,
+                                    "jobID": job.id,
+                                };
+
+                                return DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long)
+                                    .then(_ => DispatchData.reRateSplitJob(callData.jobID)
+                                        .then(_ => DispatchData.finishSplitJobProcess(callData.jobID, FirstName)
+                                            .then(_ => {
+                                                $scope.getData().then(_ => {
+                                                    loadingService.closeLoader();
+                                                    console.log("Job splitting complete!");
+                                                    console.log('Dialog closed!');
+                                                });
+                                            })));
+                            } catch (error) {
+                                toastrService.showErrorToast(error.message)
+                            }
+                            ;
+                        }).then(() => console.log("Split jobs canceled!"));
                     });
-
-                function GpsDialogController($scope, $timeout, $mdDialog, NgMap, toastrService, loadingService, currentJob, addressDetails, suburbOptions) {
-                    // Timeout to display map
-                    $timeout(() => {
-                        $scope.mapDisplay = true;
-                    }, 500);
-
-                    // Functions
-                    const findSuburbByDistrict = district => {
-                        let lowerCaseDistrict = district.toLowerCase();
-                        return suburbOptions.find(localSuburb =>
-                            localSuburb.text.toLowerCase() === lowerCaseDistrict ||
-                            (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
-                        );
-                    };
-
-                    const transformSuggestions = data => data.suggestions.map(obj => ({
-                        id: obj.locationId,
-                        text: obj.label.split(", ").reverse().join(", ")
-                    }));
-
-                    NgMap.getMap().then(map => {
-                        console.log("Loading Map!")
-                        $scope.map = map;
-                        $scope.marker = map.markers[0];
-                        $scope.addressSearchAutocomplete(addressDetails.address);
-                    });
-
-                    $scope.title = "Split Job Address and GPS";
-                    $scope.addressDetails = addressDetails;
-                    $scope.ourSuburbSearchText = "";
-                    $scope.addressSearchText = "";
-                    $scope.ourSuburbSelectedItem = findSuburbByDistrict(addressDetails.suburb);
-
-                    $scope.ourSuburbSearch = function (query) {
-                        return query ? suburbOptions.filter(suburb => (suburb.text.toLowerCase()
-                            .indexOf(query.toLowerCase()) !== -1)) : suburbOptions;
-                    };
-
-                    $scope.addressSearchAutocomplete = function (text) {
-                        try {
-                            return DispatchData.autocompleteAddressSearch(text).then(data => {
-                                return transformSuggestions(data)
-                            });
-                        } catch (error) {
-                            console.log(error.message);
-                        }
-                    }
-
-                    $scope.addressSearchItemSelected = function (item) {
-                        try {
-                            DispatchData.getGeoCodeInformation(item).then(data => {
-                                const returnedLocation = data.Response.View[0].Result[0].Location;
-
-                                console.log("Suburb = " + returnedLocation.Address.District);
-                                console.log("PostCode = " + returnedLocation.Address.PostalCode);
-
-                                const mappedSub = findSuburbByDistrict(returnedLocation.Address.District);
-
-                                if (mappedSub !== undefined) {
-                                    console.log(mappedSub);
-                                    $scope.ourSuburbSelectedItem = mappedSub;
-                                } else {
-                                    $scope.ourSuburbSelectedItem = null;
-                                    toastrService.showWarningToast("Matching suburb could not be found from this address." +
-                                        "Please select manually.")
-                                }
-
-                                $scope.addressDetails.filledAddress = returnedLocation.Address.Label;
-                                $scope.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                                $scope.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
-                                $scope.addressDetails.address = returnedLocation.Address.Label;
-                                $scope.addressDetails.suburb = returnedLocation.Address.District;
-                                $scope.addressDetails.postCode = returnedLocation.Address.PostalCode;
-
-                                const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude,
-                                    returnedLocation.DisplayPosition.Longitude);
-                                $scope.map.setCenter(latLng);
-                                $scope.marker.setPosition(latLng);
-                            });
-                        } catch (error) {
-                            console.log(error.message);
-                        }
-                    }
-
-                    $scope.submit = function (addressDetails) {
-                        try {
-                            loadingService.showLoader();
-                            const job = currentJob;
-
-                            // Assign variable it's autocomplete has been used
-                            if ($scope.ourSuburbSelectedItem.id !== undefined) {
-                                addressDetails.our_suburb = $scope.ourSuburbSelectedItem.id;
-                            }
-
-                            if (addressDetails.our_suburb === undefined) {
-                                // Alert the user
-                                const alert = $mdDialog.alert({
-                                    title: 'Courier Suburb Not Mapped',
-                                    textContent: 'You must pick one of our suburbs to map this address to',
-                                    ok: 'Close'
-                                });
-
-                                // Show the alert dialog
-                                loadingService.closeLoader();
-                                $mdDialog.show(alert);
-                            }
-
-                            job.toAddress = addressDetails.address;
-                            job.toSuburbID = parseInt(addressDetails.our_suburb);
-
-                            const callData = {
-                                "call": "updateSplitJobData",
-                                "lat": addressDetails.lat,
-                                "long": addressDetails.long,
-                                "toSuburbId": job.toSuburbID,
-                                "toAddress": job.toAddress,
-                                "jobID": job.id,
-                            };
-
-                            return DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long)
-                                .then(_ => DispatchData.reRateSplitJob(callData.jobID)
-                                    .then(_ => DispatchData.finishSplitJobProcess(callData.jobID, FirstName)
-                                        .then(_ => console.log("Submit complete"))));
-                        } catch (error) {
-                            toastrService.showErrorToast(error.message)
-                        } finally {
-                            loadingService.closeLoader();
-                        }
-                    }
-
-                    $scope.copyGpsAddress = address => $scope.addressSearchText = address;
-
-                    $scope.moveMarker = function (event) {
-                        $scope.addressDetails.lat = event.latLng.lat();
-                        $scope.addressDetails.long = event.latLng.lng();
-                        $scope.$apply();
-                    };
-
-                    $scope.markerDragend = function (event) {
-                        // Get the marker's new position
-                        const location = event.latLng;
-
-                        try {
-                            // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
-                            // that return the latitude and longitude values of your location
-                            DispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
-                                const returnedLocation = data.Response.View[0].Result[0].Location;
-
-                                // Updating scope variables with new data
-                                $scope.addressDetails.address = returnedLocation.Address.Label;
-                                $scope.addressDetails.suburb = returnedLocation.Address.District;
-                                $scope.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                                $scope.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
-
-                                // Log output
-                                console.log("Suburb = " + returnedLocation.Address.District);
-                                console.log("PostCode = " + returnedLocation.Address.PostalCode);
-
-                                // Updating suburb selection
-                                const mappedSub = self.pickSuburbs.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
-
-                                if (mappedSub !== undefined) {
-                                    console.log(mappedSub);
-                                    $scope.ourSuburbSelectedItem = mappedSub;
-                                } else {
-                                    $scope.ourSuburbSelectedItem = null;
-                                }
-                            });
-                        } catch (error) {
-                            console.log(error.message);
-                        }
-                    };
-
-                    $scope.placeChanged = function (place) {
-                        try {
-                            $scope.addressDetailsa.lat = place.geometry.location.lat();
-                            $scope.addressDetails.long = place.geometry.location.lng();
-                            if (place.address_components.find(x => x.types[0] === "postal_code")) {
-                                self.gpsForm.data.postCode = place.address_components
-                                    .find(x => x.types[0] === "postal_code").long_name;
-                            }
-
-                            $scope.map.setCenter(place.geometry.location);
-                        } catch (error) {
-                            console.log(error.message);
-                        }
-                    };
-
-                    $scope.cancel = () => $mdDialog.cancel();
-                }
             };
 
 

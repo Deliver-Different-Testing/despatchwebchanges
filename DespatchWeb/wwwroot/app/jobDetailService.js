@@ -1,8 +1,8 @@
 ﻿angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData", "$ngConfirm", "$mdDialog", "toastrService",
-            function (DispatchData, $ngConfirm, $mdDialog, toastrService) {
+        ["DispatchData", "$ngConfirm", "$mdDialog", "toastrService", "loadingService", "rateJobService",
+            function (DispatchData, $ngConfirm, $mdDialog, toastrService, loadingService, rateJobService) {
                 const self = this;
                 const options = {
                     "detail": {
@@ -746,7 +746,6 @@
                         clickOutsideToClose: false,
                         fullscreen: true,
                         locals: {
-                            currentJob,
                             addressDetails: {
                                 address: currentJob[field],
                                 lat,
@@ -754,13 +753,86 @@
                                 suburb: suburbText,
                                 postCode: currentJob.postCode,
                             },
-                            field,
-                            suburbOptions: self.pickSuburbs
+                            suburbOptions: self.pickSuburbs,
+                            title: "Update Address and GPS",
+                            submitLabel: "Update",
                         },
-                    }).then(_ => {
-                        self.selectJobDetail(currentJob.id);
+                    }).then(addressDetails => {
+                        try {
+                            loadingService.showLoader();
+                            const job = currentJob;
+
+                            if (field === "toAddress") {
+                                job.toAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
+                                if (job.bulkJob) {
+                                    DispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName)
+                                        .then(() => {
+                                            self.selectJobDetail(currentJob.id);
+                                            $mdDialog.hide();
+                                            toastrService.showSuccessToast("Address successfully updated");
+                                            loadingService.closeLoader();
+                                        });
+                                }
+
+                                job.toSuburbID = parseInt(addressDetails.our_suburb);
+                            } else {
+                                job.fromAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
+                                if (job.bulkJob) {
+                                    DispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName)
+                                        .then(() => {
+                                            self.selectJobDetail(currentJob.id);
+                                            $mdDialog.hide();
+                                            toastrService.showSuccessToast("Address successfully updated");
+                                            loadingService.closeLoader();
+                                        });
+                                }
+
+                                job.fromSuburbID = parseInt(addressDetails.our_suburb);
+                            }
+
+                            const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
+
+                            rateJobService.rateJob(job)
+                                .then(rate => {
+                                    const callData = {
+                                        "call": "updateJobData",
+                                        "addressField": field,
+                                        "lat": addressDetails.lat,
+                                        "long": addressDetails.long,
+                                        "fromSuburbId": job.fromSuburbID,
+                                        "toSuburbId": job.toSuburbID,
+                                        "fromAddress": job.fromAddress,
+                                        "toAddress": job.toAddress,
+                                        "rate": rate,
+                                        "jobID": job.id,
+                                        "CBD": pedal
+                                    };
+                                    console.log(callData);
+
+                                    if (field === "toAddress") {
+                                        DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
+                                            .then(() => {
+                                                self.selectJobDetail(currentJob.id);
+                                                $mdDialog.hide();
+                                                toastrService.showSuccessToast("Address successfully updated")
+                                                loadingService.closeLoader();
+                                            });
+                                    } else {
+                                        DispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
+                                            .then(() => {
+                                                self.selectJobDetail(currentJob.id);
+                                                $mdDialog.hide();
+                                                toastrService.showSuccessToast("Address successfully updated")
+                                                loadingService.closeLoader();
+                                            });
+                                    }
+                                });
+                        } catch (error) {
+                            toastrService.showErrorToast(error.message)
+                        }
+
                         console.log('Dialog closed!')
-                    });
+                    }).then(() => console.log("Split jobs canceled!"));
                 };
 
                 self.unlockJob = function (job) {
@@ -1229,14 +1301,14 @@
                         text: job.clientName
                     }
 
-                    this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
+                    self.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
                 };
 
                 self.courierClick = function (event, job) {
                     const url = "/courier/AllActiveSearch";
                     const placeholder = "Start typing to search courier...";
 
-                    this.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
+                    self.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
                 };
 
                 //////////////////////////////

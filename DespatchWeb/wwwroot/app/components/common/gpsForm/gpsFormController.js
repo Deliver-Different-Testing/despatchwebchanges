@@ -1,19 +1,17 @@
 // Controller to handle the GPS Form popu
 class GpsFormController {
-    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, rateJobService, NgMap, currentJob, addressDetails, field, suburbOptions) {
+    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, addressDetails, suburbOptions, title, submitLabel) {
         this.$scope = $scope;
         this.$timeout = $timeout;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
-        this.rateJobService = rateJobService
         this.NgMap = NgMap;
-        this.currentJob = currentJob;
         this.addressDetails = addressDetails;
-        this.field = field;
         this.suburbOptions = suburbOptions;
 
-        this.title = "Update Address and GPS";
+        this.title = title;
+        this.submitLabel = submitLabel
         this.addressDetails = addressDetails;
         this.ourSuburbSearchText = "";
         this.addressSearchText = "";
@@ -96,75 +94,23 @@ class GpsFormController {
     }
 
     async submit(addressDetails) {
-        try {
-            const job = this.currentJob; // Assign variable it's autocomplete has been used
             if (this.ourSuburbSelectedItem.id !== undefined) {
                 addressDetails.our_suburb = this.ourSuburbSelectedItem.id;
             }
 
-            if (addressDetails.our_suburb === undefined) { // Alert the user
+        if (addressDetails.our_suburb === undefined) {
                 const alert = this.$mdDialog.alert({
                     title: 'Courier Suburb Not Mapped',
                     textContent: 'You must pick one of our suburbs to map this address to',
-                    ok: 'Close'
+                    ok: 'OK',
                 }); // Show the alert dialog
                 await this.$mdDialog.show(alert);
+
+            return;
             }
 
-            if (this.field === "toAddress") {
-                job.toAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
-                if (job.bulkJob) {
-                    await this.DispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName);
-
-                    this.$mdDialog.hide();
-                    this.toastrService.showSuccessToast("Address successfully updated")
-                }
-
-                job.toSuburbID = parseInt(addressDetails.our_suburb);
-            } else {
-                job.fromAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
-                if (job.bulkJob) {
-                    await this.DispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName);
-
-                    this.$mdDialog.hide();
-                    this.toastrService.showSuccessToast("Address successfully updated")
-                }
-
-                job.fromSuburbID = parseInt(addressDetails.our_suburb);
-            }
-            const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
-            const rate = await this.rateJobService.rateJob(job);
-
-            const callData = {
-                "call": "updateJobData",
-                "addressField": this.field,
-                "lat": addressDetails.lat,
-                "long": addressDetails.long,
-                "fromSuburbId": job.fromSuburbID,
-                "toSuburbId": job.toSuburbID,
-                "fromAddress": job.fromAddress,
-                "toAddress": job.toAddress,
-                "rate": rate,
-                "jobID": job.id,
-                "CBD": pedal
-            };
-
-            console.log(callData);
-
-            if (this.field === "toAddress") {
-                await this.DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook);
-
-                this.$mdDialog.hide();
-                this.toastrService.showSuccessToast("Address successfully updated")
-            } else {
-                await this.DispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook);
-
-                this.$mdDialog.hide();
-                this.toastrService.showSuccessToast("Address successfully updated")
-            }
-        } catch (error) {
-            this.toastrService.showErrorToast(error.message);
-        }
+        // Pass back to function that called dialog for processing
+        this.$mdDialog.hide(addressDetails);
     }
 
     copyGpsAddress(address) {
