@@ -50,31 +50,31 @@ angular
             }
 
             $scope.jdSvc.setSelectJobDetail(function () {
-                var currentJob = $scope.currentJob;
+                const currentJob = $scope.currentJob;
                 jdSvc.setJob($scope.currentJob);
+
                 $scope.getData().then(function () {
                     if (currentJob === null || currentJob === undefined || currentJob === false) {
                         return;
                     }
 
-                    var refreshedJob = $scope.jobList.find(jo => jo.id === currentJob.id);
+                    const refreshedJob = $scope.jobList.find(jo => jo.id === currentJob.id);
                     $scope.selectJob(refreshedJob);
-                    $timeout(function () {
-                        $("#jobList tr[data-jobid='" + currentJob.id + "']").addClass("active");
+                    $timeout(() => {
+                        angular.element($document.querySelector("#jobList tr[data-jobid='" + currentJob.id + "']")).addClass('active');
 
-                        var $parentDiv = $("#jobList tr[data-jobid='" + currentJob.id + "']").parents(".box-content");
-                        var goTop = $("#jobList tr[data-jobid='" + currentJob.id + "']").offset().top;
-
+                        const element = angular.element($document.querySelector("#jobList tr[data-jobid='" + currentJob.id + "']"));
+                        const parentDiv = element.parent().hasClass('box-content') ? element.parent() : element.parent().closest('.box-content');
+                        let goTop = element[0].getBoundingClientRect().top;
 
                         try {
-                            goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                            $parentDiv.scrollTop(goTop);
+                            goTop = goTop - parentDiv.offset().top + parentDiv.scrollTop() - 28;
+                            parentDiv.scrollTop(goTop);
 
                         } catch (e) {
                             //ignore
                         }
                     }, 1000);
-
                 });
             });
 
