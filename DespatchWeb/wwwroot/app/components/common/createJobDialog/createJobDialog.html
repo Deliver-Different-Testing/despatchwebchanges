@@ -39,8 +39,9 @@
                     </md-autocomplete>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="delivery-contact">Delivery Contact</label>
-                        <input id="delivery-contact" md-no-asterisk ng-model="ctrl.job.deliveryContact" required>
+                        <label>Job Date</label>
+                        <md-datepicker aria-label="Enter job date" md-no-asterisk ng-model="ctrl.job.date"
+                                       required></md-datepicker>
                     </md-input-container>
                 </div>
 
@@ -69,9 +70,8 @@
                     </md-autocomplete>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label>Job Date</label>
-                        <md-datepicker aria-label="Enter job date" md-no-asterisk ng-model="ctrl.job.date"
-                                       required></md-datepicker>
+                        <label for="pickup-contact">Pickup Contact</label>
+                        <input id="pickup-contact" md-no-asterisk ng-model="ctrl.job.pickUpContact" required>
                     </md-input-container>
                 </div>
 
@@ -99,8 +99,8 @@
                     </md-autocomplete>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="pickup-contact">Pickup Contact</label>
-                        <input id="pickup-contact" md-no-asterisk ng-model="ctrl.job.pickUpContact" required>
+                        <label for="delivery-contact">Delivery Contact</label>
+                        <input id="delivery-contact" md-no-asterisk ng-model="ctrl.job.deliveryContact" required>
                     </md-input-container>
                 </div>
 
