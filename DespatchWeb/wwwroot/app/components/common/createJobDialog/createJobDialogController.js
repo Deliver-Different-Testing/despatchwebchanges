@@ -1,0 +1,82 @@
+class CreateJobDialog {
+    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $httpParamSerializerJQLike) {
+        this.$scope = $scope;
+        this.$mdDialog = $mdDialog;
+        this.DispatchData = DispatchData;
+        this.$http = $http;
+        this.$httpParamSerializerJQLike = $httpParamSerializerJQLike;
+        this.toastrService = toastrService;
+        this.loadingService = loadingService;
+
+        // Define job form
+        this.job = {
+            selectedClient: {
+                id: "",
+                text: ""
+            },
+            deliveryContact: "",
+            fromAddress: {
+                id: "",
+                text: ""
+            },
+            toAddress: {
+                id: "",
+                text: ""
+            },
+            date: new Date().toISOString(),
+            pickUpContact: "",
+            deliveryNotes: "",
+            pickupNotes: "",
+            van: false,
+            truck: false,
+            pedal: false,
+            attention: false,
+            vanOk: false,
+            reprice: false,
+            void: false,
+            done: false,
+            chargeAmount: 0.0
+        };
+    }
+
+    async addressSearchAutocomplete(searchText) {
+        try {
+            const suggestions = await this.DispatchData.autocompleteAddressSearch(searchText);
+            return this.transformSuggestions(suggestions);
+        } catch (error) {
+            this.toastrService.showErrorToast(error.message);
+        }
+    }
+
+    transformSuggestions(data) {
+        return data.suggestions.map(obj => ({
+            id: obj.locationId,
+            text: obj.label.split(", ").reverse().join(", ")
+        }))
+    }
+
+
+    async submit(job) {
+        try {
+            // Create Job
+            const response = await this.createJob(job);
+            this.toastrService.showSuccessToast("New Job Created Successfully")
+            return response.data;
+        } catch (error) {
+            this.toastrService.showErrorToast(error.message);
+        }
+    }
+
+    async createJob(job) {
+        const url = "job/createJob";
+        const data = this.$httpParamSerializerJQLike({
+            job
+        });
+
+        return $http.post(url, data);
+    }
+
+    cancel() {
+        this.$mdDialog.cancel();
+    }
+}

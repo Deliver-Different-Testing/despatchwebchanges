@@ -3576,9 +3576,23 @@ angular
                 };
 
                 $(".truckCourierStatusForm").show(0);
-
-
             };
+
+            $scope.createNewJob = function (event) {
+                // Dialog
+                $mdDialog.show({
+                    controller: CreateJobDialog,
+                    controllerAs: 'ctrl',
+                    parent: angular.element(document.body),
+                    targetEvent: event,
+                    templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
+                    clickOutsideToClose: false,
+                    fullscreen: true,
+                }).then(newJobId => {
+                    self.selectJobDetail(newJobId);
+                    console.log('Dialog closed!')
+                });
+            }
 
 
             $scope.sendPOD = () => {
