@@ -1,40 +1,52 @@
 class CreateJobDialog {
-    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $httpParamSerializerJQLike) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $httpParamSerializer) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.$http = $http;
-        this.$httpParamSerializerJQLike = $httpParamSerializerJQLike;
+        this.$httpParamSerializer = $httpParamSerializer;
         this.toastrService = toastrService;
         this.loadingService = loadingService;
 
+        this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
         this.toAddressSearchText = "";
         this.searchClientText = "";
 
+        this.selectedClient = null;
+        this.selectedFromAddress = null;
+        this.selectedToAddress = null;
+
         // Define job form
         this.job = {
-            selectedClient: {
-                id: "",
-                text: ""
-            },
-            deliveryContact: "",
-            fromAddress: null,
-            toAddress: null,
+            clientID: "",
+            deliverToContact: "",
+            fromAddress: "",
+            toAddress: "",
             date: new Date(),
-            pickUpContact: "",
+            fromContactName: "",
             deliveryNotes: "",
             pickupNotes: "",
             van: false,
             truck: false,
             pedal: false,
             attention: false,
-            vanOk: false,
+            vanOK: false,
             reprice: false,
             void: false,
             done: false,
-            chargeAmount: 0.0
+            charge: 0.0
         };
+    }
+
+    async clientSearchAutocomplete(searchTerm) {
+        const url = "/home/ActiveClients";
+
+        try {
+            return await this.DispatchData.autocompleteSearch(searchTerm, url);
+        } catch (error) {
+            this.toastrService.showErrorToast(error.message);
+        }
     }
 
     async addressSearchAutocomplete(searchText) {
@@ -56,22 +68,42 @@ class CreateJobDialog {
 
     async submit(job) {
         try {
+            if (!this.jobForm.$valid) {
+                this.toastrService.showWarningToast("Please complete all the fields");
+                return;
+            }
+
+            // Apply autocomplete values to job
+            job.clientID = this.selectedClient.id;
+            job.fromAddress = this.selectedFromAddress.text;
+            job.toAddress = this.selectedToAddress.text;
+
             // Create Job
             const response = await this.createJob(job);
+            const newJobId = response.data;
+
             this.toastrService.showSuccessToast("New Job Created Successfully")
-            return response.data;
+
+            // Pass new jobId back to function that called dialog
+            this.$mdDialog.hide(newJobId);
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         }
     }
 
     async createJob(job) {
-        const url = "job/createJob";
-        const data = this.$httpParamSerializerJQLike({
-            job
-        });
+        try {
+            const url = "job/createJob";
 
-        return $http.post(url, data);
+            return await this.$http({
+                url: url,
+                method: "POST",
+                data: job,
+                headers: {'Content-Type': 'application/json'}
+            });
+        } catch (error) {
+            this.toastrService.showErrorToast(error.message);
+        }
     }
 
     cancel() {
