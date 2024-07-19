@@ -1224,13 +1224,13 @@ span.courierRed {
   z-index: 99999;
 }
 md-toast.md-success-toast-theme .md-toast-content {
-  background-color: green;
+  background-color: #4CAF50;
 }
 md-toast.md-error-toast-theme .md-toast-content {
-  background-color: red;
+  background-color: #F44336;
 }
 md-toast.md-warning-toast-theme .md-toast-content {
-  background-color: yellow;
+  background-color: #FF9800;
 }
 .small-icon {
   font-size: 16px;
