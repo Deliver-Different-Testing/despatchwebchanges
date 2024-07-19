@@ -827,7 +827,7 @@ namespace DespatchWeb.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> CreateJob([FromBody] JobViewModel job)
+        public IActionResult CreateJob([FromBody] JobCreateViewModel job)
         {
             var data = new
             {
@@ -895,8 +895,6 @@ namespace DespatchWeb.Controllers
                     message += c;
                 }
             }
-
-            ;
 
             message = message.Replace("  ", " ");
             message = Strings.Trim(message);

@@ -15,6 +15,7 @@ class CreateJobDialog {
         this.selectedClient = null;
         this.selectedFromAddress = null;
         this.selectedToAddress = null;
+        this.jobDate = new Date();
 
         // Define job form
         this.job = {
@@ -22,7 +23,7 @@ class CreateJobDialog {
             deliverToContact: "",
             fromAddress: "",
             toAddress: "",
-            date: new Date(),
+            date: "",
             fromContactName: "",
             deliveryNotes: "",
             pickupNotes: "",
@@ -72,10 +73,11 @@ class CreateJobDialog {
                 return;
             }
 
-            // Apply autocomplete values to job
+            // Apply form values to job
             job.clientID = this.selectedClient.id;
             job.fromAddress = this.selectedFromAddress.text;
             job.toAddress = this.selectedToAddress.text;
+            job.date = this.jobDate.toISOString()
 
             // Create Job
             const response = await this.createJob(job);
@@ -93,13 +95,7 @@ class CreateJobDialog {
     async createJob(job) {
         try {
             const url = "job/createJob";
-
-            return await this.$http({
-                url: url,
-                method: "POST",
-                data: job,
-                headers: {'Content-Type': 'application/json'}
-            });
+            return await this.$http.post(url, job, {headers: {'Content-Type': 'application/json'}});
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         }

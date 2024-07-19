@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace DespatchWeb.Models
 {
-
     public class JobViewModel
     {
         public int ID { get; set; }
@@ -27,13 +27,15 @@ namespace DespatchWeb.Models
         public string Speed { get; set; }
         public string SpeedName { get; set; }
 
-        public string Source { get; set;  }
+        public string Source { get; set; }
         public string NotifiedName { get; set; }
         public string AcceptedName { get; set; }
         public int? SpeedID { get; set; }
         public string Notify { get; set; }
         public Vehicle Vehicle { get; set; }
-        public int? ClientID { get; set; }
+
+        [JsonProperty("clientID")] public int? ClientID { get; set; }
+
         public int JobType { get; set; }
         public string Client { get; set; }
         public string ClientName { get; set; }
@@ -41,10 +43,12 @@ namespace DespatchWeb.Models
         public int? FromSuburbID { get; set; }
         public string fromSuburbName { get; set; }
         public string FromPostCode { get; set; }
-        public string FromAddress { get; set; }
+
+        [JsonProperty("fromAddress")] public string FromAddress { get; set; }
+
         public string To { get; set; }
         public int? ToSuburbID { get; set; }
-        public string ToSuburbName { get; set;  }
+        public string ToSuburbName { get; set; }
         public string ToPostCode { get; set; }
         public string ToAddress { get; set; }
         public string ToCity { get; set; }
@@ -63,7 +67,9 @@ namespace DespatchWeb.Models
         public int? LD { get; set; }
         public string ContactName { get; set; }
         public string LoggedInContactName { get; set; }
-        public string DeliverToContact { get; set; }
+
+        [JsonProperty("deliverToContact")] public string DeliverToContact { get; set; }
+
         public int? TrackingMethod { get; set; }
         public string TrackingMobile { get; set; }
         public string TrackingEmail { get; set; }
@@ -106,7 +112,7 @@ namespace DespatchWeb.Models
         public int? RunOrder { get; set; }
         public CourierData CourierData { get; set; }
         public bool? AllowDispatch { get; set; }
-        public bool? DGDocumentation { get; set;}
+        public bool? DGDocumentation { get; set; }
         public int? DGClass { get; set; }
         public bool? DisplaySplitJobDetail { get; set; }
         public int? TruckWeightLimit { get; set; }
@@ -115,7 +121,7 @@ namespace DespatchWeb.Models
         public bool PrivateRes { get; set; }
         public bool? AllowSplit { get; internal set; }
         public DateTime? CompletedTime { get; set; }
-        public string FromContactName { get; set;  }
+        public string FromContactName { get; set; }
         public string FromContactNumber { get; set; }
         public bool RatedManually { get; set; }
         public short? SizeID { get; set; }
@@ -168,6 +174,4 @@ namespace DespatchWeb.Models
         public string Notes { get; set; }
         public int ItemID { get; set; }
     }
-
-
 }
