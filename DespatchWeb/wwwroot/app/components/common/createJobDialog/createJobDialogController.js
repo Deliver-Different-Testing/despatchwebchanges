@@ -1,10 +1,9 @@
 class CreateJobDialog {
-    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $httpParamSerializer) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.$http = $http;
-        this.$httpParamSerializer = $httpParamSerializer;
         this.toastrService = toastrService;
         this.loadingService = loadingService;
 
