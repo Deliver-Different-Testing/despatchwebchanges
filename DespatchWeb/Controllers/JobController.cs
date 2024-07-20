@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualBasic;
@@ -858,8 +859,7 @@ public class JobController : Controller
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = e.Message });
         }
     }
 
