@@ -219,7 +219,7 @@ namespace DespatchWeb.Repositories
             return jobs.Count;
         }
 
-        internal ClearListEnvelopeViewModel ClearListEnvelope(int id)
+        public ClearListEnvelopeViewModel ClearListEnvelope(int id)
         {
             var envelope = new ClearListEnvelopeViewModel();
             _context.LoadStoredProc("MAP_stpClearListArea_Envelope")
