@@ -476,9 +476,9 @@ public class JobRepository : IJobRepository
         return job;
     }
 
-    public async Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(Int32? courierId, string job, string wild,
+    public async Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(int? courierId, string job, string wild,
         DateTime fromDate,
-        DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
+        DateTime toDate, int? clientId, int pageIndex, int pageSize)
     {
         var clientSet = clientId.HasValue;
         var courierSet = courierId.HasValue;
@@ -569,8 +569,8 @@ public class JobRepository : IJobRepository
         return Tuple.Create(total, jobList);
     }
 
-    public Tuple<int, List<JobViewModel>> PodSearch(Int32? courierId, string wild, string job, DateTime fromDate,
-        DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
+    public Tuple<int, List<JobViewModel>> PodSearch(int? courierId, string wild, string job, DateTime fromDate,
+        DateTime toDate, int? clientId, int pageIndex, int pageSize)
     {
         var clientSet = clientId.HasValue;
         var courierSet = courierId.HasValue;
@@ -666,8 +666,8 @@ public class JobRepository : IJobRepository
         return Tuple.Create(total, jobList);
     }
 
-    public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(Int32? courierId, string wild, string job,
-        DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
+    public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
+        DateTime fromDate, DateTime toDate, int? clientId, int pageIndex, int pageSize)
     {
         var clientSet = clientId.HasValue;
         var courierSet = courierId.HasValue;
@@ -767,7 +767,7 @@ public class JobRepository : IJobRepository
         return jobList;
     }
 
-    public List<JobViewModel> CurrentJobList(Int32 courierId, bool done)
+    public List<JobViewModel> CurrentJobList(int courierId, bool done)
     {
         var jobs = _context.DeswebQryDespatches.FromSqlRaw($"exec [DESWeb_qryCourierJobs] {courierId}, {done}")
             .ToList();
@@ -1769,7 +1769,7 @@ public class JobRepository : IJobRepository
             })
             .ExecuteStoredNonQueryAsync();
 
-        return (Int32)outputMaxParam.Value;
+        return (int)outputMaxParam.Value;
     }
 
     public async Task<int> MaxAutoLateDeliveryAlert()
@@ -1784,7 +1784,7 @@ public class JobRepository : IJobRepository
             })
             .ExecuteStoredNonQueryAsync();
 
-        return (Int32)outputMaxParam.Value;
+        return (int)outputMaxParam.Value;
     }
 
     public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount)

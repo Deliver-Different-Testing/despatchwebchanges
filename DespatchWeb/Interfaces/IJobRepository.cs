@@ -13,18 +13,18 @@ public interface IJobRepository
     Task<List<Size>> RelatedJobs(int parentId, int clientId);
     Task<JobViewModel> BulkJobDetail(int bulkJobId);
 
-    Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(Int32? courierId, string job, string wild,
+    Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(int? courierId, string job, string wild,
         DateTime fromDate,
-        DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize);
+        DateTime toDate, int? clientId, int pageIndex, int pageSize);
 
-    Tuple<int, List<JobViewModel>> PodSearch(Int32? courierId, string wild, string job, DateTime fromDate,
-        DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize);
+    Tuple<int, List<JobViewModel>> PodSearch(int? courierId, string wild, string job, DateTime fromDate,
+        DateTime toDate, int? clientId, int pageIndex, int pageSize);
 
-    Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(Int32? courierId, string wild, string job,
-        DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize);
+    Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
+        DateTime fromDate, DateTime toDate, int? clientId, int pageIndex, int pageSize);
 
     Task<List<JobViewModel>> PreBookJobList();
-    List<JobViewModel> CurrentJobList(Int32 courierId, bool done);
+    List<JobViewModel> CurrentJobList(int courierId, bool done);
 
     Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
         bool isInternal, string clientIds);
