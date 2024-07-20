@@ -1,21 +1,17 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
-using DespatchWeb.EntityClasses;
-using DespatchWeb.Models;
-using System.Linq.Dynamic.Core;
 using DespatchWeb.Controllers;
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace DespatchWeb.Repositories
 {
-    public class CourierRepository
+    public class CourierRepository : ICourierRepository
     {
         private readonly DespatchContext _context;
 
@@ -30,12 +26,14 @@ namespace DespatchWeb.Repositories
             return result;
         }
 
-        public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null, bool close = false)
+        public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId,
+            int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null,
+            DateTime? etaTime = null, bool close = false)
         {
             int? staffOut = null;
             DateTime? responseTime = null;
             var pageCourier = false;
-            
+
             string description = null;
             var date = DateTime.Now;
             var time = DateTime.Now;
@@ -63,12 +61,10 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@Despatcher", despatcherName)
                 .WithSqlParam("@JobType", jobType)
                 .ExecuteStoredNonQueryAsync();
-
-
-
         }
 
-        public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
+        public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng,
+            decimal maxLat)
         {
             var result = new List<AvailableCourierPosition>();
             _context.LoadStoredProc("DESWEB_stpMapEnvelope")
@@ -76,10 +72,7 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@MinimumLatitude", minLat)
                 .WithSqlParam("@MaximumLongitude", maxLng)
                 .WithSqlParam("@MaximumLatitude", maxLat)
-                .ExecuteStoredProc(handle =>
-                {
-                    result = handle.ReadToList<AvailableCourierPosition>().ToList();
-                });
+                .ExecuteStoredProc(handle => { result = handle.ReadToList<AvailableCourierPosition>().ToList(); });
             return result;
         }
 
@@ -88,11 +81,7 @@ namespace DespatchWeb.Repositories
             var result = new List<PotentialCouriersViewModel>();
             _context.LoadStoredProc("DESWEB_qryPotentialCouriers")
                 .WithSqlParam("@JobID", jobId)
-
-                .ExecuteStoredProc(handle =>
-                {
-                    result = handle.ReadToList<PotentialCouriersViewModel>().ToList();
-                });
+                .ExecuteStoredProc(handle => { result = handle.ReadToList<PotentialCouriersViewModel>().ToList(); });
             return result;
         }
 
@@ -139,7 +128,7 @@ namespace DespatchWeb.Repositories
         }
 
         /// <summary>
-        /// All active couriers regardless of logged in or not 
+        /// All active couriers regardless of logged in or not
         /// </summary>
         /// <returns></returns>
         public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
@@ -160,9 +149,9 @@ namespace DespatchWeb.Repositories
             _context.LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
                 .WithSqlParam("@CourierCode", code)
                 .ExecuteStoredProc(handle =>
-                    {
-                        currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
-                    });
+                {
+                    currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
+                });
             return currentLocation;
         }
 
@@ -213,33 +202,39 @@ namespace DespatchWeb.Repositories
             return data;
         }
 
+        public async Task<int> ClearListTotalRemainingAsync(string area)
+        {
+            var filter =
+                _context.TblDespatchViews.FirstOrDefault(v =>
+                    (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
+            if (string.IsNullOrEmpty(filter))
+            {
+                return 0;
+            }
+
+            filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
+            var s =
+                $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
+            var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
+            return jobs.Count;
+        }
+
         internal ClearListEnvelopeViewModel ClearListEnvelope(int id)
         {
             var envelope = new ClearListEnvelopeViewModel();
             _context.LoadStoredProc("MAP_stpClearListArea_Envelope")
                 .WithSqlParam("@ClearListAreaID", id)
                 .WithSqlParam("@IncludeCouriers", false)
-                .ExecuteStoredProc(handle => { envelope = handle.ReadToList<ClearListEnvelopeViewModel>().FirstOrDefault(); });
+                .ExecuteStoredProc(handle =>
+                {
+                    envelope = handle.ReadToList<ClearListEnvelopeViewModel>().FirstOrDefault();
+                });
             return envelope;
         }
 
-        public async Task<int> ClearListTotalRemainingAsync(string area)
-        {
-            var filter =
-                _context.TblDespatchViews.FirstOrDefault(v =>
-                        (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
-            if (string.IsNullOrEmpty(filter))
-            {
-                return 0;
-            }
-            filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
-            var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
-            var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
-            return jobs.Count;
-        }
 
-
-        private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers, int clearListId, int percentHeight)
+        private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers,
+            int clearListId, int percentHeight)
         {
             var result = new List<CourierClearListViewModel>();
             _context.LoadStoredProc("DES_qdfCourier_ClearLists")
@@ -262,7 +257,6 @@ namespace DespatchWeb.Repositories
                         Lrm = "36 Min",
                         Eta2lrm = "25 Min",
                         CourierID = x.CourierID
-
                     },
                     Destinations = x.Deliver.Split(",").Select(d => new Destination()
                     {

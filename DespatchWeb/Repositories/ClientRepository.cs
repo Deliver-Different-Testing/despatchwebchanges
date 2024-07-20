@@ -1,15 +1,15 @@
-﻿using DespatchWeb.Models;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories
 {
-    public class ClientRepository
+    public class ClientRepository : IClientRepository
     {
         private readonly DespatchContext _context;
 
@@ -20,16 +20,18 @@ namespace DespatchWeb.Repositories
 
         public async Task<ClientViewModel> ValidateClientAsync(int contactId)
         {
-            var contact = await _context.TucClientContacts.FirstOrDefaultAsync(c=>c.UcctId == contactId);
+            var contact = await _context.TucClientContacts.FirstOrDefaultAsync(c => c.UcctId == contactId);
             if (contact == null)
             {
                 return null;
             }
-            var client = await _context.TblClients.FirstOrDefaultAsync(x=>x.ClientId == contact.UcctClientId);
+
+            var client = await _context.TblClients.FirstOrDefaultAsync(x => x.ClientId == contact.UcctClientId);
             if (client == null)
             {
                 return null;
             }
+
             return new ClientViewModel
             {
                 Active = client.Active,
@@ -39,7 +41,6 @@ namespace DespatchWeb.Repositories
                 Internal = client.Internal,
                 StaffID = contact.StaffId
             };
-            
         }
 
         public async Task<List<ClientContactViewModel>> ClientContacts(int contactId)
@@ -55,7 +56,6 @@ namespace DespatchWeb.Repositories
                     Text = c.Client.UcclName
                 };
             return await clientContacts.ToListAsync();
-
         }
 
         public async Task<DispatcherViewModel> ValidateDispatcherLogin(string name)
@@ -65,7 +65,6 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@WindowsLogonUserName", name)
                 .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DispatcherViewModel>().ToList(); });
             return result.FirstOrDefault();
-
         }
 
         public async Task<List<ClientActiveViewModel>> ActiveClients(string searchTerm)

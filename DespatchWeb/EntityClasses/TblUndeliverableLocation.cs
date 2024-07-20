@@ -7,6 +7,11 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TblUndeliverableLocation
     {
+        public TblUndeliverableLocation()
+        {
+            TucJobs = new HashSet<TucJob>();
+        }
+
         public int UndeliverableLocationId { get; set; }
         public DateTime Created { get; set; }
         public string CreatedBy { get; set; }
@@ -20,5 +25,6 @@ namespace DespatchWeb.EntityClasses
         public string WebDeliveredTimeLabel { get; set; }
 
         public virtual TucJobType JobType { get; set; }
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

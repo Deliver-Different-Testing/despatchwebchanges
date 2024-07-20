@@ -6,13 +6,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
-public class JobRepository
+public class JobRepository : IJobRepository
 {
     private readonly DespatchContext _context;
 
@@ -568,7 +569,7 @@ public class JobRepository
         return Tuple.Create(total, jobList);
     }
 
-    public Tuple<int, List<JobViewModel>> PODSearch(Int32? courierId, string wild, string job, DateTime fromDate,
+    public Tuple<int, List<JobViewModel>> PodSearch(Int32? courierId, string wild, string job, DateTime fromDate,
         DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize)
     {
         var clientSet = clientId.HasValue;
@@ -1668,7 +1669,7 @@ public class JobRepository
         }
     }
 
-    public async Task SwapPOD(string job1, string job2)
+    public async Task SwapPod(string job1, string job2)
     {
         await _context.LoadStoredProc("DESWEB_qdfSwapPOD")
             .WithSqlParam("@ucjbNumber1", job1)
@@ -1737,7 +1738,7 @@ public class JobRepository
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task UpdatePODDetails(string jobNumber, int jobStatus, string podName, DateTime podTime)
+    public async Task UpdatePodDetails(string jobNumber, int jobStatus, string podName, DateTime podTime)
     {
         await _context.LoadStoredProc("DESWEB_qdfJob_UpdatePODDetails")
             .WithSqlParam("@ucjbNumber", jobNumber)
@@ -1786,7 +1787,7 @@ public class JobRepository
         return (Int32)outputMaxParam.Value;
     }
 
-    public async Task<decimal> PPDExclusiveAmount(int clientId, decimal amount)
+    public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount)
     {
         DbParameter outputMaxParam = null;
         await _context.LoadStoredProc("UTL_stpPPD_ExclusiveAmount")
@@ -1803,7 +1804,7 @@ public class JobRepository
         return (decimal)outputMaxParam.Value;
     }
 
-    public async Task<decimal> PPDInclusiveAmount(int clientId, decimal amount)
+    public async Task<decimal> PpdInclusiveAmount(int clientId, decimal amount)
     {
         DbParameter outputMaxParam = null;
         await _context.LoadStoredProc("UTL_stpPPD_ExclusiveAmount")
@@ -2206,7 +2207,7 @@ public class JobRepository
         return (string)(outputDescriptionParam.Value == DBNull.Value ? "" : outputDescriptionParam.Value);
     }
 
-    public async Task<DirectToASAPViewModel> DirectToASAP(int jobId)
+    public async Task<DirectToASAPViewModel> DirectToAsap(int jobId)
     {
         var result = new List<DirectToASAPViewModel>();
         await _context.LoadStoredProc("DESWEB_stpJob_DirectToASAP")
@@ -2495,5 +2496,9 @@ public class JobRepository
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task<TucJobBooking>
+    public async Task QuickAddJob(TucJob tucJob)
+    {
+        await _context.TucJobs.AddAsync(tucJob);
+        await _context.SaveChangesAsync();
+    }
 }

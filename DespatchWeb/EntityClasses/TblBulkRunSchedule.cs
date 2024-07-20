@@ -29,6 +29,8 @@ namespace DespatchWeb.EntityClasses
         public int? ParentSpeedId { get; set; }
         public int? PickupBoxDiscount { get; set; }
         public int? DropOffLocationId { get; set; }
+        public bool? ApplyPickupCutoff { get; set; }
+        public int? PickupCutoff { get; set; }
 
         public virtual TucClient Client { get; set; }
         public virtual TucJobType ParentSpeed { get; set; }

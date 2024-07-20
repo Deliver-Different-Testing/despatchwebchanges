@@ -18,5 +18,8 @@ namespace DespatchWeb.EntityClasses
         public bool? Do { get; set; }
         public int? Dgclass { get; set; }
         public string Notes { get; set; }
+        public bool? PrivateRes { get; set; }
+
+        public virtual TucJob Job { get; set; }
     }
 }

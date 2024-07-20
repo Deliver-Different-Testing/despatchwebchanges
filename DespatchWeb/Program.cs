@@ -1,10 +1,9 @@
-﻿using DespatchWeb;
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using EntityFrameworkCore.UseRowNumberForPaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Server.IISIntegration;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,9 +25,9 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => true;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
-builder.Services.AddScoped<JobRepository, JobRepository>();
-builder.Services.AddScoped<CourierRepository, CourierRepository>();
-builder.Services.AddScoped<ClientRepository, ClientRepository>();
+builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<ICourierRepository, CourierRepository>();
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
 
 var connectionString = builder.Configuration.GetConnectionString("Connection");
 //var connectionTimeout = builder.Configuration.GetValue<int>("ConnectionTimeout");
@@ -47,7 +46,6 @@ var provider = new FileExtensionContentTypeProvider { Mappings = { [".tpl"] = "t
 
 app.UseStaticFiles(new StaticFileOptions
 {
-
     ContentTypeProvider = provider
 });
 app.UseRaygun();

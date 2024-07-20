@@ -1,0 +1,156 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Models;
+
+namespace DespatchWeb.Interfaces;
+
+public interface IJobRepository
+{
+    Task<JobViewModel> PreBookDetail(int prebookId);
+    Task<JobViewModel> JobDetail(int jobId);
+    Task<List<Size>> RelatedJobs(int parentId, int clientId);
+    Task<JobViewModel> BulkJobDetail(int bulkJobId);
+
+    Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(Int32? courierId, string job, string wild,
+        DateTime fromDate,
+        DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize);
+
+    Tuple<int, List<JobViewModel>> PodSearch(Int32? courierId, string wild, string job, DateTime fromDate,
+        DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize);
+
+    Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(Int32? courierId, string wild, string job,
+        DateTime fromDate, DateTime toDate, Int32? clientId, Int32 pageIndex, Int32 pageSize);
+
+    Task<List<JobViewModel>> PreBookJobList();
+    List<JobViewModel> CurrentJobList(Int32 courierId, bool done);
+
+    Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
+        bool isInternal, string clientIds);
+
+    /// <summary>
+    /// Main query for Nationwide job window panes. New =1, POD=2, BookDel=3, Reprice=4
+    /// </summary>
+    /// <param name="status"></param>
+    /// <param name="area"></param>
+    /// <param name="order"></param>
+    /// <param name="ascending"></param>
+    /// <param name="isInternal"></param>
+    /// <param name="clientIds"></param>
+    /// <param name="windowPane"></param>
+    /// <returns></returns>
+    Task<List<JobViewModel>> NationwideJobListAsync(string status, string area, string order,
+        string ascending, bool isInternal, string clientIds, int windowPane);
+
+    Task<List<SupportViewModel>> SupportEvents(string channel);
+    Task<TucEvent> GetSupportEvent(int id);
+    Task<int> UpdateSupportEvent(TucEvent supportEvent);
+    Task CloseSupportEvent(int supportId, int staffId);
+    Task DispatchSelectedJobs(int courierId, int dispId, string jobIds);
+    Task SwapPod(string job1, string job2);
+    Task ReDispatchSelectedJobs(int courierId, int dispId, string jobIds);
+    Task ReSendSelectedJobs(string jobIds);
+    Task<List<BulkScanDetail>> ScanList(DateTime? runDate, string scan);
+    Task ReAssignSelectedJobs(string jobIds);
+    Task SetFirstJob(int jobId, int courierId);
+    Task TransferJob(int jobId, int courierId, int dispId);
+    Task UpdatePodDetails(string jobNumber, int jobStatus, string podName, DateTime podTime);
+    Task ReSendAllJobs(int courierId);
+    Task<int> MaxAutoLatePickupAlert();
+    Task<int> MaxAutoLateDeliveryAlert();
+    Task<decimal> PpdExclusiveAmount(int clientId, decimal amount);
+    Task<decimal> PpdInclusiveAmount(int clientId, decimal amount);
+
+    Task<decimal> FuelSurchargeInclusiveAmount(int clientId, decimal amount, int from, int to,
+        DateTime booked, int size);
+
+    Task ResetLateEvent(int jobId, int eventType);
+
+    Task LatePickup(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher,
+        bool calculationRequired);
+
+    Task LateDelivery(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher,
+        bool calculationRequired);
+
+    Task RestoreSplitJobs(string jobIds);
+    Task RestoreJobs(string jobIds);
+    Task MessageCourier(int courierId, int dispId, string despatcher, string message);
+    Task VoidJob(int jobId);
+    Task SplitJob(int jobId, string user);
+    Task<string> UnSplitJob(int jobId);
+
+    Task UpdateSplitJobAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
+        decimal deliveryLng);
+
+    Task ReRateSplitJob(int jobId);
+    Task FinishSplitJobProcess(int jobId, string despatcher);
+    List<SuburbLookup> Suburbs();
+    List<Lookup> Speeds();
+    List<Lookup> Contacts(int clientId);
+    Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId);
+    List<Lookup> LeaveParcelLocations();
+    List<UndeliverableLocation> UndeliverableLocations();
+    List<InternalStatus> InternalStatusList();
+    List<Lookup> EventTypeList();
+
+    Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed,
+        int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
+        int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours);
+
+    Task<string> RateTruckJobDescription(int clientId, int fromId, int toId, double weight, int size,
+        int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
+        int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours);
+
+    Task<decimal> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
+        bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
+        string ourRef, string refA, string refB, int quantity, DateTime booked);
+
+    Task<string> RateJobDescription(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
+        bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
+        string ourRef, string refA, string refB, int quantity, DateTime booked);
+
+    Task<DirectToASAPViewModel> DirectToAsap(int jobId);
+    Task<UpdateFirstAvailableSpeedResult> UpdateFirstAvailableSpeed(int jobId);
+    Task<SettingsViewModel> Settings();
+    Task AddPalletInfo(PalletInfo p, bool preBook, string despatcher);
+    Task EditPalletInfo(PalletInfo p, bool preBook, string despatcher);
+    Task DeletePalletInfo(PalletInfo p, bool preBook, string despatcher);
+    Task SendPrebookJob(int jobId);
+    Task VoidPrebookJob(int jobId, string despatcher, int staffId);
+    Task<TruckItemsSummary> TruckJobItems(int jobId, int truckWeightLimit);
+
+    Task UpdateDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
+        decimal deliveryLng, bool cbd, decimal rate, string despatcher);
+
+    Task UpdateBulkDeliveryAddress(int bulkJobId, string toSuburb, int toPostCode, string address,
+        decimal deliveryLat, decimal deliveryLng, string despatcher);
+
+    Task UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat,
+        decimal pickupLng, bool cbd, decimal rate, string despatcher);
+
+    Task UpdateJobType(int jobId, int jobType, string despatcher);
+
+    Task UpdateBulkPickupAddress(int bulkJobId, string fromSuburb, int fromPostCode, string address,
+        decimal pickupLat, decimal pickupLng, string despatcher);
+
+    Task UpdateBookingDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
+        decimal deliveryLng, bool cbd, decimal rate, string despatcher);
+
+    Task UpdateBookingPickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat,
+        decimal pickupLng, bool cbd, decimal rate, string despatcher);
+
+    Task ReleaseBulkJob(string jobNumber, DateTime bookDate);
+    Task UpdateJob(int jobId, string field, string value, decimal? rate, string despatcher, int staffId);
+
+    Task UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate, string despatcher,
+        int staffId);
+
+    Task UpdateJobBooking(int jobId, string field, string value, decimal? rate, string despatcher,
+        int staffId);
+
+    Task AddNote(int jobId, string note, string despatcher);
+    Task AddBulkJobNote(int bulkJobId, string note, string despatcher);
+    Task AddJobBookingNote(int jobId, string note, string despatcher);
+    Task QuickAddJob(TucJob tucJob);
+}
