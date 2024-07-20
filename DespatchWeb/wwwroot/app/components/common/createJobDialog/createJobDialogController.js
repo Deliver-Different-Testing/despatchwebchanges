@@ -94,7 +94,7 @@ class CreateJobDialog {
 
     async createJob(job) {
         try {
-            const url = "job/createJob";
+            const url = "job/quickCreateJob";
             return await this.$http.post(url, job, {headers: {'Content-Type': 'application/json'}});
         } catch (error) {
             this.toastrService.showErrorToast(error.message);

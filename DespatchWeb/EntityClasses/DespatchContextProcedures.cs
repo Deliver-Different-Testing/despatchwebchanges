@@ -74,5 +74,47 @@ namespace DespatchWeb.EntityClasses
 
             return _;
         }
+
+        public virtual async Task<int> NET_stpJob_Insert_JobNumberAsync(int? StaffID, int? JobTypeID, OutputParameter<string> JobNumber, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterJobNumber = new SqlParameter
+            {
+                ParameterName = "JobNumber",
+                Size = 10,
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = JobNumber?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.VarChar,
+            };
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "StaffID",
+                    Value = StaffID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "JobTypeID",
+                    Value = JobTypeID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterJobNumber,
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[NET_stpJob_Insert_JobNumber] @StaffID = @StaffID, @JobTypeID = @JobTypeID, @JobNumber = @JobNumber OUTPUT", sqlParameters, cancellationToken);
+
+            JobNumber.SetValue(parameterJobNumber.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
     }
 }

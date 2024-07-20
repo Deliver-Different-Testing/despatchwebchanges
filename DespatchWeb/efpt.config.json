@@ -155,6 +155,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[UTL_fncSuburb_FromNameWithPostCode]",
          "ObjectType": 2
       }

@@ -829,7 +829,7 @@ public class JobController : Controller
 
 
     [HttpPost]
-    public async Task<IActionResult> CreateJob([FromBody] JobCreateViewModel job)
+    public async Task<IActionResult> QuickCreateJob([FromBody] JobCreateViewModel job)
     {
         try
         {
