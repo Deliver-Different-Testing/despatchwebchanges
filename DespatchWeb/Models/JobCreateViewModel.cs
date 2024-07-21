@@ -3,6 +3,12 @@ using Newtonsoft.Json;
 
 namespace DespatchWeb.Models;
 
+public class CreateJobRequest
+{
+    [JsonProperty("job")] public JobCreateViewModel Job { get; set; }
+    [JsonProperty("staffId")] public int? StaffId { get; set; }
+}
+
 public class JobCreateViewModel
 {
     public int ClientId { get; set; }

@@ -1,11 +1,12 @@
 class CreateJobDialog {
-    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, staffId) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.$http = $http;
         this.toastrService = toastrService;
         this.loadingService = loadingService;
+        this.staffId = staffId;
 
         this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
@@ -15,7 +16,10 @@ class CreateJobDialog {
         this.selectedClient = null;
         this.selectedFromAddress = null;
         this.selectedToAddress = null;
+
+        // Set default booking date to tomorrow
         this.jobDate = new Date();
+        this.jobDate.setDate(this.jobDate.getDate() + 1);
 
         // Define job form
         this.job = {
@@ -94,8 +98,13 @@ class CreateJobDialog {
 
     async createJob(job) {
         try {
-            const url = "job/quickCreateJob";
-            return await this.$http.post(url, job, {headers: {'Content-Type': 'application/json'}});
+            const url = "job/QuickCreateJob/";
+            const callData = {
+                job,
+                staffId: this.staffId
+            };
+
+            return await this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         }

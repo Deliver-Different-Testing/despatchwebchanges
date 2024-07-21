@@ -829,8 +829,14 @@ public class JobController : Controller
 
 
     [HttpPost]
-    public async Task<IActionResult> QuickCreateJob([FromBody] JobCreateViewModel job)
+    public async Task<IActionResult> QuickCreateJob([FromBody] CreateJobRequest request)
     {
+        var job = request.Job;
+        var staffId = request.StaffId;
+
+        if (job is null || staffId is null)
+            return BadRequest("Input parameters are null");
+
         try
         {
             var tucJob = new TucJob
@@ -850,10 +856,16 @@ public class JobController : Controller
                 Reprice = job.Reprice,
                 InternalNotes = job.PickupNotes,
                 UcjbJobDone = job.Done,
-                UcjbChargeType = (double)job.Charge
+                UcjbAmount = job.Charge,
+                RatedManually = true,
+                // Required values
+                RebateAmt = 0,
+                FuelSurchargeAmount = 0,
+                DeliverToPrivateBusiness = 0,
+                ContactId = 1
             };
 
-            await _jobRepo.QuickAddJob(tucJob);
+            await _jobRepo.QuickAddJob(tucJob, staffId.Value);
 
             return Json(new { jobId = tucJob.UcjbId });
         }

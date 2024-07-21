@@ -42,6 +42,7 @@ public class JobControllerTest
     public async Task CreateJob_CallsQuickAddJob_Once()
     {
         // Arrange
+        const int jacobStaffId = 385;
         var testJob = new JobCreateViewModel
         {
             ClientId = 12345,
@@ -63,13 +64,45 @@ public class JobControllerTest
             Charge = 150.75m
         };
 
+        var expectedTucJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbClientId = testJob.ClientId,
+            UcjbFromAddr = testJob.FromAddress,
+            UcjbToAddr = testJob.ToAddress,
+            PickupFromContact = testJob.FromContactName,
+            UcjbDate = testJob.Date,
+            UcjbVoid = testJob.Void,
+            UcjbVan = testJob.Van,
+            UcjbAttention = testJob.Attention,
+            DeliverToContact = testJob.DeliverToContact,
+            Truck = testJob.Truck,
+            ClientNotes = testJob.DeliveryNotes,
+            VanOk = testJob.VanOK,
+            Reprice = testJob.Reprice,
+            InternalNotes = testJob.PickupNotes,
+            UcjbJobDone = testJob.Done,
+            UcjbChargeType = (double)testJob.Charge,
+        };
+
+        _jobRepoMock.Setup(repo => repo.QuickAddJob(expectedTucJob, jacobStaffId)).Verifiable();
+
         // Act
-        var result = await _jobController.CreateJob(testJob);
+        var result = await _jobController.QuickCreateJob(testJob, jacobStaffId);
 
         // Assert
-        _jobRepoMock.Verify(repo => repo.QuickAddJob(It.IsAny<TucJob>()), Times.Once);
-        Assert.That(result, !Is.Null);
-        var okResult = result as OkObjectResult;
-        Assert.That(okResult?.StatusCode, Is.EqualTo(200));
+        _jobRepoMock.Verify(
+            repo => repo.QuickAddJob(It.Is<TucJob>(x => x.UcjbClientId == expectedTucJob.UcjbClientId), jacobStaffId),
+            Times.Once); // Confirm that the right parameters passed
+        Assert.That(result, Is.Not.Null);
+
+        var jsonResult = result as JsonResult;
+        Assert.That(jsonResult, Is.Not.Null);
+
+        var jsonValue = jsonResult.Value as dynamic;
+        Assert.That(jsonValue, Is.Not.Null);
+
+        // Replace the 0 with the expected jobId value.
+        Assert.That(jsonValue.jobId, Is.EqualTo(1));
     }
 }

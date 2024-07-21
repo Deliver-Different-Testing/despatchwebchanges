@@ -285,7 +285,7 @@
                             if (self.combos.frequency.length > 0 &&
                                 self.combos.days.length > 0 &&
                                 self.combos.holidays.length > 0) {
-                                var newDays = "0000000";
+                                let newDays = "0000000";
                                 for (let i = 0; i < self.combos.days.length; i++) {
                                     newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
                                 }
@@ -298,7 +298,7 @@
                                         self.currentJob.charge,
                                         FirstName,
                                         ContactID,
-                                        self.currentJob.preBook).then(function (response) {
+                                        self.currentJob.preBook).then(response => {
                                         self.selectJobDetail(self.currentJob.id);
                                         return response;
                                     });
@@ -331,7 +331,7 @@
                 };
 
                 self.getInternalStatus = function (is) {
-                    var selected = self.pickInternalStatus.find(({id}) => id === is);
+                    const selected = self.pickInternalStatus.find(({id}) => id === is);
                     return selected !== undefined ? selected.text : "";
                 }
 
@@ -353,7 +353,7 @@
                 self.displayPriceBreakdown = function ($event, job) {
                     $event.stopPropagation();
                     console.log(job);
-                    var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
+                    const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
                         job.fromSuburbID === 112 && job.toSuburbID === 112 ||
                         job.fromSuburbID === 480 && job.toSuburbID === 480;
                     if (job.size.id === 4 &&
@@ -366,28 +366,25 @@
                             job.speedID === 52)) {
                         //Truck Job
                         DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
-                            function (itemSummary) {
-                                return DispatchData.truckJobAmountBreakdown(job.clientID,
-                                    job.fromSuburbID,
-                                    job.toSuburbID,
-                                    itemSummary.weight,
-                                    job.size.id,
-                                    job.speedID,
-                                    itemSummary.quantity,
-                                    job.booked,
-                                    itemSummary.pickUp,
-                                    itemSummary.dropOff,
-                                    job.privateRes,
-                                    itemSummary.overSize,
-                                    itemSummary.overWeight,
-                                    itemSummary.dgClass,
-                                    job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
-                                    job.truckHours || 2,
-                                    job.gstRate).then(function (description) {
-                                    alert(description);
-                                });
-
-                            });
+                            itemSummary => DispatchData.truckJobAmountBreakdown(job.clientID,
+                                job.fromSuburbID,
+                                job.toSuburbID,
+                                itemSummary.weight,
+                                job.size.id,
+                                job.speedID,
+                                itemSummary.quantity,
+                                job.booked,
+                                itemSummary.pickUp,
+                                itemSummary.dropOff,
+                                job.privateRes,
+                                itemSummary.overSize,
+                                itemSummary.overWeight,
+                                itemSummary.dgClass,
+                                job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
+                                job.truckHours || 2,
+                                job.gstRate).then(function (description) {
+                                alert(description);
+                            }));
 
                         return false;
                     } else {
@@ -409,7 +406,7 @@
                             job.items,
                             job.booked,
                             job.gstRate,
-                            job.charge.replace("$", "")).then(function (description) {
+                            job.charge.replace("$", "")).then(description => {
                             alert(description);
                         });
                     }
@@ -618,7 +615,7 @@
                                 return DispatchData
                                     .updateJobType(callData.jobID,
                                         callData.value,
-                                        FirstName).then(function (response) {
+                                        FirstName).then(response => {
 
                                     });
                             }

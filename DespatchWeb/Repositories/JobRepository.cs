@@ -2496,9 +2496,22 @@ public class JobRepository : IJobRepository
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task QuickAddJob(TucJob tucJob)
+    public async Task QuickAddJob(TucJob tucJob, int staffId)
     {
+        tucJob.UcjbNumber = await QuickCreateJobNumber(staffId);
+
         await _context.TucJobs.AddAsync(tucJob);
         await _context.SaveChangesAsync();
+    }
+
+    private async Task<string> QuickCreateJobNumber(int staffId, int jobTypeId = 4)
+    {
+        var jobNumber = new OutputParameter<string>();
+        var returnValue = new OutputParameter<int>();
+
+        // Create JobId
+        await _context.Procedures.NET_stpJob_Insert_JobNumberAsync(staffId, jobTypeId, jobNumber, returnValue);
+
+        return jobNumber.Value;
     }
 }

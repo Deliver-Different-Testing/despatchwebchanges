@@ -3372,14 +3372,13 @@ angular
                             } catch (error) {
                                 toastrService.showErrorToast(error.message)
                             }
-                            ;
                         }).then(() => console.log("Split jobs canceled!"));
                     });
             };
 
 
             $scope.addEvent = function () {
-                var time = new Date();
+                let time = new Date();
                 time.setSeconds(0);
                 time.setMilliseconds(0);
 
@@ -3395,26 +3394,25 @@ angular
 
                     },
                     cancel: function () {
-                        $(".eventForm").hide(0);
+                        angular.element($document.querySelector('.eventForm')).css('display', 'none');
                     }
                 };
 
-                $(".eventForm").show(0);
+                angular.element($document.querySelector('.eventForm')).css('display', '');
             };
 
             $scope.truckLoadingStatus = function () {
-
                 $scope.truckCourierStatusForm = {
                     "data": $scope.truckCourierStatus[0],
-                    refresh: function () {
+                    refresh: () => {
                         $scope.refreshTruckCourierStatus();
                     },
-                    close: function () {
-                        $(".truckCourierStatusForm").hide(0);
+                    close: () => {
+                        angular.element($document.querySelector('.truckCourierStatusForm')).css('display', 'none');
                     }
                 };
 
-                $(".truckCourierStatusForm").show(0);
+                angular.element($document.querySelector('.truckCourierStatusForm')).css('display', '');
             };
 
             $scope.createNewJob = function (event) {
@@ -3427,6 +3425,9 @@ angular
                     templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
                     clickOutsideToClose: false,
                     fullscreen: true,
+                    locals: {
+                        staffId: ContactID
+                    },
                 }).then(newJobId => {
                     self.selectJobDetail(newJobId);
                     console.log('Dialog closed!')

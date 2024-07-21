@@ -152,5 +152,5 @@ public interface IJobRepository
     Task AddNote(int jobId, string note, string despatcher);
     Task AddBulkJobNote(int bulkJobId, string note, string despatcher);
     Task AddJobBookingNote(int jobId, string note, string despatcher);
-    Task QuickAddJob(TucJob tucJob);
+    Task QuickAddJob(TucJob tucJob, int staffId);
 }
