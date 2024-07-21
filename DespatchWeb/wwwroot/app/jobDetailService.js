@@ -1,8 +1,8 @@
 ﻿angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData", "$ngConfirm", "$mdDialog", "toastrService", "loadingService", "rateJobService",
-            function (DispatchData, $ngConfirm, $mdDialog, toastrService, loadingService, rateJobService) {
+        ["DispatchData", "$ngConfirm", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document",
+            function (DispatchData, $ngConfirm, $mdDialog, toastrService, loadingService, rateJobService, $document) {
                 const self = this;
                 const options = {
                     "detail": {
@@ -609,7 +609,7 @@
                             if (fieldName === "SpeedID") {
                                 callData.value = gather.form.fields[0].value;
                                 job.speedID = parseInt(gather.form.fields[0].value);
-                                job.speed = $("#gather-SpeedID").find(':selected').text();
+                                job.speed = angular.element($document.querySelector("#gather-SpeedID option:selected")).text();
                                 rerate = true;
                             }
                             if (fieldName === "JobTypeID") {
@@ -629,22 +629,23 @@
                             if (fieldName === "NotifiedJobTypeID") {
                                 callData.value = gather.form.fields[0].value;
                                 job.notifiedJobTypeID = parseInt(gather.form.fields[0].value);
-                                job.notify = $("#gather-NotifiedJobTypeID").find(':selected').text();
+                                job.notify = angular.element($document.querySelector("#gather-NotifiedJobTypeID option:selected")).text();
                                 rerate = true;
                             }
                             if (fieldName === "AcceptedJobTypeID") {
                                 callData.value = gather.form.fields[0].value;
                                 job.acceptedJobTypeID = parseInt(gather.form.fields[0].value);
-                                job.speedAccepted = $("#gather-AcceptedJobTypeID").find(':selected').text();
+                                job.speedAccepted = angular.element($document.querySelector("#gather-AcceptedJobTypeID option:selected")).text();
                                 rerate = true;
                             }
                             if (fieldName === "DeliverToLeaveID") {
                                 callData.value = gather.form.fields[0].value;
-                                job.sigNotRequired = $("#gather-DeliverToLeaveID").find(':selected').text();
+                                job.sigNotRequired = angular.element($document.querySelector("#gather-DeliverToLeaveID option:selected")).text();
                             }
+
                             if (fieldName === "UndeliverableLocationID") {
                                 callData.value = gather.form.fields[0].value;
-                                job.UDStatus = $("#gather-UndeliverableLocationID").find(':selected').text();
+                                job.UDStatus = angular.element($document.querySelector("#gather-UndeliverableLocationID option:selected")).text();
                             }
                             if (fieldName === "ClientID") {
                                 callData.value = gather.form.fields[0].value;
@@ -654,8 +655,7 @@
                             if (fieldName === "DGClass") {
                                 callData.value = callData.value.id;
                                 job.dgClass = callData.value.id;
-                                var dgdocs = gather.form.fields[1].value;
-
+                                let dgdocs = gather.form.fields[1].value;
 
                                 return DispatchData
                                     .updateJobDetail(callData.jobID,
@@ -678,7 +678,6 @@
                                         } else {
                                             return response;
                                         }
-
                                     });
                             }
                             if (rerate && !job.bulkJob) {
@@ -740,7 +739,7 @@
                     $mdDialog.show({
                         controller: GpsFormController,
                         controllerAs: 'ctrl',
-                        parent: angular.element(document.body),
+                        parent: angular.element($document.body),
                         targetEvent: event,
                         templateUrl: "app/components/common/gpsForm/gpsForm.html",
                         clickOutsideToClose: false,
@@ -1190,7 +1189,7 @@
                     $mdDialog.show({
                         controller: SelectDialogController,
                         controllerAs: 'ctrl',
-                        parent: angular.element(document.body),
+                        parent: angular.element($document.body),
                         targetEvent: event,
                         templateUrl: 'app/components/common/selectDialog/selectDialog.html',
                         clickOutsideToClose: true,
@@ -1271,7 +1270,7 @@
                     $mdDialog.show({
                         controller: AutoCompleteDialogController,
                         controllerAs: 'ctrl',
-                        parent: angular.element(document.body),
+                        parent: angular.element($document.body),
                         targetEvent: event,
                         templateUrl: 'app/components/common/autocompleteDialog/autoCompleteDialog.html',
                         clickOutsideToClose: true,
@@ -1645,7 +1644,6 @@
                         submitValue: "Edit Pallet"
                     };
                     setTimeout(function () {
-
                             gather.showForm();
                         },
                         200);
@@ -1653,8 +1651,5 @@
                 };
 
                 return self;
-
             }
-
-
         ]);
