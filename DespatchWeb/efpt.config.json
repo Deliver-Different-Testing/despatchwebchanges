@@ -67,10 +67,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[tucJob]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[tucJobBooking]",
          "ObjectType": 0
       },
@@ -155,7 +151,7 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
+        "Name": "[dbo].[DESWEB_stpQuickCreateJob]",
          "ObjectType": 1
       },
       {
@@ -172,7 +168,7 @@
    "UseDbContextSplitting": false,
    "UseDecimalDataAnnotationForSprocResult": true,
    "UseFluentApiOnly": true,
-  "UseHandleBars": true,
+  "UseHandleBars": false,
    "UseHierarchyId": false,
    "UseInflector": true,
    "UseLegacyPluralizer": false,
@@ -181,7 +177,7 @@
    "UseNoNavigations": false,
    "UseNoObjectFilter": false,
    "UseNodaTime": false,
-  "UseNullableReferences": true,
+  "UseNullableReferences": false,
    "UsePrefixNavigationNaming": false,
    "UseSchemaFolders": false,
    "UseSchemaNamespaces": false,

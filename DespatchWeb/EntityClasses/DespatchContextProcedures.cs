@@ -75,15 +75,14 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> NET_stpJob_Insert_JobNumberAsync(int? StaffID, int? JobTypeID, OutputParameter<string> JobNumber, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? UcjbClientId, string UcjbFromAddr, string UcjbToAddr, string PickupFromContact, DateTime? UcjbDate, bool? UcjbVoid, bool? UcjbVan, bool? UcjbAttention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? UcjbJobDone, decimal? UcjbAmount, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
-            var parameterJobNumber = new SqlParameter
+            var parameterJobId = new SqlParameter
             {
-                ParameterName = "JobNumber",
-                Size = 10,
+                ParameterName = "JobId",
                 Direction = System.Data.ParameterDirection.InputOutput,
-                Value = JobNumber?._value ?? Convert.DBNull,
-                SqlDbType = System.Data.SqlDbType.VarChar,
+                Value = JobId?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.Int,
             };
             var parameterreturnValue = new SqlParameter
             {
@@ -96,22 +95,154 @@ namespace DespatchWeb.EntityClasses
             {
                 new SqlParameter
                 {
-                    ParameterName = "StaffID",
-                    Value = StaffID ?? Convert.DBNull,
+                    ParameterName = "UcjbClientId",
+                    Value = UcjbClientId ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "JobTypeID",
-                    Value = JobTypeID ?? Convert.DBNull,
+                    ParameterName = "UcjbFromAddr",
+                    Size = -1,
+                    Value = UcjbFromAddr ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "UcjbToAddr",
+                    Size = -1,
+                    Value = UcjbToAddr ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PickupFromContact",
+                    Size = -1,
+                    Value = PickupFromContact ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "UcjbDate",
+                    Value = UcjbDate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.DateTime,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "UcjbVoid",
+                    Value = UcjbVoid ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "UcjbVan",
+                    Value = UcjbVan ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "UcjbAttention",
+                    Value = UcjbAttention ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliverToContact",
+                    Size = -1,
+                    Value = DeliverToContact ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Truck",
+                    Value = Truck ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ClientNotes",
+                    Size = -1,
+                    Value = ClientNotes ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "VanOk",
+                    Value = VanOk ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Reprice",
+                    Value = Reprice ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "InternalNotes",
+                    Size = -1,
+                    Value = InternalNotes ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "UcjbJobDone",
+                    Value = UcjbJobDone ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "UcjbAmount",
+                    Precision = 18,
+                    Scale = 2,
+                    Value = UcjbAmount ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "RatedManually",
+                    Value = RatedManually ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "RebateAmt",
+                    Precision = 18,
+                    Scale = 2,
+                    Value = RebateAmt ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FuelSurchargeAmount",
+                    Precision = 18,
+                    Scale = 2,
+                    Value = FuelSurchargeAmount ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliverToPrivateBusiness",
+                    Value = DeliverToPrivateBusiness ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
-                parameterJobNumber,
+                new SqlParameter
+                {
+                    ParameterName = "ContactId",
+                    Value = ContactId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "StaffId",
+                    Value = StaffId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterJobId,
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[NET_stpJob_Insert_JobNumber] @StaffID = @StaffID, @JobTypeID = @JobTypeID, @JobNumber = @JobNumber OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @UcjbClientId = @UcjbClientId, @UcjbFromAddr = @UcjbFromAddr, @UcjbToAddr = @UcjbToAddr, @PickupFromContact = @PickupFromContact, @UcjbDate = @UcjbDate, @UcjbVoid = @UcjbVoid, @UcjbVan = @UcjbVan, @UcjbAttention = @UcjbAttention, @DeliverToContact = @DeliverToContact, @Truck = @Truck, @ClientNotes = @ClientNotes, @VanOk = @VanOk, @Reprice = @Reprice, @InternalNotes = @InternalNotes, @UcjbJobDone = @UcjbJobDone, @UcjbAmount = @UcjbAmount, @RatedManually = @RatedManually, @RebateAmt = @RebateAmt, @FuelSurchargeAmount = @FuelSurchargeAmount, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @ContactId = @ContactId, @StaffId = @StaffId, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
 
-            JobNumber.SetValue(parameterJobNumber.Value);
+            JobId.SetValue(parameterJobId.Value);
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;

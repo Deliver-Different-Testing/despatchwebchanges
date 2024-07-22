@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Mail;
 using System.Reflection;
 using System.Threading.Tasks;
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Http;
@@ -831,43 +830,19 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> QuickCreateJob([FromBody] CreateJobRequest request)
     {
-        var job = request.Job;
-        var staffId = request.StaffId;
-
-        if (job is null || staffId is null)
-            return BadRequest("Input parameters are null");
-
         try
         {
-            var tucJob = new TucJob
-            {
-                UcjbClientId = job.ClientId,
-                UcjbFromAddr = job.FromAddress,
-                UcjbToAddr = job.ToAddress,
-                PickupFromContact = job.FromContactName,
-                UcjbDate = job.Date,
-                UcjbVoid = job.Void,
-                UcjbVan = job.Van,
-                UcjbAttention = job.Attention,
-                DeliverToContact = job.DeliverToContact,
-                Truck = job.Truck,
-                ClientNotes = job.DeliveryNotes,
-                VanOk = job.VanOK,
-                Reprice = job.Reprice,
-                InternalNotes = job.PickupNotes,
-                UcjbJobDone = job.Done,
-                UcjbAmount = job.Charge,
-                RatedManually = true,
-                // Required values
-                RebateAmt = 0,
-                FuelSurchargeAmount = 0,
-                DeliverToPrivateBusiness = 0,
-                ContactId = 1
-            };
+            var job = request.Job;
+            var staffId = request.StaffId;
 
-            await _jobRepo.QuickAddJob(tucJob, staffId.Value);
+            if (job is null || staffId is null)
+                return BadRequest("Input parameters are null");
 
-            return Json(new { jobId = tucJob.UcjbId });
+            var jobId = await _jobRepo.QuickAddJob(job, staffId.Value);
+
+            if (jobId == 0) return StatusCode(StatusCodes.Status500InternalServerError, "Created Job Id is null");
+
+            return Json(new { jobId });
         }
         catch (Exception e)
         {

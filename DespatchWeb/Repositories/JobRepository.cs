@@ -2496,22 +2496,37 @@ public class JobRepository : IJobRepository
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task QuickAddJob(TucJob tucJob, int staffId)
+    public async Task<int> QuickAddJob(JobCreateViewModel job, int staffId)
     {
-        tucJob.UcjbNumber = await QuickCreateJobNumber(staffId);
-
-        await _context.TucJobs.AddAsync(tucJob);
-        await _context.SaveChangesAsync();
-    }
-
-    private async Task<string> QuickCreateJobNumber(int staffId, int jobTypeId = 4)
-    {
-        var jobNumber = new OutputParameter<string>();
+        var jobId = new OutputParameter<int?>();
         var returnValue = new OutputParameter<int>();
 
-        // Create JobId
-        await _context.Procedures.NET_stpJob_Insert_JobNumberAsync(staffId, jobTypeId, jobNumber, returnValue);
+        await _context.Procedures.DESWEB_stpQuickCreateJobAsync(
+            job.ClientId,
+            job.FromAddress,
+            job.ToAddress,
+            job.FromContactName,
+            job.Date,
+            job.Void,
+            job.Van,
+            job.Attention,
+            job.DeliverToContact,
+            job.Truck,
+            job.PickupNotes,
+            job.VanOK,
+            job.Reprice,
+            job.DeliveryNotes,
+            job.Done,
+            job.Charge,
+            RatedManually: true,
+            RebateAmt: 0,
+            FuelSurchargeAmount: 0,
+            DeliverToPrivateBusiness: 0,
+            ContactId: 1,
+            staffId,
+            jobId,
+            returnValue);
 
-        return jobNumber.Value;
+        return jobId.Value ?? 0;
     }
 }

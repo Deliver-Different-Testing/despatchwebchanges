@@ -3,15 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
-#nullable enable
-
 namespace DespatchWeb.EntityClasses
 {
     public partial class DES_qryTruckCourierStatusResult
     {
         public int ucjbCourierID { get; set; }
-        public string CourierCode { get; set; } = default!;
-        public string FirstName { get; set; } = default!;
+        public string CourierCode { get; set; }
+        public string FirstName { get; set; }
         public int? MaxPallets { get; set; }
         public double? MaxPayLoad { get; set; }
         public int CurrentPallets { get; set; }
