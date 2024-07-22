@@ -96,7 +96,7 @@ class CreateJobDialog {
 
             // Create Job
             const response = await this.createJob(job);
-            const newJobId = response.data;
+            const newJobId = response.data.jobId;
 
             this.toastrService.showSuccessToast("New Job Created Successfully")
 
