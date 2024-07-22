@@ -208,6 +208,8 @@ namespace DespatchWeb.Repositories
                 from contact in contactJoin.DefaultIfEmpty()
                 join sou in _context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
                 from source in sourceJoin.DefaultIfEmpty()
+                join st in _context.TucStaffs on j.DispatcherId equals st.UcstId into staffJoin
+                from staff in staffJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)
                 select new JobViewModel()
@@ -244,7 +246,7 @@ namespace DespatchWeb.Repositories
                     From = yo.UcsuName,
                     FromSuburbID = j.FromSuburbId,
                     fromSuburbName = yo.UcsuName,
-                    FromPostCode = yo.PostCode,  
+                    FromPostCode = yo.PostCode,
                     FromAddress = j.FromAddress,
                     FromContactName = j.PickupFromContact,
                     FromContactNumber = j.PickupFromPhone,
@@ -281,13 +283,15 @@ namespace DespatchWeb.Repositories
                     DeliveryLongitude = j.DeliveryLongitude,
                     //CourierLatitude = j.CourierLatitude,
                     //CourierLongitude = j.CourierLongitude,
-                    //RunOrder = j.PickRunOrder,
+                    RunName = j.RunName,
                     CourierData = new CourierData()
                     {
                         Courier = co.Code + " " + co.FirstName + " " + co.Surname,
-                        CourierID = co.CourierId
+                        CourierID = co.CourierId,
+                        CourierName = co.FirstName + " " + co.Surname,
+                        CourierMobile = co.Mobile
                     },
-                    
+
                     //AllowDispatch = j.AllowDespatch,
                     //AllowSplit = j.AllowSplit,
                     DGClass = j.Dgclass,
@@ -324,8 +328,9 @@ namespace DespatchWeb.Repositories
                     ConNote = nw.UcnwConNote,
                     AirportOnly = nw.UcnwAirportOnly,
                     HasNationwide = nw.UcnwJobId.HasValue,
-                    StatusName = status.UcjsName
-
+                    StatusName = status.UcjsName,
+                    DispatcherName = $"{staff.UcstFirstName ??  string.Empty} {staff.UcstLastName ?? string.Empty}",
+                    CreatedDate = j.Date
                 });
             var job = await jobQuery.FirstOrDefaultAsync();
             if (job != null)
@@ -336,7 +341,7 @@ namespace DespatchWeb.Repositories
                     label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (job.SizeID ?? (short)2))
                 };
                 job.RelatedJobs = (
-                    from rel in _context.TblJobs.Where(r => 
+                    from rel in _context.TblJobs.Where(r =>
                         job.RootParentID.HasValue && r.ParentId == job.RootParentID &&  r.ClientId == job.ClientID
                         ).OrderBy(t=>t.Date).ThenBy(x=>x.Time)
                     select new Size()
@@ -465,7 +470,7 @@ namespace DespatchWeb.Repositories
                     Done = j.Done,
                     ScheduleName = schedule.Name,
                     LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}",
-                    Source = source.Name, 
+                    Source = source.Name,
                     StatusName = status.UcjsName
 
                 });
@@ -500,7 +505,7 @@ namespace DespatchWeb.Repositories
                 from x in _context.TblBulkJobs
                 join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
                 from co in courierJoin.DefaultIfEmpty()
-                
+
                 join t in _context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
                 from to in speedJoin.DefaultIfEmpty()
                 join s in _context.TucJobStatuses on x.JobStatus equals s.UcjsId into statusJoin
@@ -532,7 +537,7 @@ namespace DespatchWeb.Repositories
                     DeliveryLatitude = decimal.Parse(x.DeliveryLatitude),
                     DeliveryLongitude = decimal.Parse(x.DeliveryLongitude),
                     BookedDate = x.BookDate
-                    
+
 
                 });
             var stopwatch = new Stopwatch();
@@ -741,7 +746,7 @@ namespace DespatchWeb.Repositories
             stopwatch.Start();
             var jobList = jobs.Select(j => new JobViewModel()
             {
-                
+
                 ID = j.ID,
                 Booked = DateTime.Parse(j.Booked.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")),
                 Client = j.Client,
@@ -835,7 +840,7 @@ namespace DespatchWeb.Repositories
                      //    {
                      //        id = rel.JobId,
                      //        label = rel.Number
-                     //    } 
+                     //    }
                      //).ToList(),
                      Client = j.UcclCode,
                      ClientID = j.UcjbClientId,
@@ -933,7 +938,7 @@ namespace DespatchWeb.Repositories
             return list;
         }
 
-        
+
         public async Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending, bool isInternal, string clientIds)
         {
             var orderToUse = "";
@@ -995,7 +1000,7 @@ namespace DespatchWeb.Repositories
                             (area != "all" && selectedAreas.Contains(v.Name)) ||
                             (area == "all" && areas.Contains(v.Name)))
                         .ToList();
-                
+
                 foreach (var w in filter)
                 {
                     if (!string.IsNullOrEmpty(whereToUse))
@@ -1009,7 +1014,7 @@ namespace DespatchWeb.Repositories
                 whereToUse = $"({whereToUse})";
             }
 
-            
+
 
             if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status) && status != "all")
             {
@@ -1152,7 +1157,7 @@ namespace DespatchWeb.Repositories
                                     Notes = pa.Notes
 
                                 }).ToList(),
-                            
+
                             CourierData = new CourierData()
                             {
                                 Courier = string.IsNullOrEmpty(j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
@@ -1273,7 +1278,7 @@ namespace DespatchWeb.Repositories
 
             var selectedAreas = area.Split(',').ToList();
 
-           
+
             var whereToUse = "";
             List<int> selectedViews = new List<int>();
             foreach (var a in selectedAreas)
@@ -1307,7 +1312,7 @@ namespace DespatchWeb.Repositories
 
                 }
             }
-           
+
 
             if (isInternal)
             {
@@ -1358,12 +1363,12 @@ namespace DespatchWeb.Repositories
                             whereToUse += " Reprice = 1";
                             break;
                     }
-                    
+
                     break;
                 case "done":
                     whereToUse += windowPane == 4 ? " Reprice = 1" : " ucjbJobDone = 1";
                     break;
-                
+
                 case "default":
                     break;
             }
@@ -1391,7 +1396,7 @@ namespace DespatchWeb.Repositories
 
             }
 
-            
+
 
             if (isInternal == false && !string.IsNullOrEmpty(clientIds))
             {
@@ -1545,7 +1550,7 @@ namespace DespatchWeb.Repositories
                             ConNote = j.ConNote,
                             AirportOnly =j.AirportOnly,
                             HasNationwide = j.HasNationwide.HasValue,
-                            LoggedInContactName = j.LoggedInContactName, 
+                            LoggedInContactName = j.LoggedInContactName,
                             StatusName = j.StatusName
 
 
@@ -1613,7 +1618,7 @@ namespace DespatchWeb.Repositories
                 }
             }
 
-            
+
 
             var s = channel == "All" ? $"select * from DES_qrySupportEvents_CustomerAndCourier order by {orderToUse}" : $"select * from DES_qrySupportEvents_CustomerAndCourier where {whereToUse} order by {orderToUse}";
 
@@ -2336,7 +2341,7 @@ namespace DespatchWeb.Repositories
                 .ExecuteStoredNonQueryAsync();
         }
 
-        
+
 
         public async Task<TruckItemsSummary> TruckJobItems(int jobId, int truckWeightLimit)
         {

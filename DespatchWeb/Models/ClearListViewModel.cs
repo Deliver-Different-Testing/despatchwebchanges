@@ -48,6 +48,8 @@ namespace DespatchWeb.Models
         public string Lrm { get; set; }
         public string Eta2lrm { get; set; }
         public int? CourierID { get; set; }
+        public string? CourierName { get; set; }
+        public string? CourierMobile { get; set; }
     }
 
     public class Destination

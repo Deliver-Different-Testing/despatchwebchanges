@@ -39,7 +39,7 @@
                 <hidden name="{{field.name}}" id="gather-{{field.name}}" ng-model="field.value"/>
               </div>
             </div>
-          </div> 
+          </div>
         </div>
         <div class="col-md-12">
 
@@ -51,4 +51,3 @@
     </div>
   </div>
 </div>
-

@@ -6,6 +6,6 @@ namespace DespatchWeb.Models
     {
         [JsonPropertyName("id")] public int ID { get; set; }
 
-        public string Text { get; set; }
+        [JsonPropertyName("text")] public string Text { get; set; }
     }
 }

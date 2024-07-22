@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucSuburb()
         {
             TucClients = new HashSet<TucClient>();
+            TucStaffs = new HashSet<TucStaff>();
         }
 
         public int UcsuId { get; set; }
@@ -43,5 +44,6 @@ namespace DespatchWeb.EntityClasses
         public string Gsscity { get; set; }
 
         public virtual ICollection<TucClient> TucClients { get; set; }
+        public virtual ICollection<TucStaff> TucStaffs { get; set; }
     }
 }
