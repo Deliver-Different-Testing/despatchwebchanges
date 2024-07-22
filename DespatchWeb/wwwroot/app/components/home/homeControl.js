@@ -922,28 +922,23 @@ angular
 
             $scope.dispatchDroppedMarkerToClosestCourier = function (lat, lng, flags, carMarker, jobNumber) {
                 if (flags.length === 0 && carMarker === null) {
-                    $ngConfirm({
-                        title: 'Dispatch Invalid',
-                        content: 'Could not find courier for Dispatch',
-                        scope: $scope,
-                        buttons: {
+                    const confirm = $mdDialog.confirm()
+                        .title('Dispatch Invalid')
+                        .textContent('Could not find courier for Dispatch')
+                        .ok('Close')
+                        .cancel();
 
-                            Close: {
-                                btnClass: 'btn-red',
-                                action: function (scope, button) {
-                                    const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                                    displayPickupPoints(unDispatchedData, true, null);
-                                    $scope.getAvailableCourierLocation();
-                                }
-                            }
-
-                        }
+                    $mdDialog.show(confirm).then(() => {
+                        const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                        displayPickupPoints(unDispatchedData, true, null);
+                        $scope.getAvailableCourierLocation();
                     });
                     return;
                 }
+
                 console.log(jobNumber);
 
-                var toCompare = [];
+                let toCompare = [];
 
                 angular.forEach(flags, function (f, key) {
                     toCompare.push([key, f.position.lat(), f.position.lng()]);
@@ -953,11 +948,11 @@ angular
                     toCompare.push([9999, carMarker.position.lat(), carMarker.position.lng()]);
                 }
 
-                var closestIndex = closestLocation(lat, lng, toCompare);
-                var closestCourier = closestIndex[0] === 9999 ? carMarker : flags[closestIndex[0]];
-                var foundCourier = $scope.pickCouriers.find(c => c.courierID === closestCourier.courierId);
+                let closestIndex = closestLocation(lat, lng, toCompare);
+                let closestCourier = closestIndex[0] === 9999 ? carMarker : flags[closestIndex[0]];
+                let foundCourier = $scope.pickCouriers.find(c => c.courierID === closestCourier.courierId);
 
-                var dispTo = closestCourier.code;
+                let dispTo = closestCourier.code;
                 if (closestIndex[0] !== 9999) {
                     if (foundCourier !== undefined) {
                         if (foundCourier.code === undefined) {
@@ -969,59 +964,45 @@ angular
                     }
                 }
 
-                $ngConfirm({
-                    title: 'Dispatch Job ' + jobNumber,
-                    content: 'Dispatch to <strong>' + dispTo + '</strong>?',
-                    scope: $scope,
-                    buttons: {
-                        Yes: {
-                            btnClass: 'btn-green',
-                            action: function (scope, button) {
-                                var j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
-                                var jn = j.jobNo;
+                const confirm = $mdDialog.confirm()
+                    .title('Dispatch Job ' + jobNumber)
+                    .textContent('Dispatch to ' + dispTo + '?')
+                    .ok('Yes')
+                    .cancel('No');
 
-                                //if (!j.allowDispatch) {
-                                //    $ngConfirm("Can not despatch " + jn + " until all other child jobs have been despatched.");
-                                //    return;
-                                //}
-                                if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
-                                    $ngConfirm("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
-                                    return;
-                                }
-                                if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-                                    $ngConfirm("Courier " + courier + " doesn't have a DGLicense or license has expired.");
-                                    return;
-                                }
+                $mdDialog.show(confirm).then(() => {
+                    let j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
+                    let jn = j.jobNo;
 
-                                if (j.dgClass !== null && j.dgClass > 0) {
-                                    DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
-                                }
-                                let jobs = [];
-                                jobs.push(j.id);
-                                return DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(function (response) {
-                                    $scope.getData().then(function () {
-                                        angular.element(document.querySelector('#box-map .loading')).css('display', '');
-
-                                        $scope.courier = {gpsCourier: foundCourier.id};
-                                        $scope.searchCourier();
-                                    });
-                                });
-                            }
-                        },
-                        No: {
-                            btnClass: 'btn-red',
-                            action: function (scope, button) {
-                                //$ngConfirm('You clicked on something else');
-                                var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                                displayPickupPoints(undespatchedData, true, null);
-                                $scope.getAvailableCourierLocation();
-                            }
-                        }
-
+                    if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
+                        $mdDialog.alert().clickOutsideToClose(true).title("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.").ok('Close').show();
+                        return;
                     }
-                });
-            };
+                    if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
+                        $mdDialog.alert().clickOutsideToClose(true).title("Courier " + courier + " doesn't have a DGLicense or license has expired.").ok('Close').show();
+                        return;
+                    }
 
+                    if (j.dgClass !== null && j.dgClass > 0) {
+                        DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
+                    }
+                    let jobs = [];
+                    jobs.push(j.id);
+                    return DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(response => {
+                        $scope.getData().then(() => {
+                            angular.element(document.querySelector('#box-map .loading')).css('display', '');
+
+                            $scope.courier = {gpsCourier: foundCourier.id};
+                            $scope.searchCourier();
+                        });
+                    });
+                }, function () {
+                    let undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    displayPickupPoints(undespatchedData, true, null);
+                    $scope.getAvailableCourierLocation();
+                });
+
+            };
             $scope.selectAllContent = function ($event) {
                 $event.target.select();
             };
@@ -1065,39 +1046,25 @@ angular
             // DISPATCH THE JOBS
             ///////////////////////////////////////
             $scope.dispatchJobs = function (courier) {
-                var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
+                let foundCourier = $scope.pickCouriers.find(c => c.id === courier);
                 if (foundCourier === undefined) {
-                    $ngConfirm({
-                        title: 'Courier Offline',
-                        content: 'Dispatch anyway?',
-                        scope: $scope,
-                        buttons: {
+                    const confirm = $mdDialog.confirm()
+                        .title('Courier Offline')
+                        .textContent('Dispatch anyway?')
+                        .ok('Yes')
+                        .cancel('No');
 
-                            Yes: {
-                                btnClass: 'btn-green',
-                                action: function (scope, button) {
-                                    foundCourier = $scope.pickAllCouriers.find(c => c.id === courier);
-                                    //console.log(foundCourier);
-                                    return $scope.dispatchJobsContinue(courier, foundCourier, true);
-                                }
-
-
-                            },
-                            No: {
-                                btnClass: 'btn-red',
-                                action: function (scope, button) {
-
-                                }
-                            }
-                        }
+                    $mdDialog.show(confirm).then(() => {
+                        foundCourier = $scope.pickAllCouriers.find(c => c.id === courier);
+                        return $scope.dispatchJobsContinue(courier, foundCourier, true);
+                    }, () => {
+                        // No action on No
                     });
+
                     return;
                 }
-                ;
 
                 return $scope.dispatchJobsContinue(courier, foundCourier, false);
-
-
             };
 
             $scope.dispatchJobsContinue = function (courier, foundCourier, offline) {
@@ -1126,20 +1093,35 @@ angular
                     if (job) {
                         const jobNo = job.jobNo;
                         if (job.courierData.courierID !== null) {
-                            alert(`restore ${jobNo} prior to despatching to another courier`);
+                            $mdDialog.alert()
+                                .title('Alert')
+                                .textContent(`restore ${jobNo} prior to despatching to another courier`)
+                                .ok('Close')
+                                .show();
+
                             reset();
                             return;
                         }
 
                         if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-                            alert(`DG job ${jobNo} can not be despatched to courier ${courier} - doesn't have DGLicense.`);
+                            $mdDialog.alert()
+                                .title('Alert')
+                                .textContent(`DG job ${jobNo} can not be despatched to courier ${courier} - doesn't have DGLicense.`)
+                                .ok('Close')
+                                .show();
+
                             reset();
                             return;
                         }
 
                         if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
+                            $mdDialog.alert()
+                                .title('Alert')
+                                .textContent(`Courier ${courier} doesn't have a DGLicense or license has expired.`)
+                                .ok('Close')
+                                .show();
+
                             reset();
-                            alert(`Courier ${courier} doesn't have a DGLicense or license has expired.`);
                             return;
                         }
 
@@ -1207,18 +1189,33 @@ angular
                     if (job) {
                         const jobNo = job.jobNo;
                         if (job.courierData.courierID !== null) {
-                            alert(`restore ${jobNo} prior to despatching to another courier`);
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Alert')
+                                .textContent(`Restore ${jobNo} prior to despatching to another courier`)
+                                .ok('Close');
+                            $mdDialog.show(alert);
                             reset();
                             return;
                         }
                         if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-                            alert(`DG job ${jobNo} can not be despatched to courier ${courier} - doesn't have DGLicense.`);
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Dangerous Goods Job Alert')
+                                .textContent(`DG job ${jobNo} can not be despatched to courier ${courier} - doesn't have DGLicense.`)
+                                .ok('Close');
+                            $mdDialog.show(alert);
                             reset();
                             return;
                         }
                         if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
                             reset();
-                            alert(`Courier ${courier} doesn't have a DGLicense or license has expired.`);
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Courier Alert')
+                                .textContent(`Courier ${courier} doesn't have a DGLicense or license has expired.`)
+                                .ok('Close');
+                            $mdDialog.show(alert);
                             return;
                         }
                         if (job.dgClass !== null && job.dgClass > 0) {
