@@ -201,7 +201,7 @@
                 if (!keyIsDown[e.keyCode]) {
                     keyIsDown[e.keyCode] = true;
                     // do key down stuff here
-                    if (e.keyCode == 82 && e.ctrlKey) {
+                    if (e.keyCode === 82 && e.ctrlKey) {
                         //location.reload();
                     }
                 }
@@ -212,18 +212,18 @@
                 break;
         }
         disabledEventPropagation(e);
-        if (e.keyCode == 68 && e.ctrlKey) {
+        if (e.keyCode === 68 && e.ctrlKey) {
             e.preventDefault();
             return false;
         }
-        if (e.keyCode == 65 && e.ctrlKey) {
+        if (e.keyCode === 65 && e.ctrlKey) {
             e.preventDefault();
             return false;
         }
     }
 
     function disabledEventPropagation(e) {
-        if (e.keyCode == 68 && e.ctrlKey) {
+        if (e.keyCode === 68 && e.ctrlKey) {
             if (e.stopPropagation) {
                 e.stopPropagation();
             } else if (window.event) {
@@ -301,7 +301,7 @@
         }
 
 
-        if (mouseDown == 0) {
+        if (mouseDown === 0) {
             mouseDown = 1;
 
             if (event.which === 1) {
@@ -340,7 +340,7 @@
 
                     }
                     setTimeout(function () {
-                        if (mouseDown == 1) {
+                        if (mouseDown === 1) {
                             $("#draggingItems").show();
                             $("#draggingItems").html(jobNo);
 
@@ -393,9 +393,9 @@
 
     $(document).on("keydown", function (e) {
         var code = (e.keyCode ? e.keyCode : e.which);
-        if (code == 40) {
+        if (code === 40) {
             $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
-        } else if (code == 38) {
+        } else if (code === 38) {
             $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
         }
     });
