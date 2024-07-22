@@ -314,4 +314,6 @@ public partial class TblJob
     public int? InvoiceProcessId { get; set; }
 
     public int? LoggedInContactId { get; set; }
+
+    public int? BulkParentId { get; set; }
 }

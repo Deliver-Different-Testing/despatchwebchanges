@@ -100,4 +100,6 @@ public partial class TblContact
     public string Salt { get; set; }
 
     public int? StaffId { get; set; }
+
+    public string AccessCode { get; set; }
 }

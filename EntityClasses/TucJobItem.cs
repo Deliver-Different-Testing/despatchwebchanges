@@ -28,4 +28,6 @@ public partial class TucJobItem
     public int? Dgclass { get; set; }
 
     public string Notes { get; set; }
+
+    public bool? PrivateRes { get; set; }
 }

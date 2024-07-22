@@ -69,6 +69,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucSource> TucSources { get; set; }
 
+    public virtual DbSet<TucStaff> TucStaffs { get; set; }
+
     public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
 
     public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
@@ -199,6 +201,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
             entity.Property(e => e.Cdt).HasColumnName("CDT");
             entity.Property(e => e.ChildNotes).HasMaxLength(4000);
+            entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientName)
                 .IsRequired()
                 .HasMaxLength(75);
@@ -404,14 +407,18 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.BookDate, "idx_BookDate");
 
+            entity.HasIndex(e => new { e.Done, e.JobId, e.Void, e.BookDate }, "idx_tblBulkJob_Done_JobID_Void_BookDate");
+
             entity.Property(e => e.BulkJobId).HasColumnName("BulkJobID");
             entity.Property(e => e.Amount).HasColumnType("money");
             entity.Property(e => e.Barcode).HasMaxLength(300);
             entity.Property(e => e.BookDate).HasColumnType("datetime");
             entity.Property(e => e.BookTime).HasColumnType("datetime");
+            entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
             entity.Property(e => e.BulkRunId).HasColumnName("BulkRunID");
             entity.Property(e => e.ClientCode).HasMaxLength(5);
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
+            entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientRefa).HasMaxLength(20);
             entity.Property(e => e.ClientRefb).HasMaxLength(15);
             entity.Property(e => e.Contact).HasMaxLength(50);
@@ -975,6 +982,7 @@ public partial class DespatchContext : DbContext
                 .HasNoKey()
                 .ToView("tblContact");
 
+            entity.Property(e => e.AccessCode).HasMaxLength(50);
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.ContactRoleId).HasColumnName("ContactRoleID");
@@ -1336,6 +1344,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
             entity.Property(e => e.Amount).HasColumnType("money");
             entity.Property(e => e.Barcode).HasMaxLength(300);
+            entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
             entity.Property(e => e.Cbd).HasColumnName("CBD");
             entity.Property(e => e.ClientCode)
                 .HasMaxLength(5)
@@ -1955,6 +1964,7 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UcctClientId, "ucctClientID");
 
             entity.Property(e => e.UcctId).HasColumnName("ucctID");
+            entity.Property(e => e.AccessCode).HasMaxLength(50);
             entity.Property(e => e.ContactRoleId).HasColumnName("ContactRoleID");
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
@@ -2133,6 +2143,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.BookingInformationParentId).HasColumnName("BookingInformationParentID");
             entity.Property(e => e.BookingParentId).HasColumnName("BookingParentID");
             entity.Property(e => e.BookingRootParentId).HasColumnName("BookingRootParentID");
+            entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
+            entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientNotes).HasMaxLength(500);
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
@@ -2549,6 +2561,117 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50);
         });
 
+        modelBuilder.Entity<TucStaff>(entity =>
+        {
+            entity.HasKey(e => e.UcstId).IsClustered(false);
+
+            entity.ToTable("tucStaff", tb =>
+                {
+                    tb.HasTrigger("UTL_trgStaff_Insert");
+                    tb.HasTrigger("UTL_trgStaff_Update");
+                });
+
+            entity.HasIndex(e => new { e.UcstFirstName, e.UcstLastName }, "Name").IsUnique();
+
+            entity.HasIndex(e => e.StaffTitleId, "StaffTitleID");
+
+            entity.Property(e => e.UcstId).HasColumnName("ucstID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.ExsalerateEmail).HasMaxLength(4000);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Notes).HasColumnType("ntext");
+            entity.Property(e => e.StaffBlurb).HasMaxLength(1000);
+            entity.Property(e => e.StaffDegree).HasMaxLength(100);
+            entity.Property(e => e.StaffTitleId).HasColumnName("StaffTitleID");
+            entity.Property(e => e.UcstActive).HasColumnName("ucstActive");
+            entity.Property(e => e.UcstAddress)
+                .HasMaxLength(150)
+                .HasColumnName("ucstAddress");
+            entity.Property(e => e.UcstCode)
+                .HasMaxLength(50)
+                .HasColumnName("ucstCode");
+            entity.Property(e => e.UcstDepartment)
+                .HasDefaultValue(0)
+                .HasColumnName("ucstDepartment");
+            entity.Property(e => e.UcstDob)
+                .HasColumnType("datetime")
+                .HasColumnName("ucstDOB");
+            entity.Property(e => e.UcstDoctor)
+                .HasMaxLength(50)
+                .HasColumnName("ucstDoctor");
+            entity.Property(e => e.UcstDoctorPhone)
+                .HasMaxLength(50)
+                .HasColumnName("ucstDoctorPhone");
+            entity.Property(e => e.UcstEndDate)
+                .HasColumnType("datetime")
+                .HasColumnName("ucstEndDate");
+            entity.Property(e => e.UcstExtension)
+                .HasMaxLength(50)
+                .HasColumnName("ucstExtension");
+            entity.Property(e => e.UcstFirstName)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("ucstFirstName");
+            entity.Property(e => e.UcstInActiveDate)
+                .HasColumnType("datetime")
+                .HasColumnName("ucstInActiveDate");
+            entity.Property(e => e.UcstInActiveSetBy)
+                .HasMaxLength(50)
+                .HasColumnName("ucstInActiveSetBy");
+            entity.Property(e => e.UcstIrdnumber)
+                .HasMaxLength(50)
+                .HasColumnName("ucstIRDNumber");
+            entity.Property(e => e.UcstLastName)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("ucstLastName");
+            entity.Property(e => e.UcstMobile)
+                .HasMaxLength(50)
+                .HasColumnName("ucstMobile");
+            entity.Property(e => e.UcstNextKin)
+                .HasMaxLength(50)
+                .HasColumnName("ucstNextKin");
+            entity.Property(e => e.UcstNkaddress)
+                .HasMaxLength(150)
+                .HasColumnName("ucstNKAddress");
+            entity.Property(e => e.UcstNkphone)
+                .HasMaxLength(50)
+                .HasColumnName("ucstNKPhone");
+            entity.Property(e => e.UcstPassword)
+                .HasMaxLength(50)
+                .HasColumnName("ucstPassword");
+            entity.Property(e => e.UcstPhone)
+                .HasMaxLength(50)
+                .HasColumnName("ucstPhone");
+            entity.Property(e => e.UcstPicturePath)
+                .HasMaxLength(100)
+                .HasColumnName("ucstPicturePath");
+            entity.Property(e => e.UcstProfile)
+                .HasMaxLength(255)
+                .HasColumnName("ucstProfile");
+            entity.Property(e => e.UcstStartDate)
+                .HasColumnType("datetime")
+                .HasColumnName("ucstStartDate");
+            entity.Property(e => e.UcstSuburbId).HasColumnName("ucstSuburbID");
+            entity.Property(e => e.UcstTeam).HasColumnName("ucstTeam");
+            entity.Property(e => e.UcstUclcode)
+                .HasMaxLength(50)
+                .HasColumnName("ucstUCLCode");
+            entity.Property(e => e.UcstWindowsLogonName)
+                .HasMaxLength(50)
+                .HasColumnName("ucstWindowsLogonName");
+
+            entity.HasOne(d => d.UcstSuburb).WithMany(p => p.TucStaffs)
+                .HasForeignKey(d => d.UcstSuburbId)
+                .HasConstraintName("FK_tucStaff_tucSuburb");
+        });
+
         modelBuilder.Entity<TucSuburb>(entity =>
         {
             entity.HasKey(e => e.UcsuId).IsClustered(false);
@@ -2624,6 +2747,7 @@ public partial class DespatchContext : DbContext
                 .HasNoKey()
                 .ToView("UTL_qryContact_Lookup");
 
+            entity.Property(e => e.AccessCode).HasMaxLength(50);
             entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.ContactRoleId).HasColumnName("ContactRoleID");
@@ -2733,7 +2857,6 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucjtName");
         });
 
-        OnModelCreatingGeneratedProcedures(modelBuilder);
         OnModelCreatingGeneratedFunctions(modelBuilder);
         OnModelCreatingPartial(modelBuilder);
     }

@@ -13,6 +13,7 @@ using Mindscape.Raygun4Net.AspNetCore;
 using StackExchange.Redis;
 using System;
 using System.Threading.Tasks;
+using Amazon.Runtime;
 
 var builder = WebApplication.CreateBuilder(args);
 

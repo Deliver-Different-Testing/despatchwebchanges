@@ -29,5 +29,7 @@ public partial class TucJobBookingItem
 
     public string Notes { get; set; }
 
+    public bool? PrivateRes { get; set; }
+
     public virtual TucJobBooking Booking { get; set; }
 }

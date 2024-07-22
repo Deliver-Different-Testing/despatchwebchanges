@@ -533,9 +533,9 @@ public partial class TucClient
 
     public int? ChilledTruckRateCodeId { get; set; }
 
-    public int? FrozenTruckRateCodeId { get; set; }
-
     public int? ChilledTruckExcessZoneRateCodeId { get; set; }
+
+    public int? FrozenTruckRateCodeId { get; set; }
 
     public int? FrozenTruckExcessZoneRateCodeId { get; set; }
 

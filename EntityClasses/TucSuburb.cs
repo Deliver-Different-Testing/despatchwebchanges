@@ -66,4 +66,6 @@ public partial class TucSuburb
     public string Gsscity { get; set; }
 
     public virtual ICollection<TucClient> TucClients { get; set; } = new List<TucClient>();
+
+    public virtual ICollection<TucStaff> TucStaffs { get; set; } = new List<TucStaff>();
 }

@@ -1,6 +1,7 @@
 ﻿using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DespatchWeb.Controllers
@@ -84,7 +85,7 @@ namespace DespatchWeb.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSingleCourier(int courierId)
         {
-            var result = await _courierRepo.ActiveCouriers();
+            var result = await courierRepository.ActiveCouriers();
             var currentCourier = result.FirstOrDefault(c => c.CourierID == courierId);
 
             var courier = new

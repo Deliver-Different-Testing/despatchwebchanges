@@ -287,11 +287,15 @@ public partial class TucJobBooking
 
     public int? LoggedInContactId { get; set; }
 
-    public int? ScheduleId { get; set; }
-
     public int? DropOffLocationId { get; set; }
 
+    public int? ScheduleId { get; set; }
+
     public decimal? CourierPercentageOverride { get; set; }
+
+    public string ClientItemIds { get; set; }
+
+    public int? BulkParentId { get; set; }
 
     public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; } = new List<TucJobBookingItem>();
 

@@ -194,7 +194,7 @@ namespace DespatchWeb.Repositories
                 from contact in contactJoin.DefaultIfEmpty()
                 join sou in context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
                 from source in sourceJoin.DefaultIfEmpty()
-                join st in _context.TucStaffs on j.DispatcherId equals st.UcstId into staffJoin
+                join st in context.TucStaffs on j.DispatcherId equals st.UcstId into staffJoin
                 from staff in staffJoin.DefaultIfEmpty()
 
                 where (j.JobId == jobId)

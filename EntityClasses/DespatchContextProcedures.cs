@@ -32,11 +32,6 @@ namespace DespatchWeb.EntityClasses
         {
             return Procedures;
         }
-
-        protected void OnModelCreatingGeneratedProcedures(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<DES_qryTruckCourierStatusResult>().HasNoKey().ToView(null);
-        }
     }
 
     public partial class DespatchContextProcedures : IDespatchContextProcedures

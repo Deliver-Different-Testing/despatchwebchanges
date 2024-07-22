@@ -101,5 +101,7 @@ public partial class UtlQryContactLookup
 
     public int? StaffId { get; set; }
 
+    public string AccessCode { get; set; }
+
     public string Name { get; set; }
 }

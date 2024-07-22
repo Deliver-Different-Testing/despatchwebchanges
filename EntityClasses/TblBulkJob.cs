@@ -179,5 +179,9 @@ public partial class TblBulkJob
 
     public decimal? CourierPercentageOverride { get; set; }
 
+    public string ClientItemIds { get; set; }
+
+    public int? BulkParentId { get; set; }
+
     public virtual TucJobType SpeedNavigation { get; set; }
 }
