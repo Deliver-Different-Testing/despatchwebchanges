@@ -2,7 +2,7 @@ angular
 .module("uDispatch")
 .filter("unique", function() {
    return function(collection, keyname) {
-      var output = [], 
+      var output = [],
           keys = [];
 
       angular.forEach(collection, function(item) {
@@ -31,7 +31,7 @@ angular
 })
 .filter('getByAttr', function() {
   return function(input, val, attr) {
-    if (attr === undefined) { 
+    if (attr === undefined) {
 	    for (var k in input) {
     		if (k == val) {
     	  	  return input[k];
@@ -47,10 +47,10 @@ angular
     }
     return null;
   }
-}).filter('switch', function () { 
+}).filter('switch', function () {
       return function (input, map) {
           return map[input] || '';
-      }; 
+      };
   }).filter('selectedToTop', function () {
     return function (contacts, selected) {
         var newList = [];

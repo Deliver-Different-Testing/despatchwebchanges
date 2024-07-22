@@ -26,7 +26,6 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        
 
         [HttpGet]
         public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
@@ -75,11 +74,26 @@ namespace DespatchWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddFollowupEvent(string jobNo, int clientId, string contact, int staffId, int courierId, int jobId, int jobType, string despatcherName)
+        public async Task<IActionResult> AddFollowupEvent(string jobNo, int clientId, string contact, int staffId,
+            int courierId, int jobId, int jobType, string despatcherName)
         {
             await courierRepository.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, "Follow up dangerous goods license with courier", 69);
             return Json("OK");
         }
-        
+
+        [HttpGet]
+        public async Task<IActionResult> GetSingleCourier(int courierId)
+        {
+            var result = await _courierRepo.ActiveCouriers();
+            var currentCourier = result.FirstOrDefault(c => c.CourierID == courierId);
+
+            var courier = new
+            {
+                id = currentCourier.CourierID,
+                text = currentCourier.Text
+            };
+
+            return Json(courier);
+        }
     }
 }

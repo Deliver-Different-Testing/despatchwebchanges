@@ -80,5 +80,3 @@ Label.prototype.draw = function () {
 
     this.span_.innerHTML = this.get('text').toString();
 };
-
-

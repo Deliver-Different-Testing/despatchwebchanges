@@ -1,9 +1,9 @@
 ﻿angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData", "$ngConfirm",
-            function (DispatchData, $ngConfirm) {
-                var self = this;
+        ["DispatchData", "$ngConfirm", "$mdDialog", "toastrService", "loadingService", "rateJobService",
+            function (DispatchData, $ngConfirm, $mdDialog, toastrService, loadingService, rateJobService) {
+                const self = this;
                 const options = {
                     "detail": {
                         "size": [
@@ -91,48 +91,42 @@
                 var pickSpeeds = [];
                 var pickContacts = [];
 
-                var gather = {
-                };
-                self.gpsForm = {
-                };
+                var gather = {};
+                self.gpsForm = {};
 
 
-                DispatchData.getLeaveList().then(function(data) {
+                DispatchData.getLeaveList().then(function (data) {
                     pickLeaveList = data;
                 });
 
-                DispatchData.getUndeliverableList().then(function(data) {
+                DispatchData.getUndeliverableList().then(function (data) {
                     pickUndeliverableList = data;
                 });
 
-                DispatchData.getSpeedList().then(function(data) {
+                DispatchData.getSpeedList().then(function (data) {
                     pickSpeeds = data;
                 });
 
-                DispatchData.getSuburbList().then(function(data) {
+                DispatchData.getSuburbList().then(function (data) {
                     self.pickSuburbs = data;
                 });
 
-                DispatchData.getInternalStatusList().then(function(data) {
+                DispatchData.getInternalStatusList().then(function (data) {
                     self.pickInternalStatus = data;
                 });
 
 
-                self.setGather = function(g) {
+                self.setGather = function (g) {
                     gather = g;
                 };
 
-                self.setGPSForm = function(g) {
-                    self.gpsForm = g;
-                    //self.setupAutoComplete();
-                };
-                self.setSelectJobDetail = function(f) {
-                    self.selectJobDetail = f;
+                self.setSelectJobDetail = function (jobId) {
+                    self.selectJobDetail = jobId;
                 };
                 self.setSelectBulkJobDetail = function (f) {
                     self.selectBulkJobDetail = f;
                 };
-                self.setJob = function(job) {
+                self.setJob = function (job) {
                     self.currentJob = job;
                     DispatchData.getContactList(job.clientID).then(function (data) {
                         pickContacts = data;
@@ -225,7 +219,7 @@
                 self.combos = {
                     "frequency": [],
                     "frequencyEvents": {
-                        onSelectionChanged: function(item) {
+                        onSelectionChanged: function (item) {
                             console.log("Freq =");
                             console.log(self.combos.frequency);
                             if (self.combos.frequency.length > 0 &&
@@ -245,8 +239,8 @@
                                         FirstName,
                                         ContactID,
                                         self.currentJob.preBook).then(function (response) {
-                                            self.selectJobDetail(self.currentJob.id);
-                                            return response;
+                                        self.selectJobDetail(self.currentJob.id);
+                                        return response;
                                     });
                             } else {
                                 console.log("invalid data");
@@ -275,8 +269,8 @@
                                         FirstName,
                                         ContactID,
                                         self.currentJob.preBook).then(function (response) {
-                                            self.selectJobDetail(self.currentJob.id);
-                                            return response;
+                                        self.selectJobDetail(self.currentJob.id);
+                                        return response;
                                     });
                             } else {
                                 console.log("invalid data");
@@ -305,8 +299,8 @@
                                         FirstName,
                                         ContactID,
                                         self.currentJob.preBook).then(function (response) {
-                                            self.selectJobDetail(self.currentJob.id);
-                                            return response;
+                                        self.selectJobDetail(self.currentJob.id);
+                                        return response;
                                     });
                             } else {
                                 console.log("invalid data");
@@ -315,33 +309,33 @@
                     }
                 };
 
-                String.prototype.replaceAt = function(index, replacement) {
+                String.prototype.replaceAt = function (index, replacement) {
                     return this.substring(0, index) + replacement + this.substring(index + replacement.length);
                 };
 
-                self.frequencyChanged = function() {
-                    
+                self.frequencyChanged = function () {
+
                 };
 
-                self.getTrackingMethod = function(tm) {
+                self.getTrackingMethod = function (tm) {
                     switch (tm || 0) {
-                    case 1:
-                        return "Email";
-                    case 2:
-                        return "Mobile";
-                    case 3:
-                        return "Email & Mobile";
-                    default:
-                        return "";
+                        case 1:
+                            return "Email";
+                        case 2:
+                            return "Mobile";
+                        case 3:
+                            return "Email & Mobile";
+                        default:
+                            return "";
                     }
                 };
 
-                self.getInternalStatus = function(is) {
-                    var selected = self.pickInternalStatus.find(({ id }) => id === is);
+                self.getInternalStatus = function (is) {
+                    var selected = self.pickInternalStatus.find(({id}) => id === is);
                     return selected !== undefined ? selected.text : "";
                 }
 
-                self.hasDGDocs = function(job) {
+                self.hasDGDocs = function (job) {
                     if (job.dgClass) {
                         return ((job.dgDocumentation || 0) === 1) || ((job.dgDocumentation || false) === true)
                             ? "Yes"
@@ -352,7 +346,7 @@
 
                 };
 
-                self.ppdExclusiveAmount = function(clientId, amount) {
+                self.ppdExclusiveAmount = function (clientId, amount) {
                     return DispatchData.ppdExclusiveAmount(clientId, amount);
                 };
 
@@ -389,9 +383,9 @@
                                     itemSummary.dgClass,
                                     job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
                                     job.truckHours || 2,
-                                    job.gstRate).then(function(description) {
-                                        alert(description);
-                                    });
+                                    job.gstRate).then(function (description) {
+                                    alert(description);
+                                });
 
                             });
 
@@ -416,32 +410,32 @@
                             job.booked,
                             job.gstRate,
                             job.charge.replace("$", "")).then(function (description) {
-                                alert(description);
-                            });
+                            alert(description);
+                        });
                     }
                 };
 
-                self.rateJob = function(job) {
-                    var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
+                self.rateJob = function (job) {
+                    const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
                         job.fromSuburbID === 112 && job.toSuburbID === 112 ||
                         job.fromSuburbID === 480 && job.toSuburbID === 480;
                     if (job.size.id === 4 &&
-                    (job.speedID === 41 ||
-                        job.speedID === 42 ||
-                        job.speedID === 43 ||
-                        job.speedID === 44 ||
-                        job.speedID === 46 ||
-                        job.speedID === 51 ||
-                        job.speedID === 52 ||
-                        job.speedID == 124 ||
-                        job.speedID == 125 ||
-                        job.speedID == 150 ||
-                        job.speedID == 151 ||
-                        job.speedID == 152 
+                        (job.speedID === 41 ||
+                            job.speedID === 42 ||
+                            job.speedID === 43 ||
+                            job.speedID === 44 ||
+                            job.speedID === 46 ||
+                            job.speedID === 51 ||
+                            job.speedID === 52 ||
+                            job.speedID === 124 ||
+                            job.speedID === 125 ||
+                            job.speedID === 150 ||
+                            job.speedID === 151 ||
+                            job.speedID === 152
                         )) {
                         //Truck Job
                         return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
-                            function(itemSummary) {
+                            function (itemSummary) {
                                 return DispatchData.rateTruckJob(job.clientID,
                                     job.fromSuburbID,
                                     job.toSuburbID,
@@ -481,7 +475,7 @@
                     }
                 };
 
-                self.editDetailField = function(job, fieldName, label, value, jobID, type, options) {
+                self.editDetailField = function (job, fieldName, label, value, jobID, type, options) {
 
                     if (type === "time" || type === "date") {
 
@@ -499,32 +493,32 @@
                     var valueToUse = options ? options[value] : value;
 
                     switch (fieldName) {
-                    case "RefA":
-                        max = "20";
-                        break;
-                    case "RefB":
-                        max = "12";
-                        break;
-                    case "OurRef":
-                        max = "20";
-                        break;
-                    case "TrackingMobile":
-                        max = "500";
-                        break;
-                    case "TrackingEmail":
-                        max = "500";
+                        case "RefA":
+                            max = "20";
                             break;
-                    case "ConNote":
-                        max = "50";
-                        break;
-                    case "Size":
-                        valueToUse = options[value.id - 1];
-                        break;
-                    case "TrackingMethod":
-                        valueToUse = options[value - 1];
-                        break;
-                    default:
-                        break;
+                        case "RefB":
+                            max = "12";
+                            break;
+                        case "OurRef":
+                            max = "20";
+                            break;
+                        case "TrackingMobile":
+                            max = "500";
+                            break;
+                        case "TrackingEmail":
+                            max = "500";
+                            break;
+                        case "ConNote":
+                            max = "50";
+                            break;
+                        case "Size":
+                            valueToUse = options[value.id - 1];
+                            break;
+                        case "TrackingMethod":
+                            valueToUse = options[value - 1];
+                            break;
+                        default:
+                            break;
                     }
 
 
@@ -551,37 +545,37 @@
                                 }
                             ]
                             : fieldName === "DGClass"
-                            ? [
-                                {
-                                    "name": fieldName,
-                                    "label": label + "...",
-                                    "value": options[value],
-                                    "jobID": jobID,
-                                    "type": type,
-                                    "options": options,
-                                    "maxLength": max
-                                },
-                                {
-                                    "name": "Documentation",
-                                    "label": "Has Documentation?",
-                                    "value": job.dgDocumentation,
-                                    "jobID": jobID,
-                                    "type": "checkbox",
-                                    "options": options
-                                }
-                            ]
-                            : [
-                                {
-                                    "name": fieldName,
-                                    "label": label + "...",
-                                    "value": valueToUse,
-                                    "jobID": jobID,
-                                    "type": type,
-                                    "options": options,
-                                    "maxLength": max
-                                }
-                            ],
-                        onSubmit: function() {
+                                ? [
+                                    {
+                                        "name": fieldName,
+                                        "label": label + "...",
+                                        "value": options[value],
+                                        "jobID": jobID,
+                                        "type": type,
+                                        "options": options,
+                                        "maxLength": max
+                                    },
+                                    {
+                                        "name": "Documentation",
+                                        "label": "Has Documentation?",
+                                        "value": job.dgDocumentation,
+                                        "jobID": jobID,
+                                        "type": "checkbox",
+                                        "options": options
+                                    }
+                                ]
+                                : [
+                                    {
+                                        "name": fieldName,
+                                        "label": label + "...",
+                                        "value": valueToUse,
+                                        "jobID": jobID,
+                                        "type": type,
+                                        "options": options,
+                                        "maxLength": max
+                                    }
+                                ],
+                        onSubmit: function () {
                             var rerate = false;
 
                             var callData = {
@@ -624,7 +618,7 @@
                                 return DispatchData
                                     .updateJobType(callData.jobID,
                                         callData.value,
-                                        FirstName).then(function(response) {
+                                        FirstName).then(function (response) {
 
                                     });
                             }
@@ -670,7 +664,7 @@
                                         job.charge,
                                         FirstName,
                                         ContactID,
-                                        job.preBook).then(function (response) {
+                                        job.preBook).then(response => {
                                         if (job.dgDocumentation !== dgdocs) {
                                             job.dgDocumentation = dgdocs;
                                             return DispatchData
@@ -680,9 +674,7 @@
                                                     job.charge,
                                                     FirstName,
                                                     ContactID,
-                                                    job.preBook).then(function (response) {
-                                                    return response;
-                                                });
+                                                    job.preBook).then(response => response);
                                         } else {
                                             return response;
                                         }
@@ -690,18 +682,7 @@
                                     });
                             }
                             if (rerate && !job.bulkJob) {
-                                return self.rateJob(job).then(function(rate) {
-                                    //console.log(rate);
-                                    //if (rate !== job.charge) {
-                                    //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                                    //        job.clientID,
-                                    //        job.contactName,
-                                    //        ContactID,
-                                    //        job.courierData.courierID,
-                                    //        job.id,
-                                    //        job.jobType,
-                                    //        FirstName);
-                                    //}
+                                return self.rateJob(job).then(function (rate) {
                                     return DispatchData
                                         .updateJobDetail(callData.jobID,
                                             callData.field,
@@ -709,890 +690,625 @@
                                             Number(rate.replace(/[^0-9.-]+/g, "")),
                                             FirstName,
                                             ContactID,
-                                            job.preBook).then(function (response) {
-                                            return response;
-                                        });
+                                            job.preBook).then(response => response);
                                 });
                             } else {
-                                return job.bulkJob ?  DispatchData
-                                    .updateBulkJobDetail(job.id,
-                                        callData.field,
-                                        callData.value,
-                                        job.charge,
-                                        FirstName,
-                                        ContactID).then(function (response) {
-                                        return response;
-                                    }) :
+                                return job.bulkJob ? DispatchData
+                                        .updateBulkJobDetail(job.id,
+                                            callData.field,
+                                            callData.value,
+                                            job.charge,
+                                            FirstName,
+                                            ContactID).then(response => response) :
                                     DispatchData
-                                    .updateJobDetail(callData.jobID,
-                                        callData.field,
-                                        callData.value,
-                                        job.charge,
-                                        FirstName,
-                                        ContactID,
-                                        job.preBook).then(function(response) {
-                                        return response;
-                                    });
+                                        .updateJobDetail(callData.jobID,
+                                            callData.field,
+                                            callData.value,
+                                            job.charge,
+                                            FirstName,
+                                            ContactID,
+                                            job.preBook).then(response => response);
                             }
 
                         },
                         submitValue: "Update Field"
                     };
 
-                    setTimeout(function() {
+                    setTimeout(function () {
                             console.log(gather);
                             gather.showForm();
                         },
                         200);
-
-
                 };
 
-                self.setupAutoComplete = function() {
-                    console.log("setup autocomplete");
-                    var options = {
-                        minimumInputLength: 1,
-                        ajax: {
-                            url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
-                            delay: 250,
-                            dataType: "json",
-                            data: function(params) {
-                                return {
-                                    query: params.term,
-                                    app_id: "bBPfh2x8Cauun3ygLMAx",
-                                    app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                                    beginHighlight: "<b>",
-                                    endHighlight: "</b>",
-                                    country: "NZL"
-                                };
-                            },
-                            processResults: function(data) {
-                                return {
-                                    results: $.map(data.suggestions,
-                                        function(obj) {
-                                            return {
-                                                id: obj.locationId,
-                                                text: obj.label.split(", ").reverse().join(", ")
-                                            };
-                                        })
-                                };
-                            }
-                        },
-                        escapeMarkup: function(markup) { return markup; }
-                    };
 
-                    $("#location").select2(options).on("select2:select",
-                        function(e) {
-                            $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json",
-                                {
-                                    app_id: "bBPfh2x8Cauun3ygLMAx",
-                                    app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                                    locationId: e.params.data.id
-                                }).done(function(data) {
-                                var locn = data.Response.View[0].Result[0].Location;
-                                console.log("Suburb = " + locn.Address.District);
-                                console.log("PostCode = " + locn.Address.PostalCode);
-                                $("#suburb").val(locn.Address.District);
-                                var mappedSub = self.pickSuburbs.find(obj => obj.text === locn.Address.District ||
-                                    obj.alias === locn.Address.District);
-                                if (mappedSub !== undefined) {
-                                    console.log(mappedSub);
-                                    $('#our_suburb').val(mappedSub.id).trigger('change');
-                                } else {
-                                    $('#our_suburb').val(null).trigger('change');
+                self.updateGPS = function (event, currentJob, field) {
+                    // Get coordinates
+                    const getDeliveryLocation = currentJob => currentJob.deliveryLongitude
+                        ? {lat: currentJob.deliveryLatitude, long: currentJob.deliveryLongitude}
+                        : {lat: "", long: ""};
+                    const getPickupLocation = currentJob => currentJob.pickUpLongitude
+                        ? {lat: currentJob.pickUpLatitude, long: currentJob.pickUpLongitude}
+                        : {lat: "", long: ""};
+                    const location = field === "toAddress" ? getDeliveryLocation(currentJob) : getPickupLocation(currentJob);
+                    const {lat, long} = location;
+
+                    const suburbText = field === "toAddress" ? currentJob.toSuburbName : currentJob.fromSuburbName;
+                    console.log("Retrieved job coordinates!");
+
+                    // Dialog
+                    $mdDialog.show({
+                        controller: GpsFormController,
+                        controllerAs: 'ctrl',
+                        parent: angular.element(document.body),
+                        targetEvent: event,
+                        templateUrl: "app/components/common/gpsForm/gpsForm.html",
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            addressDetails: {
+                                address: currentJob[field],
+                                lat,
+                                long,
+                                suburb: suburbText,
+                                postCode: currentJob.postCode,
+                            },
+                            suburbOptions: self.pickSuburbs,
+                            title: "Update Address and GPS",
+                            submitLabel: "Update",
+                        },
+                    }).then(addressDetails => {
+                        try {
+                            loadingService.showLoader();
+                            const job = currentJob;
+
+                            if (field === "toAddress") {
+                                job.toAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
+                                if (job.bulkJob) {
+                                    DispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName)
+                                        .then(() => {
+                                            self.selectJobDetail(currentJob.id);
+                                            $mdDialog.hide();
+                                            toastrService.showSuccessToast("Address successfully updated");
+                                            loadingService.closeLoader();
+                                        });
                                 }
 
-
-                                self.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                                self.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                                self.gpsForm.data.address = locn.Address.Label;
-                                self.gpsForm.data.suburb = locn.Address.District;
-                                self.gpsForm.data.postCode = locn.Address.PostalCode;
-                                //var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
-                                //self.map.setCenter(ll);
-                                //self.marker.setPosition(ll);
-
-                            });
-                        });
-
-                    var suburbOptions = {
-                        minimumInputLength: 1,
-                        data: self.pickSuburbs
-                    };
-
-                    $("#our_suburb").select2(suburbOptions);
-
-                    //waitingDialog.hide();
-                };
-
-                self.updateGPS = function(currentJob, field, fromRightClick) {
-                    waitingDialog.show();
-                    var lat;
-                    var long;
-                    var q;
-                    if (field === "toAddress") {
-
-
-                        if (currentJob.deliveryLongitude) {
-
-                            lat = currentJob.deliveryLatitude;
-                            long = currentJob.deliveryLongitude;
-                            //q = $("#gpsMap").attr("data-src") + lat + "," + long;
-                        } else {
-                            lat = "";
-                            long = "";
-                            //q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.toAddress);
-                        }
-                    } else {
-
-                        if (currentJob.pickUpLongitude) {
-                            lat = currentJob.pickUpLatitude;
-                            long = currentJob.pickUpLongitude;
-                            //q = $("#gpsMap").attr("data-src") + lat + "," + long;
-                        } else {
-                            lat = "";
-                            long = "";
-                           //q = $("#gpsMap").attr("data-src") + encodeURIComponent(currentJob.fromAddress);
-                        }
-                    }
-
-                    console.log(currentJob.pickUpLatitude);
-                    //console.log(q);
-                   // $("#gpsMap").attr("src", q);
-
-
-                    self.gpsForm.data = {
-                        "address": currentJob[field],
-                        "lat": lat,
-                        "long": long
-                    };
-                    self.gpsForm.onSubmit = function(location) {
-
-                        var job = currentJob;
-                        if (self.gpsForm.data.our_suburb === undefined) {
-                            alert("You must pick one of our suburbs to map this address to");
-                            return self.gpsFormPromise;
-                        }
-
-
-
-                        if (field === "toAddress") {
-                            job.toAddress = (self.gpsForm.data.extras || '').length > 1 ? self.gpsForm.data.extras + ',' + self.gpsForm.data.address : self.gpsForm.data.address;
-                            if (job.bulkJob) {
-                                return DispatchData.updateBulkDeliveryAddress(job.id,
-                                    self.gpsForm.data.suburb,
-                                    self.gpsForm.data.postCode,
-                                    job.toAddress,
-                                    self.gpsForm.data.lat,
-                                    self.gpsForm.data.long,
-                                    FirstName).then(function () {
-                                        $(".gpsForm").hide(0);
-
-                                });
-                            }
-                            //if (!job.bulkJob && job.toSuburbID.toString() !== self.gpsForm.data.our_suburb) {
-                            //    //ToDo create change event
-                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                            //        job.clientID,
-                            //        job.contactName,
-                            //        ContactID,
-                            //        job.courierData.courierID,
-                            //        job.id,
-                            //        job.jobType,
-                            //        FirstName);
-                            //}
-                            job.toSuburbID = parseInt(self.gpsForm.data.our_suburb);
-                        } else {
-                            job.fromAddress = (self.gpsForm.data.extras || '').length > 1 ? self.gpsForm.data.extras + ',' + self.gpsForm.data.address : self.gpsForm.data.address;
-                            if (job.bulkJob) {
-                                return DispatchData.updateBulkPickupAddress(job.id,
-                                    self.gpsForm.data.suburb,
-                                    self.gpsForm.data.postCode,
-                                    job.fromAddress,
-                                    self.gpsForm.data.lat,
-                                    self.gpsForm.data.long,
-                                    FirstName).then(function () {
-                                    $(".gpsForm").hide(0);
-                                    
-
-                                });
-                            }
-                            
-                            //if (!job.bulkJob && job.fromSuburbID.toString() !== self.gpsForm.data.our_suburb) {
-                            //    //ToDo create change event
-                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                            //        job.clientID,
-                            //        job.contactName,
-                            //        ContactID,
-                            //        job.courierData.courierID,
-                            //        job.id,
-                            //        job.jobType,
-                            //        FirstName);
-                            //}
-                            job.fromSuburbID = parseInt(self.gpsForm.data.our_suburb);
-                        }
-                        var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
-                            job.fromSuburbID === 112 && job.toSuburbID === 112 ||
-                            job.fromSuburbID === 480 && job.toSuburbID === 480;
-
-                        return self.rateJob(job).then(function(rate) {
-                            //console.log(rate);
-                            //if (rate !== job.charge) {
-                            //    DispatchData.addPriceSuburbChangeEvent(job.jobNo,
-                            //        job.clientID,
-                            //        job.contactName,
-                            //        ContactID,
-                            //        job.courierData.courierID,
-                            //        job.id,
-                            //        job.jobType,
-                            //        FirstName);
-                            //}
-                            var callData = {
-                                "call": "updateJobData",
-                                "addressField": field,
-                                "lat": self.gpsForm.data.lat,
-                                "long": self.gpsForm.data.long,
-                                "fromSuburbId": job.fromSuburbID,
-                                "toSuburbId": job.toSuburbID,
-                                "fromAddress": job.fromAddress,
-                                "toAddress": job.toAddress,
-                                "rate": rate,
-                                "jobID": currentJob.id,
-                                "CBD": pedal
-                            };
-                            console.log(callData);
-                            if (field === "toAddress") {
-                                return DispatchData.updateDeliveryAddress(callData.jobID,
-                                    callData.toSuburbId,
-                                    callData.toAddress,
-                                    callData.lat,
-                                    callData.long,
-                                    callData.CBD,
-                                    Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName,
-                                    job.preBook).then(function () {
-                                    $(".gpsForm").hide(0);
-
-                                });
+                                job.toSuburbID = parseInt(addressDetails.our_suburb);
                             } else {
-                                return DispatchData.updatePickupAddress(callData.jobID,
-                                    callData.fromSuburbId,
-                                    callData.fromAddress,
-                                    callData.lat,
-                                    callData.long,
-                                    callData.CBD,
-                                    Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName,
-                                    job.preBook).then(function () {
-                                    $(".gpsForm").hide(0);
-                                    var j = currentJob;
+                                job.fromAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
+                                if (job.bulkJob) {
+                                    DispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName)
+                                        .then(() => {
+                                            self.selectJobDetail(currentJob.id);
+                                            $mdDialog.hide();
+                                            toastrService.showSuccessToast("Address successfully updated");
+                                            loadingService.closeLoader();
+                                        });
+                                }
 
+                                job.fromSuburbID = parseInt(addressDetails.our_suburb);
+                            }
+
+                            const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
+
+                            rateJobService.rateJob(job)
+                                .then(rate => {
+                                    const callData = {
+                                        "call": "updateJobData",
+                                        "addressField": field,
+                                        "lat": addressDetails.lat,
+                                        "long": addressDetails.long,
+                                        "fromSuburbId": job.fromSuburbID,
+                                        "toSuburbId": job.toSuburbID,
+                                        "fromAddress": job.fromAddress,
+                                        "toAddress": job.toAddress,
+                                        "rate": rate,
+                                        "jobID": job.id,
+                                        "CBD": pedal
+                                    };
+                                    console.log(callData);
+
+                                    if (field === "toAddress") {
+                                        DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
+                                            .then(() => {
+                                                self.selectJobDetail(currentJob.id);
+                                                $mdDialog.hide();
+                                                toastrService.showSuccessToast("Address successfully updated")
+                                                loadingService.closeLoader();
+                                            });
+                                    } else {
+                                        DispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
+                                            .then(() => {
+                                                self.selectJobDetail(currentJob.id);
+                                                $mdDialog.hide();
+                                                toastrService.showSuccessToast("Address successfully updated")
+                                                loadingService.closeLoader();
+                                            });
+                                    }
                                 });
-                            }
-
-                        });
-
-
-                    };
-                    self.gpsForm.cancel = function() {
-                        $(".gpsForm").hide(0);
-                    };
-                    self.gpsForm.placeChanged = function(place) {
-                        if (place !== null) {
-                            self.place = place;
-                        } else {
-                            self.place = this.getPlace();
+                        } catch (error) {
+                            toastrService.showErrorToast(error.message)
                         }
 
-                        //self.gpsForm.address = $scope.place.formatted_address;
-                        self.gpsForm.data.lat = self.place.geometry.location.lat();
-                        self.gpsForm.data.long = self.place.geometry.location.lng();
-                        if (self.place.address_components.find(x => x.types[0] === "postal_code")) {
-                            self.gpsForm.data.postCode = self.place.address_components
-                                .find(x => x.types[0] === "postal_code").long_name;
-                        }
-                        self.map.setCenter(self.place.geometry.location);
-                    };
-                    self.gpsForm.moveMarker = function(event) {
-                        var latlng = event.latLng;
-                        //GeoCoder.geocode({ location: latlng })
-                        //    .then(function (result) {
-                        //        $scope.marker.setPosition(latlng);
-                        //        self.gpsForm.placeChanged(result[0]);
-                        //    });
-                    };
-                    self.gpsForm.markerDragend = function() {
-                        //Geo coder for drag marker
-                        var location = self.marker.getPosition();
-                        $.getJSON("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json",
-                            {
-                                app_id: "bBPfh2x8Cauun3ygLMAx",
-                                app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                                mode: "retrieveAddresses",
-                                prox: location.lat().toString() + "," + location.lng().toString() + "," + "250"
-                            }).done(function(data) {
-                            var locn = data.Response.View[0].Result[0].Location;
-                            self.gpsForm.data.address = locn.Address.Label;
-                            console.log("Suburb = " + locn.Address.District);
-                            console.log("PostCode = " + locn.Address.PostalCode);
-                            $("#suburb").val(locn.Address.District);
-                            var mappedSub =
-                                self.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
-                            if (mappedSub !== undefined) {
-                                console.log(mappedSub);
-                                $('#our_suburb').val(mappedSub.id).trigger('change');
-                            } else {
-                                $('#our_suburb').val(null).trigger('change');
-                            }
-
-
-                            self.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                            self.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                        });
-
-                    };
-                      
-
-
-                self.gpsForm.showForm(fromRightClick);
-                
-
-
-
-                self.copyGpsAddress = function () {
-                    $('#location').select2('open');
-                    var search = $('#location').data('select2').dropdown.$search;
-                    if (self.gpsForm.data.address.indexOf(',') > 0) {
-                        search.val(self.gpsForm.data.address.split(',')[1].split());
-                    } else {
-                        search.val(self.gpsForm.data.address);
-                    }
-                    search.trigger("input");
+                        console.log('Dialog closed!')
+                    }).then(() => console.log("Split jobs canceled!"));
                 };
 
-
-                };
-
-                self.unlockJob = function(job) {
+                self.unlockJob = function (job) {
                     return DispatchData
-                        .updateJobDetail(job.id,
-                            "Locked",
-                            false,
-                            job.charge,
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
+                        .updateJobDetail(job.id, "Locked", false, job.charge, FirstName, ContactID, job.preBook)
+                        .then(response => {
+                            self.selectJobDetail(job.id);
                             return response;
+                        }).catch((_) => {
+                            toastrService.showErrorToast();
                         });
                 }
 
                 self.lockJob = function (job) {
                     return DispatchData
+                        .updateJobDetail(job.id, "Locked", true, job.charge, FirstName, ContactID, job.preBook)
+                        .then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                }
+
+                self.preBookDirectClick = function (job) {
+                    const directValue = !job.direct;
+
+                    return DispatchData
+                        .updateJobDetail(job.id, "Direct", directValue, job.charge, FirstName, ContactID, job.preBook)
+                        .then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                }
+
+                self.repriceClick = function (job) {
+                    return DispatchData
+                        .updateJobDetail(job.id, "Reprice", job.reprice, job.charge, FirstName, ContactID, job.preBook)
+                        .then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                };
+
+                self.pushToLive = function (job) {
+                    job.done = !job.done;
+
+                    return DispatchData
+                        .releaseBulkJob(job.jobNo, job.bookedDate)
+                        .then(response => {
+                            self.selectBulkJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                };
+
+                self.vanOkClick = function (job) {
+                    const vanOkValue = !job.vanOK;
+
+                    return DispatchData
                         .updateJobDetail(job.id,
-                            "Locked",
-                            true,
+                            "VanOK",
+                            vanOkValue,
                             job.charge,
                             FirstName,
                             ContactID,
-                            job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
-                            return response;
-                        });
-                }
-
-                self.preBookDirectClick = function(job) {
-                    return DispatchData
-                    .updateJobDetail(job.id,
-                        "Direct",
-                        job.direct,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
-            self.repriceClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Reprice",
-                        job.reprice,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
-            };
+                self.vanClick = function (job) {
+                    const vanValue = !job.van;
 
-            self.pushToLive = function (job) {
-                return DispatchData
-                    .releaseBulkJob(job.jobNo, job.bookedDate).then(function (response) {
-                        self.selectBulkJobDetail(job.id);
-                        return response;
-                    });
-            };
+                    return self.rateJob(job)
+                        .then(rate => {
+                            console.log(rate);
 
-            self.vanOkClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "VanOK",
-                        job.vanOK,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                        return response;
-                    });
-            };
+                            return DispatchData
+                                .updateJobDetail(
+                                    job.id,
+                                    "Van",
+                                    vanValue,
+                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                    FirstName,
+                                    ContactID,
+                                    job.preBook
+                                )
+                                .then(response => {
+                                    self.selectJobDetail(job.id);
+                                    return response;
+                                }).catch(() => toastrService.showErrorToast());
+                        }).catch(() => toastrService.showErrorToast());
 
+                };
 
-            self.vanClick = function (job) {
-                return self.rateJob(job).then(function (rate) {
-                    console.log(rate);
-                    return DispatchData
-                        .updateJobDetail(job.id,
-                            "Van",
-                            job.van,
-                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
-                                return response;
-                        });
-                });
+                self.pedalClick = function (job) {
+                    const pedalValue = !job.pedal;
 
-            };
-
-            self.pedalClick = function (job) {
-                return self.rateJob(job).then(function (rate) {
-                    console.log(rate);
-                    return DispatchData
-                        .updateJobDetail(job.id,
-                            "Pedal",
-                            job.pedal,
-                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
-                            return response;
-                        });
-                });
-
-            };
-
-            self.truckClick = function (job) {
-                return self.rateJob(job).then(function (rate) {
-                    console.log(rate);
-                    return DispatchData
-                        .updateJobDetail(job.id,
-                            "Truck",
-                            job.truck,
-                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(function (response) {
-                                self.selectJobDetail(job.id);
-                            return response;
-                        });
-                });
-
-            };
-
-            self.directClick = function(job) {
-                if (!job.direct) {
-                    return DispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
-                } else {
-                    return self.rateJob(job).then(function(rate) {
+                    return self.rateJob(job).then(rate => {
                         console.log(rate);
                         return DispatchData
                             .updateJobDetail(job.id,
-                                "Direct",
-                                job.direct,
+                                "Pedal",
+                                pedalValue,
                                 Number(rate.replace(/[^0-9.-]+/g, "")),
                                 FirstName,
                                 ContactID,
                                 job.preBook).then(function (response) {
+                                self.selectJobDetail(job.id);
+                                return response;
+                            }).catch(() => toastrService.showErrorToast());
+                    }).catch(() => toastrService.showErrorToast());
+                };
+
+                self.truckClick = function (job) {
+                    const truckValue = !job.truck;
+
+                    return self.rateJob(job)
+                        .then(rate => {
+                            console.log(rate);
+                            return DispatchData.updateJobDetail(
+                                job.id,
+                                "Truck",
+                                truckValue,
+                                Number(rate.replace(/[^0-9.-]+/g, "")),
+                                FirstName,
+                                ContactID,
+                                job.preBook
+                            );
+                        })
+                        .then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                };
+
+                self.directClick = function (job) {
+                    const directValue = !job.direct;
+
+                    if (!directValue) {
+                        return DispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
+                    } else {
+                        return self.rateJob(job).then(rate => {
+                            console.log(rate);
+                            return DispatchData
+                                .updateJobDetail(job.id,
+                                    "Direct",
+                                    directValue,
+                                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                                    FirstName,
+                                    ContactID,
+                                    job.preBook).then(response => {
                                     self.selectJobDetail(job.id);
                                     return response;
-                            });
-                    });
-
-                }
-
-            };
-
-            self.attentionClick = function(job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Attention",
-                        job.attention,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                    });
+                                }).catch(() => toastrService.showErrorToast());
+                        }).catch(() => toastrService.showErrorToast());
+                    }
                 };
 
-            self.repriceClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Reprice",
-                        job.reprice,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                self.attentionClick = function (job) {
+                    const attentionValue = !job.attention;
+
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Attention",
+                            attentionValue,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
-            };
-
-
-            self.preBookReturnClick = function(job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Return",
-                        job.return,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
-            };
-
-
-
-
-            self.oneOffClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "OneOff",
-                        job.oneOff,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                        return response;
-                    });
-
-                };
-
-            self.activeClick = function (job) {
-                return DispatchData
-                    .updateJobDetail(job.id,
-                        "Active",
-                        job.active,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
-
-            };
-
-            self.voidClick = function (job) {
-                return job.bulkJob ? DispatchData
-                    .updateBulkJobDetail(job.id,
-                        "Void",
-                        job.void,
-                        job.charge,
-                        FirstName,
-                        ContactID).then(function (response) {
-                            self.selectBulkJobDetail(job.id);
-                        return response;
-                    }) : DispatchData
-                    .updateJobDetail(job.id,
-                        "Void",
-                        job.void,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
-                        self.selectJobDetail(job.id);
-                        return response;
-                    });
-
-            };
-            self.doneClick = function (job) {
-                if (!job.completedTime) {
-                    $ngConfirm("You must set completed time (POD Time) first");
-                    job.done = false;
-                    return false;
-                }
-                if (!job.podName) {
-                    $ngConfirm("You must set POD Name first");
-                    job.done = false;
-                    return false;
-                }
-                return DispatchData
-                    .updatePODDetail(job.jobNo,
-                        6,
-                        job.podName,
-                        job.completedTime).then(function (response) {
-                            self.selectJobDetail(job.id);
-                            return response;
-                        });
-
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
 
-            self.deliveredClick = function (job) {
-                DispatchData
-                    .updateJobDetail(job.id,
-                        "Delivered",
-                        job.done,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                self.repriceClick = function (job) {
+                    const repriceValue = !job.reprice;
+
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Reprice",
+                            repriceValue,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
-            self.airportOnlyClick = function (job) {
-                DispatchData
-                    .updateJobDetail(job.id,
-                        "AirportOnly",
-                        job.airportOnly,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(function (response) {
+                self.preBookReturnClick = function (job) {
+                    returnValue = !job.return;
+
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Return",
+                            returnValue,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(response => {
                             self.selectJobDetail(job.id);
                             return response;
-                        });
-            };
-            
-            self.leaveClick = function(job) {
-                this.editDetailField(job, 'DeliverToLeaveID', 'Leave Parcel', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickLeaveList,
-                            placeholder: "Start typing to enter new location..."
-                        };
-
-                        $("#gather-DeliverToLeaveID").select2(speedOptions);
-                        $("#gather-DeliverToLeaveID").select2('open');
-                        $("#gather-DeliverToLeaveID").select2().dropdown.$search;
-
-                    },
-                    400);
-            };
-
-            self.undeliverableClick = function(job) {
-                this.editDetailField(job, 'UndeliverableLocationID', 'Undeliverable Location', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickUndeliverableList,
-                            placeholder: "Start typing to enter new location..."
-                        };
-
-                        $("#gather-UndeliverableLocationID").select2(speedOptions);
-                        $("#gather-UndeliverableLocationID").select2('open').val(job.udStatus).trigger('change');
-                        $("#gather-UndeliverableLocationID").select2().dropdown.$search;
-
-                    },
-                    400);
-            };
-
-
-            self.notifyClick = function(job) {
-                this.editDetailField(job, 'NotifiedJobTypeID', 'Notified', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickSpeeds,
-                            placeholder: "Start typing to enter new speed..."
-                        };
-
-                    $("#gather-NotifiedJobTypeID").select2(speedOptions);
-                    $("#gather-NotifiedJobTypeID").select2('open').val(job.notifiedJobTypeID).trigger('change');
-                    $("#gather-NotifiedJobTypeID").select2().dropdown.$search;
-
-                    },
-                    400);
-            };
-
-            self.acceptedClick = function(job) {
-                this.editDetailField(job, 'AcceptedJobTypeID', 'Accepted', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickSpeeds,
-                            placeholder: "Start typing to enter new speed..."
-                        };
-
-                        $("#gather-AcceptedJobTypeID").select2(speedOptions);
-
-                    },
-                    400);
-            };
-
-            self.speedClick = function(job) {
-                this.editDetailField(job, 'SpeedID', 'Speed', '', job.id, 'select2');
-                setTimeout(function() {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickSpeeds,
-                            placeholder: "Start typing to enter new speed..."
-                        };
-
-                        $("#gather-SpeedID").select2(speedOptions);
-                        $("#gather-SpeedID").select2('open').val(job.speedID).trigger('change');
-                        $("#gather-SpeedID").select2().dropdown.$search;
-
-                    },
-                    200);
+                        }).catch(() => toastrService.showErrorToast());
                 };
 
-            self.contactClick = function (job) {
-                this.editDetailField(job, 'ContactID', 'Contact', '', job.id, 'select2');
-                setTimeout(function () {
-                        var speedOptions = {
-                            minimumInputLength: 1,
-                            data: pickContacts,
-                            placeholder: "Start typing to enter new contact..."
-                        };
+                self.oneOffClick = function (job) {
+                    const oneoffValue = !job.oneOff;
 
-                        $("#gather-ContactID").select2(speedOptions);
-                        $("#gather-ContactID").select2('open').val(job.contactID).trigger('change');
-                        $("#gather-ContactID").select2().dropdown.$search;
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "OneOff",
+                            oneoffValue,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
 
-                    },
-                    200);
-            };
+                };
 
-            self.getJobTypeDescription = function(jobTypeID) {
-                switch (jobTypeID||1) {
-                case 1:
-                        return "Pickup";
-                case 2:
-                        return "Delivery";
-                case 3:
-                    return "3rd-Party";
+                self.activeClick = function (job) {
+                    const activeValue = !job.active;
 
-                    default:
-                        return "Pickup";
-                }
-            };
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Active",
+                            activeValue,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                };
 
-            self.jobTypeClick = function (job) {
-                this.editDetailField(job, 'JobTypeID', 'Job Type', '', job.id, 'select2');
-                setTimeout(function() {
-                    var jtOptions = {
+                self.voidClick = function (job) {
+                    const voidValue = !job.void;
+
+                    return job.bulkJob ? DispatchData
+                            .updateBulkJobDetail(job.id,
+                                "Void",
+                                voidValue,
+                                job.charge,
+                                FirstName,
+                                ContactID).then(response => {
+                                self.selectBulkJobDetail(job.id);
+                                return response;
+                            }).catch(() => toastrService.showErrorToast())
+                        : DispatchData
+                            .updateJobDetail(job.id,
+                                "Void",
+                                voidValue,
+                                job.charge,
+                                FirstName,
+                                ContactID,
+                                job.preBook).then(response => {
+                                self.selectJobDetail(job.id);
+                                return response;
+                            }).catch(() => toastrService.showErrorToast());
+                };
+
+                self.doneClick = function (event, job) {
+                    job.done = !job.done;
+
+                    if (!job.completedTime) {
+                        const confirm = $mdDialog.confirm()
+                            .title('You must set completed time (POD Time) first')
+                            .targetEvent(event)
+                            .ok('OK');
+
+                        $mdDialog.show(confirm).then(() => {
+                            job.done = false;
+                            return false;
+                        });
+                    }
+
+                    if (!job.podName) {
+                        const confirm = $mdDialog.confirm()
+                            .title('You must set POD Name first')
+                            .targetEvent(event)
+                            .ok('OK');
+
+                        $mdDialog.show(confirm).then(() => {
+                            job.done = false;
+                            return false;
+                        }).catch(() => toastrService.showErrorToast());
+                    }
+
+                    return DispatchData
+                        .updatePODDetail(job.jobNo,
+                            6,
+                            job.podName,
+                            job.completedTime).then(() => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                };
+
+                self.deliveredClick = function (job) {
+                    const doneValue = !job.done;
+
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "Delivered",
+                            doneValue,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                };
+
+                self.airportOnlyClick = function (job) {
+                    const airportOnlyValue = !job.airportOnly;
+
+                    return DispatchData
+                        .updateJobDetail(job.id,
+                            "AirportOnly",
+                            airportOnlyValue,
+                            job.charge,
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(response => {
+                            self.selectJobDetail(job.id);
+                            return response;
+                        }).catch(() => toastrService.showErrorToast());
+                };
+
+                self.trackingMethodClick = function (event, job) {
+                    self.showSelectDialog(event, job, options.detail.tracking, "TrackingMethod", "Tracking Method", "Select new tracking method..");
+                };
+
+                self.leaveClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickLeaveList, "DeliverToLeaveID", "Leave Parcel", "Select new location..");
+                };
+
+                self.undeliverableClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", "Select new location..");
+                };
+
+                self.showSelectDialog = function (event, job, data, fieldName, title, placeholder, id = "editField") {
+                    const options = {
                         minimumInputLength: 1,
-                        data: [
-                            {
-                                id: 1,
-                                text: 'Pickup'
-                            },
-                            {
-                                id: 2,
-                                text: 'Delivery'
-                            },
-                            {
-                                id: 3,
-                                text: '3rd-Party'
-                            }
-                        ],
-                        placeholder: "Start typing to enter new speed..."
+                        items: data,
+                        placeholder: placeholder
                     };
 
-                    $("#gather-JobTypeID").select2(jtOptions);
-                    $("#gather-JobTypeID").select2('open').val(job.jobType).trigger('change');
-                    $("#gather-JobTypeID").select2().dropdown.$search;
-                },200);
-            };
-
-            self.internalStatusClick = function(job) {
-                this.editDetailField(job, 'InternalStatusID', 'Job FollowUp', '', job.id, 'select2');
-                setTimeout(function() {
-                        var statusOptions = {
-                            minimumInputLength: 1,
-                            data: self.pickInternalStatus,
-                            placeholder: "Start typing to enter new status..."
-                        };
-
-                        $("#gather-InternalStatusID").select2(statusOptions);
-
-                    },
-                    200);
-            };
-
-            self.clientClick = function(job) {
-                this.editDetailField(job, 'ClientID', 'Client', '', job.id, 'select2');
-                setTimeout(function() {
-                        $("#gather-ClientID").select2({
-                            ajax: {
-                                url: "/home/ActiveClients",
-                                dataType: 'json',
-                                delay: 250,
-                                data: function(params) {
-                                    return {
-                                        searchTerm: params.term
-                                    };
-                                },
-                                processResults: function(data) {
-                                    // parse the results into the format expected by Select2
-                                    return {
-                                        results: data
-                                    };
-                                },
-                                cache: true
-                            },
-                            placeholder: "Start typing to enter new client...",
-                            minimumInputLength: 3
-                        });
-
-                    },
-                    200);
+                    $mdDialog.show({
+                        controller: SelectDialogController,
+                        controllerAs: 'ctrl',
+                        parent: angular.element(document.body),
+                        targetEvent: event,
+                        templateUrl: 'app/components/common/selectDialog/selectDialog.html',
+                        clickOutsideToClose: true,
+                        fullscreen: true,
+                        locals: {
+                            id: id,
+                            fieldName: fieldName,
+                            title: title,
+                            job: job,
+                            options: options
+                        },
+                    }).then(_ => {
+                        self.selectJobDetail(job.id);
+                        console.log('Dialog closed!');
+                    });
                 };
 
-                self.courierClick = function (job) {
-                    this.editDetailField(job, 'CourierID', 'Courier', '', job.id, 'select2');
-                    setTimeout(function () {
-                        $("#gather-CourierID").select2({
-                            ajax: {
-                                url: "/courier/AllActiveSearch",
-                                dataType: 'json',
-                                delay: 250,
-                                data: function (params) {
-                                    return {
-                                        searchTerm: params.term
-                                    };
-                                },
-                                processResults: function (data) {
-                                    // parse the results into the format expected by Select2
-                                    return {
-                                        results: data
-                                    };
-                                },
-                                cache: true
-                            },
-                            placeholder: "Start typing to search courier...",
-                            minimumInputLength: 3
-                        });
 
-                    },
-                        200);
+                self.notifyClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickSpeeds, "NotifiedJobTypeID", "Notified", "Select new speed....");
+                };
+
+                self.acceptedClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
+                };
+
+                self.speedClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickSpeeds, "SpeedID", "Speed", "Select new speed....");
+                };
+
+                self.contactClick = function (event, job) {
+                    self.showSelectDialog(event, job, pickSpeeds, "ContactID", "Contact", "Select new contact....");
+                };
+
+                self.getJobTypeDescription = function (jobTypeID) {
+                    switch (jobTypeID || 1) {
+                        case 1:
+                            return "Pickup";
+                        case 2:
+                            return "Delivery";
+                        case 3:
+                            return "3rd-Party";
+                        default:
+                            return "Pickup";
+                    }
+                };
+
+                self.jobTypeClick = function (event, job) {
+                    const data = [
+                        {
+                            id: 1,
+                            text: 'Pickup'
+                        },
+                        {
+                            id: 2,
+                            text: 'Delivery'
+                        },
+                        {
+                            id: 3,
+                            text: '3rd-Party'
+                        }
+                    ];
+
+                    self.showSelectDialog(event, job, data, "JobTypeID", "Job Type", "Select new job type....");
+                };
+
+                self.internalStatusClick = function (event, job) {
+                    self.showSelectDialog(event, job, self.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
+                };
+
+                self.showAutocompleteDialog = function (event, job, url, placeholder, fieldName, title, id = "editField", existingItem, showRerateOption) {
+                    const options = {
+                        placeholder,
+                        minimumInputLength: 3,
+                        searchUrl: url
+                    };
+
+                    $mdDialog.show({
+                        controller: AutoCompleteDialogController,
+                        controllerAs: 'ctrl',
+                        parent: angular.element(document.body),
+                        targetEvent: event,
+                        templateUrl: 'app/components/common/autocompleteDialog/autoCompleteDialog.html',
+                        clickOutsideToClose: true,
+                        fullscreen: true,
+                        locals: {
+                            id,
+                            fieldName,
+                            title,
+                            job,
+                            options,
+                            existingItem,
+                            showRerateOption
+                        },
+                    }).then(_ => {
+                        self.selectJobDetail(job.id);
+                        console.log('Dialog closed!')
+                    });
+                }
+
+
+                self.clientClick = function (event, job) {
+                    const url = "/home/ActiveClients";
+                    const placeholder = "Start typing to enter new client...";
+
+                    const existingItem = {
+                        id: job.clientID,
+                        text: job.clientName
+                    }
+
+                    self.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
+                };
+
+                self.courierClick = function (event, job) {
+                    const url = "/courier/AllActiveSearch";
+                    const placeholder = "Start typing to search courier...";
+
+                    self.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
                 };
 
                 //////////////////////////////
@@ -1616,15 +1332,6 @@
                                     return self.rateJob(self.currentJob).then(function (rate) {
                                         console.log(rate);
                                         if (rate !== self.currentJob.charge) {
-                                            //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
-                                            //    self.currentJob.clientID,
-                                            //    self.currentJob.contactName,
-                                            //    ContactID,
-                                            //    self.currentJob.courierData.courierID,
-                                            //    self.currentJob.id,
-                                            //    self.currentJob.jobType,
-                                            //    FirstName);
-
                                             return DispatchData
                                                 .updateJobDetail(self.currentJob.id,
                                                     "rate",
@@ -1633,24 +1340,16 @@
                                                     FirstName,
                                                     ContactID,
                                                     self.currentJob.preBook).then(function (response) {
-                                                        self.selectJobDetail(self.currentJob.id);
-                                                        return response;
-                                                    });
+                                                    self.selectJobDetail(self.currentJob.id);
+                                                    return response;
+                                                });
                                         }
 
                                     });
-
                                 } else {
-
                                     console.log("Critical Error Add Pallet");
-
                                 }
-
                             });
-
-
-
-
                         }
                     }
                 ];
@@ -1748,7 +1447,7 @@
                             });
 
                             newP["id"] = self.currentJob.id;
-                            
+
 
                             return DispatchData.addPallet(newP, self.currentJob.preBook, FirstName).then(function (response) {
 
@@ -1773,7 +1472,7 @@
                                             //    self.currentJob.id,
                                             //    self.currentJob.jobType,
                                             //    FirstName);
-                                        
+
                                             return DispatchData
                                                 .updateJobDetail(self.currentJob.id,
                                                     "rate",
@@ -1782,9 +1481,9 @@
                                                     FirstName,
                                                     ContactID,
                                                     self.currentJob.preBook).then(function (response) {
-                                                        self.selectJobDetail(self.currentJob.id);
-                                                        return response;
-                                                    });
+                                                    self.selectJobDetail(self.currentJob.id);
+                                                    return response;
+                                                });
                                         }
 
                                     });
@@ -1801,11 +1500,11 @@
                         submitValue: "Add Pallet"
                     };
                     setTimeout(function () {
-                        
-                        gather.showForm();
-                    },
+
+                            gather.showForm();
+                        },
                         200);
-                    
+
 
                 };
 
@@ -1878,11 +1577,11 @@
                                 "value": pallet.notes
                             }
                         ],
-                        onSubmit: function() {
+                        onSubmit: function () {
 
                             var newP = {};
 
-                            gather.form.fields.forEach(function(field) {
+                            gather.form.fields.forEach(function (field) {
                                 if (field.name === "amount") {
                                     newP["Quantity"] = field.value;
                                 }
@@ -1915,8 +1614,8 @@
                             newP["id"] = self.currentPallet.id;
                             newP["itemId"] = self.currentPallet.itemID;
 
-                            return DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function() {
-                                return self.rateJob(self.currentJob).then(function(rate) {
+                            return DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function () {
+                                return self.rateJob(self.currentJob).then(function (rate) {
                                     console.log(rate);
                                     if (rate !== self.currentJob.charge) {
                                         //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
@@ -1935,8 +1634,8 @@
                                                 FirstName,
                                                 ContactID,
                                                 self.currentJob.preBook).then(function (response) {
-                                                    self.selectJobDetail(self.currentJob.id);
-                                                    return response;
+                                                self.selectJobDetail(self.currentJob.id);
+                                                return response;
                                             });
                                     }
 
@@ -1945,7 +1644,7 @@
                         },
                         submitValue: "Edit Pallet"
                     };
-                    setTimeout(function() {
+                    setTimeout(function () {
 
                             gather.showForm();
                         },
@@ -1953,10 +1652,9 @@
 
                 };
 
-            return self;
+                return self;
 
-        }
+            }
 
-        
-    ]);
-        
+
+        ]);

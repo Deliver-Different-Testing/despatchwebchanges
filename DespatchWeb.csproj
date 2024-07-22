@@ -6,12 +6,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="compilerconfig.json" />
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+    <Content Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <_ContentIncludedByDefault Remove="compilerconfig.json" />
+    <_ContentIncludedByDefault Remove="wwwroot\lib\angular\angular-material.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="compilerconfig.json" />
+    <None Include="efpt.config.json.user" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="3.2.0" />

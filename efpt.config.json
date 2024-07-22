@@ -2,7 +2,6 @@
    "CodeGenerationMode": 4,
    "ContextClassName": "DespatchContext",
    "ContextNamespace": null,
-   "DefaultDacpacSchema": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
    "ModelNamespace": null,
@@ -100,6 +99,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucStaff]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucSuburb]",
          "ObjectType": 0
       },
@@ -152,8 +155,9 @@
          "ObjectType": 2
       }
    ],
-   "UiHint": "UCLSQL2.DespatchTest",
+   "UiHint": null,
    "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": false,
    "UseDateOnlyTimeOnly": false,

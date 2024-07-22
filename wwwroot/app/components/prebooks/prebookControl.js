@@ -10,64 +10,13 @@ angular
 
         $scope.searchBox = "";
         $scope.selectedEvents = [];
-        $scope.maxSize = 5;     // Limit number for pagination display number.  
-        $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero  
-        $scope.pageIndex = 1;   // Current page number. First page is 1.-->  
-        $scope.pageSizeSelected = 50; // Maximum number of items per page.  
+        $scope.maxSize = 5;     // Limit number for pagination display number.
+        $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero
+        $scope.pageIndex = 1;   // Current page number. First page is 1.-->
+        $scope.pageSizeSelected = 50; // Maximum number of items per page.
 
         $scope.jdSvc = jdSvc;
-        $scope.gpsForm = {
-            submit: function() {
-                return $scope.jdSvc.gpsForm.onSubmit().then(function(response) {
-                    $scope.selectJobDetail($scope.currentJob.id);
-                });
-            }
-        };
-
-        $scope.jdSvc.setGPSForm($scope.gpsForm);
-        
-
-        $scope.jdSvc = jdSvc;
-        var gpsForm = {
-            submit: function () {
-                return $scope.jdSvc.gpsForm.onSubmit().then(function (response) {
-                    $scope.selectJobDetail($scope.currentJob.id);
-                });
-            },
-            showForm: function (fromRightClick) {
-
-                $(".gpsForm").show(0, function () {
-                    if (fromRightClick) {
-                        $scope.$apply();
-                    }
-                    waitingDialog.hide();
-
-                });
-                setTimeout(function () {
-                    $scope.onMapReady();
-                    $('#location').select2('open').val(null).trigger('change');
-                    var search = $('#location').data('select2').dropdown.$search;
-                    if ($scope.jdSvc.gpsForm.data.address.indexOf(',') > 0) {
-                        var parts = $scope.jdSvc.gpsForm.data.address.split(',');
-                        search.val(parts[1].split());
-                        $scope.jdSvc.gpsForm.data.extras = parts[0];
-                    } else {
-                        search.val($scope.jdSvc.gpsForm.data.address);
-                    }
-                    search.trigger("input");
-                }, 150);
-            }
-        };
-
-        $scope.gpsForm = gpsForm;
-        $scope.jdSvc.setGPSForm($scope.gpsForm);
-
-
         $scope.updateGPS = function (currentJob, field, fromRightClick) {
-            $scope.gpsForm = null;
-            $scope.jdSvc.gpsForm = null;
-            $scope.gpsForm = gpsForm;
-            $scope.jdSvc.setGPSForm($scope.gpsForm);
             $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
         };
 
@@ -78,9 +27,9 @@ angular
 
                     $scope.selectJobDetail($scope.currentJob.id);
                 });
-                
+
                 //setTimeout(function () {  }, 1000);
-                
+
 
             },
             cancel: function () {
@@ -249,7 +198,7 @@ angular
         };
 
         ///////////////////////////////
-        // LAYOUT 
+        // LAYOUT
         ///////////////////////////////
         $scope.layouts = [
             {
@@ -440,7 +389,7 @@ angular
         };
 
         ///////////////////////////
-        // HOTKEYS 
+        // HOTKEYS
         //////////////////////////
 
 
@@ -475,12 +424,12 @@ angular
                 if (event.srcElement.id === "Wild") {
                     $scope.refreshData(true);
                 }
-                
+
             }
         });
 
         //$scope.freu
-        
+
 
         $scope.refreshData = function (wait) {
 
@@ -530,7 +479,7 @@ angular
         };
 
 
-      
+
 
 
         $scope.showItems = function (job) {
@@ -590,9 +539,9 @@ angular
             //$("#jobList").find(".active").removeClass("active");
             clearTimeout($scope.myTimer);
             //$scope.currentEvent = event;
-            
+
             $("#box-jobDetail").find(".loading").show();
-            
+
             uPBData.getJobDetail(id).then(function (data) {
                 $scope.currentJob = data;
                 jdSvc.setJob($scope.currentJob);
@@ -622,21 +571,21 @@ angular
                 setMapBounds();
                 map.setZoom(14);
             });
- 
+
 
 
         };
 
 
-        //This method is calling from pagination number  
+        //This method is calling from pagination number
         $scope.pageChanged = function (i) {
 
             $scope.pageIndex = i;
             $scope.refreshData();
-          
+
         };
 
-        //This method is calling from dropDown  
+        //This method is calling from dropDown
         $scope.changePageSize = function (i) {
             $scope.pageIndex = 1;
             $scope.pageSizeSelected = i;
@@ -644,7 +593,7 @@ angular
         };
 
 
-       
+
         $scope.jdSvc.setSelectJobDetail($scope.selectJobDetail);
 
         $scope.voidPrebookJob = function(jobId) {
@@ -656,7 +605,7 @@ angular
                     Yes: {
                         btnClass: 'btn-green',
                         action: function (scope, button) {
-                            
+
                             return uPBData.voidPrebookJob(jobId, FirstName, ContactID).then(function (response) {
                                 $scope.currentJob = null;
                                 $scope.refreshData();
@@ -669,8 +618,8 @@ angular
                     No: {
                         btnClass: 'btn-red',
                         action: function (scope, button) {
-                            
-                            
+
+
                         }
                     }
 
@@ -715,11 +664,11 @@ angular
             $scope.marker = map.markers[0];
             $scope.onMapReady();
             console.log("here...");
-            
+
         });
 
         $scope.refreshData();
-    
+
         $scope.onMapReady = function () {
             //$scope.heremaps = heremaps;
 
@@ -847,8 +796,8 @@ angular
                 }
             ];
 
-      
-   
+
+
 
 
 
@@ -899,5 +848,3 @@ function inStruct(val, structure) {
     }
     return false;
 }
-
-

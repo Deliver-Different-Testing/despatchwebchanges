@@ -2,14 +2,22 @@
 @spacing: 14px;
 @yellow: #76EAFE;
 
-.primary-style-mixin(@bgColor) {
+body {
+  overflow: hidden;
+}
+
+md-dialog {
+  min-width: 400px;
+}
+
+.material-button-mixin(@bgColor) {
   background-color: @bgColor;
   color: #000;
   border: none;
   border-radius: 4px;
   text-align: center;
-  box-shadow: 0 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14),
-  0px 1px 3px 0px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+  0px 1px 3px 0px rgba(0, 0, 0, 0.12);
   transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
 
   &:hover {
@@ -24,7 +32,7 @@
 }
 
 .btn-primary {
-  .primary-style-mixin(@yellow);
+  .material-button-mixin(@yellow);
   padding: 6px 12px;
   text-decoration: none;
   display: inline-block;
@@ -35,27 +43,29 @@
 }
 
 .mat-button {
-  .primary-style-mixin(@yellow);
+  .material-button-mixin(@yellow);
   text-transform: uppercase;
   transition: background-color 0.3s ease;
 }
 
-body {
-  overflow: hidden;
+.md-fab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-a.pickadate-next {
+a.pickadate-next, a.pickadate-prev {
+  .material-button-mixin(@yellow);
   font-size: 10px;
-  padding: 5px 10px;
-  background: #fff085;
-  border-radius: 8px;
+  padding: 6px 8px;
 }
 
-a.pickadate-prev {
-  font-size: 10px;
-  padding: 5px 10px;
-  background: #fff085;
-  border-radius: 8px;
+.btn-cancel {
+  .material-button-mixin(@s-grey);
+}
+
+md-divider {
+  margin: 15px 0;
 }
 
 #box-clearLists {
@@ -193,19 +203,29 @@ a.pickadate-prev {
   }
 }
 
+.pickadate-controls {
+  display: flex;
+  justify-content: space-between;
+  margin: -15px;
+}
+
 .pickadate {
   text-align: left;
   background-color: #FFF;
   padding: 30px;
-  border: 7px solid #666;
-  border-radius: 16PX;
-  padding-top: 7px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
   margin-bottom: 20px;
-  margin-top: 10px;
+  margin-top: 20px;
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
 }
 
 .top-bar {
-    position: absolute;
+    position: relative;
     top: 0;
     left: 0;
     width: 100%;
@@ -214,7 +234,7 @@ a.pickadate-prev {
     height: 64px;
     display: flex;
     align-items: center;
-    justify-content: space-between; // One of the way to distribute objects horizontally
+    justify-content: space-between;
 
     .topbar-NavButtons {
         margin-right: auto; // To align items to the right
@@ -334,7 +354,6 @@ a.pickadate-prev {
 
 .loading {
   display: none;
-  z-index: 400;
   top: 0;
   left: 0;
   bottom: 0;
@@ -366,6 +385,16 @@ a.pickadate-prev {
                                    supported by Chrome and Opera */
 }
 
+.channelSelect {
+  background-color: lightgrey;
+  color: @s-white;
+  display: inline-block;
+}
+
+.md-select-menu-container .md-option {
+  color: white !important;
+}
+
 #draggingItems {
   border: 3px dotted #CCC;
   width: 100px;
@@ -380,268 +409,113 @@ a.pickadate-prev {
   opacity: 0.8;
 }
 
-.eventForm {
+.fullScreenFormBase(@zIndex, @bgColor, @radius, @boxShadow1, @boxShadow2) {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #CCC;
+  z-index: @zIndex;
+  background-color: @bgColor;
   padding: 20px;
   display: none;
+  border: none;
+  border-radius: @radius;
+  box-shadow: @boxShadow1, @boxShadow2;
+}
+
+.boxBase(@width, @padding, @radius) {
+  background: #FFF;
   text-align: center;
+  width: @width;
+  position: relative;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: @padding;
+  border: none;
+  border-radius: @radius;
+}
 
-  .event-box {
-    background: #FFF;
-    width: 900px;
-    position: relative;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    top: 50%;
-    /* box-shadow: 0px 0px 10px #CCC; */
-    padding: 40px;
-    border: 7px solid #666;
-    border-radius: 16PX;
+.eventForm, .truckCourierStatusForm, .lateForm {
+  .fullScreenFormBase(200, rgba(255, 255, 255, 0.95), 16px, 0 1px 8px rgba(0, 0, 0, 0.1), 0 0 0 rgba(0, 0, 0, 0));
 
-    .event-title {
-      text-transform: uppercase;
-      font-weight: 700;
-      padding-bottom: 20px;
-      font-size: 20px;
-    }
+  .event-box, .late-box {
+    .boxBase(50%, 40px, 16px);
   }
 }
 
-.truckCourierStatusForm {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #CCC;
-  padding: 20px;
-  display: none;
-  text-align: center;
+.gatherForm, .gatherFormMulti {
+  .fullScreenFormBase(200, rgba(250, 250, 250, 0.97), 4px, 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22));
 
-
-  .event-box {
-    background: #FFF;
-    width: 900px;
-    position: relative;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    top: 50%;
-    /* box-shadow: 0px 0px 10px #CCC; */
-    padding: 40px;
-    border: 7px solid #666;
-    border-radius: 16PX;
-
-    input.highlight {
-      color: red;
-    }
-
-    .event-title {
-      text-transform: uppercase;
-      font-weight: 700;
-      padding-bottom: 20px;
-      font-size: 20px;
-    }
-  }
-}
-
-.lateForm {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #CCC;
-  padding: 20px;
-  display: none;
-  text-align: center;
-
-  .late-box {
-    background: #FFF;
-    width: 550px;
-    position: relative;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    top: 50%;
-    /* box-shadow: 0px 0px 10px #CCC; */
-    padding: 40px;
-    border: 7px solid #666;
-    border-radius: 16PX;
-
-    .late-title {
-      text-transform: uppercase;
-      font-weight: 700;
-      padding-bottom: 20px;
-      font-size: 20px;
-    }
+  .gatherFields, .gather-box {
+    .boxBase(50%, 30px, 4px);
   }
 }
 
 .gpsForm {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #CCC;
-  padding: 20px;
-  display: none;
-
-  .fa-exclamation {
-    color: red;
-  }
+  .fullScreenFormBase(200, rgba(255, 255, 255, 0.9), 4px, 0, 0 0 0 rgba(0, 0, 0, 0));
 
   .gps-box {
-    background: #FFF;
-    width: 900px;
-    position: relative;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    top: 50%;
-    /* box-shadow: 0px 0px 10px #CCC; */
-    padding: 40px;
-    border: 7px solid #666;
-    border-radius: 16PX;
-  }
-
-  iframe {
-    display: block;
-    width: 100%;
-    height: 400px;
+    .boxBase(900px, 40px, 4px);
   }
 }
 
-.gatherFormMulti {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(250, 250, 250, 0.97);
-  padding: 20px;
-  display: none;
+.commonTitle {
+  text-transform: uppercase;
+  font-weight: 700;
+  padding-bottom: 20px;
+  font-size: 20px;
+}
 
-  .gather-box {
-    background: #FFFFFF;
-    margin: 0 auto;
-    width: 80%;
-    max-width: 600px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-    padding: 40px;
-    border-radius: 8px;
+.eventForm, .truckCourierStatusForm, .lateForm {
+  .event-title, .late-title {
+    .commonTitle;
+  }
+}
 
-    .gather-title {
-      font-weight: 500;
-      font-size: 24px;
-      line-height: 32px;
-      color: rgba(0, 0, 0, 0.87);
-      padding-bottom: 16px;
-    }
+.gatherForm, .gatherFormMulti {
+  .gather-title, .gatherTitle {
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 32px;
+    color: rgba(0, 0, 0, 0.87);
+    padding-bottom: 16px;
+  }
+}
+
+.gpsForm {
+  .gps-title {
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 32px;
+    color: rgba(0, 0, 0, 0.87);
+    padding-bottom: 16px;
   }
 }
 
 .gatherForm {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12);
-  padding: 20px;
-  text-align: center;
-  display: none;
-  border-radius: 4px;
-
-  .gatherFields {
-    background: #FFFFFF;
-    margin: 0 auto;
-    width: 80%;
-    max-width: 600px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-    padding: 20px;
-    border-radius: 8px;
-
-    .gatherField {
-      width: 100%;
-    }
-
-    .gatherTitle {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-transform: uppercase;
-      font-weight: 500;
-      color: rgba(0, 0, 0, 0.87);
-      padding-bottom: 16px;
-      font-size: 20px;
-      line-height: 24px;
-      letter-spacing: 0.15px;
-      height: 48px;
-    }
-
-    input, textarea, select {
-      display: block;
-      margin-bottom: 16px;
-      width: 100%;
-      border-radius: 4px;
-      font-size: 16px;
-      border: 1px solid rgba(0, 0, 0, 0.23);
-      outline-width: 0;
-      line-height: 1.75;
-      padding-left: 12px;
-      padding-right: 12px;
-    }
-
-    input {
-      height: 48px;
-    }
-
-    textarea {
-      height: 355px;
-    }
-
-    select {
-      height: 48px;
-    }
-
-    .input-group-btn {
-      .btn {
-        height: 48px;
-        position: relative;
-        top: -2px;
-        border-radius: 4px;
-
-
-        .fa {
-          font-size: 20px;
-          color: #666;
-        }
-      }
-    }
+  .gatherField {
+    width: 100%;
   }
+
+  input, textarea, select {
+    display: block;
+    margin-bottom: 16px;
+    width: 100%;
+    border-radius: 4px;
+    font-size: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.23);
+    outline-width: 0;
+    line-height: 1.75;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+.pickadate-active {
+  background-color: @yellow;
 }
 
 .columns {
@@ -651,7 +525,6 @@ a.pickadate-prev {
   flex-flow: row nowrap;
   justify-content: space-around;
   align-content: space-around;
-  margin-top: 35px;
 
   .column {
     box-sizing: border-box;
@@ -660,8 +533,8 @@ a.pickadate-prev {
     flex-direction: column;
     height: calc(100vh - 45px);
     border: 7px solid #fff;
-    padding-top: 40px;
     min-width: 50px;
+    padding-bottom: 20px;
 
     &:last-child {
       flex: 1;
@@ -988,58 +861,13 @@ table-headings {
   min-width: 15px;
 }
 
-#currentWork {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
-}
-
 input.pod-DispatchField {
   color: black;
   width: 60px;
   text-align: center;
 }
 
-
-#jobList {
+.tableMixin() {
   th {
     white-space: nowrap;
     cursor: pointer;
@@ -1081,184 +909,31 @@ input.pod-DispatchField {
     text-align: center;
     height: 15px;
   }
+}
+
+#currentWork {
+  .tableMixin();
+}
+
+#jobList {
+  .tableMixin();
 }
 
 #pbList {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
+  .tableMixin();
 }
 
 #jobListPOD {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
+  .tableMixin();
 }
 
 #jobListDelivery {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
+  .tableMixin();
 }
 
 #jobListReprice {
-  th {
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  tr {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-
-
-    &.O {
-      background-color: @s-orange !important;
-    }
-
-    &.B {
-      background-color: @s-blue !important;
-    }
-
-    &.G {
-      background-color: @s-green !important;
-    }
-  }
-
-  td {
-    border: 1px solid rgba(0, 0, 0, 0.5);
-  }
-
-  .doing {
-    background-color: #d7f3ce !important;
-  }
-
-  input.dispatchField {
-    width: 29px;
-    text-align: center;
-    height: 15px;
-  }
-
-  input.lateCallField {
-    width: 21px;
-    text-align: center;
-    height: 15px;
-  }
+  .tableMixin();
 }
-
 
 #map_canvas_container {
   position: relative;
@@ -1327,45 +1002,36 @@ a.uline {
   }
 }
 
-
 #jobDetail {
   .addresses {
     .address {
       background-color: #f3f2f2;
-      margin-left: 2px;
-      margin-bottom: 3px;
-      border-top: 3px solid #c7c7c7;
-      padding: 3px;
+      margin: 16px;
+      border-radius: 4px;
+      padding: 8px;
       min-height: 100px;
 
-      .client {
-        min-height: 15px;
-        font-size: 11px;
-        margin-bottom: 10px;
-      }
-
-      .contact {
-        min-height: 15px;
-        font-size: 11px;
+      .client, .contact {
+        min-height: 20px;
+        font-size: 13px;
         margin-bottom: 10px;
       }
 
       label {
-        height: 8px;
+        height: 10px;
         color: #929191;
       }
 
       .value {
         min-height: 15px;
-        font-size: 11px;
+        font-size: 13px;
 
         pre {
           white-space: pre-wrap;
-          font-family: sans-serif;
           padding: 0;
           border: 0;
           background: transparent;
-          font-size: 11px;
+          font-size: 13px;
         }
       }
     }
@@ -1376,17 +1042,17 @@ a.uline {
   }
 
   .fields {
-    padding: 3px;
+    padding: 8px;
 
     .field {
       background-color: #f3f2f2;
-      margin-left: 2px;
-      margin-bottom: 3px;
-      border-top: 3px solid #c7c7c7;
-      padding: 3px;
+      margin: 5px;
+      border-radius: 4px;
+      padding: 4px;
+      border-top: 3px solid darken(#f3f2f2, 20%);
 
       &.red {
-        border-top: 3px solid @s-red;
+        border-color: 3px solid @s-red;
       }
 
       .fa-exclamation {
@@ -1395,22 +1061,24 @@ a.uline {
 
       .multi-element {
         .btn {
-          font-size: 11px;
-          padding: 4px 10px;
-          width: 160px;
+          font-size: 13px;
+          padding: 8px 10px;
+          min-width: 160px;
         }
       }
 
       label {
         height: 6px;
-        color: #9c9c9c;
+        color: black;
         text-transform: uppercase;
-        font-size: 8px;
+        font-size: 11px;
+        font-weight: bold;
       }
 
       .value {
         min-height: 15px;
-        font-size: 11px;
+        font-size: 13px;
+        color: black;
 
         &.disabled {
           color: #9c9c9c;
@@ -1422,8 +1090,7 @@ a.uline {
 
         pre {
           border: 0;
-          font-family: sans-serif;
-          font-size: 11px;
+          font-size: 13px;
           padding: 0;
           margin: 0;
           background: transparent;
@@ -1439,7 +1106,6 @@ a.uline {
       }
 
       &:hover {
-        border-top: 3px solid #5d5d5d;
         background-color: #e8e8e8;
         cursor: pointer;
 
@@ -1464,19 +1130,17 @@ a.uline {
     position: relative;
 
     label {
-      font-size: 13px;
+      font-size: 16px;
       position: absolute;
       top: -18px;
     }
 
     .addPallet {
-      position: absolute;
+      .material-button-mixin(#000);
+      color: white;
       right: 0;
       top: -20px;
-      background: #000;
-      color: #FFF;
       padding: 3px 7px;
-      border: 0;
       font-size: 10px;
     }
 
@@ -1523,7 +1187,6 @@ span.courier {
   white-space: nowrap;
   border: 1px solid black;
   padding: 0;
-  font-family: Arial;
   font-weight: bold;
   font-size: 8px;
   margin: 0 0 0 0;
@@ -1553,4 +1216,32 @@ span.courierRed {
   .dropdown-menu {
     z-index: 99999;
   }
+}
+
+md-toast.md-success-toast-theme {
+  .md-toast-content {
+    background-color: green;
+  }
+}
+
+md-toast.md-error-toast-theme {
+  .md-toast-content {
+    background-color: red;
+  }
+}
+
+md-toast.md-warning-toast-theme {
+  .md-toast-content {
+    background-color: yellow;
+  }
+}
+
+.small-icon {
+  font-size: 16px;
+}
+
+.resizeable-checkbox-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }

@@ -1,4 +1,10 @@
-﻿.btn-primary {
+﻿body {
+  overflow: hidden;
+}
+md-dialog {
+  min-width: 400px;
+}
+.btn-primary {
   background-color: #76EAFE;
   border-color: #43e2fe;
   color: #000;
@@ -8,20 +14,60 @@
   background-color: #43e2fe;
   border-color: #1bdcfd;
 }
-body {
-  overflow: hidden;
+.mat-button:hover {
+  background-color: #e4c700;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
 }
-a.pickadate-next {
-  font-size: 10px;
-  padding: 5px 10px;
-  background: #fff085;
-  border-radius: 8px;
+.mat-button:active {
+  transform: translateY(2px);
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
+.md-fab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+a.pickadate-next,
 a.pickadate-prev {
+  background-color: #fddd00;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 10px;
-  padding: 5px 10px;
-  background: #fff085;
-  border-radius: 8px;
+  padding: 6px 8px;
+}
+a.pickadate-next:hover,
+a.pickadate-prev:hover {
+  background-color: #e4c700;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+a.pickadate-next:active,
+a.pickadate-prev:active {
+  transform: translateY(2px);
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-cancel {
+  background-color: #DDD;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-cancel:hover {
+  background-color: #d0d0d0;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+.btn-cancel:active {
+  transform: translateY(2px);
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+md-divider {
+  margin: 15px 0;
 }
 #box-clearLists .box-content {
   overflow: hidden !important;
@@ -126,18 +172,26 @@ a.pickadate-prev {
 #clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-bottom .clearLists-list-items-item-number.active {
   background-color: #ffe0bb;
 }
+.pickadate-controls {
+  display: flex;
+  justify-content: space-between;
+  margin: -15px;
+}
 .pickadate {
   text-align: left;
   background-color: #FFF;
   padding: 30px;
-  border: 7px solid #666;
-  border-radius: 16PX;
-  padding-top: 7px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
   margin-bottom: 20px;
-  margin-top: 10px;
+  margin-top: 20px;
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pickadate:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 .top-bar {
-  position: absolute;
+  position: relative;
   top: 0;
   left: 0;
   width: 100%;
@@ -239,7 +293,6 @@ a.pickadate-prev {
 }
 .loading {
   display: none;
-  z-index: 400;
   top: 0;
   left: 0;
   bottom: 0;
@@ -270,6 +323,14 @@ a.pickadate-prev {
   /* Non-prefixed version, currently
                                      supported by Chrome and Opera */
 }
+.channelSelect {
+  background-color: lightgrey;
+  color: #EEE;
+  display: inline-block;
+}
+.md-select-menu-container .md-option {
+  color: white !important;
+}
 #draggingItems {
   border: 3px dotted #CCC;
   width: 100px;
@@ -283,71 +344,8 @@ a.pickadate-prev {
   color: #888;
   opacity: 0.8;
 }
-.eventForm {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #CCC;
-  padding: 20px;
-  display: none;
-  text-align: center;
-}
-.eventForm .event-box {
-  background: #FFF;
-  width: 900px;
-  position: relative;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  top: 50%;
-  /* box-shadow: 0px 0px 10px #CCC; */
-  padding: 40px;
-  border: 7px solid #666;
-  border-radius: 16PX;
-}
-.eventForm .event-box .event-title {
-  text-transform: uppercase;
-  font-weight: 700;
-  padding-bottom: 20px;
-  font-size: 20px;
-}
-.truckCourierStatusForm {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #CCC;
-  padding: 20px;
-  display: none;
-  text-align: center;
-}
-.truckCourierStatusForm .event-box {
-  background: #FFF;
-  width: 900px;
-  position: relative;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  top: 50%;
-  /* box-shadow: 0px 0px 10px #CCC; */
-  padding: 40px;
-  border: 7px solid #666;
-  border-radius: 16PX;
-}
-.truckCourierStatusForm .event-box input.highlight {
-  color: red;
-}
-.truckCourierStatusForm .event-box .event-title {
-  text-transform: uppercase;
-  font-weight: 700;
-  padding-bottom: 20px;
-  font-size: 20px;
-}
+.eventForm,
+.truckCourierStatusForm,
 .lateForm {
   position: absolute;
   top: 0;
@@ -355,29 +353,61 @@ a.pickadate-prev {
   right: 0;
   bottom: 0;
   z-index: 200;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #CCC;
+  background-color: rgba(255, 255, 255, 0.95);
   padding: 20px;
   display: none;
-  text-align: center;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1), 0 0 0 rgba(0, 0, 0, 0);
 }
+.eventForm .event-box,
+.truckCourierStatusForm .event-box,
+.lateForm .event-box,
+.eventForm .late-box,
+.truckCourierStatusForm .late-box,
 .lateForm .late-box {
   background: #FFF;
-  width: 550px;
+  text-align: center;
+  width: 50%;
   position: relative;
   left: 50%;
   transform: translate(-50%, -50%);
   top: 50%;
-  /* box-shadow: 0px 0px 10px #CCC; */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   padding: 40px;
-  border: 7px solid #666;
-  border-radius: 16PX;
+  border: none;
+  border-radius: 16px;
 }
-.lateForm .late-box .late-title {
-  text-transform: uppercase;
-  font-weight: 700;
-  padding-bottom: 20px;
-  font-size: 20px;
+.gatherForm,
+.gatherFormMulti {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background-color: rgba(250, 250, 250, 0.97);
+  padding: 20px;
+  display: none;
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+}
+.gatherForm .gatherFields,
+.gatherFormMulti .gatherFields,
+.gatherForm .gather-box,
+.gatherFormMulti .gather-box {
+  background: #FFF;
+  text-align: center;
+  width: 50%;
+  position: relative;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 30px;
+  border: none;
+  border-radius: 4px;
 }
 .gpsForm {
   position: absolute;
@@ -387,131 +417,78 @@ a.pickadate-prev {
   bottom: 0;
   z-index: 200;
   background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #CCC;
   padding: 20px;
   display: none;
-}
-.gpsForm .fa-exclamation {
-  color: red;
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0, 0 0 0 rgba(0, 0, 0, 0);
 }
 .gpsForm .gps-box {
   background: #FFF;
+  text-align: center;
   width: 900px;
   position: relative;
   left: 50%;
   transform: translate(-50%, -50%);
   top: 50%;
-  /* box-shadow: 0px 0px 10px #CCC; */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   padding: 40px;
-  border: 7px solid #666;
-  border-radius: 16PX;
+  border: none;
+  border-radius: 4px;
 }
-.gpsForm iframe {
-  display: block;
-  width: 100%;
-  height: 400px;
-}
-.gatherFormMulti {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.7);
-  border: 1px solid #CCC;
-  padding: 20px;
-  display: none;
-}
-.gatherFormMulti .gather-box {
-  background: #FFF;
-  width: 900px;
-  position: relative;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  top: 50%;
-  /* box-shadow: 0px 0px 10px #CCC; */
-  padding: 40px;
-  border: 7px solid #666;
-  border-radius: 16PX;
-}
-.gatherFormMulti .gather-box .gather-title {
+.commonTitle {
   text-transform: uppercase;
   font-weight: 700;
   padding-bottom: 20px;
   font-size: 20px;
 }
-.gatherForm {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  background-color: rgba(255, 255, 255, 0.7);
-  border: 1px solid #CCC;
-  padding: 20px;
-  text-align: center;
-  display: none;
-}
-.gatherForm .gatherFields {
-  display: block;
-  margin-bottom: 5px;
-  width: 559px;
-  transform: translate(-50%, -55%);
-  position: relative;
-  left: 50%;
-  top: 50%;
-  background-color: grey;
-}
-.gatherForm .gatherFields .gatherField {
-  width: 100%;
-}
-.gatherForm .gatherFields .gatherTitle {
+.eventForm .event-title,
+.truckCourierStatusForm .event-title,
+.lateForm .event-title,
+.eventForm .late-title,
+.truckCourierStatusForm .late-title,
+.lateForm .late-title {
   text-transform: uppercase;
   font-weight: 700;
-  color: #666;
-  padding-bottom: 4px;
-  background-color: #fddd00;
-}
-.gatherForm .gatherFields input {
-  display: block;
-  margin-bottom: 5px;
-  width: 100%;
-  height: 53px;
-  border-radius: 14px !important;
-  font-size: 21px;
-  border: 7px solid #666;
-}
-.gatherForm .gatherFields textarea {
-  display: block;
-  margin-bottom: 5px;
-  width: 100%;
-  height: 355px;
-  border-radius: 14px !important;
-  font-size: 21px;
-  border: 7px solid #666;
-}
-.gatherForm .gatherFields select {
-  display: block;
-  margin-bottom: 5px;
-  width: 100%;
-  height: 53px;
-  border-radius: 14px !important;
-  font-size: 21px;
-  border: 7px solid #666;
-  outline-width: 0;
-}
-.gatherForm .gatherFields .input-group-btn .btn {
-  height: 53px;
-  position: relative;
-  top: -2px;
-  border-bottom-right-radius: 11px;
-  border-top-right-radius: 11px;
-}
-.gatherForm .gatherFields .input-group-btn .btn .fa {
+  padding-bottom: 20px;
   font-size: 20px;
-  color: #666;
+}
+.gatherForm .gather-title,
+.gatherFormMulti .gather-title,
+.gatherForm .gatherTitle,
+.gatherFormMulti .gatherTitle {
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 32px;
+  color: rgba(0, 0, 0, 0.87);
+  padding-bottom: 16px;
+}
+.gpsForm .gps-title {
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 32px;
+  color: rgba(0, 0, 0, 0.87);
+  padding-bottom: 16px;
+}
+.gatherForm .gatherField {
+  width: 100%;
+}
+.gatherForm input,
+.gatherForm textarea,
+.gatherForm select {
+  display: block;
+  margin-bottom: 5px;
+  width: 100%;
+  border-radius: 4px;
+  font-size: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  outline-width: 0;
+  line-height: 1.75;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.pickadate-active {
+  background-color: #fddd00;
 }
 .columns {
   min-height: 50px;
@@ -528,8 +505,8 @@ a.pickadate-prev {
   flex-direction: column;
   height: 100vh;
   border: 7px solid #fff;
-  padding-top: 40px;
   min-width: 50px;
+  padding-bottom: 20px;
 }
 .columns .column:last-child {
   flex: 1;
@@ -763,6 +740,11 @@ table.table tr .status.ASC {
   padding: 1px;
   min-width: 15px;
 }
+input.pod-DispatchField {
+  color: black;
+  width: 60px;
+  text-align: center;
+}
 #currentWork th {
   white-space: nowrap;
   cursor: pointer;
@@ -794,11 +776,6 @@ table.table tr .status.ASC {
   width: 21px;
   text-align: center;
   height: 15px;
-}
-input.pod-DispatchField {
-  color: black;
-  width: 60px;
-  text-align: center;
 }
 #jobList th {
   white-space: nowrap;
@@ -1010,71 +987,67 @@ a.uline.disabled {
 }
 #jobDetail .addresses .address {
   background-color: #f3f2f2;
-  margin-left: 2px;
-  margin-bottom: 3px;
-  border-top: 3px solid #c7c7c7;
-  padding: 3px;
+  margin: 16px;
+  border-radius: 4px;
+  padding: 8px;
   min-height: 100px;
 }
-#jobDetail .addresses .address .client {
-  min-height: 15px;
-  font-size: 11px;
-  margin-bottom: 10px;
-}
+#jobDetail .addresses .address .client,
 #jobDetail .addresses .address .contact {
-  min-height: 15px;
-  font-size: 11px;
+  min-height: 20px;
+  font-size: 13px;
   margin-bottom: 10px;
 }
 #jobDetail .addresses .address label {
-  height: 8px;
+  height: 10px;
   color: #929191;
 }
 #jobDetail .addresses .address .value {
   min-height: 15px;
-  font-size: 11px;
+  font-size: 13px;
 }
 #jobDetail .addresses .address .value pre {
   white-space: pre-wrap;
-  font-family: sans-serif;
   padding: 0;
   border: 0;
   background: transparent;
-  font-size: 11px;
+  font-size: 13px;
 }
 #jobDetail .row-out {
   min-width: 420px;
 }
 #jobDetail .fields {
-  padding: 3px;
+  padding: 8px;
 }
 #jobDetail .fields .field {
   background-color: #f3f2f2;
-  margin-left: 2px;
-  margin-bottom: 3px;
-  border-top: 3px solid #c7c7c7;
-  padding: 3px;
+  margin: 5px;
+  border-radius: 4px;
+  padding: 4px;
+  border-top: 3px solid #c2bdbd;
 }
 #jobDetail .fields .field.red {
-  border-top: 3px solid #ffb3ba;
+  border-color: 3px solid #ffb3ba;
 }
 #jobDetail .fields .field .fa-exclamation {
   color: red;
 }
 #jobDetail .fields .field .multi-element .btn {
-  font-size: 11px;
-  padding: 4px 10px;
-  width: 160px;
+  font-size: 13px;
+  padding: 8px 10px;
+  min-width: 160px;
 }
 #jobDetail .fields .field label {
   height: 6px;
-  color: #9c9c9c;
+  color: black;
   text-transform: uppercase;
-  font-size: 8px;
+  font-size: 11px;
+  font-weight: bold;
 }
 #jobDetail .fields .field .value {
   min-height: 15px;
-  font-size: 11px;
+  font-size: 13px;
+  color: black;
 }
 #jobDetail .fields .field .value.disabled {
   color: #9c9c9c;
@@ -1084,8 +1057,7 @@ a.uline.disabled {
 }
 #jobDetail .fields .field .value pre {
   border: 0;
-  font-family: sans-serif;
-  font-size: 11px;
+  font-size: 13px;
   padding: 0;
   margin: 0;
   background: transparent;
@@ -1099,7 +1071,6 @@ a.uline.disabled {
   max-height: 300px;
 }
 #jobDetail .fields .field:hover {
-  border-top: 3px solid #5d5d5d;
   background-color: #e8e8e8;
   cursor: pointer;
 }
@@ -1118,19 +1089,31 @@ a.uline.disabled {
   position: relative;
 }
 #jobDetail .palletInfo label {
-  font-size: 13px;
+  font-size: 16px;
   position: absolute;
   top: -18px;
 }
 #jobDetail .palletInfo .addPallet {
-  position: absolute;
+  background-color: #000;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
   right: 0;
   top: -20px;
-  background: #000;
-  color: #FFF;
   padding: 3px 7px;
-  border: 0;
   font-size: 10px;
+}
+#jobDetail .palletInfo .addPallet:hover {
+  background-color: #000000;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+#jobDetail .palletInfo .addPallet:active {
+  transform: translateY(2px);
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 #jobDetail .palletInfo .pallet-table-head:hover {
   background-color: #FFF;
@@ -1164,8 +1147,7 @@ span.courier {
   left: -29%;
   white-space: nowrap;
   border: 1px solid black;
-  padding: 0px;
-  font-family: Arial;
+  padding: 0;
   font-weight: bold;
   font-size: 8px;
   margin: 0px 0px 0px 0px;
@@ -1189,3 +1171,21 @@ span.courierRed {
 #SupportChannels .dropdown-menu {
   z-index: 99999;
 }
+md-toast.md-success-toast-theme .md-toast-content {
+  background-color: green;
+}
+md-toast.md-error-toast-theme .md-toast-content {
+  background-color: red;
+}
+md-toast.md-warning-toast-theme .md-toast-content {
+  background-color: yellow;
+}
+.small-icon {
+  font-size: 16px;
+}
+.resizeable-checkbox-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/*# sourceMappingURL=udispatch.css.map */

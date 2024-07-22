@@ -1,0 +1,55 @@
+<md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
+    <form ng-cloak>
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <h2>Edit {{ ctrl.title }}</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                    <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                        close
+                    </md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-dialog-content ng-cloak>
+            <div class="md-dialog-content">
+                <form ng-submit="ctrl.submit(ctrl.selectedItem)">
+                    <md-autocomplete
+                            md-autofocus
+                            md-autoselect
+                            md-escape-options="clear"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.querySearch(ctrl.searchText)"
+                            md-min-length="0"
+                            md-search-text="ctrl.searchText"
+                            md-selected-item="ctrl.selectedItem" placeholder="{{ctrl.options.placeholder }}">
+                        <md-item-template>
+                            <span md-highlight-flags="^i" md-highlight-text="ctrl.searchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No {{ ctrl.title }} matching "{{ctrl.searchText}}" were found.
+                        </md-not-found>
+                    </md-autocomplete>
+
+                    <div layout="row" layout-align="center center">
+                        <md-input-container ng-show="ctrl.showRerateOption">
+                            <md-checkbox ng-model="ctrl.shouldRerateJob">
+                                Re-Rate?
+                            </md-checkbox>
+                        </md-input-container>
+                    </div>
+
+                </form>
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions layout="row" layout-align="center center">
+            <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.selectedItem)">
+                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                Update Field
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

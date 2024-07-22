@@ -140,12 +140,22 @@ angular
                     console.error('Book/CreateEvent error', response.status, response.data);
                 });
             },
-
-            
+            getActiveClients: function(searchTerm) {
+                return $http.get('/home/ActiveClients?searchTerm=' + searchTerm)
+                    .then(function(response) {
+                        return response.data;
+                    });
+            },
+            getActiveCouriersSearch: function(searchTerm) {
+                return $http.get('/courier/AllActiveSearch?searchTerm=' + searchTerm)
+                    .then(function(response) {
+                        return response.data;
+                    });
+            },
             doAPI: function (path, data) {
                 return $http.post(path, data).then(function (response) {
                     return response.data;
                 });
             }
         };
-    }]);   
+    }]);

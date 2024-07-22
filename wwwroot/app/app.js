@@ -6,7 +6,7 @@ angular
 		"ui.sortable",
 		"ui.bootstrap",
 		"ui.bootstrap.pagination",
-		"ui.bootstrap.contextMenu", 
+		"ui.bootstrap.contextMenu",
 		"cfp.hotkeys",
 		"ui.timepicker",
         'pickadate',
@@ -15,19 +15,67 @@ angular
         'angularjs-dropdown-multiselect',
         'heremaps',
         'ngAnimate',
+        'ngMessages',
+        'ngSanitize',
+        'ngMaterial',
 		'angularPromiseButtons',
         'cp.ngConfirm'
 	])
-	.directive('rightClick', function () {
+	.config($mdThemingProvider => {
+		$mdThemingProvider.definePalette('urgentPrimary', {
+			'50': 'fffbe0',
+			'100': 'fef5b3',
+			'200': 'feee80',
+			'300': 'fee74d',
+			'400': 'fde226',
+			'500': 'fddd00',
+			'600': 'fdd900',
+			'700': 'fcd400',
+			'800': 'fccf00',
+			'900': 'fcc700',
+			'A100': 'ffffff',
+			'A200': 'fffbef',
+			'A400': 'ffefbc',
+			'A700': 'ffe9a2',
+			'contrastDefaultColor': 'light',
+			'contrastDarkColors': [
+				'50',
+				'100',
+				'200',
+				'300',
+				'400',
+				'500',
+				'600',
+				'700',
+				'800',
+				'900',
+				'A100',
+				'A200',
+				'A400',
+				'A700'
+			],
+			'contrastLightColors': []
+		});
 
-		document.oncontextmenu = function (e) {
+		// Material Theme
+		$mdThemingProvider.theme('default')
+			.primaryPalette('urgentPrimary')
+			.accentPalette('grey');
+
+		// Register Toast themes
+		$mdThemingProvider.theme("success-toast")
+		$mdThemingProvider.theme("warning-toast")
+		$mdThemingProvider.theme("error-toast")
+	})
+	.directive('rightClick', () => {
+		document.oncontextmenu = e => {
             if (e.target.hasAttribute('right-click')) {
                 e.stopPropagation();
 				return false;
 			}
 		};
-		return function (scope, el, attrs) {
-			el.bind('contextmenu', function (e) {
+		return (scope, el, attrs) => {
+			el.bind('contextmenu', e => {
 				scope.$apply(
 					scope.$eval(attrs.action, {
 						'event': e
@@ -38,37 +86,35 @@ angular
 			});
 		}
 	})
-	.config(["$urlRouterProvider", "$stateProvider", function($urlRouterProvider, $stateProvider) {
+	.config(["$urlRouterProvider", "$stateProvider", ($urlRouterProvider, $stateProvider) => {
 		$urlRouterProvider.otherwise("/");
 
         $stateProvider
             .state("home",
                 {
                     url: "/",
-                    templateUrl: "app/components/home/homeView.html?v=1.45",
+					templateUrl: "app/components/home/homeView.html",
                     controller: "HomeControl"
 				})
 			.state('nw',
                 {
                     url: '/Nationwide',
-                    templateUrl: 'app/components/Nationwide/nationwideView.html?v=1.8',
+					templateUrl: 'app/components/Nationwide/nationwideView.html',
                     controller: 'NationwideControl',
                     reloadOnSearch: false
                 })
             .state('cs',
                 {
                     url: '/CS',
-                    templateUrl: 'app/components/CS/csView.html?v=1.23',
+					templateUrl: 'app/components/CS/csView.html',
 					controller: 'CSControl',
                     reloadOnSearch: false
 				})
             .state('prebooks',
                 {
                     url: '/prebooks',
-                    templateUrl: 'app/components/prebooks/prebookView.html?v=1.2',
+					templateUrl: 'app/components/prebooks/prebookView.html',
                     controller: 'PBControl',
                     reloadOnSearch: false
                 });
-
-
     }]);
