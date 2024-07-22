@@ -33,19 +33,38 @@ angular
                     $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
                 };
 
+                $scope.createNewJob = function (event) {
+                    // Dialog
+                    $mdDialog.show({
+                        controller: CreateJobDialog,
+                        controllerAs: 'ctrl',
+                        parent: angular.element(document.body),
+                        targetEvent: event,
+                        templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            staffId: ContactID
+                        },
+                    }).then(newJobId => {
+                        $scope.selectJobDetail(newJobId);
+                        console.log('Dialog closed!')
+                    });
+                }
+
                 $scope.gather = {
                     submit() {
-                        angular.element($document.querySelector(".gatherForm")).css("display", "none");
+                        angular.element(document.querySelector(".gatherForm")).css("display", "none");
                         $scope.gather.form.onSubmit().then(response => {
                             if ($scope.currentJob) {
                                 $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
                             }
                         });
                     },
-                    cancel: () => angular.element($document.querySelector(".gatherForm")).css("display", "none"),
+                    cancel: () => angular.element(document.querySelector(".gatherForm")).css("display", "none"),
                     showForm: () => {
-                        angular.element($document.querySelector(".gatherForm")).css("display", "block");
-                        $timeout(() => angular.element($document.querySelector(".gatherForm .focusMe")).focus(), 100);
+                        angular.element(document.querySelector(".gatherForm")).css("display", "block");
+                        $timeout(() => angular.element(document.querySelector(".gatherForm .focusMe")).focus(), 100);
                     },
                     submitValue: "Save"
                 };
@@ -449,10 +468,10 @@ angular
                 $scope.saveLayout = event => {
                     angular.forEach($scope.layout.columns,
                         (column, colKey) => {
-                            column.width = angular.element($document.querySelector("#co-" + column.id)).css("flex-basis");
+                            column.width = angular.element(document.querySelector("#co-" + column.id)).css("flex-basis");
                             angular.forEach(column.boxes,
                                 (box, boxKey) => {
-                                    box.height = angular.element($document.querySelector("#box-" + box.name)).css("flex-basis");
+                                    box.height = angular.element(document.querySelector("#box-" + box.name)).css("flex-basis");
                                 });
                         });
 
@@ -496,13 +515,13 @@ angular
                     scrollSpeed: 20,
                     handle: '.box-handle',
                     activate: function (e, ui) {
-                        const box = angular.element($document.querySelector("#" + ui.item.context.id));
+                        const box = angular.element(document.querySelector("#" + ui.item.context.id));
                         const parent = box.parent();
                         angular.element(parent).find(".box").each(() => angular.element(this).attr('data-height', angular.element(this).prop('offsetHeight') + 'px'));
                     },
                     update: function (e, ui) {
                         return $timeout(() => {
-                            const box = angular.element($document.querySelector("#" + ui.item.context.id));
+                            const box = angular.element(document.querySelector("#" + ui.item.context.id));
                             const parent = box.parent();
                             angular.element(parent).find(".box").each(() => angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")}));
                             angular.element(parent).find(".box").last().css({"flex-basis": "0"});
@@ -511,7 +530,7 @@ angular
                 };
 
                 $scope.openSearch = boxID => {
-                    let boxSearchElement = angular.element($document.querySelector("#box-" + boxID)).find(".box-search");
+                    let boxSearchElement = angular.element(document.querySelector("#box-" + boxID)).find(".box-search");
 
                     if (boxSearchElement.hasClass("open")) {
                         boxSearchElement.find("input").fadeOut(() => {
@@ -557,8 +576,8 @@ angular
                     description: 'Close gather screen',
                     allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
                     callback: () => {
-                        angular.element($document.querySelector(".gatherForm")).css("display", "none");
-                        angular.element($document.querySelector(".eventForm")).css('display', 'none');
+                        angular.element(document.querySelector(".gatherForm")).css("display", "none");
+                        angular.element(document.querySelector(".eventForm")).css('display', 'none');
                     }
                 });
 
@@ -567,7 +586,7 @@ angular
                     description: 'Select All',
                     allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
                     callback: () => {
-                        angular.element($document.querySelector(".activeTable")).find(".clickable-row").addClass("active");
+                        angular.element(document.querySelector(".activeTable")).find(".clickable-row").addClass("active");
                         $scope.showRun();
                     }
                 });
@@ -577,7 +596,7 @@ angular
                     description: 'Submit gather form',
                     allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
                     callback: () => {
-                        if (angular.element($document.querySelector(".gatherForm")).css('display') !== 'none') {
+                        if (angular.element(document.querySelector(".gatherForm")).css('display') !== 'none') {
                             $timeout($scope.gather.submit(), 0);
                         }
                         if (event.srcElement.id === "Wild" || event.srcElement.id === "Job") {
@@ -678,7 +697,7 @@ angular
                     });
 
                 $scope.restoreJob = job => {
-                    angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
                     const callData = {
                         "call": "restoreJobs",
                         "jobs": [],
@@ -770,7 +789,7 @@ angular
                     callData.jobs.push(job.id);
 
                     return uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(response => {
-                        angular.element($document.querySelectorAll('input.pod-DispatchField')).forEach(item => {
+                        angular.element(document.querySelectorAll('input.pod-DispatchField')).forEach(item => {
                             if (getComputedStyle(item).display !== 'none') {
                                 item.value = "";
                             }
@@ -900,7 +919,7 @@ angular
                 };
 
                 $scope.refreshData = wait => {
-                    const jobList = angular.element($document.querySelector("#jobList"));
+                    const jobList = angular.element(document.querySelector("#jobList"));
                     let goTop = jobList[0].offsetTop;
                     const parentDiv = jobList.parent(".box-content");
 
@@ -910,7 +929,7 @@ angular
                     } catch (e) {
                         //ignore
                     }
-                    angular.element($document.querySelector("#box-jobList")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-jobList")).find(".loading").css('display', 'block');
 
                     let dateChanged = false;
                     if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
@@ -936,13 +955,13 @@ angular
                         data => {
                             $scope.jobList = data.item2;
                             $scope.totalCount = data.item1;
-                            angular.element($document.querySelector("#box-jobList")).find(".loading").css('display', 'none');
-                            $timeout(() => sizeHeadings(angular.element($document.querySelector("#jobList")).parent(".column")), 1000);
+                            angular.element(document.querySelector("#box-jobList")).find(".loading").css('display', 'none');
+                            $timeout(() => sizeHeadings(angular.element(document.querySelector("#jobList")).parent(".column")), 1000);
                         });
                 };
 
                 $scope.refreshBulkData = wait => {
-                    const bulkJobList = angular.element($document.querySelector("#bulkJobList"));
+                    const bulkJobList = angular.element(document.querySelector("#bulkJobList"));
                     let goTop = bulkJobList[0].offsetTop;
                     const parentDiv = bulkJobList.parent(".box-content");
 
@@ -952,7 +971,7 @@ angular
                     } catch (e) {
                         //ignore
                     }
-                    angular.element($document.querySelector("#box-bulkJobList")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-bulkJobList")).find(".loading").css('display', 'block');
 
                     let dateChanged = false;
                     if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
@@ -977,13 +996,13 @@ angular
                         data => {
                             $scope.bulkJobList = data.item2;
                             $scope.bulkTotalCount = data.item1;
-                            angular.element($document.querySelector("#box-bulkJobList")).find(".loading").css('display', 'none');
-                            $timeout(() => sizeHeadings(angular.element($document.querySelector("#bulkJobList")).parent(".column")), 1000);
+                            angular.element(document.querySelector("#box-bulkJobList")).find(".loading").css('display', 'none');
+                            $timeout(() => sizeHeadings(angular.element(document.querySelector("#bulkJobList")).parent(".column")), 1000);
                         });
                 };
 
                 $scope.refreshPreBookData = wait => {
-                    const pbList = angular.element($document.querySelector("#pbList"));
+                    const pbList = angular.element(document.querySelector("#pbList"));
                     let goTop = pbList[0].offsetTop;
                     const parentDiv = pbList.parent(".box-content");
 
@@ -993,7 +1012,7 @@ angular
                     } catch (e) {
                         //ignore
                     }
-                    angular.element($document.querySelector("#box-pbList")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-pbList")).find(".loading").css('display', 'block');
 
 
                     let dateChanged = false;
@@ -1019,9 +1038,9 @@ angular
                         data => {
                             $scope.pbList = data.item2;
                             $scope.pbTotalCount = data.item1;
-                            angular.element($document.querySelector("#box-pbList")).find(".loading").css('display', 'none');
+                            angular.element(document.querySelector("#box-pbList")).find(".loading").css('display', 'none');
 
-                            $timeout(() => sizeHeadings(angular.element($document.querySelector("#pbList")).parent(".column")), 1000);
+                            $timeout(() => sizeHeadings(angular.element(document.querySelector("#pbList")).parent(".column")), 1000);
                         });
                 };
 
@@ -1051,12 +1070,12 @@ angular
                 /////////////////////////////////
 
                 $scope.showJobs = group => {
-                    angular.element($document.querySelector("#box-jobsList")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-jobsList")).find(".loading").css('display', 'block');
                     $scope.jobList = group.jobs;
 
-                    $timeout(() => sizeHeadings(angular.element($document.querySelector("#jobList")).parent(".column")), 1000);
+                    $timeout(() => sizeHeadings(angular.element(document.querySelector("#jobList")).parent(".column")), 1000);
 
-                    angular.element($document.querySelector("#box-jobsList .loading")).css('display', 'none');
+                    angular.element(document.querySelector("#box-jobsList .loading")).css('display', 'none');
                 };
 
                 $scope.sizeName = sizeId => {
@@ -1068,10 +1087,10 @@ angular
                 };
 
                 $scope.loadRelatedJobDetail = (id, jn) => {
-                    angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
                     uCSData.getJobDetail(id).then(data => {
                         $scope.currentJob = data;
-                        angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'none');
+                        angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'none');
                         $scope.currentSelection = " for Job " + jn;
                     });
                 };
@@ -1082,12 +1101,12 @@ angular
                     console.log("select Job  " + id);
                     clearTimeout($scope.myTimer);
 
-                    angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
 
                     uCSData.getJobDetail(id).then(data => {
                         $scope.currentJob = data;
                         jdSvc.setJob($scope.currentJob);
-                        angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'none');
+                        angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'none');
                         $scope.currentSelection = " for Job " + data.jobNo;
                         let jobs = [];
                         jobs.push($scope.currentJob);
@@ -1099,23 +1118,23 @@ angular
                                 $scope.currentJob.relatedJobs = data;
                             });
                         }
-                        angular.element($document.querySelector("#box-scanList")).find(".loading").css('display', 'block');
+                        angular.element(document.querySelector("#box-scanList")).find(".loading").css('display', 'block');
                         uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(data => {
                             $scope.scanList = data;
 
                             $timeout(() => {
-                                sizeHeadings(angular.element($document.querySelector("#scanList")).parent(".column"));
-                                angular.element($document.querySelector("#box-scanList")).find(".loading").css('display', 'none');
+                                sizeHeadings(angular.element(document.querySelector("#scanList")).parent(".column"));
+                                angular.element(document.querySelector("#box-scanList")).find(".loading").css('display', 'none');
                             }, 200);
                         });
 
                         if ($scope.currentJob.courier && $scope.currentJob.completedTime) {
-                            angular.element($document.querySelector("#box-map")).find(".loading").css('display', 'block');
+                            angular.element(document.querySelector("#box-map")).find(".loading").css('display', 'block');
                             uCSData.getCourierRoute($scope.currentJob.courier, moment($scope.currentJob.completedTime).subtract(5, 'm'), moment($scope.currentJob.completedTime).add(5, 'm')).then(data => {
                                 let i;
                                 let flightPathCoordinates = [];
 
-                                angular.element($document.querySelector("#box-map")).find(".loading").css('display', 'none');
+                                angular.element(document.querySelector("#box-map")).find(".loading").css('display', 'none');
                                 if (data.length === 0) {
                                     return;
                                 }
@@ -1176,12 +1195,12 @@ angular
                     console.log("select pre book Job  " + id);
                     clearTimeout($scope.myTimer);
 
-                    angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
 
                     uCSData.getPreBookDetail(id).then(data => {
                         $scope.currentJob = data;
                         jdSvc.setJob($scope.currentJob);
-                        angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'none');
+                        angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'none');
                         $scope.currentSelection = " for Job " + data.jobNo;
                         console.log($scope.currentJob.days);
                         const freq = $scope.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(8, 9);
@@ -1210,8 +1229,8 @@ angular
                             $scope.scanList = data;
 
                             $timeout(() => {
-                                sizeHeadings(angular.element($document.querySelector("#scanList")).parent(".column"));
-                                angular.element($document.querySelector("#box-scanList")).find(".loading").css('display', 'none');
+                                sizeHeadings(angular.element(document.querySelector("#scanList")).parent(".column"));
+                                angular.element(document.querySelector("#box-scanList")).find(".loading").css('display', 'none');
                             }, 200);
                         });
                     });
@@ -1225,12 +1244,12 @@ angular
                     console.log("select Bulk Job  " + id);
                     clearTimeout($scope.myTimer);
 
-                    angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
+                    angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'block');
 
                     uCSData.getBulkJobDetail(id).then(data => {
                         $scope.currentJob = data;
                         jdSvc.setJob($scope.currentJob);
-                        angular.element($document.querySelector("#box-jobDetail")).find(".loading").css('display', 'none');
+                        angular.element(document.querySelector("#box-jobDetail")).find(".loading").css('display', 'none');
                         $scope.currentSelection = " for Bulk Job " + data.jobNo;
                         let jobs = [];
                         jobs.push($scope.currentJob);
@@ -1241,8 +1260,8 @@ angular
                             $scope.scanList = data;
 
                             $timeout(() => {
-                                sizeHeadings(angular.element($document.querySelector("#scanList")).parent(".column"));
-                                angular.element($document.querySelector("#box-scanList")).find(".loading").css('display', 'none');
+                                sizeHeadings(angular.element(document.querySelector("#scanList")).parent(".column"));
+                                angular.element(document.querySelector("#box-scanList")).find(".loading").css('display', 'none');
                             }, 200);
                         });
                     });
@@ -1332,18 +1351,18 @@ angular
                 });
 
                 $scope.highlightEvent = () => {
-                    angular.element($document.querySelectorAll("#jobList .active")).removeClass("active");
+                    angular.element(document.querySelectorAll("#jobList .active")).removeClass("active");
 
                     $timeout(() => {
                         $scope.selectedEvents = [];
-                        angular.element($document.querySelectorAll("#jobList .active")).forEach(el => {
+                        angular.element(document.querySelectorAll("#jobList .active")).forEach(el => {
                             const eventIndex = angular.element(el).data("index");
                             const event = $scope.jobList[eventIndex];
                             $scope.selectedEvents.push(event);
                         });
                     }, 10);
 
-                    $timeout(() => sizeHeadings(angular.element($document.querySelector("#jobList")).parent(".column")), 1000);
+                    $timeout(() => sizeHeadings(angular.element(document.querySelector("#jobList")).parent(".column")), 1000);
                 };
 
                 $scope.jobListMenu =
@@ -1363,10 +1382,10 @@ angular
                                         }
                                     ],
                                     onSubmit: () => {
-                                        angular.element($document.querySelector("#box-jobList")).find(".loading").css("display", "block");
-                                        angular.element($document.querySelector("#box-map")).find(".loading").css('display', 'block');
+                                        angular.element(document.querySelector("#box-jobList")).find(".loading").css("display", "block");
+                                        angular.element(document.querySelector("#box-map")).find(".loading").css('display', 'block');
 
-                                        const userName = angular.element($document.querySelector("#gather-editName")).val();
+                                        const userName = angular.element(document.querySelector("#gather-editName")).val();
 
                                         uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(() => $scope.refreshData(1, true));
                                     },
@@ -1392,7 +1411,7 @@ angular
                     }
 
                     function afterShowAnimation(scope, element, options) {
-                        const e = $document.getElementById("event-notes");
+                        const e = document.getElementById("event-notes");
                         resetCursor(e);
                     }
 
@@ -1402,7 +1421,7 @@ angular
                         scope: $scope,
                         preserveScope: true,
                         templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
-                        parent: angular.element($document.body),
+                        parent: angular.element(document.body),
                         //targetEvent: $event,
                         clickOutsideToClose: true,
                         onComplete: afterShowAnimation
@@ -1418,7 +1437,7 @@ angular
                         scope: $scope,
                         preserveScope: true,
                         templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
-                        parent: angular.element($document.body),
+                        parent: angular.element(document.body),
                         //targetEvent: $event,
                         clickOutsideToClose: true
 
@@ -1463,7 +1482,7 @@ angular
                         }
 
 
-                        angular.element($document.querySelector(".wait")).css("display", "block");
+                        angular.element(document.querySelector(".wait")).css("display", "block");
                         processEventBooking();
 
 
@@ -1488,10 +1507,10 @@ angular
                                 if (returnData === undefined ||
                                     returnData !== "OK") {
                                     alert("Sorry, create event failed");
-                                    angular.element($document.querySelector(".wait")).css("display", "block");
+                                    angular.element(document.querySelector(".wait")).css("display", "block");
                                     $scope.cancel();
                                 } else {
-                                    angular.element($document.querySelector(".wait")).css("display", "block");
+                                    angular.element(document.querySelector(".wait")).css("display", "block");
                                     $scope.cancel();
                                     if ($scope.book.reply) {
                                         uCSData.closeEvent($scope.book.closeEventId, event.Name).then(() => $scope.refreshData(true, true));
