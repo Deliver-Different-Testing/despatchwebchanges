@@ -1727,7 +1727,7 @@ angular
             //ACTIVATE DROP
             $scope.activateDrop = function () {
                 $timeout(function () {
-                        document.ready(function (event) {
+                        $document.ready(function (event) {
                             $(".droppable-row").droppable({
                                 classes: {
                                     "ui-droppable-hover": "active"
@@ -1845,7 +1845,7 @@ angular
                 //$scope.currentSelection = " for Courier " + + courier.courier;
 
                 $timeout(function () {
-                        document.ready(function (event) {
+                        $document.ready(function (event) {
                             $("#box-jobDetail").find(".loading").fadeOut();
                             $("#box-map").find(".loading").fadeOut();
                         });
@@ -1897,7 +1897,7 @@ angular
                 $scope.currentSelection = " for Courier " + +courier.label;
 
                 $timeout(function () {
-                    document.ready(function (event) {
+                    $document.ready(function (event) {
                         $("#box-jobDetail").find(".loading").fadeOut();
                         $("#box-map").find(".loading").fadeOut();
                     });
@@ -1960,7 +1960,7 @@ angular
                 $scope.currentSelection = " for Courier " + +courier.courier;
 
                 $timeout(function () {
-                    document.ready(function (event) {
+                    $document.ready(function (event) {
                         $("#box-jobDetail").find(".loading").fadeOut();
                         $("#box-map").find(".loading").fadeOut();
                         //        var jid = $("#jobList .active").last().data("jobid");
@@ -2207,7 +2207,7 @@ angular
                             //highlightJobPoints(jobs);
                             displayRoutePoints(jobs, false, $scope.mapZoom.display);
                         }
-                        if (!document.activeElement.classList.contains("lateCallField")) {
+                        if (!$document.activeElement.classList.contains("lateCallField")) {
                             $(jobRow).find(".dispatchField").focus();
                         }
 
@@ -2769,7 +2769,7 @@ angular
 
 
                     $timeout(function () {
-                            document.ready(function (event) {
+                            $document.ready(function (event) {
                                 //$("#box-supports").find(".loading").fadeOut();
                                 if ($scope.currentSupport) {
                                     $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
@@ -2976,7 +2976,7 @@ angular
                     ];
 
                     $timeout(function () {
-                            document.ready(function (event) {
+                            $document.ready(function (event) {
                                 $("#box-courierMovePickedUp").find(".loading").fadeOut();
                             });
                         },
@@ -3080,7 +3080,7 @@ angular
                     ];
 
                     $timeout(function () {
-                            document.ready(function (event) {
+                            $document.ready(function (event) {
                                 $("#box-courierMoveClear").find(".loading").fadeOut();
                             });
                         },
@@ -3105,7 +3105,7 @@ angular
                     $scope.areaList = data;
 
                     $timeout(function () {
-                            document.ready(function (event) {
+                            $document.ready(function (event) {
                                 $("#box-areaList").find(".loading").fadeOut();
                             });
                         },
@@ -3170,7 +3170,7 @@ angular
 
 
                      $timeout(function () {
-                         document.ready(function (event) {
+                         $document.ready(function (event) {
                              $("#box-jobUpdates").find(".loading").fadeOut();
                          });
                      },
@@ -3238,7 +3238,7 @@ angular
                     ];
 
                     $timeout(function () {
-                            document.ready(function (event) {
+                            $document.ready(function (event) {
                                 $("#box-lateCalls").find(".loading").fadeOut();
                             });
                         },
@@ -3269,13 +3269,13 @@ angular
 
             $scope.getData();
 
-            document.everyTime("30s", "SP", function () {
+            $document.everyTime("30s", "SP", function () {
                 $scope.getSupports();
             });
             $scope.getSupports();
 
             // on first focus (bubbles up to document), open the menu
-            document.on('focus', '.select2-selection.select2-selection--single', function (e) {
+            $document.on('focus', '.select2-selection.select2-selection--single', function (e) {
                 $(this).closest(".select2-container").siblings('select:enabled').select2('open');
             });
 

@@ -1411,7 +1411,7 @@ angular
                     }
 
                     function afterShowAnimation(scope, element, options) {
-                        const e = document.getElementById("event-notes");
+                        const e = $document.getElementById("event-notes");
                         resetCursor(e);
                     }
 
