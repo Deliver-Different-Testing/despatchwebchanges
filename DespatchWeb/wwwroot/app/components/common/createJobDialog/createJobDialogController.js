@@ -1,11 +1,12 @@
 class CreateJobDialog {
-    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, staffId) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $document, staffId) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.$http = $http;
         this.toastrService = toastrService;
         this.loadingService = loadingService;
+        this.$document = $document;
         this.staffId = staffId;
 
         this.jobForm = $scope.jobForm;
@@ -70,10 +71,20 @@ class CreateJobDialog {
     }
 
 
-    async submit(job) {
+    async submit(event, job) {
         try {
             if (!this.jobForm.$valid) {
-                this.toastrService.showWarningToast("Please complete all the fields");
+                this.$mdDialog.show(
+                    this.$mdDialog.alert()
+                        .parent(angular.element(this.$document.body))
+                        .clickOutsideToClose(true)
+                        .title('Required Fields')
+                        .textContent('Please complete all the required fields.')
+                        .ariaLabel('Not all required fields are completed')
+                        .ok('Got it!')
+                        .targetEvent(event)
+                );
+
                 return;
             }
 
