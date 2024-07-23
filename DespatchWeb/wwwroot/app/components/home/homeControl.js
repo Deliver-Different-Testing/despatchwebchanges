@@ -35,9 +35,9 @@ angular
                     const refreshedJob = $scope.jobList.find(jo => jo.id === currentJob.id);
                     $scope.selectJob(refreshedJob);
                     $timeout(() => {
-                        angular.element(document.querySelector("#jobList tr[data-jobid='" + currentJob.id + "']")).addClass('active');
+                        angular.element("#jobList tr[data-jobid='" + currentJob.id + "']").addClass('active');
 
-                        const element = angular.element(document.querySelector("#jobList tr[data-jobid='" + currentJob.id + "']"));
+                        const element = angular.element("#jobList tr[data-jobid='" + currentJob.id + "']");
                         const parentDiv = element.parent().hasClass('box-content') ? element.parent() : element.parent().closest('.box-content');
                         let goTop = element[0].getBoundingClientRect().top;
 
@@ -57,7 +57,7 @@ angular
                     return $scope.gather.form.onSubmit().then(function (response) {
                         console.log("pointer 3");
 
-                        angular.element(document.querySelector(".gatherForm")).css("display", "none");
+                        angular.element(".gatherForm").css("display", "none");
                         var j = $scope.currentJob;
                         $scope.getData().then(function () {
                             if (j === null || j === undefined || j === false) {
@@ -70,10 +70,10 @@ angular
                                 const elementSelector = "#jobList tr[data-jobid='" + j.id + "']";
                                 const parentSelector = ".box-content";
 
-                                angular.element(document.querySelector(elementSelector)).addClass("active");
+                                angular.element(elementSelector).addClass("active");
 
-                                const parentDiv = angular.element(document.querySelector(elementSelector)).parent(parentSelector);
-                                let goTop = angular.element(document.querySelector(elementSelector))[0].getBoundingClientRect().top;
+                                const parentDiv = angular.element(elementSelector).parent(parentSelector);
+                                let goTop = angular.element(elementSelector)[0].getBoundingClientRect().top;
 
                                 try {
                                     goTop = goTop - parentDiv[0].getBoundingClientRect().top + parentDiv[0].scrollTop - 28;
@@ -86,12 +86,12 @@ angular
                     });
                 },
                 cancel: function () {
-                    angular.element(document.querySelector(".gatherForm")).css("display", "none");
+                    angular.element(".gatherForm").css("display", "none");
                 },
                 showForm: function () {
-                    angular.element(document.querySelector('.gatherForm')).css("display", "block");
+                    angular.element('.gatherForm').css("display", "block");
                     $timeout(function () {
-                        angular.element(document.querySelector('.gatherForm .focusMe')).focus();
+                        angular.element('.gatherForm .focusMe').focus();
                     }, 100);
                 },
                 submitValue: "Save",
@@ -188,15 +188,12 @@ angular
             $scope.markers = [];
             $scope.truckCourierStatus = [];
             $scope.getJobStyle = function (assigned) {
-                var normal =
+                const normal =
                     {
                         "font-weight": "normal"
-
-                    };
-                var bold =
+                    }, bold =
                     {
                         "font-weight": "bold"
-
                     };
                 if (assigned) {
                     return bold;
@@ -482,10 +479,10 @@ angular
             $scope.saveLayout = function (event) {
                 angular.forEach($scope.layout.columns,
                     (column, colKey) => {
-                        column.width = angular.element(document.querySelector("#co-" + column.id)).css("flex-basis");
+                        column.width = angular.element("#co-" + column.id).css("flex-basis");
                         angular.forEach(column.boxes,
                             (box, boxKey) => {
-                                box.height = angular.element(document.querySelector("#box-" + box.name)).css("flex-basis");
+                                box.height = angular.element("#box-" + box.name).css("flex-basis");
                             });
                     });
 
@@ -595,7 +592,7 @@ angular
                 scrollSpeed: 20,
                 handle: ".box-handle",
                 activate: function (e, ui) {
-                    const box = angular.element(document.querySelector("#" + ui.item.context.id)),
+                    const box = angular.element("#" + ui.item.context.id),
                         parent = box.parent(),
                         boxes = parent.children().filter((_, child) => angular.element(child).hasClass('box'));
 
@@ -606,7 +603,7 @@ angular
                 },
                 update: function (e, ui) {
                     $timeout(() => {
-                        const box = angular.element(document.querySelector("#" + ui.item.context.id)),
+                        const box = angular.element("#" + ui.item.context.id),
                             parent = box.parent(),
                             boxes = parent.children().filter((_, child) => angular.element(child).hasClass('box'));
 
@@ -621,7 +618,7 @@ angular
             };
 
             $scope.openSearch = function (boxID) {
-                const box = angular.element(document.querySelector("#box-" + boxID)),
+                const box = angular.element("#box-" + boxID),
                     boxSearch = box.find(".box-search");
 
                 if (boxSearch.hasClass("open")) {
@@ -637,7 +634,7 @@ angular
 
 
             $scope.openChat = function () {
-                let chatElement = angular.element(document.querySelector(".chat"));
+                let chatElement = angular.element(".chat");
 
                 if (chatElement.hasClass("open")) {
                     chatElement.find("input").css('display', 'none');
@@ -686,7 +683,7 @@ angular
                 description: "Dispatch selected jobs",
                 allowIn: ["INPUT", "SELECT", "TEXTAREA"],
                 callback: () => {
-                    if (angular.element(document.querySelector(".activeTable .active")).length > 0) {
+                    if (angular.element(".activeTable .active").length > 0) {
                         $scope.dispatchJobsForm();
                     }
                 }
@@ -697,8 +694,8 @@ angular
                 description: "Close gather screen",
                 allowIn: ["INPUT", "SELECT", "TEXTAREA"],
                 callback: function (event, hk) {
-                    angular.element(document.querySelector(".gatherForm")).css("display", "none");
-                    angular.element(document.querySelector('.eventForm')).css('display', 'none');
+                    angular.element(".gatherForm").css("display", "none");
+                    angular.element('.eventForm').css('display', 'none');
                     if (event.srcElement.classList.contains("dispatchField")) {
                         event.srcElement.value = "";
                     }
@@ -710,7 +707,7 @@ angular
                 description: "Submit gather form",
                 allowIn: ["INPUT", "SELECT", "TEXTAREA"],
                 callback: function (event, hk) {
-                    let gatherForm = angular.element(document.querySelector('.gatherForm'));
+                    let gatherForm = angular.element('.gatherForm');
 
                     if (gatherForm.css('display') !== 'none') {
                         $timeout($scope.gather.submit, 0);
@@ -732,10 +729,10 @@ angular
             };
 
             $scope.selectClearList = function (id, event, area) {
-                let areaGroupButtons = angular.element(document.querySelectorAll("#area-group .btn"));
+                let areaGroupButtons = angular.element("#area-group .btn");
                 areaGroupButtons.removeClass("topBarActive");
 
-                let clearListsActive = angular.element(document.querySelector("#clearLists .listActive"));
+                let clearListsActive = angular.element("#clearLists .listActive");
                 if (clearListsActive.length <= 1) {
                     $scope.getClearListEnvelope(id);
                 }
@@ -869,15 +866,15 @@ angular
                     },
                     submit: function () {
                         return DispatchData.addOtherEvent($scope.currentJob.jobNo, $scope.currentJob.clientID, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(function () {
-                            angular.element(document.querySelector('.eventForm')).css('display', 'none');
+                            angular.element('.eventForm').css('display', 'none');
                         });
                     },
                     cancel: function () {
-                        angular.element(document.querySelector('.eventForm')).css('display', 'none');
+                        angular.element('.eventForm').css('display', 'none');
                     }
                 };
 
-                angular.element(document.querySelector('.eventForm')).css('display', '');
+                angular.element('.eventForm').css('display', '');
             };
 
 
@@ -909,7 +906,7 @@ angular
                         }
                     ],
                     onSubmit: () => {
-                        const courierNumber = angular.element(document.querySelector('#gather-courierNumber')).val();
+                        const courierNumber = angular.element('#gather-courierNumber').val();
                         return $scope.dispatchJobs(courierNumber);
                     },
                     submitValue: "Dispatch"
@@ -988,7 +985,7 @@ angular
                     jobs.push(j.id);
                     return DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(response => {
                         $scope.getData().then(() => {
-                            angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                            angular.element('#box-map .loading').css('display', '');
 
                             $scope.courier = {gpsCourier: foundCourier.id};
                             $scope.searchCourier();
@@ -1073,7 +1070,7 @@ angular
                 };
 
                 const reset = function () {
-                    const activeElements = angular.element(document.querySelectorAll('.activeTable .active'));
+                    const activeElements = angular.element('.activeTable .active');
                     for (let i = 0; i < activeElements.length; i++) {
                         const jobId = angular.element(activeElements[i]).data("jobid");
                         let job = $scope.jobList.find(jo => jo.id === jobId);
@@ -1083,7 +1080,7 @@ angular
                     }
                 };
 
-                let activeElements = angular.element(document.querySelectorAll('#jobList .active'));
+                let activeElements = angular.element('#jobList .active');
                 for (let i = 0; i < activeElements.length; i++) {
                     const currentElement = angular.element(activeElements[i]);
                     const jobId = currentElement.data("jobid");
@@ -1132,9 +1129,8 @@ angular
                 }
 
                 return DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
-                    $scope.getData().then(function () {
-                        //$("#box-jobDetail").find(".loading").show();
-                        angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                    $scope.getData().then(() => {
+                        angular.element('#box-map .loading').css('display', '');
 
                         $scope.courier = {gpsCourier: foundCourier.id};
                         if (!offline) {
@@ -1143,7 +1139,7 @@ angular
                             $scope.getCurrentJobs(foundCourier.id);
                         }
                         $timeout(function () {
-                            let firstRow = angular.element(document.querySelector('#jobList tr:first-child'));
+                            let firstRow = angular.element('#jobList tr:first-child');
                             firstRow.addClass('active');
                             firstRow.find('.dispatchField').focus();
                         }, 200);
@@ -1168,7 +1164,7 @@ angular
                 };
 
                 const reset = function () {
-                    let activeElements = angular.element(document.querySelectorAll('#jobList .active'));
+                    let activeElements = angular.element('#jobList .active');
                     for (let i = 0; i < activeElements.length; i++) {
                         const currentElement = angular.element(activeElements[i]);
                         const jobId = currentElement.data("jobid");
@@ -1179,7 +1175,7 @@ angular
                     }
                 };
 
-                let activeElements = angular.element(document.querySelectorAll('#jobList .active'));
+                let activeElements = angular.element('#jobList .active');
                 for (let i = 0; i < activeElements.length; i++) {
                     const currentElement = angular.element(activeElements[i]);
                     const jobId = currentElement.attr("data-jobid");
@@ -1225,7 +1221,7 @@ angular
 
                 return DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
                     $scope.getData().then(function () {
-                        angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                        angular.element('#box-map .loading').css('display', '');
 
                         $scope.courier = {gpsCourier: foundCourier.id};
                         $scope.searchCourier();
@@ -1251,7 +1247,7 @@ angular
 
                 let foundCourier = null;
 
-                let activeElements = angular.element(document.querySelectorAll('#jobList .active'));
+                let activeElements = angular.element('#jobList .active');
                 for (let i = 0; i < activeElements.length; i++) {
                     const currentElement = angular.element(activeElements[i]);
                     const jobId = currentElement.data("jobid");
@@ -1281,7 +1277,7 @@ angular
 
                 $scope.getData().then(function () {
                     //$("#box-jobDetail").find(".loading").show();
-                    angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                    angular.element('#box-map .loading').css('display', '');
 
                     $scope.courier = {gpsCourier: foundCourier.id};
                     $scope.searchCourier();
@@ -1302,7 +1298,7 @@ angular
 
                 var foundCourier = null;
 
-                let activeElements = angular.element(document.querySelectorAll('#jobList .active'));
+                let activeElements = angular.element('#jobList .active');
                 for (let i = 0; i < activeElements.length; i++) {
                     const currentElement = angular.element(activeElements[i]);
                     const jobId = currentElement.attr("data-jobid");
@@ -1319,7 +1315,7 @@ angular
                 }
 
                 $scope.getData().then(function () {
-                    angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                    angular.element('#box-map .loading').css('display', '');
 
                     $scope.courier = {gpsCourier: foundCourier.id};
                     $scope.searchCourier();
@@ -1337,7 +1333,7 @@ angular
                     "courierID": null
                 };
 
-                angular.element(document.querySelector("#jobList .active")).each(function () {
+                angular.element("#jobList .active").each(function () {
                     const j = $scope.jobList.find(function (jo) {
                         return jo.id === angular.element(this).data("jobid")
                     });
@@ -1352,7 +1348,7 @@ angular
                 }
 
                 $scope.getData().then(() => {
-                    angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                    angular.element('#box-map .loading').css('display', '');
                     $scope.courier = {gpsCourier: foundCourier.id};
                     $scope.searchCourier();
                 });
@@ -1376,7 +1372,7 @@ angular
 
                     let foundCourier = null;
 
-                    angular.element(document.querySelector("#currentWork tr.droppable-row")).each(function () {
+                    angular.element("#currentWork tr.droppable-row").each(function () {
                         const j = $scope.jobsCurrentList.find(function (jo) {
                             return jo.id === angular.element(this).data("jobid")
                         });
@@ -1429,7 +1425,7 @@ angular
 
                     let foundCourier = null;
 
-                    angular.element(document.querySelector("#currentWork tr.droppable-row")).each(function () {
+                    angular.element("#currentWork tr.droppable-row").each(function () {
                         callData.jobs.push(angular.element(this).attr("data-jobid"));
                         foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
                     });
@@ -1439,7 +1435,7 @@ angular
                     }
 
                     $scope.getData().then(function () {
-                        angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                        angular.element('#box-map .loading').css('display', '');
                         $scope.courier = {gpsCourier: foundCourier.id};
                         $scope.searchCourier();
                     });
@@ -1466,7 +1462,7 @@ angular
 
                     let foundCourier = null;
 
-                    angular.element(document.querySelector("#currentWork tr.droppable-row")).each(function () {
+                    angular.element("#currentWork tr.droppable-row").each(function () {
                         callData.jobs.push(angular.element(this).attr("data-jobid"));
                         foundCourier = $scope.pickCouriers.find(function (c) {
                             return c.courierID === callData.courierID
@@ -1480,7 +1476,7 @@ angular
                     }
 
                     $scope.getData().then(function () {
-                        angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                        angular.element('#box-map .loading').css('display', '');
                         $scope.courier = {gpsCourier: foundCourier.id};
                         $scope.searchCourier();
                     });
@@ -1501,7 +1497,7 @@ angular
 
                 let foundCourier = null;
 
-                angular.element(document.querySelectorAll("#currentWork .active")).each(function () {
+                angular.element("#currentWork .active").each(function () {
                     callData.jobs.push(angular.element(this).attr("data-jobid"));
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
                 });
@@ -1511,7 +1507,7 @@ angular
                 }
 
                 $scope.getData().then(() => {
-                    angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                    angular.element('#box-map .loading').css('display', '');
                     $scope.courier = {gpsCourier: foundCourier.id};
                     $scope.searchCourier();
                 });
@@ -1528,7 +1524,7 @@ angular
 
                 let foundCourier = null;
 
-                angular.element(document.querySelectorAll("#currentWork .active")).each(function () {
+                angular.element("#currentWork .active").each(function () {
                     callData.jobs.push(angular.element(this).attr("data-jobid"));
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
                 });
@@ -1538,7 +1534,7 @@ angular
                 }
 
                 $scope.getData().then(() => {
-                    angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                    angular.element('#box-map .loading').css('display', '');
                     $scope.courier = {gpsCourier: foundCourier.id};
                     $scope.searchCourier();
                 });
@@ -1555,7 +1551,7 @@ angular
 
                 let foundCourier = null;
 
-                angular.element(document.querySelectorAll("#currentWork .active")).each(function () {
+                angular.element("#currentWork .active").each(function () {
                     let jobIdElement = angular.element(this);
                     let j = $scope.jobsCurrentList.find(jo => jo.id === jobIdElement.data("jobid"));
                     let jn = j.jobNo;
@@ -1665,7 +1661,7 @@ angular
             $scope.activateDrop = function () {
                 $timeout(function () {
                         $document.ready(event => {
-                            angular.element(document.querySelectorAll(".droppable-row")).droppable({
+                            angular.element(".droppable-row").droppable({
                                 classes: {
                                     "ui-droppable-hover": "active"
                                 },
@@ -1704,34 +1700,37 @@ angular
             ////////////////////////////
 
             $scope.getPotentialCouriers = function (jobId) {
-                angular.element(document.querySelector("#box-potentialCouriers .loading")).css('display', 'block');
-                DispatchData.getPotentialCouriers(jobId).then(data => {
+
+                angular.element('#box-potentialCouriers .loading').css('display', 'block');
+                DispatchData.getPotentialCouriers(jobId).then((data) => {
+
                     $scope.potentialCouriers = data;
 
-                    //Set headings
-                    $timeout(() => {
-                        sizeHeadings(angular.element(document.querySelector("#potentialCouriers").parentNode.parentNode));
+                    setTimeout(() => {
+                        sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
                     }, 1000);
-                    $timeout(() => {
-                        sizeHeadings(angular.element(document.querySelector("#potentialCouriers").parentNode.parentNode));
+
+                    setTimeout(() => {
+                        sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
                     }, 2000);
 
-                    angular.element(document.querySelector("#box-potentialCouriers .loading")).css('display', 'none');
+                    angular.element('#box-potentialCouriers .loading').css('display', 'none');
+
                     $scope.activateDrop();
                 });
             };
 
             // Search Courier GPS
             $scope.searchCourier = function () {
-                angular.element(document.querySelector("#box-currentWork .loading")).css('display', 'block');
-                angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                angular.element("#box-currentWork .loading").css('display', 'block');
+                angular.element('#box-map .loading').css('display', '');
 
                 let ac = $scope.pickAllCouriers.find(c => c.id === $scope.courier.gpsCourier);
                 console.log(ac);
 
                 if (ac === undefined) {
-                    angular.element(document.querySelector("#box-currentWork .loading")).css('display', 'none');
-                    angular.element(document.querySelector('#box-map .loading')).css('display', 'none');
+                    angular.element("#box-currentWork .loading").css('display', 'none');
+                    angular.element('#box-map .loading').css('display', 'none');
                     $mdDialog.show(
                         $mdDialog.alert()
                             .clickOutsideToClose(true)
@@ -1758,8 +1757,8 @@ angular
 
             // Select the courier
             $scope.selectCourier = function (courier) {
-                angular.element(document.querySelector("#box-jobDetail .loading")).css('display', 'block');
-                angular.element(document.querySelector('#box-map .loading')).css('display', '');
+                angular.element("#box-jobDetail .loading").css('display', 'block');
+                angular.element('#box-map .loading').css('display', '');
 
                 if (courier.courier === undefined) {
                     courier.courier = courier.code + ' ' + courier.firstName;
@@ -1773,9 +1772,9 @@ angular
                 $scope.currentCourier = courier;
 
                 $timeout(() => {
-                    angular.element(document).ready(event => {
-                        angular.element(document.querySelector("#box-jobDetail .loading")).css('display', 'none');
-                        angular.element(document.querySelector("#box-map .loading")).css('display', 'none');
+                    $document.ready(event => {
+                        angular.element("#box-jobDetail .loading").css('display', 'none');
+                        angular.element("#box-map .loading").css('display', 'none');
                     });
                 }, 100);
 
@@ -1792,10 +1791,10 @@ angular
             };
 
             $scope.selectMapCourier = function (courier) {
-                angular.element(document.querySelector("#box-jobDetail .loading")).css('display', 'block');
-                angular.element(document.querySelector('#box-map .loading')).css('display', 'block');
+                angular.element("#box-jobDetail .loading").css('display', 'block');
+                angular.element('#box-map .loading').css('display', 'block');
 
-                angular.element(document.querySelector("#box-currentWork .loading")).css('display', 'block');
+                angular.element("#box-currentWork .loading").css('display', 'block');
                 let foundCourier = $scope.pickCouriers.find(x => x.courierID === courier.courierID);
 
                 $scope.currentCourier = {
@@ -1804,7 +1803,7 @@ angular
                 };
 
                 DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(data => {
-                    angular.element(document.querySelector("#box-currentWork .loading")).css('display', 'none');
+                    angular.element("#box-currentWork .loading").css('display', 'none');
 
                     $scope.jobsCurrentList = data;
                     if (data.length > 0) {
@@ -1813,11 +1812,11 @@ angular
                     $scope.activateDrop();
 
                     $timeout(() => {
-                        sizeHeadings(angular.element(document.querySelector("#currentWork")).parentNode.parentNode);
+                        sizeHeadings(angular.element("#currentWork").parentNode.parentNode);
                     }, 1000);
 
                     $timeout(() => {
-                        sizeHeadings(angular.element(document.querySelector("#currentWork")).parentNode.parentNode);
+                        sizeHeadings(angular.element("#currentWork").parentNode.parentNode);
                     }, 2000);
                 });
 
@@ -1826,8 +1825,8 @@ angular
 
                 $timeout(() => {
                     $document.ready(() => {
-                        angular.element(document.querySelector("#box-jobDetail .loading")).css('display', 'none');
-                        angular.element(document.querySelector("#box-map .loading")).css('display', 'none');
+                        angular.element("#box-jobDetail .loading").css('display', 'none');
+                        angular.element("#box-map .loading").css('display', 'none');
                     });
                 }, 100);
 
@@ -1842,24 +1841,25 @@ angular
                 $scope.currentWorkSelection = '';
             }
 
-            $scope.selectPotentialCourier = function (courier) {
-                $("#box-jobDetail").find(".loading").show();
-                angular.element(document.querySelector('#box-map .loading')).css('display', '');
+            $scope.selectPotentialCourier = (courier) => {
+                angular.element('#box-jobDetail').find(".loading").css('display', 'block');
+                angular.element('#box-map .loading').css('display', '');
+
                 if (courier.courier === undefined) {
                     courier.courier = courier.code + ' ' + courier.firstName;
                 }
 
                 if ($scope.jobList.length > 0) {
-                    var jid = $("#jobList .active").last().data("jobid");
-                    var currentJob = $scope.jobList.find(jo => jo.id === jid);
-                    var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    let jid = angular.element("#jobList .active").last().data("jobid");
+                    let currentJob = $scope.jobList.find(jo => jo.id === jid);
+                    let undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                     displayPickupPoints(undespatchedData, true, currentJob);
                 }
 
-                $("#box-currentWork").find(".loading").show();
-                var code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
-                DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(function (data) {
-                    $("#box-currentWork").find(".loading").fadeOut();
+                angular.element('#box-currentWork').find(".loading").css('display', 'block');
+                const code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
+                DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then((data) => {
+                    angular.element('#box-currentWork').find(".loading").css('display', 'none');
                     if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
                         $scope.currentJob = null;
                     }
@@ -1867,57 +1867,51 @@ angular
                     if (data.length > 0) {
                         displayRoutePoints(data, false, $scope.mapZoom.display);
                     } else {
-                        DispatchData.getCourierPosition(code).then(function (posData) {
+                        DispatchData.getCourierPosition(code).then((posData) => {
                             displayCourierPositionOnly(posData.latitude, posData.longitude);
                         });
                     }
                     $scope.activateDrop();
-                    $timeout(function () {
-                        sizeHeadings($("#currentWork").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#currentWork").parents(".column"));
                     }, 1000);
-                    $timeout(function () {
-                        sizeHeadings($("#currentWork").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#currentWork").parents(".column"));
                     }, 2000);
                     $scope.getAvailableCourierLocation();
                 });
+
                 $scope.currentWorkSelection = " for Courier " + courier.courier;
 
                 $scope.currentCourier = courier;
 
-                $scope.currentSelection = " for Courier " + +courier.courier;
+                $scope.currentSelection = " for Courier " + courier.courier;
 
-                $timeout(function () {
-                    $document.ready(function (event) {
-                        $("#box-jobDetail").find(".loading").fadeOut();
-                        $("#box-map").find(".loading").fadeOut();
-                        //        var jid = $("#jobList .active").last().data("jobid");
-                        //        var job = $scope.jobList.find(jo => jo.id === jid);
-                        //        var jobs = [job];
-                        //        displayRoutePoints(jobs, false);
+                $timeout(() => {
+                    $document.ready((event) => {
+                        angular.element('#box-jobDetail').find(".loading").css('display', 'none');
+                        angular.element('#box-map').find(".loading").css('display', 'none');
                     });
                 }, 100);
-
-
             };
-
             ////////////////////////////
             // GROUPED JOBS
             ////////////////////////////
 
-            $scope.getGroupedJobs = function (jobs, courier) {
-                angular.element(document.querySelector("#box-jobGroups .loading")).css('display', 'block');
+            $scope.getGroupedJobs = (jobs, courier) => {
+                angular.element('#box-jobGroups').find(".loading").css('display', 'block');
+                DispatchData.getJobsGrouped().then((data) => {
 
-                DispatchData.getJobsGrouped().then(data => {
-                    angular.element(document.querySelector("#box-jobGroups .loading")).css('display', 'none');
+                    angular.element('#box-jobGroups').find(".loading").css('display', 'none');
                     $scope.jobGroups = data;
 
                     $timeout(() => {
-                        sizeHeadings(angular.element(document.querySelector("#jobGroups").parentNode.parentNode));
+                        sizeHeadings(angular.element("#jobGroups").parents(".column"));
                     }, 1000);
-
                     $timeout(() => {
-                        sizeHeadings(angular.element(document.querySelector("#jobGroups").parentNode.parentNode));
+                        sizeHeadings(angular.element("#jobGroups").parents(".column"));
                     }, 2000);
+
                 });
             };
 
@@ -1929,7 +1923,7 @@ angular
 
                 $("#box-currentWork").find(".loading").show();
                 var foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
-                var code = foundCourier != undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
+                var code = foundCourier !== undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
                 DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
                     $("#box-currentWork").find(".loading").fadeOut();
                     /*
@@ -3298,11 +3292,11 @@ angular
 
                     },
                     cancel: function () {
-                        angular.element(document.querySelector('.eventForm')).css('display', 'none');
+                        angular.element('.eventForm').css('display', 'none');
                     }
                 };
 
-                angular.element(document.querySelector('.eventForm')).css('display', '');
+                angular.element('.eventForm').css('display', '');
             };
 
             $scope.truckLoadingStatus = function () {
@@ -3312,11 +3306,11 @@ angular
                         $scope.refreshTruckCourierStatus();
                     },
                     close: () => {
-                        angular.element(document.querySelector('.truckCourierStatusForm')).css('display', 'none');
+                        angular.element('.truckCourierStatusForm').css('display', 'none');
                     }
                 };
 
-                angular.element(document.querySelector('.truckCourierStatusForm')).css('display', '');
+                angular.element('.truckCourierStatusForm').css('display', '');
             };
 
             $scope.createNewJob = function (event) {
