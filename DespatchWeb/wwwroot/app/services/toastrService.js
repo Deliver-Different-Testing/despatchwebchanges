@@ -1,8 +1,16 @@
 class ToastrService {
+    /**
+     * Class to handle toast notifications
+     * @class ToastrService
+     */
     constructor($mdToast) {
         this.$mdToast = $mdToast;
     }
 
+    /**
+     * Method to show error toast
+     * @param {string} errorMessage
+     */
     showErrorToast(errorMessage) {
         if (!errorMessage) {
             errorMessage = "An unexpected error occurred. Please try again";
@@ -12,16 +20,29 @@ class ToastrService {
         this.showToast("Oops an unexpected error occured. Please try again or contact support.", "error");
     }
 
+    /**
+     * Method to show success toast
+     * @param {string} successMessage
+     */
     showSuccessToast(successMessage) {
         console.log('Success:', successMessage);
         this.showToast(successMessage, "success");
     }
 
+    /**
+     * Method to show warning toast
+     * @param {string} warningMessage
+     */
     showWarningToast(warningMessage) {
         console.log('Warning:', warningMessage);
         this.showToast(warningMessage, "warning");
     }
 
+    /**
+     * Method to show toast
+     * @param {string} message
+     * @param {string} theme - This theme is defined in the css and registred in app.js
+     */
     showToast(message, theme) {
         this.$mdToast.show(
             this.$mdToast.simple()
