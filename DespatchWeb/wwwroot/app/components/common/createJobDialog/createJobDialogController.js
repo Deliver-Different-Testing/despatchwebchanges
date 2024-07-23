@@ -1,4 +1,15 @@
 class CreateJobDialog {
+    /**
+     * @constructor
+     * @param {*} $scope
+     * @param {*} $mdDialog
+     * @param {*} DispatchData
+     * @param {*} toastrService
+     * @param {*} loadingService
+     * @param {*} $http
+     * @param {*} $document
+     * @param {number} staffId
+     */
     constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $document, staffId) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
@@ -44,6 +55,11 @@ class CreateJobDialog {
         };
     }
 
+    /**
+     * Method to autocomplete client search
+     * @param {string} searchTerm
+     * @return {Promise<unknown>}
+     */
     async clientSearchAutocomplete(searchTerm) {
         const url = "/home/ActiveClients";
 
@@ -54,6 +70,11 @@ class CreateJobDialog {
         }
     }
 
+    /**
+     * Method to autocomplete address search
+     * @param {string} searchText
+     * @return {Promise<unknown>}
+     */
     async addressSearchAutocomplete(searchText) {
         try {
             const suggestions = await this.DispatchData.autocompleteAddressSearch(searchText);
@@ -63,6 +84,11 @@ class CreateJobDialog {
         }
     }
 
+    /**
+     * Method to transform suggestions
+     * @param {*} data
+     * @returns
+     */
     transformSuggestions(data) {
         return data.suggestions.map(obj => ({
             id: obj.locationId,
@@ -70,7 +96,12 @@ class CreateJobDialog {
         }))
     }
 
-
+    /**
+     * Method to submit job
+     * @param {*} event
+     * @param {*} job
+     * @return {Promise<void>}
+     */
     async submit(event, job) {
         try {
             if (!this.jobForm.$valid) {
@@ -107,6 +138,11 @@ class CreateJobDialog {
         }
     }
 
+    /**
+     * Method to create job
+     * @param {*} job
+     * @return {Promise<unknown>}
+     */
     async createJob(job) {
         try {
             const url = "job/QuickCreateJob/";
@@ -120,6 +156,7 @@ class CreateJobDialog {
             this.toastrService.showErrorToast(error.message);
         }
     }
+
 
     cancel() {
         this.$mdDialog.cancel();

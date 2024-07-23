@@ -20,6 +20,11 @@ class AutoCompleteDialogController {
         this.shouldRerateJob = false;
     }
 
+    /**
+     * Method to search query
+     * @param {string} searchTerm
+     * @return {Promise<unknown>}
+     */
     async querySearch(searchTerm) {
         try {
             const url = this.options.searchUrl;
@@ -29,6 +34,12 @@ class AutoCompleteDialogController {
         }
     }
 
+
+    /**
+     * Method to submit selected item
+     * @param {*} selectedItem
+     * @return {Promise<void>}
+     */
     async submit(selectedItem) {
         this.loadingService.showLoader();
 
