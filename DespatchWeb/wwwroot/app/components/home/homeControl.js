@@ -3130,8 +3130,8 @@ angular
                             locals: {
                                 addressDetails: {
                                     address: currentJob.toAddress,
-                                    lat: lat,
-                                    long: long,
+                                    lat,
+                                    long,
                                     suburb: suburbText,
                                     postCode: currentJob.postCode,
                                 },
