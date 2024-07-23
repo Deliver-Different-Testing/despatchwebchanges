@@ -85,6 +85,9 @@ angular
 			});
 		}
 	})
+	.config(['$qProvider', $qProvider => {
+		$qProvider.errorOnUnhandledRejections(false);
+	}])
 	.config(["$urlRouterProvider", "$stateProvider", ($urlRouterProvider, $stateProvider) => {
 		$urlRouterProvider.otherwise("/");
 
