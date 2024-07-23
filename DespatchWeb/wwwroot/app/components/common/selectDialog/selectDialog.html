@@ -15,9 +15,6 @@
 
         <md-dialog-content ng-cloak>
             <div class="md-dialog-content">
-                <p>
-                    Search for your desired {{ ctrl.title }} below
-                </p>
                 <md-select aria-label="Select an option" ng-model="ctrl.field.value"
                            placeholder="{{ ctrl.field.options.placeholder }}">
                     <md-option ng-repeat="item in ctrl.field.options.items" ng-value="item">

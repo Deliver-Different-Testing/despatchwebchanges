@@ -1,4 +1,19 @@
+/**
+ * A controller which handles the Selection Dialog.
+ * @class
+ */
 class SelectDialogController {
+    /**
+     * Create a SelectDialogController
+     * @param {Object} $scope - The active AngularJS scope.
+     * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param {Object} DispatchData - The service used for data dispatching.
+     * @param {number|string} id - The ID related to the selection.
+     * @param {string} fieldName - The name of the field for which the selection is being made.
+     * @param {string} title - The title of the dialog.
+     * @param {Job} job - The job for which the selection is being made.
+     * @param {Array} options - The array of selectable options.
+     */
     constructor($scope, $mdDialog, DispatchData, id, fieldName, title, job, options) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
@@ -14,6 +29,11 @@ class SelectDialogController {
         };
     }
 
+
+    /**
+     * Submits the selected value, updates the job detail, and closes the dialog.
+     * @param {Object} value - The selected value from the options.
+     */
     async submit(value) {
         const callData = {
             "call": "updateDetailField",
@@ -29,6 +49,10 @@ class SelectDialogController {
         this.$mdDialog.hide();
     }
 
+
+    /**
+     * Cancels the Angular Material Dialog
+     */
     cancel() {
         this.$mdDialog.cancel();
     }
