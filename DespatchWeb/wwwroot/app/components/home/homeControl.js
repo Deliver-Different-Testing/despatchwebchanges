@@ -27,7 +27,7 @@ angular
                 const currentJob = $scope.currentJob;
                 jdSvc.setJob($scope.currentJob);
 
-                $scope.getData().then(function () {
+                $scope.getData().then(() => {
                     if (currentJob === null || currentJob === undefined || currentJob === false) {
                         return;
                     }
@@ -54,20 +54,20 @@ angular
 
             $scope.gather = {
                 submit: function () {
-                    return $scope.gather.form.onSubmit().then(function (response) {
+                    return $scope.gather.form.onSubmit().then(response => {
                         console.log("pointer 3");
 
                         angular.element(".gatherForm").css("display", "none");
-                        var j = $scope.currentJob;
+                        const currentJob = $scope.currentJob;
                         $scope.getData().then(function () {
-                            if (j === null || j === undefined || j === false) {
+                            if (currentJob === null || currentJob === undefined || currentJob === false) {
                                 return;
                             }
 
-                            const refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+                            const refreshedJob = $scope.jobList.find(jo => jo.id === currentJob.id);
                             $scope.selectJob(refreshedJob);
                             $timeout(() => {
-                                const elementSelector = "#jobList tr[data-jobid='" + j.id + "']";
+                                const elementSelector = "#jobList tr[data-jobid='" + currentJob.id + "']";
                                 const parentSelector = ".box-content";
 
                                 angular.element(elementSelector).addClass("active");
@@ -1276,7 +1276,6 @@ angular
 
 
                 $scope.getData().then(function () {
-                    //$("#box-jobDetail").find(".loading").show();
                     angular.element('#box-map .loading').css('display', '');
 
                     $scope.courier = {gpsCourier: foundCourier.id};
@@ -2062,7 +2061,6 @@ angular
                         $scope.currentSupport = null;
 
                         angular.element(".activeTable .active").each(function () {
-                            //$(this).hide();
                             angular.element(this).find(".selectjob").click();
 
                             $scope.selectedJobs.push($scope.jobForDispatch.ID);
@@ -2210,9 +2208,9 @@ angular
                     case 3:
                         // this is right click
                         $timeout(function () {
-                            var dueTime = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
-                            var items = [];
-                            for (var i = 1; i < 37; i++) {
+                            const dueTime = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
+                            let items = [];
+                            for (let i = 1; i < 37; i++) {
                                 if (parseInt(dueTime) < (i * 5))
                                     items.push({"id": (i * 5), "text": ((i * 5).toString() + " mins away")});
                             }
@@ -2225,41 +2223,40 @@ angular
                                     "choose": ""
                                 },
                                 submit: function () {
-                                    var pickupETAValue = parseInt($scope.lateForm.choose.value);
-                                    var dueMins = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
+                                    const pickupETAValue = parseInt($scope.lateForm.choose.value);
+                                    const dueMins = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
 
                                     if ($scope.currentJob.lp !== pickupETAValue) {
-                                        var window = $scope.currentJob.lp || $scope.currentJob.pickupTime;
-                                        var lateMins = pickupETAValue - dueMins + window;
+                                        const window = $scope.currentJob.lp || $scope.currentJob.pickupTime;
+                                        const lateMins = pickupETAValue - dueMins + window;
                                         $scope.currentJob.lp = lateMins;
                                         console.log(lateMins);
                                         $scope.lateCall(lateMins, 1, $scope.currentJob, false);
                                         $scope.lateForm.data = null;
-                                        $("#AwayMins").select2().empty();
-                                        $("#AwayMins").select2('destroy');
-                                        $(".lateForm").hide(0)
+                                        angular.element("#AwayMins").select2().empty();
+                                        angular.element("#AwayMins").select2('destroy');
+                                        angular.element(".lateForm").hide(0)
                                     }
                                 },
                                 cancel: function () {
                                     $scope.lateForm.data = null;
-                                    $("#AwayMins").select2().empty();
-                                    $("#AwayMins").select2('destroy');
-                                    $(".lateForm").hide(0);
+                                    angular.element("#AwayMins").select2().empty();
+                                    angular.element("#AwayMins").select2('destroy');
+                                    angular.element(".lateForm").hide(0);
                                 }
                             };
                             $scope.$apply();
-                            $(".lateForm").show(0);
+                            angular.element(".lateForm").show(0);
 
-                            $timeout(function () {
-
-                                var dueOptions = {
+                            $timeout(() => {
+                                const dueOptions = {
                                     minimumInputLength: 0,
                                     data: items,
                                     placeholder: "Start typing to enter new time..."
                                 };
 
-                                $("#AwayMins").select2(dueOptions);
-                                $("#AwayMins").select2('open');
+                                angular.element("#AwayMins").select2(dueOptions);
+                                angular.element("#AwayMins").select2('open');
                             }, 200);
                         }, 400);
 
@@ -2282,7 +2279,7 @@ angular
                         break;
                     case 3:
                         // this is right click
-                        $timeout(function () {
+                        $timeout(() => {
                             $scope.jdSvc.speedClick($scope.currentJob);
                             $scope.$apply();
                         }, 400);
@@ -2345,60 +2342,59 @@ angular
             };
 
             $scope.setEventsMenu = function () {
-                var fullMenu =
-                    [
-                        {
-                            text: "Void Job",
-                            click: function ($itemScope, $event, modelValue, text, $li) {
-                                $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
-                            }
-                        },
-
-                        {
-                            text: "Add Event - Other",
-                            click: function ($itemScope, $event, modelValue, text, $li) {
-                                $scope.otherEventForm($scope.currentJob.jobNo);
-                            }
-                        },
-
-                        {
-                            text: "Split Job",
-                            click: function ($itemScope, $event, modelValue, text, $li) {
-                                $scope.splitJob($scope.currentJob);
-                            },
-                            enabled: function ($itemScope, $event, modelValue, text, $li) {
-                                return $itemScope.job.allowSplit;
-                            },
-                        },
-
-                        {
-                            text: "Set First Job",
-                            click: function ($itemScope, $event, modelValue, text, $li) {
-                                $scope.setFirstJob($scope.currentJob);
-                            }
+                return [
+                    {
+                        text: "Void Job",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
                         }
-                    ];
-                return fullMenu;
+                    },
+
+                    {
+                        text: "Add Event - Other",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.otherEventForm($scope.currentJob.jobNo);
+                        }
+                    },
+
+                    {
+                        text: "Split Job",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.splitJob($scope.currentJob);
+                        },
+                        enabled: function ($itemScope, $event, modelValue, text, $li) {
+                            return $itemScope.job.allowSplit;
+                        },
+                    },
+
+                    {
+                        text: "Set First Job",
+                        click: function ($itemScope, $event, modelValue, text, $li) {
+                            $scope.setFirstJob($scope.currentJob);
+                        }
+                    }
+                ];
             };
 
             $scope.setJobsMenu = function () {
-                var multiple = $(".activeTable .active").length > 1;
-                var lastCourier = null;
-                var sameCourier = true;
-                $(".activeTable .active").each(function () {
-                    var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+                let multiple = angular.element(".activeTable .active").length > 1;
+                let lastCourier = null;
+                let sameCourier = true;
+                angular.element(".activeTable .active").each(() => {
+                    let j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
                     if (lastCourier !== null && lastCourier !== j.courier) {
                         sameCourier = false;
                         return false;
                     }
                     lastCourier = j.courier;
-
                 });
+
                 console.log("same courier =" + sameCourier + " last courier =" + lastCourier);
                 if (!sameCourier) {
                     return [];
                 }
-                var multipleMenu = [
+
+                let multipleMenu = [
                     {
                         text: "Dispatch Selected",
                         click: function ($itemScope, $event, modelValue, text, $li) {
@@ -2450,7 +2446,7 @@ angular
                 }
 
 
-                var fullMenu =
+                const fullMenu =
                     [
                         {
                             text: "Dispatch",
@@ -2727,10 +2723,10 @@ angular
                 };
 
                 $scope.getClearListsData = function () {
-                    DispatchData.getClearLists().then(function (data) {
+                    DispatchData.getClearLists().then(data => {
                         $scope.clearLists = data;
-                        $timeout(function () {
-                            $("#clearLists .loading").fadeOut();
+                        $timeout(() => {
+                            angular.element("#clearLists .loading").fadeOut();
                         }, 0);
                         console.log($scope.clearLists);
                         $scope.activateDrop();
@@ -2756,36 +2752,29 @@ angular
                 ////////////////////////////
                 // COURIER MOVEMENTS THROUGH
                 ////////////////////////////
-                $("#box-couriersMoveThrough").find(".loading").show();
-
+                angular.element("#box-couriersMoveThrough").find(".loading").show();
 
                 DispatchData.getCouriersThrough().then(function (data) {
                     $scope.couriersThrough = data;
-
-
                     $scope.couriersThroughMenu = [
-                        // NEW IMPLEMENTATION
                         {
                             text: "Delete",
                             click: function ($itemScope, $event, modelValue, text, $li) {
-                                //$scope.selected = $itemScope.item.name;
-                                $(".rightActiveTable .active").fadeOut();
+                                angular.element(".rightActiveTable .active").fadeOut();
                             }
                         }
                     ];
                     $scope.activateDrop();
-                    $timeout(function () {
-                        $("#box-couriersMoveThrough").find(".loading").fadeOut();
+                    $timeout(() => {
+                        angular.element("#box-couriersMoveThrough").find(".loading").fadeOut();
                     }, 100);
 
-
-                    $timeout(function () {
-                        sizeHeadings($("#couriersThrough").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#couriersThrough").parents(".column"));
                     }, 1000);
-                    $timeout(function () {
-                        sizeHeadings($("#couriersThrough").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#couriersThrough").parents(".column"));
                     }, 2000);
-
                 });
 
 
@@ -2793,7 +2782,7 @@ angular
                 // COURIER MOVEMENTS PICKED UP
                 ////////////////////////////
 
-                $("#box-courierMovePickedUp").find(".loading").show();
+                angular.element("#box-courierMovePickedUp").find(".loading").show();
 
                 DispatchData.getCouriersPicked().then(function (data) {
                     $scope.couriersPicked = data;
@@ -2802,200 +2791,142 @@ angular
                         // NEW IMPLEMENTATION
                         {
                             text: "Hold",
-                            click: function ($itemScope, $event, modelValue, text, $li) {
-                                //$scope.selected = $itemScope.item.name;
-
-
-                                var callData = {
+                            click: ($itemScope, $event, modelValue, text, $li) => {
+                                const callData = {
                                     "call": "holdCourier",
                                     "courier": $itemScope.courier
                                 };
 
-                                DispatchData.doAPI(callData).then(function (data) {
-
+                                DispatchData.doAPI(callData).then(data => {
                                     console.log(data);
-
                                     if (data.response === "Success") {
-
-                                        $(".rightActiveTable .active").css({"background-color": "#c6dfad"});
-
-                                        $(".rightActiveTable .active").animate({backgroundColor: "inherit"},
-                                            300,
-                                            function () {
-                                                $(this).removeAttr("style");
-                                            });
-
+                                        angular.element(".rightActiveTable .active").css({"background-color": "#c6dfad"});
+                                        angular.element(".rightActiveTable .active").animate({backgroundColor: "inherit"}, 300, function () {
+                                            angular.element(this).removeAttr("style");
+                                        });
                                     } else {
-
                                         console.log("Critical Error");
-
                                     }
-
                                 });
-
                             }
                         },
                         {
                             text: "Head",
                             click: function ($itemScope, $event, modelValue, text, $li) {
-                                //$scope.items.splice($itemScope.$index, 1);
-
-
-                                var callData = {
+                                const callData = {
                                     "call": "headCourier",
                                     "courier": $itemScope.courier
                                 };
-
-                                DispatchData.doAPI(callData).then(function (data) {
-
+                                DispatchData.doAPI(callData).then(data => {
                                     console.log(data);
-
                                     if (data.response === "Success") {
-
-                                        $(".rightActiveTable .active").css({"background-color": "#c6dfad"});
-
-                                        $(".rightActiveTable .active").animate({backgroundColor: "inherit"},
-                                            300,
-                                            function () {
-                                                $(this).removeAttr("style");
-                                            });
-
+                                        angular.element(".rightActiveTable .active").css({"background-color": "#c6dfad"});
+                                        angular.element(".rightActiveTable .active").animate({backgroundColor: "inherit"}, 300, function () {
+                                            angular.element(this).removeAttr("style");
+                                        });
                                     } else {
-
                                         console.log("Critical Error");
-
                                     }
-
                                 });
-
                             }
                         },
                         {
                             text: "Delete",
                             click: function ($itemScope, $event, modelValue, text, $li) {
-                                $(".rightActiveTable .active").fadeOut();
+                                angular.element(".rightActiveTable .active").fadeOut();
                             }
                         }
                     ];
 
-                    $timeout(function () {
-                            $document.ready(function (event) {
-                                $("#box-courierMovePickedUp").find(".loading").fadeOut();
-                            });
-                        },
-                        100);
+                    $timeout(() => {
+                        $document.ready(event => {
+                            angular.element("#box-courierMovePickedUp").find(".loading").fadeOut();
+                        });
+                    }, 100);
 
-                    $timeout(function () {
-                        sizeHeadings($("#couriersPicked").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#couriersPicked").parents(".column"));
                     }, 1000);
-                    $timeout(function () {
-                        sizeHeadings($("#couriersPicked").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#couriersPicked").parents(".column"));
                     }, 2000);
-
                 });
 
 
                 ////////////////////////////
                 // COURIER MOVEMENTS CLEAR
                 ////////////////////////////
-                $("#box-courierMoveClear").find(".loading").show();
+                angular.element("#box-courierMoveClear").find(".loading").show();
+
                 DispatchData.getCouriersClear().then(function (data) {
                     $scope.couriersClear = data;
 
                     $scope.couriersClearMenu = [
-                        // NEW IMPLEMENTATION
                         {
                             text: "Hold",
                             click: function ($itemScope, $event, modelValue, text, $li) {
-                                //$scope.selected = $itemScope.item.name;
-
-
-                                var callData = {
+                                let callData = {
                                     "call": "holdCourier",
                                     "courier": $itemScope.courier
                                 }
 
-                                DispatchData.doAPI(callData).then(function (data) {
-
+                                DispatchData.doAPI(callData).then(data => {
                                     console.log(data);
-                                    //YAY ITS VISABLE
 
                                     if (data.response === "Success") {
-
-                                        $(".rightActiveTable .active").css({"background-color": "#c6dfad"});
-
-                                        $(".rightActiveTable .active").animate({backgroundColor: "inherit"},
-                                            300,
-                                            function () {
-                                                $(this).removeAttr("style");
-                                            });
-
+                                        angular.element(".rightActiveTable .active").css({"background-color": "#c6dfad"});
+                                        angular.element(".rightActiveTable .active").animate({backgroundColor: "inherit"}, 300, function () {
+                                            angular.element(this).removeAttr("style");
+                                        });
                                     } else {
-
                                         console.log("Critical Error");
-
                                     }
-
                                 });
-
                             }
                         },
                         {
                             text: "Move",
                             click: function ($itemScope, $event, modelValue, text, $li) {
-
-                                var callData = {
+                                let callData = {
                                     "call": "moveCourier",
                                     "courier": $itemScope.courier
                                 };
 
-                                DispatchData.doAPI(callData).then(function (data) {
-
+                                DispatchData.doAPI(callData).then(data => {
                                     console.log(data);
 
                                     if (data.response === "Success") {
-
-                                        $(".rightActiveTable .active").css({"background-color": "#c6dfad"});
-
-                                        $(".rightActiveTable .active").animate({backgroundColor: "inherit"},
-                                            300,
-                                            function () {
-                                                $(this).removeAttr("style");
-                                            });
-
+                                        angular.element(".rightActiveTable .active").css({"background-color": "#c6dfad"});
+                                        angular.element(".rightActiveTable .active").animate({backgroundColor: "inherit"}, 300, function () {
+                                            angular.element(this).removeAttr("style");
+                                        });
                                     } else {
-
                                         console.log("Critical Error");
-
                                     }
-
                                 });
-
                             }
                         },
                         {
                             text: "Delete",
                             click: function ($itemScope, $event, modelValue, text, $li) {
-                                //$scope.items.splice($itemScope.$index, 1);
-                                $(".rightActiveTable .active").fadeOut();
+                                angular.element(".rightActiveTable .active").fadeOut();
                             }
                         }
                     ];
 
                     $timeout(function () {
-                            $document.ready(function (event) {
-                                $("#box-courierMoveClear").find(".loading").fadeOut();
-                            });
-                        },
-                        100);
+                        $document.ready(event => {
+                            angular.element("#box-courierMoveClear").find(".loading").fadeOut();
+                        });
+                    }, 100);
 
-                    $timeout(function () {
-                        sizeHeadings($("#couriersClear").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#couriersClear").parents(".column"));
                     }, 1000);
-                    $timeout(function () {
-                        sizeHeadings($("#couriersClear").parents(".column"));
-                    }, 2000);
 
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#couriersClear").parents(".column"));
+                    }, 2000);
                 });
 
 
@@ -3003,22 +2934,22 @@ angular
                 // AREA LIST
                 ////////////////////////////
 
-                $("#box-areaList").find(".loading").show();
+                angular.element("#box-areaList").find(".loading").show();
                 DispatchData.getAreaList().then(function (data) {
                     $scope.areaList = data;
 
-                    $timeout(function () {
-                            $document.ready(function (event) {
-                                $("#box-areaList").find(".loading").fadeOut();
+                    $timeout(() => {
+                            $document.ready(event => {
+                                angular.element("#box-areaList").find(".loading").fadeOut();
                             });
                         },
                         100);
 
-                    $timeout(function () {
-                        sizeHeadings($("#areaList").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#areaList").parents(".column"));
                     }, 1000);
-                    $timeout(function () {
-                        sizeHeadings($("#areaList").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#areaList").parents(".column"));
                     }, 2000);
 
                 });
@@ -3092,10 +3023,9 @@ angular
                 // LATE CALLS
                 ////////////////////////////
 
-                $("#box-lateCalls").find(".loading").show();
+                angular.element("#box-lateCalls").find(".loading").show();
                 DispatchData.getLateCalls().then(function (data) {
                     $scope.lateCalls = data;
-
 
                     $scope.lateCallsMenu = [
                         // NEW IMPLEMENTATION
@@ -3104,54 +3034,42 @@ angular
                             click: function ($itemScope, $event, modelValue, text, $li) {
                                 //$scope.selected = $itemScope.item.name;
 
-
-                                var callData = {
+                                let callData = {
                                     "call": "dismissSupport",
                                     "support": $itemScope.support
                                 };
 
-                                DispatchData.doAPI(callData).then(function (data) {
-
+                                DispatchData.doAPI(callData).then(data => {
                                     console.log(data);
-
                                     if (data.response === "Success") {
-
-                                        $(".rightActiveTable .active").fadeOut();
-
+                                        angular.element(".rightActiveTable .active").fadeOut();
                                     } else {
-
                                         console.log("Critical Error");
-
                                     }
-
                                 });
-
                             }
                         },
                         {
                             text: "Lock",
                             click: function ($itemScope, $event, modelValue, text, $li) {
-                                //$scope.items.splice($itemScope.$index, 1);
-
-
+                                //$scope.items.splice($itemScope.$index, 1)
                                 //LOCK WITH CURRENT USER
-
                             }
                         }
                     ];
 
-                    $timeout(function () {
-                            $document.ready(function (event) {
-                                $("#box-lateCalls").find(".loading").fadeOut();
+                    $timeout(() => {
+                            $document.ready(event => {
+                                angular.element("#box-lateCalls").find(".loading").fadeOut();
                             });
                         },
                         100);
 
-                    $timeout(function () {
-                        sizeHeadings($("#getLastCalls").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#getLastCalls").parents(".column"));
                     }, 1000);
-                    $timeout(function () {
-                        sizeHeadings($("#getLastCalls").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#getLastCalls").parents(".column"));
                     }, 2000);
                 });
 
@@ -3179,12 +3097,11 @@ angular
 
             // on first focus (bubbles up to document), open the menu
             $document.on('focus', '.select2-selection.select2-selection--single', function (e) {
-                $(this).closest(".select2-container").siblings('select:enabled').select2('open');
+                angular.element(this).closest(".select2-container").siblings('select:enabled').select2('open');
             });
 
-            // steal focus during close - only capture once and stop propogation
-            $('select.select2').on('select2:closing', function (e) {
-                $(e.target).data("select2").$selection.one('focus focusin', function (e) {
+            angular.element('select.select2').on('select2:closing', function (e) {
+                angular.element(e.target).data("select2").$selection.one('focus focusin', e => {
                     e.stopPropagation();
                 });
             });
@@ -3382,27 +3299,26 @@ function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
 
-function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
+function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     lat1 = Deg2Rad(lat1);
     lat2 = Deg2Rad(lat2);
     lon1 = Deg2Rad(lon1);
     lon2 = Deg2Rad(lon2);
-    var R = 6371; // km
-    var x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
-    var y = (lat2 - lat1);
-    var d = Math.sqrt(x * x + y * y) * R;
-    return d;
+    const R = 6371; // km
+    const x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
+    const y = (lat2 - lat1);
+    return Math.sqrt(x * x + y * y) * R;
 }
 
 function closestLocation(latitude, longitude, locations) {
-    var mindif = 99999;
-    var closest;
+    let minDifference = 99999;
+    let closest;
 
-    for (index = 0; index < locations.length; ++index) {
-        var dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
-        if (dif < mindif) {
+    for (let index = 0; index < locations.length; ++index) {
+        const dif = PythagorasEquirectAngular(latitude, longitude, locations[index][1], locations[index][2]);
+        if (dif < minDifference) {
             closest = index;
-            mindif = dif;
+            minDifference = dif;
         }
     }
 
