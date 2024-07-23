@@ -3215,7 +3215,7 @@ angular
             $scope.createNewJob = function (event) {
                 // Dialog
                 $mdDialog.show({
-                    controller: CreateJobDialog,
+                    controller: CreateJobDialogController,
                     controllerAs: 'ctrl',
                     parent: angular.element($document.body),
                     targetEvent: event,

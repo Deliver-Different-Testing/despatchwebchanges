@@ -14,6 +14,6 @@ namespace DespatchWeb.EntityClasses
     public partial interface IDespatchContextProcedures
     {
         Task<List<DES_qryTruckCourierStatusResult>> DES_qryTruckCourierStatusAsync(string CourierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<int> DESWEB_stpQuickCreateJobAsync(int? UcjbClientId, string UcjbFromAddr, string UcjbToAddr, string PickupFromContact, DateTime? UcjbDate, bool? UcjbVoid, bool? UcjbVan, bool? UcjbAttention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? UcjbJobDone, decimal? UcjbAmount, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, string ToAddress, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? JobDone, decimal? Amount, int? JobTypeId, string ToSuburb, string FromSuburb, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }
 }

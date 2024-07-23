@@ -75,7 +75,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? UcjbClientId, string UcjbFromAddr, string UcjbToAddr, string PickupFromContact, DateTime? UcjbDate, bool? UcjbVoid, bool? UcjbVan, bool? UcjbAttention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? UcjbJobDone, decimal? UcjbAmount, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, string ToAddress, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? JobDone, decimal? Amount, int? JobTypeId, string ToSuburb, string FromSuburb, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobId = new SqlParameter
             {
@@ -95,22 +95,22 @@ namespace DespatchWeb.EntityClasses
             {
                 new SqlParameter
                 {
-                    ParameterName = "UcjbClientId",
-                    Value = UcjbClientId ?? Convert.DBNull,
+                    ParameterName = "ClientId",
+                    Value = ClientId ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "UcjbFromAddr",
+                    ParameterName = "FromAddress",
                     Size = -1,
-                    Value = UcjbFromAddr ?? Convert.DBNull,
+                    Value = FromAddress ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "UcjbToAddr",
+                    ParameterName = "ToAddress",
                     Size = -1,
-                    Value = UcjbToAddr ?? Convert.DBNull,
+                    Value = ToAddress ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
@@ -122,26 +122,26 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "UcjbDate",
-                    Value = UcjbDate ?? Convert.DBNull,
+                    ParameterName = "JobDate",
+                    Value = JobDate ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.DateTime,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "UcjbVoid",
-                    Value = UcjbVoid ?? Convert.DBNull,
+                    ParameterName = "Void",
+                    Value = Void ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Bit,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "UcjbVan",
-                    Value = UcjbVan ?? Convert.DBNull,
+                    ParameterName = "Van",
+                    Value = Van ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Bit,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "UcjbAttention",
-                    Value = UcjbAttention ?? Convert.DBNull,
+                    ParameterName = "Attention",
+                    Value = Attention ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Bit,
                 },
                 new SqlParameter
@@ -185,17 +185,37 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "UcjbJobDone",
-                    Value = UcjbJobDone ?? Convert.DBNull,
+                    ParameterName = "JobDone",
+                    Value = JobDone ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Bit,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "UcjbAmount",
+                    ParameterName = "Amount",
                     Precision = 18,
                     Scale = 2,
-                    Value = UcjbAmount ?? Convert.DBNull,
+                    Value = Amount ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "JobTypeId",
+                    Value = JobTypeId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToSuburb",
+                    Size = 100,
+                    Value = ToSuburb ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromSuburb",
+                    Size = 100,
+                    Value = FromSuburb ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
@@ -240,7 +260,7 @@ namespace DespatchWeb.EntityClasses
                 parameterJobId,
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @UcjbClientId = @UcjbClientId, @UcjbFromAddr = @UcjbFromAddr, @UcjbToAddr = @UcjbToAddr, @PickupFromContact = @PickupFromContact, @UcjbDate = @UcjbDate, @UcjbVoid = @UcjbVoid, @UcjbVan = @UcjbVan, @UcjbAttention = @UcjbAttention, @DeliverToContact = @DeliverToContact, @Truck = @Truck, @ClientNotes = @ClientNotes, @VanOk = @VanOk, @Reprice = @Reprice, @InternalNotes = @InternalNotes, @UcjbJobDone = @UcjbJobDone, @UcjbAmount = @UcjbAmount, @RatedManually = @RatedManually, @RebateAmt = @RebateAmt, @FuelSurchargeAmount = @FuelSurchargeAmount, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @ContactId = @ContactId, @StaffId = @StaffId, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @ToAddress = @ToAddress, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @Truck = @Truck, @ClientNotes = @ClientNotes, @VanOk = @VanOk, @Reprice = @Reprice, @InternalNotes = @InternalNotes, @JobDone = @JobDone, @Amount = @Amount, @JobTypeId = @JobTypeId, @ToSuburb = @ToSuburb, @FromSuburb = @FromSuburb, @RatedManually = @RatedManually, @RebateAmt = @RebateAmt, @FuelSurchargeAmount = @FuelSurchargeAmount, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @ContactId = @ContactId, @StaffId = @StaffId, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
 
             JobId.SetValue(parameterJobId.Value);
             returnValue?.SetValue(parameterreturnValue.Value);

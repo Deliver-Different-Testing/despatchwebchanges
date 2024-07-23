@@ -36,9 +36,9 @@ angular
                 $scope.createNewJob = function (event) {
                     // Dialog
                     $mdDialog.show({
-                        controller: CreateJobDialog,
+                        controller: CreateJobDialogController,
                         controllerAs: 'ctrl',
-                        parent: angular.element(document.body),
+                        parent: angular.element($document.body),
                         targetEvent: event,
                         templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
                         clickOutsideToClose: false,
