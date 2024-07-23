@@ -1,11 +1,13 @@
 class DispatchData {
+    static $inject = ["$http"];
+
     constructor($http) {
         this.$http = $http;
     }
 
     /**
      * @param {string} jobId
-     * @param {*} note
+     * @param {string} note
      * @param {string} despatcherName
      * @param {boolean} preBook
      */
@@ -16,9 +18,9 @@ class DispatchData {
 
     /**
      * @param {string} id
-     * @param {*} note
-     * @param {*} despatcherName
-     * @param {*} preBook
+     * @param {string} note
+     * @param {string} despatcherName
+     * @param {boolean} preBook
      */
     async addBulkJobNote(id, note, despatcherName, preBook) {
         return await this.$http.post("job/AddBulkJobNote?BulkJobId=" + id + "&note=" + note + "&despatcher=" + despatcherName);
@@ -67,7 +69,7 @@ class DispatchData {
     }
 
     /**
-     * @param {*} jobNo
+     * @param {string} jobNo
      * @param {number} clientId
      * @param {*} contact
      * @param {number} staffId
@@ -92,15 +94,15 @@ class DispatchData {
     }
 
     /**
-     * @param {*} jobNo
-     * @param {*} clientId
+     * @param {string} jobNo
+     * @param {number} clientId
      * @param {*} contact
-     * @param {*} staffId
+     * @param {number} staffId
      * @param {number} courierId
      * @param {string} jobId
      * @param {*} jobType
-     * @param {*} despatcherName
-     * @param {*} notes
+     * @param {string} despatcherName
+     * @param {string} notes
      */
     async addOtherEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
         let response = await this.$http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes);
@@ -192,7 +194,7 @@ class DispatchData {
 
     /**
      * @param {number} courierId
-     * @param {*} dispId
+     * @param {number} dispId
      * @param {[]|string} jobIds
      */
     async restoreSplitJobs(courierId, dispId, jobIds) {
@@ -242,7 +244,7 @@ class DispatchData {
 
     /**
      * @param {number} id
-     * @param {clientId} id
+     * @param {number} clientId
      */
     async getRelatedJobs(id, clientId) {
         let response = await this.$http.get('/Job/Related?parentId=' + id + '&clientId=' + clientId);
@@ -307,7 +309,6 @@ class DispatchData {
      *
      * @param {number} supportId - The unique identifier of the support request.
      * @param {number} staffId - The unique identifier of the staff member marking the request as closed.
-     * @returns {Promise<any>} Returns a promise that resolves to the result of the HTTP post request.
      */
     async closeSupport(supportId, staffId) {
         return await this.$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
@@ -318,7 +319,6 @@ class DispatchData {
      *
      * @param {number} id - The unique identifier of the support request.
      * @param {number|string} dispatcher - The unique identifier of the dispatcher locking the request.
-     * @returns {Promise<any>} Returns a promise that resolves to the result of the HTTP post request.
      */
     async lockSupport(id, dispatcher) {
         return await this.$http.post("job/LockSupport?id=" + id + "&dispatcher=" + dispatcher);
@@ -329,7 +329,6 @@ class DispatchData {
      *
      * @param {number} id - The unique identifier of the support request.
      * @param {number|string} dispatcher - The unique identifier of the dispatcher unlocking the request.
-     * @returns {Promise<any>} Returns a promise that resolves to the result of the HTTP post request.
      */
     async unLockSupport(id, dispatcher) {
         return await this.$http.post("job/UnLockSupport?id=" + id + "&dispatcher=" + dispatcher);
@@ -413,7 +412,6 @@ class DispatchData {
      * Retrieves the contact list for the client with the provided clientId.
      *
      * @param {number} clientId - The unique identifier of the client.
-     * @returns {Promise<any>} Returns a promise that resolves to the data from the contact list response.
      */
     async getContactList(clientId) {
         let response = await this.$http.get("job/ContactList?clientId=" + clientId);
@@ -424,7 +422,6 @@ class DispatchData {
      * Retrieves the detailed contact list for the client with the provided clientId.
      *
      * @param {number} clientId - The unique identifier of the client.
-     * @returns {Promise<any>} Returns a promise that resolves to the data from the contact detail list response.
      */
     async getContactDetailList(clientId) {
         let response = await this.$http.get("job/ContactDetailList?clientId=" + clientId);
@@ -628,7 +625,6 @@ class DispatchData {
      * Retrieves the auto-complete search results for the given address text from a geocoder service.
      *
      * @param {string} text - The search text for which auto-complete results are to be fetched.
-     * @returns {Promise<any>} Returns a promise that resolves to the data from the auto-complete response.
      */
     async autocompleteAddressSearch(text) {
         let response = await this.$http({
@@ -660,7 +656,6 @@ class DispatchData {
      *
      * @param {number} lat - Latitude of the location.
      * @param {number} long - Longitude of the location.
-     * @returns {Promise<any>} Returns a promise that resolves to the data from the location response.
      */
     async retrieveAddresses(lat, long) {
         let response = await this.$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
@@ -679,7 +674,6 @@ class DispatchData {
      *
      * @param {string} searchTerm - The term to search for.
      * @param {string} url - The URL to perform the search in.
-     * @returns {Promise<any>} Returns a promise that resolves to the data from the search response.
      */
     async autocompleteSearch(searchTerm, url) {
         let response = await this.$http.get(url, {
@@ -694,7 +688,6 @@ class DispatchData {
      * Retrieves information of the courier from provided courier Id.
      *
      * @param {number} courierId - The unique identifier of the courier.
-     * @returns {Promise<any>} Returns a promise that resolves to the data from the courier response.
      */
     async getSingleCourier(courierId) {
         let response = await this.$http.get("courier/GetSingleCourier", {
@@ -706,5 +699,4 @@ class DispatchData {
     }
 }
 
-DispatchData.$inject = ["$http"];
 angular.module("uDispatch").factory("DispatchData", DispatchData);
