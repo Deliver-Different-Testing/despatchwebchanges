@@ -1,6 +1,7 @@
 class LoadingService {
-    constructor($mdDialog) {
+    constructor($mdDialog, $document) {
         this.$mdDialog = $mdDialog;
+        this.$document = $document;
     }
 
     get dialogTemplate() {
@@ -16,7 +17,7 @@ class LoadingService {
         const template = this.dialogTemplate;
         this.$mdDialog.show({
             template,
-            parent: angular.element(document.body),
+            parent: angular.element(this.$document.body),
             clickOutsideToClose: false,
             fullscreen: false
         });
