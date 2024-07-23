@@ -11,13 +11,19 @@ public class CreateJobRequest
 
 public class JobCreateViewModel
 {
-    public int ClientId { get; set; }
+    [JsonProperty("clientID")] public int ClientId { get; set; }
+
+    [JsonProperty("speedId")] public int SpeedId { get; set; }
 
     [JsonProperty("deliverToContact")] public string DeliverToContact { get; set; }
 
     [JsonProperty("fromAddress")] public string FromAddress { get; set; }
 
+    [JsonProperty("fromSuburb")] public string FromSuburb { get; set; }
+
     [JsonProperty("toAddress")] public string ToAddress { get; set; }
+
+    [JsonProperty("toSuburb")] public string ToSuburb { get; set; }
 
     [JsonProperty("date")] public DateTime Date { get; set; }
 
