@@ -83,11 +83,37 @@ class DispatchData {
         return response.data;
     }
 
+    /**
+     * Sends a request to add a restore event for a specific job.
+     *
+     * @param {string} jobNo - The number identifier of the job.
+     * @param {number} clientId - The identifier of the client.
+     * @param {string} contact - Contact related to the event.
+     * @param {number} staffId - The identifier of the staff member involved.
+     * @param {number} courierId - The identifier of the courier.
+     * @param {number} jobId - The identifier of the job.
+     * @param {string} jobType - The type of the job.
+     * @param {string} despatcherName - The name of the despatcher.
+     * @returns {Promise<Object>} - A Promise that fulfills with response data from server after adding a restore event.
+     */
     async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
         let response = await this.$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
         return response.data;
     }
 
+    /**
+     * Sends a request to add a price suburb change event for a specific job.
+     *
+     * @param {string} jobNo - The number identifier of the job.
+     * @param {number} clientId - The identifier of the client.
+     * @param {string} contact - Contact related to the event.
+     * @param {number} staffId - The identifier of the staff member involved.
+     * @param {number} courierId - The identifier of the courier.
+     * @param {number} jobId - The identifier of the job.
+     * @param {string} jobType - The type of the job.
+     * @param {string} despatcherName - The name of the despatcher.
+     * @returns {Promise<Object>} - A Promise that fulfills with response data from server after adding a price suburb change event.
+     */
     async addPriceSuburbChangeEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
         let response = await this.$http.post("job/addPriceSuburbChangeEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
         return response.data;
@@ -393,6 +419,15 @@ class DispatchData {
 
     }
 
+    /**
+     * Retrieves the available courier location within a geographical boundary.
+     *
+     * @param {number} minLng - The minimum longitude of the boundary.
+     * @param {number} minLat - The minimum latitude of the boundary.
+     * @param {number} maxLng - The maximum longitude of the boundary.
+     * @param {number} maxLat - The maximum latitude of the boundary.
+     * @returns {Promise<Object>} - A Promise that fulfills with the location details of the available courier from server response.
+     */
     async getAvailableCourierLocation(minLng, minLat, maxLng, maxLat) {
         let response = await this.$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat);
         return response.data;
