@@ -2613,11 +2613,7 @@ angular
             }
 
             function SetSelectedChannels(item, index) {
-                var sr = $scope.pickChannels.find(obj => {
-
-                    return obj.label === item;
-
-                });
+                var sr = $scope.pickChannels.find(obj => obj.label === item);
                 $scope.pickService.channel.push(sr);
             }
 
