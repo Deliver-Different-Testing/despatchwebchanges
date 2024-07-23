@@ -1,6 +1,11 @@
 class GreetingService {
+    /**
+     * Method to greet user based on current time
+     * @param {string} userName
+     * @returns {string}
+     */
     greetUser(userName) {
-        let currentHour = new Date().getHours();
+        const currentHour = new Date().getHours();
         let greeting;
 
         if (currentHour < 12) {
