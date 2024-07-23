@@ -1,5 +1,43 @@
-// Controller to handle the GPS Form popu
+/**
+ * @typedef {Object} AddressDetails - Details related to the address in use.
+ * @property {string} filledAddress - The fully formed address.
+ * @property {number} lat - The latitude of the address.
+ * @property {number} long - The longitude of the address.
+ * @property {string} address - The address.
+ * @property {string} suburb - The suburb of the address.
+ * @property {string} postCode - The postal code of the address.
+ */
+
+/**
+ * @typedef {Object} Suggestion - A suggested location returned from the autocompleteAddressSearch.
+ * @property {string} id - The ID of the location.
+ * @property {string} text - The textual representation of the location.
+ */
+
+/**
+ * @typedef {Object} SuburbOption - An option for selection in the ourSuburbSearch.
+ * @property {string} text - The textual representation of the suburb.
+ * @property {string=} alias - The alias of the suburb.
+ */
+
+/**
+ * A controller which handles the GPS Form popup
+ * @class
+ */
 class GpsFormController {
+    /**
+     * Create a GpsFormController
+     * @param {Object} $scope - The active AngularJS scope.
+     * @param {Object} $timeout - The AngularJS wrapper for window.setTimeout.
+     * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param {Object} DispatchData - The service used for data dispatching.
+     * @param {Object} toastrService - The service used for toast notifications.
+     * @param {Object} NgMap - Wrapper for Google Maps provided by 'ngMap' library.
+     * @param {AddressDetails} addressDetails - Details related to the address in use.
+     * @param {Array.<SuburbOption>} suburbOptions - Options for suburbs.
+     * @param {string} title - The title to display.
+     * @param {string} submitLabel - The label to display on the submit button.
+     */
     constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, addressDetails, suburbOptions, title, submitLabel) {
         this.$scope = $scope;
         this.$timeout = $timeout;
@@ -28,6 +66,11 @@ class GpsFormController {
         });
     }
 
+    /**
+     * This function finds a suburb by its district.
+     * @param {string} district - The district of the suburb.
+     * @returns {SuburbOption|null} - The matched suburb or null.
+     */
     findSuburbByDistrict(district) {
         let lowerCaseDistrict = district.toLowerCase();
         return this.suburbOptions.find(localSuburb =>
@@ -36,6 +79,11 @@ class GpsFormController {
         );
     }
 
+    /**
+     * Transforms API suggestion data format into application-specific format.
+     * @param {Object} data - Suggestion data from the DispatchData service.
+     * @returns {Array.<Suggestion>} - Suggestions in application-specific format.
+     */
     transformSuggestions(data) {
         return data.suggestions.map(obj => ({
             id: obj.locationId,
@@ -43,11 +91,21 @@ class GpsFormController {
         }))
     }
 
+    /**
+     * Searches amongst suburb options matching provided query.
+     * @param {string} query - Query for searching amongst suburb options.
+     * @returns {Array.<SuburbOption>} - Array of suburbs which matches provided query.
+     */
     ourSuburbSearch(query) {
         return query ? this.suburbOptions.filter(suburb => (suburb.text.toLowerCase()
             .indexOf(query.toLowerCase()) !== -1)) : this.suburbOptions;
     }
 
+    /**
+     * Autocomplete the given address searchText
+     * @param {string} searchText - Search text of the address to autocomplete.
+     * @returns {Promise<Array.<Suggestion>>} - A promise that fulfils with a list of potential matches for the search text.
+     */
     async addressSearchAutocomplete(searchText) {
         try {
             const suggestions = await this.DispatchData.autocompleteAddressSearch(searchText);
@@ -57,6 +115,10 @@ class GpsFormController {
         }
     }
 
+    /**
+     * Handles the selection of items from the address search.
+     * @param {Object} item - A selected item from the address search.
+     */
     async addressSearchItemSelected(item) {
         try {
             const data = await this.DispatchData.getGeoCodeInformation(item);
@@ -92,6 +154,10 @@ class GpsFormController {
         }
     }
 
+    /**
+     * Submits provided address details.
+     * @param {AddressDetails} addressDetails - Details related to the address to submit.
+     */
     async submit(addressDetails) {
             if (this.ourSuburbSelectedItem.id !== undefined) {
                 addressDetails.our_suburb = this.ourSuburbSelectedItem.id;
@@ -112,16 +178,29 @@ class GpsFormController {
         this.$mdDialog.hide(addressDetails);
     }
 
+    /**
+     * Copies the given address to the addressSearchText.
+     * @param {string} address - The address to copy.
+     */
     copyGpsAddress(address) {
         this.addressSearchText = address;
     }
 
+
+    /**
+     * Updates the latitude and longitude values in addressDetails when a marker on the map is moved.
+     * @param {google.maps.MouseEvent} event - A Google Maps mouse event.
+     */
     moveMarker(event) {
         this.addressDetails.lat = event.latLng.lat();
         this.addressDetails.long = event.latLng.lng();
         this.$scope.$apply();
     };
 
+    /**
+     * Updates addressDetails with new position data when the marker finishes being dragged.
+     * @param {google.maps.MouseEvent} event - A Google Maps mouse event.
+     */
     markerDragend(event) {
         // Get the marker's new position
         const location = event.latLng;
@@ -158,6 +237,10 @@ class GpsFormController {
         }
     }
 
+    /**
+     * Update location values in addressDetails when place gets changed on the map.
+     * @param {google.maps.places.PlaceResult} place - A result from the Google Places service.
+     */
     placeChanged(place) {
         try {
             this.addressDetails.lat = place.geometry.location.lat();
@@ -173,6 +256,9 @@ class GpsFormController {
         }
     }
 
+    /**
+     * Cancels the Angular Material Dialog
+     */
     cancel() {
         this.$mdDialog.cancel();
     }
