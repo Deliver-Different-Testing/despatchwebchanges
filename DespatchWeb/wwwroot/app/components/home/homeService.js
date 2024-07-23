@@ -149,6 +149,9 @@ class DispatchData {
         return await this.$http.post("courier/TruckCourierStatus?courierId=" + courierId);
     }
 
+    /**
+     * @param {string} jobNumber
+     */
     async validateSwapPOD(jobNumber) {
         let response = await this.$http.post('Job/ValidateSwapPOD?job=' + jobNumber);
         return response.data;
@@ -159,12 +162,19 @@ class DispatchData {
         return response.data;
     }
 
-    voidJob(jobId) {
-        return this.$http.post("job/Void?jobId=" + jobId).then(function (response) {
-            return response;
-        });
+    /**
+     * @param {number} jobId
+     */
+    async voidJob(jobId) {
+        return await this.$http.post("job/Void?jobId=" + jobId);
     }
 
+    /**
+     * @param {number} jobId
+     * @param {string} despatcherName
+     * @param {number} staffId
+     * @param {*} currentSpeed
+     */
     async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
         let response = await this.$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
         return response.data;
@@ -196,7 +206,7 @@ class DispatchData {
     }
 
     /**
-     * @param {$scope.currentCourier.courierID|string} courierId
+     * @param {number} courierId
      */
     async resendAllJobs(courierId) {
         let response = await this.$http.post("job/ResendAll?courierId=" + courierId);
@@ -220,7 +230,6 @@ class DispatchData {
     async getJobs() {
         let response = await this.$http.get("app/components/home/api/jobsList.php");
         return response.data;
-
     }
 
     /**
@@ -246,10 +255,13 @@ class DispatchData {
 
     }
 
+    /**
+     * @param {number} courierId
+     * @param {boolean} done
+     */
     async getJobsCurrent(courierId, done) {
         let response = await this.$http.get("job/current?courierId=" + courierId + "&done=" + done);
         return response.data;
-
     }
 
     async getCouriersPicked() {
@@ -281,20 +293,44 @@ class DispatchData {
 
     }
 
+    /**
+     * @param {string} channel
+     */
     async getSupports(channel) {
         let response = await this.$http.get("job/supports?channel=" + channel);
         return response.data;
 
     }
 
+    /**
+     * Closes the support request with the provided supportId and marks it closed by the provided staffId.
+     *
+     * @param {number} supportId - The unique identifier of the support request.
+     * @param {number} staffId - The unique identifier of the staff member marking the request as closed.
+     * @returns {Promise<any>} Returns a promise that resolves to the result of the HTTP post request.
+     */
     async closeSupport(supportId, staffId) {
         return await this.$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
     }
 
+    /**
+     * Locks a support request with the provided id and locks it by the provided dispatcher.
+     *
+     * @param {number} id - The unique identifier of the support request.
+     * @param {number|string} dispatcher - The unique identifier of the dispatcher locking the request.
+     * @returns {Promise<any>} Returns a promise that resolves to the result of the HTTP post request.
+     */
     async lockSupport(id, dispatcher) {
         return await this.$http.post("job/LockSupport?id=" + id + "&dispatcher=" + dispatcher);
     }
 
+    /**
+     * Unlocks a support request with the provided id and unlocks it by the provided dispatcher.
+     *
+     * @param {number} id - The unique identifier of the support request.
+     * @param {number|string} dispatcher - The unique identifier of the dispatcher unlocking the request.
+     * @returns {Promise<any>} Returns a promise that resolves to the result of the HTTP post request.
+     */
     async unLockSupport(id, dispatcher) {
         return await this.$http.post("job/UnLockSupport?id=" + id + "&dispatcher=" + dispatcher);
     }
@@ -302,7 +338,6 @@ class DispatchData {
     async getLateCalls() {
         let response = await this.$http.get("app/components/home/api/lateCalls.json");
         return response.data;
-
     }
 
     async getClearLists() {
@@ -311,6 +346,9 @@ class DispatchData {
 
     }
 
+    /**
+     * @param {number} id
+     */
     async getClearListEnvelope(id) {
         let response = await this.$http.get("courier/ClearListEnvelope?clearListId=" + id);
         return response.data;
@@ -331,16 +369,25 @@ class DispatchData {
         return response.data;
     }
 
+    /**
+     * @param {number} contactId
+     */
     async getClientContacts(contactId) {
         let response = await this.$http.get("home/ClientContacts?contactId=" + contactId);
         return response.data;
     }
 
+    /**
+     * @param {number} jobId
+     */
     async getPotentialCouriers(jobId) {
         let response = await this.$http.get("courier/PotentialCouriers?jobId=" + jobId);
         return response.data;
     }
 
+    /**
+     * @param {string} code
+     */
     async getCourierPosition(code) {
         let response = await this.$http.get("courier/location?code=" + code);
         return response.data;
@@ -362,11 +409,23 @@ class DispatchData {
         return response.data;
     }
 
+    /**
+     * Retrieves the contact list for the client with the provided clientId.
+     *
+     * @param {number} clientId - The unique identifier of the client.
+     * @returns {Promise<any>} Returns a promise that resolves to the data from the contact list response.
+     */
     async getContactList(clientId) {
         let response = await this.$http.get("job/ContactList?clientId=" + clientId);
         return response.data;
     }
 
+    /**
+     * Retrieves the detailed contact list for the client with the provided clientId.
+     *
+     * @param {number} clientId - The unique identifier of the client.
+     * @returns {Promise<any>} Returns a promise that resolves to the data from the contact detail list response.
+     */
     async getContactDetailList(clientId) {
         let response = await this.$http.get("job/ContactDetailList?clientId=" + clientId);
         return response.data;
