@@ -1706,11 +1706,11 @@ angular
 
                     $scope.potentialCouriers = data;
 
-                    setTimeout(() => {
+                    $timeout(() => {
                         sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
                     }, 1000);
 
-                    setTimeout(() => {
+                    $timeout(() => {
                         sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
                     }, 2000);
 
@@ -1921,33 +1921,30 @@ angular
 
             $scope.getCurrentJobs = function (courierId) {
 
-                $("#box-currentWork").find(".loading").show();
-                var foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
-                var code = foundCourier !== undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
-                DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
-                    $("#box-currentWork").find(".loading").fadeOut();
-                    /*
-                    if ($scope.currentJob !== undefined && $scope.currentJob !== null && $scope.currentJob.courier !== code) {
-                        $scope.currentJob = null;
-                    }
-                    */
+                angular.element('#box-currentWork').find(".loading").css('display', 'block');
+                const foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
+                const code = foundCourier !== undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
+
+                DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(data => {
+                    angular.element('#box-currentWork').find(".loading").css('display', 'none');
+
                     $scope.jobsCurrentList = data;
                     if (data.length > 0) {
                         displayRoutePoints(data, true, $scope.mapZoom.display);
                     } else {
-                        DispatchData.getCourierPosition(code).then(function (posData) {
+                        DispatchData.getCourierPosition(code).then(posData => {
                             displayCourierPositionOnly(posData.latitude, posData.longitude);
                         });
                     }
                     $scope.activateDrop();
-                    $timeout(function () {
-                        sizeHeadings($("#currentWork").parents(".column"));
+
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#currentWork").parents(".column"));
                     }, 1000);
-                    $timeout(function () {
-                        sizeHeadings($("#currentWork").parents(".column"));
+                    $timeout(() => {
+                        sizeHeadings(angular.element("#currentWork").parents(".column"));
                     }, 2000);
                 });
-
             };
 
             var filtersObject = null;
@@ -1955,21 +1952,21 @@ angular
                 filtersObject = JSON.parse(localStorage.getItem("disp-filters-" + ContactID));
             }
             $scope.jobFilters = filtersObject || {"status": "nda", "area": "main1", "order": "remain", "asc": "asc"};
-            var f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
-            $(f).addClass("topBarActive");
-            var areas = $scope.jobFilters.area.split(',');
-            for (var i = 0; i < areas.length; i++) {
+            let f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
+            angular.element(f).addClass("topBarActive");
+            const areas = $scope.jobFilters.area.split(',');
+
+            for (let i = 0; i < areas.length; i++) {
                 f = ".top-bar .btn-group .btn." + areas[i];
-                $(f).addClass("topBarActive");
+                angular.element(f).addClass("topBarActive");
             }
 
             $scope.sort["jobList"] = "remain";
 
             $scope.setFiltersFromTopBar = function (data) {
-                $('.clearLists-list-title').removeClass('listActive');
+                angular.element('.clearLists-list-title').removeClass('listActive');
                 $scope.setFilters(data);
             };
-
 
             $scope.setFilters = function (data) {
                 $timeout(function () {
@@ -1979,17 +1976,16 @@ angular
 
 
                     if (data.area) {
-                        var selected = $("#area-group > .btn.topBarActive").length;
+                        let selected = angular.element("#area-group > .btn.topBarActive").length;
                         if (selected > 1) {
                             $scope.jobFilters.area += "," + data.area;
                         } else {
                             $scope.jobFilters.area = data.area;
                         }
-
                     }
 
                     if (data.clearList) {
-                        var clSelected = $("#clearLists").find('.listActive').length;
+                        let clSelected = angular.element("#clearLists").find('.listActive').length;
                         if (clSelected > 1) {
                             $scope.jobFilters.area += "," + data.clearList;
                         } else {
@@ -2021,25 +2017,25 @@ angular
             };
 
             $scope.loadRelatedJobDetail = function (id, jn) {
-                $("#box-jobDetail").find(".loading").show();
-                DispatchData.getJobDetail(id).then(function (data) {
+                angular.element("#box-jobDetail").find(".loading").show();
+                DispatchData.getJobDetail(id).then(data => {
                     $scope.currentJob = data;
-                    $("#box-jobDetail").find(".loading").hide();
+                    angular.element("#box-jobDetail").find(".loading").hide();
                     $scope.currentSelection = " for Job " + jn;
                 });
-            }
+            };
 
             $scope.selectSupportJobDetail = function (support) {
                 console.log("select Job  " + support.jobId);
 
                 $scope.currentSupport = support;
-                $("#box-jobDetail").find(".loading").show();
+                angular.element("#box-jobDetail").find(".loading").show();
 
-                DispatchData.getJobDetail(support.jobId).then(function (data) {
+                DispatchData.getJobDetail(support.jobId).then(data => {
                     $scope.currentJob = data;
-                    $("#box-jobDetail").find(".loading").hide();
+                    angular.element("#box-jobDetail").find(".loading").hide();
                     $scope.currentSelection = " for Job " + support.jobNumber;
-                    var jobs = [];
+                    let jobs = [];
                     jobs.push($scope.currentJob);
                     displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
 
@@ -2049,7 +2045,7 @@ angular
                     }
 
                     if ($scope.currentJob.rootParentID) {
-                        DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                        DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
                             //data = data.filter(item => item.id !== $scope.currentJob.id);
                             $scope.currentJob.relatedJobs = data;
                         });
@@ -2057,25 +2053,22 @@ angular
 
                 });
 
-
             };
 
-            //Select Job
             $scope.selectJob = function (job, clear) {
-
-                $timeout(function () {
-                        var jobRow = null;
+                $timeout(() => {
+                        let jobRow = null;
                         $scope.selectedJobs = [];
                         $scope.currentSupport = null;
 
-                        $(".activeTable .active").each(function () {
-
+                        angular.element(".activeTable .active").each(function () {
                             //$(this).hide();
-                            $(this).find(".selectjob").click();
+                            angular.element(this).find(".selectjob").click();
 
                             $scope.selectedJobs.push($scope.jobForDispatch.ID);
-                            jobRow = $(this);
+                            jobRow = angular.element(this);
                         });
+
                         console.log("selectJob");
                         $scope.currentJob = job;
                         $scope.$apply();
@@ -2084,20 +2077,18 @@ angular
 
                         jdSvc.setJob($scope.currentJob);
 
-                        DispatchData.getActiveCouriers().then(function (data) {
+                        DispatchData.getActiveCouriers().then(data => {
                             $scope.pickCouriers = data;
                         });
 
                         if ($scope.currentJob.rootParentID) {
-                            DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
+                            DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
                                 //data = data.filter(item => item.id !== $scope.currentJob.id);
                                 $scope.currentJob.relatedJobs = data;
                             });
                         }
 
-
                         if (job.courier === null) {
-
                             $scope.jobGroups = false;
                             //$scope.jobsCurrentList = false;
                             $scope.getPotentialCouriers(job.id);
@@ -2105,38 +2096,33 @@ angular
                             //$scope.getGroupedJobs();
                             //$scope.groupJobsSelection = " for Job " + job.jobNo;
                             //$scope.currentWorkSelection = "";
-
-
                         } else {
                             $scope.potentialCouriers = false;
                         }
+
                         $scope.currentCourier = null;
                         $scope.currentSelection = " for Job " + job.jobNo;
 
-                        var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                        let undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                         displayPickupPoints(undespatchedData, true, job);
 
                         if (job.courier !== null) {
                             $scope.selectCourier(job.courierData);
                         } else {
-                            var jobs = [job];
-
+                            let jobs = [job];
                             //highlightJobPoints(jobs);
                             displayRoutePoints(jobs, false, $scope.mapZoom.display);
                         }
+
                         if (!$document.activeElement.classList.contains("lateCallField")) {
-                            $(jobRow).find(".dispatchField").focus();
+                            angular.element(jobRow).find(".dispatchField").focus();
                         }
-
-
                     },
                     0);
-
-
             };
 
             $scope.setCurrentWorkMenu = function () {
-                var multiple = $(".activeTable .active").length > 1;
+                let multiple = angular.element(".activeTable .active").length > 1;
 
                 return [
                     {
