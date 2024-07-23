@@ -13,8 +13,8 @@ angular
             }
         });
     }])
-    .controller("HomeControl", ['$document', "$filter", 'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "NgMap", "$ngConfirm", "$mdDialog", "$parse", "$q", "$scope", "$state", "$timeout", 'toastrService', "DispatchData",
-        function ($document, $filter, greetingService, hotkeys, jdSvc, loadingService, NgMap, $ngConfirm, $mdDialog, $parse, $q, $scope, $state, $timeout, toastrService, DispatchData) {
+    .controller("HomeControl", ['$document', "$filter", 'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "NgMap", "$mdDialog", "$parse", "$q", "$scope", "$state", "$timeout", 'toastrService', "DispatchData",
+        function ($document, $filter, greetingService, hotkeys, jdSvc, loadingService, NgMap, $mdDialog, $parse, $q, $scope, $state, $timeout, toastrService, DispatchData) {
             $scope.isInternal = (ClientInternal === "True");
             $scope.name = "Home";
             $scope.jdSvc = jdSvc;
@@ -762,43 +762,41 @@ angular
                     onSubmit: function () {
                         return DispatchData.validateSwapPOD($scope.gather.form.fields[0].value).then(function (data) {
                             if (!data) {
-                                $ngConfirm("Invalid Job");
+                                $mdDialog.show(
+                                    $mdDialog.alert()
+                                        .title('Error')
+                                        .textContent('Invalid Job')
+                                        .ok('OK')
+                                );
                             } else {
-                                var secondJobId = data;
-                                var firstJobId = $scope.currentJob.id;
-                                $ngConfirm({
-                                    title: 'Swap Delivery Info',
-                                    content: `Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`,
-                                    scope: $scope,
-                                    buttons: {
+                                const self = this;
+                                const secondJobId = data;
+                                const firstJobId = self.currentJob.id;
 
-                                        Yes: {
-                                            btnClass: 'btn-green',
-                                            action: function (scope, button) {
-                                                return DispatchData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(function (data) {
-                                                    $ngConfirm("POD Swap Completed Successfully");
-                                                    DispatchData.resendJobs(secondJobId);
-                                                    DispatchData.reAssignJobs(firstJobId).then(function (data) {
-                                                        DispatchData.resendJobs(firstJobId).then(function (data) {
-                                                            $scope.getData();
-                                                        });
-                                                    });
+                                const content = `Are you sure you wish to swap delivery info between ${self.currentJob.jobNo} and ${self.gather.form.fields[0].value}?`;
 
+                                const confirmDialog = $mdDialog.confirm()
+                                    .title('Swap Delivery Info')
+                                    .textContent(content)
+                                    .ok('Yes')
+                                    .cancel('No');
 
-                                                });
-
-                                            }
-                                        },
-                                        No: {
-                                            btnClass: 'btn-red',
-                                            action: function (scope, button) {
-
-                                            }
-                                        }
-
-                                    }
+                                $mdDialog.show(confirmDialog).then(() => {
+                                    self.DispatchData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then((data) => {
+                                        $mdDialog.show(
+                                            $mdDialog.alert()
+                                                .title('Success')
+                                                .textContent('POD Swap Completed Successfully')
+                                                .ok('OK')
+                                        );
+                                        self.DispatchData.resendJobs(secondJobId);
+                                        self.DispatchData.reAssignJobs(firstJobId).then(() => {
+                                            self.DispatchData.resendJobs(firstJobId).then(() => {
+                                                self.getData();
+                                            });
+                                        });
+                                    });
                                 });
-
                             }
                         });
 
@@ -840,7 +838,7 @@ angular
                 $mdDialog.show({
                     controller: SendMessageDialogController,
                     controllerAs: 'ctrl',
-                    parent: angular.element(document.body),
+                    parent: angular.element($document.body),
                     targetEvent: event,
                     templateUrl: 'app/components/common/sendMessageDialog/sendMessageDialog.html',
                     clickOutsideToClose: true,
@@ -1609,7 +1607,7 @@ angular
                 if (!job.allowSplit) {
                     $mdDialog.show(
                         $mdDialog.alert()
-                            .parent(angular.element(document.body))
+                            .parent(angular.element($document.body))
                             .clickOutsideToClose(true)
                             .title('Unable to split job')
                             .textContent("Can not split " + job.JobNo + ".")
@@ -3231,7 +3229,7 @@ angular
                         $mdDialog.show({
                             controller: GpsFormController,
                             controllerAs: 'ctrl',
-                            parent: angular.element(document.body),
+                            parent: angular.element($document.body),
                             targetEvent: event,
                             templateUrl: "app/components/common/gpsForm/gpsForm.html",
                             clickOutsideToClose: false,
@@ -3326,7 +3324,7 @@ angular
                 $mdDialog.show({
                     controller: CreateJobDialog,
                     controllerAs: 'ctrl',
-                    parent: angular.element(document.body),
+                    parent: angular.element($document.body),
                     targetEvent: event,
                     templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
                     clickOutsideToClose: false,
