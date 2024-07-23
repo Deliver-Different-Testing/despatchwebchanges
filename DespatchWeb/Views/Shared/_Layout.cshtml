@@ -216,85 +216,36 @@
 <script src="~/lib/jquery_timers.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
 
+<script src="lib/moment.js"></script>
+<script src="lib/sortable.js"></script>
+<script src="lib/contextMenu.js"></script>
+<script src="lib/autocomplete/angular-auto-complete.js"></script>
+<script src="lib/ng-map-autocomplete.js"></script>
+<script src="lib/ModernizerLocalStorage.js"></script>
+<script src="lib/angular-promise-buttons.js"></script>
 
-@{
-    void CreateScriptTag(string src, bool versioning)
-    {
-        <script src="@src" @(versioning ? "asp-append-version=\"true\"" : string.Empty)></script>
-    }
+<script src="js/Loading.js"></script>
+<script src="app/app.js"></script>
+<script src="app/filters.js"></script>
+<script src="app/jobDetailService.js" asp-append-version="true"></script>
+<script src="app/components/home/homeService.js" asp-append-version="true"></script>
+<script src="app/components/home/homeControl.js" asp-append-version="true"></script>
+<script src="app/components/Nationwide/nationwideService.js" asp-append-version="true"></script>
+<script src="app/components/Nationwide/nationwideControl.js" asp-append-version="true"></script>
+<script src="app/components/CS/csService.js" asp-append-version="true"></script>
+<script src="app/components/CS/csControl.js" asp-append-version="true"></script>
+<script src="app/components/prebooks/prebookService.js" asp-append-version="true"></script>
+<script src="app/components/prebooks/prebookControl.js" asp-append-version="true"></script>
+<script src="app/components/common/gpsForm/gpsFormController.js" asp-append-version="true"></script>
+<script src="app/components/common/autoCompleteDialog/autoCompleteDialogController.js"
+        asp-append-version="true"></script>
+<script src="app/components/common/sendMessageDialog/sendMessageDialogController.js" asp-append-version="true"></script>
+<script src="app/components/common/selectDialog/selectDialogController.js" asp-append-version="true"></script>
+<script src="app/components/common/createJobDialog/createJobDialogController.js" asp-append-version="true"></script>
+<script src="app/services/toastrService.js" asp-append-version="true"></script>
+<script src="app/services/loadingService.js" asp-append-version="true"></script>
+<script src="app/services/greetingService.js" asp-append-version="true"></script>
+<script src="app/services/rateJobService.js" asp-append-version="true"></script>
 
-    var scripts = new[]
-    {
-        ("lib/moment.js", false),
-        ("lib/sortable.js", false),
-        ("lib/contextMenu.js", false),
-        ("lib/autocomplete/angular-auto-complete.js", false),
-        ("lib/ng-map-autocomplete.js", false),
-        ("lib/ModernizerLocalStorage.js", false),
-        ("lib/angular-promise-buttons.js", false),
-    };
-
-    foreach (var (src, versioning) in scripts) CreateScriptTag(src, versioning);
-}
-
-<environment include="Development">
-    @{
-        var devScripts = new[]
-        {
-            ("js/Loading.js", false),
-            ("app/app.js", false),
-            ("app/filters.js", false),
-            ("app/jobDetailService.js", true),
-            ("app/components/home/homeService.js", true),
-            ("app/components/home/homeControl.js", true),
-            ("app/components/Nationwide/nationwideService.js", true),
-            ("app/components/Nationwide/nationwideControl.js", true),
-            ("app/components/CS/csService.js", true),
-            ("app/components/CS/csControl.js", true),
-            ("app/components/prebooks/prebookService.js", true),
-            ("app/components/prebooks/prebookControl.js", true),
-            ("app/components/common/gpsForm/gpsFormController.js", true),
-            ("app/components/common/autoCompleteDialog/autoCompleteDialogController.js", true),
-            ("app/components/common/sendMessageDialog/sendMessageDialogController.js", true),
-            ("app/components/common/selectDialog/selectDialogController.js", true),
-            ("app/components/common/createJobDialog/createJobDialogController.js", true),
-            ("app/services/toastrService.js", true),
-            ("app/services/loadingService.js", true),
-            ("app/services/greetingService.js", true),
-            ("app/services/rateJobService.js", true)
-        };
-        foreach (var (src, versioning) in devScripts) CreateScriptTag(src, versioning);
-    }
-</environment>
-
-<environment exclude="Development">
-    @{
-        var minScripts = new[]
-        {
-            ("js/Loading.min.js", false),
-            ("app/app.min.js", false),
-            ("app/filters.min.js", false),
-            ("app/jobDetailService.min.js", true),
-            ("app/components/home/homeService.min.js", true),
-            ("app/components/home/homeControl.min.js", true),
-            ("app/components/Nationwide/nationwideService.min.js", true),
-            ("app/components/Nationwide/nationwideControl.min.js", true),
-            ("app/components/CS/csService.min.js", true),
-            ("app/components/CS/csControl.min.js", true),
-            ("app/components/prebooks/prebookService.min.js", true),
-            ("app/components/prebooks/prebookControl.min.js", true),
-            ("app/components/common/gpsForm/gpsFormController.min.js", true),
-            ("app/components/common/autoCompleteDialog/autoCompleteDialogController.min.js", true),
-            ("app/components/common/sendMessageDialog/sendMessageDialogController.min.js", true),
-            ("app/components/common/selectDialog/selectDialogController.min.js", true),
-            ("app/components/common/createJobDialog/createJobDialogController.min.js", true),
-            ("app/services/toastrService.min.js", true),
-            ("app/services/loadingService.min.js", true),
-            ("app/services/greetingService.min.js", true),
-            ("app/services/rateJobService.min.js", true)
-        };
-        foreach (var (src, versioning) in minScripts) CreateScriptTag(src, versioning);
-    }
-</environment>
 </body>
 </html>
