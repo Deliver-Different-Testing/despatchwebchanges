@@ -446,6 +446,10 @@ class DispatchData {
         return response.data;
     }
 
+    /**
+     * @param {number} jobId
+     * @param {number} truckWeightLimit
+     */
     async getTruckItemsSummary(jobId, truckWeightLimit) {
         let response = await this.$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
         return response.data;
@@ -504,10 +508,22 @@ class DispatchData {
         return await this.$http.post("job/finishSplitJobProcess?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
+    /**
+     * @param {string} jobNumber
+     * @param {number|string} jobStatus
+     * @param {string} podName
+     * @param {*} podTime
+     */
     async updatePODDetail(jobNumber, jobStatus, podName, podTime) {
         return await this.$http.post("job/UpdatePODDetails?jobNumber=" + jobNumber + "&jobStatus=" + jobStatus + "&podName=" + podName + "&podTime=" + podTime);
     }
 
+    /**
+     * @param {number} courierId
+     * @param {number} staffId
+     * @param {string} despatcherName
+     * @param {string} message
+     */
     async sendSMS(courierId, staffId, despatcherName, message) {
         let response = await this.$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message);
         return response.data;
@@ -517,11 +533,31 @@ class DispatchData {
         return await this.$http.post("job/ReRateSplitJob?jobId=" + jobId);
     }
 
+    /**
+     * @param {number} jobId
+     * @param {number} toSuburbId
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     * @param {boolean} cbd
+     * @param {string|*} rate
+     * @param {string} despatcherName
+     * @param {boolean} prebook
+     */
     async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
         return await this.$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
 
+    /**
+     * @param {number} bulkJobId
+     * @param {number} toSuburb
+     * @param {string|number} toPostCode
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     * @param {string} despatcherName
+     */
     async updateBulkDeliveryAddress(bulkJobId, toSuburb, toPostCode, address, lat, lng, despatcherName) {
         return await this.$http.post("job/UpdateBulkDeliveryAddress?bulkJobId=" + bulkJobId + "&toSuburb=" + toSuburb + "&toPostCode=" + toPostCode + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + '&despatcherName=' + despatcherName);
     }
@@ -588,6 +624,12 @@ class DispatchData {
         return response.data;
     }
 
+    /**
+     * Retrieves the auto-complete search results for the given address text from a geocoder service.
+     *
+     * @param {string} text - The search text for which auto-complete results are to be fetched.
+     * @returns {Promise<any>} Returns a promise that resolves to the data from the auto-complete response.
+     */
     async autocompleteAddressSearch(text) {
         let response = await this.$http({
             url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
