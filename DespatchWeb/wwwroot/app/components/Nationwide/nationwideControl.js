@@ -1,4 +1,4 @@
-function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm, greetingService, $mdDialog) {
+function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog) {
     $scope.isInternal = (ClientInternal === "True");
     $scope.jdSvc = jdSvc;
     $scope.name = "Nationwide";
@@ -867,23 +867,22 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     $scope.dispatchDroppedMarkerToClosestCourier = function (lat, lng, flags, carMarker, jobNumber) {
         if (flags.length === 0 && carMarker === null) {
-            $ngConfirm({
-                title: 'Dispatch Invalid',
-                content: 'Could not find courier for Dispatch',
-                scope: $scope,
-                buttons: {
+            $scope.showConfirm = function () {
+                const confirm = $mdDialog.confirm()
+                    .title('Dispatch Invalid')
+                    .textContent('Could not find courier for Dispatch')
+                    .ok('Close')
+                    .cancel('Cancel');
 
-                    Close: {
-                        btnClass: 'btn-red',
-                        action: function (scope, button) {
-                            var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                            displayPickupPoints(undespatchedData, true, null);
-                            $scope.getAvailableCourierLocation();
-                        }
-                    }
-
-                }
-            });
+                $mdDialog.show(confirm).then(() => {
+                    const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    displayPickupPoints(unDispatchedData, true, null);
+                    $scope.getAvailableCourierLocation();
+                }, () => {
+                    // This will be executed if the user cancels the dialog.
+                    // Handle the cancel action here
+                });
+            };
             return;
         }
         console.log(jobNumber);
@@ -914,61 +913,46 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             }
         }
 
-        $ngConfirm({
-            title: 'Dispatch Job ' + jobNumber,
-            content: 'Dispatch to <strong>' + dispTo + '</strong>?',
-            scope: $scope,
-            buttons: {
-                Yes: {
-                    btnClass: 'btn-green',
-                    action: function (scope, button) {
-                        var j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
-                        var jn = j.jobNo;
+        let dialog = $mdDialog.confirm()
+            .title('Dispatch Job ' + jobNumber)
+            .textContent('Dispatch to <strong>' + dispTo + '</strong>?')
+            .ok('Yes')
+            .cancel('No');
 
-                        //if (!j.allowDispatch) {
-                        //    $ngConfirm("Can not despatch " + jn + " until all other child jobs have been despatched.");
-                        //    return;
-                        //}
-                        if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
-                            $ngConfirm("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
-                            return;
-                        }
-                        if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-                            $ngConfirm("Courier " + courier + " doesn't have a DGLicense or license has expired.");
-                            return;
-                        }
+        $mdDialog.show(dialog).then(() => {
+            let j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
+            const jn = j.jobNo;
 
-                        if (j.dgClass !== null && j.dgClass > 0) {
-                            NWData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
-                        }
-                        var jobs = [];
-                        jobs.push(j.id);
-                        return NWData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(function (response) {
-                            $scope.getData().then(function () {
-                                //angular.element("#box-jobDetail").find(".loading").show();
-                                angular.element("#box-map").find(".loading").show();
-
-                                $scope.courier = {gpsCourier: foundCourier.id};
-                                $scope.searchCourier();
-
-
-                            });
-                        });
-
-
-                    }
-                },
-                No: {
-                    btnClass: 'btn-red',
-                    action: function (scope, button) {
-                        //$ngConfirm('You clicked on something else');
-                        var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                        displayPickupPoints(undespatchedData, true, null);
-                        $scope.getAvailableCourierLocation();
-                    }
-                }
-
+            if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .textContent(`DG job ${jn} can not be despatched to courier ${courier} - doesn't have DGLicense.`)
+                        .ok('OK')
+                );
+                return;
             }
+            if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .textContent(`Courier ${courier} doesn't have a DGLicense or license has expired.`)
+                        .ok('OK')
+                );
+                return;
+            }
+
+            let jobs = [];
+            jobs.push(j.id);
+            return NWData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(response => {
+                $scope.getData().then(() => {
+                    angular.element("#box-map").find(".loading").show();
+                    $scope.courier = {gpsCourier: foundCourier.id};
+                    $scope.searchCourier();
+                });
+            });
+        }, function () {
+            let unDespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+            displayPickupPoints(unDespatchedData, true, null);
+            $scope.getAvailableCourierLocation();
         });
         //return closestJob;
 
@@ -1106,17 +1090,20 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             var j = $scope.jobListPOD.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             if (j.courierData.courierID !== null) {
-                alert("restore " + jn + " prior to despatching to another courier");
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .textContent(`Restore ${jn} prior to despatching to another courier.`)
+                        .ok('OK')
+                );
                 reset();
                 return;
             }
-            //if (!j.allowDispatch) {
-            //    alert("Can not despatch " + jn + " until all other child jobs have been despatched.");
-            //    reset();
-            //    return;
-            //}
             if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
-                alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .textContent(`DG job ${jn} can not be despatched to courier ${courier} - doesn't have DGLicense.`)
+                        .ok('OK')
+                );
                 reset();
                 return;
             }
@@ -1134,13 +1121,12 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         });
 
         return NWData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
-            $scope.getData().then(function () {
-                //angular.element("#box-jobDetail").find(".loading").show();
+            $scope.getData().then(() => {
                 angular.element("#box-map").find(".loading").show();
 
                 $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
-                $timeout(function () {
+                $timeout(() => {
                     angular.element("#jobListPOD tr").first().find(".dispatchField").focus();
                 }, 200);
 
@@ -1204,7 +1190,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         return NWData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
             $scope.getData().then(function () {
-                //angular.element("#box-jobDetail").find(".loading").show();
                 angular.element("#box-map").find(".loading").show();
 
                 $scope.courier = {gpsCourier: foundCourier.id};
@@ -1442,164 +1427,123 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.restoreAll = function () {
-        $ngConfirm({
-            title: 'Restore All Jobs',
-            content: 'Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier,
-            scope: $scope,
-            buttons: {
+        let dialog = $mdDialog.confirm()
+            .title('Restore All Jobs')
+            .textContent('Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier)
+            .ok('Yes')
+            .cancel('No');
 
-                Yes: {
-                    btnClass: 'btn-green',
-                    action: function (scope, button) {
-                        var callData = {
-                            "call": "restoreJobs",
-                            "jobs": [],
-                            "splitJobs": [],
-                            "jobNos": [],
-                            "courierID": null
-                        };
+        $mdDialog.show(dialog).then(() => {
+            let callData = {
+                "call": "restoreJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": null
+            };
 
-                        var foundCourier = null;
+            let foundCourier = null;
 
-                        angular.element("#currentWork tr.droppable-row").each(function () {
-                            var j = $scope.jobsCurrentList.find(jo => jo.id === angular.element(this).data("jobid"));
-                            var jn = j.jobNo;
-                            NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
-                            if (callData.courierID === null) {
-                                callData.courierID = j.courierData.courierID;
-                                foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
-                            }
-                            if (j.displaySplitJobDetail) {
-                                callData.splitJobs.push(angular.element(this).data("jobid"));
-                            } else {
-                                callData.jobs.push(angular.element(this).attr("data-jobid"));
-                            }
-                        });
-
-                        if (callData.splitJobs.length > 0) {
-                            NWData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
-                        }
-                        if (callData.jobs.length > 0) {
-                            NWData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
-                        }
-
-
-                        $timeout(function () {
-                            $scope.getCurrentJobs(foundCourier.courierID);
-                            $scope.getData();
-                        }, 1000);
-
-                    }
-                },
-                No: {
-                    btnClass: 'btn-red',
-                    action: function (scope, button) {
-
-                    }
+            angular.element("#currentWork tr.droppable-row").each(() => {
+                let j = $scope.jobsCurrentList.find(jo => jo.id === angular.element(this).data("jobid"));
+                const jn = j.jobNo;
+                NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                if (callData.courierID === null) {
+                    callData.courierID = j.courierData.courierID;
+                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
                 }
+                if (j.displaySplitJobDetail) {
+                    callData.splitJobs.push(angular.element(this).data("jobid"));
+                } else {
+                    callData.jobs.push(angular.element(this).attr("data-jobid"));
+                }
+            });
 
+            if (callData.splitJobs.length > 0) {
+                NWData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
-        });
+            if (callData.jobs.length > 0) {
+                NWData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+            }
 
+            $timeout(() => {
+                $scope.getCurrentJobs(foundCourier.courierID);
+                $scope.getData();
+            }, 1000);
+        }, function () {
+            // Actions to perform when 'No' is clicked.
+        });
     };
 
     $scope.redispatchAll = function () {
-        $ngConfirm({
-            title: 'Restore All Jobs',
-            content: 'Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier,
-            scope: $scope,
-            buttons: {
+        let dialog = $mdDialog.confirm()
+            .title('Restore All Jobs')
+            .textContent('Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier)
+            .ok('Yes')
+            .cancel('No');
 
-                Yes: {
-                    btnClass: 'btn-green',
-                    action: function (scope, button) {
-                        var callData = {
-                            "call": "redespatchJobs",
-                            "jobs": [],
-                            "splitJobs": [],
-                            "jobNos": [],
-                            "courierID": $scope.currentCourier.courierID
-                        };
+        $mdDialog.show(dialog).then(() => {
+            let callData = {
+                "call": "redespatchJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": $scope.currentCourier.courierID
+            };
 
-                        var foundCourier = null;
-                        angular.element("#currentWork tr.droppable-row").each(function () {
-                            callData.jobs.push(angular.element(this).attr("data-jobid"));
-                            foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
-                        });
+            let foundCourier = null;
+            angular.element("#currentWork tr.droppable-row").each(function () {
+                callData.jobs.push(angular.element(this).attr("data-jobid"));
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+            });
 
-
-                        if (callData.jobs.length > 0) {
-                            NWData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
-                        }
-
-                        $scope.getData().then(function () {
-                            angular.element("#box-map").find(".loading").show();
-
-                            $scope.courier = {gpsCourier: foundCourier.id};
-                            $scope.searchCourier();
-
-
-                        });
-                    }
-                },
-                No: {
-                    btnClass: 'btn-red',
-                    action: function (scope, button) {
-
-                    }
-                }
-
+            if (callData.jobs.length > 0) {
+                NWData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
             }
+
+            $scope.getData().then(function () {
+                angular.element("#box-map").find(".loading").show();
+                $scope.courier = {gpsCourier: foundCourier.id};
+                $scope.searchCourier();
+            });
+        }, function () {
+            // Actions to perform when 'No' is clicked.
         });
     };
 
     $scope.resendAll = function () {
-        $ngConfirm({
-            title: 'Resend All Jobs',
-            content: 'Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier,
-            scope: $scope,
-            buttons: {
+        let dialog = $mdDialog.confirm()
+            .title('Resend All Jobs')
+            .textContent('Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier)
+            .ok('Yes')
+            .cancel('No');
 
-                Yes: {
-                    btnClass: 'btn-green',
-                    action: function (scope, button) {
-                        var callData = {
-                            "call": "resendJobs",
-                            "jobs": [],
-                            "splitJobs": [],
-                            "jobNos": [],
-                            "courierID": $scope.currentCourier.courierID
-                        };
+        $mdDialog.show(dialog).then(() => {
+            let callData = {
+                "call": "resendJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": $scope.currentCourier.courierID
+            };
 
-                        var foundCourier = null;
-                        angular.element("#currentWork tr.droppable-row").each(function () {
-                            callData.jobs.push(angular.element(this).attr("data-jobid"));
-                            foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
-                        });
+            let foundCourier = null;
+            angular.element("#currentWork tr.droppable-row").each(function () {
+                callData.jobs.push(angular.element(this).attr("data-jobid"));
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
+            });
 
-
-                        if (callData.jobs.length > 0) {
-                            NWData.resendAllJobs(callData.courierID);
-                        }
-
-                        $scope.getData().then(function () {
-                            angular.element("#box-map").find(".loading").show();
-
-                            $scope.courier = {gpsCourier: foundCourier.id};
-                            $scope.searchCourier();
-
-
-                        });
-                    }
-                },
-                No: {
-                    btnClass: 'btn-red',
-                    action: function (scope, button) {
-
-                    }
-                }
-
+            if (callData.jobs.length > 0) {
+                NWData.resendAllJobs(callData.courierID);
             }
+
+            $scope.getData().then(() => {
+                angular.element("#box-map").find(".loading").show();
+                $scope.courier = {gpsCourier: foundCourier.id};
+                $scope.searchCourier();
+            });
+        }, function () {
+            // Actions to perform when 'No' is clicked.
         });
     };
 
@@ -3264,7 +3208,6 @@ angular
     "NgMap",
     "$q",
     "$timeout",
-    "$ngConfirm",
     "greetingService",
     "$mdDialog",
     NationwideController]);
