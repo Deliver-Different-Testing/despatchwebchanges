@@ -30,18 +30,18 @@ namespace DespatchWeb.Models
         public string Source { get; set; }
         public string NotifiedName { get; set; }
         public string AcceptedName { get; set; }
-        public int? SpeedID { get; set; }
+        [JsonProperty("speedID")] public int? SpeedId { get; set; }
         public string Notify { get; set; }
         public Vehicle Vehicle { get; set; }
 
-        [JsonProperty("clientID")] public int? ClientID { get; set; }
+        [JsonProperty("clientID")] public int? ClientId { get; set; }
 
         public int JobType { get; set; }
         public string Client { get; set; }
         public string ClientName { get; set; }
         public string From { get; set; }
-        public int? FromSuburbID { get; set; }
-        public string fromSuburbName { get; set; }
+        [JsonProperty("fromSuburbID")] public int? FromSuburbId { get; set; }
+        [JsonProperty("fromSuburbName")] public string FromSuburbName { get; set; }
         public string FromPostCode { get; set; }
 
         [JsonProperty("fromAddress")] public string FromAddress { get; set; }

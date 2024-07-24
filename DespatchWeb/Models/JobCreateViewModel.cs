@@ -3,35 +3,16 @@ using Newtonsoft.Json;
 
 namespace DespatchWeb.Models;
 
-public class CreateJobRequest
-{
-    [JsonProperty("job")] public JobCreateViewModel Job { get; set; }
-    [JsonProperty("staffId")] public int? StaffId { get; set; }
-}
-
+// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
 public class JobCreateViewModel
 {
     [JsonProperty("clientID")] public int ClientId { get; set; }
-
-    [JsonProperty("speedId")] public int SpeedId { get; set; }
 
     [JsonProperty("deliverToContact")] public string DeliverToContact { get; set; }
 
     [JsonProperty("fromAddress")] public string FromAddress { get; set; }
 
-    [JsonProperty("fromSuburb")] public int FromSuburb { get; set; }
-
-    [JsonProperty("fromLong")] public decimal FromLongitude { get; set; }
-
-    [JsonProperty("fromLat")] public decimal FromLatitude { get; set; }
-
     [JsonProperty("toAddress")] public string ToAddress { get; set; }
-
-    [JsonProperty("toSuburb")] public int ToSuburb { get; set; }
-
-    [JsonProperty("toLong")] public decimal ToLongitude { get; set; }
-
-    [JsonProperty("toLat")] public decimal ToLatitude { get; set; }
 
     [JsonProperty("date")] public DateTime Date { get; set; }
 
@@ -58,4 +39,25 @@ public class JobCreateViewModel
     [JsonProperty("done")] public bool Done { get; set; }
 
     [JsonProperty("charge")] public decimal Charge { get; set; }
+
+    [JsonProperty("fromSuburb")] public int FromSuburb { get; set; }
+
+    [JsonProperty("fromLat")] public double FromLat { get; set; }
+
+    [JsonProperty("fromLong")] public double FromLong { get; set; }
+
+    [JsonProperty("toSuburb")] public int ToSuburb { get; set; }
+
+    [JsonProperty("toLat")] public double ToLat { get; set; }
+
+    [JsonProperty("toLong")] public double ToLong { get; set; }
+
+    [JsonProperty("speedId")] public int SpeedId { get; set; }
+}
+
+public class CreateJobRequest
+{
+    [JsonProperty("job")] public JobCreateViewModel Job { get; set; }
+
+    [JsonProperty("staffId")] public int? StaffId { get; set; }
 }

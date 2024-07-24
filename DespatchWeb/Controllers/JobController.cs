@@ -208,8 +208,16 @@ public class JobController : Controller
 
     public async Task<IActionResult> Detail(int jobId)
     {
-        var result = await _jobRepo.JobDetail(jobId);
-        return Json(result);
+        try
+        {
+            var result = await _jobRepo.JobDetail(jobId);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpGet]
