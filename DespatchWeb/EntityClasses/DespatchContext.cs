@@ -521,6 +521,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
+                entity.HasIndex(e => new { e.BulkJobId, e.ParentId, e.MultiboxParentId, e.BulkParentId }, "IX_tblBulkJob_Composite");
+
+                entity.HasIndex(e => e.JobId, "IX_tblBulkJob_JobID");
+
                 entity.HasIndex(e => e.JobId, "JobId-NonClusteredIndex-20190417-112100");
 
                 entity.HasIndex(e => e.BookDate, "idx_BookDate");

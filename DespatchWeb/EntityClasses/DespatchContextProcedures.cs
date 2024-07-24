@@ -75,7 +75,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, decimal? FromLat, decimal? FromLong, string ToAddress, decimal? ToLat, decimal? ToLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? JobDone, decimal? Amount, int? JobTypeId, int? ToSuburbId, int? FromSuburbId, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, decimal? FromLat, decimal? FromLong, string ToAddress, decimal? ToLat, decimal? ToLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? JobDone, decimal? Amount, int? JobTypeId, int? SpeedId, int? ToSuburbId, int? FromSuburbId, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobId = new SqlParameter
             {
@@ -233,6 +233,12 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
+                    ParameterName = "SpeedId",
+                    Value = SpeedId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
                     ParameterName = "ToSuburbId",
                     Value = ToSuburbId ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
@@ -286,7 +292,7 @@ namespace DespatchWeb.EntityClasses
                 parameterJobId,
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @FromLat = @FromLat, @FromLong = @FromLong, @ToAddress = @ToAddress, @ToLat = @ToLat, @ToLong = @ToLong, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @Truck = @Truck, @ClientNotes = @ClientNotes, @VanOk = @VanOk, @Reprice = @Reprice, @InternalNotes = @InternalNotes, @JobDone = @JobDone, @Amount = @Amount, @JobTypeId = @JobTypeId, @ToSuburbId = @ToSuburbId, @FromSuburbId = @FromSuburbId, @RatedManually = @RatedManually, @RebateAmt = @RebateAmt, @FuelSurchargeAmount = @FuelSurchargeAmount, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @ContactId = @ContactId, @StaffId = @StaffId, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @FromLat = @FromLat, @FromLong = @FromLong, @ToAddress = @ToAddress, @ToLat = @ToLat, @ToLong = @ToLong, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @Truck = @Truck, @ClientNotes = @ClientNotes, @VanOk = @VanOk, @Reprice = @Reprice, @InternalNotes = @InternalNotes, @JobDone = @JobDone, @Amount = @Amount, @JobTypeId = @JobTypeId, @SpeedId = @SpeedId, @ToSuburbId = @ToSuburbId, @FromSuburbId = @FromSuburbId, @RatedManually = @RatedManually, @RebateAmt = @RebateAmt, @FuelSurchargeAmount = @FuelSurchargeAmount, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @ContactId = @ContactId, @StaffId = @StaffId, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
 
             JobId.SetValue(parameterJobId.Value);
             returnValue?.SetValue(parameterreturnValue.Value);
