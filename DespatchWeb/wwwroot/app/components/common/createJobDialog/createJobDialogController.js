@@ -9,8 +9,12 @@
  * @property {string} deliverToContact - The contact to whom the job will be delivered.
  * @property {string} fromAddress - The address from which the job will be picked up.
  * @property {string} fromSuburb - The suburb from which the job will be picked up.
+ * @property {number} fromLong - The longitude of the pickup address.
+ * @property {number} fromLat - The latitude of the pickup address.
  * @property {string} toAddress - The address to which the job will be delivered.
  * @property {string} toSuburb - The suburb to which the job will be delivered.
+ * @property {number} toLong - The longitude of the delivery address.
+ * @property {number} toLat - The latitude of the delivery address.
  * @property {string} date - The date when the job is scheduled.
  * @property {string} fromContactName - The name of the contact from whom the job will be picked up.
  * @property {string} deliveryNotes - Any notes related to the delivery of the job.
@@ -70,9 +74,8 @@ class CreateJobDialogController {
             this.speedOptions = data;
         });
 
-        // Set default booking date to tomorrow
+        // Set default booking date to today
         this.jobDate = new Date();
-        this.jobDate.setDate(this.jobDate.getDate() + 1);
 
         // Define job form
         this.job = {};
@@ -136,17 +139,26 @@ class CreateJobDialogController {
 
     /**
      * Handles the selection of items from the address search.
-     * @param {Object} item - A selected item from the address search.
-     * @param {boolean} toAddress - A selected item from the address search.
+     *
+     * @param {Object} item - A selected item from the address search. The object should have 'text' and 'id' properties.
+     * @param {string} item.text - The text of the selected item.
+     * @param {number} item.id - The id of the selected item.
+     *
+     * @param {boolean} isToAddress - A boolean value to indicate whether the address is a 'to address'.
+     *
+     * @return {Promise<void>}
      */
-    async addressSearchItemSelected(item, toAddress) {
+    async addressSearchItemSelected(item, isToAddress) {
         try {
             const data = await this.DispatchData.getGeoCodeInformation(item);
+
             const returnedLocation = data.Response.View[0].Result[0].Location;
+            const lat = returnedLocation.DisplayPosition.Latitude;
+            const long = returnedLocation.DisplayPosition.Longitude;
 
             const mappedSub = await this.findSuburbByDistrict(returnedLocation.Address.District);
             if (mappedSub !== undefined) {
-                this.assignSuburbToJob(mappedSub.id, toAddress);
+                this.assignAddressToJob(mappedSub.id, item.text, lat, long, isToAddress);
             }
         } catch (error) {
             console.log("Error: ", error);
@@ -154,15 +166,25 @@ class CreateJobDialogController {
     }
 
     /**
-     * Assigns a suburb to the job based on given condition.
-     * @param {number} suburbId - The suburb ID.
-     * @param {boolean} toAddress - Defines the target address.
+     * Assigns an address to a job based on the provided parameters.
+     *
+     * @param {number} suburbId - The id of the suburb.
+     * @param {string} addressFull - The full address.
+     * @param {number} lat
+     * @param {number} long
+     * @param {boolean} toAddress - If true, assign to the 'to' address of the job. Otherwise, assign to the 'from' address.
      */
-    assignSuburbToJob(suburbId, toAddress) {
+    assignAddressToJob(suburbId, addressFull, lat, long, toAddress) {
         if (toAddress) {
             this.job.toSuburb = suburbId;
+            this.job.toAddress = addressFull;
+            this.job.toLat = lat;
+            this.job.toLong = long;
         } else {
             this.job.fromSuburb = suburbId;
+            this.job.fromAddress = addressFull;
+            this.job.fromLat = lat;
+            this.job.fromLong = long;
         }
     }
 
@@ -190,8 +212,6 @@ class CreateJobDialogController {
 
             // Apply form values to job
             job.clientID = this.selectedClient.id;
-            job.toAddress = this.selectedFromAddress.text;
-            job.toAddress = this.selectedToAddress.text;
             job.date = this.jobDate.toISOString();
             job.speedId = this.selectedSpeed.id;
 

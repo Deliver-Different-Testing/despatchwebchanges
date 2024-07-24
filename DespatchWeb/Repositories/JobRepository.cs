@@ -2513,7 +2513,7 @@ public class JobRepository : IJobRepository
             job.DeliverToContact,
             job.Truck,
             job.PickupNotes,
-            job.VanOK,
+            job.VanOk,
             job.Reprice,
             job.DeliveryNotes,
             job.Done,

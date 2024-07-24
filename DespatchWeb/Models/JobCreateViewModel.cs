@@ -21,9 +21,17 @@ public class JobCreateViewModel
 
     [JsonProperty("fromSuburb")] public int FromSuburb { get; set; }
 
+    [JsonProperty("fromLong")] public decimal FromLongitude { get; set; }
+
+    [JsonProperty("fromLat")] public decimal FromLatitude { get; set; }
+
     [JsonProperty("toAddress")] public string ToAddress { get; set; }
 
     [JsonProperty("toSuburb")] public int ToSuburb { get; set; }
+
+    [JsonProperty("toLong")] public decimal ToLongitude { get; set; }
+
+    [JsonProperty("toLat")] public decimal ToLatitude { get; set; }
 
     [JsonProperty("date")] public DateTime Date { get; set; }
 
@@ -41,7 +49,7 @@ public class JobCreateViewModel
 
     [JsonProperty("attention")] public bool Attention { get; set; }
 
-    [JsonProperty("vanOK")] public bool VanOK { get; set; }
+    [JsonProperty("vanOK")] public bool VanOk { get; set; }
 
     [JsonProperty("reprice")] public bool Reprice { get; set; }
 

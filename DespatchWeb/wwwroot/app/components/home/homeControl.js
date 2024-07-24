@@ -2005,12 +2005,10 @@ angular
                 $scope.potentialCouriersSelection = " for Job " + job.jobNo;
                 $scope.currentSelection = " for Job " + job.jobNo;
                 if ($scope.currentJob.rootParentID) {
-                    DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                        //data = data.filter(item => item.id !== $scope.currentJob.id);
+                    DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
                         $scope.currentJob.relatedJobs = data;
                     });
                 }
-
             };
 
             $scope.loadRelatedJobDetail = function (id, jn) {
@@ -3218,11 +3216,14 @@ angular
                         staffId: ContactID
                     },
                 }).then(newJobId => {
+                    loadingService.showLoader();
+
                     self.getData().then(() => {
                         self.selectJobDetail(newJobId);
                         console.log('Dialog closed!')
+                        loadingService.closeLoader();
                     });
-                });
+                }).then(() => "Create Job Canceled!");
             }
 
 
