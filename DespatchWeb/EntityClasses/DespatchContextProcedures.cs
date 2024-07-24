@@ -75,7 +75,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, string ToAddress, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? JobDone, decimal? Amount, int? JobTypeId, string ToSuburb, string FromSuburb, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, string ToAddress, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, bool? Truck, string ClientNotes, bool? VanOk, bool? Reprice, string InternalNotes, bool? JobDone, decimal? Amount, int? JobTypeId, int? ToSuburbId, int? FromSuburbId, bool? RatedManually, decimal? RebateAmt, decimal? FuelSurchargeAmount, int? DeliverToPrivateBusiness, int? ContactId, int? StaffId, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobId = new SqlParameter
             {
@@ -205,17 +205,15 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "ToSuburb",
-                    Size = 100,
-                    Value = ToSuburb ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                    ParameterName = "ToSuburbId",
+                    Value = ToSuburbId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "FromSuburb",
-                    Size = 100,
-                    Value = FromSuburb ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                    ParameterName = "FromSuburbId",
+                    Value = FromSuburbId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
                 },
                 new SqlParameter
                 {
@@ -260,7 +258,7 @@ namespace DespatchWeb.EntityClasses
                 parameterJobId,
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @ToAddress = @ToAddress, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @Truck = @Truck, @ClientNotes = @ClientNotes, @VanOk = @VanOk, @Reprice = @Reprice, @InternalNotes = @InternalNotes, @JobDone = @JobDone, @Amount = @Amount, @JobTypeId = @JobTypeId, @ToSuburb = @ToSuburb, @FromSuburb = @FromSuburb, @RatedManually = @RatedManually, @RebateAmt = @RebateAmt, @FuelSurchargeAmount = @FuelSurchargeAmount, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @ContactId = @ContactId, @StaffId = @StaffId, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @ToAddress = @ToAddress, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @Truck = @Truck, @ClientNotes = @ClientNotes, @VanOk = @VanOk, @Reprice = @Reprice, @InternalNotes = @InternalNotes, @JobDone = @JobDone, @Amount = @Amount, @JobTypeId = @JobTypeId, @ToSuburbId = @ToSuburbId, @FromSuburbId = @FromSuburbId, @RatedManually = @RatedManually, @RebateAmt = @RebateAmt, @FuelSurchargeAmount = @FuelSurchargeAmount, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @ContactId = @ContactId, @StaffId = @StaffId, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
 
             JobId.SetValue(parameterJobId.Value);
             returnValue?.SetValue(parameterreturnValue.Value);

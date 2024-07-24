@@ -146,16 +146,23 @@ class CreateJobDialogController {
 
             const mappedSub = await this.findSuburbByDistrict(returnedLocation.Address.District);
             if (mappedSub !== undefined) {
-                console.log(mappedSub);
-
-                if (toAddress) {
-                    this.job.toSuburb = mappedSub.text;
-                } else {
-                    this.job.fromSuburb = mappedSub.text;
-                }
+                this.assignSuburbToJob(mappedSub.id, toAddress);
             }
         } catch (error) {
             console.log("Error: ", error);
+        }
+    }
+
+    /**
+     * Assigns a suburb to the job based on given condition.
+     * @param {number} suburbId - The suburb ID.
+     * @param {boolean} toAddress - Defines the target address.
+     */
+    assignSuburbToJob(suburbId, toAddress) {
+        if (toAddress) {
+            this.job.toSuburb = suburbId;
+        } else {
+            this.job.fromSuburb = suburbId;
         }
     }
 
@@ -183,7 +190,7 @@ class CreateJobDialogController {
 
             // Apply form values to job
             job.clientID = this.selectedClient.id;
-            job.fromAddress = this.selectedFromAddress.text;
+            job.toAddress = this.selectedFromAddress.text;
             job.toAddress = this.selectedToAddress.text;
             job.date = this.jobDate.toISOString();
             job.speedId = this.selectedSpeed.id;

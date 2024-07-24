@@ -19,11 +19,11 @@ public class JobCreateViewModel
 
     [JsonProperty("fromAddress")] public string FromAddress { get; set; }
 
-    [JsonProperty("fromSuburb")] public string FromSuburb { get; set; }
+    [JsonProperty("fromSuburb")] public int FromSuburb { get; set; }
 
     [JsonProperty("toAddress")] public string ToAddress { get; set; }
 
-    [JsonProperty("toSuburb")] public string ToSuburb { get; set; }
+    [JsonProperty("toSuburb")] public int ToSuburb { get; set; }
 
     [JsonProperty("date")] public DateTime Date { get; set; }
 
