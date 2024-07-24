@@ -1210,8 +1210,6 @@ function CSControl($document, $filter, $location, $mdDialog, $ngConfirm, $parse,
                 }, 200);
             });
         });
-
-
     };
 
     //Select Bulk Job
@@ -1387,7 +1385,7 @@ function CSControl($document, $filter, $location, $mdDialog, $ngConfirm, $parse,
         }
 
         function afterShowAnimation(scope, element, options) {
-            const e = $document.getElementById("event-notes");
+            let e = angular.element("#event-notes");
             resetCursor(e);
         }
 
@@ -1396,12 +1394,11 @@ function CSControl($document, $filter, $location, $mdDialog, $ngConfirm, $parse,
             controller: $scope.eventDialogController,
             scope: $scope,
             preserveScope: true,
-            templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
-            parent: angular.element(document.body),
+            templateUrl: "app/components/CS/tpls/createEvent.html",
+            parent: angular.element($document.body),
             //targetEvent: $event,
             clickOutsideToClose: true,
             onComplete: afterShowAnimation
-
         });
     };
 
@@ -1457,11 +1454,8 @@ function CSControl($document, $filter, $location, $mdDialog, $ngConfirm, $parse,
                 return;
             }
 
-
             angular.element(".wait").css("display", "block");
             processEventBooking();
-
-
         };
 
         function processEventBooking() {
