@@ -1,35 +1,49 @@
-angular
-    .module('uDispatch')
-    .factory('uPBData', ['$http', function ($http) {
-        return {
+class PrebookData {
+    static $inject = ["$http"];
+
+    constructor($http) {
+        this.$http = $http;
+    }
+
+    async getPreBookJobs() {
+        let response = await $http.get('/Job/PreBookJobs');
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     */
+    async sendPrebookJob(jobId) {
+        let response = await $http.post('/Job/SendPrebookJob?jobId=' + jobId);
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {string} despatcherName
+     * @param {number} staffId
+     */
+    async voidPrebookJob(jobId, despatcherName, staffId) {
+        let response = await $http.post('/Job/VoidPrebookJob?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId);
+        return response.data;
+    }
+
+    /**
+     * @param {number} preBookJobId
+     */
+    async getJobDetail(preBookJobId) {
+        let response = await $http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
+        return response.data;
+    }
+
+    /**
+     * @param {number} bulkJobId
+     */
+    async getBulkJobPhoto(bulkJobId) {
+        let response = await $http.get('/CS/GetBulkJobPhoto?bulkJobId=' + bulkJobId);
+        return response.data;
+    }
+}
 
 
-            getPreBookJobs: function () {
-                return $http.get('/Job/PreBookJobs').then(function (response) {
-                    return response.data;
-                });
-            },
-            sendPrebookJob: function (jobId) {
-                return $http.post('/Job/SendPrebookJob?jobId=' + jobId).then(function (response) {
-                    return response.data;
-                });
-            },
-            voidPrebookJob: function (jobId, despatcherName, staffId) {
-                return $http.post('/Job/VoidPrebookJob?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId).then(function (response) {
-                    return response.data;
-                });
-            },
-
-            getJobDetail: function (id) {
-                return $http.get('/Job/PreBookDetail?preBookJobId=' + id).then(function (response) {
-                    return response.data;
-                });
-            },
-            getBulkJobPhoto: function (bulkJobId) {
-                return $http.get('/CS/GetBulkJobPhoto?bulkJobId=' + bulkJobId).then(function (response) {
-                    return response.data;
-                });
-            }
-
-        };
-    }]);
+angular.module('uDispatch').factory('uPBData', PrebookData);
