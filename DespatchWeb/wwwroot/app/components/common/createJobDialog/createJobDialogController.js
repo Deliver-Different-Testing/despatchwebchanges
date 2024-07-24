@@ -78,7 +78,25 @@ class CreateJobDialogController {
         this.jobDate = new Date();
 
         // Define job form
-        this.job = {};
+        this.job = {
+            clientID: "",
+            deliverToContact: "",
+            fromAddress: "",
+            toAddress: "",
+            date: "",
+            fromContactName: "",
+            deliveryNotes: "",
+            pickupNotes: "",
+            van: false,
+            truck: false,
+            pedal: false,
+            attention: false,
+            vanOK: false,
+            reprice: false,
+            void: false,
+            done: false,
+            charge: 0.0
+        };
     }
 
     /**
@@ -246,7 +264,6 @@ class CreateJobDialogController {
             this.toastrService.showErrorToast(error.message);
         }
     }
-
 
     /**
      * Cancels the Angular Material Dialog

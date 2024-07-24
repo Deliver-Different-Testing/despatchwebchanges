@@ -312,7 +312,6 @@ class DispatchData {
     async getAreaList() {
         let response = await this.$http.get("app/components/home/api/areaList.json");
         return response.data;
-
     }
 
     async getJobUpdates() {

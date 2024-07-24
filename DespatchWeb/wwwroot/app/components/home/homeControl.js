@@ -844,7 +844,7 @@ angular
                         selectedCourierId: job.courierId,
                     },
                 }).then(_ => {
-                    $scope.selectJobDetail(job.id);
+                    $scope.selectJobDetail(job);
                     console.log('Dialog closed!')
                 });
             }
@@ -3218,11 +3218,13 @@ angular
                 }).then(newJobId => {
                     loadingService.showLoader();
 
-                    $scope.getData().then(() => {
-                        $scope.selectJobDetail(newJobId);
-                        console.log('Dialog closed!')
-                        loadingService.closeLoader();
-                    });
+                    DispatchData.getJobDetail(newJobId).then(job => {
+                        $scope.getData().then(() => {
+                            $scope.selectJobDetail(job);
+                            console.log('Dialog closed!')
+                            loadingService.closeLoader();
+                        });
+                    })
                 }).then(() => "Create Job Canceled!");
             }
 
