@@ -2704,9 +2704,9 @@ angular
 
 
                 $scope.getClearListEnvelope = function (id) {
-                    DispatchData.getClearListEnvelope(id).then(function (data) {
-                        var swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
-                        var nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
+                    DispatchData.getClearListEnvelope(id).then(data => {
+                        const swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
+                        const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
                         map.fitBounds(new google.maps.LatLngBounds(swll, nell));
                         map.setZoom(13);
                         $scope.getAvailableCourierLocation();
@@ -2849,8 +2849,7 @@ angular
 
                     $scope.couriersClearMenu = [
                         {
-                            text: "Hold",
-                            click: function ($itemScope, $event, modelValue, text, $li) {
+                            click: ($itemScope, $event, modelValue, text, $li) => {
                                 let callData = {
                                     "call": "holdCourier",
                                     "courier": $itemScope.courier
@@ -2868,7 +2867,8 @@ angular
                                         console.log("Critical Error");
                                     }
                                 });
-                            }
+                            },
+                            text: "Hold"
                         },
                         {
                             text: "Move",
