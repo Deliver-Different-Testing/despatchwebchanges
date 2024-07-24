@@ -1,4 +1,4 @@
-function CSControl($document, $filter, $location, $mdDialog, $ngConfirm, $parse, $q, $scope, $state, $stateParams, $timeout, GeoCoder, jdSvc, NgMap, greetingService, hotkeys, uCSData) {
+function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope, $state, $stateParams, $timeout, GeoCoder, jdSvc, NgMap, greetingService, hotkeys, uCSData) {
     $scope.isAdmin = ClientInternal === "True";
     $scope.mapSetting = {
         "allCouriers": false,
@@ -1590,7 +1590,7 @@ function CSControl($document, $filter, $location, $mdDialog, $ngConfirm, $parse,
 angular
     .module('uDispatch')
     .controller('CSControl',
-        ['$document', '$filter', '$location', '$mdDialog', '$ngConfirm', '$parse', '$q', '$scope', '' +
+        ['$document', '$filter', '$location', '$mdDialog', '$parse', '$q', '$scope', '' +
         '$state', '$stateParams', '$timeout', 'GeoCoder', 'JobDetailService', 'NgMap', 'greetingService', 'hotkeys', 'uCSData', CSControl]);
 
 
