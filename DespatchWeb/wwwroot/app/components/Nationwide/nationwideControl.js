@@ -1,4 +1,4 @@
-function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm, greetingService) {
+function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, $ngConfirm, greetingService, $mdDialog) {
     $scope.isInternal = (ClientInternal === "True");
     $scope.jdSvc = jdSvc;
     $scope.name = "Nationwide";
@@ -12,26 +12,25 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.jdSvc.setSelectJobDetail(function () {
-        var j = $scope.currentJob;
+        const j = $scope.currentJob;
         jdSvc.setJob($scope.currentJob);
-        $scope.getData().then(function () {
+        $scope.getData().then(() => {
             if (j === null || j === undefined || j === false) {
                 return;
             }
 
-            var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
+            let refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
             if (refreshedJob) {
                 $scope.selectJob(refreshedJob);
-                $timeout(function () {
-                        $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+                $timeout(() => {
+                        angular.element(`#jobList tr[data-jobid='${j.id}']`).addClass("active");
 
-                        var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                        var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
-
+                        const parentDiv = angular.element(`#jobList tr[data-jobid='${j.id}'].box-content`);
+                        let goTop = angular.element(`#jobList tr[data-jobid='${j.id}']`).prop('offsetTop');
 
                         try {
-                            goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                            $parentDiv.scrollTop(goTop);
+                            goTop = goTop - parentDiv.prop('offsetTop') + parentDiv.prop('scrollTop') - 28;
+                            parentDiv.prop('scrollTop', goTop);
 
                         } catch (e) {
                             //ignore
@@ -42,17 +41,15 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 refreshedJob = $scope.jobListDelivery.find(jo => jo.id === j.id);
                 if (refreshedJob) {
                     $scope.selectJob(refreshedJob);
-                    $timeout(function () {
-                            $("#jobListDelivery tr[data-jobid='" + j.id + "']").addClass("active");
+                    $timeout(() => {
+                            angular.element(`#jobListDelivery tr[data-jobid='${j.id}']`).addClass("active");
 
-                            var $parentDiv = $("#jobListDelivery tr[data-jobid='" + j.id + "']")
-                                .parents(".box-content");
-                            var goTop = $("#jobListDelivery tr[data-jobid='" + j.id + "']").offset().top;
-
+                            const parentDiv = angular.element(`#jobListDelivery tr[data-jobid='${j.id}'].box-content`);
+                            let goTop = angular.element(`#jobListDelivery tr[data-jobid='${j.id}']`).prop('offsetTop');
 
                             try {
-                                goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                                $parentDiv.scrollTop(goTop);
+                                goTop = goTop - parentDiv.prop('offsetTop') + parentDiv.prop('scrollTop') - 28;
+                                parentDiv.prop('scrollTop', goTop);
 
                             } catch (e) {
                                 //ignore
@@ -64,16 +61,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                     if (refreshedJob) {
                         $scope.selectJob(refreshedJob);
                         $timeout(function () {
-                                $("#jobListPOD tr[data-jobid='" + j.id + "']").addClass("active");
+                                angular.element(`#jobListPOD tr[data-jobid='${j.id}']`).addClass("active");
 
-                                var $parentDiv = $("#jobListPOD tr[data-jobid='" + j.id + "']")
-                                    .parents(".box-content");
-                                var goTop = $("#jobListPOD tr[data-jobid='" + j.id + "']").offset().top;
-
+                                const parentDiv = angular.element(`#jobListPOD tr[data-jobid='${j.id}'].box-content`);
+                                let goTop = angular.element(`#jobListPOD tr[data-jobid='${j.id}']`).prop('offsetTop');
 
                                 try {
-                                    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                                    $parentDiv.scrollTop(goTop);
+                                    goTop = goTop - parentDiv.prop('offsetTop') + parentDiv.prop('scrollTop') - 28;
+                                    parentDiv.prop('scrollTop', goTop);
 
                                 } catch (e) {
                                     //ignore
@@ -85,16 +80,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         if (refreshedJob) {
                             $scope.selectJob(refreshedJob);
                             $timeout(function () {
-                                    $("#jobListReprice tr[data-jobid='" + j.id + "']").addClass("active");
+                                    angular.element(`#jobListReprice tr[data-jobid='${j.id}']`).addClass("active");
 
-                                    var $parentDiv = $("#jobListReprice tr[data-jobid='" + j.id + "']")
-                                        .parents(".box-content");
-                                    var goTop = $("#jobListReprice tr[data-jobid='" + j.id + "']").offset().top;
-
+                                    const parentDiv = angular.element(`#jobListReprice tr[data-jobid='${j.id}'].box-content`);
+                                    let goTop = angular.element(`#jobListReprice tr[data-jobid='${j.id}']`).prop('offsetTop');
 
                                     try {
-                                        goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                                        $parentDiv.scrollTop(goTop);
+                                        goTop = goTop - parentDiv.prop('offsetTop') + parentDiv.prop('scrollTop') - 28;
+                                        parentDiv.prop('scrollTop', goTop);
 
                                     } catch (e) {
                                         //ignore
@@ -105,8 +98,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                     }
                 }
             }
-
-
         });
     });
 
@@ -115,7 +106,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             return $scope.gather.form.onSubmit().then(function (response) {
                 //console.log("pointer 3");
 
-                $(".gatherForm").hide();
+                angular.element('.gatherForm').css('display', 'none');
                 //var j = $scope.currentJob;
                 $scope.getData().then(function () {
                     //if (j === null || j === undefined || j === false) {
@@ -125,10 +116,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                     //var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
                     //$scope.selectJob(refreshedJob);
                     //$timeout(function () {
-                    //    $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+                    //    angular.element("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
 
-                    //    var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                    //    var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+                    //    var $parentDiv = angular.element("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                    //    var goTop = angular.element("#jobList tr[data-jobid='" + j.id + "']").offset().top;
 
 
                     //    try {
@@ -146,13 +137,13 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         },
         cancel: function () {
-            $(".gatherForm").hide();
+            angular.element('.gatherForm').css('display', 'none');
         },
         showForm: function () {
-            $(".gatherForm").show(0,
-                function () {
-                    $timeout(function () {
-                        $(".gatherForm .focusMe").focus();
+            angular.element(".gatherForm").show(0,
+                () => {
+                    $timeout(() => {
+                        angular.element(".gatherForm .focusMe").focus();
                     }, 100);
                 });
         },
@@ -249,12 +240,11 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.markers = [];
     $scope.truckCourierStatus = [];
     $scope.getJobStyle = function (assigned) {
-        var normal =
+        const normal =
             {
                 "font-weight": "normal"
 
-            };
-        var bold =
+            }, bold =
             {
                 "font-weight": "bold"
 
@@ -518,11 +508,11 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     $scope.saveLayout = function (event) {
         angular.forEach($scope.layout.columns,
-            function (column, colKey) {
-                column.width = $("#co-" + column.id).css("flex-basis");
+            (column, colKey) => {
+                column.width = angular.element("#co-" + column.id).css("flex-basis");
                 angular.forEach(column.boxes,
                     function (box, boxKey) {
-                        box.height = $("#box-" + box.name).css("flex-basis");
+                        box.height = angular.element("#box-" + box.name).css("flex-basis");
                     });
             });
 
@@ -613,18 +603,18 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         scrollSpeed: 20,
         handle: ".box-handle",
         activate: function (e, ui) {
-            var box = $("#" + ui.item.context.id);
+            var box = angular.element("#" + ui.item.context.id);
             var parent = box.parent();
             parent.find(".box").each(function () {
-                $(this).attr("data-height", $(this).height() + "px");
+                angular.element(this).attr("data-height", angular.element(this).height() + "px");
             });
         },
         update: function (e, ui) {
             $timeout(function () {
-                var box = $("#" + ui.item.context.id);
+                var box = angular.element("#" + ui.item.context.id);
                 var parent = box.parent();
                 parent.find(".box").each(function () {
-                    $(this).css({"flex-basis": $(this).attr("data-height")});
+                    angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
                 });
                 parent.find(".box").last().css({"flex-basis": "0"});
             }, 0);
@@ -633,22 +623,22 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     $scope.openSearch = function (boxID) {
 
-        if ($("#box-" + boxID).find(".box-search").hasClass("open")) {
+        if (angular.element("#box-" + boxID).find(".box-search").hasClass("open")) {
 
-            $("#box-" + boxID).find(".box-search input").fadeOut(function () {
+            angular.element("#box-" + boxID).find(".box-search input").fadeOut(function () {
 
-                $("#box-" + boxID).find(".box-search").removeClass("open");
-                $("#box-" + boxID).find(".box-search").animate({"width": "31px"}, 500);
+                angular.element("#box-" + boxID).find(".box-search").removeClass("open");
+                angular.element("#box-" + boxID).find(".box-search").animate({"width": "31px"}, 500);
 
             });
 
         } else {
 
-            $("#box-" + boxID).find(".box-search").animate({"width": "200px"},
+            angular.element("#box-" + boxID).find(".box-search").animate({"width": "200px"},
                 500,
                 function () {
-                    $("#box-" + boxID).find(".box-search").addClass("open");
-                    $("#box-" + boxID).find(".box-search input").fadeIn();
+                    angular.element("#box-" + boxID).find(".box-search").addClass("open");
+                    angular.element("#box-" + boxID).find(".box-search input").fadeIn();
                 });
 
         }
@@ -657,15 +647,15 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
     $scope.openChat = function () {
-        if ($(".chat").hasClass("open")) {
-            $(".chat input").fadeOut(function () {
-                $(".chat").removeClass("open");
-                $(".chat").animate({"width": "31px"}, 500);
+        if (angular.element(".chat").hasClass("open")) {
+            angular.element(".chat input").fadeOut(function () {
+                angular.element(".chat").removeClass("open");
+                angular.element(".chat").animate({"width": "31px"}, 500);
             });
         } else {
-            $(".chat").animate({"width": "250px"}, 500, function () {
-                $(".chat").addClass("open");
-                $(".chat").find("input").fadeIn();
+            angular.element(".chat").animate({"width": "250px"}, 500, function () {
+                angular.element(".chat").addClass("open");
+                angular.element(".chat").find("input").fadeIn();
             });
         }
     };
@@ -706,7 +696,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         description: "Dispatch selected jobs",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
         callback: function () {
-            if ($(".activeTable .active").length > 0) {
+            if (angular.element(".activeTable .active").length > 0) {
                 $scope.dispatchJobsForm();
             }
         }
@@ -717,8 +707,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         description: "Close gather screen",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
         callback: function (event, hk) {
-            $(".gatherForm").hide();
-            $(".eventForm").hide();
+            angular.element('.gatherForm').css('display', 'none');
+            angular.element(".eventForm").hide();
             if (event.srcElement.classList.contains("dispatchField")) {
                 event.srcElement.value = "";
             }
@@ -730,7 +720,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         description: "Submit gather form",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
         callback: function (event, hk) {
-            if ($(".gatherForm").is(":visible") === true) {
+            if (angular.element(".gatherForm").is(":visible") === true) {
                 $timeout($scope.gather.submit(), 0);
             }
             if (event.srcElement.id === "gps") {
@@ -752,9 +742,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.selectClearList = function (id, event, area) {
-        $("#area-group .btn").removeClass("topBarActive");
-        $(".clearLists-list-title").removeClass("listActive");
-        $(event.currentTarget).addClass("listActive");
+        angular.element("#area-group .btn").removeClass("topBarActive");
+        angular.element(".clearLists-list-title").removeClass("listActive");
+        angular.element(event.currentTarget).addClass("listActive");
         $scope.getClearListEnvelope(id);
         $scope.setFilters({'area': area});
     };
@@ -809,15 +799,15 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             },
             submit: function () {
                 return NWData.addOtherEvent($scope.currentJob.jobNo, $scope.currentJob.clientID, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(function () {
-                    $(".eventForm").hide();
+                    angular.element(".eventForm").hide();
                 });
             },
             cancel: function () {
-                $(".eventForm").hide(0);
+                angular.element(".eventForm").hide(0);
             }
         };
 
-        $(".eventForm").show(0);
+        angular.element(".eventForm").show(0);
 
 
     };
@@ -867,7 +857,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 }
             ],
             onSubmit: function () {
-                return $scope.dispatchJobs($("#gather-courierNumber").val());
+                return $scope.dispatchJobs(angular.element("#gather-courierNumber").val());
             },
             submitValue: "Dispatch"
         };
@@ -955,8 +945,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         jobs.push(j.id);
                         return NWData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(function (response) {
                             $scope.getData().then(function () {
-                                //$("#box-jobDetail").find(".loading").show();
-                                $("#box-map").find(".loading").show();
+                                //angular.element("#box-jobDetail").find(".loading").show();
+                                angular.element("#box-map").find(".loading").show();
 
                                 $scope.courier = {gpsCourier: foundCourier.id};
                                 $scope.searchCourier();
@@ -1034,14 +1024,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
 
         var reset = function () {
-            $(".activeTable .active").each(function () {
-                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+            angular.element(".activeTable .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
                 j.courier = null;
             });
         };
 
-        $("#jobList .active").each(function () {
-            var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#jobList .active").each(function () {
+            var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             if (j.courierData.courierID !== null) {
                 alert("restore " + jn + " prior to despatching to another courier");
@@ -1068,18 +1058,18 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 NWData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
             }
 
-            callData.jobs.push($(this).attr("data-jobid"));
+            callData.jobs.push(angular.element(this).attr("data-jobid"));
         });
 
         return NWData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
             $scope.getData().then(function () {
-                //$("#box-jobDetail").find(".loading").show();
-                $("#box-map").find(".loading").show();
+                //angular.element("#box-jobDetail").find(".loading").show();
+                angular.element("#box-map").find(".loading").show();
 
                 $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
                 $timeout(function () {
-                    $("#jobList tr").first().find(".dispatchField").focus();
+                    angular.element("#jobList tr").first().find(".dispatchField").focus();
                 }, 200);
 
             });
@@ -1106,14 +1096,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
 
         var reset = function () {
-            $(".activeTable .active").each(function () {
-                var j = $scope.jobListPOD.find(jo => jo.id === $(this).data("jobid"));
+            angular.element(".activeTable .active").each(function () {
+                var j = $scope.jobListPOD.find(jo => jo.id === angular.element(this).data("jobid"));
                 j.courier = null;
             });
         };
 
-        $("#jobListPOD .active").each(function () {
-            var j = $scope.jobListPOD.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#jobListPOD .active").each(function () {
+            var j = $scope.jobListPOD.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             if (j.courierData.courierID !== null) {
                 alert("restore " + jn + " prior to despatching to another courier");
@@ -1140,18 +1130,18 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 NWData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
             }
 
-            callData.jobs.push($(this).attr("data-jobid"));
+            callData.jobs.push(angular.element(this).attr("data-jobid"));
         });
 
         return NWData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
             $scope.getData().then(function () {
-                //$("#box-jobDetail").find(".loading").show();
-                $("#box-map").find(".loading").show();
+                //angular.element("#box-jobDetail").find(".loading").show();
+                angular.element("#box-map").find(".loading").show();
 
                 $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
                 $timeout(function () {
-                    $("#jobListPOD tr").first().find(".dispatchField").focus();
+                    angular.element("#jobListPOD tr").first().find(".dispatchField").focus();
                 }, 200);
 
             });
@@ -1175,14 +1165,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
 
         var reset = function () {
-            $("#jobList .active").each(function () {
-                var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+            angular.element("#jobList .active").each(function () {
+                var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
                 j.courier = null;
             });
         };
 
-        $("#jobList .active").each(function () {
-            var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#jobList .active").each(function () {
+            var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             if (j.courierData.courierID !== null) {
                 alert("restore " + jn + " prior to despatching to another courier");
@@ -1209,13 +1199,13 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 NWData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
             }
 
-            callData.jobs.push($(this).attr("data-jobid"));
+            callData.jobs.push(angular.element(this).attr("data-jobid"));
         });
 
         return NWData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
             $scope.getData().then(function () {
-                //$("#box-jobDetail").find(".loading").show();
-                $("#box-map").find(".loading").show();
+                //angular.element("#box-jobDetail").find(".loading").show();
+                angular.element("#box-map").find(".loading").show();
 
                 $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
@@ -1241,8 +1231,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         var foundCourier = null;
 
-        $("#jobList .active").each(function () {
-            var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#jobList .active").each(function () {
+            var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
             if (callData.courierID === null) {
@@ -1250,9 +1240,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
             }
             if (j.displaySplitJobDetail) {
-                callData.splitJobs.push($(this).data("jobid"));
+                callData.splitJobs.push(angular.element(this).data("jobid"));
             } else {
-                callData.jobs.push($(this).attr("data-jobid"));
+                callData.jobs.push(angular.element(this).attr("data-jobid"));
             }
         });
 
@@ -1265,8 +1255,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
         $scope.getData().then(function () {
-            //$("#box-jobDetail").find(".loading").show();
-            $("#box-map").find(".loading").show();
+            //angular.element("#box-jobDetail").find(".loading").show();
+            angular.element("#box-map").find(".loading").show();
 
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1292,8 +1282,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         var foundCourier = null;
 
-        $("#jobListPOD .active").each(function () {
-            var j = $scope.jobListPOD.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#jobListPOD .active").each(function () {
+            var j = $scope.jobListPOD.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
             if (callData.courierID === null) {
@@ -1301,9 +1291,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
             }
             if (j.displaySplitJobDetail) {
-                callData.splitJobs.push($(this).data("jobid"));
+                callData.splitJobs.push(angular.element(this).data("jobid"));
             } else {
-                callData.jobs.push($(this).attr("data-jobid"));
+                callData.jobs.push(angular.element(this).attr("data-jobid"));
             }
         });
 
@@ -1316,8 +1306,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
         $scope.getData().then(function () {
-            //$("#box-jobDetail").find(".loading").show();
-            $("#box-map").find(".loading").show();
+            //angular.element("#box-jobDetail").find(".loading").show();
+            angular.element("#box-map").find(".loading").show();
 
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1343,8 +1333,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         var foundCourier = null;
 
-        $("#jobListDelivery .active").each(function () {
-            var j = $scope.jobListDelivery.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#jobListDelivery .active").each(function () {
+            var j = $scope.jobListDelivery.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
             if (callData.courierID === null) {
@@ -1352,9 +1342,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
             }
             if (j.displaySplitJobDetail) {
-                callData.splitJobs.push($(this).data("jobid"));
+                callData.splitJobs.push(angular.element(this).data("jobid"));
             } else {
-                callData.jobs.push($(this).attr("data-jobid"));
+                callData.jobs.push(angular.element(this).attr("data-jobid"));
             }
         });
 
@@ -1367,8 +1357,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
         $scope.getData().then(function () {
-            //$("#box-jobDetail").find(".loading").show();
-            $("#box-map").find(".loading").show();
+            //angular.element("#box-jobDetail").find(".loading").show();
+            angular.element("#box-map").find(".loading").show();
 
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1395,11 +1385,11 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         var foundCourier = null;
 
-        $("#jobList .active").each(function () {
-            var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#jobList .active").each(function () {
+            var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
-            callData.jobs.push($(this).attr("data-jobid"));
+            callData.jobs.push(angular.element(this).attr("data-jobid"));
         });
 
         if (callData.jobs.length > 0) {
@@ -1407,7 +1397,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         }
 
         $scope.getData().then(function () {
-            $("#box-map").find(".loading").show();
+            angular.element("#box-map").find(".loading").show();
 
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1429,10 +1419,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
 
 
-        $("#jobList .active").each(function () {
-            var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#jobList .active").each(function () {
+            var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
-            callData.jobs.push($(this).attr("data-jobid"));
+            callData.jobs.push(angular.element(this).attr("data-jobid"));
         });
 
         if (callData.jobs.length > 0) {
@@ -1440,7 +1430,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         }
 
         $scope.getData().then(function () {
-            $("#box-map").find(".loading").show();
+            angular.element("#box-map").find(".loading").show();
 
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1471,8 +1461,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
                         var foundCourier = null;
 
-                        $("#currentWork tr.droppable-row").each(function () {
-                            var j = $scope.jobsCurrentList.find(jo => jo.id === $(this).data("jobid"));
+                        angular.element("#currentWork tr.droppable-row").each(function () {
+                            var j = $scope.jobsCurrentList.find(jo => jo.id === angular.element(this).data("jobid"));
                             var jn = j.jobNo;
                             NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                             if (callData.courierID === null) {
@@ -1480,9 +1470,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                                 foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
                             }
                             if (j.displaySplitJobDetail) {
-                                callData.splitJobs.push($(this).data("jobid"));
+                                callData.splitJobs.push(angular.element(this).data("jobid"));
                             } else {
-                                callData.jobs.push($(this).attr("data-jobid"));
+                                callData.jobs.push(angular.element(this).attr("data-jobid"));
                             }
                         });
 
@@ -1532,8 +1522,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         };
 
                         var foundCourier = null;
-                        $("#currentWork tr.droppable-row").each(function () {
-                            callData.jobs.push($(this).attr("data-jobid"));
+                        angular.element("#currentWork tr.droppable-row").each(function () {
+                            callData.jobs.push(angular.element(this).attr("data-jobid"));
                             foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
                         });
 
@@ -1543,7 +1533,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         }
 
                         $scope.getData().then(function () {
-                            $("#box-map").find(".loading").show();
+                            angular.element("#box-map").find(".loading").show();
 
                             $scope.courier = {gpsCourier: foundCourier.id};
                             $scope.searchCourier();
@@ -1582,8 +1572,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         };
 
                         var foundCourier = null;
-                        $("#currentWork tr.droppable-row").each(function () {
-                            callData.jobs.push($(this).attr("data-jobid"));
+                        angular.element("#currentWork tr.droppable-row").each(function () {
+                            callData.jobs.push(angular.element(this).attr("data-jobid"));
                             foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
                         });
 
@@ -1593,7 +1583,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         }
 
                         $scope.getData().then(function () {
-                            $("#box-map").find(".loading").show();
+                            angular.element("#box-map").find(".loading").show();
 
                             $scope.courier = {gpsCourier: foundCourier.id};
                             $scope.searchCourier();
@@ -1624,8 +1614,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
 
         var foundCourier = null;
-        $("#currentWork .active").each(function () {
-            callData.jobs.push($(this).attr("data-jobid"));
+        angular.element("#currentWork .active").each(function () {
+            callData.jobs.push(angular.element(this).attr("data-jobid"));
             foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
         });
 
@@ -1635,7 +1625,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         }
 
         $scope.getData().then(function () {
-            $("#box-map").find(".loading").show();
+            angular.element("#box-map").find(".loading").show();
 
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1657,8 +1647,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
 
         var foundCourier = null;
-        $("#currentWork .active").each(function () {
-            callData.jobs.push($(this).attr("data-jobid"));
+        angular.element("#currentWork .active").each(function () {
+            callData.jobs.push(angular.element(this).attr("data-jobid"));
             foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID);
         });
 
@@ -1668,7 +1658,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         }
 
         $scope.getData().then(function () {
-            $("#box-map").find(".loading").show();
+            angular.element("#box-map").find(".loading").show();
 
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1692,8 +1682,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         var foundCourier = null;
 
-        $("#currentWork .active").each(function () {
-            var j = $scope.jobsCurrentList.find(jo => jo.id === $(this).data("jobid"));
+        angular.element("#currentWork .active").each(function () {
+            var j = $scope.jobsCurrentList.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
             if (callData.courierID === null) {
@@ -1701,9 +1691,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
             }
             if (j.displaySplitJobDetail) {
-                callData.splitJobs.push($(this).data("jobid"));
+                callData.splitJobs.push(angular.element(this).data("jobid"));
             } else {
-                callData.jobs.push($(this).attr("data-jobid"));
+                callData.jobs.push(angular.element(this).attr("data-jobid"));
             }
         });
 
@@ -1727,7 +1717,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     /////////////////////////////
     $scope.splitJob = function () {
         var jid;
-        jid = $(".activeTable .active").first().data("jobid");
+        jid = angular.element(".activeTable .active").first().data("jobid");
         var j = $scope.jobList.find(jo => jo.id === jid);
         if (!j.allowSplit) {
             alert("Can not split " + j.JobNo + ".");
@@ -1739,10 +1729,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
                 $scope.selectJob(refreshedJob);
                 $timeout(function () {
-                    $("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
+                    angular.element("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
 
-                    var $parentDiv = $("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                    var goTop = $("#jobList tr[data-jobid='" + j.id + "']").offset().top;
+                    var $parentDiv = angular.element("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
+                    var goTop = angular.element("#jobList tr[data-jobid='" + j.id + "']").offset().top;
 
 
                     try {
@@ -1785,22 +1775,22 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.activateDrop = function () {
         $timeout(function () {
 
-                $(document).ready(function (event) {
-                    $(".droppable-row").droppable({
+                angular.element(document).ready(function (event) {
+                    angular.element(".droppable-row").droppable({
                         classes: {
                             "ui-droppable-hover": "active"
                         },
                         drop: function (event, ui) {
-                            //$(this).addClass("active");
+                            //angular.element(this).addClass("active");
 
 
                             //STOP DROPPABLE FIRING OUTSIDE ITS CONTAINER & HIDDEN
-                            var parent = $(this).parents(".box");
+                            var parent = angular.element(this).parents(".box");
                             var parentOffset = parent.offset();
                             var parentTop = parentOffset.top;
                             var parentBottom = parentTop + parent.outerHeight();
 
-                            var row = $(this);
+                            var row = angular.element(this);
                             var rowOffset = row.offset();
                             var rowTop = rowOffset.top;
                             var rowBottom = rowTop + row.outerHeight();
@@ -1808,13 +1798,13 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                             if (rowTop < parentBottom && rowBottom > parentTop) {
 
                                 //YAY ITS VISABLE
-                                $(this).css({"background-color": "#c6dfad"});
-                                $(this).animate({backgroundColor: "inherit"},
+                                angular.element(this).css({"background-color": "#c6dfad"});
+                                angular.element(this).animate({backgroundColor: "inherit"},
                                     300,
                                     function () {
-                                        $(this).removeAttr("style");
+                                        angular.element(this).removeAttr("style");
                                     });
-                                $scope.dispatchJobs($(this).attr("data-courier").replace(/[^\d.-]/g, ''));
+                                $scope.dispatchJobs(angular.element(this).attr("data-courier").replace(/[^\d.-]/g, ''));
                                 $scope.getClearListsData();
 
                             }
@@ -1833,19 +1823,19 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     $scope.getPotentialCouriers = function (jobId) {
 
-        $("#box-potentialCouriers .loading").show();
+        angular.element("#box-potentialCouriers .loading").show();
         NWData.getPotentialCouriers(jobId).then(function (data) {
             $scope.potentialCouriers = data;
 
             //Set headings
             $timeout(function () {
-                sizeHeadings($("#potentialCouriers").parents(".column"));
+                sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
             }, 1000);
             $timeout(function () {
-                sizeHeadings($("#potentialCouriers").parents(".column"));
+                sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
             }, 2000);
 
-            $("#box-potentialCouriers .loading").fadeOut();
+            angular.element("#box-potentialCouriers .loading").fadeOut();
 
             $scope.activateDrop();
 
@@ -1856,13 +1846,13 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     // Search Courier GPS
     $scope.searchCourier = function () {
-        $("#box-currentWork").find(".loading").show();
-        $("#box-map").find(".loading").show();
+        angular.element("#box-currentWork").find(".loading").show();
+        angular.element("#box-map").find(".loading").show();
         var ac = $scope.pickCouriers.find(c => c.id === $scope.courier.gpsCourier);
         console.log(ac);
         if (ac === undefined) {
-            $("#box-currentWork").find(".loading").fadeOut();
-            $("#box-map").find(".loading").show();
+            angular.element("#box-currentWork").find(".loading").fadeOut();
+            angular.element("#box-map").find(".loading").show();
             alert("courier not found");
             return;
         }
@@ -1875,7 +1865,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         $scope.currentSelection = " for Courier " + ac.id + " " + ac.name;
         $scope.getCurrentJobs(ac.courierID);
         //NWData.getJobsCurrent(ac.courierID, false).then(function (data) {
-        //    $("#box-currentWork").find(".loading").fadeOut();
+        //    angular.element("#box-currentWork").find(".loading").fadeOut();
         //    $scope.jobsCurrentList = data;
         //    if (data.length > 0) {
         //        displayRoutePoints(data);
@@ -1884,8 +1874,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         //            displayCourierPositionOnly(posData.latitude, posData.longitude);
         //        });
         //    }
-        //    $timeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 1000);
-        //    $timeout(function () { sizeHeadings($("#currentWork").parents(".column")); }, 2000);
+        //    $timeout(function () { sizeHeadings(angular.element("#currentWork").parents(".column")); }, 1000);
+        //    $timeout(function () { sizeHeadings(angular.element("#currentWork").parents(".column")); }, 2000);
         //});
     };
 
@@ -1893,8 +1883,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.selectCourier = function (courier) {
 
 
-        $("#box-jobDetail").find(".loading").show();
-        $("#box-map").find(".loading").show();
+        angular.element("#box-jobDetail").find(".loading").show();
+        angular.element("#box-map").find(".loading").show();
         if (courier.courier === undefined) {
             courier.courier = courier.code + ' ' + courier.firstName;
         }
@@ -1911,9 +1901,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         //$scope.currentSelection = " for Courier " + + courier.courier;
 
         $timeout(function () {
-                $(document).ready(function (event) {
-                    $("#box-jobDetail").find(".loading").fadeOut();
-                    $("#box-map").find(".loading").fadeOut();
+                angular.element(document).ready(function (event) {
+                    angular.element("#box-jobDetail").find(".loading").fadeOut();
+                    angular.element("#box-map").find(".loading").fadeOut();
                 });
             },
             100);
@@ -1930,17 +1920,17 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.selectMapCourier = function (courier) {
-        $("#box-jobDetail").find(".loading").show();
-        $("#box-map").find(".loading").show();
+        angular.element("#box-jobDetail").find(".loading").show();
+        angular.element("#box-map").find(".loading").show();
 
-        $("#box-currentWork").find(".loading").show();
+        angular.element("#box-currentWork").find(".loading").show();
         var foundCourier = $scope.pickCouriers.find(x => x.courierID === courier.courierID);
         $scope.currentCourier = {
             courierID: foundCourier.courierID,
             courier: foundCourier.label
         };
         NWData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(function (data) {
-            $("#box-currentWork").find(".loading").fadeOut();
+            angular.element("#box-currentWork").find(".loading").fadeOut();
             //if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
             //    $scope.currentJob = null;
             //}
@@ -1950,10 +1940,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             }
             $scope.activateDrop();
             $timeout(function () {
-                sizeHeadings($("#currentWork").parents(".column"));
+                sizeHeadings(angular.element("#currentWork").parents(".column"));
             }, 1000);
             $timeout(function () {
-                sizeHeadings($("#currentWork").parents(".column"));
+                sizeHeadings(angular.element("#currentWork").parents(".column"));
             }, 2000);
             //$scope.getAvailableCourierLocation();
         });
@@ -1963,9 +1953,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         //$scope.currentSelection = " for Courier " + + courier.label;
 
         $timeout(function () {
-            $(document).ready(function (event) {
-                $("#box-jobDetail").find(".loading").fadeOut();
-                $("#box-map").find(".loading").fadeOut();
+            angular.element(document).ready(function (event) {
+                angular.element("#box-jobDetail").find(".loading").fadeOut();
+                angular.element("#box-map").find(".loading").fadeOut();
             });
         }, 100);
 
@@ -1976,23 +1966,23 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.selectPotentialCourier = function (courier) {
-        $("#box-jobDetail").find(".loading").show();
-        $("#box-map").find(".loading").show();
+        angular.element("#box-jobDetail").find(".loading").show();
+        angular.element("#box-map").find(".loading").show();
         if (courier.courier === undefined) {
             courier.courier = courier.code + ' ' + courier.firstName;
         }
 
         if ($scope.jobList.length > 0) {
-            var jid = $("#jobList .active").last().data("jobid");
+            var jid = angular.element("#jobList .active").last().data("jobid");
             var currentJob = $scope.jobList.find(jo => jo.id === jid);
             var undespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
             displayPickupPoints(undespatchedData, true, currentJob);
         }
 
-        $("#box-currentWork").find(".loading").show();
+        angular.element("#box-currentWork").find(".loading").show();
         var code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
         NWData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(function (data) {
-            $("#box-currentWork").find(".loading").fadeOut();
+            angular.element("#box-currentWork").find(".loading").fadeOut();
             if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
                 $scope.currentJob = null;
             }
@@ -2006,10 +1996,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             }
             $scope.activateDrop();
             $timeout(function () {
-                sizeHeadings($("#currentWork").parents(".column"));
+                sizeHeadings(angular.element("#currentWork").parents(".column"));
             }, 1000);
             $timeout(function () {
-                sizeHeadings($("#currentWork").parents(".column"));
+                sizeHeadings(angular.element("#currentWork").parents(".column"));
             }, 2000);
             $scope.getAvailableCourierLocation();
         });
@@ -2020,10 +2010,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         //$scope.currentSelection = " for Courier " + + courier.courier;
 
         $timeout(function () {
-            $(document).ready(function (event) {
-                $("#box-jobDetail").find(".loading").fadeOut();
-                $("#box-map").find(".loading").fadeOut();
-                //        var jid = $("#jobList .active").last().data("jobid");
+            angular.element(document).ready(function (event) {
+                angular.element("#box-jobDetail").find(".loading").fadeOut();
+                angular.element("#box-map").find(".loading").fadeOut();
+                //        var jid = angular.element("#jobList .active").last().data("jobid");
                 //        var job = $scope.jobList.find(jo => jo.id === jid);
                 //        var jobs = [job];
                 //        displayRoutePoints(jobs, false);
@@ -2039,19 +2029,19 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     $scope.getGroupedJobs = function (jobs, courier) {
 
-        $("#box-jobGroups").find(".loading").show();
+        angular.element("#box-jobGroups").find(".loading").show();
 
         NWData.getJobsGrouped().then(function (data) {
 
-            $("#box-jobGroups").find(".loading").fadeOut();
+            angular.element("#box-jobGroups").find(".loading").fadeOut();
 
             $scope.jobGroups = data;
 
             $timeout(function () {
-                sizeHeadings($("#jobGroups").parents(".column"));
+                sizeHeadings(angular.element("#jobGroups").parents(".column"));
             }, 1000);
             $timeout(function () {
-                sizeHeadings($("#jobGroups").parents(".column"));
+                sizeHeadings(angular.element("#jobGroups").parents(".column"));
             }, 2000);
 
         });
@@ -2064,11 +2054,11 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     $scope.getCurrentJobs = function (courierId) {
 
-        $("#box-currentWork").find(".loading").show();
+        angular.element("#box-currentWork").find(".loading").show();
         var foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
         var code = foundCourier != undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
         NWData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
-            $("#box-currentWork").find(".loading").fadeOut();
+            angular.element("#box-currentWork").find(".loading").fadeOut();
             /*
             if ($scope.currentJob !== undefined && $scope.currentJob !== null && $scope.currentJob.courier !== code) {
                 $scope.currentJob = null;
@@ -2084,10 +2074,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             }
             $scope.activateDrop();
             $timeout(function () {
-                sizeHeadings($("#currentWork").parents(".column"));
+                sizeHeadings(angular.element("#currentWork").parents(".column"));
             }, 1000);
             $timeout(function () {
-                sizeHeadings($("#currentWork").parents(".column"));
+                sizeHeadings(angular.element("#currentWork").parents(".column"));
             }, 2000);
         });
 
@@ -2099,17 +2089,17 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     }
     $scope.jobFilters = filtersObject || {"status": "all", "area": "mainfu", "order": "", "asc": "asc"};
     var f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
-    $(f).addClass("topBarActive");
+    angular.element(f).addClass("topBarActive");
     var areas = $scope.jobFilters.area.split(',');
     for (var i = 0; i < areas.length; i++) {
         f = ".top-bar .btn-group .btn." + areas[i];
-        $(f).addClass("topBarActive");
+        angular.element(f).addClass("topBarActive");
     }
 
     $scope.sort["jobList"] = "remain";
 
     $scope.setFiltersFromTopBar = function (data) {
-        $('.clearLists-list-title').removeClass('listActive');
+        angular.element('.clearLists-list-title').removeClass('listActive');
         $scope.setFilters(data);
     };
 
@@ -2121,7 +2111,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
             if (data.area) {
-                var selected = $("#area-group > .btn.topBarActive").length;
+                var selected = angular.element("#area-group > .btn.topBarActive").length;
                 if (selected > 1) {
                     $scope.jobFilters.area += "," + data.area;
                 } else {
@@ -2149,11 +2139,11 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         console.log("select Job  " + support.jobId);
 
         $scope.currentSupport = support;
-        $("#box-jobDetail").find(".loading").show();
+        angular.element("#box-jobDetail").find(".loading").show();
 
         NWData.getJobDetail(support.jobId).then(function (data) {
             $scope.currentJob = data;
-            $("#box-jobDetail").find(".loading").hide();
+            angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + support.jobNumber;
             var jobs = [];
             jobs.push($scope.currentJob);
@@ -2170,10 +2160,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.loadRelatedJobDetail = function (id, jn) {
-        $("#box-jobDetail").find(".loading").show();
+        angular.element("#box-jobDetail").find(".loading").show();
         NWData.getJobDetail(id).then(function (data) {
             $scope.currentJob = data;
-            $("#box-jobDetail").find(".loading").hide();
+            angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + jn;
         });
     }
@@ -2186,13 +2176,13 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 $scope.selectedJobs = [];
                 $scope.currentSupport = null;
 
-                $(".activeTable .active").each(function () {
+                angular.element(".activeTable .active").each(function () {
 
-                    //$(this).hide();
-                    $(this).find(".selectjob").click();
+                    //angular.element(this).hide();
+                    angular.element(this).find(".selectjob").click();
 
                     $scope.selectedJobs.push($scope.jobForDispatch.ID);
-                    jobRow = $(this);
+                    jobRow = angular.element(this);
                 });
                 console.log("selectJob");
                 $scope.currentJob = job;
@@ -2242,7 +2232,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                     displayRoutePoints(jobs, false, $scope.mapZoom.display);
                 }
                 if (!document.activeElement.classList.contains("lateCallField")) {
-                    $(jobRow).find(".dispatchField").focus();
+                    angular.element(jobRow).find(".dispatchField").focus();
                 }
 
 
@@ -2253,7 +2243,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.setCurrentWorkMenu = function () {
-        var multiple = $(".activeTable .active").length > 1;
+        var multiple = angular.element(".activeTable .active").length > 1;
 
         var menu = [
             {
@@ -2365,20 +2355,20 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                                 console.log(lateMins);
                                 $scope.lateCall(lateMins, 1, $scope.currentJob, false);
                                 $scope.lateForm.data = null;
-                                $("#AwayMins").select2().empty();
-                                $("#AwayMins").select2('destroy');
-                                $(".lateForm").hide(0)
+                                angular.element("#AwayMins").select2().empty();
+                                angular.element("#AwayMins").select2('destroy');
+                                angular.element(".lateForm").hide(0)
                             }
                         },
                         cancel: function () {
                             $scope.lateForm.data = null;
-                            $("#AwayMins").select2().empty();
-                            $("#AwayMins").select2('destroy');
-                            $(".lateForm").hide(0);
+                            angular.element("#AwayMins").select2().empty();
+                            angular.element("#AwayMins").select2('destroy');
+                            angular.element(".lateForm").hide(0);
                         }
                     };
                     $scope.$apply();
-                    $(".lateForm").show(0);
+                    angular.element(".lateForm").show(0);
 
                     $timeout(function () {
 
@@ -2388,8 +2378,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                             placeholder: "Start typing to enter new time..."
                         };
 
-                        $("#AwayMins").select2(dueOptions);
-                        $("#AwayMins").select2('open');
+                        angular.element("#AwayMins").select2(dueOptions);
+                        angular.element("#AwayMins").select2('open');
                     }, 200);
                 }, 400);
 
@@ -2496,11 +2486,11 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.setJobsMenu = function () {
-        var multiple = $(".activeTable .active").length > 1;
+        var multiple = angular.element(".activeTable .active").length > 1;
         var lastCourier = null;
         var sameCourier = true;
-        $(".activeTable .active").each(function () {
-            var j = $scope.jobList.find(jo => jo.id === $(this).data("jobid"));
+        angular.element(".activeTable .active").each(function () {
+            var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             if (lastCourier !== null && lastCourier !== j.courier) {
                 sameCourier = false;
                 return false;
@@ -2690,8 +2680,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             $scope.jobListPOD = data;
 
             $timeout(function () {
-                $("#box-jobsListPOD .loading").fadeOut();
-                sizeHeadings($("#jobListPOD").parents(".column"));
+                angular.element("#box-jobsListPOD .loading").fadeOut();
+                sizeHeadings(angular.element("#jobListPOD").parents(".column"));
 
             }, 200);
 
@@ -2701,8 +2691,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             $scope.jobList = data;
 
             $timeout(function () {
-                $("#box-jobsList .loading").fadeOut();
-                sizeHeadings($("#jobList").parents(".column"));
+                angular.element("#box-jobsList .loading").fadeOut();
+                sizeHeadings(angular.element("#jobList").parents(".column"));
 
             }, 200);
 
@@ -2712,8 +2702,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             $scope.jobListReprice = data;
 
             $timeout(function () {
-                $("#box-jobsListReprice .loading").fadeOut();
-                sizeHeadings($("#jobListReprice").parents(".column"));
+                angular.element("#box-jobsListReprice .loading").fadeOut();
+                sizeHeadings(angular.element("#jobListReprice").parents(".column"));
 
             }, 200);
 
@@ -2723,8 +2713,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             $scope.jobListDelivery = data;
 
             $timeout(function () {
-                $("#box-jobsListDelivery .loading").fadeOut();
-                sizeHeadings($("#jobListDelivery").parents(".column"));
+                angular.element("#box-jobsListDelivery .loading").fadeOut();
+                sizeHeadings(angular.element("#jobListDelivery").parents(".column"));
 
                 $scope.getAvailableCourierLocation();
             }, 200);
@@ -2756,7 +2746,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         ////////////////////////////
         // SUPPORTS
         ////////////////////////////
-        $("#box-supports").find(".loading").show();
+        angular.element("#box-supports").find(".loading").show();
         return NWData.getSupports($scope.supportChannel).then(function (data) {
             $scope.supports = data;
 
@@ -2784,10 +2774,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
             $timeout(function () {
-                    $(document).ready(function (event) {
-                        $("#box-supports").find(".loading").fadeOut();
+                    angular.element(document).ready(function (event) {
+                        angular.element("#box-supports").find(".loading").fadeOut();
                         if ($scope.currentSupport) {
-                            $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
+                            angular.element("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
                         }
                     });
 
@@ -2796,10 +2786,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
             $timeout(function () {
-                sizeHeadings($("#supports").parents(".column"));
+                sizeHeadings(angular.element("#supports").parents(".column"));
             }, 1000);
             $timeout(function () {
-                sizeHeadings($("#supports").parents(".column"));
+                sizeHeadings(angular.element("#supports").parents(".column"));
             }, 2000);
         });
     }
@@ -2825,7 +2815,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         //Get Job Data
 
-        $("#box-jobsList").find(".loading").show();
+        angular.element("#box-jobsList").find(".loading").show();
         $scope.jobList = [];
         $scope.jobListPOD = [];
         $scope.currentJob = false;
@@ -2857,16 +2847,16 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.getEventTypes();
 
     $scope.getData();
-    //$(document).everyTime("10s", "SP", function () { $scope.getSupports(); });
+    //angular.element(document).everyTime("10s", "SP", function () { $scope.getSupports(); });
 
     // on first focus (bubbles up to document), open the menu
-    $(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
-        $(this).closest(".select2-container").siblings('select:enabled').select2('open');
+    angular.element(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
+        angular.element(this).closest(".select2-container").siblings('select:enabled').select2('open');
     });
 
     // steal focus during close - only capture once and stop propogation
-    $('select.select2').on('select2:closing', function (e) {
-        $(e.target).data("select2").$selection.one('focus focusin', function (e) {
+    angular.element('select.select2').on('select2:closing', function (e) {
+        angular.element(e.target).data("select2").$selection.one('focus focusin', function (e) {
             e.stopPropagation();
         });
     });
@@ -2929,7 +2919,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             }
         };
 
-        $("#location").select2(options).on("select2:select", function (e) {
+        angular.element("#location").select2(options).on("select2:select", function (e) {
             $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json", {
                 app_id: "bBPfh2x8Cauun3ygLMAx",
                 app_code: "yjfwTdkin_R2rGXYTrwWVg",
@@ -2938,13 +2928,13 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 var locn = data.Response.View[0].Result[0].Location;
                 console.log("Suburb = " + locn.Address.District);
                 console.log("PostCode = " + locn.Address.PostalCode);
-                $("#suburb").val(locn.Address.District);
+                angular.element("#suburb").val(locn.Address.District);
                 var mappedSub = $scope.jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
                 if (mappedSub !== undefined) {
                     console.log(mappedSub);
-                    $('#our_suburb').val(mappedSub.id).trigger('change');
+                    angular.element('#our_suburb').val(mappedSub.id).trigger('change');
                 } else {
-                    $('#our_suburb').val(null).trigger('change');
+                    angular.element('#our_suburb').val(null).trigger('change');
                 }
 
 
@@ -2963,7 +2953,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             data: $scope.jdSvc.pickSuburbs
         };
 
-        $("#our_suburb").select2(suburbOptions);
+        angular.element("#our_suburb").select2(suburbOptions);
 
         waitingDialog.hide();
     };
@@ -2980,16 +2970,16 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
             lat = $scope.currentJob.deliveryLatitude;
             long = $scope.currentJob.deliveryLongitude;
-            q = $("#gpsMap").attr("data-src") + lat + "," + long;
+            q = angular.element("#gpsMap").attr("data-src") + lat + "," + long;
         } else {
             lat = "";
             long = "";
-            q = $("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentJob.toAddress);
+            q = angular.element("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentJob.toAddress);
         }
 
         console.log($scope.currentJob.pickupLatitude);
         console.log(q);
-        $("#gpsMap").attr("src", q);
+        angular.element("#gpsMap").attr("src", q);
 
         $scope.gpsForm = {
             "data": {
@@ -3031,7 +3021,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
             },
             cancel: function () {
-                $(".gpsForm").hide(0);
+                angular.element(".gpsForm").hide(0);
             },
             placeChanged: function (place) {
                 if (place !== null) {
@@ -3070,13 +3060,13 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                     //$scope.gpsForm.data.address = locn.Address.Label;
                     console.log("Suburb = " + locn.Address.District);
                     console.log("PostCode = " + locn.Address.PostalCode);
-                    $("#suburb").val(locn.Address.District);
+                    angular.element("#suburb").val(locn.Address.District);
                     var mappedSub = $scope.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
                     if (mappedSub !== undefined) {
                         console.log(mappedSub);
-                        $('#our_suburb').val(mappedSub.id).trigger('change');
+                        angular.element('#our_suburb').val(mappedSub.id).trigger('change');
                     } else {
-                        $('#our_suburb').val(null).trigger('change');
+                        angular.element('#our_suburb').val(null).trigger('change');
                     }
 
 
@@ -3088,7 +3078,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
 
 
-        $(".gpsForm").show(0, function () {
+        angular.element(".gpsForm").show(0, function () {
             $scope.$apply();
             $scope.onMapReady();
             //var auckland = { lat: -36.8804466, lng: 174.6117981 };
@@ -3098,8 +3088,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             //$scope.heremaps.refresh();
             //$scope.heremaps.setZoom(10);
             $timeout(function () {
-                $('#location').select2('open');
-                var search = $('#location').data('select2').dropdown.$search;
+                angular.element('#location').select2('open');
+                var search = angular.element('#location').data('select2').dropdown.$search;
                 if ($scope.gpsForm.data.address.indexOf(',') > 0) {
                     var parts = $scope.gpsForm.data.address.split(',');
                     search.val(parts[1].split());
@@ -3114,8 +3104,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
         $scope.copyGpsAddress = function () {
-            $('#location').select2('open');
-            var search = $('#location').data('select2').dropdown.$search;
+            angular.element('#location').select2('open');
+            var search = angular.element('#location').data('select2').dropdown.$search;
             if ($scope.gpsForm.data.address.indexOf(',') > 0) {
                 var parts = $scope.gpsForm.data.address.split(',');
                 search.val(parts[1].split());
@@ -3192,17 +3182,17 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         if ($scope.eventForm.data.event === "6") {
                             NWData.voidJob($scope.currentJob.id);
                         }
-                        $(".eventForm").hide();
+                        angular.element(".eventForm").hide();
                         $scope.getData();
                     });
 
                 },
                 cancel: function () {
-                    $(".eventForm").hide(0);
+                    angular.element(".eventForm").hide(0);
                 }
             };
 
-            $(".eventForm").show(0, function () {
+            angular.element(".eventForm").show(0, function () {
                 $scope.$apply();
                 $timeout(function () {
                     var statusOptions = {
@@ -3211,8 +3201,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         placeholder: "Start typing to choose event type..."
                     };
 
-                    $(".eventForm #event-type").select2(statusOptions);
-                    $(".eventForm #event-type").select2('open');
+                    angular.element(".eventForm #event-type").select2(statusOptions);
+                    angular.element(".eventForm #event-type").select2('open');
 
 
                 }, 200);
@@ -3230,11 +3220,11 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 $scope.refreshTruckCourierStatus();
             },
             close: function () {
-                $(".truckCourierStatusForm").hide(0);
+                angular.element(".truckCourierStatusForm").hide(0);
             }
         };
 
-        $(".truckCourierStatusForm").show(0);
+        angular.element(".truckCourierStatusForm").show(0);
 
 
     };
@@ -3261,7 +3251,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     // Call the init function when the controller loads
     $scope.init();
-
 }
 
 angular
@@ -3276,7 +3265,9 @@ angular
     "$q",
     "$timeout",
     "$ngConfirm",
-    "greetingService", NationwideController]);
+    "greetingService",
+    "$mdDialog",
+    NationwideController]);
 
 
 function Deg2Rad(deg) {
