@@ -602,7 +602,7 @@
                 if (fieldName === "SpeedID") {
                     callData.value = gather.form.fields[0].value;
                     job.speedID = parseInt(gather.form.fields[0].value);
-                    job.speed = angular.element($document.querySelector("#gather-SpeedID option:selected")).text();
+                    job.speed = angular.element("#gather-SpeedID option:selected").text();
                     rerate = true;
                 }
                 if (fieldName === "JobTypeID") {
@@ -622,23 +622,23 @@
                 if (fieldName === "NotifiedJobTypeID") {
                     callData.value = gather.form.fields[0].value;
                     job.notifiedJobTypeID = parseInt(gather.form.fields[0].value);
-                    job.notify = angular.element($document.querySelector("#gather-NotifiedJobTypeID option:selected")).text();
+                    job.notify = angular.element("#gather-NotifiedJobTypeID option:selected").text();
                     rerate = true;
                 }
                 if (fieldName === "AcceptedJobTypeID") {
                     callData.value = gather.form.fields[0].value;
                     job.acceptedJobTypeID = parseInt(gather.form.fields[0].value);
-                    job.speedAccepted = angular.element($document.querySelector("#gather-AcceptedJobTypeID option:selected")).text();
+                    job.speedAccepted = angular.element("#gather-AcceptedJobTypeID option:selected").text();
                     rerate = true;
                 }
                 if (fieldName === "DeliverToLeaveID") {
                     callData.value = gather.form.fields[0].value;
-                    job.sigNotRequired = angular.element($document.querySelector("#gather-DeliverToLeaveID option:selected")).text();
+                    job.sigNotRequired = angular.element("#gather-DeliverToLeaveID option:selected").text();
                 }
 
                 if (fieldName === "UndeliverableLocationID") {
                     callData.value = gather.form.fields[0].value;
-                    job.UDStatus = angular.element($document.querySelector("#gather-UndeliverableLocationID option:selected")).text();
+                    job.UDStatus = angular.element("#gather-UndeliverableLocationID option:selected").text();
                 }
                 if (fieldName === "ClientID") {
                     callData.value = gather.form.fields[0].value;
@@ -674,16 +674,14 @@
                         });
                 }
                 if (rerate && !job.bulkJob) {
-                    return self.rateJob(job).then(function (rate) {
-                        return DispatchData
-                            .updateJobDetail(callData.jobID,
-                                callData.field,
-                                callData.value,
-                                Number(rate.replace(/[^0-9.-]+/g, "")),
-                                FirstName,
-                                ContactID,
-                                job.preBook).then(response => response);
-                    });
+                    return self.rateJob(job).then(rate => DispatchData
+                        .updateJobDetail(callData.jobID,
+                            callData.field,
+                            callData.value,
+                            Number(rate.replace(/[^0-9.-]+/g, "")),
+                            FirstName,
+                            ContactID,
+                            job.preBook).then(response => response));
                 } else {
                     return job.bulkJob ? DispatchData
                             .updateBulkJobDetail(job.id,
