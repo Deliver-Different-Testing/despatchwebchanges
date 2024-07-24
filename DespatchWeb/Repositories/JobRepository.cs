@@ -2504,7 +2504,11 @@ public class JobRepository : IJobRepository
         await _context.Procedures.DESWEB_stpQuickCreateJobAsync(
             job.ClientId,
             job.FromAddress,
+            job.FromLatitude,
+            job.FromLongitude,
             job.ToAddress,
+            job.ToLatitude,
+            job.ToLongitude,
             job.FromContactName,
             job.Date,
             job.Void,
