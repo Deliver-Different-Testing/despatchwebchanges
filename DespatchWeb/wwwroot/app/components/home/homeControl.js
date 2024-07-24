@@ -844,7 +844,7 @@ angular
                         selectedCourierId: job.courierId,
                     },
                 }).then(_ => {
-                    self.selectJobDetail(job.id);
+                    $scope.selectJobDetail(job.id);
                     console.log('Dialog closed!')
                 });
             }
@@ -3218,8 +3218,8 @@ angular
                 }).then(newJobId => {
                     loadingService.showLoader();
 
-                    self.getData().then(() => {
-                        self.selectJobDetail(newJobId);
+                    $scope.getData().then(() => {
+                        $scope.selectJobDetail(newJobId);
                         console.log('Dialog closed!')
                         loadingService.closeLoader();
                     });
