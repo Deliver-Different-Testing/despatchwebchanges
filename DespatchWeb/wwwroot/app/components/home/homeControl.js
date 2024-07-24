@@ -90,7 +90,7 @@ angular
                 },
                 showForm: function () {
                     angular.element('.gatherForm').css("display", "block");
-                    $timeout(function () {
+                    $timeout(() => {
                         angular.element('.gatherForm .focusMe').focus();
                     }, 100);
                 },
@@ -335,7 +335,7 @@ angular
                 layoutsObject = JSON.parse(localStorage.getItem("layouts-" + ContactID));
                 $scope.mapZoom = JSON.parse(localStorage.getItem("mapZoom-" + ContactID)) || {display: true};
             }
-            var defaultLayout = [
+            const defaultLayout = [
                 {
                     name: "Default",
                     layout: {
@@ -523,17 +523,15 @@ angular
             };
 
             $scope.isLinehaul = function (input) {
-                var hideLinehaulDelMulti = /DEL/g
-                var hideLinehaulMulti = /LH/g
-                var hideLinehaulPickMulti = /LHP/g
+                const hideLinehaulDelMulti = /DEL/g, hideLinehaulMulti = /LH/g, hideLinehaulPickMulti = /LHP/g;
                 return hideLinehaulMulti.test(input) || hideLinehaulDelMulti.test(input) || hideLinehaulPickMulti.test(input);
             };
 
             $scope.checkLinehaul = function (input) {
-                var hideLinehaulDelMulti = /DEL-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g
-                var hideLinehaulMulti = /LH-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g
-                var hideLinehaulMulti2 = /LH([1-9]|[0-9][0-9]|[1-9][0-9][0-9])-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g
-                var hideLinehaulPickMulti = /LHP-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g
+                const hideLinehaulDelMulti = /DEL-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g,
+                    hideLinehaulMulti = /LH-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g,
+                    hideLinehaulMulti2 = /LH([1-9]|[0-9][0-9]|[1-9][0-9][0-9])-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g,
+                    hideLinehaulPickMulti = /LHP-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g;
                 return hideLinehaulMulti.test(input) || hideLinehaulDelMulti.test(input) || hideLinehaulPickMulti.test(input) || hideLinehaulMulti2.test(input);
             };
 
@@ -2696,8 +2694,7 @@ angular
                 ///////////////////////////////
 
                 //Get Job Data
-
-                $("#box-jobsList").find(".loading").show();
+                angular.element("#box-jobsList").find(".loading").show();
                 $scope.jobList = [];
                 $scope.currentJob = false;
                 $scope.potentialCouriers = false;
@@ -2740,11 +2737,6 @@ angular
                     $scope.pickAllCouriers = data;
                 });
 
-
-                //DispatchData.getActiveClients().then(function (data) {
-                //    $scope.pickClients = data;
-                //});
-
                 ////////////////////////////
                 // COURIER MOVEMENTS THROUGH
                 ////////////////////////////
@@ -2755,7 +2747,7 @@ angular
                     $scope.couriersThroughMenu = [
                         {
                             text: "Delete",
-                            click: function ($itemScope, $event, modelValue, text, $li) {
+                            click: ($itemScope, $event, modelValue, text, $li) => {
                                 angular.element(".rightActiveTable .active").fadeOut();
                             }
                         }
@@ -3226,8 +3218,10 @@ angular
                         staffId: ContactID
                     },
                 }).then(newJobId => {
-                    self.selectJobDetail(newJobId);
-                    console.log('Dialog closed!')
+                    self.getData().then(() => {
+                        self.selectJobDetail(newJobId);
+                        console.log('Dialog closed!')
+                    });
                 });
             }
 
