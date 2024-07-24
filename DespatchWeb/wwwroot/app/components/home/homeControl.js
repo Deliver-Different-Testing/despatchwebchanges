@@ -3274,29 +3274,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", 'greetingService', 'hotkeys', "JobDetailService",
     'loadingService', "NgMap", "$mdDialog", "$parse", "$q", "$scope", "$state", "$timeout", 'toastrService', "DispatchData", HomeController]);
 
-
-class HereMapsConfigProvider {
-    constructor() {
-        this.options = {
-            'app_id': 'bBPfh2x8Cauun3ygLMAx',
-            'app_code': 'yjfwTdkin_R2rGXYTrwWVg',
-            'useHTTPS': true,
-            'useCIT': true,
-            'mapTileConfig': {
-                metadataQueryParams: {
-                    'lg2': 'ara'
-                }
-            }
-        };
-    }
-
-    setOptions(options) {
-        this.options = options;
-    }
-}
-
-angular.module("uDispatch").config(["HereMapsConfigProvider", HereMapsConfigProvider]);
-
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }

@@ -86,6 +86,19 @@ angular
             });
         }
     })
+    .config(["HereMapsConfigProvider", HereMapsConfigProvider => {
+        HereMapsConfigProvider.setOptions({
+            'app_id': 'bBPfh2x8Cauun3ygLMAx',
+            'app_code': 'yjfwTdkin_R2rGXYTrwWVg',
+            'useHTTPS': true,
+            'useCIT': true,
+            'mapTileConfig': {
+                metadataQueryParams: {
+                    'lg2': 'ara'
+                }
+            }
+        });
+    }])
     .config(['$qProvider', $qProvider => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
