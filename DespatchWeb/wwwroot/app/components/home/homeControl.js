@@ -3214,6 +3214,17 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     }
 
     HomeController.prototype.interCourierCharge = function (event) {
+        $mdDialog.show({
+            controller: InterCourierChargeDialogController,
+            controllerAs: 'ctrl',
+            parent: angular.element($document.body),
+            targetEvent: event,
+            templateUrl: "app/components/common/interCourierChargeDialog/interCourierChargeDialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+        }).then(() => {
+            console.log("Intercourier Charge Added!")
+        }).then(() => "Intercourier Charge Canceled!");
     }
 
     $scope.sendPOD = () => {

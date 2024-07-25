@@ -19,6 +19,7 @@
 
                 <div layout-gt-sm="row">
                     <md-autocomplete
+                            flex-gt-sm
                             md-autofocus
                             md-autoselect
                             md-escape-options="clear"
@@ -39,6 +40,7 @@
                     </md-autocomplete>
 
                     <md-autocomplete
+                            flex-gt-sm
                             md-escape-options="clear"
                             md-floating-label="To Courier"
                             md-item-text="item.text"
@@ -69,9 +71,9 @@
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="charge-amount">Charge Amount</label>
+                        <label for="charge-amount">Amount</label>
                         <md-icon md-font-set="material-symbols-outlined">paid</md-icon>
-                        <input id="charge-amount" md-no-asterisk ng-model="ctrl.job.charge" required step="0.01"
+                        <input id="charge-amount" md-no-asterisk ng-model="ctrl.amount" required step="0.01"
                                type="number">
                     </md-input-container>
                 </div>

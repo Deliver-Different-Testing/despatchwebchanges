@@ -103,4 +103,20 @@ public class CourierController : Controller
 
         return Json(courier);
     }
+
+    [HttpPost]
+    public async Task<IActionResult> InterCourierCharge(InterCourierChargeViewModel viewModel)
+    {
+        // Do something
+        return Json("OK");
+    }
+
+    public class InterCourierChargeViewModel
+    {
+        public int FromCourierId { get; set; }
+        public int ToCourierId { get; set; }
+        public string Reference { get; set; }
+        public int Zones { get; set; }
+        public double Amount { get; set; }
+    }
 }
