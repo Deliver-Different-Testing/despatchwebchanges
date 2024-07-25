@@ -1,11 +1,12 @@
-function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope, $state, $stateParams, $timeout, GeoCoder, jdSvc, NgMap, greetingService, hotkeys, uCSData) {
+function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope, $state, $stateParams, $timeout,
+                   GeoCoder, jdSvc, NgMap, greetingService, hotkeys, uCSData) {
     $scope.isAdmin = ClientInternal === "True";
     $scope.mapSetting = {
         "allCouriers": false,
         "allRuns": false
     };
 
-    $scope.dateSearchRange = 1; // Set to fortnight
+    CSControl.prototype.dateSearchRange = 1; // Set to fortnight
     $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
     $scope.searchBox = "";
@@ -22,11 +23,64 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
     $scope.name = "POD";
     $scope.jdSvc = jdSvc;
+    CSControl.prototype.pickDateService = {
+        client: '',
+        courier: "",
+        date: new Date(),
+        from_date: new Date(),
+        to_date: new Date(),
+        followupClient: "All",
+        includeClosed: true
+    };
 
-    $scope.greetUser = () => greetingService.greetUser($scope.userName);
+    /**
+     * @param {number} selectedDateRange
+     */
+    CSControl.prototype.onSearchRangeChange = (selectedDateRange) => {
+        let now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        let firstDayOfMonth = new Date();
+        firstDayOfMonth.setDate(1);
+        firstDayOfMonth.setHours(0, 0, 0, 0);
+
+        let lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        lastDayOfMonth.setHours(0, 0, 0, 0);
+
+        let oneWeekAgo = new Date();
+        oneWeekAgo.setDate(now.getDate() - 7);
+        oneWeekAgo.setHours(0, 0, 0, 0);
+
+        let oneWeekAhead = new Date();
+        oneWeekAhead.setDate(now.getDate() + 7);
+        oneWeekAhead.setHours(0, 0, 0, 0);
+
+        switch (selectedDateRange) {
+            case '2':
+                this.pickDateService.from_date = now;
+                this.pickDateService.to_date = now;
+                break;
+            case '1':
+                this.pickDateService.from_date = oneWeekAgo;
+                this.pickDateService.to_date = oneWeekAhead;
+                break;
+            case '3':
+                this.pickDateService.from_date = firstDayOfMonth;
+                this.pickDateService.to_date = lastDayOfMonth;
+                break;
+            case '4':
+                // This option is empty as ng-if is used on the page to show custom date range options
+                break;
+        }
+    };
+
+    // Default to fortnight
+    CSControl.prototype.onSearchRangeChange(1);
+
+    CSControl.prototype.greetUser = () => greetingService.greetUser($scope.userName);
 
     $scope.updateGPS = (currentJob, field, fromRightClick) => {
-        $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
+        jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
     $scope.createNewJob = function (event) {
@@ -342,7 +396,7 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         layoutsObject = JSON.parse(localStorage.getItem("layoutsCS-" + ContactID));
     }
 
-    var defaultLayout = [
+    const defaultLayout = [
         {
             name: "Default",
             layout: {
@@ -407,16 +461,6 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     $scope.layouts = layoutsObject || defaultLayout;
     $scope.userName = FirstName;
 
-
-    $scope.pickDateService = {
-        "client": '',
-        "courier": "",
-        "date": moment().format("YYYY-MM-DD"),
-        "from_date": moment().subtract(7, 'days').format("YYYY-MM-DD"),
-        "to_date": moment().add(7, 'days').format("YYYY-MM-DD"),
-        "followupClient": "All",
-        "includeClosed": true
-    };
 
     $scope.followupClient = {
         name: "All"
@@ -643,8 +687,8 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
 
     $scope.filterRegion = region => {
         var sr = $scope.pickRegions.find(obj => obj.id === region.id);
-        $scope.pickDateService.regions = [];
-        $scope.pickDateService.regions.push(sr);
+        this.pickDateService.regions = [];
+        this.pickDateService.regions.push(sr);
         $scope.refreshData(true);
         $scope.refreshBulkData(true);
         $scope.refreshPreBookData(true);
@@ -740,25 +784,46 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     };
 
     $scope.dispatchJobsContinue = (courier, foundCourier, offline, job) => {
-        var callData = {
+        const callData = {
             "call": "dispatchJobs",
             courier,
             "jobs": []
         };
 
-
-        var jn = job.jobNo;
+        const jobNumber = job.jobNo;
         if (job.courierData.courierID !== null) {
-            alert("restore " + jn + " prior to despatching to another courier");
+            $mdDialog.show(
+                $mdDialog.alert()
+                    .clickOutsideToClose(true)
+                    .title('Alert')
+                    .textContent("restore " + jobNumber + " prior to despatching to another courier")
+                    .ariaLabel('Alert Dialog')
+                    .ok('OK')
+            );
             return;
         }
 
         if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-            alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+            $mdDialog.show(
+                $mdDialog.alert()
+                    .clickOutsideToClose(true)
+                    .title('Alert')
+                    .textContent("DG job " + jobNumber + " can not be despatched to courier " + courier + " - doesn't have DGLicense.")
+                    .ariaLabel('Alert Dialog')
+                    .ok('OK')
+            );
             return;
         }
         if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-            alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+            $mdDialog.show(
+                $mdDialog.alert()
+                    .clickOutsideToClose(true)
+                    .title('Alert')
+                    .textContent("Courier " + courier + " doesn't have a DGLicense or license has expired.")
+                    .ariaLabel('Alert Dialog')
+                    .ok('OK')
+            );
+
             return;
         }
 
@@ -862,22 +927,20 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
                         .textContent('POD email has been sent')
                         .ok('OK')
                 ).then(_ => console.log("Alert closed."));
-
-                alert("Email sent!");
             },
             submitValue: "Send"
         };
         $scope.gather.showForm();
     };
 
-    $scope.refreshAllData = wait => {
+    CSControl.prototype.refreshAllData = wait => {
         // Empty search criteria
-        console.log($scope.pickDateService);
+        console.log(this.pickDateService);
 
-        if (($scope.pickDateService.client || "") === "" &&
-            ($scope.pickDateService.courier || "") === "" &&
-            ($scope.pickDateService.job || "") === "" &&
-            ($scope.pickDateService.wild || "") === "") {
+        if ((this.pickDateService.client || "") === "" &&
+            (this.pickDateService.courier || "") === "" &&
+            (this.pickDateService.job || "") === "" &&
+            (this.pickDateService.wild || "") === "") {
 
             $mdDialog.show(
                 $mdDialog.alert()
@@ -905,34 +968,35 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         } catch (e) {
             //ignore
         }
+
         angular.element("#box-jobList").find(".loading").css('display', 'block');
 
-        let dateChanged = false;
-        if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
-
-            $scope.currentFromDate = $scope.pickDateService.from_date;
-            dateChanged = true;
-        }
-        if ($scope.currentToDate !== $scope.pickDateService.to_date) {
-
-            $scope.currentToDate = $scope.pickDateService.to_date;
-            dateChanged = true;
-        }
-
         console.log("about to call data - page " + $scope.pageIndex);
-        uCSData.getPodJobs($scope.pickDateService.courier,
-            $scope.pickDateService.client,
-            $scope.pickDateService.wild || "",
-            $scope.pickDateService.job || "",
-            moment($scope.currentFromDate),
-            moment($scope.currentToDate),
-            $scope.pageIndex,
-            $scope.pageSizeSelected).then(
+        uCSData.getPodJobs({
+            courierId: this.pickDateService.courier,
+            clientId: this.pickDateService.client,
+            wild: this.pickDateService.wild || "",
+            job: this.pickDateService.job || "",
+            fromDate: moment(this.pickDateService.from_date),
+            toDate: moment(this.pickDateService.to_date),
+            pageIndex: $scope.pageIndex,
+            pageSize: $scope.pageSizeSelected
+        }).then(
             data => {
                 $scope.jobList = data.item2;
                 $scope.totalCount = data.item1;
                 angular.element("#box-jobList").find(".loading").css('display', 'none');
-                $timeout(() => sizeHeadings(angular.element("#jobList")).parent(".column"), 1000);
+                $document.ready(() => {
+                    $timeout(() => {
+                        const element = angular.element("#jobList");
+
+                        if (element.length > 0) {
+                            sizeHeadings(element).parent(".column");
+                        } else {
+                            console.log('The element with id "jobList" could not be found');
+                        }
+                    }, 1000);
+                });
             });
     };
 
@@ -947,25 +1011,16 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         } catch (e) {
             //ignore
         }
-        angular.element("#box-bulkJobList").find(".loading").css('display', 'block');
 
-        let dateChanged = false;
-        if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
-            $scope.currentFromDate = $scope.pickDateService.from_date;
-            dateChanged = true;
-        }
-        if ($scope.currentToDate !== $scope.pickDateService.to_date) {
-            $scope.currentToDate = $scope.pickDateService.to_date;
-            dateChanged = true;
-        }
+        angular.element("#box-bulkJobList").find(".loading").css('display', 'block');
 
         console.log("about to call bulk data - page " + $scope.bulkPageIndex);
 
-        uCSData.searchBulkJobs($scope.pickDateService.courier,
-            $scope.pickDateService.client,
-            $scope.pickDateService.job || "",
-            $scope.pickDateService.wild || "",
-            moment($scope.currentFromDate),
+        uCSData.searchBulkJobs(this.pickDateService.courier,
+            this.pickDateService.client,
+            this.pickDateService.job || "",
+            this.pickDateService.wild || "",
+            moment(this.pickDateService.from_date),
             moment($scope.currentToDate),
             $scope.bulkPageIndex,
             $scope.bulkPageSizeSelected).then(
@@ -988,26 +1043,16 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         } catch (e) {
             //ignore
         }
+
         angular.element("#box-pbList").find(".loading").css('display', 'block');
-
-
-        let dateChanged = false;
-        if ($scope.currentFromDate !== $scope.pickDateService.from_date) {
-            $scope.currentFromDate = $scope.pickDateService.from_date;
-            dateChanged = true;
-        }
-        if ($scope.currentToDate !== $scope.pickDateService.to_date) {
-            $scope.currentToDate = $scope.pickDateService.to_date;
-            dateChanged = true;
-        }
 
         console.log("about to call prebook data - page " + $scope.pbPageIndex);
 
-        uCSData.searchPreBookJobs($scope.pickDateService.courier,
-            $scope.pickDateService.client,
-            $scope.pickDateService.wild || "",
-            $scope.pickDateService.job || "",
-            moment($scope.currentFromDate),
+        uCSData.searchPreBookJobs(this.pickDateService.courier,
+            this.pickDateService.client,
+            this.pickDateService.wild || "",
+            this.pickDateService.job || "",
+            moment(this.pickDateService.from_date),
             moment($scope.currentToDate),
             $scope.pbPageIndex,
             $scope.pbPageSizeSelected).then(
@@ -1282,13 +1327,9 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         $scope.refreshData();
     };
 
-
-    $scope.currentFromDate = $scope.pickDateService.from_date;
-    $scope.currentToDate = $scope.pickDateService.to_date;
-
     // New Material Autocompletes
-    $scope.clientSelectedItem = $scope.pickDateService.client;
-    $scope.courierSelectedItem = $scope.pickDateService.client;
+    $scope.clientSelectedItem = this.pickDateService.client;
+    $scope.courierSelectedItem = this.pickDateService.client;
     $scope.clientSearchText = '';
     $scope.courierSearchText = '';
 
@@ -1296,18 +1337,18 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
 
     $scope.selectedClientChange = item => {
         if (!item) {
-            $scope.pickDateService.client = null;
+            this.pickDateService.client = null;
         }
-        $scope.pickDateService.client = item.id;
+        this.pickDateService.client = item.id;
     };
 
     $scope.courierQuerySearch = searchText => uCSData.getActiveCouriersSearch(searchText);
 
     $scope.selectedCourierChange = item => {
         if (!item) {
-            $scope.pickDateService.courier = null;
+            this.pickDateService.courier = null;
         }
-        $scope.pickDateService.courier = item.id;
+        this.pickDateService.courier = item.id;
     };
 
     uCSData.getActiveCouriers().then(data => {
@@ -1468,7 +1509,7 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
                 "Internal": $scope.isAdmin ? !$scope.book.internal : 0,
                 "ClientCreated": !$scope.isAdmin,
                 "ClientFollowup": $scope.book.account !== "UCL" ? 1 : 0,
-                "EventDate": $scope.pickDateService.date,
+                "EventDate": this.pickDateService.date,
                 "ClientID": $scope.currentJob.clientID
             };
 
@@ -1511,20 +1552,20 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
             ],
             onSubmit: () =>
                 uCSData.addEventNote($scope.gather.form.fields[0].eventID, $scope.gather.form.fields[0].value).then(data => {
-
                     if (data.response === "Success") {
                         $scope.currentEvent = data.bulkEvent;
-                        var ci = $scope.jobList.findIndex(obj => obj.bulkEventID === data.bulkEvent.bulkEventID);
+                        const ci = $scope.jobList.findIndex(obj => obj.bulkEventID === data.bulkEvent.bulkEventID);
                         $scope.jobList[ci] = data.bulkEvent;
-                        //  $scope.$apply();
-                        //alert(field + "Note added successfully!");
-
                     } else {
-
-                        alert(data.response);
-
+                        $mdDialog.show(
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Response')
+                                .textContent(data.response)
+                                .ariaLabel('Alert Dialog')
+                                .ok('OK')
+                        );
                     }
-
                 }),
             submitValue: "Add Note"
         };
@@ -1556,42 +1597,13 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
 
     // Call the init function when the controller loads
     $scope.init();
-
-    $scope.onSearchRangeChange = selectedDateRange => {
-        const now = moment().format("YYYY-MM-DD");
-        const firstDayOfMonth = moment().startOf('month').format("YYYY-MM-DD");
-        const lastDayOfMonth = moment().endOf('month').format("YYYY-MM-DD");
-        const oneWeekAgo = moment().subtract(1, 'weeks').format("YYYY-MM-DD");
-        const oneWeekAhead = moment().add(1, 'weeks').format("YYYY-MM-DD");
-
-        switch (selectedDateRange) {
-            case '2':
-                $scope.currentFromDate = now;
-                $scope.currentToDate = now;
-                break;
-            case '1':
-                $scope.currentFromDate = oneWeekAgo;
-                $scope.currentToDate = oneWeekAhead;
-                break;
-            case '3':
-                $scope.currentFromDate = firstDayOfMonth;
-                $scope.currentToDate = lastDayOfMonth;
-                break;
-            case '4':
-                // This option is empty as ng-if is used on the page to show custom date range options
-                break;
-        }
-    };
-
-    // Default to today
-    $scope.onSearchRangeChange($scope.dateSearchRange);
 }
 
 angular
     .module('uDispatch')
     .controller('CSControl',
-        ['$document', '$filter', '$location', '$mdDialog', '$parse', '$q', '$scope', '' +
-        '$state', '$stateParams', '$timeout', 'GeoCoder', 'JobDetailService', 'NgMap', 'greetingService', 'hotkeys', 'uCSData', CSControl]);
+        ['$document', '$filter', '$location', '$mdDialog', '$parse', '$q', '$scope',
+            '$state', '$stateParams', '$timeout', 'GeoCoder', 'JobDetailService', 'NgMap', 'greetingService', 'hotkeys', 'uCSData', CSControl]);
 
 
 // Convert Degress to Radians
@@ -1599,14 +1611,14 @@ function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
 
-function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
+function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     lat1 = Deg2Rad(lat1);
     lat2 = Deg2Rad(lat2);
     lon1 = Deg2Rad(lon1);
     lon2 = Deg2Rad(lon2);
-    var R = 6371; // km
-    var x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
-    var y = lat2 - lat1;
+    const R = 6371; // km
+    const x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
+    const y = lat2 - lat1;
     return Math.sqrt(x * x + y * y) * R;
 }
 
@@ -1615,7 +1627,7 @@ function closestLocation(latitude, longitude, locations) {
     let closest;
 
     for (let index = 0; index < locations.length; ++index) {
-        const dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
+        const dif = PythagorasEquirectAngular(latitude, longitude, locations[index][1], locations[index][2]);
         if (dif < minDifference) {
             closest = index;
             minDifference = dif;

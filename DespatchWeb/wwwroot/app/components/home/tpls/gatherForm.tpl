@@ -1,4 +1,5 @@
-<div class="gatherForm" id="{{gather.form.id}}" ng-if="gather.form.tpl != 'multi'">
+<div class="gatherForm" id="{{gather.form.id}}" ng-cloak ng-controller="CSControl as ctrl"
+     ng-if="gather.form.tpl != 'multi'">
     <div class="gatherFields">
         <div class="gatherTitle">{{gather.form.title}}</div>
         <div ng-repeat="field in gather.form.fields" class="gatherField"
@@ -52,10 +53,10 @@
                     </md-select>
                 </div>
                 <div ng-switch-when="fromdatepicker">
-                    <div pickadate ng-model="pickDateService.from_date"></div>
+                    <div ng-model="ctrl.pickDateService.from_date" pickadate></div>
                 </div>
                 <div ng-switch-when="todatepicker">
-                    <div pickadate ng-model="pickDateService.to_date"></div>
+                    <div ng-model="ctrl.pickDateService.to_date" pickadate></div>
                 </div>
             </div>
 

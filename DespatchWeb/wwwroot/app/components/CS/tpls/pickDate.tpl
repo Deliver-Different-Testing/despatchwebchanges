@@ -1,7 +1,7 @@
-<div class="dateService">
+<div class="dateService" ng-cloak ng-controller="CSControl as ctrl">
     <div class="container-fluid space">
         <label id="dateRange" class="label-padding">Quick Search: </label>
-        <md-radio-group ng-model="dateSearchRange" ng-change="onSearchRangeChange(dateSearchRange)"
+        <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
                         aria-labelledby="dateRange" layout="row" layout-align="center center">
             <md-radio-button value="1">Fortnight</md-radio-button>
             <md-radio-button value="2">Today</md-radio-button>
@@ -10,16 +10,25 @@
         </md-radio-group>
         <md-divider></md-divider>
 
-        <div class="space" ng-if="dateSearchRange == 4">
-            <label>From: </label><span>{{currentFromDate | date: DEFAULT_DATE_FORMAT}}</span>
-            <div class="btn-group" role="group" aria-label="Basic example">
-                <button type="button" class="btn btn-sm btn-secondary" title="Choose From Date"
-                        ng-click="chooseFromDate()"><i class="fa fa-calendar"></i></button>
+        <div class="space" layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 4">
+            <div>
+                <label id="from-datepicker-header">From: </label>
+                <md-datepicker input-aria-describedby="from-datepicker-description" input-aria-labelledby="from-datepicker-header "
+                               md-placeholder="Enter date"
+                               ng-model="ctrl.pickDateService.from_date"></md-datepicker>
+                <p id="from-datepicker-description" style="display: none">
+                    Start date search
+                </p>
             </div>
-            <label>To: </label><span>{{currentToDate | date: DEFAULT_DATE_FORMAT}}</span>
-            <div class="btn-group" role="group" aria-label="Basic example">
-                <button type="button" class="btn btn-sm btn-secondary" title="Choose To Date"
-                        ng-click="chooseToDate()"><i class="fa fa-calendar"></i></button>
+
+            <div>
+                <label id="datepicker-header">To: </label>
+                <md-datepicker input-aria-describedby="to-datepicker-description" input-aria-labelledby="to-datepicker-header "
+                               md-placeholder="Enter date"
+                               ng-model="ctrl.pickDateService.to_date"></md-datepicker>
+                <p id="to-datepicker-description" style="display: none">
+                    End date search
+                </p>
             </div>
         </div>
 
@@ -76,7 +85,7 @@
         </div>
 
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">
-            <md-button class="md-raised md-primary" ng-click="refreshAllData(true)">
+            <md-button class="md-raised md-primary" ng-click="ctrl.refreshAllData(true)">
                 <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                 Search
             </md-button>
