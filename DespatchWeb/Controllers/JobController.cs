@@ -840,13 +840,26 @@ public class JobController : Controller
     {
         try
         {
+            if (request is null) return StatusCode(StatusCodes.Status500InternalServerError, "Request is null!");
+
             var job = request.Job;
             var staffId = request.StaffId;
+            var despatcherName = request.DespatcherName;
 
             if (job is null || staffId is null)
                 return BadRequest("Input parameters are null");
 
             var jobId = await _jobRepo.QuickAddJob(job, staffId.Value);
+
+            // Add all the notes to the newly created job
+            var notesList = new List<string>
+            {
+                FormatNote($"Job Notes: {job.JobNotes}"),
+                FormatNote($"Pickup Notes: {job.PickupNotes}"),
+                FormatNote($"Delivery Notes: {job.DeliveryNotes}")
+            };
+
+            foreach (var note in notesList) await AddNote(jobId, note, despatcherName);
 
             if (jobId == 0) return StatusCode(StatusCodes.Status500InternalServerError, "Created Job Id is null");
 

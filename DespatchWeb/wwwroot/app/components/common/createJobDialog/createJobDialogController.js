@@ -19,6 +19,7 @@
  * @property {string} fromContactName - The name of the contact from whom the job will be picked up.
  * @property {string} deliveryNotes - Any notes related to the delivery of the job.
  * @property {string} pickupNotes - Any notes related to the pickup of the job.
+ * @property {string} jobNotes - Any other notes related to the job.
  * @property {number} speedId - The ID of the speed at which the job will be performed.
  * @property {boolean} van - Indicator if a van is required for the job.
  * @property {boolean} truck - Indicator if a truck is required for the job.
@@ -29,6 +30,8 @@
  * @property {boolean} void - Indicator if the job is voided.
  * @property {boolean} done - Indicator if the job is done.
  * @property {number} charge - The charge for the job.
+ * @property {string} refA - Reference A for the job
+ * @property {string} refB - Reference B for the job
  */
 
 /**
@@ -47,8 +50,9 @@ class CreateJobDialogController {
      * @param {Object} $http - Angular's built-in $http service.
      * @param {Object} $document - Angular's built-in $document service.
      * @param {number} staffId - The ID of the staff member initiating the action.
+     * @param {string} despatcherName
      */
-    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $document, staffId) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $document, staffId, despatcherName) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
@@ -56,7 +60,8 @@ class CreateJobDialogController {
         this.toastrService = toastrService;
         this.loadingService = loadingService;
         this.$document = $document;
-        this.staffId = staffId;
+        this._staffId = staffId;
+        this._despatcherName = despatcherName;
 
         this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
@@ -85,6 +90,7 @@ class CreateJobDialogController {
             toAddress: "",
             date: "",
             fromContactName: "",
+            jobNotes: "",
             deliveryNotes: "",
             pickupNotes: "",
             van: false,
@@ -95,7 +101,9 @@ class CreateJobDialogController {
             reprice: false,
             void: false,
             done: false,
-            charge: 0.0
+            charge: 0.0,
+            refA: "",
+            refB: ""
         };
     }
 
@@ -256,7 +264,8 @@ class CreateJobDialogController {
             const url = "job/QuickCreateJob/";
             const callData = {
                 job,
-                staffId: this.staffId
+                staffId: this._staffId,
+                despatcherName: this._despatcherName
             };
 
             return await this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});

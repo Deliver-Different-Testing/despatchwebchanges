@@ -16,9 +16,9 @@
         <form name="ctrl.jobForm" ng-cloak ng-submit="ctrl.jobForm.$valid && ctrl.submit($event, ctrl.job)">
             <div class="md-dialog-content">
 
-                <div layout-gt-xs="row">
+                <div layout-gt-sm="row">
                     <md-autocomplete
-                            flex-gt-xs
+                            flex-gt-sm
                             md-autofocus
                             md-autoselect
                             md-escape-options="clear"
@@ -40,7 +40,14 @@
                         </md-not-found>
                     </md-autocomplete>
 
-                    <md-input-container>
+                    <md-input-container class="md-icon-float md-icon-left md-block" flex-gt-sm>
+                        <label for="charge-amount">Charge Amount</label>
+                        <md-icon md-font-set="material-symbols-outlined">paid</md-icon>
+                        <input id="charge-amount" md-no-asterisk ng-model="ctrl.job.charge" required step="0.01"
+                               type="number">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
                         <label>Job Date</label>
                         <md-datepicker aria-label="Enter job date" md-no-asterisk ng-model="ctrl.jobDate"
                                        required></md-datepicker>
@@ -139,18 +146,19 @@
                 </div>
 
                 <div layout-gt-sm="row">
-
-                    <md-input-container class="md-icon-float md-icon-right md-block" flex-gt-sm>
-                        <label for="charge-amount">Charge Amount</label>
-                        <md-icon md-font-set="material-symbols-outlined">paid</md-icon>
-                        <input id="charge-amount" md-no-asterisk ng-model="ctrl.job.charge" required step="0.01"
-                               type="number">
-                        <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="referenceA">Reference A</label>
+                        <input id="referenceA" md-maxlength="40" ng-model="ctrl.job.refA">
                     </md-input-container>
 
-                    <md-input-container>
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="referenceB">Reference B</label>
+                        <input id="referenceB" md-maxlength="40" ng-model="ctrl.job.refB">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
                         <label>Speed</label>
-                        <md-select aria-label="Select an option" flex-gt-sm md-no-asterisk ng-model="ctrl.selectedSpeed"
+                        <md-select aria-label="Select an option" md-no-asterisk ng-model="ctrl.selectedSpeed"
                                    required>
                             <md-option ng-repeat="item in ctrl.speedOptions" ng-value="item">
                                 {{ item.text }}
@@ -162,15 +170,21 @@
 
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
+                        <label>Job Notes</label>
+                        <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.jobNotes"
+                                  rows="5"></textarea>
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
                         <label>Pickup Notes</label>
                         <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.pickupNotes"
-                                  rows="3"></textarea>
+                                  rows="5"></textarea>
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label>Delivery Notes</label>
                         <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.deliveryNotes"
-                                  rows="3"></textarea>
+                                  rows="5"></textarea>
                     </md-input-container>
                 </div>
 

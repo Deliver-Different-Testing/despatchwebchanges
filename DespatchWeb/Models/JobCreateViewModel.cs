@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 
 namespace DespatchWeb.Models;
 
-// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
 public class JobCreateViewModel
 {
     [JsonProperty("clientID")] public int ClientId { get; set; }
@@ -18,9 +17,15 @@ public class JobCreateViewModel
 
     [JsonProperty("fromContactName")] public string FromContactName { get; set; }
 
+    [JsonProperty("refA")] public string RefA { get; set; }
+
+    [JsonProperty("refB")] public string RefB { get; set; }
+
     [JsonProperty("deliveryNotes")] public string DeliveryNotes { get; set; }
 
     [JsonProperty("pickupNotes")] public string PickupNotes { get; set; }
+
+    [JsonProperty("jobNotes")] public string JobNotes { get; set; }
 
     [JsonProperty("van")] public bool Van { get; set; }
 
@@ -60,4 +65,6 @@ public class CreateJobRequest
     [JsonProperty("job")] public JobCreateViewModel Job { get; set; }
 
     [JsonProperty("staffId")] public int? StaffId { get; set; }
+
+    [JsonProperty("despatcherName")] public string DespatcherName { get; set; }
 }

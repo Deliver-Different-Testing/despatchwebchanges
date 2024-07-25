@@ -2511,10 +2511,8 @@ public class JobRepository : IJobRepository
             Attention: job.Attention,
             DeliverToContact: job.DeliverToContact,
             Truck: job.Truck,
-            ClientNotes: job.PickupNotes,
             VanOk: job.VanOk,
             Reprice: job.Reprice,
-            InternalNotes: job.DeliveryNotes,
             JobDone: job.Done,
             Amount: job.Charge,
             JobTypeId: 1,
@@ -2527,6 +2525,8 @@ public class JobRepository : IJobRepository
             DeliverToPrivateBusiness: 0,
             ContactId: 1,
             StaffId: staffId,
+            RefA: job.RefA,
+            RefB: job.RefB,
             JobId: jobId,
             returnValue: returnValue);
 
