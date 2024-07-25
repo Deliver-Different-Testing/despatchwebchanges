@@ -1603,6 +1603,188 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
 
     // Call the init function when the controller loads
     $scope.init();
+
+
+    // Code moved from CSView HTML
+    overrideKeyboardEvent = (e) => {
+        switch (e.type) {
+            case "keydown":
+                if (!keyIsDown[e.keyCode]) {
+                    keyIsDown[e.keyCode] = true;
+                    if (e.keyCode === 82 && e.ctrlKey) {
+                    }
+                }
+                break;
+            case "keyup":
+                delete (keyIsDown[e.keyCode]);
+                break;
+        }
+        disabledEventPropagation(e);
+        if ((e.keyCode === 68 || e.keyCode === 65) && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+    };
+
+    sizeHeadings = () => {
+        angular.element("body").find(".box").each(function () {
+            let box = angular.element(this);
+            box.find(".table-headings thead tr th").each((index) => {
+                let newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                angular.element(this).width(newWidth);
+            });
+            box.find(".table-headings table").width(box.find(".table").width());
+        });
+
+        angular.element("body").find(".box").each(function () {
+            let box = angular.element(this);
+            box.find(".table-b-headings thead tr th").each((index) => {
+                let newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                angular.element(this).width(newWidth);
+            });
+            box.find(".table-b-headings table").width(box.find(".table").width());
+        });
+    };
+
+    disabledEventPropagation = (e) => {
+        if (e.keyCode === 68 && e.ctrlKey) {
+            e.stopPropagation && e.stopPropagation();
+            window.event && (window.event.cancelBubble = true);
+        }
+    }
+
+    const processTable = (classSelector, activeClassSelector) => {
+        angular.element(classSelector).removeClass(activeClassSelector);
+        angular.element('[data-group="' + angular.element(this).parents(".table-rows").attr("data-group") + '"]').each(function () {
+            angular.element(this).find('.active').removeClass('active');
+        });
+    };
+
+    $document.on('click', '.top-bar .btn-group .btn', function (event) {
+        angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
+        angular.element(this).addClass('topBarActive');
+    });
+
+    $document.on('ready', function () {
+        const favicon = document.getElementById("favicon");
+        favicon.setAttribute("href", "/POD_favicon.ico");
+        let isDown = false;
+
+        $document.on("mousedown", () => {
+            isDown = true;
+        })
+            .on("mouseup", () => {
+                isDown = false;
+            });
+
+        let isOnRow = false;
+
+        $document.on("mouseenter", ".activeTable .clickable-row", function (event) {
+
+            if (event.ctrlKey && isDown) {
+                angular.element(this).addClass("active");
+            }
+        });
+
+        $document.on("mouseenter", ".activeTable .clickable-row", () => {
+            isOnRow = true;
+        })
+            .on("mouseleave", ".activeTable .clickable-row", () => {
+                isOnRow = false;
+            });
+
+        $document.on('click', '.box-content', event => {
+            event.stopPropagation();
+            if (isOnRow) {
+                angular.element(".activeTable .active").removeClass("active");
+            }
+        });
+    });
+
+    let mouseDown = 0;
+
+    $document.on('mousedown', '.clickable-row', function (event) {
+        let jobNo = angular.element(".activeTable .clickable-row.active").length > 1 ?
+            angular.element(".activeTable .clickable-row.active").length + " Jobs" :
+            angular.element(this).attr("data-jobno");
+
+        if (mouseDown === 0) {
+            mouseDown = 1;
+
+            if (event.which === 1) {
+                if (event.ctrlKey) {
+                    angular.element(this).toggleClass('active');
+                } else {
+                    if (!angular.element(this).hasClass("active")) {
+                        processTable(this, '.active');
+                    }
+                }
+
+                angular.element(".activeTable").removeClass("activeTable");
+                angular.element(this).parents(".table").addClass("activeTable");
+            }
+
+            if (!event.ctrlKey) {
+                if (angular.element(this).hasClass("draggable-row")) {
+                    if (!angular.element(this).hasClass("active")) {
+                        processTable(this, '.active');
+                    }
+                    setTimeout(() => {
+                        if (mouseDown === 1) {
+                            angular.element("#draggingItems").css({display: "block"});
+                            angular.element("#draggingItems").html(jobNo);
+
+                            angular.element("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
+                            angular.element("#draggingItems").trigger(event);
+                        }
+                    }, 200);
+                }
+            }
+        }
+    });
+
+    $document.on('mouseup', '.clickable-row', function (event) {
+        if (event.which === 3) {
+            angular.element(".rightActiveTable").removeClass("rightActiveTable");
+            angular.element(this).parents(".table").addClass("rightActiveTable");
+        }
+        if (!event.ctrlKey) {
+            if (!angular.element(this).hasClass("active")) {
+                processTable(this, '.active');
+            }
+        }
+    });
+
+    $document.on('click', '.clickable-row', (event) => {
+        event.stopPropagation();
+    });
+
+    $document.on("mouseup", () => {
+        angular.element("#draggingItems").css('display', 'none');
+        mouseDown = 0;
+    });
+
+    $document.on("keydown", (e) => {
+        let code = e.keyCode || e.which;
+        if (code === 40) {
+            angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").trigger('mouseup').trigger('click');
+        } else if (code === 38) {
+            angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").trigger('mouseup').trigger('click');
+        }
+    });
+
+
+    $document.onkeydown = overrideKeyboardEvent;
+    $document.onkeyup = overrideKeyboardEvent;
+    let keyIsDown = {};
+
+    $document.on('focus', '.searchBox input', () => {
+        angular.element(".results").css('display', 'block');
+    });
+
+    $document.on('blur', '.searchBox input', () => {
+        angular.element(".results").css('display', 'none');
+    });
 }
 
 angular
