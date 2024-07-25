@@ -8,7 +8,7 @@
                             <label>Client</label><i class="material-symbols-outlined small-icon"
                                                     ng-class="currentJob.locked ? 'disabled' : ''"
                                                     title="Change Client Code"
-                                                    ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)">edit</i>
+                                                    ng-click="!currentJob.locked && jdSvc.editClientCode($event, currentJob)">edit</i>
                             <div class="value" ng-class="currentJob.locked ? 'disabled' : ''"><a
                                     class="uline" ng-class="currentJob.locked ? 'disabled' : ''" ng-click="!currentJob.locked && jdSvc.clientClick($event, currentJob)"
                                     src="#">{{currentJob.client}}
@@ -73,7 +73,7 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ToContactPhone','To Contact Phone',currentJob.phone,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editJobToPhone($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">To Phone</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.phone}}</div>
                         </div>

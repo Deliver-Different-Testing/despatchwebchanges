@@ -486,6 +486,85 @@
         }
     };
 
+    self.editClientCode = function (event, job) {
+        const prompt = $mdDialog.prompt()
+            .title('Edit Client Code')
+            .placeholder('Client Code')
+            .ariaLabel('client code')
+            .initialValue(job.client)
+            .targetEvent(event)
+            .required(true)
+            .ok('Save')
+            .cancel('Cancel');
+
+        $mdDialog.show(prompt).then(result => {
+            const callData = {
+                "call": "updateDetailField",
+                "field": "ClientCode",
+                "value": result,
+                "jobID": job.jobID
+            };
+
+            self.updateField(false, job, callData)
+        }, () => {
+            console.log("Edit Client Code Cancelled!")
+        });
+    }
+
+    self.editJobToPhone = function (event, job) {
+        const prompt = $mdDialog.prompt()
+            .title('Edit To Contact Phone')
+            .placeholder('To Contact Phone')
+            .ariaLabel('ton contact phone')
+            .initialValue(job.phone)
+            .targetEvent(event)
+            .required(true)
+            .ok('Save')
+            .cancel('Cancel');
+
+        $mdDialog.show(prompt).then(result => {
+            const callData = {
+                "call": "updateDetailField",
+                "field": "ToContactPhone",
+                "value": result,
+                "jobID": job.jobID
+            };
+
+            self.updateField(false, job, callData)
+        }, () => {
+            console.log("Edit Client Code Cancelled!")
+        });
+    }
+
+    self.updateField = function (reRate, job, callData) {
+        if (reRate && !job.bulkJob) {
+            return self.rateJob(job).then(rate => DispatchData
+                .updateJobDetail(callData.jobID,
+                    callData.field,
+                    callData.value,
+                    Number(rate.replace(/[^0-9.-]+/g, "")),
+                    FirstName,
+                    ContactID,
+                    job.preBook).then(response => response));
+        } else {
+            return job.bulkJob ? DispatchData
+                    .updateBulkJobDetail(job.id,
+                        callData.field,
+                        callData.value,
+                        job.charge,
+                        FirstName,
+                        ContactID).then(response => response) :
+                DispatchData
+                    .updateJobDetail(callData.jobID,
+                        callData.field,
+                        callData.value,
+                        job.charge,
+                        FirstName,
+                        ContactID,
+                        job.preBook).then(response => response);
+        }
+    }
+
     self.editDetailField = function (job, fieldName, label, value, jobID, type, options) {
 
         if (type === "time" || type === "date") {
