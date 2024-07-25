@@ -486,12 +486,12 @@
         }
     };
 
-    self.editClientCode = function (event, job) {
+    self.editPrompt = function (event, job, title, placeholder, ariaLabel, initialValue, field) {
         const prompt = $mdDialog.prompt()
-            .title('Edit Client Code')
-            .placeholder('Client Code')
-            .ariaLabel('client code')
-            .initialValue(job.client)
+            .title(title)
+            .placeholder(placeholder)
+            .ariaLabel(ariaLabel)
+            .initialValue(initialValue)
             .targetEvent(event)
             .required(true)
             .ok('Save')
@@ -500,41 +500,55 @@
         $mdDialog.show(prompt).then(result => {
             const callData = {
                 "call": "updateDetailField",
-                "field": "ClientCode",
+                "field": field,
                 "value": result,
                 "jobID": job.jobID
             };
-
             self.updateField(false, job, callData)
         }, () => {
-            console.log("Edit Client Code Cancelled!")
+            console.log(`Edit ${title} Cancelled!`)
         });
-    }
+    };
+
+    self.editClientCode = function (event, job) {
+        self.editPrompt(event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
+    };
 
     self.editJobToPhone = function (event, job) {
-        const prompt = $mdDialog.prompt()
-            .title('Edit To Contact Phone')
-            .placeholder('To Contact Phone')
-            .ariaLabel('ton contact phone')
-            .initialValue(job.phone)
-            .targetEvent(event)
-            .required(true)
-            .ok('Save')
-            .cancel('Cancel');
+        self.editPrompt(event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
+    };
 
-        $mdDialog.show(prompt).then(result => {
-            const callData = {
-                "call": "updateDetailField",
-                "field": "ToContactPhone",
-                "value": result,
-                "jobID": job.jobID
-            };
+    self.editToJobContact = function (event, job) {
+        self.editPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
+    };
 
-            self.updateField(false, job, callData)
-        }, () => {
-            console.log("Edit Client Code Cancelled!")
-        });
-    }
+    self.editFromJobContact = function (event, job) {
+        self.editPrompt(event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
+    };
+
+    self.editJobWeight = function (event, job) {
+        self.editPrompt(event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
+    };
+
+    self.editRef = function (event, job, isRefA) {
+        if (isRefA) {
+            self.editPrompt(event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
+        } else {
+            self.editPrompt(event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
+        }
+    };
+
+    self.editOurRef = function (event, job) {
+        self.editPrompt(event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
+    };
+
+    self.editTrackingMobile = function (event, job) {
+        self.editPrompt(event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
+    };
+
+    self.editTrackingEmail = function (event, job) {
+        self.editPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
+    };
 
     self.updateField = function (reRate, job, callData) {
         if (reRate && !job.bulkJob) {

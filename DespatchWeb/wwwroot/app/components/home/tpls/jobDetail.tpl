@@ -29,7 +29,7 @@
                         </div>
 
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'FromContactName','From Contact Name',currentJob.fromContactName,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editFromJobContact($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">From Contact:</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 {{currentJob.fromContactName}}
@@ -66,7 +66,7 @@
                             <div class="disabled" class="value">{{currentJob.toCity}}</div>
                         </div>
                         <div class="field contact"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'ToContactName','To Contact Name',currentJob.deliverToContact,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editToJobContact($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">To Contact</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 {{currentJob.deliverToContact}}
@@ -132,23 +132,23 @@
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.items}}</div>
                         </div>
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'Weight','Weight',currentJob.weight,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editJobWeight($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Weight</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.weight}}
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'RefA','RefA',currentJob.refA,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editRef($event, currentJob, true)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Ref A</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.refA}}</div>
                         </div>
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'RefB','RefB',currentJob.refB,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editRef($event, currentJob, false)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Ref B</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.refB}}</div>
                         </div>
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'OurRef','OurRef',currentJob.ourRef,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editOurRef($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Our Ref</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">{{currentJob.ourRef}}
                             </div>
@@ -168,14 +168,14 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'TrackingMobile','Tracking Mobile',currentJob.trackingMobile,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editTrackingMobile($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Tracking Mobile</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 {{currentJob.trackingMobile}}
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'TrackingEmail','Tracking Email',currentJob.trackingEmail,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editTrackingEmail($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Tracking Email</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 {{currentJob.trackingEmail}}
