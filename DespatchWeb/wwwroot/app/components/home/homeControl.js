@@ -3186,7 +3186,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         angular.element('.truckCourierStatusForm').css('display', '');
     };
 
-    $scope.createNewJob = function (event) {
+    HomeController.prototype.createNewJob = function (event) {
         // Dialog
         $mdDialog.show({
             controller: CreateJobDialogController,
@@ -3213,6 +3213,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         }).then(() => "Create Job Canceled!");
     }
 
+    HomeController.prototype.interCourierCharge = function (event) {
+    }
 
     $scope.sendPOD = () => {
         if (!$scope.currentJob.podPhoto) {

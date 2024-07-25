@@ -24,6 +24,9 @@ class SendMessageDialogController {
         }
     }
 
+    /**
+     * @param {string} searchTerm
+     */
     async querySearch(searchTerm) {
         try {
             const url = "/courier/AllActiveSearch";
