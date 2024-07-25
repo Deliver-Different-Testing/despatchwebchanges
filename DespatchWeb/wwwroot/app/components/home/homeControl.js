@@ -3197,7 +3197,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                staffId: ContactID
+                staffId: ContactID,
+                despatcherName: FirstName
             },
         }).then(newJobId => {
             loadingService.showLoader();

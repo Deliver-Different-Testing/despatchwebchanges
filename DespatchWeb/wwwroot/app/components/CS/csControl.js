@@ -94,7 +94,8 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                staffId: ContactID
+                staffId: ContactID,
+                despatcherName: FirstName
             },
         }).then(newJobId => {
             // Refresh data
