@@ -1281,6 +1281,10 @@
         self.showSelectDialog(event, job, pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", "Select new location..");
     };
 
+    self.sizeClick = function (event, job) {
+        self.showSelectDialog(event, job, options.detail.size, "Size", "Size", "Select new size..");
+    }
+
     self.showSelectDialog = function (event, job, data, fieldName, title, placeholder, id = "editField") {
         const options = {
             minimumInputLength: 1,

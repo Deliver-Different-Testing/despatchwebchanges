@@ -161,7 +161,7 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'TrackingMethod','Tracking Method',currentJob.trackingMethod,currentJob.id, 'select', options.detail.tracking)">
+                             ng-click="!currentJob.locked && jdSvc.trackingMethodClick($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Tracking Method</label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 {{jdSvc.getTrackingMethod(currentJob.trackingMethod)}}
@@ -713,7 +713,7 @@
                             <div ng-class="disabled" class="value">{{currentJob.source}}</div>
                         </div>
                         <div class="field"
-                             ng-click="jdSvc.editDetailField(currentJob, 'Size','Size',currentJob.size,currentJob.id, 'select', options.detail.size)">
+                             ng-click="jdSvc.sizeClick($event, currentJob)">
                             <label>Size</label>
                             <div class="value">{{currentJob.size.label}}</div>
                         </div>
@@ -743,7 +743,7 @@
                             <div class="value">{{currentJob.ourRef}}</div>
                         </div>
                         <div class="field"
-                             ng-click="jdSvc.editDetailField($event, currentJob)">
+                             ng-click="jdSvc.trackingMethodClick($event, currentJob)">
                             <label>Tracking Method</label>
                             <div class="value">{{jdSvc.getTrackingMethod(currentJob.trackingMethod)}}</div>
                         </div>
