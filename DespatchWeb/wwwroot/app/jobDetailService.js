@@ -1,4 +1,4 @@
-﻿function JobDetailService(DispatchData, $ngConfirm, $mdDialog, toastrService, loadingService, rateJobService, $document, $timeout) {
+﻿function JobDetailService(DispatchData, $mdDialog, toastrService, loadingService, rateJobService, $document, $timeout) {
     const self = this;
     const options = {
         "detail": {
@@ -378,8 +378,17 @@
                     itemSummary.dgClass,
                     job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
                     job.truckHours || 2,
-                    job.gstRate).then(function (description) {
-                    alert(description);
+                    job.gstRate).then(description => {
+                    $mdDialog.show(
+                        $mdDialog.alert()
+                            .parent($document.body)
+                            .clickOutsideToClose(true)
+                            .title('Alert')
+                            .textContent(description)
+                            .ariaLabel('Alert Dialog')
+                            .ok('Got it!')
+                            .targetEvent($event)
+                    );
                 }));
 
             return false;
@@ -403,7 +412,16 @@
                 job.booked,
                 job.gstRate,
                 job.charge.replace("$", "")).then(description => {
-                alert(description);
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .parent($document.body)
+                        .clickOutsideToClose(true)
+                        .title('Alert')
+                        .textContent(description)
+                        .ariaLabel('Alert Dialog')
+                        .ok('Got it!')
+                        .targetEvent($event)
+                );
             });
         }
     };
@@ -1647,4 +1665,4 @@
 angular
     .module("uDispatch")
     .factory("JobDetailService",
-        ["DispatchData", "$ngConfirm", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", JobDetailService]);
+        ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", JobDetailService]);
