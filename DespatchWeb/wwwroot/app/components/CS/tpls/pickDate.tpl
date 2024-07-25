@@ -38,17 +38,17 @@
                     input-aria-labelledby="clientLabel"
                     md-clear-button="true"
                     md-item-text="item.text"
-                    md-items="item in clientQuerySearch(clientSearchText)"
+                    md-items="item in ctrl.clientQuerySearch(ctrl.clientSearchText)"
                     md-min-length="3"
-                    md-search-text="clientSearchText"
-                    md-selected-item="clientSelectedItem"
-                    md-selected-item-change="selectedClientChange(item)"
+                    md-search-text="ctrl.clientSearchText"
+                    md-selected-item="ctrl.pickDateService.client"
+                    md-selected-item-change="ctrl.selectedClientChange(item)"
                     placeholder="Start typing to enter new client...">
                 <md-item-template>
-                    <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
+                    <span md-highlight-flags="^i" md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
                 </md-item-template>
                 <md-not-found>
-                    No clients matching "{{searchText}}" were found.
+                    No clients matching "{{ctrl.clientSearchText}}" were found.
                 </md-not-found>
             </md-autocomplete>
         </div>
@@ -56,20 +56,20 @@
         <div class="space">
             <label id="courierLabel">Courier:</label>
             <md-autocomplete
-                    md-selected-item="courierSelectedItem"
-                    md-search-text="courierSearchText"
-                    md-selected-item-change="selectedCourierChange(item)"
-                    md-items="item in courierQuerySearch(courierSearchText)"
+                    md-items="item in ctrl.courierQuerySearch(ctrl.courierSearchText)"
+                    md-search-text="ctrl.courierSearchText"
+                    md-selected-item="ctrl.pickDateService.courier"
+                    md-selected-item-change="ctrl.selectedCourierChange(item)"
                     md-item-text="item.text"
                     md-min-length="3"
                     placeholder="Start typing to enter new courier..."
                     input-aria-labelledby="courierLabel"
                     md-clear-button="true">
                 <md-item-template>
-                    <span md-highlight-text="searchText" md-highlight-flags="^i">{{item.text}}</span>
+                    <span md-highlight-flags="^i" md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
                 </md-item-template>
                 <md-not-found>
-                    No couriers matching "{{searchText}}" were found.
+                    No couriers matching "{{ctrl.courierSearchText}}" were found.
                 </md-not-found>
             </md-autocomplete>
         </div>

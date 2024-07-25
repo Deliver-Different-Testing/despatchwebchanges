@@ -83,7 +83,7 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
-    $scope.createNewJob = function (event) {
+    CSControl.prototype.createNewJob = function (event) {
         // Dialog
         $mdDialog.show({
             controller: CreateJobDialogController,
@@ -1290,21 +1290,30 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     $scope.jdSvc.setSelectBulkJobDetail($scope.selectBulkJobDetail);
 
     //This method is calling from pagination number
-    $scope.pageChanged = i => {
-        $scope.pageIndex = i;
+    /**
+     * @param {number} index
+     */
+    $scope.pageChanged = index => {
+        $scope.pageIndex = index;
         $scope.refreshData();
     };
 
     //This method is calling from dropDown
-    $scope.changeBulkPageSize = i => {
-        $scope.bulkPageIndex = i;
-        $scope.bulkPageSizeSelected = i;
+    /**
+     * @param {number} index
+     */
+    $scope.changeBulkPageSize = index => {
+        $scope.bulkPageIndex = index;
+        $scope.bulkPageSizeSelected = index;
         $scope.refreshBulkData();
     };
 
     //This method is calling from pagination number
-    $scope.pbPageChanged = i => {
-        $scope.pbPageIndex = i;
+    /**
+     * @param {number} index
+     */
+    $scope.pbPageChanged = index => {
+        $scope.pbPageIndex = index;
         $scope.refreshPreBookData();
     };
 
@@ -1315,41 +1324,37 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     };
 
     //This method is calling from pagination number
-    $scope.bulkPageChanged = i => {
-        $scope.bulkPageIndex = i;
+    /**
+     * @param {number} index
+     */
+    $scope.bulkPageChanged = index => {
+        $scope.bulkPageIndex = index;
         $scope.refreshBulkData();
     };
 
     //This method is calling from dropDown
-    $scope.changePageSize = i => {
-        $scope.pageIndex = i;
-        $scope.pageSizeSelected = i;
+    /**
+     * @param {number} index
+     */
+    $scope.changePageSize = index => {
+        $scope.pageIndex = index;
+        $scope.pageSizeSelected = index;
         $scope.refreshData();
     };
 
     // New Material Autocompletes
-    $scope.clientSelectedItem = this.pickDateService.client;
-    $scope.courierSelectedItem = this.pickDateService.client;
-    $scope.clientSearchText = '';
-    $scope.courierSearchText = '';
+    CSControl.prototype.clientSearchText = '';
+    CSControl.prototype.courierSearchText = '';
 
-    $scope.clientQuerySearch = searchText => uCSData.getActiveClients(searchText);
+    /**
+     * @param {string} searchText
+     */
+    CSControl.prototype.clientQuerySearch = (searchText) => uCSData.getActiveClients(searchText);
 
-    $scope.selectedClientChange = item => {
-        if (!item) {
-            this.pickDateService.client = null;
-        }
-        this.pickDateService.client = item.id;
-    };
-
-    $scope.courierQuerySearch = searchText => uCSData.getActiveCouriersSearch(searchText);
-
-    $scope.selectedCourierChange = item => {
-        if (!item) {
-            this.pickDateService.courier = null;
-        }
-        this.pickDateService.courier = item.id;
-    };
+    /**
+     * @param {string} searchText
+     */
+    CSControl.prototype.courierQuerySearch = (searchText) => uCSData.getActiveCouriersSearch(searchText);
 
     uCSData.getActiveCouriers().then(data => {
         $scope.pickCouriers = data;
