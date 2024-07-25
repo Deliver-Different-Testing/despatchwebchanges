@@ -127,10 +127,10 @@
 
                                 <div class="box-details" ng-show="box.name == 'jobDetail'">
                                     <input class="pod-DispatchField" id="pod-DispatchField" ng-keydown="$event.keyCode === 13 && dispatchJobs(dispatchCourier, currentJob)"
+                                           title="Dispatch to Courier Code"
                                            ng-model="dispatchCourier"
                                            ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier == null"
                                            placeholder="dispatch"
-                                           title="Dispatch to Courier Code"
                                            type="text"/>
                                     <div aria-label="Basic example" class="btn-group" role="group">
                                         <button class="btn btn-sm btn-secondary" ng-click="reply(currentEvent)" ng-show="currentEvent && !currentEvent.closedDate"

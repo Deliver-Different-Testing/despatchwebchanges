@@ -45,13 +45,12 @@
                     </select>
                 </div>
 
-                <div ng-switch-when="md-select">
-                    <md-select ng-model="field.value" aria-label="{{field.label}}">
-                        <md-option ng-value="option.id" ng-repeat="option in field.options.data track by option.id">
-                            {{option.text}}
-                        </md-option>
-                    </md-select>
-                </div>
+                <md-select aria-label="{{field.label}}" ng-model="field.value">
+                    <md-option ng-repeat="option in field.options.data track by option.id" ng-value="option.id">
+                        {{option.text}}
+                    </md-option>
+                </md-select>
+
                 <div ng-switch-when="fromdatepicker">
                     <div ng-model="ctrl.pickDateService.from_date" pickadate></div>
                 </div>
