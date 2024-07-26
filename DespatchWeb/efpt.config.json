@@ -151,7 +151,11 @@
          "ObjectType": 1
       },
       {
-        "Name": "[dbo].[DESWEB_stpQuickCreateJob]",
+        "Name": "[dbo].[DESWEB_stpCreateInterCourierJobs]",
+        "ObjectType": 1
+      },
+     {
+       "Name": "[dbo].[DESWEB_stpQuickCreateJob]",
          "ObjectType": 1
       },
       {
