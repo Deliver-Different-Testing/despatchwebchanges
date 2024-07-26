@@ -107,6 +107,20 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         });
     }
 
+    CSControl.prototype.interCourierCharge = function (event) {
+        $mdDialog.show({
+            controller: InterCourierChargeDialogController,
+            controllerAs: 'ctrl',
+            parent: angular.element($document.body),
+            targetEvent: event,
+            templateUrl: "app/components/common/interCourierChargeDialog/interCourierChargeDialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+        }).then(() => {
+            console.log("Intercourier Charge Added!")
+        }).then(() => "Intercourier Charge Canceled!");
+    }
+
     $scope.gather = {
         submit() {
             angular.element(".gatherForm").css("display", "none");
