@@ -75,7 +75,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpCreateInterCourierJobsAsync(int? jobNumber, int? fromCourierId, int? toCourierId, decimal? Amount, string Reference, int? StaffId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpCreateInterCourierJobsAsync(int? fromCourierId, int? toCourierId, decimal? Amount, string Reference, int? StaffId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -86,12 +86,6 @@ namespace DespatchWeb.EntityClasses
 
             var sqlParameters = new []
             {
-                new SqlParameter
-                {
-                    ParameterName = "jobNumber",
-                    Value = jobNumber ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
                 new SqlParameter
                 {
                     ParameterName = "fromCourierId",
@@ -127,7 +121,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpCreateInterCourierJobs] @jobNumber = @jobNumber, @fromCourierId = @fromCourierId, @toCourierId = @toCourierId, @Amount = @Amount, @Reference = @Reference, @StaffId = @StaffId", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpCreateInterCourierJobs] @fromCourierId = @fromCourierId, @toCourierId = @toCourierId, @Amount = @Amount, @Reference = @Reference, @StaffId = @StaffId", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

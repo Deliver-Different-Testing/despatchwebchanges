@@ -2532,4 +2532,17 @@ public class JobRepository : IJobRepository
 
         return jobId.Value ?? 0;
     }
+
+    public async Task AddInterCourierCharge(InterCourierChargeViewModel viewModel)
+    {
+        var returnValue = new OutputParameter<int>();
+
+        await _context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
+            viewModel.FromCourierId,
+            viewModel.ToCourierId,
+            Convert.ToDecimal(viewModel.Amount),
+            viewModel.Reference,
+            viewModel.StaffId,
+            returnValue);
+    }
 }

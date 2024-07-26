@@ -18,7 +18,7 @@ using RestSharp.Authenticators;
 
 namespace DespatchWeb.Controllers;
 
-public class JobController : Controller
+public partial class JobController : Controller
 {
     private readonly IClientRepository _clientRepo;
     private readonly IConfiguration _configuration;
@@ -864,6 +864,23 @@ public class JobController : Controller
             if (jobId == 0) return StatusCode(StatusCodes.Status500InternalServerError, "Created Job Id is null");
 
             return Json(new { jobId });
+        }
+        catch (Exception e)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = e.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> InterCourierCharge(InterCourierChargeViewModel viewModel)
+    {
+        try
+        {
+            if (viewModel is null) return StatusCode(StatusCodes.Status500InternalServerError, "View is null!");
+
+            await _jobRepo.AddInterCourierCharge(viewModel);
+
+            return Json("OK");
         }
         catch (Exception e)
         {

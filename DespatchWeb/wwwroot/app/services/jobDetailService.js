@@ -1554,7 +1554,7 @@
                 newP["id"] = self.currentJob.id;
 
 
-                return DispatchData.addPallet(newP, self.currentJob.preBook, FirstName).then(function (response) {
+                return DispatchData.addPallet(newP, self.currentJob.preBook, FirstName).then(response => {
 
                     console.log(response);
 
@@ -1566,18 +1566,9 @@
 
                         self.currentJob.palletInfo.push(newP);
 
-                        return self.rateJob(self.currentJob).then(function (rate) {
+                        return self.rateJob(self.currentJob).then(rate => {
                             console.log(rate);
                             if (rate !== self.currentJob.charge) {
-                                //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
-                                //    self.currentJob.clientID,
-                                //    self.currentJob.contactName,
-                                //    ContactID,
-                                //    self.currentJob.courierData.courierID,
-                                //    self.currentJob.id,
-                                //    self.currentJob.jobType,
-                                //    FirstName);
-
                                 return DispatchData
                                     .updateJobDetail(self.currentJob.id,
                                         "rate",
@@ -1585,7 +1576,7 @@
                                         Number(rate.replace(/[^0-9.-]+/g, "")),
                                         FirstName,
                                         ContactID,
-                                        self.currentJob.preBook).then(function (response) {
+                                        self.currentJob.preBook).then(response => {
                                         self.selectJobDetail(self.currentJob.id);
                                         return response;
                                     });
@@ -1594,23 +1585,17 @@
                         });
 
                     } else {
-
                         console.log("Critical Error Add Pallet");
-
                     }
 
                 });
-
             },
             submitValue: "Add Pallet"
         };
-        $timeout(function () {
-
+        $timeout(() => {
                 gather.showForm();
             },
             200);
-
-
     };
 
     self.currentPallet = "";
@@ -1686,7 +1671,7 @@
 
                 var newP = {};
 
-                gather.form.fields.forEach(function (field) {
+                gather.form.fields.forEach(field => {
                     if (field.name === "amount") {
                         newP["Quantity"] = field.value;
                     }
