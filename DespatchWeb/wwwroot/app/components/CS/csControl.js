@@ -1620,6 +1620,8 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
 
 
     // Code moved from CSView HTML
+    let keyIsDown = {};
+
     overrideKeyboardEvent = (e) => {
         switch (e.type) {
             case "keydown":
@@ -1790,7 +1792,6 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
 
     $document.onkeydown = overrideKeyboardEvent;
     $document.onkeyup = overrideKeyboardEvent;
-    let keyIsDown = {};
 
     $document.on('focus', '.searchBox input', () => {
         angular.element(".results").css('display', 'block');

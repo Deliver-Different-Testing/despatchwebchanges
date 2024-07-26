@@ -238,17 +238,7 @@ class CreateJobDialogController {
     async submit(event, job) {
         try {
             if (!this.jobForm.$valid) {
-                this.$mdDialog.show(
-                    this.$mdDialog.alert()
-                        .parent(angular.element(this.$document.body))
-                        .clickOutsideToClose(true)
-                        .title('Required Fields')
-                        .textContent('Please complete all the required fields.')
-                        .ariaLabel('Not all required fields are completed')
-                        .ok('Got it!')
-                        .targetEvent(event)
-                );
-
+                this.toastrService.showWarningToast("Please complete all the required fields.");
                 return;
             }
 

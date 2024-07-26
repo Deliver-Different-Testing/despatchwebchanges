@@ -2558,10 +2558,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         var selectedClients = $scope.pickService.clients.map(a => a.id);
         return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(function (data) {
             $scope.jobList = data;
-            $("#box-jobsList .loading").fadeOut();
+            angular.element("#box-jobsList .loading").fadeOut();
             $timeout(function () {
 
-                sizeHeadings($("#jobList").parents(".column"));
+                sizeHeadings(angular.element("#jobList").parents(".column"));
                 if (data.length > 0) {
                     var undespatchedData = data.filter(x => x.courierData.courierID === null);
                     displayPickupPoints(undespatchedData, true, null);
@@ -2601,7 +2601,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         ////////////////////////////
         // SUPPORTS
         ////////////////////////////
-        $("#box-supports").find(".loading").show();
+        angular.element("#box-supports").find(".loading").show();
         return DispatchData.getSupports($scope.supportChannel).then(function (data) {
             var first = $scope.supports === null || $scope.supports === undefined;
 
@@ -2610,7 +2610,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             if (first) {
                 $scope.supportChannel.split(',').forEach(SetSelectedChannels);
             }
-            $("#box-supports").find(".loading").fadeOut();
+            angular.element("#box-supports").find(".loading").fadeOut();
 
             $scope.supportMenu = [
                 // NEW IMPLEMENTATION
@@ -2645,9 +2645,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
             $timeout(function () {
                     $document.ready(function (event) {
-                        //$("#box-supports").find(".loading").fadeOut();
+                        //angular.element("#box-supports").find(".loading").fadeOut();
                         if ($scope.currentSupport) {
-                            $("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
+                            angular.element("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
                         }
                     });
                 },
@@ -2655,10 +2655,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
 
             $timeout(function () {
-                sizeHeadings($("#supports").parents(".column"));
+                sizeHeadings(angular.element("#supports").parents(".column"));
             }, 1000);
             $timeout(function () {
-                sizeHeadings($("#supports").parents(".column"));
+                sizeHeadings(angular.element("#supports").parents(".column"));
             }, 2000);
         });
     }
@@ -2928,7 +2928,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         // JobUpdates
         ////////////////////////////
 
-        // $("#box-jobUpdates").find(".loading").show();
+        // angular.element("#box-jobUpdates").find(".loading").show();
         /* DispatchData.getJobUpdates().then(function (data) {
              $scope.jobUpdates = data;
 
@@ -2948,7 +2948,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
                              if (data.response === "Success") {
 
-                                 $(".rightActiveTable .active").fadeOut();
+                                 angular.element(".rightActiveTable .active").fadeOut();
 
                              } else {
 
@@ -2975,14 +2975,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
              $timeout(function () {
                  $document.ready(function (event) {
-                     $("#box-jobUpdates").find(".loading").fadeOut();
+                     angular.element("#box-jobUpdates").find(".loading").fadeOut();
                  });
              },
                  100);
 
 
-             $timeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 1000);
-             $timeout(function () { sizeHeadings($("#jobUpdates").parents(".column")); }, 2000);
+             $timeout(function () { sizeHeadings(angular.element("#jobUpdates").parents(".column")); }, 1000);
+             $timeout(function () { sizeHeadings(angular.element("#jobUpdates").parents(".column")); }, 2000);
 
 
          });
@@ -3283,6 +3283,204 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
     // Call the init function when the controller loads
     $scope.init();
+
+    // Code from html
+    let keyIsDown = {};
+
+    function overrideKeyboardEvent(e) {
+        switch (e.type) {
+            case "keydown":
+                if (!keyIsDown[e.keyCode]) {
+                    keyIsDown[e.keyCode] = true;
+                    // do key down stuff here
+                    if (e.keyCode === 82 && e.ctrlKey) {
+                        //location.reload();
+                    }
+                }
+                break;
+            case "keyup":
+                delete (keyIsDown[e.keyCode]);
+                // do key up stuff here
+                break;
+        }
+        disabledEventPropagation(e);
+        if (e.keyCode === 68 && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+    }
+
+    function disabledEventPropagation(e) {
+        if (e.keyCode === 68 && e.ctrlKey) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else if (window.event) {
+                window.event.cancelBubble = true;
+            }
+        }
+    }
+
+    function sizeHeadings(ele) {
+        angular.element("body").find(".box").each(function () {
+            const box = angular.element(this);
+            box.find(".table-headings thead tr th").each(function (index) {
+                const newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
+                angular.element(this).outerWidth(newWidth);
+            });
+            box.find(".table-headings table").width(box.find(".table").width());
+        });
+
+        $document.onkeydown = overrideKeyboardEvent;
+        $document.onkeyup = overrideKeyboardEvent;
+
+        $document.on('keydown', '.dispatchField, .lateCallField', function (event) {
+            if (event.keyCode === 13) {
+                angular.element(this).parents(".clickable-row").addClass("doing");
+            }
+        });
+
+        $document.on('click', '.top-bar .btn-group .btn', function (event) {
+            if (!event.ctrlKey && !event.metaKey) {
+                angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
+            }
+
+            angular.element(this).addClass('topBarActive');
+        });
+
+        $document.on('click', '.clearLists-list-title', function (event) {
+            if (!event.ctrlKey && !event.metaKey) {
+                angular.element("#clearLists").find('.listActive').removeClass('listActive');
+            }
+
+            angular.element(this).addClass('listActive');
+        });
+
+
+        $document.ready(() => {
+            let isDown = false;   // Tracks status of mouse button
+            $document.mousedown(() => {
+                isDown = true;      // When mouse goes down, set isDown to true
+            })
+                .mouseup(() => {
+                    isDown = false;    // When mouse goes up, set isDown to false
+                });
+
+            $document.on("mouseenter", ".activeTable .clickable-row", function (event) {
+
+                if (event.ctrlKey) {
+                    if (isDown) {        // Only change css if mouse is down
+                        angular.element(this).addClass("active");
+                        angular.element(this).siblings(".test").click();
+                    }
+                }
+            });
+        });
+
+        let mouseDown = 0;
+        $document.on('mousedown', '.clickable-row', function (event) {
+            let group;
+            let jobNo;
+            const activeTableClickActive = angular.element(".activeTable .clickable-row.active");
+            if (activeTableClickActive.length > 1) {
+                jobNo = activeTableClickActive.length + " Jobs";
+            } else {
+                jobNo = angular.element(this).attr("data-jobno");
+            }
+
+
+            if (mouseDown === 0) {
+                mouseDown = 1;
+                if (event.which === 1) {
+                    if (event.ctrlKey) {
+                        if (angular.element(this).hasClass("active")) {
+                            angular.element(this).removeClass('active');
+                        } else {
+                            angular.element(this).addClass('active');
+                        }
+                    } else {
+                        if (!angular.element(this).hasClass("active")) {
+
+                            group = angular.element(this).parents(".table-rows").attr("data-group");
+                            angular.element('*[data-group="' + group + '"]').each(function () {
+                                angular.element(this).find('.active').removeClass('active');
+                            });
+
+                            angular.element(this).addClass('active');
+                        }
+                    }
+
+                    angular.element(".activeTable").removeClass("activeTable");
+                    angular.element(this).parents(".table").addClass("activeTable");
+                }
+
+                if (!event.ctrlKey) {
+                    if (angular.element(this).hasClass("draggable-row")) {
+
+                        if (!angular.element(this).hasClass("active")) {
+
+                            group = angular.element(this).parents(".table-rows").attr("data-group");
+                            angular.element('*[data-group="' + group + '"]').each(function () {
+                                angular.element(this).find('.active').removeClass('active');
+                            });
+                            angular.element(this).addClass('active');
+                        }
+
+                        setTimeout(() => {
+                            if (mouseDown === 1) {
+                                const $draggingItems = angular.element("#draggingItems")
+                                $draggingItems.show();
+                                $draggingItems.html(jobNo);
+
+                                $draggingItems.css({"top": event.pageY - 25, "left": event.pageX - 50});
+                                $draggingItems.draggable();
+                                $draggingItems.trigger(event);
+                            }
+                        }, 200);
+                    }
+                }
+            }
+        });
+
+        $document.on('mouseup', '.clickable-row', function (event) {
+            if (event.which === 3) {
+                angular.element(".rightActiveTable").removeClass("rightActiveTable");
+                angular.element(this).parents(".table").addClass("rightActiveTable");
+            }
+            if (!event.ctrlKey) {
+
+                if (angular.element(this).hasClass("active")) {
+                } else {
+                    const group = angular.element(this).parents(".table-rows").attr("data-group");
+                    angular.element('*[data-group="' + group + '"]').each(function () {
+                        angular.element(this).find('.active').removeClass('active');
+                    });
+                    angular.element(this).addClass('active');
+                }
+            }
+        });
+
+
+        $document.on("mouseup", ev => {
+            angular.element("#draggingItems").hide();
+            mouseDown = 0;
+        });
+
+        $document.on("keydown", e => {
+            const code = (e.keyCode ? e.keyCode : e.which);
+            if (code === 40) {
+                angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+            } else if (code === 38) {
+                angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+            }
+        });
+
+
+        const height = angular.element("#box-clearLists").find(".box-content").height() - 30;
+        angular.element(".clearLists-list").each(function () {
+            const newHeight = angular.element(this).data("height") * height / 100;
+            angular.element(this).height(newHeight);
+        });
+    }
 }
 
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", 'greetingService', 'hotkeys', "JobDetailService",

@@ -378,17 +378,8 @@
                     itemSummary.dgClass,
                     job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
                     job.truckHours || 2,
-                    job.gstRate).then(description => {
-                    $mdDialog.show(
-                        $mdDialog.alert()
-                            .parent($document.body)
-                            .clickOutsideToClose(true)
-                            .title('Alert')
-                            .textContent(description)
-                            .ariaLabel('Alert Dialog')
-                            .ok('Got it!')
-                            .targetEvent($event)
-                    );
+                    job.gstRate).then(function (description) {
+                    alert(description);
                 }));
 
             return false;
@@ -412,16 +403,7 @@
                 job.booked,
                 job.gstRate,
                 job.charge.replace("$", "")).then(description => {
-                $mdDialog.show(
-                    $mdDialog.alert()
-                        .parent($document.body)
-                        .clickOutsideToClose(true)
-                        .title('Alert')
-                        .textContent(description)
-                        .ariaLabel('Alert Dialog')
-                        .ok('Got it!')
-                        .targetEvent($event)
-                );
+                alert(description);
             });
         }
     };
@@ -1554,7 +1536,7 @@
                 newP["id"] = self.currentJob.id;
 
 
-                return DispatchData.addPallet(newP, self.currentJob.preBook, FirstName).then(response => {
+                return DispatchData.addPallet(newP, self.currentJob.preBook, FirstName).then(function (response) {
 
                     console.log(response);
 
@@ -1566,9 +1548,18 @@
 
                         self.currentJob.palletInfo.push(newP);
 
-                        return self.rateJob(self.currentJob).then(rate => {
+                        return self.rateJob(self.currentJob).then(function (rate) {
                             console.log(rate);
                             if (rate !== self.currentJob.charge) {
+                                //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
+                                //    self.currentJob.clientID,
+                                //    self.currentJob.contactName,
+                                //    ContactID,
+                                //    self.currentJob.courierData.courierID,
+                                //    self.currentJob.id,
+                                //    self.currentJob.jobType,
+                                //    FirstName);
+
                                 return DispatchData
                                     .updateJobDetail(self.currentJob.id,
                                         "rate",
@@ -1576,7 +1567,7 @@
                                         Number(rate.replace(/[^0-9.-]+/g, "")),
                                         FirstName,
                                         ContactID,
-                                        self.currentJob.preBook).then(response => {
+                                        self.currentJob.preBook).then(function (response) {
                                         self.selectJobDetail(self.currentJob.id);
                                         return response;
                                     });
@@ -1671,7 +1662,7 @@
 
                 var newP = {};
 
-                gather.form.fields.forEach(field => {
+                gather.form.fields.forEach(function (field) {
                     if (field.name === "amount") {
                         newP["Quantity"] = field.value;
                     }
