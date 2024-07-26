@@ -52,7 +52,7 @@ class InterCourierChargeDialogController {
         data.fromCourierId = this.fromCourierSelectedItem.id;
         data.toCourierId = this.toCourierSelectedItem.id;
 
-        const url = "courier/InterCourierCharge";
+        const url = "job/InterCourierCharge";
         this.$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
     }
 
