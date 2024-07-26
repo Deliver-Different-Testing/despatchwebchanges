@@ -500,6 +500,10 @@
         self.editPrompt(event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
     };
 
+    self.editJobFromPhone = function (event, job) {
+        self.editPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
+    };
+
     self.editToJobContact = function (event, job) {
         self.editPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
     };

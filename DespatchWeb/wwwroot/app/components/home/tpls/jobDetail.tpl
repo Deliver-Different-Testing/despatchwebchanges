@@ -36,7 +36,7 @@
                             </div>
                         </div>
                         <div ng-if="!currentJob.bulkJob" class="field"
-                             ng-click="!currentJob.locked && jdSvc.editDetailField(currentJob, 'FromContactPhone','From Contact Phone',currentJob.fromContactNumber,currentJob.id)">
+                             ng-click="!currentJob.locked && jdSvc.editJobFromPhone($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">From Phone: </label>
                             <div ng-class="currentJob.locked ? 'disabled' : ''" class="value">
                                 {{currentJob.fromContactNumber}}
