@@ -6,6 +6,7 @@
 /**
  * @typedef {Object} Job
  * @property {number} clientID - The ID of the client associated with the job.
+ * @property {number} courierId - The ID of the courier associated with the job.
  * @property {string} deliverToContact - The contact to whom the job will be delivered.
  * @property {string} fromAddress - The address from which the job will be picked up.
  * @property {string} fromSuburb - The suburb from which the job will be picked up.
@@ -67,7 +68,9 @@ class CreateJobDialogController {
         this.fromAddressSearchText = "";
         this.toAddressSearchText = "";
         this.searchClientText = "";
+        this.fromCourierSearchText = "";
 
+        this.selectedCourier = null;
         this.selectedClient = null;
         this.selectedFromAddress = null;
         this.selectedToAddress = null;
@@ -85,6 +88,7 @@ class CreateJobDialogController {
         // Define job form
         this.job = {
             clientID: "",
+            courierId: "",
             deliverToContact: "",
             fromAddress: "",
             toAddress: "",
@@ -116,6 +120,18 @@ class CreateJobDialogController {
         const url = "/home/ActiveClients";
 
         try {
+            return await this.DispatchData.autocompleteSearch(searchTerm, url);
+        } catch (error) {
+            this.toastrService.showErrorToast(error.message);
+        }
+    }
+
+    /**
+     * @param {string} searchTerm
+     */
+    async courierSearch(searchTerm) {
+        try {
+            const url = "/courier/AllActiveSearch";
             return await this.DispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
@@ -238,6 +254,7 @@ class CreateJobDialogController {
 
             // Apply form values to job
             job.clientID = this.selectedClient.id;
+            job.courierId = this.selectedCourier.id;
             job.date = this.jobDate.toISOString();
             job.speedId = this.selectedSpeed.id;
 

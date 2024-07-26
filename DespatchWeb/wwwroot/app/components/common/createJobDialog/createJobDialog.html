@@ -47,6 +47,27 @@
                                type="number">
                     </md-input-container>
 
+                    <md-autocomplete
+                            flex-gt-sm
+                            md-escape-options="clear"
+                            md-floating-label="Courier"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
+                            md-min-length="3"
+                            md-no-asterisk
+                            md-search-text="ctrl.courierSearchText"
+                            md-selected-item="ctrl.courierSelectedItem"
+                            placeholder="Start typing to search couriers"
+                            required>
+                        <md-item-template>
+                            <span md-highlight-flags="^i"
+                                  md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No couriers matching "{{ctrl.courierSearchText}}" were found.
+                        </md-not-found>
+                    </md-autocomplete>
+
                     <md-input-container class="md-block" flex-gt-sm>
                         <label>Job Date</label>
                         <md-datepicker aria-label="Enter job date" md-no-asterisk ng-model="ctrl.jobDate"
