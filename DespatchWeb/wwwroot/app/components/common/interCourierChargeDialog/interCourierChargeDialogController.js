@@ -9,12 +9,13 @@
  */
 
 class InterCourierChargeDialogController {
-    constructor($scope, $mdDialog, $http, DispatchData, toastrService) {
+    constructor($scope, $mdDialog, $http, DispatchData, toastrService, loadingService) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.$http = $http;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
+        this.loadingService = loadingService;
 
         this.data = {
             fromCourierId: 0,
@@ -48,12 +49,28 @@ class InterCourierChargeDialogController {
      * @param {data} data
      */
     async submit(data) {
-        // Assign variables from autocompletes
-        data.fromCourierId = this.fromCourierSelectedItem.id;
-        data.toCourierId = this.toCourierSelectedItem.id;
+        try {
+            if (!this.courierChargeForm.$valid) {
+                this.toastrService.showWarningToast("Please complete all the required fields.");
+                return;
+            }
 
-        const url = "job/InterCourierCharge";
-        this.$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
+            this.loadingService.showLoader();
+
+            // Assign variables from autocompletes
+            data.fromCourierId = this.fromCourierSelectedItem.id;
+            data.toCourierId = this.toCourierSelectedItem.id;
+
+            const url = "job/InterCourierCharge";
+            await this.$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
+
+            this.toastrService.showSuccessToast("Inter-Courier Charge saved successfully");
+            this.$mdDialog.hide();
+            this.loadingService.closeLoader();
+        } catch (error) {
+            this.toastrService.showErrorToast(error.message);
+            this.loadingService.closeLoader();
+        }
     }
 
     cancel() {

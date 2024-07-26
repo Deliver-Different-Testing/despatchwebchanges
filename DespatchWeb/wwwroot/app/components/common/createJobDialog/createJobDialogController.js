@@ -242,6 +242,7 @@ class CreateJobDialogController {
                 return;
             }
 
+            this.loadingService.showLoader();
             // Apply form values to job
             job.clientID = this.selectedClient.id;
             job.courierId = this.selectedCourier.id;
@@ -257,6 +258,7 @@ class CreateJobDialogController {
             // Pass new jobId back to function that called dialog
             this.$mdDialog.hide(newJobId);
         } catch (error) {
+            this.loadingService.closeLoader();
             this.toastrService.showErrorToast(error.message);
         }
     }
