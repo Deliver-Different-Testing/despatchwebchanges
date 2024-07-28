@@ -177,7 +177,7 @@
                                             <i class="material-symbols-outlined small-icon">send</i>
                                         </button>
                                         <button class="btn btn-sm btn-secondary"
-                                                ng-click="messageClick($event, currentJob)"
+                                                ng-click="ctrl.messageClick($event, currentJob)"
                                                 title="Send Message"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">sms</i>
@@ -188,30 +188,38 @@
 
                                 <div class="box-details" ng-if="currentJob" ng-show="boxes[box.name].showDetailButtons">
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="otherEventForm(currentJob.jobNo)" title="Add Event"
+                                        <button class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.otherEventForm(currentJob.jobNo)" title="Add Event"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">edit_calendar</i>
                                         </button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="closeSupport(currentSupport);" ng-disabled="!currentSupport"
+                                        <button class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.closeSupport(currentSupport);"
+                                                ng-disabled="!currentSupport"
                                                 title="Close Event" type="button">
                                             <i class="material-symbols-outlined small-icon">event_available</i>
                                         </button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="unlockJob()" ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.unlockJob(currentJob)"
+                                                ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)"
                                                 title="Unlock Job"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">lock_open</i>
                                         </button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="lockJob()" ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.lockJob(currentJob)"
+                                                ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)"
                                                 title="Lock Job"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">lock</i>
                                         </button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="splitJob($event, currentJob)" ng-show="currentJob && (currentJob.allowSplit)"
+                                        <button class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.splitJob($event, currentJob)"
+                                                ng-show="currentJob && (currentJob.allowSplit)"
                                                 title="Split Job"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">shuffle</i>
                                         </button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="swapPOD()" ng-show="currentJob && currentJob.done && !currentJob.bulkJob && !currentJob.preBook"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.swapPOD()"
+                                                ng-show="currentJob && currentJob.done && !currentJob.bulkJob && !currentJob.preBook"
                                                 title="Swap POD"
                                                 type="button">
                                             <i class="fa fa-exchange"></i>

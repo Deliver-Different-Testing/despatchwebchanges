@@ -700,14 +700,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         }
     });
 
-    $scope.unlockJob = function () {
-        return $scope.jdSvc
-            .unlockJob($scope.currentJob);
+    HomeController.prototype.unlockJob = function (currentJob) {
+        return jdSvc.unlockJob(currentJob);
     };
 
-    $scope.lockJob = function () {
-        return $scope.jdSvc
-            .lockJob($scope.currentJob);
+    HomeController.prototype.lockJob = function (currentJob) {
+        return jdSvc.lockJob(currentJob);
     };
 
     $scope.selectClearList = function (id, event, area) {
@@ -727,7 +725,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         $scope.jobForDispatch = job;
     };
 
-    $scope.swapPOD = function () {
+    HomeController.prototype.swapPOD = function () {
         $scope.gather.form = {
             id: "swapPOD",
             title: "Enter the other job number",
@@ -811,7 +809,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
     };
 
-    $scope.messageClick = function (event, job) {
+    HomeController.prototype.messageClick = function (event, job) {
         const title = "Send Message";
 
         $mdDialog.show({
@@ -833,14 +831,17 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     }
 
-    $scope.otherEventForm = function (jobNumber) {
+    /**
+     * @param {string} jobNumber
+     */
+    HomeController.prototype.otherEventForm = function (jobNumber) {
         let time = new Date();
         time.setSeconds(0);
         time.setMilliseconds(0);
 
         $scope.eventForm = {
             "data": {
-                "jobNum": $scope.currentJob.jobNo,
+                "jobNum": jobNumber,
                 "client": $scope.currentJob.client,
                 "event": "Other",
                 "date": new Date(),
@@ -1580,7 +1581,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     //////////////////////////////
     //  SPLIT JOB //
     /////////////////////////////
-    $scope.splitJob = function (event, job) {
+    HomeController.prototype.splitJob = function (event, job) {
         if (!job.allowSplit) {
             $mdDialog.show(
                 $mdDialog.alert()
@@ -2333,7 +2334,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             {
                 text: "Add Event - Other",
                 click: function ($itemScope, $event, modelValue, text, $li) {
-                    $scope.otherEventForm($scope.currentJob.jobNo);
+                    HomeController.prototype.otherEventForm($scope.currentJob.jobNo);
                 }
             },
 
@@ -2572,8 +2573,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
-    $scope.closeSupport = function (support) {
-        DispatchData.closeSupport(support.eventId, ContactID).then(function (data) {
+    HomeController.prototype.closeSupport = function (support) {
+        DispatchData.closeSupport(support.eventId, ContactID).then(data => {
             $scope.getSupports();
             $scope.currentSupport = null;
         });
