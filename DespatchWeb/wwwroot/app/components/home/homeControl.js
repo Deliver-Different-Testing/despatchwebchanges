@@ -3,11 +3,15 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     $scope.name = "Home";
     $scope.jdSvc = jdSvc;
 
-    $scope.greetUser = function () {
+    HomeController.prototype.courierSearchText = "";
+    HomeController.prototype.selectedCourier = null;
+
+
+    HomeController.prototype.greetUser = function () {
         return greetingService.greetUser($scope.userName);
     }
 
-    $scope.jdSvc.setSelectJobDetail(function () {
+    jdSvc.setSelectJobDetail(function () {
         const currentJob = $scope.currentJob;
         jdSvc.setJob($scope.currentJob);
 
@@ -379,23 +383,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                         ] : [{
                             "name": "map"
                         }]
-                    }//,
-                    //{
-                    //    "id": "col4",
-                    //    "boxes": [
-                    //        {
-                    //            "name": "jobUpdates",
-                    //            "height": "300px"
-                    //        },
-                    //        {
-                    //            "name": "supports",
-                    //            "height": "300px"
-                    //        },
-                    //        {
-                    //            "name": "lateCalls"
-                    //        }
-                    //    ]
-                    //}
+                    }
                 ]
             }
         }
@@ -408,10 +396,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
     $scope.layouts = layoutsObject || defaultLayout;
     $scope.userName = FirstName;
-    $scope.currentLayoutName = "default";
+    HomeController.prototype.currentLayoutName = "default";
     $scope.truckMode = "On";
     $scope.supportChannel = JSON.parse(localStorage.getItem("support-channel-" + ContactID)) || "All";
-    //$scope.pickService.channel = $scope.supportChannel;
 
     $scope.groupJobsSelection = "";
     $scope.currentWorkSelection = "";
@@ -425,7 +412,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
     $scope.layout = angular.copy($scope.layouts[0].layout);
 
-    $scope.deleteLayout = function (event, index) {
+    HomeController.prototype.deleteLayout = function (event, index) {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
@@ -444,23 +431,23 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     }
 
-    $scope.setLastActiveLayoutName = function (layoutName) {
+    HomeController.prototype.setLastActiveLayoutName = function (layoutName) {
         if (Modernizr.localstorage) {
             localStorage.setItem("lastActiveLayout-" + ContactID, layoutName);
         }
     };
 
-    $scope.loadLayout = function (index) {
-        $scope.currentLayoutName = $scope.layouts[index].name;
+    HomeController.prototype.loadLayout = function (index) {
+        HomeController.prototype.currentLayoutName = $scope.layouts[index].name;
         $scope.layout = angular.copy($scope.layouts[index].layout);
 
         // save layout as last active
-        $scope.setLastActiveLayoutName($scope.currentLayoutName);
+        HomeController.prototype.setLastActiveLayoutName(HomeController.prototype.currentLayoutName);
 
         $timeout(HomeController.prototype.getData, 1000);
     };
 
-    $scope.saveLayout = function (event) {
+    HomeController.prototype.saveLayout = function (event) {
         angular.forEach($scope.layout.columns,
             (column, colKey) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
@@ -489,7 +476,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
 
                 // save last active layout
-                $scope.setLastActiveLayoutName(layoutName);
+                HomeController.prototype.setLastActiveLayoutName(layoutName);
             }
 
             const deferred = $q.defer();
@@ -520,17 +507,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     };
 
     $scope.attention = function (job) {
-
-        var temp = "";
+        let temp = "";
 
         if (job.direct) {
             temp += "DIRECT ";
         }
-        //else {
-        //    if (job.speedID !== job.notifiedJobTypeID && job.notifiedJobTypeID !== -1) {
-        //        temp += "ASAP ";
-        //    }
-        //}
         if (job.van) {
             temp = "VAN ";
         }
@@ -1702,17 +1683,51 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
-    // Search Courier GPS
-    $scope.searchCourier = function () {
+    /**
+     * @param {string} searchText
+     */
+    HomeController.prototype.courierSearch = async function (searchText) {
+        try {
+            const url = "/courier/AllActiveSearch";
+            return await DispatchData.autocompleteSearch(searchText, url);
+        } catch (error) {
+            toastrService.showErrorToast(error.message);
+        }
+    }
+
+    HomeController.prototype.updateCourierData = function (courierID, courierName) {
+        $scope.currentWorkSelection = ` for Courier  ${courierID}  ${courierName}`;
+        $scope.currentCourier = {
+            courierID: courierID,
+            courier: courierName
+        };
+        $scope.currentSelection = ` for Courier ${courierID}  ${courierName}`;
+        $scope.getCurrentJobs(courierID);
+        DispatchData.truckCourierStatus(courierID).then(result => {
+            $scope.truckCourierStatus = result.data;
+        });
+    };
+
+    HomeController.prototype.displayLoadingIndicators = function () {
         angular.element("#box-currentWork .loading").css('display', 'block');
         angular.element('#box-map .loading').css('display', '');
+    };
 
-        let ac = $scope.pickAllCouriers.find(c => c.id === $scope.courier.gpsCourier);
-        console.log(ac);
+    HomeController.prototype.hideLoadingIndicators = function () {
+        angular.element("#box-currentWork .loading").css('display', 'none');
+        angular.element('#box-map .loading').css('display', 'none');
+    };
 
-        if (ac === undefined) {
-            angular.element("#box-currentWork .loading").css('display', 'none');
-            angular.element('#box-map .loading').css('display', 'none');
+    HomeController.prototype.selectedCourierChange = function (courier) {
+        this.updateCourierData(courier.id, courier.text);
+    };
+
+    $scope.searchCourier = function () {
+        HomeController.prototype.displayLoadingIndicators();
+        let foundCourier = $scope.pickAllCouriers.find(c => c.id === $scope.courier.gpsCourier);
+        console.log(foundCourier);
+        if (foundCourier === undefined) {
+            HomeController.prototype.hideLoadingIndicators();
             $mdDialog.show(
                 $mdDialog.alert()
                     .clickOutsideToClose(true)
@@ -1722,19 +1737,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             );
             return;
         }
-
-        $scope.currentWorkSelection = " for Courier " + ac.id + " " + ac.name;
-        $scope.currentCourier = {
-            courierID: ac.courierID,
-            courier: ac.label
-        };
-
-        $scope.currentSelection = " for Courier " + ac.id + " " + ac.name;
-        $scope.getCurrentJobs(ac.courierID);
-
-        DispatchData.truckCourierStatus(ac.courierID).then(result => {
-            $scope.truckCourierStatus = result.data;
-        });
+        HomeController.prototype.updateCourierData(foundCourier.id, foundCourier.name);
+        HomeController.prototype.hideLoadingIndicators();
     };
 
     // Select the courier
@@ -3282,7 +3286,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
                     // if the last active layout is found among stored layouts
                     if (lastActiveLayoutIndex !== -1) {
-                        $scope.loadLayout(lastActiveLayoutIndex);
+                        HomeController.prototype.loadLayout(lastActiveLayoutIndex);
                     }
                 }
             }

@@ -93,7 +93,7 @@
 
             <div style="display: flex; align-items: center;">
                 <div class="btn topbar-button" style="color: white;">
-                    <span>{{greetUser()}}</span>
+                    <span>{{ctrl.greetUser()}}</span>
                 </div>
                 <md-menu md-position-mode="target-right target">
                     <md-button aria-label="Open layout options menu"
@@ -104,7 +104,7 @@
                     </md-button>
                     <md-menu-content width="2">
                         <md-menu-item>
-                            <md-button ng-click="saveLayout($event)">
+                            <md-button ng-click="ctrl.saveLayout($event)">
                                 <md-icon md-font-set="material-symbols-outlined">save</md-icon>
                                 Save Layout
                             </md-button>
@@ -113,11 +113,11 @@
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
                                 <md-icon md-font-set="material-symbols-outlined"
-                                         ng-click="deleteLayout($event, $index)">
+                                         ng-click="ctrl.deleteLayout($event, $index)">
                                     delete
                                 </md-icon>
-                                <span ng-click="loadLayout($index)"
-                                      ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                                <span ng-click="ctrl.loadLayout($index)"
+                                      ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
                             </md-button>
                         </md-menu-item>
                     </md-menu-content>
@@ -229,30 +229,21 @@
 
                                 <div class="btn-group " ng-show="box.name === 'jobsList'" style="padding:8px 5px;">
                                     <md-autocomplete
-                                            md-item-text="item.display"
+                                            md-item-text="item.text"
                                             md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
-                                            md-min-length="0"
+                                            md-min-length="1"
                                             md-search-text="ctrl.courierSearchText"
                                             md-selected-item="ctrl.selectedCourier"
                                             md-selected-item-change="ctrl.selectedCourierChange(item)"
                                             placeholder="gps courier (enter code)...">
                                         <md-item-template>
                                             <span md-highlight-flags="^i"
-                                                  md-highlight-text="ctrl.courierSearchText">{{item.display}}</span>
+                                                  md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
                                         </md-item-template>
                                         <md-not-found>
                                             No couriers matching "{{ctrl.courierSearchText}}" were found.
                                         </md-not-found>
                                     </md-autocomplete>
-
-
-                                    <i class="material-symbols-outlined small-icon" ng-click="searchCourier()"
-                                       title="GPS Courier">search</i>
-                                    <input id="gps" ng-model="$parent.$parent.courier.gpsCourier"
-                                           placeholder="gps courier (enter code)..."
-                                           style="color: black;display:inline-block!important;" type="text"/>
-                                    <i class="material-symbols-outlined small-icon" ng-click="clearCourierSearch();"
-                                       title="Clear">close</i>
                                 </div>
 
                                 <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
