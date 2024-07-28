@@ -4,44 +4,17 @@ class SendMessageDialogController {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
+        this.selectedCourierId = selectedCourierId;
 
         this.message = "";
-        this.searchText = "";
-
-        // Find the selected courier
-        this.getCurrentCourier(selectedCourierId).then(_ => console.log("Courier method completed!"));
     }
 
-    async getCurrentCourier(selectedCourierId) {
-        try {
-            if (selectedCourierId === undefined) {
-                return;
-            }
-
-            this.selectedItem = await this.DispatchData.getSingleCourier(selectedCourierId);
-        } catch (error) {
-            console.log("Error", error);
-        }
-    }
-
-    /**
-     * @param {string} searchTerm
-     */
-    async querySearch(searchTerm) {
-        try {
-            const url = "/courier/AllActiveSearch";
-            return await this.DispatchData.autocompleteSearch(searchTerm, url);
-        } catch (error) {
-            this.toastrService.showErrorToast(error.message);
-        }
-    }
-
-    async submit(message, selectedCourier) {
+    async submit(message) {
         try {
             console.log("Message", message);
-            console.log("Courier", selectedCourier);
+            console.log("Courier", this.selectedCourierId);
 
-            await this.DispatchData.sendSMS(selectedCourier.courierId, ContactID, FirstName, message);
+            await this.DispatchData.sendSMS(this.selectedCourierId, ContactID, FirstName, message);
 
             this.toastrService.showSuccessToast("Message Sent!");
         } catch (error) {

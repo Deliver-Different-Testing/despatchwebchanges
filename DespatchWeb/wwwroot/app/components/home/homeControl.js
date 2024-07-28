@@ -804,7 +804,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             locals: {
                 title,
                 job,
-                selectedCourierId: job.courierId,
+                selectedCourierId: job.courierData.courierId,
             },
         }).then(_ => {
             $scope.selectJobDetail(job);
