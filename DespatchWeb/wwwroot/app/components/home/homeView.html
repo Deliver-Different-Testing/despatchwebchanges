@@ -224,12 +224,6 @@
                                                 type="button">
                                             <i class="fa fa-exchange"></i>
                                         </button>
-
-
-                                        <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
-        <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
-        <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
-        <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
                                     </div>
                                 </div>
 
@@ -268,7 +262,7 @@
                                                ng-show="box.name === 'clearLists'">
                                         City
                                     </md-switch>
-                                    <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                    <md-switch class="md-primary" ng-change="ctrl.getAvailableCourierLocation()"
                                                ng-model="allCouriers.display" ng-show="box.name === 'map'">
                                         All
                                     </md-switch>
@@ -276,7 +270,7 @@
                                                ng-model="mapZoom.display" ng-show="box.name === 'map'">
                                         Auto Zoom
                                     </md-switch>
-                                    <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                    <md-switch class="md-primary" ng-change="ctrl.getAvailableCourierLocation()"
                                                ng-model="allCouriers.includeUA" ng-show="box.name === 'map'">
                                         Include UA
                                     </md-switch>
@@ -284,7 +278,7 @@
 
                                 <div class="box-search" ng-show="boxes[box.name].showSearch">
                                     <i class="material-symbols-outlined small-icon"
-                                       ng-click="openSearch(box.name)">search</i>
+                                       ng-click="ctrl.openSearch(box.name)">search</i>
                                     <i class="material-symbols-outlined small-icon" ng-click="box.searchBox = ''"
                                        title="Clear">close</i>
                                     <input ng-model="box.searchBox" ng-model-options="{debounce: 300}"
@@ -308,7 +302,7 @@
         <ul active-icon="refresh"
             effect="slidein"
             label="Refresh"
-            main-action="getData()"
+            main-action="ctrl.getData()"
             mfb-menu
             position="bl"
             resting-icon="menu"
