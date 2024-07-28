@@ -13,7 +13,7 @@
     </md-toolbar>
 
     <md-dialog-content ng-cloak>
-        <form name="ctrl.jobForm" ng-cloak ng-submit="ctrl.jobForm.$valid && ctrl.submit($event, ctrl.job)">
+        <form name="ctrl.jobForm" ng-cloak ng-submit="ctrl.jobForm.$valid && ctrl.submit(ctrl.job)">
             <div class="md-dialog-content">
 
                 <div layout-gt-sm="row">
@@ -214,7 +214,7 @@
     </md-dialog-content>
 
     <md-dialog-actions layout="row" layout-align="center center">
-        <md-button class="md-raised md-primary" ng-click="ctrl.submit($event, ctrl.job)">
+        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.job)">
             <md-icon md-font-set="material-symbols-outlined">add</md-icon>
             Create
         </md-button>

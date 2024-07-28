@@ -14,7 +14,7 @@
 
     <md-dialog-content ng-cloak>
         <form name="ctrl.courierChargeForm" ng-cloak
-              ng-submit="ctrl.courierChargeForm.$valid && ctrl.submit($event, ctrl.data)">
+              ng-submit="ctrl.courierChargeForm.$valid && ctrl.submit(ctrl.data)">
             <div class="md-dialog-content">
 
                 <div layout-gt-sm="row">
@@ -62,18 +62,18 @@
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="reference">Reference</label>
-                        <input id="reference" ng-model="data.reference">
+                        <input id="reference" ng-model="ctrl.data.reference">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="zones">Zones</label>
-                        <input id="zones" ng-model="data.zones" type="number">
+                        <input id="zones" ng-model="ctrl.data.zones" type="number">
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="charge-amount">Amount</label>
                         <md-icon md-font-set="material-symbols-outlined">paid</md-icon>
-                        <input id="charge-amount" md-no-asterisk ng-model="ctrl.amount" required step="0.01"
+                        <input id="charge-amount" md-no-asterisk ng-model="ctrl.data.amount" required step="0.01"
                                type="number">
                     </md-input-container>
                 </div>
@@ -83,7 +83,7 @@
     </md-dialog-content>
 
     <md-dialog-actions layout="row" layout-align="center center">
-        <md-button class="md-raised md-primary" ng-click="ctrl.submit($event, ctrl.data)">
+        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.data)">
             <md-icon md-font-set="material-symbols-outlined">add</md-icon>
             Add
         </md-button>

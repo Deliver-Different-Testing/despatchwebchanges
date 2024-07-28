@@ -116,6 +116,9 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
             templateUrl: "app/components/common/interCourierChargeDialog/interCourierChargeDialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
+            locals: {
+                staffId: ContactID,
+            },
         }).then(() => {
             console.log("Intercourier Charge Added!")
         }).then(() => "Intercourier Charge Canceled!");

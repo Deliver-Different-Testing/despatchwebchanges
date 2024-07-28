@@ -9,7 +9,7 @@
  */
 
 class InterCourierChargeDialogController {
-    constructor($scope, $mdDialog, $http, DispatchData, toastrService, loadingService) {
+    constructor($scope, $mdDialog, $http, DispatchData, toastrService, loadingService, staffId) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.$http = $http;
@@ -22,7 +22,8 @@ class InterCourierChargeDialogController {
             toCourierId: 0,
             reference: "",
             zones: 0,
-            amount: 0.0
+            amount: 0.0,
+            staffId
         }
 
         this.courierChargeForm = $scope.courierChargeForm;
@@ -76,5 +77,4 @@ class InterCourierChargeDialogController {
     cancel() {
         this.$mdDialog.cancel();
     }
-
 }

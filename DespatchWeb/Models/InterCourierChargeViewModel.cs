@@ -1,11 +1,18 @@
+using Newtonsoft.Json;
+
 namespace DespatchWeb.Models;
 
 public class InterCourierChargeViewModel
 {
-    public int FromCourierId { get; set; }
-    public int ToCourierId { get; set; }
-    public string Reference { get; set; }
-    public int Zones { get; set; }
-    public double Amount { get; set; }
-    public int StaffId { get; set; }
+    [JsonProperty("fromCourierId")] public int FromCourierId { get; set; }
+
+    [JsonProperty("toCourierId")] public int ToCourierId { get; set; }
+
+    [JsonProperty("reference")] public string Reference { get; set; }
+
+    [JsonProperty("zones")] public int Zones { get; set; }
+
+    [JsonProperty("amount")] public double Amount { get; set; }
+
+    [JsonProperty("staffId")] public int StaffId { get; set; }
 }

@@ -232,10 +232,9 @@ class CreateJobDialogController {
 
     /**
      * Submits a job after validating form and applying form values.
-     * @param {Event} event - The event object, required for the AlertDialog.
      * @param {Job} job - A job object to submit.
      */
-    async submit(event, job) {
+    async submit(job) {
         try {
             if (!this.jobForm.$valid) {
                 this.toastrService.showWarningToast("Please complete all the required fields.");

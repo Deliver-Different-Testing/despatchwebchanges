@@ -872,7 +872,7 @@ public partial class JobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> InterCourierCharge(InterCourierChargeViewModel viewModel)
+    public async Task<IActionResult> InterCourierCharge([FromBody] InterCourierChargeViewModel viewModel)
     {
         try
         {
