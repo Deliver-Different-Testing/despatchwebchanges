@@ -19,9 +19,7 @@ angular
         "ngSanitize",
         "ngMaterial",
         "angularPromiseButtons",
-        "cp.ngConfirm",
-        "ng-mfb",
-        "dndLists"
+        "ng-mfb"
     ])
     .config($mdThemingProvider => {
         $mdThemingProvider.definePalette("urgentPrimary", {

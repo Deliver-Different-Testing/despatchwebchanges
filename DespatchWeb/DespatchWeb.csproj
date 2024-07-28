@@ -21,6 +21,8 @@
     <_ContentIncludedByDefault Remove="compilerconfig.json" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\angular\angular-material.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\lib\angular\angular.min.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\lib\angular-confirm\angular-confirm.min.css"/>
+      <_ContentIncludedByDefault Remove="wwwroot\lib\angular-confirm\angular-confirm.min.js"/>
   </ItemGroup>
 
   <ItemGroup>
