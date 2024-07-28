@@ -228,6 +228,24 @@
                                 </div>
 
                                 <div class="btn-group " ng-show="box.name === 'jobsList'" style="padding:8px 5px;">
+                                    <md-autocomplete
+                                            md-item-text="item.display"
+                                            md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
+                                            md-min-length="0"
+                                            md-search-text="ctrl.courierSearchText"
+                                            md-selected-item="ctrl.selectedCourier"
+                                            md-selected-item-change="ctrl.selectedCourierChange(item)"
+                                            placeholder="gps courier (enter code)...">
+                                        <md-item-template>
+                                            <span md-highlight-flags="^i"
+                                                  md-highlight-text="ctrl.courierSearchText">{{item.display}}</span>
+                                        </md-item-template>
+                                        <md-not-found>
+                                            No couriers matching "{{ctrl.courierSearchText}}" were found.
+                                        </md-not-found>
+                                    </md-autocomplete>
+
+
                                     <i class="material-symbols-outlined small-icon" ng-click="searchCourier()"
                                        title="GPS Courier">search</i>
                                     <input id="gps" ng-model="$parent.$parent.courier.gpsCourier"
