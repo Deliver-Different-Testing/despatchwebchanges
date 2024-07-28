@@ -1719,7 +1719,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     };
 
     HomeController.prototype.selectedCourierChange = function (courier) {
-        this.updateCourierData(courier.id, courier.text);
+        if (courier === undefined) {
+            HomeController.prototype.selectedCourier = null;
+        } else {
+            this.updateCourierData(courier.id, courier.text);
+        }
     };
 
     $scope.searchCourier = function () {
@@ -2478,7 +2482,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         return multiple ? multipleMenu : fullMenu;
     };
 
-    $scope.setTruckMode = function (mode) {
+    HomeController.prototype.setTruckMode = function (mode) {
         $scope.truckMode = mode;
         HomeController.prototype.getData();
     };
