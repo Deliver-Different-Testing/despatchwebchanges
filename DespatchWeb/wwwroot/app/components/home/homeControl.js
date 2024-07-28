@@ -404,7 +404,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     $scope.currentWorkSelection = "";
     $scope.potentialCouriersSelection = "";
 
-    $scope.storeMapZoomDisplay = function () {
+    HomeController.prototype.storeMapZoomDisplay = function () {
         if (Modernizr.localstorage) {
             localStorage.setItem("mapZoom-" + ContactID, JSON.stringify($scope.mapZoom));
         }
