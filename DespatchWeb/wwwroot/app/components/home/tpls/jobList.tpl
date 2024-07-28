@@ -12,8 +12,7 @@
                 <th scope="col" ng-click="orderList('jobList','client')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-client'"></i>Client </th>
                 <th scope="col" ng-click="orderList('jobList','from')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i>From </th>
 				<th colspan="2" scope="col" ng-click="orderList('jobList','to')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i>To </th>
-				<!--<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>-->
-                
+
                 <th></th>
                 <th scope="col" ng-click="orderList('jobList','remain')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i>Remain</th>
                 <th scope="col" ng-click="orderList('jobList','status')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i>S </th>
@@ -52,8 +51,8 @@
 
         </tr>
         <tr>
-            
-            <td><div></div></td>
+
+        <td><div></div></td>
 			<td><div></div></td>
             <td><div></div></td>
             <td><div></div></td>
@@ -82,9 +81,9 @@
 
 <script>
 
-    $(".box-content").on("scroll", function() {
-        var newTop = $(this).scrollTop();
-        $(this).find(".table-headings").css({"top":newTop});
+    angular.element(".box-content").on("scroll", function () {
+        var newTop = angular.element(this).scrollTop();
+        angular.element(this).find(".table-headings").css({"top": newTop});
     });
 
 </script>
