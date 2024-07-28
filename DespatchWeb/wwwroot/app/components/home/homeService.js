@@ -1,6 +1,9 @@
 class DispatchData {
     static $inject = ["$http"];
 
+    /**
+     * @constructor DispatchData
+     */
     constructor($http) {
         this.$http = $http;
     }
