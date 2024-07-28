@@ -19,7 +19,8 @@ angular
         "ngSanitize",
         "ngMaterial",
         "angularPromiseButtons",
-        "ng-mfb"
+        "ng-mfb",
+        "md.data.table"
     ])
     .config($mdThemingProvider => {
         $mdThemingProvider.definePalette("urgentPrimary", {
@@ -86,18 +87,18 @@ angular
     })
     .config(["HereMapsConfigProvider", HereMapsConfigProvider => {
         HereMapsConfigProvider.setOptions({
-            'app_id': 'bBPfh2x8Cauun3ygLMAx',
-            'app_code': 'yjfwTdkin_R2rGXYTrwWVg',
-            'useHTTPS': true,
-            'useCIT': true,
-            'mapTileConfig': {
+            "app_id": "bBPfh2x8Cauun3ygLMAx",
+            "app_code": "yjfwTdkin_R2rGXYTrwWVg",
+            "useHTTPS": true,
+            "useCIT": true,
+            "mapTileConfig": {
                 metadataQueryParams: {
-                    'lg2': 'ara'
+                    "lg2": "ara"
                 }
             }
         });
     }])
-    .config(['$qProvider', $qProvider => {
+    .config(["$qProvider", $qProvider => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
     .config(["$urlRouterProvider", "$stateProvider", ($urlRouterProvider, $stateProvider) => {
