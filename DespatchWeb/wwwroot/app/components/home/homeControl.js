@@ -41,7 +41,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     });
 
     $scope.gather = {
-        submit: function () {
+        submit() {
             return $scope.gather.form.onSubmit().then(response => {
                 console.log("pointer 3");
 
@@ -73,10 +73,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 });
             });
         },
-        cancel: function () {
+        cancel() {
             angular.element(".gatherForm").css("display", "none");
         },
-        showForm: function () {
+        showForm() {
             angular.element('.gatherForm').css("display", "block");
             $timeout(() => {
                 angular.element('.gatherForm .focusMe').focus();
@@ -558,7 +558,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         scrollSensitivity: 100,
         scrollSpeed: 20,
         handle: ".box-handle",
-        activate: function (e, ui) {
+        activate(e, ui) {
             const box = angular.element("#" + ui.item.context.id);
             const parent = box.parent();
             const boxes = parent.children().filter((_, child) => angular.element(child).hasClass('box'));
@@ -568,7 +568,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 box.attr("data-height", box.prop('offsetHeight') + "px");
             });
         },
-        update: function (e, ui) {
+        update(e, ui) {
             $timeout(() => {
                 const box = angular.element("#" + ui.item.context.id);
                 const parent = box.parent();
@@ -660,7 +660,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         combo: "esc",
         description: "Close gather screen",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback: function (event, hk) {
+        callback(event, hk) {
             angular.element(".gatherForm").css("display", "none");
             angular.element('.eventForm').css('display', 'none');
             if (event.srcElement && event.srcElement.classList.contains("dispatchField")) {
@@ -673,7 +673,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         combo: "enter",
         description: "Submit gather form",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback: function (event, hk) {
+        callback(event, hk) {
             let gatherForm = angular.element('.gatherForm');
 
             if (gatherForm.css('display') !== 'none') {
@@ -721,7 +721,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                     "type": "text"
                 }
             ],
-            onSubmit: function () {
+            onSubmit() {
                 return DispatchData.validateSwapPOD($scope.gather.form.fields[0].value).then(function (data) {
                     if (!data) {
                         $mdDialog.show(
@@ -782,7 +782,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                     "value": ""
                 }
             ],
-            onSubmit: function () {
+            onSubmit() {
                 return DispatchData.addNote(jobId, $scope.gather.form.fields[0].value, FirstName, false).then(function () {
                     return DispatchData.voidJob(jobId);
 
@@ -832,12 +832,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 "date": new Date(),
                 "time": time
             },
-            submit: function () {
+            submit() {
                 return DispatchData.addOtherEvent($scope.currentJob.jobNo, $scope.currentJob.clientID, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(function () {
                     angular.element('.eventForm').css('display', 'none');
                 });
             },
-            cancel: function () {
+            cancel() {
                 angular.element('.eventForm').css('display', 'none');
             }
         };
@@ -1614,7 +1614,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         // NEW IMPLEMENTATION
         {
             text: "Delete",
-            click: function ($itemScope, $event, modelValue, text, $li) {
+            click($itemScope, $event, modelValue, text, $li) {
                 //$scope.items.splice($itemScope.$index, 1);
 
                 const index = $scope.currentJob.PalletInfo.indexOf($itemScope.pallet);
@@ -1635,7 +1635,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                         classes: {
                             "ui-droppable-hover": "active"
                         },
-                        drop: function (event, ui) {
+                        drop(event, ui) {
 
                             let parent = angular.element(this).parents(".box");
                             let parentOffset = parent.offset();
@@ -2122,19 +2122,19 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         return [
             {
                 text: "Restore",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     $scope.restoreJobsFromCurrentWindow();
                 }
             },
             {
                 text: "Redispatch",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     $scope.reAllocateJobsFromCurrentWindow();
                 }
             },
             {
                 text: "Resend",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     $scope.resendJobsFromCurrentWindow();
                 }
             }
@@ -2219,7 +2219,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                             "dueMins": dueTime,
                             "choose": ""
                         },
-                        submit: function () {
+                        submit() {
                             const pickupETAValue = parseInt($scope.lateForm.choose.value);
                             const dueMins = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
 
@@ -2235,7 +2235,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                                 angular.element(".lateForm").hide(0)
                             }
                         },
-                        cancel: function () {
+                        cancel() {
                             $scope.lateForm.data = null;
                             angular.element("#AwayMins").select2().empty();
                             angular.element("#AwayMins").select2('destroy');
@@ -2342,31 +2342,31 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         return [
             {
                 text: "Void Job",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
                 }
             },
 
             {
                 text: "Add Event - Other",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     HomeController.prototype.otherEventForm($scope.currentJob.jobNo);
                 }
             },
 
             {
                 text: "Split Job",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     $scope.splitJob($scope.currentJob);
                 },
-                enabled: function ($itemScope, $event, modelValue, text, $li) {
+                enabled($itemScope, $event, modelValue, text, $li) {
                     return $itemScope.job.allowSplit;
                 },
             },
 
             {
                 text: "Set First Job",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     $scope.setFirstJob($scope.currentJob);
                 }
             }
@@ -2394,13 +2394,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         let multipleMenu = [
             {
                 text: "Dispatch Selected",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     $scope.dispatchJobsForm();
                 }
             },
             {
                 text: "Re-dispatch Selected",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click($itemScope, $event, modelValue, text, $li) {
                     //$scope.items.splice($itemScope.$index, 1);
                 }
             }
@@ -2409,19 +2409,19 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             multipleMenu.push(
                 {
                     text: "Restore Selected",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         $scope.restoreJobs();
                     }
                 },
                 {
                     text: "Redispatch Selected",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         $scope.reAllocateJobs();
                     }
                 },
                 {
                     text: "Resend Selected",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         $scope.resendJobs();
                     }
                 }
@@ -2434,7 +2434,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 [
                     {
                         text: "Dispatch Selected",
-                        click: function ($itemScope, $event, modelValue, text, $li) {
+                        click($itemScope, $event, modelValue, text, $li) {
                             $scope.dispatchJobsForm();
                         }
 
@@ -2447,7 +2447,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             [
                 {
                     text: "Dispatch",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         $scope.dispatchJobsForm();
                     }
                 }
@@ -2468,19 +2468,19 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             fullMenu.push(
                 {
                     text: "Restore",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         $scope.restoreJobs();
                     }
                 },
                 {
                     text: "Redispatch",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         $scope.reAllocateJobs();
                     }
                 },
                 {
                     text: "Resend",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         $scope.resendJobs();
                     }
                 }
@@ -2551,7 +2551,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         // NEW IMPLEMENTATION
         {
             text: "Dispatch Selected",
-            click: function ($itemScope, $event, modelValue, text, $li) {
+            click($itemScope, $event, modelValue, text, $li) {
                 //$scope.selected = $itemScope.item.name;
                 $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
             }
@@ -2561,7 +2561,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     $scope.potentialCourierMenu = [
         {
             text: "Dispatch Selected",
-            click: function ($itemScope, $event, modelValue, text, $li) {
+            click($itemScope, $event, modelValue, text, $li) {
                 //$scope.selected = $itemScope.item.name;
                 $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
             }
@@ -2633,7 +2633,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 // NEW IMPLEMENTATION
                 {
                     text: "Complete",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
 
                         $scope.closeSupport($itemScope.support);
 
@@ -2641,7 +2641,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 },
                 {
                     text: "Toggle Lock",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
 
                         $scope.lockSupport($itemScope.support);
 
@@ -2650,10 +2650,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 },
                 {
                     text: "Void Job",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         $scope.voidJobForm($itemScope.support.jobNumber, $itemScope.support.jobId);
                     },
-                    enabled: function ($itemScope, $event, modelValue, text, $li) {
+                    enabled($itemScope, $event, modelValue, text, $li) {
                         return ($itemScope.support.jobId);
                     },
                 },
@@ -2798,7 +2798,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 },
                 {
                     text: "Head",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         const callData = {
                             "call": "headCourier",
                             "courier": $itemScope.courier
@@ -2818,7 +2818,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 },
                 {
                     text: "Delete",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         angular.element(".rightActiveTable .active").fadeOut();
                     }
                 }
@@ -2872,7 +2872,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 },
                 {
                     text: "Move",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         let callData = {
                             "call": "moveCourier",
                             "courier": $itemScope.courier
@@ -2894,7 +2894,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 },
                 {
                     text: "Delete",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         angular.element(".rightActiveTable .active").fadeOut();
                     }
                 }
@@ -2951,7 +2951,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 // NEW IMPLEMENTATION
                 {
                     text: "Complete",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         //$scope.selected = $itemScope.item.name;
 
                         let callData = {
@@ -2971,7 +2971,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 },
                 {
                     text: "Lock",
-                    click: function ($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope, $event, modelValue, text, $li) {
                         //$scope.items.splice($itemScope.$index, 1)
                         //LOCK WITH CURRENT USER
                     }
@@ -3111,10 +3111,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 "date": new Date(),
                 "time": time
             },
-            submit: function () {
+            submit() {
 
             },
-            cancel: function () {
+            cancel() {
                 angular.element('.eventForm').css('display', 'none');
             }
         };
