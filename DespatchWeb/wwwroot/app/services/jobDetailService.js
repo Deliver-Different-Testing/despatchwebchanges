@@ -231,7 +231,7 @@ class JobDetailService {
                                 self.currentJob.charge,
                                 FirstName,
                                 ContactID,
-                                self.currentJob.preBook).then(function (response) {
+                                self.currentJob.preBook).then(response => {
                                 self.selectJobDetail(self.currentJob.id);
                                 return response;
                             });
@@ -320,12 +320,11 @@ class JobDetailService {
                 text: "Delete",
                 click: function ($itemScope, $event, modelValue, text, $li) {
 
-                    return self.DispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(function (response) {
+                    return self.DispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(response => {
 
                         console.log(response);
 
                         if (response === "OK") {
-
                             const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
                             $itemScope.currentJob.palletInfo.splice(index, 1);
 
@@ -339,7 +338,7 @@ class JobDetailService {
                                             Number(rate.replace(/[^0-9.-]+/g, "")),
                                             FirstName,
                                             ContactID,
-                                            self.currentJob.preBook).then(function (response) {
+                                            self.currentJob.preBook).then(response => {
                                             self.selectJobDetail(self.currentJob.id);
                                             return response;
                                         });
@@ -360,10 +359,16 @@ class JobDetailService {
         return self;
     }
 
+    /**
+     * @param {*|{cancel: (function(): *), submitValue: string, submit(): void, showForm: $scope.gather.showForm}} g
+     */
     setGather(g) {
         this.gather = g;
     }
 
+    /**
+     * @param {number} jobId
+     */
     setSelectJobDetail(jobId) {
         this.selectJobDetail = jobId;
     }
@@ -386,8 +391,11 @@ class JobDetailService {
         });
     }
 
-    getTrackingMethod(tm) {
-        switch (tm || 0) {
+    /**
+     * @param {number} trackingMethod
+     */
+    getTrackingMethod(trackingMethod) {
+        switch (trackingMethod || 0) {
             case 1:
                 return "Email";
             case 2:
@@ -1361,19 +1369,19 @@ class JobDetailService {
     }
 
     notifyClick(event, job) {
-        this.showSelectDialog(event, job, pickSpeeds, "NotifiedJobTypeID", "Notified", "Select new speed....");
+        this.showSelectDialog(event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", "Select new speed....");
     }
 
     acceptedClick(event, job) {
-        this.showSelectDialog(event, job, pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
+        this.showSelectDialog(event, job, this.pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
     }
 
     speedClick(event, job) {
-        this.showSelectDialog(event, job, pickSpeeds, "SpeedID", "Speed", "Select new speed....");
+        this.showSelectDialog(event, job, this.pickSpeeds, "SpeedID", "Speed", "Select new speed....");
     }
 
     contactClick(event, job) {
-        this.showSelectDialog(event, job, pickSpeeds, "ContactID", "Contact", "Select new contact....");
+        this.showSelectDialog(event, job, this.pickSpeeds, "ContactID", "Contact", "Select new contact....");
     }
 
     getJobTypeDescription(jobTypeID) {
