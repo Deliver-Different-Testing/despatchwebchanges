@@ -82,12 +82,12 @@
             ]
         }
     }
-    var pickLeaveList = [];
-    var pickUndeliverableList = [];
-    var pickSpeeds = [];
-    var pickContacts = [];
+    let pickLeaveList = [];
+    let pickUndeliverableList = [];
+    let pickSpeeds = [];
+    let pickContacts = [];
 
-    var gather = {};
+    let gather = {};
     self.gpsForm = {};
 
 
@@ -221,7 +221,7 @@
                 if (self.combos.frequency.length > 0 &&
                     self.combos.days.length > 0 &&
                     self.combos.holidays.length > 0) {
-                    var newDays = "0000000";
+                    let newDays = "0000000";
                     for (let i = 0; i < self.combos.days.length; i++) {
                         newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
                     }
@@ -251,7 +251,7 @@
                 if (self.combos.frequency.length > 0 &&
                     self.combos.days.length > 0 &&
                     self.combos.holidays.length > 0) {
-                    var newDays = "0000000";
+                    let newDays = "0000000";
                     for (let i = 0; i < self.combos.days.length; i++) {
                         newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
                     }
@@ -579,8 +579,8 @@
             value = new Date(moment(value).format("YYYY-MM-DDTHH:mm"))
         }
 
-        var max = "";
-        var valueToUse = options ? options[value] : value;
+        let max = "";
+        let valueToUse = options ? options[value] : value;
 
         switch (fieldName) {
             case "RefA":
@@ -666,9 +666,9 @@
                         }
                     ],
             onSubmit: function () {
-                var rerate = false;
+                let rerate = false;
 
-                var callData = {
+                const callData = {
                     "call": "updateDetailField",
                     "field": gather.form.fields[0].name,
                     "value": gather.form.fields[0].value,
@@ -1417,7 +1417,7 @@
 
                     if (response === "OK") {
 
-                        var index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
+                        const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
                         $itemScope.currentJob.palletInfo.splice(index, 1);
 
                         return self.rateJob(self.currentJob).then(function (rate) {
@@ -1504,7 +1504,7 @@
             ],
             onSubmit: function () {
 
-                var newP = {};
+                const newP = {};
 
                 gather.form.fields.forEach(function (field) {
                     if (field.name === "amount") {
@@ -1664,7 +1664,7 @@
             ],
             onSubmit: function () {
 
-                var newP = {};
+                const newP = {};
 
                 gather.form.fields.forEach(function (field) {
                     if (field.name === "amount") {
