@@ -189,20 +189,21 @@
 
                 <div layout-gt-sm="row">
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label>Job Notes</label>
-                        <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.jobNotes"
+                        <label for="jobNotes">Job Notes</label>
+                        <textarea id="jobNotes" md-maxlength="150" md-select-on-focus ng-model="ctrl.job.jobNotes"
                                   rows="5"></textarea>
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label>Pickup Notes</label>
-                        <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.pickupNotes"
+                        <label for="pickupNotes">Pickup Notes</label>
+                        <textarea id="pickupNotes" md-maxlength="150" md-select-on-focus ng-model="ctrl.job.pickupNotes"
                                   rows="5"></textarea>
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label>Delivery Notes</label>
-                        <textarea md-maxlength="150" md-select-on-focus ng-model="ctrl.job.deliveryNotes"
+                        <label for="deliveryNotes">Delivery Notes</label>
+                        <textarea id="deliveryNotes" md-maxlength="150" md-select-on-focus
+                                  ng-model="ctrl.job.deliveryNotes"
                                   rows="5"></textarea>
                     </md-input-container>
                 </div>
