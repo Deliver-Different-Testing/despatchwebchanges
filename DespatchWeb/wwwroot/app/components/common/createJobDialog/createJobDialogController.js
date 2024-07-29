@@ -1,5 +1,4 @@
 /**
- * A controller which handles the Create Job dialog.
  * @class
  */
 
@@ -42,7 +41,6 @@
  */
 class CreateJobDialogController {
     /**
-     * Create a CreateJobDialogController
      * @param {Object} $scope - The active AngularJS scope.
      * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
      * @param {Object} DispatchData - The service used for data dispatching.
@@ -124,7 +122,7 @@ class CreateJobDialogController {
     }
 
     /**
-     * @param {string|number} key
+     * @param {string} key
      */
     updateChoice(key) {
         this.resetChoices();

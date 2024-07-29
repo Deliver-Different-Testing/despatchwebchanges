@@ -2933,73 +2933,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             $timeout(() => {
                 sizeHeadings(angular.element("#areaList").parents(".column"));
             }, 2000);
-
         });
-
-        ////////////////////////////
-        // JobUpdates
-        ////////////////////////////
-
-        // angular.element("#box-jobUpdates").find(".loading").show();
-        /* DispatchData.getJobUpdates().then(function (data) {
-             $scope.jobUpdates = data;
-
-             $scope.jobUpdatesMenu = [
-                 // NEW IMPLEMENTATION
-                 {
-                     text: "Dismiss",
-                     click: function ($itemScope, $event, modelValue, text, $li) {
-
-                         var callData = {
-                             "call": "dismissSupport",
-                             "support": $itemScope.support
-                         };
-
-                         DispatchData.doAPI(callData).then(function (data) {
-                             console.log(data);
-
-                             if (data.response === "Success") {
-
-                                 angular.element(".rightActiveTable .active").fadeOut();
-
-                             } else {
-
-                                 console.log("Critical Error");
-
-                             }
-
-                         });
-
-                     }
-                 },
-                 {
-                     text: "Support",
-                     click: function ($itemScope, $event, modelValue, text, $li) {
-                         //$scope.items.splice($itemScope.$index, 1);
-
-
-                         //BRING UP CURRENT EVENT FORM TO ENTER A SUPPORT
-
-                     }
-                 }
-             ];
-
-
-             $timeout(function () {
-                 $document.ready(function (event) {
-                     angular.element("#box-jobUpdates").find(".loading").fadeOut();
-                 });
-             },
-                 100);
-
-
-             $timeout(function () { sizeHeadings(angular.element("#jobUpdates").parents(".column")); }, 1000);
-             $timeout(function () { sizeHeadings(angular.element("#jobUpdates").parents(".column")); }, 2000);
-
-
-         });
-*/
-
 
         ////////////////////////////
         // LATE CALLS
@@ -3279,7 +3213,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
 
     // Load custom layout
-    $scope.init = function () {
+    HomeController.prototype.init = function () {
         if (Modernizr.localstorage) {
             const storedLayouts = localStorage.getItem("layouts-" + ContactID);
             const lastActiveLayoutName = localStorage.getItem("lastActiveLayout-" + ContactID);
@@ -3300,7 +3234,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     };
 
     // Call the init function when the controller loads
-    $scope.init();
+    HomeController.prototype.init();
 
     // Code from html
     let keyIsDown = {};
