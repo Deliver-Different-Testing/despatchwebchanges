@@ -83,8 +83,7 @@
                             md-min-length="3"
                             md-no-asterisk
                             md-search-text="ctrl.fromAddressSearchText"
-                            md-selected-item="ctrl.selectedFromAddress"
-                            md-selected-item-change="ctrl.addressSearchItemSelected(ctrl.selectedFromAddress, false)"
+                            md-selected-item-change="ctrl.addressSearchItemSelected(item, false)"
                             placeholder="Start typing to search clients"
                             required>
                         <md-item-template>
@@ -112,8 +111,7 @@
                             md-min-length="3"
                             md-no-asterisk
                             md-search-text="ctrl.toAddressSearchText"
-                            md-selected-item="ctrl.selectedToAddress"
-                            md-selected-item-change="ctrl.addressSearchItemSelected(ctrl.selectedToAddress, true)"
+                            md-selected-item-change="ctrl.addressSearchItemSelected(item, true)"
                             placeholder="Start typing to search clients" required>
                         <md-item-template>
                             <span md-highlight-flags="^i"

@@ -69,8 +69,6 @@ class CreateJobDialogController {
 
         this.selectedCourier = null;
         this.selectedClient = null;
-        this.selectedFromAddress = null;
-        this.selectedToAddress = null;
         this.selectedSpeed = null;
 
         // Initialize pickSpeeds
@@ -260,12 +258,12 @@ class CreateJobDialogController {
             }
 
             // Apply form values to job
-            job.courierId = this.selectedCourier.id;
+            job.clientID = this.selectedClient.id;
             job.date = this.jobDate.toISOString();
             job.speedId = this.selectedSpeed.id;
 
-            if (this.selectedClient) {
-                job.clientID = this.selectedClient.id;
+            if (this.selectedCourier) {
+                job.courierId = this.selectedCourier.id;
             }
 
             // Create Job
