@@ -1,6 +1,6 @@
 function PrebookController($scope, jdSvc, uPBData, $state, $stateParams,
                            $filter, $parse, hotkeys, $location, NgMap, GeoCoder,
-                           $timeout, $mdDialog) {
+                           $document, $window, $timeout, $mdDialog) {
     $scope.isAdmin = (ClientInternal === "True");
     $scope.mapSetting = {
         "allCouriers": false,
@@ -748,10 +748,226 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams,
                 }
             }
         ];
+
+
+    let keyIsDown = {};
+
+    const sizeHeadings = ele => {
+        const sizeHeadingsForSelector = selector => {
+            angular.element("body").find(".box").each(function () {
+                const box = angular.element(this);
+                box.find(`${selector} thead tr th`).each(function (index) {
+                    const newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                    angular.element(this).width(newWidth);
+                });
+                box.find(`${selector} table`).width(box.find(".table").width());
+            });
+        };
+
+        sizeHeadingsForSelector(".table-headings");
+        sizeHeadingsForSelector(".table-b-headings");
+    };
+
+    function overrideKeyboardEvent(e) {
+        switch (e.type) {
+            case "keydown":
+                if (!keyIsDown[e.keyCode]) {
+                    keyIsDown[e.keyCode] = true;
+                    // do key down stuff here
+                    if (e.keyCode === 82 && e.ctrlKey) {
+                        //location.reload();
+                    }
+                }
+                break;
+            case "keyup":
+                delete (keyIsDown[e.keyCode]);
+                // do key up stuff here
+                break;
+        }
+        disabledEventPropagation(e);
+        if (e.keyCode === 68 && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+        if (e.keyCode === 65 && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+    }
+
+    function disabledEventPropagation(e) {
+        if (e.keyCode === 68 && e.ctrlKey) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else if ($window.event) {
+                $window.event.cancelBubble = true;
+            }
+        }
+    }
+
+    $document.on('focus', '.searchBox input', function () {
+        angular.element(".results").fadeIn(100);
+    });
+    $document.on('blur', '.searchBox input', function () {
+        angular.element(".results").fadeOut(100);
+    });
+
+    $document.on('click', '.top-bar .btn-group .btn', function (event) {
+        angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
+        angular.element(this).addClass('topBarActive');
+    });
+
+    $document.ready(function () {
+        const favicon = angular.element("favicon");
+        favicon.setAttribute("href", "/Prebook.ico");
+        let isDown = false;   // Tracks status of mouse button
+
+        $document.mousedown(function () {
+            isDown = true;      // When mouse goes down, set isDown to true
+        })
+            .mouseup(function () {
+                isDown = false;    // When mouse goes up, set isDown to false
+            });
+
+        let isOnRow = false;
+
+        $document.on("mouseenter", ".activeTable .clickable-row", function (event) {
+            if (event.ctrlKey) {
+                if (isDown) {        // Only change css if mouse is down
+                    angular.element(this).addClass("active");
+                }
+            }
+        });
+
+        $document.on("hover", ".activeTable .clickable-row", function (event) {
+            isOnRow = true;
+        });
+
+        $document.on("mouseleave", ".activeTable .clickable-row", function (event) {
+            isOnRow = false;
+        });
+
+        $document.on('click', '.box-content', function (event) {
+            event.stopPropagation();
+            if (isOnRow) {
+                angular.element(".activeTable .active").removeClass("active");
+            }
+
+        });
+
+    });
+
+
+    let mouseDown = 0;
+
+    $document.on('mousedown', '.clickable-row', function (event) {
+
+        let jobNo;
+        let group;
+        if (angular.element(".activeTable .clickable-row.active").length > 1) {
+            jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
+        } else {
+            jobNo = angular.element(this).attr("data-jobno");
+        }
+
+
+        if (mouseDown === 0) {
+            mouseDown = 1;
+
+            if (event.which === 1) {
+                if (event.ctrlKey) {
+                    if (angular.element(this).hasClass("active")) {
+                        angular.element(this).removeClass('active');
+                    } else {
+                        angular.element(this).addClass('active');
+                    }
+                } else {
+                    if (!angular.element(this).hasClass("active")) {
+
+                        group = angular.element(this).parents(".table-rows").attr("data-group");
+                        angular.element('*[data-group="' + group + '"]').each(function () {
+                            angular.element(this).find('.active').removeClass('active');
+                        });
+
+                        angular.element(this).addClass('active');
+                    }
+                }
+
+                angular.element(".activeTable").removeClass("activeTable");
+                angular.element(this).parents(".table").addClass("activeTable");
+            }
+
+            if (!event.ctrlKey) {
+                if (angular.element(this).hasClass("draggable-row")) {
+
+                    if (!angular.element(this).hasClass("active")) {
+                        group = angular.element(this).parents(".table-rows").attr("data-group");
+                        angular.element('*[data-group="' + group + '"]').each(function () {
+                            angular.element(this).find('.active').removeClass('active');
+                        });
+                        angular.element(this).addClass('active');
+
+                    }
+                    $timeout(() => {
+                        if (mouseDown === 1) {
+                            angular.element("#draggingItems").show();
+                            angular.element("#draggingItems").html(jobNo);
+
+                            angular.element("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
+                            angular.element("#draggingItems").draggable();
+                            angular.element("#draggingItems").trigger(event);
+                        }
+                    }, 200);
+                }
+            }
+        }
+
+    });
+
+    $document.on('mouseup', '.clickable-row', function (event) {
+        if (event.which === 3) {
+            angular.element(".rightActiveTable").removeClass("rightActiveTable");
+            angular.element(this).parents(".table").addClass("rightActiveTable");
+        }
+        if (!event.ctrlKey) {
+
+            if (angular.element(this).hasClass("active")) {
+            } else {
+                const group = angular.element(this).parents(".table-rows").attr("data-group");
+
+                angular.element('*[data-group="' + group + '"]').each(function () {
+                    angular.element(this).find('.active').removeClass('active');
+                });
+                angular.element(this).addClass('active');
+            }
+        }
+    });
+
+    $document.on('click', '.clickable-row', function (event) {
+        event.stopPropagation();
+    });
+
+
+    $document.on("mouseup", function (ev) {
+        angular.element("#draggingItems").hide();
+        mouseDown = 0;
+    });
+
+    $document.on("keydown", function (e) {
+        const code = (e.keyCode ? e.keyCode : e.which);
+        if (code === 40) {
+            angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+        } else if (code === 38) {
+            angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+        }
+    });
+
+    $document.onkeydown = overrideKeyboardEvent;
+    $document.onkeyup = overrideKeyboardEvent;
 }
 
 angular.module('uDispatch').controller('PBControl', ['$scope', 'JobDetailService', 'uPBData',
-    "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder',
+    "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$document', '$window',
     '$timeout', '$mdDialog', PrebookController]);
 
 
@@ -788,8 +1004,7 @@ function closestLocation(latitude, longitude, locations) {
 }
 
 function inStruct(val, structure) {
-
-    for (a in structure) {
+    for (let a in structure) {
 
         if (structure[a] === val && structure.hasOwnProperty(a)) {
             return true;
