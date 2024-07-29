@@ -132,35 +132,35 @@
                 </div>
 
                 <div layout="row" layout-align="center center" layout-wrap>
-                    <md-checkbox ng-model="ctrl.job.van">
+                    <md-checkbox ng-change="ctrl.updateChoice('van')" ng-model="ctrl.job.van">
                         Van
                     </md-checkbox>
 
-                    <md-checkbox ng-model="ctrl.job.truck">
+                    <md-checkbox ng-change="ctrl.updateChoice('truck')" ng-model="ctrl.job.truck">
                         Truck
                     </md-checkbox>
 
-                    <md-checkbox ng-model="ctrl.job.pedal">
+                    <md-checkbox ng-change="ctrl.updateChoice('pedal')" ng-model="ctrl.job.pedal">
                         Pedal
                     </md-checkbox>
 
-                    <md-checkbox ng-model="ctrl.job.attention">
+                    <md-checkbox ng-change="ctrl.updateChoice('attention')" ng-model="ctrl.job.attention">
                         Attention
                     </md-checkbox>
 
-                    <md-checkbox ng-model="ctrl.job.vanOK">
+                    <md-checkbox ng-change="ctrl.updateChoice('vanOK')" ng-model="ctrl.job.vanOK">
                         Van OK?
                     </md-checkbox>
 
-                    <md-checkbox ng-model="ctrl.job.reprice">
+                    <md-checkbox ng-change="ctrl.updateChoice('reprice')" ng-model="ctrl.job.reprice">
                         Reprice
                     </md-checkbox>
 
-                    <md-checkbox ng-model="ctrl.job.void">
+                    <md-checkbox ng-change="ctrl.updateChoice('void')" ng-model="ctrl.job.void">
                         Void
                     </md-checkbox>
 
-                    <md-checkbox ng-model="ctrl.job.done">
+                    <md-checkbox ng-change="ctrl.updateChoice('done')" ng-model="ctrl.job.done">
                         Done
                     </md-checkbox>
                 </div>

@@ -107,8 +107,28 @@ class CreateJobDialogController {
             done: false,
             charge: 0.0,
             refA: "",
-            refB: ""
+            refB: "",
         };
+    }
+
+
+    resetChoices() {
+        this.job.van = false;
+        this.job.truck = false;
+        this.job.pedal = false;
+        this.job.attention = false;
+        this.job.vanOK = false;
+        this.job.reprice = false;
+        this.job.void = false;
+        this.job.done = false;
+    }
+
+    /**
+     * @param {string|number} key
+     */
+    updateChoice(key) {
+        this.resetChoices();
+        this.job[key] = true;
     }
 
     /**
