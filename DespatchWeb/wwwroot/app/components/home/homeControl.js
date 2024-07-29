@@ -3136,6 +3136,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         angular.element('.truckCourierStatusForm').css('display', '');
     };
 
+    /**
+     * @param       {Event}  event
+     */
     HomeController.prototype.createNewJob = event => {
         // Dialog
         $mdDialog.show({
@@ -3177,8 +3180,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 staffId: ContactID,
             },
         }).then(() => {
-            console.log("Intercourier Charge Added!")
-        }).then(() => "Intercourier Charge Canceled!");
+            console.log("Inter-courier Charge Added!")
+        }).then(() => "Inter-courier Charge Canceled!");
     }
 
     $scope.sendPOD = () => {
