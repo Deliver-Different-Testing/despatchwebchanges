@@ -1,319 +1,386 @@
-﻿function JobDetailService(DispatchData, $mdDialog, toastrService, loadingService, rateJobService, $document, $timeout) {
-    const self = this;
-    const options = {
-        "detail": {
-            "size": [
-                {
-                    "id": 1,
-                    "label": "Bike"
-                },
-                {
-                    "id": 2,
-                    "label": "Car"
-                },
-                {
-                    "id": 3,
-                    "label": "Van"
-                },
-                {
-                    "id": 4,
-                    "label": "Truck"
-                },
-                {
-                    "id": 5,
-                    "label": "Scooter"
-                }
-            ],
-            "tracking": [
-                {
-                    "id": 1,
-                    "label": "Email"
-                },
-                {
-                    "id": 2,
-                    "label": "Mobile"
-                },
-                {
-                    "id": 3,
-                    "label": "Email & Mobile"
-                }
-            ],
-            "DGClass": [
-                {
-                    "id": 0,
-                    "label": "0"
-                },
-                {
-                    "id": 1,
-                    "label": "1"
-                },
-                {
-                    "id": 2,
-                    "label": "2"
-                },
-                {
-                    "id": 3,
-                    "label": "3"
-                },
-                {
-                    "id": 4,
-                    "label": "4"
-                },
-                {
-                    "id": 5,
-                    "label": "5"
-                },
-                {
-                    "id": 6,
-                    "label": "6"
-                },
-                {
-                    "id": 7,
-                    "label": "7"
-                },
-                {
-                    "id": 8,
-                    "label": "8"
-                },
-                {
-                    "id": 9,
-                    "label": "9"
-                }
-            ]
+class JobDetailService {
+    static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout"];
+
+    constructor(
+        DispatchData,
+        $mdDialog,
+        toastrService,
+        loadingService,
+        rateJobService,
+        $document,
+        $timeout
+    ) {
+        this.DispatchData = DispatchData;
+        this.$mdDialog = $mdDialog;
+        this.toastrService = toastrService;
+        this.loadingService = loadingService;
+        this.rateJobService = rateJobService;
+        this.$document = $document;
+        this.$timeout = $timeout;
+
+        this.options = {
+            "detail": {
+                "size": [
+                    {
+                        "id": 1,
+                        "label": "Bike"
+                    },
+                    {
+                        "id": 2,
+                        "label": "Car"
+                    },
+                    {
+                        "id": 3,
+                        "label": "Van"
+                    },
+                    {
+                        "id": 4,
+                        "label": "Truck"
+                    },
+                    {
+                        "id": 5,
+                        "label": "Scooter"
+                    }
+                ],
+                "tracking": [
+                    {
+                        "id": 1,
+                        "label": "Email"
+                    },
+                    {
+                        "id": 2,
+                        "label": "Mobile"
+                    },
+                    {
+                        "id": 3,
+                        "label": "Email & Mobile"
+                    }
+                ],
+                "DGClass": [
+                    {
+                        "id": 0,
+                        "label": "0"
+                    },
+                    {
+                        "id": 1,
+                        "label": "1"
+                    },
+                    {
+                        "id": 2,
+                        "label": "2"
+                    },
+                    {
+                        "id": 3,
+                        "label": "3"
+                    },
+                    {
+                        "id": 4,
+                        "label": "4"
+                    },
+                    {
+                        "id": 5,
+                        "label": "5"
+                    },
+                    {
+                        "id": 6,
+                        "label": "6"
+                    },
+                    {
+                        "id": 7,
+                        "label": "7"
+                    },
+                    {
+                        "id": 8,
+                        "label": "8"
+                    },
+                    {
+                        "id": 9,
+                        "label": "9"
+                    }
+                ]
+            }
         }
-    }
-    let pickLeaveList = [];
-    let pickUndeliverableList = [];
-    let pickSpeeds = [];
-    let pickContacts = [];
 
-    let gather = {};
-    self.gpsForm = {};
+        this.pickLeaveList = [];
+        this.pickUndeliverableList = [];
+        this.pickSpeeds = [];
+        this.pickContacts = [];
 
-
-    DispatchData.getLeaveList().then(function (data) {
-        pickLeaveList = data;
-    });
-
-    DispatchData.getUndeliverableList().then(function (data) {
-        pickUndeliverableList = data;
-    });
-
-    DispatchData.getSpeedList().then(function (data) {
-        pickSpeeds = data;
-    });
-
-    DispatchData.getSuburbList().then(function (data) {
-        self.pickSuburbs = data;
-    });
-
-    DispatchData.getInternalStatusList().then(function (data) {
-        self.pickInternalStatus = data;
-    });
+        this.gather = {};
+        this.gpsForm = {};
 
 
-    self.setGather = function (g) {
-        gather = g;
-    };
-
-    self.setSelectJobDetail = function (jobId) {
-        self.selectJobDetail = jobId;
-    };
-    self.setSelectBulkJobDetail = function (f) {
-        self.selectBulkJobDetail = f;
-    };
-    self.setJob = function (job) {
-        self.currentJob = job;
-        DispatchData.getContactList(job.clientID).then(function (data) {
-            pickContacts = data;
+        DispatchData.getLeaveList().then(data => {
+            this.pickLeaveList = data;
         });
-    };
 
-    self.getClientContactDetail = function ($event, job) {
+        DispatchData.getUndeliverableList().then(data => {
+            this.pickUndeliverableList = data;
+        });
+
+        DispatchData.getSpeedList().then(data => {
+            this.pickSpeeds = data;
+        });
+
+        this.DispatchData.getSuburbList().then(data => {
+            this.pickSuburbs = data;
+        });
+
+        DispatchData.getInternalStatusList().then((data) => {
+            this.pickInternalStatus = data;
+        });
+
+
+        this.pickHolidays = [
+            {
+                "id": "0",
+                "label": "Don't Book"
+            },
+            {
+                "id": "1",
+                "label": "Next Business Day"
+            }
+        ];
+
+        this.pickDays = [
+            {
+                "id": "0",
+                "label": "Monday"
+            },
+            {
+                "id": "1",
+                "label": "Tuesday"
+            },
+            {
+                "id": "2",
+                "label": "Wednesday"
+            },
+            {
+                "id": "3",
+                "label": "Thursday"
+            },
+            {
+                "id": "4",
+                "label": "Friday"
+            },
+            {
+                "id": "5",
+                "label": "Saturday"
+            },
+            {
+                "id": "6",
+                "label": "Sunday"
+            }
+        ];
+        this.pickFrequency = [
+            {
+                "id": "0",
+                "label": "Weekly"
+            },
+            {
+                "id": "1",
+                "label": "Fortnightly"
+            },
+            {
+                "id": "2",
+                "label": "First of the Month"
+            },
+            {
+                "id": "3",
+                "label": "Second of the Month"
+            },
+            {
+                "id": "4",
+                "label": "Third of the Month"
+            },
+            {
+                "id": "5",
+                "label": "Last of the Month"
+            },
+            {
+                "id": "6",
+                "label": "First work day of the Month"
+            },
+            {
+                "id": "7",
+                "label": "Last work day of the Month"
+            }
+        ];
+
+        this.combos = {
+            "frequency": [],
+            "frequencyEvents": {
+                onSelectionChanged: function (item) {
+                    console.log("Freq =");
+                    console.log(this.combos.frequency);
+                    if (this.combos.frequency.length > 0 &&
+                        this.combos.days.length > 0 &&
+                        this.combos.holidays.length > 0) {
+                        let newDays = "0000000";
+                        for (let i = 0; i < this.combos.days.length; i++) {
+                            newDays = newDays.replaceAt(parseInt(this.combos.days[i].id), "1");
+                        }
+                        newDays = newDays + this.combos.frequency[0].id + this.combos.holidays[0].id;
+                        console.log(newDays);
+                        return this.DispatchData
+                            .updateJobDetail(this.currentJob.id,
+                                "Frequency",
+                                newDays,
+                                this.currentJob.charge,
+                                FirstName,
+                                ContactID,
+                                this.currentJob.preBook).then(function (response) {
+                                this.selectJobDetail(this.currentJob.id);
+                                return response;
+                            });
+                    } else {
+                        console.log("invalid data");
+                    }
+                }
+            },
+            "days": [],
+            "daysEvents": {
+                onSelectionChanged: function (item) {
+                    console.log("Days =");
+                    console.log(this.combos.days);
+                    if (this.combos.frequency.length > 0 &&
+                        this.combos.days.length > 0 &&
+                        this.combos.holidays.length > 0) {
+                        let newDays = "0000000";
+                        for (let i = 0; i < this.combos.days.length; i++) {
+                            newDays = newDays.replaceAt(parseInt(this.combos.days[i].id), "1");
+                        }
+                        newDays = newDays + this.combos.frequency[0].id + this.combos.holidays[0].id;
+                        console.log(newDays);
+                        return this.DispatchData
+                            .updateJobDetail(this.currentJob.id,
+                                "Days",
+                                newDays,
+                                this.currentJob.charge,
+                                FirstName,
+                                ContactID,
+                                this.currentJob.preBook).then(function (response) {
+                                this.selectJobDetail(this.currentJob.id);
+                                return response;
+                            });
+                    } else {
+                        console.log("invalid data");
+                    }
+                }
+            },
+            "holidays": [],
+            "holidaysEvents": {
+                onSelectionChanged: function (item) {
+                    console.log("Days =");
+                    console.log(this.combos.days);
+                    if (this.combos.frequency.length > 0 &&
+                        this.combos.days.length > 0 &&
+                        this.combos.holidays.length > 0) {
+                        let newDays = "0000000";
+                        for (let i = 0; i < this.combos.days.length; i++) {
+                            newDays = newDays.replaceAt(parseInt(this.combos.days[i].id), "1");
+                        }
+                        newDays = newDays + this.combos.frequency[0].id + this.combos.holidays[0].id;
+                        console.log(newDays);
+                        return this.DispatchData
+                            .updateJobDetail(this.currentJob.id,
+                                "Holidays",
+                                newDays,
+                                this.currentJob.charge,
+                                FirstName,
+                                ContactID,
+                                this.currentJob.preBook).then(response => {
+                                this.selectJobDetail(this.currentJob.id);
+                                return response;
+                            });
+                    } else {
+                        console.log("invalid data");
+                    }
+                }
+            }
+        };
+
+        String.prototype.replaceAt = function (index, replacement) {
+            return this.substring(0, index) + replacement + this.substring(index + replacement.length);
+        };
+
+        //////////////////////////////
+        //  PALLET CONTROLS //
+        /////////////////////////////
+        let self = this;
+        this.palletMenu = [
+            // NEW IMPLEMENTATION
+            {
+                text: "Delete",
+                click: function ($itemScope, $event, modelValue, text, $li) {
+
+                    return self.DispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(function (response) {
+
+                        console.log(response);
+
+                        if (response === "OK") {
+
+                            const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
+                            $itemScope.currentJob.palletInfo.splice(index, 1);
+
+                            return self.rateJob(this.currentJob).then(function (rate) {
+                                console.log(rate);
+                                if (rate !== self.currentJob.charge) {
+                                    return self.DispatchData
+                                        .updateJobDetail(self.currentJob.id,
+                                            "rate",
+                                            Number(rate.replace(/[^0-9.-]+/g, "")),
+                                            Number(rate.replace(/[^0-9.-]+/g, "")),
+                                            FirstName,
+                                            ContactID,
+                                            self.currentJob.preBook).then(function (response) {
+                                            self.selectJobDetail(self.currentJob.id);
+                                            return response;
+                                        });
+                                }
+
+                            });
+                        } else {
+                            console.log("Critical Error Add Pallet");
+                        }
+                    });
+                }
+            }
+        ];
+
+
+        this.currentPallet = "";
+
+        return self;
+    }
+
+    setGather(g) {
+        this.gather = g;
+    }
+
+    setSelectJobDetail(jobId) {
+        this.selectJobDetail = jobId;
+    }
+
+    setSelectBulkJobDetail(f) {
+        this.selectBulkJobDetail = f;
+    }
+
+    setJob(job) {
+        this.currentJob = job;
+        this.DispatchData.getContactList(job.clientID).then(data => {
+            this.pickContacts = data;
+        });
+    }
+
+    getClientContactDetail($event, job) {
         $event.stopPropagation();
-        DispatchData.getContactDetailList(job.clientID).then(function (data) {
+        this.DispatchData.getContactDetailList(job.clientID).then(data => {
             job.contactList = data;
         });
     }
 
-    self.pickHolidays = [
-        {
-            "id": "0",
-            "label": "Don't Book"
-        },
-        {
-            "id": "1",
-            "label": "Next Business Day"
-        }
-    ];
-
-    self.pickDays = [
-        {
-            "id": "0",
-            "label": "Monday"
-        },
-        {
-            "id": "1",
-            "label": "Tuesday"
-        },
-        {
-            "id": "2",
-            "label": "Wednesday"
-        },
-        {
-            "id": "3",
-            "label": "Thursday"
-        },
-        {
-            "id": "4",
-            "label": "Friday"
-        },
-        {
-            "id": "5",
-            "label": "Saturday"
-        },
-        {
-            "id": "6",
-            "label": "Sunday"
-        }
-    ];
-    self.pickFrequency = [
-        {
-            "id": "0",
-            "label": "Weekly"
-        },
-        {
-            "id": "1",
-            "label": "Fortnightly"
-        },
-        {
-            "id": "2",
-            "label": "First of the Month"
-        },
-        {
-            "id": "3",
-            "label": "Second of the Month"
-        },
-        {
-            "id": "4",
-            "label": "Third of the Month"
-        },
-        {
-            "id": "5",
-            "label": "Last of the Month"
-        },
-        {
-            "id": "6",
-            "label": "First work day of the Month"
-        },
-        {
-            "id": "7",
-            "label": "Last work day of the Month"
-        }
-    ];
-
-    self.combos = {
-        "frequency": [],
-        "frequencyEvents": {
-            onSelectionChanged: function (item) {
-                console.log("Freq =");
-                console.log(self.combos.frequency);
-                if (self.combos.frequency.length > 0 &&
-                    self.combos.days.length > 0 &&
-                    self.combos.holidays.length > 0) {
-                    let newDays = "0000000";
-                    for (let i = 0; i < self.combos.days.length; i++) {
-                        newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
-                    }
-                    newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
-                    console.log(newDays);
-                    return DispatchData
-                        .updateJobDetail(self.currentJob.id,
-                            "Frequency",
-                            newDays,
-                            self.currentJob.charge,
-                            FirstName,
-                            ContactID,
-                            self.currentJob.preBook).then(function (response) {
-                            self.selectJobDetail(self.currentJob.id);
-                            return response;
-                        });
-                } else {
-                    console.log("invalid data");
-                }
-            }
-        },
-        "days": [],
-        "daysEvents": {
-            onSelectionChanged: function (item) {
-                console.log("Days =");
-                console.log(self.combos.days);
-                if (self.combos.frequency.length > 0 &&
-                    self.combos.days.length > 0 &&
-                    self.combos.holidays.length > 0) {
-                    let newDays = "0000000";
-                    for (let i = 0; i < self.combos.days.length; i++) {
-                        newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
-                    }
-                    newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
-                    console.log(newDays);
-                    return DispatchData
-                        .updateJobDetail(self.currentJob.id,
-                            "Days",
-                            newDays,
-                            self.currentJob.charge,
-                            FirstName,
-                            ContactID,
-                            self.currentJob.preBook).then(function (response) {
-                            self.selectJobDetail(self.currentJob.id);
-                            return response;
-                        });
-                } else {
-                    console.log("invalid data");
-                }
-            }
-        },
-        "holidays": [],
-        "holidaysEvents": {
-            onSelectionChanged: function (item) {
-                console.log("Days =");
-                console.log(self.combos.days);
-                if (self.combos.frequency.length > 0 &&
-                    self.combos.days.length > 0 &&
-                    self.combos.holidays.length > 0) {
-                    let newDays = "0000000";
-                    for (let i = 0; i < self.combos.days.length; i++) {
-                        newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
-                    }
-                    newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
-                    console.log(newDays);
-                    return DispatchData
-                        .updateJobDetail(self.currentJob.id,
-                            "Holidays",
-                            newDays,
-                            self.currentJob.charge,
-                            FirstName,
-                            ContactID,
-                            self.currentJob.preBook).then(response => {
-                            self.selectJobDetail(self.currentJob.id);
-                            return response;
-                        });
-                } else {
-                    console.log("invalid data");
-                }
-            }
-        }
-    };
-
-    String.prototype.replaceAt = function (index, replacement) {
-        return this.substring(0, index) + replacement + this.substring(index + replacement.length);
-    };
-
-    self.frequencyChanged = function () {
-
-    };
-
-    self.getTrackingMethod = function (tm) {
+    getTrackingMethod(tm) {
         switch (tm || 0) {
             case 1:
                 return "Email";
@@ -324,14 +391,14 @@
             default:
                 return "";
         }
-    };
+    }
 
-    self.getInternalStatus = function (is) {
-        const selected = self.pickInternalStatus.find(({id}) => id === is);
+    getInternalStatus(is) {
+        const selected = this.pickInternalStatus.find(({id}) => id === is);
         return selected !== undefined ? selected.text : "";
     }
 
-    self.hasDGDocs = function (job) {
+    hasDGDocs(job) {
         if (job.dgClass) {
             return ((job.dgDocumentation || 0) === 1) || ((job.dgDocumentation || false) === true)
                 ? "Yes"
@@ -340,13 +407,9 @@
             return "";
         }
 
-    };
+    }
 
-    self.ppdExclusiveAmount = function (clientId, amount) {
-        return DispatchData.ppdExclusiveAmount(clientId, amount);
-    };
-
-    self.displayPriceBreakdown = function ($event, job) {
+    displayPriceBreakdown($event, job) {
         $event.stopPropagation();
         console.log(job);
         const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
@@ -361,8 +424,8 @@
                 job.speedID === 51 ||
                 job.speedID === 52)) {
             //Truck Job
-            DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
-                itemSummary => DispatchData.truckJobAmountBreakdown(job.clientID,
+            this.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
+                itemSummary => this.DispatchData.truckJobAmountBreakdown(job.clientID,
                     job.fromSuburbID,
                     job.toSuburbID,
                     itemSummary.weight,
@@ -384,7 +447,7 @@
 
             return false;
         } else {
-            return DispatchData.jobAmountBreakdown(job.clientID,
+            return this.DispatchData.jobAmountBreakdown(job.clientID,
                 job.fromSuburbID,
                 job.toSuburbID,
                 job.speedID,
@@ -406,9 +469,11 @@
                 alert(description);
             });
         }
-    };
+    }
 
-    self.rateJob = function (job) {
+    rateJob(job) {
+        const self = this;
+
         const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
             job.fromSuburbID === 112 && job.toSuburbID === 112 ||
             job.fromSuburbID === 480 && job.toSuburbID === 480;
@@ -427,9 +492,9 @@
                 job.speedID === 152
             )) {
             //Truck Job
-            return DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
+            return self.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
                 function (itemSummary) {
-                    return DispatchData.rateTruckJob(job.clientID,
+                    return self.DispatchData.rateTruckJob(job.clientID,
                         job.fromSuburbID,
                         job.toSuburbID,
                         itemSummary.weight,
@@ -448,7 +513,7 @@
 
                 });
         } else {
-            return DispatchData.rateJob(job.clientID,
+            return self.DispatchData.rateJob(job.clientID,
                 job.fromSuburbID,
                 job.toSuburbID,
                 job.speedID,
@@ -466,10 +531,10 @@
                 job.items,
                 job.booked);
         }
-    };
+    }
 
-    self.editPrompt = function (event, job, title, placeholder, ariaLabel, initialValue, field) {
-        const prompt = $mdDialog.prompt()
+    editPrompt(event, job, title, placeholder, ariaLabel, initialValue, field) {
+        const prompt = this.$mdDialog.prompt()
             .title(title)
             .placeholder(placeholder)
             .ariaLabel(ariaLabel)
@@ -479,66 +544,66 @@
             .ok('Save')
             .cancel('Cancel');
 
-        $mdDialog.show(prompt).then(result => {
+        this.$mdDialog.show(prompt).then(result => {
             const callData = {
                 "call": "updateDetailField",
                 "field": field,
                 "value": result,
                 "jobID": job.jobID
             };
-            self.updateField(false, job, callData)
+            this.updateField(false, job, callData)
         }, () => {
             console.log(`Edit ${title} Cancelled!`)
         });
-    };
+    }
 
-    self.editClientCode = function (event, job) {
-        self.editPrompt(event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
-    };
+    editClientCode(event, job) {
+        this.editPrompt(event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
+    }
 
-    self.editJobToPhone = function (event, job) {
-        self.editPrompt(event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
-    };
+    editJobToPhone(event, job) {
+        this.editPrompt(event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
+    }
 
-    self.editJobFromPhone = function (event, job) {
-        self.editPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
-    };
+    editJobFromPhone(event, job) {
+        this.editPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
+    }
 
-    self.editToJobContact = function (event, job) {
-        self.editPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
-    };
+    editToJobContact(event, job) {
+        this.editPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
+    }
 
-    self.editFromJobContact = function (event, job) {
-        self.editPrompt(event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
-    };
+    editFromJobContact(event, job) {
+        this.editPrompt(event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
+    }
 
-    self.editJobWeight = function (event, job) {
-        self.editPrompt(event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
-    };
+    editJobWeight(event, job) {
+        this.editPrompt(event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
+    }
 
-    self.editRef = function (event, job, isRefA) {
+    editRef(event, job, isRefA) {
         if (isRefA) {
-            self.editPrompt(event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
+            this.editPrompt(event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
         } else {
-            self.editPrompt(event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
+            this.editPrompt(event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
         }
-    };
+    }
 
-    self.editOurRef = function (event, job) {
-        self.editPrompt(event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
-    };
+    editOurRef(event, job) {
+        this.editPrompt(event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
+    }
 
-    self.editTrackingMobile = function (event, job) {
-        self.editPrompt(event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
-    };
+    editTrackingMobile(event, job) {
+        this.editPrompt(event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
+    }
 
-    self.editTrackingEmail = function (event, job) {
-        self.editPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
-    };
+    editTrackingEmail(event, job) {
+        this.editPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
+    }
 
-    self.updateField = function (reRate, job, callData) {
+    updateField(reRate, job, callData) {
         if (reRate && !job.bulkJob) {
-            return self.rateJob(job).then(rate => DispatchData
+            return this.rateJob(job).then(rate => this.DispatchData
                 .updateJobDetail(callData.jobID,
                     callData.field,
                     callData.value,
@@ -547,14 +612,14 @@
                     ContactID,
                     job.preBook).then(response => response));
         } else {
-            return job.bulkJob ? DispatchData
+            return job.bulkJob ? this.DispatchData
                     .updateBulkJobDetail(job.id,
                         callData.field,
                         callData.value,
                         job.charge,
                         FirstName,
                         ContactID).then(response => response) :
-                DispatchData
+                this.DispatchData
                     .updateJobDetail(callData.jobID,
                         callData.field,
                         callData.value,
@@ -565,7 +630,7 @@
         }
     }
 
-    self.editDetailField = function (job, fieldName, label, value, jobID, type, options) {
+    editDetailField(job, fieldName, label, value, jobID, type, options) {
 
         if (type === "time" || type === "date") {
 
@@ -612,7 +677,7 @@
         }
 
 
-        gather.form = {
+        this.gather.form = {
             id: "editField",
             title: (fieldName === "Notes" ? "Add " : "Edit ") + label,
             fields: fieldName === "ClientID"
@@ -666,46 +731,47 @@
                         }
                     ],
             onSubmit: function () {
-                let rerate = false;
+                const self = this;
+                let reRate = false;
 
                 const callData = {
                     "call": "updateDetailField",
-                    "field": gather.form.fields[0].name,
-                    "value": gather.form.fields[0].value,
-                    "jobID": gather.form.fields[0].jobID
+                    "field": self.gather.form.fields[0].name,
+                    "value": self.gather.form.fields[0].value,
+                    "jobID": self.gather.form.fields[0].jobID
                 };
 
                 if (callData.field === "Notes") {
-                    return job.bulkJob ? DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) : DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
+                    return job.bulkJob ? self.DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) : self.DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
                 }
 
                 if (fieldName === "Items" || fieldName === "Weight" || fieldName === "Date") {
-                    rerate = true;
+                    reRate = true;
                 }
                 if (fieldName === "Size") {
-                    callData.value = gather.form.fields[0].value.id;
-                    rerate = true;
+                    callData.value = self.gather.form.fields[0].value.id;
+                    reRate = true;
                 }
                 if (fieldName === "TrackingMethod") {
-                    callData.value = gather.form.fields[0].value.id;
+                    callData.value = self.gather.form.fields[0].value.id;
 
                 }
                 if (fieldName === "Size" || fieldName === "TrackingMethod") {
-                    job[callData.field.toLowerCase()] = gather.form.fields[0].value;
+                    job[callData.field.toLowerCase()] = self.gather.form.fields[0].value;
                 } else {
                     job[callData.field.toLowerCase()] = callData.value;
                 }
 
                 if (fieldName === "SpeedID") {
-                    callData.value = gather.form.fields[0].value;
-                    job.speedID = parseInt(gather.form.fields[0].value);
+                    callData.value = self.gather.form.fields[0].value;
+                    job.speedID = parseInt(self.gather.form.fields[0].value);
                     job.speed = angular.element("#gather-SpeedID option:selected").text();
-                    rerate = true;
+                    reRate = true;
                 }
                 if (fieldName === "JobTypeID") {
-                    callData.value = gather.form.fields[0].value;
-                    job.jobType = gather.form.fields[0].value;
-                    return DispatchData
+                    callData.value = self.gather.form.fields[0].value;
+                    job.jobType = self.gather.form.fields[0].value;
+                    return self.DispatchData
                         .updateJobType(callData.jobID,
                             callData.value,
                             FirstName).then(response => {
@@ -713,41 +779,41 @@
                         });
                 }
                 if (fieldName === "InternalStatusID") {
-                    callData.value = gather.form.fields[0].value;
-                    job.internalStatusID = gather.form.fields[0].value;
+                    callData.value = self.gather.form.fields[0].value;
+                    job.internalStatusID = self.gather.form.fields[0].value;
                 }
                 if (fieldName === "NotifiedJobTypeID") {
-                    callData.value = gather.form.fields[0].value;
-                    job.notifiedJobTypeID = parseInt(gather.form.fields[0].value);
+                    callData.value = self.gather.form.fields[0].value;
+                    job.notifiedJobTypeID = parseInt(self.gather.form.fields[0].value);
                     job.notify = angular.element("#gather-NotifiedJobTypeID option:selected").text();
-                    rerate = true;
+                    reRate = true;
                 }
                 if (fieldName === "AcceptedJobTypeID") {
-                    callData.value = gather.form.fields[0].value;
-                    job.acceptedJobTypeID = parseInt(gather.form.fields[0].value);
+                    callData.value = self.gather.form.fields[0].value;
+                    job.acceptedJobTypeID = parseInt(self.gather.form.fields[0].value);
                     job.speedAccepted = angular.element("#gather-AcceptedJobTypeID option:selected").text();
-                    rerate = true;
+                    reRate = true;
                 }
                 if (fieldName === "DeliverToLeaveID") {
-                    callData.value = gather.form.fields[0].value;
+                    callData.value = self.gather.form.fields[0].value;
                     job.sigNotRequired = angular.element("#gather-DeliverToLeaveID option:selected").text();
                 }
 
                 if (fieldName === "UndeliverableLocationID") {
-                    callData.value = gather.form.fields[0].value;
+                    callData.value = self.gather.form.fields[0].value;
                     job.UDStatus = angular.element("#gather-UndeliverableLocationID option:selected").text();
                 }
                 if (fieldName === "ClientID") {
-                    callData.value = gather.form.fields[0].value;
-                    job.clientID = gather.form.fields[0].value;
-                    rerate = gather.form.fields[1].value;
+                    callData.value = self.gather.form.fields[0].value;
+                    job.clientID = self.gather.form.fields[0].value;
+                    reRate = self.gather.form.fields[1].value;
                 }
                 if (fieldName === "DGClass") {
                     callData.value = callData.value.id;
                     job.dgClass = callData.value.id;
-                    let dgdocs = gather.form.fields[1].value;
+                    let dgdocs = self.gather.form.fields[1].value;
 
-                    return DispatchData
+                    return self.DispatchData
                         .updateJobDetail(callData.jobID,
                             callData.field,
                             callData.value,
@@ -757,7 +823,7 @@
                             job.preBook).then(response => {
                             if (job.dgDocumentation !== dgdocs) {
                                 job.dgDocumentation = dgdocs;
-                                return DispatchData
+                                return self.DispatchData
                                     .updateJobDetail(callData.jobID,
                                         "DGDocumentation",
                                         job.dgDocumentation,
@@ -770,8 +836,8 @@
                             }
                         });
                 }
-                if (rerate && !job.bulkJob) {
-                    return self.rateJob(job).then(rate => DispatchData
+                if (reRate && !job.bulkJob) {
+                    return self.rateJob(job).then(rate => self.DispatchData
                         .updateJobDetail(callData.jobID,
                             callData.field,
                             callData.value,
@@ -780,14 +846,14 @@
                             ContactID,
                             job.preBook).then(response => response));
                 } else {
-                    return job.bulkJob ? DispatchData
+                    return job.bulkJob ? self.DispatchData
                             .updateBulkJobDetail(job.id,
                                 callData.field,
                                 callData.value,
                                 job.charge,
                                 FirstName,
                                 ContactID).then(response => response) :
-                        DispatchData
+                        self.DispatchData
                             .updateJobDetail(callData.jobID,
                                 callData.field,
                                 callData.value,
@@ -801,15 +867,14 @@
             submitValue: "Update Field"
         };
 
-        $timeout(function () {
-                console.log(gather);
-                gather.showForm();
+        this.$timeout(function () {
+                console.log(this.gather);
+                this.gather.showForm();
             },
             200);
-    };
+    }
 
-
-    self.updateGPS = function (event, currentJob, field) {
+    updateGPS(event, currentJob, field) {
         // Get coordinates
         const getDeliveryLocation = currentJob => currentJob.deliveryLongitude
             ? {lat: currentJob.deliveryLatitude, long: currentJob.deliveryLongitude}
@@ -824,10 +889,10 @@
         console.log("Retrieved job coordinates!");
 
         // Dialog
-        $mdDialog.show({
+        this.$mdDialog.show({
             controller: GpsFormController,
             controllerAs: 'ctrl',
-            parent: angular.element($document.body),
+            parent: angular.element(this.$document.body),
             targetEvent: event,
             templateUrl: "app/components/common/gpsForm/gpsForm.html",
             clickOutsideToClose: false,
@@ -840,24 +905,24 @@
                     suburb: suburbText,
                     postCode: currentJob.postCode,
                 },
-                suburbOptions: self.pickSuburbs,
+                suburbOptions: this.pickSuburbs,
                 title: "Update Address and GPS",
                 submitLabel: "Update",
             },
         }).then(addressDetails => {
             try {
-                loadingService.showLoader();
+                this.loadingService.showLoader();
                 const job = currentJob;
 
                 if (field === "toAddress") {
                     job.toAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
                     if (job.bulkJob) {
-                        DispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName)
+                        this.DispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName)
                             .then(() => {
-                                self.selectJobDetail(currentJob.id);
-                                $mdDialog.hide();
-                                toastrService.showSuccessToast("Address successfully updated");
-                                loadingService.closeLoader();
+                                this.selectJobDetail(currentJob.id);
+                                this.$mdDialog.hide();
+                                this.toastrService.showSuccessToast("Address successfully updated");
+                                this.loadingService.closeLoader();
                             });
                     }
 
@@ -865,12 +930,12 @@
                 } else {
                     job.fromAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
                     if (job.bulkJob) {
-                        DispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName)
+                        this.DispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName)
                             .then(() => {
-                                self.selectJobDetail(currentJob.id);
-                                $mdDialog.hide();
-                                toastrService.showSuccessToast("Address successfully updated");
-                                loadingService.closeLoader();
+                                this.selectJobDetail(currentJob.id);
+                                this.$mdDialog.hide();
+                                this.toastrService.showSuccessToast("Address successfully updated");
+                                this.loadingService.closeLoader();
                             });
                     }
 
@@ -879,7 +944,7 @@
 
                 const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
 
-                rateJobService.rateJob(job)
+                this.rateJobService.rateJob(job)
                     .then(rate => {
                         const callData = {
                             "call": "updateJobData",
@@ -897,86 +962,77 @@
                         console.log(callData);
 
                         if (field === "toAddress") {
-                            DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
+                            this.DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
                                 .then(() => {
-                                    self.selectJobDetail(currentJob.id);
-                                    $mdDialog.hide();
-                                    toastrService.showSuccessToast("Address successfully updated")
-                                    loadingService.closeLoader();
+                                    this.selectJobDetail(currentJob.id);
+                                    this.$mdDialog.hide();
+                                    this.toastrService.showSuccessToast("Address successfully updated")
+                                    this.loadingService.closeLoader();
                                 });
                         } else {
-                            DispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
+                            this.DispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
                                 .then(() => {
-                                    self.selectJobDetail(currentJob.id);
-                                    $mdDialog.hide();
-                                    toastrService.showSuccessToast("Address successfully updated")
-                                    loadingService.closeLoader();
+                                    this.selectJobDetail(currentJob.id);
+                                    this.$mdDialog.hide();
+                                    this.toastrService.showSuccessToast("Address successfully updated")
+                                    this.loadingService.closeLoader();
                                 });
                         }
                     });
             } catch (error) {
-                toastrService.showErrorToast(error.message)
+                this.toastrService.showErrorToast(error.message)
             }
 
             console.log('Dialog closed!')
         }).then(() => console.log("Split jobs canceled!"));
-    };
+    }
 
-    self.unlockJob = function (job) {
-        return DispatchData
+    unlockJob(job) {
+        return this.DispatchData
             .updateJobDetail(job.id, "Locked", false, job.charge, FirstName, ContactID, job.preBook)
             .then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
             }).catch((_) => {
-                toastrService.showErrorToast();
+                this.toastrService.showErrorToast();
             });
     }
 
-    self.lockJob = function (job) {
-        return DispatchData
+    lockJob(job) {
+        return this.DispatchData
             .updateJobDetail(job.id, "Locked", true, job.charge, FirstName, ContactID, job.preBook)
             .then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
+            }).catch(() => this.toastrService.showErrorToast());
     }
 
-    self.preBookDirectClick = function (job) {
+    preBookDirectClick(job) {
         const directValue = !job.direct;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id, "Direct", directValue, job.charge, FirstName, ContactID, job.preBook)
             .then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
+            }).catch(() => this.toastrService.showErrorToast());
     }
 
-    self.repriceClick = function (job) {
-        return DispatchData
-            .updateJobDetail(job.id, "Reprice", job.reprice, job.charge, FirstName, ContactID, job.preBook)
-            .then(response => {
-                self.selectJobDetail(job.id);
-                return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
-
-    self.pushToLive = function (job) {
+    pushToLive(job) {
         job.done = !job.done;
 
-        return DispatchData
+        return this.DispatchData
             .releaseBulkJob(job.jobNo, job.bookedDate)
             .then(response => {
-                self.selectBulkJobDetail(job.id);
+                this.selectBulkJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.vanOkClick = function (job) {
+    vanOkClick(job) {
         const vanOkValue = !job.vanOK;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id,
                 "VanOK",
                 vanOkValue,
@@ -984,19 +1040,19 @@
                 FirstName,
                 ContactID,
                 job.preBook).then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.vanClick = function (job) {
+    vanClick(job) {
         const vanValue = !job.van;
 
-        return self.rateJob(job)
+        return this.rateJob(job)
             .then(rate => {
                 console.log(rate);
 
-                return DispatchData
+                return this.DispatchData
                     .updateJobDetail(
                         job.id,
                         "Van",
@@ -1007,19 +1063,19 @@
                         job.preBook
                     )
                     .then(response => {
-                        self.selectJobDetail(job.id);
+                        this.selectJobDetail(job.id);
                         return response;
-                    }).catch(() => toastrService.showErrorToast());
-            }).catch(() => toastrService.showErrorToast());
+                    }).catch(() => this.toastrService.showErrorToast());
+            }).catch(() => this.toastrService.showErrorToast());
 
-    };
+    }
 
-    self.pedalClick = function (job) {
+    pedalClick(job) {
         const pedalValue = !job.pedal;
 
-        return self.rateJob(job).then(rate => {
+        return this.rateJob(job).then(rate => {
             console.log(rate);
-            return DispatchData
+            return this.DispatchData
                 .updateJobDetail(job.id,
                     "Pedal",
                     pedalValue,
@@ -1027,19 +1083,19 @@
                     FirstName,
                     ContactID,
                     job.preBook).then(function (response) {
-                    self.selectJobDetail(job.id);
+                    this.selectJobDetail(job.id);
                     return response;
-                }).catch(() => toastrService.showErrorToast());
-        }).catch(() => toastrService.showErrorToast());
-    };
+                }).catch(() => this.toastrService.showErrorToast());
+        }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.truckClick = function (job) {
+    truckClick(job) {
         const truckValue = !job.truck;
 
-        return self.rateJob(job)
+        return this.rateJob(job)
             .then(rate => {
                 console.log(rate);
-                return DispatchData.updateJobDetail(
+                return this.DispatchData.updateJobDetail(
                     job.id,
                     "Truck",
                     truckValue,
@@ -1050,20 +1106,20 @@
                 );
             })
             .then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.directClick = function (job) {
+    directClick(job) {
         const directValue = !job.direct;
 
         if (!directValue) {
-            return DispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
+            return this.DispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
         } else {
-            return self.rateJob(job).then(rate => {
+            return this.rateJob(job).then(rate => {
                 console.log(rate);
-                return DispatchData
+                return this.DispatchData
                     .updateJobDetail(job.id,
                         "Direct",
                         directValue,
@@ -1071,17 +1127,17 @@
                         FirstName,
                         ContactID,
                         job.preBook).then(response => {
-                        self.selectJobDetail(job.id);
+                        this.selectJobDetail(job.id);
                         return response;
-                    }).catch(() => toastrService.showErrorToast());
-            }).catch(() => toastrService.showErrorToast());
+                    }).catch(() => this.toastrService.showErrorToast());
+            }).catch(() => this.toastrService.showErrorToast());
         }
-    };
+    }
 
-    self.attentionClick = function (job) {
+    attentionClick(job) {
         const attentionValue = !job.attention;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id,
                 "Attention",
                 attentionValue,
@@ -1089,16 +1145,15 @@
                 FirstName,
                 ContactID,
                 job.preBook).then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-
-    self.repriceClick = function (job) {
+    repriceClick(job) {
         const repriceValue = !job.reprice;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id,
                 "Reprice",
                 repriceValue,
@@ -1106,15 +1161,15 @@
                 FirstName,
                 ContactID,
                 job.preBook).then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.preBookReturnClick = function (job) {
-        returnValue = !job.return;
+    preBookReturnClick(job) {
+        const returnValue = !job.return;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id,
                 "Return",
                 returnValue,
@@ -1122,15 +1177,15 @@
                 FirstName,
                 ContactID,
                 job.preBook).then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.oneOffClick = function (job) {
+    oneOffClick(job) {
         const oneoffValue = !job.oneOff;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id,
                 "OneOff",
                 oneoffValue,
@@ -1138,16 +1193,16 @@
                 FirstName,
                 ContactID,
                 job.preBook).then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
+            }).catch(() => this.toastrService.showErrorToast());
 
-    };
+    }
 
-    self.activeClick = function (job) {
+    activeClick(job) {
         const activeValue = !job.active;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id,
                 "Active",
                 activeValue,
@@ -1155,25 +1210,25 @@
                 FirstName,
                 ContactID,
                 job.preBook).then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.voidClick = function (job) {
+    voidClick(job) {
         const voidValue = !job.void;
 
-        return job.bulkJob ? DispatchData
+        return job.bulkJob ? this.DispatchData
                 .updateBulkJobDetail(job.id,
                     "Void",
                     voidValue,
                     job.charge,
                     FirstName,
                     ContactID).then(response => {
-                    self.selectBulkJobDetail(job.id);
+                    this.selectBulkJobDetail(job.id);
                     return response;
-                }).catch(() => toastrService.showErrorToast())
-            : DispatchData
+                }).catch(() => this.toastrService.showErrorToast())
+            : this.DispatchData
                 .updateJobDetail(job.id,
                     "Void",
                     voidValue,
@@ -1181,52 +1236,52 @@
                     FirstName,
                     ContactID,
                     job.preBook).then(response => {
-                    self.selectJobDetail(job.id);
+                    this.selectJobDetail(job.id);
                     return response;
-                }).catch(() => toastrService.showErrorToast());
-    };
+                }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.doneClick = function (event, job) {
+    doneClick(event, job) {
         job.done = !job.done;
 
         if (!job.completedTime) {
-            const confirm = $mdDialog.confirm()
+            const confirm = this.$mdDialog.confirm()
                 .title('You must set completed time (POD Time) first')
                 .targetEvent(event)
                 .ok('OK');
 
-            $mdDialog.show(confirm).then(() => {
+            this.$mdDialog.show(confirm).then(() => {
                 job.done = false;
                 return false;
             });
         }
 
         if (!job.podName) {
-            const confirm = $mdDialog.confirm()
+            const confirm = this.$mdDialog.confirm()
                 .title('You must set POD Name first')
                 .targetEvent(event)
                 .ok('OK');
 
-            $mdDialog.show(confirm).then(() => {
+            this.$mdDialog.show(confirm).then(() => {
                 job.done = false;
                 return false;
-            }).catch(() => toastrService.showErrorToast());
+            }).catch(() => this.toastrService.showErrorToast());
         }
 
-        return DispatchData
+        return this.DispatchData
             .updatePODDetail(job.jobNo,
                 6,
                 job.podName,
                 job.completedTime).then(() => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.deliveredClick = function (job) {
+    deliveredClick(job) {
         const doneValue = !job.done;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id,
                 "Delivered",
                 doneValue,
@@ -1234,15 +1289,15 @@
                 FirstName,
                 ContactID,
                 job.preBook).then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
+            }).catch(() => this.toastrService.showErrorToast());
+    }
 
-    self.airportOnlyClick = function (job) {
+    airportOnlyClick(job) {
         const airportOnlyValue = !job.airportOnly;
 
-        return DispatchData
+        return this.DispatchData
             .updateJobDetail(job.id,
                 "AirportOnly",
                 airportOnlyValue,
@@ -1250,38 +1305,38 @@
                 FirstName,
                 ContactID,
                 job.preBook).then(response => {
-                self.selectJobDetail(job.id);
+                this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => toastrService.showErrorToast());
-    };
-
-    self.trackingMethodClick = function (event, job) {
-        self.showSelectDialog(event, job, options.detail.tracking, "TrackingMethod", "Tracking Method", "Select new tracking method..");
-    };
-
-    self.leaveClick = function (event, job) {
-        self.showSelectDialog(event, job, pickLeaveList, "DeliverToLeaveID", "Leave Parcel", "Select new location..");
-    };
-
-    self.undeliverableClick = function (event, job) {
-        self.showSelectDialog(event, job, pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", "Select new location..");
-    };
-
-    self.sizeClick = function (event, job) {
-        self.showSelectDialog(event, job, options.detail.size, "Size", "Size", "Select new size..");
+            }).catch(() => this.toastrService.showErrorToast());
     }
 
-    self.showSelectDialog = function (event, job, data, fieldName, title, placeholder, id = "editField") {
+    trackingMethodClick(event, job) {
+        this.showSelectDialog(event, job, this.options.detail.tracking, "TrackingMethod", "Tracking Method", "Select new tracking method..");
+    }
+
+    leaveClick(event, job) {
+        this.showSelectDialog(event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", "Select new location..");
+    }
+
+    undeliverableClick(event, job) {
+        this.showSelectDialog(event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", "Select new location..");
+    }
+
+    sizeClick(event, job) {
+        this.showSelectDialog(event, job, this.options.detail.size, "Size", "Size", "Select new size..");
+    }
+
+    showSelectDialog(event, job, data, fieldName, title, placeholder, id = "editField") {
         const options = {
             minimumInputLength: 1,
             items: data,
             placeholder: placeholder
         };
 
-        $mdDialog.show({
+        this.$mdDialog.show({
             controller: SelectDialogController,
             controllerAs: 'ctrl',
-            parent: angular.element($document.body),
+            parent: angular.element(this.$document.body),
             targetEvent: event,
             templateUrl: 'app/components/common/selectDialog/selectDialog.html',
             clickOutsideToClose: true,
@@ -1294,29 +1349,28 @@
                 options: options
             },
         }).then(_ => {
-            self.selectJobDetail(job.id);
+            this.selectJobDetail(job.id);
             console.log('Dialog closed!');
         });
-    };
+    }
 
+    notifyClick(event, job) {
+        this.showSelectDialog(event, job, pickSpeeds, "NotifiedJobTypeID", "Notified", "Select new speed....");
+    }
 
-    self.notifyClick = function (event, job) {
-        self.showSelectDialog(event, job, pickSpeeds, "NotifiedJobTypeID", "Notified", "Select new speed....");
-    };
+    acceptedClick(event, job) {
+        this.showSelectDialog(event, job, pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
+    }
 
-    self.acceptedClick = function (event, job) {
-        self.showSelectDialog(event, job, pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
-    };
+    speedClick(event, job) {
+        this.showSelectDialog(event, job, pickSpeeds, "SpeedID", "Speed", "Select new speed....");
+    }
 
-    self.speedClick = function (event, job) {
-        self.showSelectDialog(event, job, pickSpeeds, "SpeedID", "Speed", "Select new speed....");
-    };
+    contactClick(event, job) {
+        this.showSelectDialog(event, job, pickSpeeds, "ContactID", "Contact", "Select new contact....");
+    }
 
-    self.contactClick = function (event, job) {
-        self.showSelectDialog(event, job, pickSpeeds, "ContactID", "Contact", "Select new contact....");
-    };
-
-    self.getJobTypeDescription = function (jobTypeID) {
+    getJobTypeDescription(jobTypeID) {
         switch (jobTypeID || 1) {
             case 1:
                 return "Pickup";
@@ -1327,9 +1381,9 @@
             default:
                 return "Pickup";
         }
-    };
+    }
 
-    self.jobTypeClick = function (event, job) {
+    jobTypeClick(event, job) {
         const data = [
             {
                 id: 1,
@@ -1345,24 +1399,34 @@
             }
         ];
 
-        self.showSelectDialog(event, job, data, "JobTypeID", "Job Type", "Select new job type....");
-    };
+        this.showSelectDialog(event, job, data, "JobTypeID", "Job Type", "Select new job type....");
+    }
 
-    self.internalStatusClick = function (event, job) {
-        self.showSelectDialog(event, job, self.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
-    };
+    internalStatusClick(event, job) {
+        this.showSelectDialog(event, job, this.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
+    }
 
-    self.showAutocompleteDialog = function (event, job, url, placeholder, fieldName, title, id = "editField", existingItem, showRerateOption) {
+    showAutocompleteDialog(
+        event,
+        job,
+        url,
+        placeholder,
+        fieldName,
+        title,
+        id = "editField",
+        existingItem,
+        showRerateOption
+    ) {
         const options = {
             placeholder,
             minimumInputLength: 3,
             searchUrl: url
         };
 
-        $mdDialog.show({
+        this.$mdDialog.show({
             controller: AutoCompleteDialogController,
             controllerAs: 'ctrl',
-            parent: angular.element($document.body),
+            parent: angular.element(this.$document.body),
             targetEvent: event,
             templateUrl: 'app/components/common/autocompleteDialog/autoCompleteDialog.html',
             clickOutsideToClose: true,
@@ -1377,13 +1441,12 @@
                 showRerateOption
             },
         }).then(_ => {
-            self.selectJobDetail(job.id);
+            this.selectJobDetail(job.id);
             console.log('Dialog closed!')
         });
     }
 
-
-    self.clientClick = function (event, job) {
+    clientClick(event, job) {
         const url = "/home/ActiveClients";
         const placeholder = "Start typing to enter new client...";
 
@@ -1392,63 +1455,20 @@
             text: job.clientName
         }
 
-        self.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
-    };
+        this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
+    }
 
-    self.courierClick = function (event, job) {
+    courierClick(event, job) {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
 
-        self.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
-    };
+        this.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
+    }
 
-    //////////////////////////////
-    //  PALLET CONTROLS //
-    /////////////////////////////
-    self.palletMenu = [
-        // NEW IMPLEMENTATION
-        {
-            text: "Delete",
-            click: function ($itemScope, $event, modelValue, text, $li) {
+    newPallet() {
+        const self = this;
 
-                return DispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(function (response) {
-
-                    console.log(response);
-
-                    if (response === "OK") {
-
-                        const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
-                        $itemScope.currentJob.palletInfo.splice(index, 1);
-
-                        return self.rateJob(self.currentJob).then(function (rate) {
-                            console.log(rate);
-                            if (rate !== self.currentJob.charge) {
-                                return DispatchData
-                                    .updateJobDetail(self.currentJob.id,
-                                        "rate",
-                                        Number(rate.replace(/[^0-9.-]+/g, "")),
-                                        Number(rate.replace(/[^0-9.-]+/g, "")),
-                                        FirstName,
-                                        ContactID,
-                                        self.currentJob.preBook).then(function (response) {
-                                        self.selectJobDetail(self.currentJob.id);
-                                        return response;
-                                    });
-                            }
-
-                        });
-                    } else {
-                        console.log("Critical Error Add Pallet");
-                    }
-                });
-            }
-        }
-    ];
-
-
-    self.newPallet = function () {
-
-        gather.form = {
+        self.gather.form = {
             id: "newPallet",
             tpl: "multi",
             title: "Add Pallet",
@@ -1503,10 +1523,9 @@
                 }
             ],
             onSubmit: function () {
-
                 const newP = {};
 
-                gather.form.fields.forEach(function (field) {
+                self.gather.form.fields.forEach(function (field) {
                     if (field.name === "amount") {
                         newP["Quantity"] = field.value;
                     }
@@ -1537,10 +1556,10 @@
 
                 });
 
-                newP["id"] = self.currentJob.id;
+                newP["id"] = this.currentJob.id;
 
 
-                return DispatchData.addPallet(newP, self.currentJob.preBook, FirstName).then(function (response) {
+                return self.DispatchData.addPallet(newP, this.currentJob.preBook, FirstName).then(function (response) {
 
                     console.log(response);
 
@@ -1555,16 +1574,7 @@
                         return self.rateJob(self.currentJob).then(function (rate) {
                             console.log(rate);
                             if (rate !== self.currentJob.charge) {
-                                //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
-                                //    self.currentJob.clientID,
-                                //    self.currentJob.contactName,
-                                //    ContactID,
-                                //    self.currentJob.courierData.courierID,
-                                //    self.currentJob.id,
-                                //    self.currentJob.jobType,
-                                //    FirstName);
-
-                                return DispatchData
+                                return self.DispatchData
                                     .updateJobDetail(self.currentJob.id,
                                         "rate",
                                         Number(rate.replace(/[^0-9.-]+/g, "")),
@@ -1572,13 +1582,11 @@
                                         FirstName,
                                         ContactID,
                                         self.currentJob.preBook).then(function (response) {
-                                        self.selectJobDetail(self.currentJob.id);
+                                        this.selectJobDetail(self.currentJob.id);
                                         return response;
                                     });
                             }
-
                         });
-
                     } else {
                         console.log("Critical Error Add Pallet");
                     }
@@ -1587,19 +1595,17 @@
             },
             submitValue: "Add Pallet"
         };
-        $timeout(() => {
-                gather.showForm();
+        this.$timeout(() => {
+                this.gather.showForm();
             },
             200);
-    };
+    }
 
-    self.currentPallet = "";
-
-    self.editPallet = function (pallet) {
-
+    editPallet(pallet) {
+        const self = this;
         self.currentPallet = pallet;
 
-        gather.form = {
+        self.gather.form = {
             id: "editPallet",
             title: "Edit Pallet",
             tpl: "multi",
@@ -1666,7 +1672,7 @@
 
                 const newP = {};
 
-                gather.form.fields.forEach(function (field) {
+                self.gather.form.fields.forEach(function (field) {
                     if (field.name === "amount") {
                         newP["Quantity"] = field.value;
                     }
@@ -1699,20 +1705,12 @@
                 newP["id"] = self.currentPallet.id;
                 newP["itemId"] = self.currentPallet.itemID;
 
-                return DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function () {
+                return self.DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function () {
                     return self.rateJob(self.currentJob).then(function (rate) {
                         console.log(rate);
                         if (rate !== self.currentJob.charge) {
-                            //DispatchData.addPriceSuburbChangeEvent(self.currentJob.jobNo,
-                            //    self.currentJob.clientID,
-                            //    self.currentJob.contactName,
-                            //    ContactID,
-                            //    self.currentJob.courierData.courierID,
-                            //    self.currentJob.id,
-                            //    self.currentJob.jobType,
-                            //    FirstName);
-                            return DispatchData
-                                .updateJobDetail(self.currentJob.id,
+                            return self.DispatchData
+                                .updateJobDetail(this.currentJob.id,
                                     "rate",
                                     Number(rate.replace(/[^0-9.-]+/g, "")),
                                     Number(rate.replace(/[^0-9.-]+/g, "")),
@@ -1729,17 +1727,14 @@
             },
             submitValue: "Edit Pallet"
         };
-        $timeout(function () {
-                gather.showForm();
+
+        this.$timeout(function () {
+                this.gather.showForm();
             },
             200);
-
-    };
-
-    return self;
+    }
 }
 
 angular
     .module("uDispatch")
-    .factory("JobDetailService",
-        ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", JobDetailService]);
+    .factory("JobDetailService", JobDetailService);
