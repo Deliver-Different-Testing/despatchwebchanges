@@ -319,7 +319,6 @@ class JobDetailService {
             {
                 text: "Delete",
                 click: function ($itemScope, $event, modelValue, text, $li) {
-
                     return self.DispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(response => {
 
                         console.log(response);
@@ -328,7 +327,7 @@ class JobDetailService {
                             const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
                             $itemScope.currentJob.palletInfo.splice(index, 1);
 
-                            return self.rateJob(this.currentJob).then(function (rate) {
+                            return self.rateJob(this.currentJob).then(rate => {
                                 console.log(rate);
                                 if (rate !== self.currentJob.charge) {
                                     return self.DispatchData
