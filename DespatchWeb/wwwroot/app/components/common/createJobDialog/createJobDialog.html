@@ -213,6 +213,8 @@
     </md-dialog-content>
 
     <md-dialog-actions layout="row" layout-align="center center">
+        <md-progress-circular md-mode="indeterminate" ng-if="ctrl.isLoading"></md-progress-circular>
+
         <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.job)">
             <md-icon md-font-set="material-symbols-outlined">add</md-icon>
             Create

@@ -45,19 +45,17 @@ class CreateJobDialogController {
      * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
      * @param {Object} DispatchData - The service used for data dispatching.
      * @param {Object} toastrService - The service used for toast notifications.
-     * @param {Object} loadingService - The service used for loading animations.
      * @param {Object} $http - Angular's built-in $http service.
      * @param {Object} $document - Angular's built-in $document service.
      * @param {number} staffId - The ID of the staff member initiating the action.
      * @param {string} despatcherName
      */
-    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, $http, $document, staffId, despatcherName) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, $http, $document, staffId, despatcherName) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.$http = $http;
         this.toastrService = toastrService;
-        this.loadingService = loadingService;
         this.$document = $document;
         this._staffId = staffId;
         this._despatcherName = despatcherName;
@@ -67,6 +65,7 @@ class CreateJobDialogController {
         this.toAddressSearchText = "";
         this.searchClientText = "";
         this.courierSearchText = "";
+        this.isLoading = false;
 
         this.selectedCourier = null;
         this.selectedClient = null;
@@ -254,12 +253,12 @@ class CreateJobDialogController {
      */
     async submit(job) {
         try {
+            this.isLoading = true;
             if (!this.jobForm.$valid) {
                 this.toastrService.showWarningToast("Please complete all the required fields.");
                 return;
             }
 
-            this.loadingService.showLoader();
             // Apply form values to job
             job.clientID = this.selectedClient.id;
             job.courierId = this.selectedCourier.id;
@@ -270,12 +269,10 @@ class CreateJobDialogController {
             const response = await this.createJob(job);
             const newJobId = response.data.jobId;
 
-            this.toastrService.showSuccessToast("New Job Created Successfully")
-
             // Pass new jobId back to function that called dialog
+            this.isLoading = false;
             this.$mdDialog.hide(newJobId);
         } catch (error) {
-            this.loadingService.closeLoader();
             this.toastrService.showErrorToast(error.message);
         }
     }

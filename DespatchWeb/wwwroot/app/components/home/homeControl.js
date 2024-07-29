@@ -3149,28 +3149,32 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
      * @param       {Event}  event
      */
     HomeController.prototype.createNewJob = event => {
-        // Dialog
-        $mdDialog.show({
-            controller: CreateJobDialogController,
-            controllerAs: 'ctrl',
-            parent: angular.element($document.body),
-            targetEvent: event,
-            templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                staffId: ContactID,
-                despatcherName: FirstName
-            },
-        }).then(newJobId => {
-            DispatchData.getJobDetail(newJobId).then(job => {
-                HomeController.prototype.getData().then(() => {
-                    $scope.selectJobDetail(job);
-                    console.log('Dialog closed!')
-                    loadingService.closeLoader();
-                });
-            })
-        }).then(() => "Create Job Canceled!");
+        try {
+            $mdDialog.show({
+                controller: CreateJobDialogController,
+                controllerAs: 'ctrl',
+                parent: angular.element($document.body),
+                targetEvent: event,
+                templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
+                clickOutsideToClose: false,
+                fullscreen: true,
+                locals: {
+                    staffId: ContactID,
+                    despatcherName: FirstName
+                },
+            }).then(newJobId => {
+                DispatchData.getJobDetail(newJobId).then(job => {
+                    HomeController.prototype.getData().then(() => {
+                        $scope.selectJobDetail(job);
+
+                        toastrService.showSuccessToast("New Job Created Successfully")
+                        loadingService.closeLoader();
+                    });
+                })
+            }).then(() => "Create Job Canceled!");
+        } catch (error) {
+            toastrService.showErrorToast(error.message);
+        }
     }
 
     /**

@@ -9,13 +9,14 @@
  */
 
 class InterCourierChargeDialogController {
-    constructor($scope, $mdDialog, $http, DispatchData, toastrService, loadingService, staffId) {
+    constructor($scope, $mdDialog, $http, DispatchData, toastrService, staffId) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.$http = $http;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
-        this.loadingService = loadingService;
+
+        this.isLoading = false;
 
         this.data = {
             fromCourierId: 0,
@@ -51,12 +52,13 @@ class InterCourierChargeDialogController {
      */
     async submit(data) {
         try {
+            this.isLoading = true;
+
             if (!this.courierChargeForm.$valid) {
                 this.toastrService.showWarningToast("Please complete all the required fields.");
+                this.isLoading = false;
                 return;
             }
-
-            this.loadingService.showLoader();
 
             // Assign variables from autocompletes
             data.fromCourierId = this.fromCourierSelectedItem.id;
@@ -67,10 +69,10 @@ class InterCourierChargeDialogController {
 
             this.toastrService.showSuccessToast("Inter-Courier Charge saved successfully");
             this.$mdDialog.hide();
-            this.loadingService.closeLoader();
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
-            this.loadingService.closeLoader();
+        } finally {
+            this.isLoading = false;
         }
     }
 
