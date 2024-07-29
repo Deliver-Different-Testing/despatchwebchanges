@@ -211,26 +211,28 @@ class JobDetailService {
             "frequency": [],
             "frequencyEvents": {
                 onSelectionChanged: function (item) {
+                    const self = this;
+
                     console.log("Freq =");
-                    console.log(this.combos.frequency);
-                    if (this.combos.frequency.length > 0 &&
-                        this.combos.days.length > 0 &&
-                        this.combos.holidays.length > 0) {
+                    console.log(self.combos.frequency);
+                    if (self.combos.frequency.length > 0 &&
+                        self.combos.days.length > 0 &&
+                        self.combos.holidays.length > 0) {
                         let newDays = "0000000";
-                        for (let i = 0; i < this.combos.days.length; i++) {
-                            newDays = newDays.replaceAt(parseInt(this.combos.days[i].id), "1");
+                        for (let i = 0; i < self.combos.days.length; i++) {
+                            newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
                         }
-                        newDays = newDays + this.combos.frequency[0].id + this.combos.holidays[0].id;
+                        newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
                         console.log(newDays);
-                        return this.DispatchData
-                            .updateJobDetail(this.currentJob.id,
+                        return self.DispatchData
+                            .updateJobDetail(self.currentJob.id,
                                 "Frequency",
                                 newDays,
-                                this.currentJob.charge,
+                                self.currentJob.charge,
                                 FirstName,
                                 ContactID,
-                                this.currentJob.preBook).then(function (response) {
-                                this.selectJobDetail(this.currentJob.id);
+                                self.currentJob.preBook).then(function (response) {
+                                self.selectJobDetail(self.currentJob.id);
                                 return response;
                             });
                     } else {
@@ -241,26 +243,28 @@ class JobDetailService {
             "days": [],
             "daysEvents": {
                 onSelectionChanged: function (item) {
+                    const self = this;
+
                     console.log("Days =");
-                    console.log(this.combos.days);
-                    if (this.combos.frequency.length > 0 &&
-                        this.combos.days.length > 0 &&
-                        this.combos.holidays.length > 0) {
+                    console.log(self.combos.days);
+                    if (self.combos.frequency.length > 0 &&
+                        self.combos.days.length > 0 &&
+                        self.combos.holidays.length > 0) {
                         let newDays = "0000000";
-                        for (let i = 0; i < this.combos.days.length; i++) {
-                            newDays = newDays.replaceAt(parseInt(this.combos.days[i].id), "1");
+                        for (let i = 0; i < self.combos.days.length; i++) {
+                            newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
                         }
-                        newDays = newDays + this.combos.frequency[0].id + this.combos.holidays[0].id;
+                        newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
                         console.log(newDays);
-                        return this.DispatchData
-                            .updateJobDetail(this.currentJob.id,
+                        return self.DispatchData
+                            .updateJobDetail(self.currentJob.id,
                                 "Days",
                                 newDays,
-                                this.currentJob.charge,
+                                self.currentJob.charge,
                                 FirstName,
                                 ContactID,
-                                this.currentJob.preBook).then(function (response) {
-                                this.selectJobDetail(this.currentJob.id);
+                                self.currentJob.preBook).then(response => {
+                                self.selectJobDetail(self.currentJob.id);
                                 return response;
                             });
                     } else {
@@ -271,26 +275,28 @@ class JobDetailService {
             "holidays": [],
             "holidaysEvents": {
                 onSelectionChanged: function (item) {
+                    const self = this;
+
                     console.log("Days =");
-                    console.log(this.combos.days);
-                    if (this.combos.frequency.length > 0 &&
-                        this.combos.days.length > 0 &&
-                        this.combos.holidays.length > 0) {
+                    console.log(self.combos.days);
+                    if (self.combos.frequency.length > 0 &&
+                        self.combos.days.length > 0 &&
+                        self.combos.holidays.length > 0) {
                         let newDays = "0000000";
                         for (let i = 0; i < this.combos.days.length; i++) {
-                            newDays = newDays.replaceAt(parseInt(this.combos.days[i].id), "1");
+                            newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
                         }
-                        newDays = newDays + this.combos.frequency[0].id + this.combos.holidays[0].id;
+                        newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
                         console.log(newDays);
-                        return this.DispatchData
-                            .updateJobDetail(this.currentJob.id,
+                        return self.DispatchData
+                            .updateJobDetail(self.currentJob.id,
                                 "Holidays",
                                 newDays,
-                                this.currentJob.charge,
+                                self.currentJob.charge,
                                 FirstName,
                                 ContactID,
-                                this.currentJob.preBook).then(response => {
-                                this.selectJobDetail(this.currentJob.id);
+                                self.currentJob.preBook).then(response => {
+                                self.selectJobDetail(self.currentJob.id);
                                 return response;
                             });
                     } else {
