@@ -1,4 +1,4 @@
-function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope, $state, $stateParams, $timeout,
+function CSController($document, $filter, $location, $mdDialog, $parse, $q, $scope, $state, $stateParams, $timeout,
                    GeoCoder, jdSvc, NgMap, greetingService, hotkeys, uCSData) {
     $scope.isAdmin = ClientInternal === "True";
     $scope.mapSetting = {
@@ -6,7 +6,7 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         "allRuns": false
     };
 
-    CSControl.prototype.dateSearchRange = 1; // Set to fortnight
+    CSController.prototype.dateSearchRange = 1; // Set to fortnight
     $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
     $scope.searchBox = "";
@@ -23,7 +23,7 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
     $scope.name = "POD";
     $scope.jdSvc = jdSvc;
-    CSControl.prototype.pickDateService = {
+    CSController.prototype.pickDateService = {
         client: '',
         courier: "",
         date: new Date(),
@@ -36,7 +36,7 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     /**
      * @param {number} selectedDateRange
      */
-    CSControl.prototype.onSearchRangeChange = (selectedDateRange) => {
+    CSController.prototype.onSearchRangeChange = (selectedDateRange) => {
         let now = new Date();
         now.setHours(0, 0, 0, 0);
 
@@ -75,15 +75,15 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     };
 
     // Default to fortnight
-    CSControl.prototype.onSearchRangeChange(1);
+    CSController.prototype.onSearchRangeChange(1);
 
-    CSControl.prototype.greetUser = () => greetingService.greetUser($scope.userName);
+    CSController.prototype.greetUser = () => greetingService.greetUser($scope.userName);
 
     $scope.updateGPS = (currentJob, field, fromRightClick) => {
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
-    CSControl.prototype.createNewJob = function (event) {
+    CSController.prototype.createNewJob = function (event) {
         // Dialog
         $mdDialog.show({
             controller: CreateJobDialogController,
@@ -107,7 +107,7 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         });
     }
 
-    CSControl.prototype.interCourierCharge = function (event) {
+    CSController.prototype.interCourierCharge = function (event) {
         $mdDialog.show({
             controller: InterCourierChargeDialogController,
             controllerAs: 'ctrl',
@@ -951,7 +951,7 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
         $scope.gather.showForm();
     };
 
-    CSControl.prototype.refreshAllData = wait => {
+    CSController.prototype.refreshAllData = wait => {
         // Empty search criteria
         console.log(this.pickDateService);
 
@@ -1361,18 +1361,18 @@ function CSControl($document, $filter, $location, $mdDialog, $parse, $q, $scope,
     };
 
     // New Material Autocompletes
-    CSControl.prototype.clientSearchText = '';
-    CSControl.prototype.courierSearchText = '';
+    CSController.prototype.clientSearchText = '';
+    CSController.prototype.courierSearchText = '';
 
     /**
      * @param {string} searchText
      */
-    CSControl.prototype.clientQuerySearch = (searchText) => uCSData.getActiveClients(searchText);
+    CSController.prototype.clientQuerySearch = (searchText) => uCSData.getActiveClients(searchText);
 
     /**
      * @param {string} searchText
      */
-    CSControl.prototype.courierQuerySearch = (searchText) => uCSData.getActiveCouriersSearch(searchText);
+    CSController.prototype.courierQuerySearch = (searchText) => uCSData.getActiveCouriersSearch(searchText);
 
     uCSData.getActiveCouriers().then(data => {
         $scope.pickCouriers = data;
@@ -1809,7 +1809,7 @@ angular
     .module('uDispatch')
     .controller('CSControl',
         ['$document', '$filter', '$location', '$mdDialog', '$parse', '$q', '$scope',
-            '$state', '$stateParams', '$timeout', 'GeoCoder', 'JobDetailService', 'NgMap', 'greetingService', 'hotkeys', 'uCSData', CSControl]);
+            '$state', '$stateParams', '$timeout', 'GeoCoder', 'JobDetailService', 'NgMap', 'greetingService', 'hotkeys', 'uCSData', CSController]);
 
 
 // Convert Degress to Radians

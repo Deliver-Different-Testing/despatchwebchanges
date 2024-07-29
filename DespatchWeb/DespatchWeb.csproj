@@ -23,6 +23,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\lib\angular\angular.min.js" />
       <_ContentIncludedByDefault Remove="wwwroot\lib\angular-confirm\angular-confirm.min.css"/>
       <_ContentIncludedByDefault Remove="wwwroot\lib\angular-confirm\angular-confirm.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\lib\resizable\angular-resizable.min.css"/>
+      <_ContentIncludedByDefault Remove="wwwroot\lib\resizable\angular-resizable.min.js"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
-function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loadingService, NgMap, $mdDialog, $parse, $q, $scope, $state, $timeout, toastrService, DispatchData) {
+function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loadingService, NgMap, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData) {
     $scope.isInternal = (ClientInternal === "True");
     $scope.name = "Home";
-    $scope.jdSvc = jdSvc;
 
     HomeController.prototype.courierSearchText = "";
     HomeController.prototype.selectedCourier = null;
@@ -86,7 +85,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         cancelValue: "Cancel"
     };
 
-    $scope.jdSvc.setGather($scope.gather);
+    jdSvc.setGather($scope.gather);
     $scope.allCouriers = {display: false, includeUA: false};
     $scope.mapZoom = {display: true};
     $scope.supportSettings = {autoRefresh: true};
@@ -1317,10 +1316,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
-    $scope.restoreAll = function () {
+    HomeController.prototype.restoreAll = function (event) {
         let confirm = $mdDialog.confirm()
             .title('Restore All Jobs')
             .textContent('Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier)
+            .targetEvent(event)
             .ok('Yes')
             .cancel('No');
 
@@ -1370,10 +1370,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
-    $scope.redispatchAll = function () {
+    HomeController.prototype.redispatchAll = function (event) {
         const confirm = $mdDialog.confirm()
             .title('Restore All Jobs')
             .textContent('Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier)
+            .targetEvent(event)
             .ok('Yes')
             .cancel('No');
 
@@ -1407,10 +1408,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
-    $scope.resendAll = function () {
+    $scope.resendAll = function (event) {
         let confirm = $mdDialog.confirm()
             .title('Resend All Jobs')
             .textContent('Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier)
+            .targetEvent(event)
             .ok('Yes')
             .cancel('No');
 
@@ -2150,7 +2152,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                   // this is right click
                   loadingService.showLoader();
                   $timeout(() => {
-                      $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
+                      jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
                   }, 100);
                   break;
               default:
@@ -2175,7 +2177,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                      // this is right click
                      waitingDialog.show();
                      $timeout(function () {
-                         $scope.jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
+                         jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
                      }, 100);
 
                      break;
@@ -2270,7 +2272,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             case 3:
                 // this is right click
                 $timeout(() => {
-                    $scope.jdSvc.speedClick($scope.currentJob);
+                    jdSvc.speedClick($scope.currentJob);
                     $scope.$apply();
                 }, 400);
 
@@ -2294,7 +2296,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             case 3:
                 // this is right click
                 $timeout(function () {
-                    $scope.jdSvc.clientClick($scope.currentJob);
+                    jdSvc.clientClick($scope.currentJob);
                     $scope.$apply();
                 }, 400);
 
@@ -2318,7 +2320,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             case 3:
                 // this is right click
                 $timeout(function () {
-                    $scope.jdSvc.notifyClick($scope.currentJob);
+                    jdSvc.notifyClick($scope.currentJob);
                     $scope.$apply();
                 }, 400);
 
@@ -3182,7 +3184,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         angular.element('.eventForm').css('display', '');
     };
 
-    $scope.truckLoadingStatus = function () {
+    HomeController.prototype.truckLoadingStatus = function () {
         $scope.truckCourierStatusForm = {
             "data": $scope.truckCourierStatus[0],
             refresh: () => {
@@ -3330,8 +3332,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         if (e.keyCode === 68 && e.ctrlKey) {
             if (e.stopPropagation) {
                 e.stopPropagation();
-            } else if (window.event) {
-                window.event.cancelBubble = true;
+            } else if ($window.event) {
+                $window.event.cancelBubble = true;
             }
         }
     }
@@ -3500,7 +3502,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 }
 
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", 'greetingService', 'hotkeys', "JobDetailService",
-    'loadingService', "NgMap", "$mdDialog", "$parse", "$q", "$scope", "$state", "$timeout", 'toastrService', "DispatchData", HomeController]);
+    'loadingService', "NgMap", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", HomeController]);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;

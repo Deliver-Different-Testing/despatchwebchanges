@@ -1,16 +1,6 @@
-
-<link rel="stylesheet" href="/css/udispatch.css?v=8">
-<!--
-<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.21/angular-material.min.css">
--->
-
 <div class="top-bar">
     <img src="/images/menu-urgent.png" class="logo" />
 
-    <!--<div class="topbar-buttons">
-        <div class="btn btn-sm btn-primary topbar-button" ng-click="refreshData(1)"><i class="fa fa-refresh"></i></div>
-
-    </div>-->
     <div class="topbar-NavButtons" role="navigation">
         <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
         <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>
@@ -23,10 +13,14 @@
 
     <div class="columns">
 
-        <div class="column" ng-repeat="(colKey,column) in layout.columns" id="co-{{column.id}}" resizablelayout r-directions="['right']" r-flex="true" style="flex-basis: {{column.width}}">
+        <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in layout.columns" r-directions="['right']"
+             r-flex="true" resizable style="flex-basis: {{column.width}}">
             <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
-                <div class="box" ng-repeat="(boxName,box) in column.boxes" id="box-{{box.name}}" resizablelayout r-directions="['bottom']" r-flex="true" style="flex-basis: {{box.height}}">
-                    <div class="box-bar">
+                <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
+                     r-directions="['bottom']"
+                     r-flex="true" resizable style="flex-basis: {{box.height}}">
+
+                <div class="box-bar">
                         <div class="box-bar-title">{{boxes[box.name].title}}  <span ng-show="box.name == 'scanList'">{{currentSelection}}</span>  </div>
                         <div class="searchBox"  ng-show="box.name == 'eventList'">
                             <input type="text" ng-model="searchBox" placeholder="Search Events..." />

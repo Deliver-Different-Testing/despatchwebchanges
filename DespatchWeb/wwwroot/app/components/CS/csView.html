@@ -54,11 +54,13 @@
         <div class="columns">
 
             <div class="column" id="co-{{column.id}}" ng-repeat="column in layout.columns" r-directions="['right']"
-                 r-flex="true" resizablelayout style="flex-basis: {{column.width}}">
+                 r-flex="true" resizable style="flex-basis: {{column.width}}">
                 <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
                     <div class="box" id="box-{{box.name}}" ng-repeat="box in column.boxes" r-directions="['bottom']"
-                         r-flex="true" resizablelayout style="flex-basis: {{box.height}}">
-                        <div class="box-bar">
+                         r-flex="true" resizable style="flex-basis: {{box.height}}">
+
+
+                    <div class="box-bar">
                             <div class="box-bar-title"
                                  ng-class="{'related':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}">
                                 {{boxes[box.name].title}}

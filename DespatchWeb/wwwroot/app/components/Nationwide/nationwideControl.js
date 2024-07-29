@@ -1,4 +1,4 @@
-function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog) {
+function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window) {
     $scope.isInternal = (ClientInternal === "True");
     $scope.jdSvc = jdSvc;
     $scope.name = "Nationwide";
@@ -2000,7 +2000,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         angular.element("#box-currentWork").find(".loading").show();
         var foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
-        var code = foundCourier != undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
+        var code = foundCourier !== undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
         NWData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
             angular.element("#box-currentWork").find(".loading").fadeOut();
             /*
@@ -2985,11 +2985,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             },
             moveMarker: function (event) {
                 var latlng = event.latLng;
-                //GeoCoder.geocode({ location: latlng })
-                //    .then(function (result) {
-                //        $scope.marker.setPosition(latlng);
-                //        $scope.gpsForm.placeChanged(result[0]);
-                //    });
             },
             markerDragend: function () {
                 //Geo coder for drag marker
@@ -3139,7 +3134,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             angular.element(".eventForm").show(0, function () {
                 $scope.$apply();
                 $timeout(function () {
-                    var statusOptions = {
+                    const statusOptions = {
                         minimumInputLength: 0,
                         data: $scope.pickEventTypes,
                         placeholder: "Start typing to choose event type..."
@@ -3152,8 +3147,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 }, 200);
             });
         }, 300);
-
-
     };
 
     $scope.truckLoadingStatus = function () {
@@ -3195,6 +3188,247 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
     // Call the init function when the controller loads
     $scope.init();
+
+    let keyIsDown = {};
+    let mouseDown = 0;
+
+    function overrideKeyboardEvent(e) {
+        switch (e.type) {
+            case "keydown":
+                if (!keyIsDown[e.keyCode]) {
+                    keyIsDown[e.keyCode] = true;
+                    // do key down stuff here
+                    if (e.keyCode === 82 && e.ctrlKey) {
+                        //location.reload();
+                    }
+                    if (e.keyCode === 113) {
+                        let sc = angular.element('box-jobDetail').scope();
+
+                        sc.gather.form = {
+                            id: "smsCustomer",
+                            title: "Enter your Message (160 chars)",
+                            fields: [
+                                {
+                                    "name": "editMessage",
+                                    "label": "Message",
+                                    "type": "sms",
+                                    "value": ""
+                                },
+                                {
+                                    "name": "courier",
+                                    "label": "Courier",
+                                    "type": "select2"
+                                }
+                            ],
+                            onSubmit: function () {
+                                console.log(sc.gather.form.fields[1]);
+                                const foundCourier = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
+                                return sc.sendSMS(foundCourier.courierID, sc.gather.form.fields[0].value).then(data => {
+                                    sc.gather.cancel();
+                                    alert("Message Sent");
+                                });
+
+
+                            },
+                            submitValue: "Send Message"
+                        };
+
+                        sc.gather.showForm();
+
+
+                        $timeout(() => {
+                            sc.$apply();
+
+                            const statusOptions = {
+                                minimumInputLength: 0,
+                                data: sc.pickCouriers,
+                                placeholder: "Start typing to choose courier..."
+                            };
+
+                            angular.element(".gatherForm #gather-courier").select2(statusOptions);
+                            angular.element(".gatherForm #gather-courier").select2('open');
+
+
+                        }, 200);
+                    }
+                }
+                break;
+            case "keyup":
+                delete (keyIsDown[e.keyCode]);
+                // do key up stuff here
+                break;
+            default:
+                break;
+        }
+        disabledEventPropagation(e);
+        if (e.keyCode === 68 && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+    }
+
+    function disabledEventPropagation(e) {
+        if (e.keyCode === 68 && e.ctrlKey) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else if ($window.event) {
+                $window.event.cancelBubble = true;
+            }
+        }
+    }
+
+    $document.on('keydown', '.dispatchField, .lateCallField', function (event) {
+        if (event.keyCode === 13) {
+            angular.element(this).parents(".clickable-row").addClass("doing");
+        }
+    });
+
+    $document.on('click', '.top-bar .btn-group .btn', function (event) {
+        if (!event.ctrlKey) {
+            angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
+        }
+
+        angular.element(this).addClass('topBarActive');
+    });
+
+
+    $document.ready(function () {
+        const favicon = angular.element("favicon");
+        favicon.setAttribute("href", "/Nationwide.ico");
+        let isDown = false;   // Tracks status of mouse button
+
+        $document.mousedown(function () {
+            isDown = true;      // When mouse goes down, set isDown to true
+        })
+            .mouseup(function () {
+                isDown = false;    // When mouse goes up, set isDown to false
+            });
+
+        $document.on("mouseenter", ".activeTable .clickable-row", function (event) {
+            if (event.ctrlKey) {
+                if (isDown) {        // Only change css if mouse is down
+                    angular.element(this).addClass("active");
+                    angular.element(this).siblings(".test").click();
+                }
+            }
+        });
+    });
+
+    $document.on('mousedown', '.clickable-row', function (event) {
+        let jobNo;
+        let group;
+        if (angular.element(".activeTable .clickable-row.active").length > 1) {
+            jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
+        } else {
+            jobNo = angular.element(this).attr("data-jobno");
+        }
+
+
+        if (mouseDown === 0) {
+            mouseDown = 1;
+
+            if (event.which === 1) {
+                if (event.ctrlKey) {
+                    if (angular.element(this).hasClass("active")) {
+                        angular.element(this).removeClass('active');
+                    } else {
+                        angular.element(this).addClass('active');
+                    }
+                } else {
+                    if (!angular.element(this).hasClass("active")) {
+
+                        group = angular.element(this).parents(".table-rows").attr("data-group");
+                        angular.element('*[data-group="' + group + '"]').each(function () {
+                            angular.element(this).find('.active').removeClass('active');
+                        });
+
+                        angular.element(this).addClass('active');
+                    }
+                }
+
+                angular.element(".activeTable").removeClass("activeTable");
+                angular.element(this).parents(".table").addClass("activeTable");
+            }
+
+            if (!event.ctrlKey) {
+                if (angular.element(this).hasClass("draggable-row")) {
+
+                    if (!angular.element(this).hasClass("active")) {
+
+                        group = angular.element(this).parents(".table-rows").attr("data-group");
+                        angular.element('*[data-group="' + group + '"]').each(function () {
+                            angular.element(this).find('.active').removeClass('active');
+                        });
+                        angular.element(this).addClass('active');
+                    }
+
+                    $timeout(() => {
+                        if (mouseDown === 1) {
+                            angular.element("#draggingItems").show();
+                            angular.element("#draggingItems").html(jobNo);
+
+                            angular.element("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
+                            angular.element("#draggingItems").draggable();
+                            angular.element("#draggingItems").trigger(event);
+                        }
+                    }, 200);
+                }
+            }
+        }
+    });
+
+    $document.on('mouseup', '.clickable-row', function (event) {
+        if (event.which === 3) {
+            angular.element(".rightActiveTable").removeClass("rightActiveTable");
+            angular.element(this).parents(".table").addClass("rightActiveTable");
+        }
+        if (!event.ctrlKey) {
+            if (angular.element(this).hasClass("active")) {
+            } else {
+                const group = angular.element(this).parents(".table-rows").attr("data-group");
+
+                angular.element('*[data-group="' + group + '"]').each(function () {
+                    angular.element(this).find('.active').removeClass('active');
+                });
+                angular.element(this).addClass('active');
+            }
+        }
+    });
+
+    $document.on("mouseup", function (ev) {
+        angular.element("#draggingItems").hide();
+        mouseDown = 0;
+    });
+
+    $document.on("keydown", function (e) {
+        const code = (e.keyCode ? e.keyCode : e.which);
+        if (code === 40) {
+            angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+        } else if (code === 38) {
+            angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+        }
+    });
+
+    function sizeHeadings(ele) {
+        angular.element("body").find(".box").each(function () {
+            const box = angular.element(this);
+            box.find(".table-headings thead tr th").each(function (index) {
+                const newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
+                angular.element(this).outerWidth(newWidth);
+            });
+            box.find(".table-headings table").width(box.find(".table").width());
+        });
+
+        const height = angular.element("#box-clearLists").find(".box-content").height() - 30;
+
+        angular.element(".clearLists-list").each(function () {
+            const newHeight = angular.element(this).data("height") * height / 100;
+            angular.element(this).height(newHeight);
+        });
+    }
+
+    $document.onkeydown = overrideKeyboardEvent;
+    $document.onkeyup = overrideKeyboardEvent;
 }
 
 angular
@@ -3210,6 +3444,8 @@ angular
     "$timeout",
     "greetingService",
     "$mdDialog",
+    "$document",
+    "$window",
     NationwideController]);
 
 
