@@ -851,6 +851,9 @@ public partial class JobController : Controller
 
             var jobId = await _jobRepo.QuickAddJob(job, staffId.Value);
 
+            // Assign job to courier if needed
+            if (job.CourierId is not null) await _jobRepo.ReAssignSelectedJobs($"{jobId.ToString()},")!;
+
             // Add all the notes to the newly created job
             var notesList = new List<string>
             {

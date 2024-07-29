@@ -68,7 +68,7 @@ class CreateJobDialogController {
         this.fromAddressSearchText = "";
         this.toAddressSearchText = "";
         this.searchClientText = "";
-        this.fromCourierSearchText = "";
+        this.courierSearchText = "";
 
         this.selectedCourier = null;
         this.selectedClient = null;
@@ -147,12 +147,12 @@ class CreateJobDialogController {
     }
 
     /**
-     * @param {string} searchTerm
+     * @param {string} searchText
      */
-    async courierSearch(searchTerm) {
+    async courierSearch(searchText) {
         try {
             const url = "/courier/AllActiveSearch";
-            return await this.DispatchData.autocompleteSearch(searchTerm, url);
+            return await this.DispatchData.autocompleteSearch(searchText, url);
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         }

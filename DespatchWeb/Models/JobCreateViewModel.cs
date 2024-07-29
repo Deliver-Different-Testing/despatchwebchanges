@@ -7,7 +7,7 @@ public class JobCreateViewModel
 {
     [JsonProperty("clientID")] public int ClientId { get; set; }
 
-    [JsonProperty("courierId")] public int CourierId { get; set; }
+    [JsonProperty("courierId")] public int? CourierId { get; set; }
 
     [JsonProperty("deliverToContact")] public string DeliverToContact { get; set; }
 

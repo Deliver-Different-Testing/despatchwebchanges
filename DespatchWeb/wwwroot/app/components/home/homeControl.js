@@ -287,8 +287,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             "onSelectionChanged": function () {
                 const temp = $scope.pickService.channel.map(el => el.label);
 
-                $scope.setSupportChannel(String(temp) || "All");
-
+                HomeController.prototype.setSupportChannel(String(temp) || "All");
             }
         },
         "settings": {
@@ -2490,7 +2489,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         HomeController.prototype.getData();
     };
 
-    $scope.setSupportChannel = function (channel) {
+    HomeController.prototype.setSupportChannel = function (channel) {
         $scope.supportChannel = channel;
         if (Modernizr.localstorage) {
             localStorage.setItem("support-channel-" + ContactID, JSON.stringify($scope.supportChannel));

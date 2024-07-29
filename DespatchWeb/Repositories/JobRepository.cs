@@ -2498,7 +2498,6 @@ public class JobRepository : IJobRepository
 
         await _context.Procedures.DESWEB_stpQuickCreateJobAsync(
             ClientId: job.ClientId,
-            CourierId: job.CourierId,
             FromAddress: job.FromAddress,
             FromLat: Convert.ToDecimal(job.FromLat),
             FromLong: Convert.ToDecimal(job.FromLong),
