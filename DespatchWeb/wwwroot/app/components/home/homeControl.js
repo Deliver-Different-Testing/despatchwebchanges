@@ -317,7 +317,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     ///////////////////////////////
     // LAYOUT
     ///////////////////////////////
-    var layoutsObject = null;
+    let layoutsObject = null;
     if (Modernizr.localstorage) {
         layoutsObject = JSON.parse(localStorage.getItem("layouts-" + ContactID));
         $scope.mapZoom = JSON.parse(localStorage.getItem("mapZoom-" + ContactID)) || {display: true};
@@ -995,7 +995,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     };
 
     $scope.jobClass = function (job) {
-        var classToUse = job.direct ? "direct " : "";
+        let classToUse = job.direct ? "direct " : "";
         classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTHIRE" || job.speed === "FT" || job.speed === "FTHIRE" || job.speed === "HC" || job.speed === "TC") ? "chilled" : "");
         return classToUse;
     }
@@ -1250,7 +1250,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     // REDESPATCHED JOB
     ///////////////////////////////////////
     $scope.reAllocateJobs = function () {
-        var callData = {
+        const callData = {
             "call": "redespatchJobs",
             "jobs": [],
             "splitJobs": [],
@@ -1258,7 +1258,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             "courierID": null
         };
 
-        var foundCourier = null;
+        let foundCourier = null;
 
         let activeElements = angular.element('#jobList .active');
         for (let i = 0; i < activeElements.length; i++) {
@@ -1612,7 +1612,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             click: function ($itemScope, $event, modelValue, text, $li) {
                 //$scope.items.splice($itemScope.$index, 1);
 
-                var index = $scope.currentJob.PalletInfo.indexOf($itemScope.pallet);
+                const index = $scope.currentJob.PalletInfo.indexOf($itemScope.pallet);
                 $scope.currentJob.PalletInfo.splice(index, 1);
 
                 //LOCK WITH CURRENT USER
@@ -1939,7 +1939,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
-    var filtersObject = null;
+    let filtersObject = null;
     if (Modernizr.localstorage) {
         filtersObject = JSON.parse(localStorage.getItem("disp-filters-" + ContactID));
     }
@@ -2567,7 +2567,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         if (Modernizr.localstorage) {
             localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.jobFilters));
         }
-        var selectedClients = $scope.pickService.clients.map(a => a.id);
+        const selectedClients = $scope.pickService.clients.map(a => a.id);
         return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(function (data) {
             $scope.jobList = data;
             angular.element("#box-jobsList .loading").fadeOut();
@@ -2575,7 +2575,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
                 sizeHeadings(angular.element("#jobList").parents(".column"));
                 if (data.length > 0) {
-                    var undespatchedData = data.filter(x => x.courierData.courierID === null);
+                    const undespatchedData = data.filter(x => x.courierData.courierID === null);
                     displayPickupPoints(undespatchedData, true, null);
                 }
                 HomeController.prototype.getAvailableCourierLocation();
@@ -2605,7 +2605,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     }
 
     function SetSelectedChannels(item, index) {
-        var sr = $scope.pickChannels.find(obj => obj.label === item);
+        const sr = $scope.pickChannels.find(obj => obj.label === item);
         $scope.pickService.channel.push(sr);
     }
 
@@ -2615,7 +2615,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         ////////////////////////////
         angular.element("#box-supports").find(".loading").show();
         return DispatchData.getSupports($scope.supportChannel).then(function (data) {
-            var first = $scope.supports === null || $scope.supports === undefined;
+            const first = $scope.supports === null || $scope.supports === undefined;
 
             $scope.supports = data;
 
@@ -2655,9 +2655,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
             ];
 
 
-            $timeout(function () {
-                    $document.ready(function (event) {
-                        //angular.element("#box-supports").find(".loading").fadeOut();
+            $timeout(() => {
+                    $document.ready(event => {
                         if ($scope.currentSupport) {
                             angular.element("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
                         }
@@ -2896,7 +2895,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 }
             ];
 
-            $timeout(function () {
+            $timeout(() => {
                 $document.ready(event => {
                     angular.element("#box-courierMoveClear").find(".loading").fadeOut();
                 });
@@ -3147,8 +3146,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                 despatcherName: FirstName
             },
         }).then(newJobId => {
-            loadingService.showLoader();
-
             DispatchData.getJobDetail(newJobId).then(job => {
                 HomeController.prototype.getData().then(() => {
                     $scope.selectJobDetail(job);
