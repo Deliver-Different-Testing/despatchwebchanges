@@ -1321,6 +1321,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
+    /**
+     * @param       {Event}  event
+     */
     HomeController.prototype.restoreAll = event => {
         let confirm = $mdDialog.confirm()
             .title('Restore All Jobs')
@@ -1375,6 +1378,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
+    /**
+     * @param       {Event}  event
+     */
     HomeController.prototype.redispatchAll = event => {
         const confirm = $mdDialog.confirm()
             .title('Restore All Jobs')
@@ -1413,6 +1419,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         });
     };
 
+    /**
+     * @param       {Event}  event
+     */
     $scope.resendAll = event => {
         let confirm = $mdDialog.confirm()
             .title('Resend All Jobs')
