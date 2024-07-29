@@ -1,6 +1,7 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loadingService, NgMap, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData) {
     $scope.isInternal = (ClientInternal === "True");
     $scope.name = "Home";
+    HomeController.prototype.jdSvc = jdSvc;
 
     HomeController.prototype.courierSearchText = "";
     HomeController.prototype.selectedCourier = null;
