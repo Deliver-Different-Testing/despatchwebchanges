@@ -179,10 +179,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         const normal =
             {
                 "font-weight": "normal"
-            }, bold =
+            };
+
+        const bold =
             {
                 "font-weight": "bold"
             };
+
         if (assigned) {
             return bold;
         } else {
@@ -493,15 +496,17 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     };
 
     $scope.isLinehaul = function (input) {
-        const hideLinehaulDelMulti = /DEL/g, hideLinehaulMulti = /LH/g, hideLinehaulPickMulti = /LHP/g;
+        const hideLinehaulDelMulti = /DEL/g;
+        const hideLinehaulMulti = /LH/g;
+        const hideLinehaulPickMulti = /LHP/g;
         return hideLinehaulMulti.test(input) || hideLinehaulDelMulti.test(input) || hideLinehaulPickMulti.test(input);
     };
 
     $scope.checkLinehaul = function (input) {
-        const hideLinehaulDelMulti = /DEL-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g,
-            hideLinehaulMulti = /LH-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g,
-            hideLinehaulMulti2 = /LH([1-9]|[0-9][0-9]|[1-9][0-9][0-9])-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g,
-            hideLinehaulPickMulti = /LHP-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g;
+        const hideLinehaulDelMulti = /DEL-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g;
+        const hideLinehaulMulti = /LH-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g;
+        const hideLinehaulMulti2 = /LH([1-9]|[0-9][0-9]|[1-9][0-9][0-9])-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g;
+        const hideLinehaulPickMulti = /LHP-([2-9]|[0-9][0-9]|[2-9][0-9][0-9])/g;
         return hideLinehaulMulti.test(input) || hideLinehaulDelMulti.test(input) || hideLinehaulPickMulti.test(input) || hideLinehaulMulti2.test(input);
     };
 
@@ -554,9 +559,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         scrollSpeed: 20,
         handle: ".box-handle",
         activate: function (e, ui) {
-            const box = angular.element("#" + ui.item.context.id),
-                parent = box.parent(),
-                boxes = parent.children().filter((_, child) => angular.element(child).hasClass('box'));
+            const box = angular.element("#" + ui.item.context.id);
+            const parent = box.parent();
+            const boxes = parent.children().filter((_, child) => angular.element(child).hasClass('box'));
 
             angular.forEach(boxes, boxElement => {
                 let box = angular.element(boxElement);
@@ -565,9 +570,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         },
         update: function (e, ui) {
             $timeout(() => {
-                const box = angular.element("#" + ui.item.context.id),
-                    parent = box.parent(),
-                    boxes = parent.children().filter((_, child) => angular.element(child).hasClass('box'));
+                const box = angular.element("#" + ui.item.context.id);
+                const parent = box.parent();
+                const boxes = parent.children().filter((_, child) => angular.element(child).hasClass('box'));
 
                 angular.forEach(boxes, boxElement => {
                     let box = angular.element(boxElement);
@@ -580,8 +585,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     };
 
     HomeController.prototype.openSearch = function (boxID) {
-        const box = angular.element("#box-" + boxID),
-            boxSearch = box.find(".box-search");
+        const box = angular.element("#box-" + boxID);
+        const boxSearch = box.find(".box-search");
 
         if (boxSearch.hasClass("open")) {
             boxSearch.find("input").css('display', 'none');
@@ -1700,7 +1705,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     HomeController.prototype.updateCourierData = function (courierID, courierName) {
         $scope.currentWorkSelection = ` for Courier  ${courierID}  ${courierName}`;
         $scope.currentCourier = {
-            courierID: courierID,
+            courierID,
             courier: courierName
         };
         $scope.currentSelection = ` for Courier ${courierID}  ${courierName}`;
