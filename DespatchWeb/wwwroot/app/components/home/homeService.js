@@ -374,10 +374,10 @@ class DispatchData {
     }
 
     /**
-     * @param {number} id
+     * @param {number} clearListId
      */
-    async getClearListEnvelope(id) {
-        let response = await this.$http.get("courier/ClearListEnvelope?clearListId=" + id);
+    async getClearListEnvelope(clearListId) {
+        let response = await this.$http.get("courier/ClearListEnvelope?clearListId=" + clearListId);
         return response.data;
     }
 
