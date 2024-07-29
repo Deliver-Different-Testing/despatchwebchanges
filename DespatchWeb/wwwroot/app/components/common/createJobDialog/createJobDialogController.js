@@ -5,7 +5,7 @@
 /**
  * @typedef {Object} Job
  * @property {number} clientID - The ID of the client associated with the job.
- * @property {number} courierId - The ID of the courier associated with the job.
+ * @property {number|null} courierId - The ID of the courier associated with the job.
  * @property {string} deliverToContact - The contact to whom the job will be delivered.
  * @property {string} fromAddress - The address from which the job will be picked up.
  * @property {string} fromSuburb - The suburb from which the job will be picked up.
@@ -37,7 +37,7 @@
 /**
  * @typedef {Object} SuburbOption - An option for selection in the ourSuburbSearch.
  * @property {string} text - The textual representation of the suburb.
- * @property {string=} alias - The alias of the suburb.
+ * @property {string} alias - The alias of the suburb.
  */
 class CreateJobDialogController {
     /**
@@ -85,7 +85,7 @@ class CreateJobDialogController {
         // Define job form
         this.job = {
             clientID: "",
-            courierId: "",
+            courierId: null,
             deliverToContact: "",
             fromAddress: "",
             toAddress: "",
@@ -260,10 +260,13 @@ class CreateJobDialogController {
             }
 
             // Apply form values to job
-            job.clientID = this.selectedClient.id;
             job.courierId = this.selectedCourier.id;
             job.date = this.jobDate.toISOString();
             job.speedId = this.selectedSpeed.id;
+
+            if (this.selectedClient) {
+                job.clientID = this.selectedClient.id;
+            }
 
             // Create Job
             const response = await this.createJob(job);
