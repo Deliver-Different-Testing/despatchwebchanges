@@ -1719,7 +1719,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.activateDrop = function () {
         $timeout(function () {
 
-                angular.element(document).ready(function (event) {
+                $document.on('ready', function (event) {
                     angular.element(".droppable-row").droppable({
                         classes: {
                             "ui-droppable-hover": "active"
@@ -1845,7 +1845,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         //$scope.currentSelection = " for Courier " + + courier.courier;
 
         $timeout(function () {
-                angular.element(document).ready(function (event) {
+                $document.on('ready', function (event) {
                     angular.element("#box-jobDetail").find(".loading").fadeOut();
                     angular.element("#box-map").find(".loading").fadeOut();
                 });
@@ -1875,9 +1875,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
         NWData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(function (data) {
             angular.element("#box-currentWork").find(".loading").fadeOut();
-            //if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
-            //    $scope.currentJob = null;
-            //}
+
             $scope.jobsCurrentList = data;
             if (data.length > 0) {
                 displayRoutePointsOnly(data, false, $scope.mapZoom.display);
@@ -1889,15 +1887,12 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             $timeout(function () {
                 sizeHeadings(angular.element("#currentWork").parents(".column"));
             }, 2000);
-            //$scope.getAvailableCourierLocation();
         });
         $scope.currentWorkSelection = " for Courier " + courier.label;
 
 
-        //$scope.currentSelection = " for Courier " + + courier.label;
-
         $timeout(function () {
-            angular.element(document).ready(function (event) {
+            $document.on('ready', function (event) {
                 angular.element("#box-jobDetail").find(".loading").fadeOut();
                 angular.element("#box-map").find(".loading").fadeOut();
             });
@@ -1954,7 +1949,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         //$scope.currentSelection = " for Courier " + + courier.courier;
 
         $timeout(function () {
-            angular.element(document).ready(function (event) {
+            $document.on('ready', function (event) {
                 angular.element("#box-jobDetail").find(".loading").fadeOut();
                 angular.element("#box-map").find(".loading").fadeOut();
                 //        var jid = angular.element("#jobList .active").last().data("jobid");
@@ -2718,7 +2713,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
             $timeout(function () {
-                    angular.element(document).ready(function (event) {
+                    $document.on('ready', function (event) {
                         angular.element("#box-supports").find(".loading").fadeOut();
                         if ($scope.currentSupport) {
                             angular.element("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
@@ -2791,10 +2786,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.getEventTypes();
 
     $scope.getData();
-    //angular.element(document).everyTime("10s", "SP", function () { $scope.getSupports(); });
+    //$document.everyTime("10s", "SP", function () { $scope.getSupports(); });
 
     // on first focus (bubbles up to document), open the menu
-    angular.element(document).on('focus', '.select2-selection.select2-selection--single', function (e) {
+    $document.on('focus', '.select2-selection.select2-selection--single', function (e) {
         angular.element(this).closest(".select2-container").siblings('select:enabled').select2('open');
     });
 
