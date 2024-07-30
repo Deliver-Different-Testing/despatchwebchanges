@@ -71,6 +71,9 @@ class CreateJobDialogController {
         this.selectedClient = null;
         this.selectedSpeed = null;
 
+        console.log("staffId: ", staffId);
+        console.log("despatcherName: ", despatcherName);
+
         // Initialize pickSpeeds
         this.speedOptions = [];
         DispatchData.getSpeedList().then(data => {

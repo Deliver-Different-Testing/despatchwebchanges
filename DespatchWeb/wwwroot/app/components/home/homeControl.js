@@ -1,4 +1,6 @@
-function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loadingService, NgMap, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData) {
+function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
+                        loadingService, NgMap, $mdDialog, $parse, $q, $scope, $state,
+                        $window, $timeout, toastrService, DispatchData) {
     $scope.isInternal = (ClientInternal === "True");
     $scope.name = "Home";
     HomeController.prototype.jdSvc = jdSvc;
@@ -8,7 +10,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
 
     HomeController.prototype.greetUser = () => {
-        return greetingService.greetUser($scope.userName);
+        return greetingService.greetUser(FirstName);
     }
 
     jdSvc.setSelectJobDetail(() => {
@@ -397,7 +399,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     }
 
     $scope.layouts = layoutsObject || defaultLayout;
-    $scope.userName = FirstName;
     HomeController.prototype.currentLayoutName = "default";
     $scope.truckMode = "On";
     $scope.supportChannel = JSON.parse(localStorage.getItem("support-channel-" + ContactID)) || "All";
@@ -2050,7 +2051,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
 
             if ($scope.currentJob.rootParentID) {
                 DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
-                    //data = data.filter(item => item.id !== $scope.currentJob.id);
                     $scope.currentJob.relatedJobs = data;
                 });
             }
@@ -2460,14 +2460,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
                         $scope.dispatchJobsForm();
                     }
                 }
-
-                //{
-                //    text: "Split Job",
-                //    click: function ($itemScope, $event, modelValue, text, $li) {
-                //        //$scope.items.splice($itemScope.$index, 1);
-                //        $scope.splitJob();
-                //    }
-                //}
             ];
 
         if (lastCourier !== null) {
@@ -2561,7 +2553,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         {
             text: "Dispatch Selected",
             click($itemScope, $event, modelValue, text, $li) {
-                //$scope.selected = $itemScope.item.name;
                 $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
             }
         }
@@ -2571,7 +2562,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
         {
             text: "Dispatch Selected",
             click($itemScope, $event, modelValue, text, $li) {
-                //$scope.selected = $itemScope.item.name;
                 $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
             }
         }
@@ -3146,7 +3136,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc, loa
     };
 
     /**
-     * @param       {Event}  event
+     * @param {Event}  event
      */
     HomeController.prototype.createNewJob = event => {
         try {

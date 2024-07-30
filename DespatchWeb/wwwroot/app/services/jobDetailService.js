@@ -1444,12 +1444,15 @@ class JobDetailService {
     }
 
     /**
+     * @param {Event} event
+     * @param job
      * @param {string} url
      * @param {string} placeholder
      * @param {string} fieldName
      * @param {string} title
-     * @param {{id: (string|nshowRerateOptionumber|*), text: *}} existingItem
-     * @param {boolean}
+     * @param {string} id
+     * @param {{id: (string|number|*), text: *}} existingItem
+     * @param {boolean} showRerateOption
      */
     showAutocompleteDialog(
         event,
