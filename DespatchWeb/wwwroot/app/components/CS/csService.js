@@ -39,17 +39,15 @@ class CSData {
     }
 
     /**
-     * @param {number} courierId
-     * @param {number} clientId
-     * @param {string} wild
-     * @param {string} job
-     * @param {Date} fromDate
-     * @param {Date} toDate
-     * @param {number} pageIndex
-     * @param {number} pageSize
+     * @param {object} params
      */
-    async getPodJobs({courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize}) {
-        let response = await this.$http.get('/Job/PODSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize);
+    getPodJobs = async function (params) {
+        const {courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize} = params;
+        const response = await this.$http.get('/Job/PODSearch?courierId='
+            + courierId + '&clientId=' + clientId
+            + '&wild=' + wild + '&job=' + job
+            + '&fromDate=' + fromDate + '&toDate=' + toDate
+            + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize);
         return response.data;
     }
 

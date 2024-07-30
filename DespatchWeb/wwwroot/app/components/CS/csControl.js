@@ -1,13 +1,15 @@
 function CSController($document, $filter, $location, $mdDialog, $parse, $q, $scope, $state,
                       $stateParams, $timeout, $window, GeoCoder, jdSvc, NgMap,
-                      greetingService, hotkeys, uCSData, toastrService) {
+                      greetingService, hotkeys, uCSData, toastrService, loadingService) {
+    const self = this;
+
     $scope.isAdmin = ClientInternal === "True";
     $scope.mapSetting = {
         "allCouriers": false,
         "allRuns": false
     };
 
-    CSController.prototype.dateSearchRange = 1; // Set to fortnight
+    self.dateSearchRange = 1; // Set to fortnight
     $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
     $scope.searchBox = "";
@@ -23,64 +25,70 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->
     $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
     $scope.name = "POD";
-    CSController.prototype.pickDateService = {
+
+    self.pickDateService = {
         client: '',
         courier: "",
-        date: null,
-        from_date: null,
-        to_date: null,
+        date: new Date(),
+        from_date: new Date(),
+        to_date: new Date(),
         followupClient: "All",
-        includeClosed: true
+        includeClosed: true,
+        wild: ""
     };
 
     /**
      * @param {number} selectedDateRange
      */
-    CSController.prototype.onSearchRangeChange = (selectedDateRange) => {
-        let now = new Date();
-        now.setHours(0, 0, 0, 0);
+    self.onSearchRangeChange = (selectedDateRange) => {
+        try {
+            let now = new Date();
+            now.setHours(0, 0, 0, 0);
 
-        let firstDayOfMonth = new Date();
-        firstDayOfMonth.setDate(1);
-        firstDayOfMonth.setHours(0, 0, 0, 0);
+            let firstDayOfMonth = new Date();
+            firstDayOfMonth.setDate(1);
+            firstDayOfMonth.setHours(0, 0, 0, 0);
 
-        let lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        lastDayOfMonth.setHours(0, 0, 0, 0);
+            let lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            lastDayOfMonth.setHours(0, 0, 0, 0);
 
-        let oneWeekAgo = new Date();
-        oneWeekAgo.setDate(now.getDate() - 7);
-        oneWeekAgo.setHours(0, 0, 0, 0);
+            let oneWeekAgo = new Date();
+            oneWeekAgo.setDate(now.getDate() - 7);
+            oneWeekAgo.setHours(0, 0, 0, 0);
 
-        let oneWeekAhead = new Date();
-        oneWeekAhead.setDate(now.getDate() + 7);
-        oneWeekAhead.setHours(0, 0, 0, 0);
+            let oneWeekAhead = new Date();
+            oneWeekAhead.setDate(now.getDate() + 7);
+            oneWeekAhead.setHours(0, 0, 0, 0);
 
-        switch (selectedDateRange) {
-            case '2':
-                this.pickDateService.from_date = now;
-                this.pickDateService.to_date = now;
-                break;
-            case '1':
-                this.pickDateService.from_date = oneWeekAgo;
-                this.pickDateService.to_date = oneWeekAhead;
-                break;
-            case '3':
-                this.pickDateService.from_date = firstDayOfMonth;
-                this.pickDateService.to_date = lastDayOfMonth;
-                break;
-            case '4':
-                // This option is empty as ng-if is used on the page to show custom date range options
-                break;
+            switch (selectedDateRange) {
+                case '1':
+                    self.pickDateService.from_date = oneWeekAgo;
+                    self.pickDateService.to_date = oneWeekAhead;
+                    break;
+                case '2':
+                    self.pickDateService.from_date = now;
+                    self.pickDateService.to_date = now;
+                    break;
+                case '3':
+                    self.pickDateService.from_date = firstDayOfMonth;
+                    self.pickDateService.to_date = lastDayOfMonth;
+                    break;
+                case '4':
+                    // This option is empty as ng-if is used on the page to show custom date range options
+                    break;
+            }
+        } catch (error) {
+            console.log("Error: ", error);
         }
     };
 
-    CSController.prototype.greetUser = () => greetingService.greetUser($scope.userName);
+    self.greetUser = () => greetingService.greetUser($scope.userName);
 
     $scope.updateGPS = (currentJob, field, fromRightClick) => {
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
-    CSController.prototype.createNewJob = event => {
+    self.createNewJob = event => {
         // Dialog
         $mdDialog.show({
             controller: CreateJobDialogController,
@@ -96,7 +104,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             },
         }).then(newJobId => {
             // Refresh data
-            $scope.refreshData();
+            self.refreshData();
 
             // Then load the new job
             $scope.selectJobDetail(newJobId);
@@ -104,7 +112,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         });
     }
 
-    CSController.prototype.interCourierCharge = event => {
+    self.interCourierCharge = event => {
         $mdDialog.show({
             controller: InterCourierChargeDialogController,
             controllerAs: 'ctrl',
@@ -232,7 +240,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
 
         "jobList": {
             "title": "Live Job Data",
-            "tpl": "app/components/CS/tpls/jobList.tpl?v=1.12",
+            "tpl": "app/components/CS/tpls/jobList.tpl",
             "showSearch": 1,
             "model": "jobList",
             "headings": [
@@ -278,7 +286,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         },
         "bulkJobList": {
             "title": "Bulk Job Data",
-            "tpl": "app/components/CS/tpls/bulkJobList.tpl?v=1.14",
+            "tpl": "app/components/CS/tpls/bulkJobList.tpl",
             "showSearch": 1,
             "model": "bulkJobList",
             "headings": [
@@ -324,7 +332,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         },
         "pbList": {
             "title": "PreBook Data",
-            "tpl": "app/components/CS/tpls/pbList.tpl?v=1.4",
+            "tpl": "app/components/CS/tpls/pbList.tpl",
             "showSearch": 1,
             "showRefresh": 1,
             "model": "pbList",
@@ -491,7 +499,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     $scope.layout = layoutToUse;
     $scope.currentLayoutName = $scope.layouts[0].name;
 
-    CSController.prototype.deleteLayout = (event, index) => {
+    self.deleteLayout = (event, index) => {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
@@ -508,23 +516,23 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         }, () => console.log("Delete layout canceled!"));
     };
 
-    CSController.prototype.setLastActiveLayoutName = layoutName => {
+    self.setLastActiveLayoutName = layoutName => {
         if (Modernizr.localstorage) {
             localStorage.setItem("lastActiveLayoutCS-" + ContactID, layoutName);
         }
     };
 
-    CSController.prototype.loadLayout = index => {
+    self.loadLayout = index => {
         $scope.currentLayoutName = $scope.layouts[index].name;
         $scope.layout = angular.copy($scope.layouts[index].layout);
 
         // save layout as last active
-        CSController.prototype.setLastActiveLayoutName($scope.currentLayoutName);
+        self.setLastActiveLayoutName($scope.currentLayoutName);
 
         $timeout($scope.initFilters, 1000);
     };
 
-    CSController.prototype.saveLayout = event => {
+    self.saveLayout = event => {
         angular.forEach($scope.layout.columns,
             (column, colKey) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
@@ -553,7 +561,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                 localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
 
                 // save last active layout
-                CSController.prototype.setLastActiveLayoutName(layoutName);
+                self.setLastActiveLayoutName(layoutName);
             }
 
             const deferred = $q.defer();
@@ -588,7 +596,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         }
     };
 
-    CSController.prototype.openSearch = boxID => {
+    self.openSearch = boxID => {
         let boxSearchElement = angular.element("#box-" + boxID).find(".box-search");
 
         if (boxSearchElement.hasClass("open")) {
@@ -681,41 +689,30 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         $scope.gather.cancel();
         const {[dateKey]: pdsDate, [dateKey]: scopeDate} = $scope;
 
+        let dateChanged;
         if (scopeDate !== pdsDate) {
             $scope[dateKey] = pdsDate;
             dateChanged = true;
         }
-
-        // $scope.refreshData(true);
     };
-
-    $scope.chooseFromDate = () => {
-        $scope.gather.form = $scope.createForm("fromdatepicker", "fromdatepicker");
-        $scope.gather.showForm();
-    };
-
-    $scope.chooseToDate = () => {
-        $scope.gather.form = $scope.createForm("todatepicker", "todatepicker");
-        $scope.gather.showForm();
-    };
-
 
     $scope.filterRegion = region => {
         const sr = $scope.pickRegions.find(obj => obj.id === region.id);
-        this.pickDateService.regions = [];
-        this.pickDateService.regions.push(sr);
-        $scope.refreshData(true);
-        $scope.refreshBulkData(true);
-        $scope.refreshPreBookData(true);
+        self.pickDateService.regions = [];
+        self.pickDateService.regions.push(sr);
+
+        self.refreshData();
+        self.refreshBulkData();
+        self.refreshPreBookData();
     };
 
-    CSController.prototype.unlockJob = () => jdSvc
+    self.unlockJob = () => jdSvc
         .unlockJob($scope.currentJob);
 
-    CSController.prototype.lockJob = () => jdSvc
+    self.lockJob = () => jdSvc
         .lockJob($scope.currentJob);
 
-    CSController.prototype.unSplitJob = () => {
+    self.unSplitJob = () => {
         const confirm = $mdDialog.confirm()
             .title('Un-Split Job?')
             .textContent('Are you sure you wish to un-split this job?')
@@ -772,7 +769,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         }
     };
 
-    CSController.prototype.dispatchJobs = (courier, job) => {
+    self.dispatchJobs = (courier, job) => {
         let foundCourier = $scope.pickCouriers.find(c => c.id === courier);
         if (foundCourier === undefined) {
             const confirm = $mdDialog.confirm()
@@ -898,7 +895,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
 
                         toastrService.showSuccessToast("POD Swap Completed Successfully");
                         uCSData.reSendJobs(secondJobId);
-                        uCSData.reAssignJobs(firstJobId).then(_ => uCSData.reSendJobs(firstJobId).then(_ => $scope.refreshData(true)));
+                        uCSData.reAssignJobs(firstJobId).then(_ => uCSData.reSendJobs(firstJobId).then(_ => self.refreshData(true)));
                     }), () => console.log("POD Swap Canceled"));
                 }
             }),
@@ -908,7 +905,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         $scope.gather.showForm();
     };
 
-    CSController.prototype.sendPOD = () => {
+    self.sendPOD = () => {
         if (!$scope.currentJob.podPhoto) {
             $mdDialog.show(
                 $mdDialog.alert()
@@ -946,31 +943,37 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         $scope.gather.showForm();
     };
 
-    CSController.prototype.refreshAllData = wait => {
-        // Empty search criteria
-        console.log(this.pickDateService);
+    self.refreshAllData = () => {
+        try {
+            if ((self.pickDateService.client || "") === "" &&
+                (self.pickDateService.courier || "") === "" &&
+                (self.pickDateService.job || "") === "" &&
+                (self.pickDateService.wild || "") === "") {
 
-        if ((this.pickDateService.client || "") === "" &&
-            (this.pickDateService.courier || "") === "" &&
-            (this.pickDateService.job || "") === "" &&
-            (this.pickDateService.wild || "") === "") {
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .clickOutsideToClose(true)
+                        .title('Missing Criteria')
+                        .textContent('Please provide more detailed search criteria.')
+                        .ok('Understood')
+                ).then(() => console.log("Search operation cancelled due to insufficient criteria."));
+                return;
+            }
 
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .clickOutsideToClose(true)
-                    .title('Missing Criteria')
-                    .textContent('Please provide more detailed search criteria.')
-                    .ok('Understood')
-            ).then(() => console.log("Search operation cancelled due to insufficient criteria."));
-            return;
+            loadingService.showLoader();
+
+            self.refreshData();
+            self.refreshBulkData();
+            self.refreshPreBookData();
+
+            loadingService.closeLoader();
+        } catch (error) {
+            loadingService.closeLoader();
+            toastrService.showErrorToast(error.message);
         }
-
-        CSController.prototype.refreshData();
-        $scope.refreshBulkData(wait);
-        $scope.refreshPreBookData(wait);
     };
 
-    CSController.prototype.refreshData = () => {
+    self.refreshData = () => {
         const $jobList = angular.element("#jobList");
         let goTop = $jobList.offset().top;
         const $parentDiv = $jobList.parents(".box-content");
@@ -981,29 +984,27 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         } catch (e) {
             //ignore
         }
-        angular.element("#box-jobList").find(".loading").show();
-
 
         console.log("about to call data - page " + $scope.pageIndex);
-        uCSData.getPodJobs(CSController.prototype.pickDateService.courier,
-            CSController.prototype.pickDateService.client,
-            (CSController.prototype.pickDateService.wild || ""),
-            (CSController.prototype.pickDateService.job || ""),
-            moment(CSController.prototype.pickDateService.from_date),
-            moment(CSController.prototype.pickDateService.to_date),
-            $scope.pageIndex,
-            $scope.pageSizeSelected).then(
-            function (data) {
-                $scope.jobList = data.item2;
-                $scope.totalCount = data.item1;
-                angular.element("#box-jobList").find(".loading").hide();
-                $timeout(function () {
-                    sizeHeadings(angular.element("#jobList").parents(".column"));
-                }, 1000);
-            });
+
+        const paramsData = {
+            courierId: self.pickDateService.courier,
+            clientId: self.pickDateService.client,
+            wild: self.pickDateService.wild || "",
+            job: self.pickDateService.job || "",
+            fromDate: self.pickDateService.from_date,
+            toDate: self.pickDateService.to_date,
+            pageIndex: $scope.pageIndex,
+            pageSize: $scope.pageSizeSelected,
+        };
+
+        uCSData.getPodJobs(paramsData).then(data => {
+            $scope.jobList = data.item2;
+            $scope.totalCount = data.item1;
+        });
     };
 
-    $scope.refreshBulkData = wait => {
+    self.refreshBulkData = () => {
         let goTop = angular.element("#bulkJobList").offset().top;
         const $parentDiv = angular.element("#bulkJobList").parents(".box-content");
 
@@ -1013,29 +1014,28 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         } catch (e) {
             //ignore
         }
-        angular.element("#box-bulkJobList").find(".loading").show();
 
         console.log("about to call bulk data - page " + $scope.bulkPageIndex);
 
-        uCSData.searchBulkJobs(CSController.prototype.pickDateService.courier,
-            CSController.prototype.pickDateService.client,
-            (CSController.prototype.pickDateService.job || ""),
-            (CSController.prototype.pickDateService.wild || ""),
-            moment(CSController.prototype.pickDateService.from_date),
-            moment(CSController.prototype.pickDateService.to_date),
+        uCSData.searchBulkJobs(
+            self.pickDateService.courier,
+            self.pickDateService.client,
+            (self.pickDateService.job || ""),
+            (self.pickDateService.wild || ""),
+            self.pickDateService.from_date,
+            self.pickDateService.to_date,
             $scope.bulkPageIndex,
             $scope.bulkPageSizeSelected).then(
             function (data) {
                 $scope.bulkJobList = data.item2;
                 $scope.bulkTotalCount = data.item1;
-                angular.element("#box-bulkJobList").find(".loading").hide();
                 $timeout(function () {
                     sizeHeadings(angular.element("#bulkJobList").parents(".column"));
                 }, 1000);
             });
     };
 
-    $scope.refreshPreBookData = wait => {
+    self.refreshPreBookData = () => {
         const pbList = angular.element("#pbList");
         let goTop = pbList.offset().top;
         const $parentDiv = pbList.parents(".box-content");
@@ -1046,22 +1046,21 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         } catch (e) {
             //ignore
         }
-        angular.element("#box-pbList").find(".loading").show();
 
         console.log("about to call prebook data - page " + $scope.pbPageIndex);
 
-        uCSData.searchPreBookJobs($scope.pickDateService.courier,
-            $scope.pickDateService.client,
-            ($scope.pickDateService.wild || ""),
-            ($scope.pickDateService.job || ""),
-            moment(CSController.prototype.pickDateService.from_date),
-            moment(CSController.prototype.pickDateService.to_date),
+        uCSData.searchPreBookJobs(
+            self.pickDateService.courier,
+            self.pickDateService.client,
+            (self.pickDateService.wild || ""),
+            (self.pickDateService.job || ""),
+            self.pickDateService.from_date,
+            self.pickDateService.to_date,
             $scope.pbPageIndex,
             $scope.pbPageSizeSelected).then(
             function (data) {
                 $scope.pbList = data.item2;
                 $scope.pbTotalCount = data.item1;
-                angular.element("#box-pbList").find(".loading").hide();
                 $timeout(function () {
                     sizeHeadings(angular.element("#pbList").parents(".column"));
                 }, 1000)
@@ -1252,12 +1251,13 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
+
             uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(data => {
                 $scope.scanList = data;
 
-                $timeout(() => {
-                    sizeHeadings(angular.element("#scanList")).parent(".column");
-                    angular.element("#box-scanList").find(".loading").css('display', 'none');
+                $timeout(function () {
+                    sizeHeadings(angular.element("#scanList").parents(".column"));
+                    angular.element("#box-scanList").find(".loading").fadeOut();
                 }, 200);
             });
         });
@@ -1269,24 +1269,25 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         console.log("select Bulk Job  " + id);
         clearTimeout($scope.myTimer);
 
-        angular.element("#box-jobDetail").find(".loading").css('display', 'block');
+        loadingService.showLoader();
 
-        uCSData.getBulkJobDetail(id).then(data => {
+        uCSData.getBulkJobDetail(id).then(function (data) {
             $scope.currentJob = data;
             jdSvc.setJob($scope.currentJob);
-            angular.element("#box-jobDetail").find(".loading").css('display', 'none');
+
+            loadingService.closeLoader();
             $scope.currentSelection = " for Bulk Job " + data.jobNo;
-            let jobs = [];
+            const jobs = [];
             jobs.push($scope.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(data => {
+            uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
                 $scope.scanList = data;
 
-                $timeout(() => {
-                    sizeHeadings(angular.element("#scanList")).parent(".column");
-                    angular.element("#box-scanList").find(".loading").css('display', 'none');
+                $timeout(function () {
+                    sizeHeadings(angular.element("#scanList").parents(".column"));
+                    angular.element("#box-scanList").find(".loading").fadeOut();
                 }, 200);
             });
         });
@@ -1301,7 +1302,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
      */
     $scope.pageChanged = index => {
         $scope.pageIndex = index;
-        $scope.refreshData();
+        self.refreshData();
     };
 
     //This method is calling from dropDown
@@ -1311,7 +1312,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     $scope.changeBulkPageSize = index => {
         $scope.bulkPageIndex = index;
         $scope.bulkPageSizeSelected = index;
-        $scope.refreshBulkData();
+        self.refreshBulkData();
     };
 
     //This method is calling from pagination number
@@ -1320,13 +1321,13 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
      */
     $scope.pbPageChanged = index => {
         $scope.pbPageIndex = index;
-        $scope.refreshPreBookData();
+        self.refreshPreBookData();
     };
 
     $scope.changePBPageSize = i => {
         $scope.pbPageIndex = i;
         $scope.pbPageSizeSelected = i;
-        $scope.refreshPreBookData();
+        self.refreshPreBookData();
     };
 
     //This method is calling from pagination number
@@ -1335,7 +1336,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
      */
     $scope.bulkPageChanged = index => {
         $scope.bulkPageIndex = index;
-        $scope.refreshBulkData();
+        self.refreshBulkData();
     };
 
     //This method is calling from dropDown
@@ -1345,22 +1346,38 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     $scope.changePageSize = index => {
         $scope.pageIndex = index;
         $scope.pageSizeSelected = index;
-        $scope.refreshData();
+        self.refreshData();
     };
 
     // New Material Autocompletes
-    CSController.prototype.clientSearchText = '';
-    CSController.prototype.courierSearchText = '';
+    self.clientSearchText = '';
+    self.courierSearchText = '';
+    self.selectedClient = null;
+    self.selectedCourier = null;
 
     /**
      * @param {string} searchText
      */
-    CSController.prototype.clientQuerySearch = (searchText) => uCSData.getActiveClients(searchText);
+    self.clientQuerySearch = (searchText) => uCSData.getActiveClients(searchText);
+
+    self.selectedClientChange = function (selectedClient) {
+        if (!selectedClient) {
+            self.pickDateService.client = null;
+        }
+        self.pickDateService.client = selectedClient.id;
+    };
 
     /**
      * @param {string} searchText
      */
-    CSController.prototype.courierQuerySearch = (searchText) => uCSData.getActiveCouriersSearch(searchText);
+    self.courierQuerySearch = (searchText) => uCSData.getActiveCouriersSearch(searchText);
+
+    self.selectedCourierChange = function (selectedCourier) {
+        if (!selectedCourier) {
+            self.pickDateService.courier = null;
+        }
+        self.pickDateService.courier = selectedCourier.id;
+    };
 
     uCSData.getActiveCouriers().then(data => {
         $scope.pickCouriers = data;
@@ -1377,18 +1394,23 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     });
 
     $scope.highlightEvent = () => {
-        angular.element("#jobList .active").removeClass("active");
+        angular.element("#jobList .active").each(function () {
+            angular.element(this).removeClass("active");
+        });
+        //loop actives
 
-        $timeout(() => {
+        $timeout(function () {
             $scope.selectedEvents = [];
-            angular.element("#jobList .active").forEach(el => {
-                const eventIndex = angular.element(el).data("index");
+            angular.element("#jobList .active").each(function () {
+                const eventIndex = angular.element(this).data("index");
                 const event = $scope.jobList[eventIndex];
                 $scope.selectedEvents.push(event);
             });
         }, 10);
 
-        $timeout(() => sizeHeadings(angular.element("#jobList")).parent(".column"), 1000);
+        $timeout(function () {
+            sizeHeadings(angular.element("#jobList").parents(".column"));
+        }, 1000);
     };
 
     $scope.jobListMenu =
@@ -1413,13 +1435,12 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
 
                             const userName = angular.element("#gather-editName").val();
 
-                            uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(() => $scope.refreshData(1, true));
+                            uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(() => self.refreshData());
                         },
                         submitValue: "Close Event"
                     };
 
                     $scope.gather.showForm();
-
                 }
             }
         ];
@@ -1448,7 +1469,6 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             preserveScope: true,
             templateUrl: "app/components/CS/tpls/createEvent.html",
             parent: angular.element($document.body),
-            //targetEvent: $event,
             clickOutsideToClose: true,
             onComplete: afterShowAnimation
         });
@@ -1461,7 +1481,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             controller: $scope.eventDialogController,
             scope: $scope,
             preserveScope: true,
-            templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
+            templateUrl: "app/components/CS/tpls/createEvent.html",
             parent: angular.element($document.body),
             //targetEvent: $event,
             clickOutsideToClose: true
@@ -1520,7 +1540,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                 "Internal": $scope.isAdmin ? !$scope.book.internal : 0,
                 "ClientCreated": !$scope.isAdmin,
                 "ClientFollowup": $scope.book.account !== "UCL" ? 1 : 0,
-                "EventDate": CSController.prototype.pickDateService.date,
+                "EventDate": self.pickDateService.date,
                 "ClientID": $scope.currentJob.clientID
             };
 
@@ -1535,13 +1555,13 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                         angular.element(".wait").css("display", "block");
                         $scope.cancel();
                         if ($scope.book.reply) {
-                            uCSData.closeEvent($scope.book.closeEventId, event.Name).then(() => CSController.prototype.refreshData());
+                            uCSData.closeEvent($scope.book.closeEventId, event.Name).then(() => self.refreshData());
                         }
 
                         alert("Event Created!");
                     }
 
-                    CSController.prototype.refreshData();
+                    self.refreshData();
                 });
         }
     };
@@ -1585,7 +1605,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
 
 
     // Load custom layout
-    CSController.prototype.init = () => {
+    self.init = () => {
         if (Modernizr.localstorage) {
             const storedLayouts = localStorage.getItem("layoutsCS-" + ContactID);
             const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutCS-" + ContactID);
@@ -1598,7 +1618,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
 
                     // if the last active layout is found among stored layouts
                     if (lastActiveLayoutIndex !== -1) {
-                        CSController.prototype.loadLayout(lastActiveLayoutIndex);
+                        self.loadLayout(lastActiveLayoutIndex);
                     }
                 }
             }
@@ -1606,8 +1626,8 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     };
 
     // Call the init function when the controller loads
-    CSController.prototype.init();
-    CSController.prototype.onSearchRangeChange(1);
+    self.init();
+    self.onSearchRangeChange(1);
 
     // Code moved from CSView HTML
     let keyIsDown = {};
@@ -1683,8 +1703,8 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         $document.on("mousedown", () => {
             isDown = true;
         }).on("mouseup", () => {
-                isDown = false;
-            });
+            isDown = false;
+        });
 
         let isOnRow = false;
 
@@ -1795,7 +1815,7 @@ angular
     .controller('CSControl',
         ['$document', '$filter', '$location', '$mdDialog', '$parse', '$q', '$scope',
             '$state', '$stateParams', '$timeout', '$window', 'GeoCoder', 'JobDetailService', 'NgMap',
-            'greetingService', 'hotkeys', 'uCSData', 'toastrService', CSController]);
+            'greetingService', 'hotkeys', 'uCSData', 'toastrService', 'loadingService', CSController]);
 
 
 // Convert Degress to Radians

@@ -8,14 +8,17 @@
             <md-radio-button value="3">Month</md-radio-button>
             <md-radio-button value="4">Custom</md-radio-button>
         </md-radio-group>
+
         <md-divider></md-divider>
 
         <div class="space" layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 4">
             <div>
                 <label id="from-datepicker-header">From: </label>
-                <md-datepicker input-aria-describedby="from-datepicker-description" input-aria-labelledby="from-datepicker-header "
-                               md-placeholder="Enter date"
-                               ng-model="ctrl.pickDateService.from_date"></md-datepicker>
+                <md-datepicker
+                        input-aria-describedby="from-datepicker-description"
+                        input-aria-labelledby="from-datepicker-header "
+                        md-placeholder="Enter date"
+                        ng-model="ctrl.pickDateService.from_date"></md-datepicker>
                 <p id="from-datepicker-description" style="display: none">
                     Start date search
                 </p>
@@ -23,9 +26,11 @@
 
             <div>
                 <label id="datepicker-header">To: </label>
-                <md-datepicker input-aria-describedby="to-datepicker-description" input-aria-labelledby="to-datepicker-header "
-                               md-placeholder="Enter date"
-                               ng-model="ctrl.pickDateService.to_date"></md-datepicker>
+                <md-datepicker
+                        input-aria-describedby="to-datepicker-description"
+                        input-aria-labelledby="to-datepicker-header "
+                        md-placeholder="Enter date"
+                        ng-model="ctrl.pickDateService.to_date"></md-datepicker>
                 <p id="to-datepicker-description" style="display: none">
                     End date search
                 </p>
@@ -41,8 +46,8 @@
                     md-items="item in ctrl.clientQuerySearch(ctrl.clientSearchText)"
                     md-min-length="3"
                     md-search-text="ctrl.clientSearchText"
-                    md-selected-item="ctrl.pickDateService.client"
-                    md-selected-item-change="ctrl.selectedClientChange(item)"
+                    md-selected-item="ctrl.selectedClient"
+                    md-selected-item-change="ctrl.selectedClientChange(ctrl.selectedClient)"
                     placeholder="Start typing to enter new client...">
                 <md-item-template>
                     <span md-highlight-flags="^i" md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
@@ -58,8 +63,8 @@
             <md-autocomplete
                     md-items="item in ctrl.courierQuerySearch(ctrl.courierSearchText)"
                     md-search-text="ctrl.courierSearchText"
-                    md-selected-item="ctrl.pickDateService.courier"
-                    md-selected-item-change="ctrl.selectedCourierChange(item)"
+                    md-selected-item="ctrl.selectedCourier"
+                    md-selected-item-change="ctrl.selectedCourierChange(ctrl.selectedCourier)"
                     md-item-text="item.text"
                     md-min-length="3"
                     placeholder="Start typing to enter new courier..."
@@ -74,18 +79,26 @@
             </md-autocomplete>
         </div>
 
+        <md-divider></md-divider>
+
         <div class="space">
             <b>Job Number:</b>
-            <input type="text" name="Job" id="Job" ng-model="pickDateService.job" class="form-control focusMe"/>
+            <md-input-container class="md-block">
+                <input id="Job" md-maxlength="50" name="Job" ng-model="ctrl.pickDateService.job"
+                       type="text">
+            </md-input-container>
         </div>
 
         <div class="space">
             <b>Everything Else (JobNo, Address, Name, Refs):</b>
-            <input type="text" name="Wild" id="Wild" ng-model="pickDateService.wild" class="form-control focusMe"/>
+            <md-input-container class="md-block">
+                <input id="Wild" md-maxlength="150" name="Wild" ng-model="ctrl.pickDateService.wild"
+                       type="text">
+            </md-input-container>
         </div>
 
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">
-            <md-button class="md-raised md-primary" ng-click="ctrl.refreshAllData(true)">
+            <md-button class="md-raised md-primary" ng-click="ctrl.refreshAllData()">
                 <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                 Search
             </md-button>
