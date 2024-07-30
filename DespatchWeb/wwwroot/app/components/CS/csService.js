@@ -69,8 +69,8 @@ class CSData {
      * @param {number} clientId
      * @param {string} wild
      * @param {string} job
-     * @param {Date} fromDate
-     * @param {Date} toDate
+     * @param {string} fromDate
+     * @param {string} toDate
      * @param {number} pageIndex
      * @param {number} pageSize
      */

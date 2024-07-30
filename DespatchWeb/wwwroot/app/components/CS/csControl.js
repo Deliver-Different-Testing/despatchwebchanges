@@ -620,8 +620,6 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     //Column Sorting
     $scope.sort = [];
     $scope.orderList = (list, prop) => {
-
-
         if ($scope.sort[list] !== prop) {
             $scope.sort[list] = prop;
             $scope[list] = $filter('orderBy')($scope[list], prop);
@@ -949,8 +947,8 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             clientId: self.pickDateService.client,
             wild: self.pickDateService.wild || "",
             job: self.pickDateService.job || "",
-            fromDate: self.pickDateService.from_date,
-            toDate: self.pickDateService.to_date,
+            fromDate: self.pickDateService.from_date.toISOString(),
+            toDate: self.pickDateService.to_date.toISOString(),
             pageIndex: $scope.pageIndex,
             pageSize: $scope.pageSizeSelected,
         };
@@ -979,8 +977,8 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             self.pickDateService.client,
             (self.pickDateService.job || ""),
             (self.pickDateService.wild || ""),
-            self.pickDateService.from_date,
-            self.pickDateService.to_date,
+            self.pickDateService.from_date.toISOString(),
+            self.pickDateService.to_date.toISOString(),
             $scope.bulkPageIndex,
             $scope.bulkPageSizeSelected).then(
             function (data) {
@@ -1011,8 +1009,8 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             self.pickDateService.client,
             (self.pickDateService.wild || ""),
             (self.pickDateService.job || ""),
-            self.pickDateService.from_date,
-            self.pickDateService.to_date,
+            self.pickDateService.from_date.toISOString(),
+            self.pickDateService.to_date.toISOString(),
             $scope.pbPageIndex,
             $scope.pbPageSizeSelected).then(
             function (data) {
@@ -1057,7 +1055,6 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             sizeHeadings(angular.element("#jobList").parents(".column"));
         }, 1000);
         angular.element("#box-jobsList .loading").fadeOut();
-        $t
     };
 
     $scope.sizeName = sizeId => {

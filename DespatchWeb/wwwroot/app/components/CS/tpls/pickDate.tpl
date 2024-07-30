@@ -84,7 +84,7 @@
         <div class="space">
             <b>Job Number:</b>
             <md-input-container class="md-block">
-                <input id="Job" md-maxlength="50" name="Job" ng-model="ctrl.pickDateService.job"
+                <input id="Job" name="Job" ng-model="ctrl.pickDateService.job"
                        type="text">
             </md-input-container>
         </div>
@@ -92,7 +92,7 @@
         <div class="space">
             <b>Everything Else (JobNo, Address, Name, Refs):</b>
             <md-input-container class="md-block">
-                <input id="Wild" md-maxlength="150" name="Wild" ng-model="ctrl.pickDateService.wild"
+                <input id="Wild" name="Wild" ng-model="ctrl.pickDateService.wild"
                        type="text">
             </md-input-container>
         </div>
