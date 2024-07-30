@@ -136,27 +136,27 @@
                                            placeholder="dispatch"
                                            type="text"/>
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="reply(currentEvent)"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.reply(currentEvent)"
                                                 ng-show="currentEvent && !currentEvent.closedDate"
                                                 title="Reply"
                                                 type="button"><i class="fa fa-reply"></i></button>
                                     </div>
                                     <div aria-label="Basic example" class="btn-group" role="group">
                                         <button class="btn btn-sm btn-secondary"
-                                                ng-click="generateDirectLink(currentEvent)"
+                                                ng-click="ctrl.generateDirectLink(currentEvent)"
                                                 ng-show="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))"
                                                 title="Copy Link"
                                                 type="button"><i class="fa fa-link"></i>
                                         </button>
                                     </div>
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="restoreJob(currentJob)"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.restoreJob(currentJob)"
                                                 ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier != null && !currentJob.done"
                                                 title="Restore Job"
                                                 type="button"><i class="fa fa-undo"></i></button>
                                     </div>
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="swapPOD()"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.swapPOD()"
                                                 ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook"
                                                 title="Swap POD"
                                                 type="button"><i class="fa fa-exchange"></i></button>

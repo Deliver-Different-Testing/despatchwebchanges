@@ -730,7 +730,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             });
     };
 
-    $scope.restoreJob = job => {
+    self.restoreJob = job => {
         angular.element("#box-jobDetail").find(".loading").css('display', 'block');
         const callData = {
             "call": "restoreJobs",
@@ -821,7 +821,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
 
     };
 
-    $scope.swapPOD = () => {
+    self.swapPOD = () => {
         $scope.gather.form = {
             id: "swapPOD",
             title: "Enter the other job number",
@@ -1163,11 +1163,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                     map.addFlightPath(flightPathPoly);
                 });
             }
-
-
         });
-
-
     };
 
     $scope.selectPreBookDetail = id => {
@@ -1399,7 +1395,13 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             }
         ];
 
-    $scope.reply = currentEvent => {
+    self.generateDirectLink = currentEvent => {
+        return uCSData.generateDirectLink(currentEvent).then(data => {
+            return data;
+        })
+    }
+
+    self.reply = currentEvent => {
         function resetCursor(txtElement) {
             if (txtElement.setSelectionRange) {
                 txtElement.focus();
