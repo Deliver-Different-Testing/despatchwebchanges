@@ -167,13 +167,7 @@ class GpsFormController {
         }
 
         if (addressDetails.our_suburb === undefined) {
-            const alert = this.$mdDialog.alert({
-                title: 'Courier Suburb Not Mapped',
-                textContent: 'You must pick one of our suburbs to map this address to',
-                ok: 'OK',
-            }); // Show the alert dialog
-            await this.$mdDialog.show(alert);
-
+            alert("You must pick one of our suburbs to map this address to");
             this.isLoading = false;
             return;
         }
