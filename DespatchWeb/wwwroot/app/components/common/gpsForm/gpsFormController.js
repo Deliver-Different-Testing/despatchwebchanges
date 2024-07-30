@@ -46,6 +46,7 @@ class GpsFormController {
         this.toastrService = toastrService;
         this.NgMap = NgMap;
 
+        this.isLoading = false;
         this.title = title;
         this.addressDetails = addressDetails;
         this.suburbOptions = suburbOptions;
@@ -159,22 +160,26 @@ class GpsFormController {
      * @param {AddressDetails} addressDetails - Details related to the address to submit.
      */
     async submit(addressDetails) {
-            if (this.ourSuburbSelectedItem.id !== undefined) {
-                addressDetails.our_suburb = this.ourSuburbSelectedItem.id;
-            }
+        this.isLoading = true;
+
+        if (this.ourSuburbSelectedItem.id !== undefined) {
+            addressDetails.our_suburb = this.ourSuburbSelectedItem.id;
+        }
 
         if (addressDetails.our_suburb === undefined) {
-                const alert = this.$mdDialog.alert({
-                    title: 'Courier Suburb Not Mapped',
-                    textContent: 'You must pick one of our suburbs to map this address to',
-                    ok: 'OK',
-                }); // Show the alert dialog
-                await this.$mdDialog.show(alert);
+            const alert = this.$mdDialog.alert({
+                title: 'Courier Suburb Not Mapped',
+                textContent: 'You must pick one of our suburbs to map this address to',
+                ok: 'OK',
+            }); // Show the alert dialog
+            await this.$mdDialog.show(alert);
 
+            this.isLoading = false;
             return;
-            }
+        }
 
         // Pass back to function that called dialog for processing
+        this.isLoading = false;
         this.$mdDialog.hide(addressDetails);
     }
 
