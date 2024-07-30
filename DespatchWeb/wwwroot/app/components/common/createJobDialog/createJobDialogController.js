@@ -99,7 +99,6 @@ class CreateJobDialogController {
             vanOK: false,
             reprice: false,
             void: false,
-            done: false,
             charge: 0.0,
             refA: "",
             refB: "",
@@ -115,7 +114,6 @@ class CreateJobDialogController {
         this.job.vanOK = false;
         this.job.reprice = false;
         this.job.void = false;
-        this.job.done = false;
     }
 
     /**
