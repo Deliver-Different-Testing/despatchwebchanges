@@ -497,7 +497,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     }
 
     $scope.layout = layoutToUse;
-    $scope.currentLayoutName = $scope.layouts[0].name;
+    self.currentLayoutName = $scope.layouts[0].name;
 
     self.deleteLayout = (event, index) => {
         const deleteConfirm = $mdDialog.confirm()
@@ -523,11 +523,11 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     };
 
     self.loadLayout = index => {
-        $scope.currentLayoutName = $scope.layouts[index].name;
+        self.currentLayoutName = $scope.layouts[index].name;
         $scope.layout = angular.copy($scope.layouts[index].layout);
 
         // save layout as last active
-        self.setLastActiveLayoutName($scope.currentLayoutName);
+        self.setLastActiveLayoutName(self.currentLayoutName);
 
         $timeout($scope.initFilters, 1000);
     };
@@ -724,12 +724,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                 uCSData.unSplitJob($scope.currentJob.id)
                     .then(msg => {
                         if ((msg || "").length > 2) {
-                            $mdDialog.show(
-                                $mdDialog.alert()
-                                    .title('Error')
-                                    .textContent(msg)
-                                    .ok('Close')
-                            );
+                            alert(msg);
                         }
                     })
             }, () => { // No button clicked or dialog closed
@@ -802,38 +797,15 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
 
         const jobNumber = job.jobNo;
         if (job.courierData.courierID !== null) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .clickOutsideToClose(true)
-                    .title('Alert')
-                    .textContent("restore " + jobNumber + " prior to despatching to another courier")
-                    .ariaLabel('Alert Dialog')
-                    .ok('OK')
-            );
+            alert("restore " + jobNumber + " prior to despatching to another courier");
             return;
         }
-
         if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .clickOutsideToClose(true)
-                    .title('Alert')
-                    .textContent("DG job " + jobNumber + " can not be despatched to courier " + courier + " - doesn't have DGLicense.")
-                    .ariaLabel('Alert Dialog')
-                    .ok('OK')
-            );
+            alert("DG job " + jobNumber + " can not be despatched to courier " + courier + " - doesn't have DGLicense.")
             return;
         }
         if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .clickOutsideToClose(true)
-                    .title('Alert')
-                    .textContent("Courier " + courier + " doesn't have a DGLicense or license has expired.")
-                    .ariaLabel('Alert Dialog')
-                    .ok('OK')
-            );
-
+            alert("Courier " + courier + " doesn't have a DGLicense or license has expired.")
             return;
         }
 
@@ -864,13 +836,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             ],
             onSubmit: event => uCSData.validateSwapPOD($scope.gather.form.fields[0].value).then(data => {
                 if (!data) {
-                    $mdDialog.show(
-                        $mdDialog.alert()
-                            .clickOutsideToClose(true)
-                            .title('Invalid Job')
-                            .textContent('This job is invalid.')
-                            .ok('OK')
-                    ).then(_ => console.log("Alert closed."));
+                    alert('This job is invalid.')
                 } else {
                     const secondJobId = data;
                     const firstJobId = $scope.currentJob.id;
@@ -884,15 +850,6 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                         .cancel('No');
 
                     $mdDialog.show(confirm).then(() => uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(_ => {
-
-                        $mdDialog.show(
-                            $mdDialog.alert()
-                                .clickOutsideToClose(true)
-                                .title('Successful')
-                                .textContent('POD Swap Completed Successfully')
-                                .ok('OK')
-                        ).then(_ => console.log("Alert closed."));
-
                         toastrService.showSuccessToast("POD Swap Completed Successfully");
                         uCSData.reSendJobs(secondJobId);
                         uCSData.reAssignJobs(firstJobId).then(_ => uCSData.reSendJobs(firstJobId).then(_ => self.refreshData(true)));
@@ -1483,11 +1440,8 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             preserveScope: true,
             templateUrl: "app/components/CS/tpls/createEvent.html",
             parent: angular.element($document.body),
-            //targetEvent: $event,
             clickOutsideToClose: true
-
         });
-
     };
 
     $scope.eventDialogController = ($scope, $mdDialog, dataToPass) => {
@@ -1549,6 +1503,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                     if (returnData === undefined ||
                         returnData !== "OK") {
                         alert("Sorry, create event failed");
+
                         angular.element(".wait").css("display", "block");
                         $scope.cancel();
                     } else {
@@ -1565,7 +1520,6 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                 });
         }
     };
-
 
     $scope.addEventNote = (eventId, type, options) => {
         $scope.gather.form = {
@@ -1588,14 +1542,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                         const ci = $scope.jobList.findIndex(obj => obj.bulkEventID === data.bulkEvent.bulkEventID);
                         $scope.jobList[ci] = data.bulkEvent;
                     } else {
-                        $mdDialog.show(
-                            $mdDialog.alert()
-                                .clickOutsideToClose(true)
-                                .title('Response')
-                                .textContent(data.response)
-                                .ariaLabel('Alert Dialog')
-                                .ok('OK')
-                        );
+                        alert(data.response);
                     }
                 }),
             submitValue: "Add Note"
