@@ -643,6 +643,14 @@ class JobDetailService {
         }
     }
 
+    /**
+     * @param {{fromSuburbID: number, toSuburbID: number, size: {id: number}, speedID: number, truckStartTime: (string|null), truckHours: number, truckWeightLimit: (number|null), pedal: boolean, van: boolean, return: boolean, weight: number, true: boolean, direct: boolean, acceptedJobTypeID: number, ourRef: string, refA: string, refB: string, items: Array, booked: Date}} job
+     * @param {string} fieldName
+     * @param {string} label
+     * @param {Date} value
+     * @param {string} type
+     * @param {{id: number, label: string}|[{id: number, label: string},{id: number, label: string},{id: number, label: string}]} options
+     */
     editDetailField(job, fieldName, label, value, jobID, type, options) {
 
         if (type === "time" || type === "date") {
@@ -887,6 +895,10 @@ class JobDetailService {
             200);
     }
 
+    /**
+     * @param {*} currentJob
+     * @param {string} field
+     */
     updateGPS(event, currentJob, field) {
         // Get coordinates
         const getDeliveryLocation = currentJob => currentJob.deliveryLongitude
@@ -1339,6 +1351,15 @@ class JobDetailService {
         this.showSelectDialog(event, job, this.options.detail.size, "Size", "Size", "Select new size..");
     }
 
+    /**
+     * @param {Event} event
+     * @param job
+     * @param {[]} data
+     * @param {string} fieldName
+     * @param {string} title
+     * @param {string} placeholder
+     * @param {string} id
+     */
     showSelectDialog(event, job, data, fieldName, title, placeholder, id = "editField") {
         const options = {
             minimumInputLength: 1,
@@ -1383,6 +1404,9 @@ class JobDetailService {
         this.showSelectDialog(event, job, this.pickSpeeds, "ContactID", "Contact", "Select new contact....");
     }
 
+    /**
+     * @param {number} jobTypeID
+     */
     getJobTypeDescription(jobTypeID) {
         switch (jobTypeID || 1) {
             case 1:
@@ -1419,6 +1443,14 @@ class JobDetailService {
         this.showSelectDialog(event, job, this.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
     }
 
+    /**
+     * @param {string} url
+     * @param {string} placeholder
+     * @param {string} fieldName
+     * @param {string} title
+     * @param {{id: (string|nshowRerateOptionumber|*), text: *}} existingItem
+     * @param {boolean}
+     */
     showAutocompleteDialog(
         event,
         job,
@@ -1614,6 +1646,9 @@ class JobDetailService {
             200);
     }
 
+    /**
+     * @param {{}} pallet
+     */
     editPallet(pallet) {
         const self = this;
         self.currentPallet = pallet;
