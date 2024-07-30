@@ -271,10 +271,11 @@ class CreateJobDialogController {
             const newJobId = response.data.jobId;
 
             // Pass new jobId back to function that called dialog
-            this.isLoading = false;
             this.$mdDialog.hide(newJobId);
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
+        } finally {
+            this.isLoading = false;
         }
     }
 
