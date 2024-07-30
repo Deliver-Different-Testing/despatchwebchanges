@@ -3054,27 +3054,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             }
             search.trigger("input");
         };
-
-
     };
-
-
-    //$scope.rateJob = function (job) {
-    //    var pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
-    //    if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
-    //        //Truck Job
-    //        return NWData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
-    //            return NWData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff,
-    //                job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2)
-
-    //        });
-    //    }
-    //    else {
-    //        return NWData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID,
-    //            job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked)
-    //    }
-    //}
-
 
     $scope.createEvent = function () {
 
@@ -3150,7 +3130,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.truckLoadingStatus = function () {
-
         $scope.truckCourierStatusForm = {
             "data": $scope.truckCourierStatus[0],
             refresh: function () {
@@ -3162,12 +3141,10 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         };
 
         angular.element(".truckCourierStatusForm").show(0);
-
-
     };
 
     // Load custom layout
-    $scope.init = function () {
+    NationwideController.prototype.init = function () {
         if (Modernizr.localstorage) {
             const storedLayouts = localStorage.getItem("layoutsNW-" + ContactID);
             const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutNW-" + ContactID);
@@ -3187,10 +3164,38 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     // Call the init function when the controller loads
-    $scope.init();
+    NationwideController.prototype.init();
 
     let keyIsDown = {};
     let mouseDown = 0;
+
+    function disabledEventPropagation(e) {
+        if (e.keyCode === 68 && e.ctrlKey) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else if ($window.event) {
+                $window.event.cancelBubble = true;
+            }
+        }
+    }
+
+    function sizeHeadings(ele) {
+        angular.element("body").find(".box").each(function () {
+            const box = angular.element(this);
+            box.find(".table-headings thead tr th").each(function (index) {
+                const newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
+                angular.element(this).outerWidth(newWidth);
+            });
+            box.find(".table-headings table").width(box.find(".table").width());
+        });
+
+        const height = angular.element("#box-clearLists").find(".box-content").height() - 30;
+
+        angular.element(".clearLists-list").each(function () {
+            const newHeight = angular.element(this).data("height") * height / 100;
+            angular.element(this).height(newHeight);
+        });
+    }
 
     function overrideKeyboardEvent(e) {
         switch (e.type) {
@@ -3267,16 +3272,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         }
     }
 
-    function disabledEventPropagation(e) {
-        if (e.keyCode === 68 && e.ctrlKey) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            } else if ($window.event) {
-                $window.event.cancelBubble = true;
-            }
-        }
-    }
-
     $document.on('keydown', '.dispatchField, .lateCallField', function (event) {
         if (event.keyCode === 13) {
             angular.element(this).parents(".clickable-row").addClass("doing");
@@ -3292,15 +3287,15 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     });
 
 
-    $document.ready(function () {
-        const favicon = angular.element("favicon");
+    $document.on('ready', function () {
+        const favicon = $document.getElementById("favicon");
         favicon.setAttribute("href", "/Nationwide.ico");
         let isDown = false;   // Tracks status of mouse button
 
-        $document.mousedown(function () {
+        $document.on('mousedown', function () {
             isDown = true;      // When mouse goes down, set isDown to true
         })
-            .mouseup(function () {
+            .on('mouseup', function () {
                 isDown = false;    // When mouse goes up, set isDown to false
             });
 
@@ -3409,44 +3404,28 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         }
     });
 
-    function sizeHeadings(ele) {
-        angular.element("body").find(".box").each(function () {
-            const box = angular.element(this);
-            box.find(".table-headings thead tr th").each(function (index) {
-                const newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
-                angular.element(this).outerWidth(newWidth);
-            });
-            box.find(".table-headings table").width(box.find(".table").width());
-        });
-
-        const height = angular.element("#box-clearLists").find(".box-content").height() - 30;
-
-        angular.element(".clearLists-list").each(function () {
-            const newHeight = angular.element(this).data("height") * height / 100;
-            angular.element(this).height(newHeight);
-        });
-    }
 
     $document.onkeydown = overrideKeyboardEvent;
     $document.onkeyup = overrideKeyboardEvent;
 }
 
 angular
-    .module("uDispatch").controller("NationwideControl", ["$scope",
-    'JobDetailService',
-    "NWData",
-    "$state",
-    "$filter",
-    "$parse",
-    "hotkeys",
-    "NgMap",
-    "$q",
-    "$timeout",
-    "greetingService",
-    "$mdDialog",
-    "$document",
-    "$window",
-    NationwideController]);
+    .module("uDispatch").controller("NationwideControl",
+    ["$scope",
+        'JobDetailService',
+        "NWData",
+        "$state",
+        "$filter",
+        "$parse",
+        "hotkeys",
+        "NgMap",
+        "$q",
+        "$timeout",
+        "greetingService",
+        "$mdDialog",
+        "$document",
+        "$window",
+        NationwideController]);
 
 
 function Deg2Rad(deg) {
