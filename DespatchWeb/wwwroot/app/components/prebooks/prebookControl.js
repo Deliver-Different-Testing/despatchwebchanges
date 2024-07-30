@@ -463,9 +463,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams,
 
         var closestIndex = closestLocation(lat, lng, toCompare);
 
-        var closestJob = $scope.runBuilder[closestIndex[0]];
-
-        return closestJob;
+        return $scope.runBuilder[closestIndex[0]];
 
     };
 
@@ -683,7 +681,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams,
             });
         });
 
-        var suburbOptions = {
+        const suburbOptions = {
             minimumInputLength: 1,
             data: $scope.jdSvc.pickSuburbs
         };
@@ -752,7 +750,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams,
 
     let keyIsDown = {};
 
-    const sizeHeadings = ele => {
+    function sizeHeadings(ele) {
         const sizeHeadingsForSelector = selector => {
             angular.element("body").find(".box").each(function () {
                 const box = angular.element(this);
@@ -818,19 +816,18 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams,
     });
 
     $document.ready(function () {
-        const favicon = angular.element("favicon");
+        const favicon = document.getElementById("favicon");
         favicon.setAttribute("href", "/Prebook.ico");
         let isDown = false;   // Tracks status of mouse button
 
-        $document.mousedown(function () {
+        $document.on('mousedown', function () {
             isDown = true;      // When mouse goes down, set isDown to true
         })
-            .mouseup(function () {
+            .on('mouseup', function () {
                 isDown = false;    // When mouse goes up, set isDown to false
             });
 
         let isOnRow = false;
-
         $document.on("mouseenter", ".activeTable .clickable-row", function (event) {
             if (event.ctrlKey) {
                 if (isDown) {        // Only change css if mouse is down
@@ -859,9 +856,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams,
 
 
     let mouseDown = 0;
-
     $document.on('mousedown', '.clickable-row', function (event) {
-
         let jobNo;
         let group;
         if (angular.element(".activeTable .clickable-row.active").length > 1) {
@@ -869,7 +864,6 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams,
         } else {
             jobNo = angular.element(this).attr("data-jobno");
         }
-
 
         if (mouseDown === 0) {
             mouseDown = 1;

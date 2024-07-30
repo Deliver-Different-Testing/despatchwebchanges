@@ -3288,7 +3288,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
 
     $document.on('ready', function () {
-        const favicon = $document.getElementById("favicon");
+        const favicon = document.getElementById("favicon");
         favicon.setAttribute("href", "/Nationwide.ico");
         let isDown = false;   // Tracks status of mouse button
 

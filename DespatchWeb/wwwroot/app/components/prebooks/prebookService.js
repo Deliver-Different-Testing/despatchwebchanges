@@ -6,7 +6,7 @@ class PrebookData {
     }
 
     async getPreBookJobs() {
-        let response = await $http.get('/Job/PreBookJobs');
+        let response = await this.$http.get('/Job/PreBookJobs');
         return response.data;
     }
 
@@ -14,7 +14,7 @@ class PrebookData {
      * @param {number} jobId
      */
     async sendPrebookJob(jobId) {
-        let response = await $http.post('/Job/SendPrebookJob?jobId=' + jobId);
+        let response = await this.$http.post('/Job/SendPrebookJob?jobId=' + jobId);
         return response.data;
     }
 
@@ -24,7 +24,7 @@ class PrebookData {
      * @param {number} staffId
      */
     async voidPrebookJob(jobId, despatcherName, staffId) {
-        let response = await $http.post('/Job/VoidPrebookJob?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId);
+        let response = await this.$http.post('/Job/VoidPrebookJob?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId);
         return response.data;
     }
 
@@ -32,7 +32,7 @@ class PrebookData {
      * @param {number} preBookJobId
      */
     async getJobDetail(preBookJobId) {
-        let response = await $http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
+        let response = await this.$http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
         return response.data;
     }
 
@@ -40,7 +40,7 @@ class PrebookData {
      * @param {number} bulkJobId
      */
     async getBulkJobPhoto(bulkJobId) {
-        let response = await $http.get('/CS/GetBulkJobPhoto?bulkJobId=' + bulkJobId);
+        let response = await this.$http.get('/CS/GetBulkJobPhoto?bulkJobId=' + bulkJobId);
         return response.data;
     }
 }
