@@ -49,15 +49,15 @@ public class JobCreateViewModel
 
     [JsonProperty("fromSuburb")] public int FromSuburb { get; set; }
 
-    [JsonProperty("fromLat")] public double FromLat { get; set; }
+    [JsonProperty("fromLat")] public decimal FromLat { get; set; }
 
-    [JsonProperty("fromLong")] public double FromLong { get; set; }
+    [JsonProperty("fromLong")] public decimal FromLong { get; set; }
 
     [JsonProperty("toSuburb")] public int ToSuburb { get; set; }
 
-    [JsonProperty("toLat")] public double ToLat { get; set; }
+    [JsonProperty("toLat")] public decimal ToLat { get; set; }
 
-    [JsonProperty("toLong")] public double ToLong { get; set; }
+    [JsonProperty("toLong")] public decimal ToLong { get; set; }
 
     [JsonProperty("speedId")] public int SpeedId { get; set; }
 }

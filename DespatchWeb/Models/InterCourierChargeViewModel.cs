@@ -12,7 +12,7 @@ public class InterCourierChargeViewModel
 
     [JsonProperty("zones")] public int Zones { get; set; }
 
-    [JsonProperty("amount")] public double Amount { get; set; }
+    [JsonProperty("amount")] public decimal Amount { get; set; }
 
     [JsonProperty("staffId")] public int StaffId { get; set; }
 }

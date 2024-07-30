@@ -2499,11 +2499,11 @@ public class JobRepository : IJobRepository
         await _context.Procedures.DESWEB_stpQuickCreateJobAsync(
             ClientId: job.ClientId,
             FromAddress: job.FromAddress,
-            FromLat: Convert.ToDecimal(job.FromLat),
-            FromLong: Convert.ToDecimal(job.FromLong),
+            FromLat: job.FromLat,
+            FromLong: job.FromLong,
             ToAddress: job.ToAddress,
-            ToLat: Convert.ToDecimal(job.ToLat),
-            ToLong: Convert.ToDecimal(job.ToLong),
+            ToLat: job.ToLat,
+            ToLong: job.ToLong,
             PickupFromContact: job.FromContactName,
             JobDate: job.Date,
             Void: job.Void,
@@ -2514,7 +2514,6 @@ public class JobRepository : IJobRepository
             VanOk: job.VanOk,
             Reprice: job.Reprice,
             Amount: job.Charge,
-            JobTypeId: 1,
             SpeedId: job.SpeedId,
             ToSuburbId: job.ToSuburb,
             FromSuburbId: job.FromSuburb,
@@ -2532,11 +2531,11 @@ public class JobRepository : IJobRepository
         var returnValue = new OutputParameter<int>();
 
         await _context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
-            viewModel.FromCourierId,
-            viewModel.ToCourierId,
-            Convert.ToDecimal(viewModel.Amount),
-            viewModel.Reference,
-            viewModel.StaffId,
-            returnValue);
+            fromCourierId: viewModel.FromCourierId,
+            toCourierId: viewModel.ToCourierId,
+            Amount: viewModel.Amount,
+            Reference: viewModel.Reference,
+            StaffId: viewModel.StaffId,
+            returnValue: returnValue);
     }
 }
