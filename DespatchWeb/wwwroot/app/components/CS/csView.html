@@ -26,7 +26,7 @@
                     </md-button>
                     <md-menu-content width="2">
                         <md-menu-item>
-                            <md-button ng-click="saveLayout($event)">
+                            <md-button ng-click="ctrl.saveLayout($event)">
                                 <md-icon md-font-set="material-symbols-outlined">save</md-icon>
                                 Save Layout
                             </md-button>
@@ -34,33 +34,32 @@
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
                                 <md-icon md-font-set="material-symbols-outlined"
-                                         ng-click="deleteLayout($event, $index)">
+                                         ng-click="ctrl.deleteLayout($event, $index)">
                                     delete
                                 </md-icon>
-                                <span ng-click="loadLayout($index)"
+                                <span ng-click="ctrl.loadLayout($index)"
                                       ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
                             </md-button>
                         </md-menu-item>
                     </md-menu-content>
                 </md-menu>
             </div>
-
         </div>
     </div>
 
 
     <div class="">
-
         <div class="columns">
 
-            <div class="column" id="co-{{column.id}}" ng-repeat="column in layout.columns" r-directions="['right']"
+            <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in layout.columns"
+                 r-directions="['right']"
                  r-flex="true" resizable style="flex-basis: {{column.width}}">
                 <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
-                    <div class="box" id="box-{{box.name}}" ng-repeat="box in column.boxes" r-directions="['bottom']"
+                    <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
+                         r-directions="['bottom']"
                          r-flex="true" resizable style="flex-basis: {{box.height}}">
 
-
-                    <div class="box-bar">
+                        <div class="box-bar">
                             <div class="box-bar-title"
                                  ng-class="{'related':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}">
                                 {{boxes[box.name].title}}
@@ -79,7 +78,7 @@
                                 <div class="results" ng-show="searchBox">
                                     <ul>
                                         <li class="result"
-                                            ng-mousedown="selectEvent(event)"
+                                            ng-mousedown="selectEvent($event)"
                                             ng-repeat="event in filteredEvents = ( allEvents | filter: searchBox) | limitTo:10">
                                             {{event.jobNumber}}<br/> <small
                                                 class="address">{{event.courierName}} {{event.courierCode}}</small></li>
@@ -91,34 +90,34 @@
 
                                 <div class="box-details" ng-show="box.name == 'eventList'">
                                     <label class="checkbox-inline">
-                                        <input ng-change="refreshData(true)" ng-model="followupClient.includeClosed"
+                                        <input ng-change="this.refreshData(true)"
+                                               ng-model="followupClient.includeClosed"
                                                type="checkbox" value="All">
                                         Include Closed?
                                     </label>
                                     <label class="checkbox-inline" ng-show="isAdmin">
-                                        <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                        <input ng-change="this.refreshData(true)" ng-model="followupClient.name"
+                                               type="radio"
                                                value="All">
                                         All
                                     </label>
                                     <label class="checkbox-inline" ng-show="isAdmin">
-                                        <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                        <input ng-change="this.refreshData(true)" ng-model="followupClient.name"
+                                               type="radio"
                                                value="UCL">
                                         UCL
                                     </label>
                                     <label class="checkbox-inline" ng-show="isAdmin">
-                                        <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                        <input ng-change="this.refreshData(true)" ng-model="followupClient.name"
+                                               type="radio"
                                                value="Client">
                                         Client
                                     </label>
 
-
-                                    <!--<span>{{currentDate | date : "dd/MM/yyyy"}}</span>-->
                                     <div aria-label="Basic example" class="btn-group" role="group">
                                         F
                                         <!--<button type="button" class="btn btn-sm btn-secondary" title="Choose Date" ng-click="chooseDate()"><i class="fa fa-calendar-alt"></i></button>-->
                                     </div>
-
-
                                 </div>
 
 
@@ -130,7 +129,7 @@
 
                                 <div class="box-details" ng-show="box.name == 'jobDetail'">
                                     <input class="pod-DispatchField" id="pod-DispatchField"
-                                           ng-keydown="$event.keyCode === 13 && dispatchJobs(dispatchCourier, currentJob)"
+                                           ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(dispatchCourier, currentJob)"
                                            title="Dispatch to Courier Code"
                                            ng-model="dispatchCourier"
                                            ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier == null"
@@ -163,25 +162,25 @@
                                                 type="button"><i class="fa fa-exchange"></i></button>
                                     </div>
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="sendPOD()"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.sendPOD()"
                                                 ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook"
                                                 title="Email Photo POD"
                                                 type="button"><i class="fa fa-mail-forward"></i></button>
                                     </div>
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="unlockJob()"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.unlockJob()"
                                                 ng-show="currentJob && !currentJob.preBook && (currentJob.locked && !currentJob.invoiced)"
                                                 title="Unlock Job"
                                                 type="button"><i class="fa fa-lock"></i></button>
                                     </div>
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="lockJob()"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.lockJob()"
                                                 ng-show="currentJob && !currentJob.preBook && !currentJob.bulkJob && (!currentJob.locked && !currentJob.invoiced)"
                                                 title="Lock Job"
                                                 type="button"><i class="fa fa-unlock"></i></button>
                                     </div>
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="unSplitJob()"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.unSplitJob()"
                                                 ng-show="currentJob && !currentJob.preBook && (!currentJob.locked && currentJob.jobRelationshipTypeID ==8)"
                                                 title="UnSplit Job"
                                                 type="button"><i class="fa fa-recycle"></i></button>
@@ -194,7 +193,7 @@
 
 
                                 <div class="box-search" ng-show="boxes[box.name].showSearch"><i class="fa fa-search"
-                                                                                                ng-click="openSearch(box.name)"></i>
+                                                                                                ng-click="ctrl.openSearch(box.name)"></i>
                                     <input ng-model="box.searchBox" ng-model-options="{debounce: 300}"
                                            placeholder="Search..."
                                            type="text"></div>
