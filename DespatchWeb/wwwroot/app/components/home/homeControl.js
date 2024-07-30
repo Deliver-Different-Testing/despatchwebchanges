@@ -6,8 +6,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     HomeController.prototype.jdSvc = jdSvc;
 
     HomeController.prototype.courierSearchText = "";
-    HomeController.prototype.selectedCourier = null;
-
 
     HomeController.prototype.greetUser = () => {
         return greetingService.greetUser(FirstName);

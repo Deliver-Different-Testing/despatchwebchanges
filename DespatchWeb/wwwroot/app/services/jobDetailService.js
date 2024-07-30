@@ -1451,7 +1451,7 @@ class JobDetailService {
      * @param {string} fieldName
      * @param {string} title
      * @param {string} id
-     * @param {{id: (string|number|*), text: *}} existingItem
+     * @param {null} existingItem
      * @param {boolean} showRerateOption
      */
     showAutocompleteDialog(

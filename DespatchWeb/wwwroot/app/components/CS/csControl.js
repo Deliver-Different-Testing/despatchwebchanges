@@ -120,14 +120,14 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                 staffId: ContactID,
             },
         }).then(() => {
-            console.log("Intercourier Charge Added!")
-        }).then(() => "Intercourier Charge Canceled!");
+            console.log("Inter-courier Charge Added!")
+        }).then(() => "Inter-courier Charge Canceled!");
     }
 
     $scope.gather = {
         submit() {
             angular.element(".gatherForm").css("display", "none");
-            $scope.gather.form.onSubmit().then(response => {
+            $scope.gather.form.onSubmit().then(() => {
                 if ($scope.currentJob) {
                     $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
                 }
