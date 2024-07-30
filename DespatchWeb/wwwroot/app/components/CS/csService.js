@@ -41,7 +41,7 @@ class CSData {
     /**
      * @param {object} params
      */
-    getPodJobs = async function (params) {
+    async getPodJobs(params) {
         const {courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize} = params;
         const response = await this.$http.get('/Job/PODSearch?courierId='
             + courierId + '&clientId=' + clientId
