@@ -85,9 +85,10 @@
     <md-dialog-actions layout="row" layout-align="center center">
         <md-progress-circular md-mode="indeterminate" ng-if="ctrl.isLoading"></md-progress-circular>
 
-        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.data)">
-            <md-icon md-font-set="material-symbols-outlined">add</md-icon>
-            Add
+        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.job)">
+            <md-progress-circular md-mode="indeterminate" ng-if="ctrl.isLoading"></md-progress-circular>
+            <md-icon md-font-set="material-symbols-outlined" ng-if="!ctrl.isLoading">add</md-icon>
+            <span ng-if="!ctrl.isLoading">Create</span>
         </md-button>
     </md-dialog-actions>
 </md-dialog>
