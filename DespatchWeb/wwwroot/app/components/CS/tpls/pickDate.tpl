@@ -48,6 +48,7 @@
                     md-search-text="ctrl.clientSearchText"
                     md-selected-item="ctrl.selectedClient"
                     md-selected-item-change="ctrl.selectedClientChange(ctrl.selectedClient)"
+                    md-autoselect
                     placeholder="Start typing to enter new client...">
                 <md-item-template>
                     <span md-highlight-flags="^i" md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
@@ -69,6 +70,7 @@
                     md-min-length="3"
                     placeholder="Start typing to enter new courier..."
                     input-aria-labelledby="courierLabel"
+                    md-autoselect
                     md-clear-button="true">
                 <md-item-template>
                     <span md-highlight-flags="^i" md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>

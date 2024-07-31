@@ -30,6 +30,7 @@
                             md-search-text="ctrl.searchClientText"
                             md-selected-item="ctrl.selectedClient"
                             placeholder="Start typing to search clients"
+                            md-autoselect
                             required>
                         <md-item-template>
                                 <span md-highlight-flags="^i"
@@ -56,6 +57,7 @@
                             md-no-asterisk
                             md-search-text="ctrl.courierSearchText"
                             md-selected-item="ctrl.selectedCourier"
+                            md-autoselect
                             placeholder="Start typing to search couriers">
                         <md-item-template>
                             <span md-highlight-flags="^i"
@@ -85,6 +87,7 @@
                             md-search-text="ctrl.fromAddressSearchText"
                             md-selected-item-change="ctrl.addressSearchItemSelected(item, false)"
                             placeholder="Start typing to search clients"
+                            md-autoselect
                             required>
                         <md-item-template>
                             <span md-highlight-flags="^i"
@@ -112,6 +115,7 @@
                             md-no-asterisk
                             md-search-text="ctrl.toAddressSearchText"
                             md-selected-item-change="ctrl.addressSearchItemSelected(item, true)"
+                            md-autoselect
                             placeholder="Start typing to search clients" required>
                         <md-item-template>
                             <span md-highlight-flags="^i"
@@ -208,7 +212,8 @@
 
     <md-dialog-actions layout="row" layout-align="center center">
         <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.job)">
-            <md-progress-circular md-mode="indeterminate" ng-if="ctrl.isLoading"></md-progress-circular>
+            <md-progress-circular class="md-accent" md-mode="indeterminate"
+                                  ng-if="ctrl.isLoading"></md-progress-circular>
             <md-icon md-font-set="material-symbols-outlined" ng-if="!ctrl.isLoading">add</md-icon>
             <span ng-if="!ctrl.isLoading">Create</span>
         </md-button>

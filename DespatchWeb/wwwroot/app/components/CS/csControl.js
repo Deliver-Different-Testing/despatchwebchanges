@@ -731,7 +731,8 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     };
 
     self.restoreJob = job => {
-        angular.element("#box-jobDetail").find(".loading").css('display', 'block');
+        loadingService.showLoader();
+
         const callData = {
             "call": "restoreJobs",
             "jobs": [],
@@ -929,6 +930,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
     };
 
     self.refreshData = () => {
+
         const $jobList = angular.element("#jobList");
         let goTop = $jobList.offset().top;
         const $parentDiv = $jobList.parents(".box-content");
@@ -1080,7 +1082,7 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
         console.log("select Job  " + id);
         clearTimeout($scope.myTimer);
 
-        angular.element("#box-jobDetail").find(".loading").css('display', 'block');
+        loadingService.showLoader();
 
         uCSData.getJobDetail(id).then(data => {
             $scope.currentJob = data;
@@ -1098,7 +1100,6 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                 });
             }
 
-            angular.element("#box-scanList").find(".loading").css('display', 'block');
             uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(data => {
                 $scope.scanList = data;
 
@@ -1109,12 +1110,10 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
             });
 
             if ($scope.currentJob.courier && $scope.currentJob.completedTime) {
-                angular.element("#box-map").find(".loading").css('display', 'block');
                 uCSData.getCourierRoute($scope.currentJob.courier, moment($scope.currentJob.completedTime).subtract(5, 'm'), moment($scope.currentJob.completedTime).add(5, 'm')).then(data => {
                     let i;
                     let flightPathCoordinates = [];
 
-                    angular.element("#box-map").find(".loading").css('display', 'none');
                     if (data.length === 0) {
                         return;
                     }
@@ -1163,6 +1162,8 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                     map.addFlightPath(flightPathPoly);
                 });
             }
+
+            loadingService.closeLoader();
         });
     };
 
@@ -1380,12 +1381,11 @@ function CSController($document, $filter, $location, $mdDialog, $parse, $q, $sco
                             }
                         ],
                         onSubmit: () => {
-                            angular.element("#box-jobList").find(".loading").css("display", "block");
-                            angular.element("#box-map").find(".loading").css('display', 'block');
-
+                            loadingService.showLoader();
                             const userName = angular.element("#gather-editName").val();
 
                             uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(() => self.refreshData());
+                            loadingService.closeLoader();
                         },
                         submitValue: "Close Event"
                     };
