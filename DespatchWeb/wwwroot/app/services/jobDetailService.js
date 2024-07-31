@@ -648,6 +648,7 @@ class JobDetailService {
      * @param {string} fieldName
      * @param {string} label
      * @param {Date} value
+     * @param {number} jobID
      * @param {string} type
      * @param {{id: number, label: string}|[{id: number, label: string},{id: number, label: string},{id: number, label: string}]} options
      */
@@ -896,6 +897,7 @@ class JobDetailService {
     }
 
     /**
+     * @param {Event} event
      * @param {*} currentJob
      * @param {string} field
      */
