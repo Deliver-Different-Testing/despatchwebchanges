@@ -3,65 +3,68 @@
         <img class="logo" src="/images/menu-urgent.png"/>
 
         <div class="btn-group" id="status-group" role="group">
-            <button class="btn new btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'new'})"
+            <button class="btn new btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'status':'new'})"
                     type="button">
                 New
             </button>
-            <button class="btn nda btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'nda'})"
+            <button class="btn nda btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'status':'nda'})"
                     type="button">
                 NDA
             </button>
-            <button class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})"
+            <button class="btn active btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'status':'active'})"
                     type="button">Active
             </button>
-            <button class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})"
+            <button class="btn done btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'status':'done'})"
                     type="button">
                 Done
             </button>
-            <button class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})"
+            <button class="btn all btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'status':'all'})"
                     type="button">
                 All
             </button>
         </div>
 
         <div aria-label="Basic example" class="btn-group" id="area-group" ng-show="isInternal" role="group">
-            <button class="btn city btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'city'})"
+            <button class="btn city btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'city'})"
                     type="button">
                 City
             </button>
-            <button class="btn truck btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'truck'})"
+            <button class="btn truck btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'truck'})"
                     type="button">
                 Truck
             </button>
-            <button class="btn main1 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main1'})"
+            <button class="btn main1 btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'main1'})"
                     type="button">
                 Main1
             </button>
-            <button class="btn main2 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main2'})"
+            <button class="btn main2 btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'main2'})"
                     type="button">
                 Main2
             </button>
-            <button class="btn central btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'central'})"
+            <button class="btn central btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'central'})"
                     type="button">Central
             </button>
-            <button class="btn shore btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'shore'})"
+            <button class="btn shore btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'shore'})"
                     type="button">
                 Shore
             </button>
-            <button class="btn west btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'west'})"
+            <button class="btn west btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'west'})"
                     type="button">
                 West
             </button>
-            <button class="btn remoteouter btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'remote outer'})"
+            <button class="btn remoteouter btn-sm btn-secondary"
+                    ng-click="ctrl.setFiltersFromTopBar({'area':'remote outer'})"
                     type="button">Remote Outer
             </button>
-            <button class="btn remotecity btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'remote city'})"
+            <button class="btn remotecity btn-sm btn-secondary"
+                    ng-click="ctrl.setFiltersFromTopBar({'area':'remote city'})"
                     type="button">Remote City
             </button>
-            <button class="btn remotecentral btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'remote central'})"
+            <button class="btn remotecentral btn-sm btn-secondary"
+                    ng-click="ctrl.setFiltersFromTopBar({'area':'remote central'})"
                     type="button">Remote Central
             </button>
-            <button class="btn regional btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'regional'})"
+            <button class="btn regional btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'regional'})"
                     type="button">Regional
             </button>
 
@@ -77,7 +80,7 @@
         </div>
 
         <div class="btn-group box-search chat" ng-show="showChat">
-            <i class="material-symbols-outlined small-icon" ng-click="openChat()">search</i>
+            <i class="material-symbols-outlined small-icon" ng-click="ctrl.openChat()">search</i>
             <i class="material-symbols-outlined small-icon" ng-click="chatBox = ''" title="Clear"></i>
             <input ng-model="chatBox" ng-model-options="{debounce: 300}" placeholder="Chat to..." type="text">
         </div>
@@ -110,7 +113,7 @@
                             </md-button>
                         </md-menu-item>
                         <md-menu-divider></md-menu-divider>
-                        <md-menu-item ng-repeat="lo in layouts track by $index">
+                        <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
                             <md-button>
                                 <md-icon md-font-set="material-symbols-outlined"
                                          ng-click="ctrl.deleteLayout($event, $index)">
@@ -137,7 +140,7 @@
                          r-flex="true" resizable style="flex-basis: {{box.height}}">
                         <div class="box-bar">
                             <div class="box-bar-title"
-                                 ng-class="{'related':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}">
+                                 ng-class="{'related':box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 4}">
                                 {{boxes[box.name].title}}
 
                                 <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
@@ -145,10 +148,10 @@
                                 <span ng-show="box.name == 'supports'"> ({{supportChannel}})</span>
                                 <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
                                 <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
-                                <span ng-repeat="jo in currentJob.relatedJobs"
-                                      ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1">&nbsp;<span
+                                <span ng-repeat="jo in ctrl.currentJob.relatedJobs"
+                                      ng-show="box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 1">&nbsp;<span
                                         ng-click="loadRelatedJobDetail(jo.id, jo.label)"
-                                        ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
+                                        ng-style="ctrl.currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
                                         style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
                             </div>
 
@@ -189,7 +192,7 @@
                                 <div class="box-details" ng-if="currentJob" ng-show="boxes[box.name].showDetailButtons">
                                     <div aria-label="Basic example" class="btn-group" role="group">
                                         <button class="btn btn-sm btn-secondary"
-                                                ng-click="ctrl.otherEventForm(currentJob.jobNo)" title="Add Event"
+                                                ng-click="ctrl.otherEventForm(ctrl.currentJob.jobNo)" title="Add Event"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">edit_calendar</i>
                                         </button>
@@ -200,26 +203,26 @@
                                             <i class="material-symbols-outlined small-icon">event_available</i>
                                         </button>
                                         <button class="btn btn-sm btn-secondary" ng-click="ctrl.unlockJob(currentJob)"
-                                                ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)"
+                                                ng-show="currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
                                                 title="Unlock Job"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">lock_open</i>
                                         </button>
                                         <button class="btn btn-sm btn-secondary" ng-click="ctrl.lockJob(currentJob)"
-                                                ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)"
+                                                ng-show="currentJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
                                                 title="Lock Job"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">lock</i>
                                         </button>
                                         <button class="btn btn-sm btn-secondary"
                                                 ng-click="ctrl.splitJob($event, currentJob)"
-                                                ng-show="currentJob && (currentJob.allowSplit)"
+                                                ng-show="currentJob && (ctrl.currentJob.allowSplit)"
                                                 title="Split Job"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">shuffle</i>
                                         </button>
                                         <button class="btn btn-sm btn-secondary" ng-click="ctrl.swapPOD()"
-                                                ng-show="currentJob && currentJob.done && !currentJob.bulkJob && !currentJob.preBook"
+                                                ng-show="currentJob && ctrl.currentJob.done && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
                                                 title="Swap POD"
                                                 type="button">
                                             <i class="fa fa-exchange"></i>
@@ -300,7 +303,7 @@
                             </div>
                         </div>
                         <div class="box-content"
-                             ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}"
+                             ng-class="{'related-content':box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 4}"
                              ng-include="boxes[box.name].tpl"></div>
                     </div>
                 </div>
