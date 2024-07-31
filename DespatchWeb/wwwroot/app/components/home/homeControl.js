@@ -216,11 +216,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             "tpl": "app/components/home/tpls/potentialCouriers.tpl?v=1.0",
             "showSearch": 1
         },
-        //"jobGroups": {
-        //	"title": "Grouped Jobs",
-        //	"tpl": "app/components/home/tpls/jobGroups.tpl",
-        //	"showSearch": 1
-        //},
         "currentWork": {
             "title": "Current Work",
             "tpl": "app/components/home/tpls/currentWork.tpl?v=1.27",
@@ -346,15 +341,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         "id": "col2",
                         "width": "300px",
                         "boxes": [
-                            //{
-                            //    "name": "jobGroups",
-                            //    "height": "400px"
-                            //},
-                            //{
-                            //    "name": "potentialCouriers",
-                            //    "height": "200px"
-                            //},
-
                             {
                                 "name": "currentWork",
                                 "height": "300px"
@@ -415,6 +401,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     $scope.layout = angular.copy(self.layouts[0].layout);
 
+    /**
+     * @param {Event} event
+     * @param {Number} index
+     */
     self.deleteLayout = (event, index) => {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
@@ -434,13 +424,19 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     }
 
+    /**
+     * @param {string} layoutName
+     */
     self.setLastActiveLayoutName = layoutName => {
         if (Modernizr.localstorage) {
             localStorage.setItem("lastActiveLayout-" + ContactID, layoutName);
         }
     };
 
-    self.loadLayout = index => {
+    /**
+     * @param {number} index
+     */
+    self.loadLayout = (index) => {
         self.currentLayoutName = self.layouts[index].name;
         $scope.layout = angular.copy(self.layouts[index].layout);
 
@@ -585,7 +581,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     };
 
-    self.openSearch = boxID => {
+    /**
+     * @param {string} boxID
+     */
+    self.openSearch = (boxID) => {
         const box = angular.element("#box-" + boxID);
         const boxSearch = box.find(".box-search");
 
@@ -694,6 +693,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return jdSvc.lockJob(currentJob);
     };
 
+    /**
+     * @param {number} id
+     * @param {Event} event
+     * @param {string} area
+     */
     $scope.selectClearList = (id, event, area) => {
         let areaGroupButtons = angular.element("#area-group .btn");
         areaGroupButtons.removeClass("topBarActive");
