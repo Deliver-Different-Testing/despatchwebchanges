@@ -3385,7 +3385,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                             angular.element(this).addClass('active');
                         }
 
-                        setTimeout(() => {
+                        $timeout(() => {
                             if (mouseDown === 1) {
                                 const $draggingItems = angular.element("#draggingItems")
                                 $draggingItems.show();
