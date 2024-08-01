@@ -93,7 +93,7 @@
                 <div class="notes field">
                     <label>Notes</label>
                     <md-button class="md-fab md-raised md-mini" style="float: right;"
-                               ng-click="ctrl.jdSvc.editDetailField(ctrl.currentJob, 'Notes','Note','',ctrl.currentJob.id, 'textarea')">
+                               ng-click="ctrl.jdSvc.showNotesDialog($event, ctrl.currentJob, 'Notes','Note')">
                         <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
                         <md-tooltip md-direction="bottom">Add New Note</md-tooltip>
                     </md-button>

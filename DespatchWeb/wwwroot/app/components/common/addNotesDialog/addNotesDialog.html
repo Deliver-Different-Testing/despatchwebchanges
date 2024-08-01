@@ -1,0 +1,28 @@
+<md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <form ng-submit="ctrl.submit(ctrl.note)">
+                <h2 class="md-title">Edit {{ ctrl.title }}</h2>
+
+                <!-- Text Area -->
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label for="notes">{{ ctrl.title }}</label>
+                    <textarea id="notes" md-maxlength="150" md-min-length="1" md-select-on-focus ng-model="ctrl.note"
+                              rows="5"></textarea>
+                </md-input-container>
+
+            </form>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.note)">
+            <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
+            Save
+        </md-button>
+
+        <md-button ng-click="ctrl.cancel()">
+            Cancel
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

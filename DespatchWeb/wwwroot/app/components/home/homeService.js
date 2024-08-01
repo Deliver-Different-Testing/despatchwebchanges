@@ -20,7 +20,7 @@ class DispatchData {
     }
 
     /**
-     * @param {string} id
+     * @param {number} id
      * @param {string} note
      * @param {string} despatcherName
      * @param {boolean} preBook

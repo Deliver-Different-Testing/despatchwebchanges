@@ -733,6 +733,33 @@ class JobDetailService {
         }
     }
 
+    showNotesDialog(event, job, title, fieldName) {
+        return this.$mdDialog.show({
+            controller: AddNotesDialogController,
+            controllerAs: "ctrl",
+            templateUrl: "app/components/common/textAreaDialog/textAreaDialog.html",
+            parent: angular.element(this.$document.body),
+            targetEvent: event,
+            clickOutsideToClose: true,
+            fullscreen: true,
+            locals: {
+                id: id,
+                fieldName: fieldName,
+                title: title,
+                job: job,
+            }
+        }).then(() => console.log("Notes dialog closed!"));
+    }
+
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     * @param {string} title
+     * @param {string} placeholder
+     * @param {string} ariaLabel
+     * @param {string} initialValue
+     * @param {string} field
+     */
     editPrompt(event, job, title, placeholder, ariaLabel, initialValue, field) {
         const prompt = this.$mdDialog.prompt()
             .title(title)
@@ -799,6 +826,10 @@ class JobDetailService {
 
     editTrackingEmail(event, job) {
         this.editPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
+    }
+
+    addInternalNote(event, job) {
+        this.
     }
 
     updateField(reRate, job, callData) {
