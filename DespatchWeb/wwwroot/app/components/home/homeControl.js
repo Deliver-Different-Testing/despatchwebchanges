@@ -399,7 +399,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     }
 
-    $scope.layout = angular.copy(self.layouts[0].layout);
+    self.layout = angular.copy(self.layouts[0].layout);
 
     /**
      * @param {Event} event
@@ -438,7 +438,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      */
     self.loadLayout = (index) => {
         self.currentLayoutName = self.layouts[index].name;
-        $scope.layout = angular.copy(self.layouts[index].layout);
+        self.layout = angular.copy(self.layouts[index].layout);
 
         // save layout as last active
         self.setLastActiveLayoutName(self.currentLayoutName);
@@ -447,7 +447,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     self.saveLayout = event => {
-        angular.forEach($scope.layout.columns,
+        angular.forEach(self.layout.columns,
             (column, colKey) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
                 angular.forEach(column.boxes,
@@ -470,7 +470,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 self.layouts = self.layouts.concat(
                     {
                         name: layoutName,
-                        layout: angular.copy($scope.layout)
+                        layout: angular.copy(self.layout)
                     });
                 localStorage.setItem("layouts-" + ContactID, JSON.stringify(self.layouts));
 
@@ -774,16 +774,17 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     self.selectAndDispatchJob = (event, job) => {
-        const confirm = $mdDialog.prompt()
+        const despatchJobPrompt = $mdDialog.prompt()
             .title("Despatch To Courier")
-            .textContent('Select courier to despatch job to.')
+            .textContent('Enter the courier number to despatch job to')
+            .placeholder("Courier Number")
             .ariaLabel("courier to dispatch too")
             .targetEvent(event)
             .required(true)
             .ok("Despatch")
             .cancel('Cancel');
 
-        $mdDialog.show(confirm).then(courierNumber => {
+        $mdDialog.show(despatchJobPrompt).then(courierNumber => {
             try {
                 dispatchJobService.dispatchJob(courierNumber, job).then(() => {
                     $scope.selectJobDetail(job.id);

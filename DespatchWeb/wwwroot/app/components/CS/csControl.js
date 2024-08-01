@@ -501,7 +501,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         name: "All"
     };
 
-    var layoutToUse = angular.copy(self.layouts[0].layout);
+    const layoutToUse = angular.copy(self.layouts[0].layout);
 
     if (!$scope.isAdmin) {
         //layoutToUse.columns[0].boxes.splice(0, 1);
@@ -568,7 +568,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 self.layouts = self.layouts.concat(
                     {
                         name: layoutName,
-                        layout: angular.copy($scope.layout)
+                        layout: angular.copy(self.layout)
                     });
                 localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify(self.layouts));
 

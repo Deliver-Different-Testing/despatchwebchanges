@@ -1,522 +1,522 @@
 <div ng-cloak ng-controller="CSControl as ctrl">
 
-<div class="top-bar">
-    <img class="logo" src="/images/menu-urgent.png"/>
-    <div class="topbar-NavButtons" role="navigation">
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks</div>
-    </div>
-
-    <div class="topbar-buttons">
-
-        <div style="display: flex; align-items: center;">
-            <div class="btn topbar-button" style="color: white;">
-                <span>{{ctrl.greetUser()}}</span>
+    <div class="top-bar">
+        <img class="logo" src="/images/menu-urgent.png"/>
+        <div class="topbar-NavButtons" role="navigation">
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks
             </div>
-            <md-menu md-position-mode="target-right target">
-                <md-button aria-label="Open layout options menu"
-                           class="md-fab md-mini md-primary"
-                           ng-click="$mdMenu.open($event)">
-                    <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
-                    <md-tooltip md-direction="bottom">Layouts</md-tooltip>
-                </md-button>
-                <md-menu-content width="2">
-                    <md-menu-item>
-                        <md-button ng-click="ctrl.saveLayout($event)">
-                            <md-icon md-font-set="material-symbols-outlined">save</md-icon>
-                            Save Layout
-                        </md-button>
-                    </md-menu-item>
-                    <md-menu-divider></md-menu-divider>
-                    <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
-                        <md-button>
-                            <md-icon md-font-set="material-symbols-outlined"
-                                     ng-click="ctrl.deleteLayout($event, $index)">
-                                delete
-                            </md-icon>
-                            <span ng-click="ctrl.loadLayout($index)"
-                                  ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
-                        </md-button>
-                    </md-menu-item>
-                </md-menu-content>
-            </md-menu>
         </div>
 
+        <div class="topbar-buttons">
 
-    </div>
-</div>
-
-
-<div class="">
-
-    <div class="columns">
-
-        <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
-             r-directions="['right']"
-             r-flex="true" resizable style="flex-basis: {{column.width}}">
-            <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
-                <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
-                     r-directions="['bottom']"
-                     r-flex="true" resizable style="flex-basis: {{box.height}}">
-
-                    <div class="box-bar">
-                        <div class="box-bar-title"
-                             ng-class="{'related':box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 4}">
-                            {{boxes[box.name].title}}
-                            <span ng-show="box.name == 'scanList'">{{currentSelection}}</span>
-                            <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
-                            <span ng-show="box.name == 'jobDetail' && ctrl.currentJob.locked"> - LOCKED</span>
-                            <span ng-repeat="jo in ctrl.currentJob.relatedJobs"
-                                  ng-show="box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 1">&nbsp;<span
-                                    ng-click="loadRelatedJobDetail(jo.id, jo.label)"
-                                    ng-style="ctrl.currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
-                                    style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
-
-                        </div>
-                        <div class="searchBox" ng-show="box.name == 'eventList'">
-                            <input ng-model="searchBox" placeholder="Search Events..." type="text"/>
-                            <div class="results" ng-show="searchBox">
-                                <ul>
-                                    <li class="result"
-                                        ng-mousedown="selectEvent(event)"
-                                        ng-repeat="event in filteredEvents = ( allEvents | filter: searchBox) | limitTo:10">{{event.jobNumber}}<br/> <small
-                                            class="address">{{event.courierName}} {{event.courierCode}}</small></li>
-                                </ul>
-                                <small ng-hide="filteredEvents.length">No results</small>
-                            </div>
-                        </div>
-                        <div class="box-buttons">
-
-                            <div class="box-details" ng-show="box.name == 'eventList'">
-                                <label class="checkbox-inline">
-                                    <input ng-change="refreshData(true)" ng-model="followupClient.includeClosed"
-                                           type="checkbox" value="All">
-                                    Include Closed?
-                                </label>
-                                <label class="checkbox-inline" ng-show="isAdmin">
-                                    <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
-                                           value="All">
-                                    All
-                                </label>
-                                <label class="checkbox-inline" ng-show="isAdmin">
-                                    <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
-                                           value="UCL">
-                                    UCL
-                                </label>
-                                <label class="checkbox-inline" ng-show="isAdmin">
-                                    <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
-                                           value="Client">
-                                    Client
-                                </label>
-
-
-                                <!--<span>{{currentDate | date : "dd/MM/yyyy"}}</span>-->
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    F
-                                    <!--<button type="button" class="btn btn-sm btn-secondary" title="Choose Date" ng-click="chooseDate()"><i class="fa fa-calendar-alt"></i></button>-->
-                                </div>
-
-
-                            </div>
-
-
-                            <div class="box-details" ng-show="box.name == 'runBuilder'">
-
-
-                            </div>
-
-
-                            <div class="box-details" ng-show="box.name == 'jobDetail'">
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.selectAndDispatchJob($event, currentJob)"
-                                            ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier == null"
-                                            title="Dispatch to Courier Code"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">local_shipping</i>
-                                    </button>
-                                </div>
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="reply(currentEvent)"
-                                            ng-show="currentEvent && !currentEvent.closedDate"
-                                            title="Reply"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">reply</i>
-                                    </button>
-                                </div>
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="generateDirectLink(currentEvent)"
-                                            ng-show="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))"
-                                            title="Copy Link"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">link</i>
-                                    </button>
-                                </div>
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.restoreJob(ctrl.currentJob)"
-                                            ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier != null && !ctrl.currentJob.done"
-                                            title="Restore Job"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">undo</i>
-                                    </button>
-                                </div>
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.swapPOD($event)"
-                                            ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
-                                            title="Swap POD"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">swap_horiz</i>
-                                    </button>
-                                </div>
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.sendPOD($event)"
-                                            ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
-                                            title="Email Photo POD"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">send</i>
-                                    </button>
-                                </div>
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.unlockJob()"
-                                            ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
-                                            title="Unlock Job"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">lock</i>
-                                    </button>
-                                </div>
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.lockJob()"
-                                            ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && !ctrl.currentJob.bulkJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
-                                            title="Lock Job"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">lock_open</i>
-                                    </button>
-                                </div>
-                                <div aria-label="Basic example" class="btn-group" role="group">
-                                    <button
-                                            class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.unSplitJob()"
-                                            ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && (!ctrl.currentJob.locked && ctrl.currentJob.jobRelationshipTypeID ==8)"
-                                            title="UnSplit Job"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">undo</i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="box-details" ng-show="box.name == 'map'">
-
-                            </div>
-
-
-                            <div class="box-search" ng-show="boxes[box.name].showSearch">
-                                <i class="material-symbols-outlined small-icon"
-                                   ng-click="ctrl.openSearch(box.name)">search</i>
-                                <input ng-model="box.searchBox" ng-model-options="{debounce: 300}" placeholder="Search..."
-                                       type="text"></div>
-
-                            <div class="box-handle">
-                                <i class="material-symbols-outlined small-icon">drag_indicator</i>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div class="box-content"
-                         ng-class="{'related-content':box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 4}"
-                         ng-include="boxes[box.name].tpl"></div>
+            <div style="display: flex; align-items: center;">
+                <div class="btn topbar-button" style="color: white;">
+                    <span>{{ctrl.greetUser()}}</span>
                 </div>
-
+                <md-menu md-position-mode="target-right target">
+                    <md-button aria-label="Open layout options menu"
+                               class="md-fab md-mini md-primary"
+                               ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
+                        <md-tooltip md-direction="bottom">Layouts</md-tooltip>
+                    </md-button>
+                    <md-menu-content width="2">
+                        <md-menu-item>
+                            <md-button ng-click="ctrl.saveLayout($event)">
+                                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                                Save Layout
+                            </md-button>
+                        </md-menu-item>
+                        <md-menu-divider></md-menu-divider>
+                        <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
+                            <md-button>
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.deleteLayout($event, $index)">
+                                    delete
+                                </md-icon>
+                                <span ng-click="ctrl.loadLayout($index)"
+                                      ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                            </md-button>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
             </div>
-        </div>
 
+
+        </div>
     </div>
 
-    <ul active-icon="close"
-        effect="slidein"
-        label="Menu"
-        mfb-menu
-        position="bl"
-        resting-icon="menu"
-        template-url="ng-mfb-menu-md.tpl.html"
-        toggling-method="hover">
-        <mfb-button
-                icon="add"
-                label="Add New Job"
-                ng-click="ctrl.createNewJob($event)"
-                template-url="ng-mfb-button-md.tpl.html">
-        </mfb-button>
-        <mfb-button
-                icon="attach_money"
-                label="Inter-Courier Charge"
-                ng-click="ctrl.interCourierCharge($event)"
-                template-url="ng-mfb-button-md.tpl.html">
-        </mfb-button>
-    </ul>
-</div>
 
-<div ng-include="'app/components/home/tpls/gatherForm.tpl'"></div>
+    <div class="">
+        <div class="columns">
+            <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
+                 r-directions="['right']"
+                 r-flex="true" resizable style="flex-basis: {{column.width}}">
+                <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
+                    <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
+                         r-directions="['bottom']"
+                         r-flex="true" resizable style="flex-basis: {{box.height}}">
 
-<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
+                        <div class="box-bar">
+                            <div class="box-bar-title"
+                                 ng-class="{'related':box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 4}">
+                                {{boxes[box.name].title}}
+                                <span ng-show="box.name == 'scanList'">{{currentSelection}}</span>
+                                <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
+                                <span ng-show="box.name == 'jobDetail' && ctrl.currentJob.locked"> - LOCKED</span>
+                                <span ng-repeat="jo in ctrl.currentJob.relatedJobs"
+                                      ng-show="box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 1">&nbsp;<span
+                                        ng-click="loadRelatedJobDetail(jo.id, jo.label)"
+                                        ng-style="ctrl.currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
+                                        style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
 
+                            </div>
+                            <div class="searchBox" ng-show="box.name == 'eventList'">
+                                <input ng-model="searchBox" placeholder="Search Events..." type="text"/>
+                                <div class="results" ng-show="searchBox">
+                                    <ul>
+                                        <li class="result"
+                                            ng-mousedown="selectEvent(event)"
+                                            ng-repeat="event in filteredEvents = ( allEvents | filter: searchBox) | limitTo:10">
+                                            {{event.jobNumber}}<br/> <small
+                                                class="address">{{event.courierName}} {{event.courierCode}}</small></li>
+                                    </ul>
+                                    <small ng-hide="filteredEvents.length">No results</small>
+                                </div>
+                            </div>
+                            <div class="box-buttons">
 
-<div id='draggingItems'></div>
-
-<script>
-    document.onkeydown = overrideKeyboardEvent;
-    document.onkeyup = overrideKeyboardEvent;
-    var keyIsDown = {};
-
-
-    $(document).on('focus', '.searchBox input', function () {
-        $(".results").fadeIn(100);
-    });
-    $(document).on('blur', '.searchBox input', function () {
-        $(".results").fadeOut(100);
-    });
-
-    function overrideKeyboardEvent(e) {
-        switch (e.type) {
-            case "keydown":
-                if (!keyIsDown[e.keyCode]) {
-                    keyIsDown[e.keyCode] = true;
-                    // do key down stuff here
-                    if (e.keyCode === 82 && e.ctrlKey) {
-                        //location.reload();
-                    }
-                }
-                break;
-            case "keyup":
-                delete (keyIsDown[e.keyCode]);
-                // do key up stuff here
-                break;
-        }
-        disabledEventPropagation(e);
-        if (e.keyCode === 68 && e.ctrlKey) {
-            e.preventDefault();
-            return false;
-        }
-        if (e.keyCode === 65 && e.ctrlKey) {
-            e.preventDefault();
-            return false;
-        }
-    }
-
-    function disabledEventPropagation(e) {
-        if (e.keyCode === 68 && e.ctrlKey) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            } else if (window.event) {
-                window.event.cancelBubble = true;
-            }
-        }
-    }
+                                <div class="box-details" ng-show="box.name == 'eventList'">
+                                    <label class="checkbox-inline">
+                                        <input ng-change="refreshData(true)" ng-model="followupClient.includeClosed"
+                                               type="checkbox" value="All">
+                                        Include Closed?
+                                    </label>
+                                    <label class="checkbox-inline" ng-show="isAdmin">
+                                        <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                               value="All">
+                                        All
+                                    </label>
+                                    <label class="checkbox-inline" ng-show="isAdmin">
+                                        <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                               value="UCL">
+                                        UCL
+                                    </label>
+                                    <label class="checkbox-inline" ng-show="isAdmin">
+                                        <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                               value="Client">
+                                        Client
+                                    </label>
 
 
-    $(document).on('click', '.top-bar .btn-group .btn', function (event) {
-        $(this).parent().find('.topBarActive').removeClass('topBarActive');
-        $(this).addClass('topBarActive');
-    });
+                                    <!--<span>{{currentDate | date : "dd/MM/yyyy"}}</span>-->
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        F
+                                        <!--<button type="button" class="btn btn-sm btn-secondary" title="Choose Date" ng-click="chooseDate()"><i class="fa fa-calendar-alt"></i></button>-->
+                                    </div>
 
 
-    $(document).ready(function () {
-        const favicon = document.getElementById("favicon");
-        favicon.setAttribute("href", "/POD_favicon.ico");
-        var isDown = false;   // Tracks status of mouse button
-
-        $(document).mousedown(function () {
-            isDown = true;      // When mouse goes down, set isDown to true
-        })
-            .mouseup(function () {
-                isDown = false;    // When mouse goes up, set isDown to false
-            });
-
-        var isOnRow = false;
+                                </div>
 
 
-        $(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
+                                <div class="box-details" ng-show="box.name == 'runBuilder'">
 
-            if (event.ctrlKey) {
-                if (isDown) {        // Only change css if mouse is down
-                    $(this).addClass("active");
-                }
-            }
 
+                                </div>
+
+
+                                <div class="box-details" ng-show="box.name == 'jobDetail'">
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.selectAndDispatchJob($event, ctrl.currentJob)"
+                                                ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier == null"
+                                                title="Dispatch to Courier Code"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">local_shipping</i>
+                                        </button>
+                                    </div>
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="reply(currentEvent)"
+                                                ng-show="currentEvent && !currentEvent.closedDate"
+                                                title="Reply"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">reply</i>
+                                        </button>
+                                    </div>
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="generateDirectLink(currentEvent)"
+                                                ng-show="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))"
+                                                title="Copy Link"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">link</i>
+                                        </button>
+                                    </div>
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.restoreJob(ctrl.currentJob)"
+                                                ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier != null && !ctrl.currentJob.done"
+                                                title="Restore Job"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">undo</i>
+                                        </button>
+                                    </div>
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.swapPOD($event)"
+                                                ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
+                                                title="Swap POD"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">swap_horiz</i>
+                                        </button>
+                                    </div>
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.sendPOD($event)"
+                                                ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
+                                                title="Email Photo POD"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">send</i>
+                                        </button>
+                                    </div>
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.unlockJob()"
+                                                ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
+                                                title="Unlock Job"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">lock</i>
+                                        </button>
+                                    </div>
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.lockJob()"
+                                                ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && !ctrl.currentJob.bulkJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
+                                                title="Lock Job"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">lock_open</i>
+                                        </button>
+                                    </div>
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.unSplitJob()"
+                                                ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && (!ctrl.currentJob.locked && ctrl.currentJob.jobRelationshipTypeID ==8)"
+                                                title="UnSplit Job"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">undo</i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="box-details" ng-show="box.name == 'map'">
+
+                                </div>
+
+
+                                <div class="box-search" ng-show="boxes[box.name].showSearch">
+                                    <i class="material-symbols-outlined small-icon"
+                                       ng-click="ctrl.openSearch(box.name)">search</i>
+                                    <input ng-model="box.searchBox" ng-model-options="{debounce: 300}"
+                                           placeholder="Search..."
+                                           type="text"></div>
+
+                                <div class="box-handle">
+                                    <i class="material-symbols-outlined small-icon">drag_indicator</i>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div class="box-content"
+                             ng-class="{'related-content':box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 4}"
+                             ng-include="boxes[box.name].tpl"></div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <ul active-icon="close"
+            effect="slidein"
+            label="Menu"
+            mfb-menu
+            position="bl"
+            resting-icon="menu"
+            template-url="ng-mfb-menu-md.tpl.html"
+            toggling-method="hover">
+            <mfb-button
+                    icon="add"
+                    label="Add New Job"
+                    ng-click="ctrl.createNewJob($event)"
+                    template-url="ng-mfb-button-md.tpl.html">
+            </mfb-button>
+            <mfb-button
+                    icon="attach_money"
+                    label="Inter-Courier Charge"
+                    ng-click="ctrl.interCourierCharge($event)"
+                    template-url="ng-mfb-button-md.tpl.html">
+            </mfb-button>
+        </ul>
+    </div>
+
+    <div ng-include="'app/components/home/tpls/gatherForm.tpl'"></div>
+
+    <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
+
+
+    <div id='draggingItems'></div>
+
+    <script>
+        document.onkeydown = overrideKeyboardEvent;
+        document.onkeyup = overrideKeyboardEvent;
+        var keyIsDown = {};
+
+
+        $(document).on('focus', '.searchBox input', function () {
+            $(".results").fadeIn(100);
+        });
+        $(document).on('blur', '.searchBox input', function () {
+            $(".results").fadeOut(100);
         });
 
-        $(document).on("hover", ".activeTable .clickable-row", function (event) {
-            isOnRow = true;
-        });
-
-        $(document).on("mouseleave", ".activeTable .clickable-row", function (event) {
-            isOnRow = false;
-        });
-
-        $(document).on('click', '.box-content', function (event) {
-            event.stopPropagation();
-            if (isOnRow) {
-                $(".activeTable .active").removeClass("active");
-            }
-
-        });
-
-    });
-
-
-    var mouseDown = 0;
-
-    $(document).on('mousedown', '.clickable-row', function (event) {
-
-        if ($(".activeTable .clickable-row.active").length > 1) {
-            var jobNo = $(".activeTable .clickable-row.active").length + " Jobs";
-        } else {
-            var jobNo = $(this).attr("data-jobno");
-        }
-
-
-        if (mouseDown === 0) {
-            mouseDown = 1;
-
-            if (event.which === 1) {
-                if (event.ctrlKey) {
-                    if ($(this).hasClass("active")) {
-                        $(this).removeClass('active');
-                    } else {
-                        $(this).addClass('active');
-                    }
-                } else {
-                    if (!$(this).hasClass("active")) {
-
-                        var group = $(this).parents(".table-rows").attr("data-group");
-                        $('*[data-group="' + group + '"]').each(function () {
-                            $(this).find('.active').removeClass('active');
-                        });
-
-                        $(this).addClass('active');
-                    }
-                }
-
-                $(".activeTable").removeClass("activeTable");
-                $(this).parents(".table").addClass("activeTable");
-            }
-
-            if (!event.ctrlKey) {
-                if ($(this).hasClass("draggable-row")) {
-
-                    if (!$(this).hasClass("active")) {
-
-                        var group = $(this).parents(".table-rows").attr("data-group");
-                        $('*[data-group="' + group + '"]').each(function () {
-                            $(this).find('.active').removeClass('active');
-                        });
-                        $(this).addClass('active');
-
-                    }
-                    setTimeout(function () {
-                        if (mouseDown === 1) {
-                            $("#draggingItems").show();
-                            $("#draggingItems").html(jobNo);
-
-                            $("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
-                            $("#draggingItems").draggable();
-                            $("#draggingItems").trigger(event);
+        function overrideKeyboardEvent(e) {
+            switch (e.type) {
+                case "keydown":
+                    if (!keyIsDown[e.keyCode]) {
+                        keyIsDown[e.keyCode] = true;
+                        // do key down stuff here
+                        if (e.keyCode === 82 && e.ctrlKey) {
+                            //location.reload();
                         }
-                    }, 200);
+                    }
+                    break;
+                case "keyup":
+                    delete (keyIsDown[e.keyCode]);
+                    // do key up stuff here
+                    break;
+            }
+            disabledEventPropagation(e);
+            if (e.keyCode === 68 && e.ctrlKey) {
+                e.preventDefault();
+                return false;
+            }
+            if (e.keyCode === 65 && e.ctrlKey) {
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        function disabledEventPropagation(e) {
+            if (e.keyCode === 68 && e.ctrlKey) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                } else if (window.event) {
+                    window.event.cancelBubble = true;
                 }
             }
-
         }
 
-    });
 
-    $(document).on('mouseup', '.clickable-row', function (event) {
+        $(document).on('click', '.top-bar .btn-group .btn', function (event) {
+            $(this).parent().find('.topBarActive').removeClass('topBarActive');
+            $(this).addClass('topBarActive');
+        });
 
-        if (event.which === 3) {
 
-            $(".rightActiveTable").removeClass("rightActiveTable");
-            $(this).parents(".table").addClass("rightActiveTable");
-        }
-        if (!event.ctrlKey) {
+        $(document).ready(function () {
+            const favicon = document.getElementById("favicon");
+            favicon.setAttribute("href", "/POD_favicon.ico");
+            var isDown = false;   // Tracks status of mouse button
 
-            if ($(this).hasClass("active")) {
-            } else {
-                var group = $(this).parents(".table-rows").attr("data-group");
-
-                $('*[data-group="' + group + '"]').each(function () {
-                    $(this).find('.active').removeClass('active');
+            $(document).mousedown(function () {
+                isDown = true;      // When mouse goes down, set isDown to true
+            })
+                .mouseup(function () {
+                    isDown = false;    // When mouse goes up, set isDown to false
                 });
-                $(this).addClass('active');
+
+            var isOnRow = false;
+
+
+            $(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
+
+                if (event.ctrlKey) {
+                    if (isDown) {        // Only change css if mouse is down
+                        $(this).addClass("active");
+                    }
+                }
+
+            });
+
+            $(document).on("hover", ".activeTable .clickable-row", function (event) {
+                isOnRow = true;
+            });
+
+            $(document).on("mouseleave", ".activeTable .clickable-row", function (event) {
+                isOnRow = false;
+            });
+
+            $(document).on('click', '.box-content', function (event) {
+                event.stopPropagation();
+                if (isOnRow) {
+                    $(".activeTable .active").removeClass("active");
+                }
+
+            });
+
+        });
+
+
+        var mouseDown = 0;
+
+        $(document).on('mousedown', '.clickable-row', function (event) {
+
+            if ($(".activeTable .clickable-row.active").length > 1) {
+                var jobNo = $(".activeTable .clickable-row.active").length + " Jobs";
+            } else {
+                var jobNo = $(this).attr("data-jobno");
             }
 
-        }
 
-    });
+            if (mouseDown === 0) {
+                mouseDown = 1;
 
+                if (event.which === 1) {
+                    if (event.ctrlKey) {
+                        if ($(this).hasClass("active")) {
+                            $(this).removeClass('active');
+                        } else {
+                            $(this).addClass('active');
+                        }
+                    } else {
+                        if (!$(this).hasClass("active")) {
 
-    $(document).on('click', '.clickable-row', function (event) {
-        event.stopPropagation();
-    });
+                            var group = $(this).parents(".table-rows").attr("data-group");
+                            $('*[data-group="' + group + '"]').each(function () {
+                                $(this).find('.active').removeClass('active');
+                            });
 
+                            $(this).addClass('active');
+                        }
+                    }
 
-    $(document).on("mouseup", function (ev) {
-        $("#draggingItems").hide();
-        mouseDown = 0;
-    });
+                    $(".activeTable").removeClass("activeTable");
+                    $(this).parents(".table").addClass("activeTable");
+                }
 
-    $(document).on("keydown", function (e) {
-        var code = (e.keyCode ? e.keyCode : e.which);
-        if (code === 40) {
-            $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
-        } else if (code === 38) {
-            $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
-        }
-    });
+                if (!event.ctrlKey) {
+                    if ($(this).hasClass("draggable-row")) {
 
+                        if (!$(this).hasClass("active")) {
 
-    //var delay = 250; // delay between calls
-    //var throttled = false; // are we currently throttled?
+                            var group = $(this).parents(".table-rows").attr("data-group");
+                            $('*[data-group="' + group + '"]').each(function () {
+                                $(this).find('.active').removeClass('active');
+                            });
+                            $(this).addClass('active');
 
-    //setTimeout(function(){ sizeHeadings($("#jobList").parents(".column")); }, 100);
+                        }
+                        setTimeout(function () {
+                            if (mouseDown === 1) {
+                                $("#draggingItems").show();
+                                $("#draggingItems").html(jobNo);
 
-    function sizeHeadings(ele) {
+                                $("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
+                                $("#draggingItems").draggable();
+                                $("#draggingItems").trigger(event);
+                            }
+                        }, 200);
+                    }
+                }
 
-        $("body").find(".box").each(function () {
-            var box = $(this);
-            box.find(".table-headings thead tr th").each(function (index) {
-                var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
-                $(this).width(newWidth);
-            });
-            box.find(".table-headings table").width(box.find(".table").width());
+            }
+
         });
 
-        $("body").find(".box").each(function () {
-            var box = $(this);
-            box.find(".table-b-headings thead tr th").each(function (index) {
-                var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
-                $(this).width(newWidth);
-            });
-            box.find(".table-b-headings table").width(box.find(".table").width());
+        $(document).on('mouseup', '.clickable-row', function (event) {
+
+            if (event.which === 3) {
+
+                $(".rightActiveTable").removeClass("rightActiveTable");
+                $(this).parents(".table").addClass("rightActiveTable");
+            }
+            if (!event.ctrlKey) {
+
+                if ($(this).hasClass("active")) {
+                } else {
+                    var group = $(this).parents(".table-rows").attr("data-group");
+
+                    $('*[data-group="' + group + '"]').each(function () {
+                        $(this).find('.active').removeClass('active');
+                    });
+                    $(this).addClass('active');
+                }
+
+            }
+
         });
 
-    }
+
+        $(document).on('click', '.clickable-row', function (event) {
+            event.stopPropagation();
+        });
 
 
+        $(document).on("mouseup", function (ev) {
+            $("#draggingItems").hide();
+            mouseDown = 0;
+        });
 
-</script>
+        $(document).on("keydown", function (e) {
+            var code = (e.keyCode ? e.keyCode : e.which);
+            if (code === 40) {
+                $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+            } else if (code === 38) {
+                $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+            }
+        });
+
+
+        //var delay = 250; // delay between calls
+        //var throttled = false; // are we currently throttled?
+
+        //setTimeout(function(){ sizeHeadings($("#jobList").parents(".column")); }, 100);
+
+        function sizeHeadings(ele) {
+
+            $("body").find(".box").each(function () {
+                var box = $(this);
+                box.find(".table-headings thead tr th").each(function (index) {
+                    var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                    $(this).width(newWidth);
+                });
+                box.find(".table-headings table").width(box.find(".table").width());
+            });
+
+            $("body").find(".box").each(function () {
+                var box = $(this);
+                box.find(".table-b-headings thead tr th").each(function (index) {
+                    var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                    $(this).width(newWidth);
+                });
+                box.find(".table-b-headings table").width(box.find(".table").width());
+            });
+
+        }
+
+
+    </script>
 </div>
