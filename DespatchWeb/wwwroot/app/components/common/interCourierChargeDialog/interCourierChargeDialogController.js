@@ -58,7 +58,7 @@ class InterCourierChargeDialogController {
             throw new Error('zones must be a valid number');
         }
 
-        this.data.amount = (this.data.amount || 0) + zones * 7;
+        this.data.amount = (zones * 7);
     }
 
     /**

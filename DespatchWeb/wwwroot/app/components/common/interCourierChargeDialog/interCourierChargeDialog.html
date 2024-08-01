@@ -68,7 +68,8 @@
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="zones">Zones</label>
-                        <input id="zones" ng-change="updateAmountByZones(ctrl.data.zones)" ng-model="ctrl.data.zones"
+                        <input id="zones" ng-change="ctrl.updateAmountByZones(ctrl.data.zones)"
+                               ng-model="ctrl.data.zones"
                                type="number">
                     </md-input-container>
 
