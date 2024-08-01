@@ -1,8 +1,4 @@
 /**
- * @class
- */
-
-/**
  * @typedef {Object} Job
  * @property {number} clientID - The ID of the client associated with the job.
  * @property {number|null} courierId - The ID of the courier associated with the job.
@@ -17,6 +13,7 @@
  * @property {number} toLat - The latitude of the delivery address.
  * @property {string} date - The date when the job is scheduled.
  * @property {string} fromContactName - The name of the contact from whom the job will be picked up.
+ * @property {string} podNames - The name of the POD contact from whom the job will be picked up.
  * @property {string} deliveryNotes - Any notes related to the delivery of the job.
  * @property {string} pickupNotes - Any notes related to the pickup of the job.
  * @property {string} jobNotes - Any other notes related to the job.
@@ -38,6 +35,10 @@
  * @typedef {Object} SuburbOption - An option for selection in the ourSuburbSearch.
  * @property {string} text - The textual representation of the suburb.
  * @property {string} alias - The alias of the suburb.
+ */
+
+/**
+ * @class
  */
 class CreateJobDialogController {
     /**
@@ -92,6 +93,7 @@ class CreateJobDialogController {
             toAddress: "",
             date: "",
             fromContactName: "",
+            podName: "",
             jobNotes: "",
             deliveryNotes: "",
             pickupNotes: "",

@@ -98,13 +98,6 @@
                         </md-not-found>
                     </md-autocomplete>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="pickup-contact">Pickup Contact</label>
-                        <input id="pickup-contact" md-no-asterisk ng-model="ctrl.job.fromContactName" required>
-                    </md-input-container>
-                </div>
-
-                <div layout-gt-sm="row">
                     <md-autocomplete
                             flex-gt-sm
                             md-escape-options="clear"
@@ -125,10 +118,22 @@
                             No addresses matching "{{ctrl.toAddressSearchText}}" were found.
                         </md-not-found>
                     </md-autocomplete>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="pickup-contact">Pickup Contact</label>
+                        <input id="pickup-contact" md-no-asterisk ng-model="ctrl.job.fromContactName" required>
+                    </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
                         <label for="delivery-contact">Delivery Contact</label>
                         <input id="delivery-contact" md-no-asterisk ng-model="ctrl.job.deliverToContact" required>
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="pod-name">POD Name</label>
+                        <input id="pod-name" md-no-asterisk ng-model="ctrl.job.podName" required>
                     </md-input-container>
                 </div>
 
