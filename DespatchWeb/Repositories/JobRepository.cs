@@ -2494,7 +2494,6 @@ public class JobRepository : IJobRepository
     public async Task<int> QuickAddJob(JobCreateViewModel job, int staffId)
     {
         var jobId = new OutputParameter<int?>();
-        var returnValue = new OutputParameter<int>();
 
         await _context.Procedures.DESWEB_stpQuickCreateJobAsync(
             ClientId: job.ClientId,
@@ -2510,6 +2509,7 @@ public class JobRepository : IJobRepository
             Van: job.Van,
             Attention: job.Attention,
             DeliverToContact: job.DeliverToContact,
+            PodName: job.PodName,
             Truck: job.Truck,
             VanOk: job.VanOk,
             Reprice: job.Reprice,
@@ -2520,22 +2520,19 @@ public class JobRepository : IJobRepository
             StaffId: staffId,
             RefA: job.RefA,
             RefB: job.RefB,
-            JobId: jobId,
-            returnValue: returnValue);
+            JobId: jobId);
 
         return jobId.Value ?? 0;
     }
 
     public async Task AddInterCourierCharge(InterCourierChargeViewModel viewModel)
     {
-        var returnValue = new OutputParameter<int>();
-
         await _context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
             fromCourierId: viewModel.FromCourierId,
             toCourierId: viewModel.ToCourierId,
             Amount: viewModel.Amount,
             Reference: viewModel.Reference,
-            StaffId: viewModel.StaffId,
-            returnValue: returnValue);
+            StaffId: viewModel.StaffId
+        );
     }
 }

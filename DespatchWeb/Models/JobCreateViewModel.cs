@@ -11,6 +11,8 @@ public class JobCreateViewModel
 
     [JsonProperty("deliverToContact")] public string DeliverToContact { get; set; }
 
+    [JsonProperty("podName")] public string PodName { get; set; }
+
     [JsonProperty("fromAddress")] public string FromAddress { get; set; }
 
     [JsonProperty("toAddress")] public string ToAddress { get; set; }

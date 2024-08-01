@@ -128,7 +128,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, decimal? FromLat, decimal? FromLong, string ToAddress, decimal? ToLat, decimal? ToLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, bool? Truck, bool? VanOk, bool? Reprice, decimal? Amount, int? SpeedId, int? ToSuburbId, int? FromSuburbId, int? StaffId, string RefA, string RefB, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, decimal? FromLat, decimal? FromLong, string ToAddress, decimal? ToLat, decimal? ToLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, string PodName, bool? Truck, bool? VanOk, bool? Reprice, decimal? Amount, int? SpeedId, int? ToSuburbId, int? FromSuburbId, int? StaffId, string RefA, string RefB, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobId = new SqlParameter
             {
@@ -155,7 +155,7 @@ namespace DespatchWeb.EntityClasses
                 new SqlParameter
                 {
                     ParameterName = "FromAddress",
-                    Size = -1,
+                    Size = 300,
                     Value = FromAddress ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
@@ -176,7 +176,7 @@ namespace DespatchWeb.EntityClasses
                 new SqlParameter
                 {
                     ParameterName = "ToAddress",
-                    Size = -1,
+                    Size = 300,
                     Value = ToAddress ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
@@ -197,7 +197,7 @@ namespace DespatchWeb.EntityClasses
                 new SqlParameter
                 {
                     ParameterName = "PickupFromContact",
-                    Size = -1,
+                    Size = 60,
                     Value = PickupFromContact ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
@@ -228,8 +228,15 @@ namespace DespatchWeb.EntityClasses
                 new SqlParameter
                 {
                     ParameterName = "DeliverToContact",
-                    Size = -1,
+                    Size = 60,
                     Value = DeliverToContact ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PodName",
+                    Size = 200,
+                    Value = PodName ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
@@ -285,21 +292,21 @@ namespace DespatchWeb.EntityClasses
                 new SqlParameter
                 {
                     ParameterName = "RefA",
-                    Size = 80,
+                    Size = 40,
                     Value = RefA ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
                     ParameterName = "RefB",
-                    Size = 80,
+                    Size = 40,
                     Value = RefB ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 parameterJobId,
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @FromLat = @FromLat, @FromLong = @FromLong, @ToAddress = @ToAddress, @ToLat = @ToLat, @ToLong = @ToLong, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @Truck = @Truck, @VanOk = @VanOk, @Reprice = @Reprice, @Amount = @Amount, @SpeedId = @SpeedId, @ToSuburbId = @ToSuburbId, @FromSuburbId = @FromSuburbId, @StaffId = @StaffId, @RefA = @RefA, @RefB = @RefB, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @FromLat = @FromLat, @FromLong = @FromLong, @ToAddress = @ToAddress, @ToLat = @ToLat, @ToLong = @ToLong, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @PodName = @PodName, @Truck = @Truck, @VanOk = @VanOk, @Reprice = @Reprice, @Amount = @Amount, @SpeedId = @SpeedId, @ToSuburbId = @ToSuburbId, @FromSuburbId = @FromSuburbId, @StaffId = @StaffId, @RefA = @RefA, @RefB = @RefB, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
 
             JobId.SetValue(parameterJobId.Value);
             returnValue?.SetValue(parameterreturnValue.Value);
