@@ -755,7 +755,10 @@ class JobDetailService {
                 title: title,
                 job: job,
             }
-        }).then(() => console.log("Notes dialog closed!"));
+        }).then(_ => {
+            this.selectJobDetail(job.id);
+            console.log('Notes Dialog closed!');
+        });
     }
 
     /**

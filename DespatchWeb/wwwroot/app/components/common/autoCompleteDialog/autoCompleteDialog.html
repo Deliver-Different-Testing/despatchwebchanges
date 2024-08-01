@@ -1,9 +1,13 @@
 <md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Edit {{ ctrl.title }}</h2>
+        </div>
+    </md-toolbar>
+
     <md-dialog-content>
         <div class="md-dialog-content">
             <form ng-submit="ctrl.submit(ctrl.selectedItem)">
-                <h2 class="md-title">Edit {{ ctrl.title }}</h2>
-
                 <!-- Autocomplete field -->
                 <md-autocomplete
                         md-autofocus
@@ -11,7 +15,7 @@
                         md-escape-options="clear"
                         md-item-text="item.text"
                         md-items="item in ctrl.querySearch(ctrl.searchText)"
-                        md-min-length="0"
+                        md-min-length="1"
                         md-search-text="ctrl.searchText"
                         md-selected-item="ctrl.selectedItem" placeholder="{{ctrl.options.placeholder }}">
                     <md-item-template>
@@ -35,11 +39,12 @@
     </md-dialog-content>
 
     <md-dialog-actions>
-        <md-button ng-click="ctrl.cancel()">
+        <md-button class="md-primary" ng-click="ctrl.cancel()">
             Cancel
         </md-button>
 
-        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.selectedItem)">
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.selectedItem)"
+                   ng-disabled="ctrl.selectedItem === null">
             Save
         </md-button>
     </md-dialog-actions>
