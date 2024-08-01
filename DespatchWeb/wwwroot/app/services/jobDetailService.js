@@ -733,11 +733,18 @@ class JobDetailService {
         }
     }
 
-    showNotesDialog(event, job, title, fieldName) {
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     * @param {string} title
+     * @param {string} fieldName
+     * @param {string} id
+     */
+    showNotesDialog(event, job, title, fieldName, id = "editField") {
         return this.$mdDialog.show({
             controller: AddNotesDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/common/textAreaDialog/textAreaDialog.html",
+            templateUrl: "app/components/common/addNotesDialog/addNotesDialog.html",
             parent: angular.element(this.$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
