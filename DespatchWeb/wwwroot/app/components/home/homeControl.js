@@ -1730,13 +1730,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     self.displayLoadingIndicators = () => {
-        angular.element("#box-currentWork .loading").css('display', 'block');
-        angular.element('#box-map .loading').css('display', '');
+        loadingService.showLoader();
     };
 
     self.hideLoadingIndicators = () => {
-        angular.element("#box-currentWork .loading").css('display', 'none');
-        angular.element('#box-map .loading').css('display', 'none');
+        loadingService.closeLoader();
     };
 
     self.selectedCourierChange = function (courier) {
