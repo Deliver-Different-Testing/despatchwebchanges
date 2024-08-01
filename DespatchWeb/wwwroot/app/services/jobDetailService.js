@@ -828,10 +828,6 @@ class JobDetailService {
         this.editPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
     }
 
-    addInternalNote(event, job) {
-        this.
-    }
-
     updateField(reRate, job, callData) {
         if (reRate && !job.bulkJob) {
             return this.rateJob(job).then(rate => this.DispatchData
@@ -1249,7 +1245,7 @@ class JobDetailService {
             .then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     preBookDirectClick(job) {
@@ -1260,7 +1256,7 @@ class JobDetailService {
             .then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     pushToLive(job) {
@@ -1271,7 +1267,7 @@ class JobDetailService {
             .then(response => {
                 this.selectBulkJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     vanOkClick(job) {
@@ -1287,7 +1283,7 @@ class JobDetailService {
                 job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     vanClick(job) {
@@ -1310,8 +1306,8 @@ class JobDetailService {
                     .then(response => {
                         this.selectJobDetail(job.id);
                         return response;
-                    }).catch(() => this.toastrService.showErrorToast());
-            }).catch(() => this.toastrService.showErrorToast());
+                    }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
 
     }
 
@@ -1330,8 +1326,8 @@ class JobDetailService {
                     job.preBook).then(function (response) {
                     this.selectJobDetail(job.id);
                     return response;
-                }).catch(() => this.toastrService.showErrorToast());
-        }).catch(() => this.toastrService.showErrorToast());
+                }).catch((error) => this.toastrService.showErrorToast(error.message));
+        }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     truckClick(job) {
@@ -1353,7 +1349,7 @@ class JobDetailService {
             .then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     directClick(job) {
@@ -1374,8 +1370,8 @@ class JobDetailService {
                         job.preBook).then(response => {
                         this.selectJobDetail(job.id);
                         return response;
-                    }).catch(() => this.toastrService.showErrorToast());
-            }).catch(() => this.toastrService.showErrorToast());
+                    }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
         }
     }
 
@@ -1392,7 +1388,7 @@ class JobDetailService {
                 job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     repriceClick(job) {
@@ -1408,7 +1404,7 @@ class JobDetailService {
                 job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     preBookReturnClick(job) {
@@ -1424,7 +1420,7 @@ class JobDetailService {
                 job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     oneOffClick(job) {
@@ -1440,7 +1436,7 @@ class JobDetailService {
                 job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
 
     }
 
@@ -1457,7 +1453,7 @@ class JobDetailService {
                 job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     voidClick(job) {
@@ -1483,7 +1479,7 @@ class JobDetailService {
                     job.preBook).then(response => {
                     this.selectJobDetail(job.id);
                     return response;
-                }).catch(() => this.toastrService.showErrorToast());
+                }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     doneClick(event, job) {
@@ -1510,7 +1506,7 @@ class JobDetailService {
             this.$mdDialog.show(confirm).then(() => {
                 job.done = false;
                 return false;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
         }
 
         return this.DispatchData
@@ -1520,7 +1516,7 @@ class JobDetailService {
                 job.completedTime).then(() => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     deliveredClick(job) {
@@ -1536,7 +1532,7 @@ class JobDetailService {
                 job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     airportOnlyClick(job) {
@@ -1552,7 +1548,7 @@ class JobDetailService {
                 job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast());
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     trackingMethodClick(event, job) {
