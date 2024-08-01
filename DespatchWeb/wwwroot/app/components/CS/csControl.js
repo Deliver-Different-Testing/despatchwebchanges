@@ -33,7 +33,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
-    $scope.createNewJob = function (event) {
+    self.createNewJob = function (event) {
         // Dialog
         $mdDialog.show({
             controller: CreateJobDialogController,
@@ -57,7 +57,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    $scope.interCourierCharge = function (event) {
+    self.interCourierCharge = function (event) {
         $mdDialog.show({
             controller: InterCourierChargeDialogController,
             controllerAs: 'ctrl',
@@ -796,10 +796,10 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     };
 
-    $scope.dispatchJobs = function (courier, job) {
-        var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
+    self.dispatchJobs = function (courier, job) {
+        let foundCourier = $scope.pickCouriers.find(c => c.id === courier);
         if (foundCourier === undefined) {
-            var confirm = $mdDialog.confirm()
+            const confirm = $mdDialog.confirm()
                 .title('Courier Offline')
                 .textContent('Dispatch anyway?')
                 .ok('Yes')
@@ -807,36 +807,63 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
             $mdDialog.show(confirm).then(function () {
                 foundCourier = $scope.pickAllCouriers.find(c => c.id === courier);
-                return $scope.dispatchJobsContinue(courier, foundCourier, true, job);
+                return self.dispatchJobsContinue(courier, foundCourier, true, job);
             }, function () {
                 // user clicked 'No'
             });
             return;
         }
 
-        return $scope.dispatchJobsContinue(courier, foundCourier, false, job);
+        return self.dispatchJobsContinue(courier, foundCourier, false, job);
     };
 
-    $scope.dispatchJobsContinue = function (courier, foundCourier, offline, job) {
-        var callData = {
+    self.dispatchJobsContinue = function (courier, foundCourier, offline, job) {
+        const callData = {
             "call": "dispatchJobs",
             "courier": courier,
             "jobs": []
         };
 
 
-        var jn = job.jobNo;
+        const jobNumber = job.jobNo;
         if (job.courierData.courierID !== null) {
-            alert("restore " + jn + " prior to despatching to another courier");
+            $mdDialog.show(
+                $mdDialog.alert()
+                    .parent(angular.element($document.body))
+                    .clickOutsideToClose(true)
+                    .title('Message')
+                    .textContent('Restore ' + jobNumber + ' prior to despatching to another courier')
+                    .ariaLabel('Alert')
+                    .ok('OK')
+            );
+
             return;
         }
 
         if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-            alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+            $mdDialog.show(
+                $mdDialog.alert()
+                    .parent(angular.element($document.body))
+                    .clickOutsideToClose(true)
+                    .title('Message')
+                    .textContent("DG job " + jobNumber + " can not be despatched to courier " + courier + " - doesn't have DGLicense.")
+                    .ariaLabel('Alert')
+                    .ok('OK')
+            );
             return;
         }
+
         if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-            alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+            $mdDialog.show(
+                $mdDialog.alert()
+                    .parent(angular.element($document.body))
+                    .clickOutsideToClose(true)
+                    .title('Message')
+                    .textContent("Courier " + courier + " doesn't have a DGLicense or license has expired.")
+                    .ariaLabel('Alert')
+                    .ok('OK')
+            );
+
             return;
         }
 

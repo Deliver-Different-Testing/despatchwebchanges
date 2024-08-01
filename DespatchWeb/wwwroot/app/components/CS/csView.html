@@ -128,7 +128,8 @@
 
 
                             <div class="box-details" ng-show="box.name == 'jobDetail'">
-                                <input class="pod-DispatchField" id="pod-DispatchField" ng-keydown="$event.keyCode === 13 && dispatchJobs(dispatchCourier, currentJob)"
+                                <input class="pod-DispatchField" id="pod-DispatchField"
+                                       ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(dispatchCourier, currentJob)"
                                        ng-model="dispatchCourier"
                                        ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier == null"
                                        placeholder="dispatch"
@@ -210,13 +211,13 @@
         <mfb-button
                 icon="add"
                 label="Add New Job"
-                ng-click="createNewJob($event)"
+                ng-click="ctrl.createNewJob($event)"
                 template-url="ng-mfb-button-md.tpl.html">
         </mfb-button>
         <mfb-button
                 icon="attach_money"
                 label="Inter-Courier Charge"
-                ng-click="interCourierCharge($event)"
+                ng-click="ctrl.interCourierCharge($event)"
                 template-url="ng-mfb-button-md.tpl.html">
         </mfb-button>
     </ul>

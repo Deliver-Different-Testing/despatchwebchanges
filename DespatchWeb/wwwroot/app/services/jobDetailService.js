@@ -1122,7 +1122,7 @@ class JobDetailService {
 
     /**
      * @param {Event} event
-     * @param {*} currentJob
+     * @param {Job} currentJob
      * @param {string} field
      */
     updateGPS(event, currentJob, field) {
