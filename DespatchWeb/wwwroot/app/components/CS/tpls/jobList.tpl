@@ -13,7 +13,7 @@
         <th scope="col" ng-click="orderList('jobList', 'from')">From <i class="fa fa-caret-down" ng-show="sort.jobList =='from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-from'"></i></th>
         <th scope="col" ng-click="orderList('jobList', 'to')">To <i class="fa fa-caret-down" ng-show="sort.jobList =='to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-to'"></i></th>
 		<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
-        
+
         </tr>
         </thead>
     </table>
@@ -51,31 +51,32 @@
 
         </tr>
     </tbody>
-    <tfoot>  
-        <tr>  
-            <td align="center" colspan="6">  
-                <!--<span class="form-group pull-left page-size form-inline">  
-                    <select id="ddlPageSize" class="form-control control-color"  
-                            ng-model="pageSizeSelected"  
-                            ng-change="changePageSize(pageSizeSelected)">  
-                        <option value="5">5</option>  
-                        <option value="10">10</option>  
-                        <option value="25">25</option>  
-                        <option value="50">50</option>  
-                    </select>  
+        <tfoot>
+        <tr>
+            <td align="center" colspan="6">
+                <!--<span class="form-group pull-left page-size form-inline">
+                    <select id="ddlPageSize" class="form-control control-color"
+                            ng-model="pageSizeSelected"
+                            ng-change="changePageSize(pageSizeSelected)">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                    </select>
                 </span>  -->
-            
-                <div class="pull-right">  
-                    <uib-pagination total-items="totalCount" ng-change="pageChanged(pageIndex)" items-per-page="pageSizeSelected" 
+
+                <div class="pull-right">
+                    <uib-pagination items-per-page="pageSizeSelected" ng-change="pageChanged(pageIndex)"
+                                    num-pages="numPages"
                     direction-links="true" ng-model="pageIndex" max-size="maxSize" class="pagination" boundary-links="true" rotate="false"
-                    num-pages="numPages"></uib-pagination>  
-                    <a class="btn btn-primary">Page: {{pageIndex}} / {{numPages}}</a>  
-                </div>  
-            </td>  
-        </tr>  
-    </tfoot>  
+                                    total-items="totalCount"></uib-pagination>
+                    <md-button class="md-raised md-primary">Page: {{pageIndex}} / {{numPages}}</md-button>
+                </div>
+            </td>
+        </tr>
+        </tfoot>
 </table>
-    
+
 
 </div>
 
@@ -89,12 +90,8 @@
 
 
 <script>
-
-    $(".box-content").on("scroll", function() {
-
-        var newTop2 = $(this).scrollTop(); 
-        $(this).find(".box-calculator").css({"top":newTop2});
-
+    angular.element(".box-content").on("scroll", function () {
+        var newTop2 = angular.element(this).scrollTop();
+        angular.element(this).find(".box-calculator").css({"top": newTop2});
     });
-
 </script>

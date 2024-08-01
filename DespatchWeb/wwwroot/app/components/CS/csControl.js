@@ -9,6 +9,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         "allRuns": false
     };
 
+    $scope.userName = FirstName;
     $scope.dateSearchRange = 1; // Set to fortnight
     $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
@@ -50,6 +51,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $mdDialog.show(confirm).then(courierNumber => {
             try {
                 dispatchJobService.dispatchJob(courierNumber, job).then(() => {
+                    $scope.selectJobDetail(job.id);
                     toastrService.showSuccessToast(`Job despatched to courier ${courierNumber} successfully`);
                 });
             } catch (error) {
@@ -105,8 +107,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         submit() {
             angular.element(".gatherForm").css("display", "none");
             $scope.gather.form.onSubmit().then(() => {
-                if ($scope.currentJob) {
-                    $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
+                if (self.currentJob) {
+                    self.currentJob.bulkJob ? $scope.selectBulkJobDetail(self.currentJob.id) : self.currentJob.preBook ? $scope.selectPreBookDetail(self.currentJob.id) : $scope.selectJobDetail(self.currentJob.id);
                 }
             });
         },
@@ -122,8 +124,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         submit: function () {
             angular.element(".gatherForm").hide();
             $scope.gather.form.onSubmit().then(function (response) {
-                if ($scope.currentJob) {
-                    $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
+                if (self.currentJob) {
+                    self.currentJob.bulkJob ? $scope.selectBulkJobDetail(self.currentJob.id) : self.currentJob.preBook ? $scope.selectPreBookDetail(self.currentJob.id) : $scope.selectJobDetail(self.currentJob.id);
                 }
             });
         },
@@ -476,7 +478,6 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     }
 
     self.layouts = layoutsObject || defaultLayout;
-    $scope.userName = FirstName;
 
 
     const now = new Date();
@@ -753,12 +754,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     $scope.unlockJob = function () {
         return jdSvc
-            .unlockJob($scope.currentJob);
+            .unlockJob(self.currentJob);
     };
 
     $scope.lockJob = function () {
         return jdSvc
-            .lockJob($scope.currentJob);
+            .lockJob(self.currentJob);
     };
 
     $scope.unSplitJob = function () {
@@ -769,7 +770,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             .cancel('No');
 
         $mdDialog.show(confirm).then(function () {
-            uCSData.unSplitJob($scope.currentJob.id).then(function (msg) {
+            uCSData.unSplitJob(self.currentJob.id).then(function (msg) {
                 if ((msg || "").length > 2) {
                     var alert = $mdDialog.alert()
                         .title('Error')
@@ -844,17 +845,17 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                         ).then(_ => console.log("Alert closed."));
                     } else {
                         const secondJobId = data;
-                        const firstJobId = $scope.currentJob.id;
+                        const firstJobId = self.currentJob.id;
 
                         const confirm = $mdDialog.confirm()
                             .title('Swap Delivery Info?')
-                            .textContent(`Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`)
+                            .textContent(`Are you sure you wish to swap delivery info between ${self.currentJob.jobNo} and ${$scope.gather.form.fields[0].value}?`)
                             .ariaLabel('Lucky day')
                             .targetEvent(event)
                             .ok('Yes')
                             .cancel('No');
 
-                        $mdDialog.show(confirm).then(() => uCSData.swapPOD($scope.currentJob.jobNo, $scope.gather.form.fields[0].value).then(_ => {
+                        $mdDialog.show(confirm).then(() => uCSData.swapPOD(self.currentJob.jobNo, $scope.gather.form.fields[0].value).then(_ => {
 
                             $mdDialog.show(
                                 $mdDialog.alert()
@@ -885,7 +886,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     }
 
     $scope.sendPOD = function () {
-        if (!$scope.currentJob.podPhoto) {
+        if (!self.currentJob.podPhoto) {
             $mdDialog.show(
                 $mdDialog.alert()
                     .clickOutsideToClose(true)
@@ -906,7 +907,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 }
             ],
             onSubmit: function () {
-                uCSData.sendPOD($scope.currentJob.id, $scope.gather.form.fields[0].value).then(data => {
+                uCSData.sendPOD(self.currentJob.id, $scope.gather.form.fields[0].value).then(data => {
                 });
 
                 $mdDialog.show(
@@ -1172,40 +1173,40 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.loadRelatedJobDetail = function (id, jn) {
         angular.element("#box-jobDetail").find(".loading").show();
         uCSData.getJobDetail(id).then(function (data) {
-            $scope.currentJob = data;
+            self.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + jn;
         });
     }
 
-    //Select Job
-    $scope.selectJobDetail = function (id) {
+    /**
+     * @param {number} jobId
+     */
+    $scope.selectJobDetail = function (jobId) {
         $scope.scanList = [];
-        console.log("select Job  " + id);
-        //angular.element("#jobList").find(".active").removeClass("active");
+        console.log("select Job  " + jobId);
         clearTimeout($scope.myTimer);
-        //$scope.currentEvent = event;
 
         angular.element("#box-jobDetail").find(".loading").show();
 
-        uCSData.getJobDetail(id).then(function (data) {
-            $scope.currentJob = data;
-            jdSvc.setJob($scope.currentJob);
+        uCSData.getJobDetail(jobId).then(function (data) {
+            self.currentJob = data;
+            jdSvc.setJob(self.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + data.jobNo;
             var jobs = [];
-            jobs.push($scope.currentJob);
+            jobs.push(self.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            if ($scope.currentJob.rootParentID) {
-                uCSData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                    //data = data.filter(item => item.id !== $scope.currentJob.id);
-                    $scope.currentJob.relatedJobs = data;
+            if (self.currentJob.rootParentID) {
+                uCSData.getRelatedJobs(self.currentJob.rootParentID, self.currentJob.clientID).then(function (data) {
+                    //data = data.filter(item => item.id !== self.currentJob.id);
+                    self.currentJob.relatedJobs = data;
                 });
             }
             angular.element("#box-scanList").find(".loading").show();
-            uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(self.currentJob.bookedDate), self.currentJob.jobNo).then(function (data) {
                 $scope.scanList = data;
 
                 $timeout(function () {
@@ -1214,9 +1215,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 }, 200);
             });
 
-            if ($scope.currentJob.courier && $scope.currentJob.completedTime) {
+            if (self.currentJob.courier && self.currentJob.completedTime) {
                 angular.element("#box-map").find(".loading").show();
-                uCSData.getCourierRoute($scope.currentJob.courier, moment($scope.currentJob.completedTime).subtract(5, 'm'), moment($scope.currentJob.completedTime).add(5, 'm')).then(function (data) {
+                uCSData.getCourierRoute(self.currentJob.courier, moment(self.currentJob.completedTime).subtract(5, 'm'), moment(self.currentJob.completedTime).add(5, 'm')).then(function (data) {
                     var flightPathCoordinates = [];
 
                     angular.element("#box-map").find(".loading").fadeOut();
@@ -1285,21 +1286,21 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         angular.element("#box-jobDetail").find(".loading").show();
 
         uCSData.getPreBookDetail(id).then(function (data) {
-            $scope.currentJob = data;
-            jdSvc.setJob($scope.currentJob);
+            self.currentJob = data;
+            jdSvc.setJob(self.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + data.jobNo;
-            console.log($scope.currentJob.days);
-            var freq = $scope.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(8, 9);
+            console.log(self.currentJob.days);
+            var freq = self.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : self.currentJob.days.slice(8, 9);
             console.log(freq);
             jdSvc.combos.frequency = [jdSvc.pickFrequency[freq]];
             console.log(jdSvc.combos.frequency);
-            var hol = $scope.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(9, 10);
+            var hol = self.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : self.currentJob.days.slice(9, 10);
             console.log(hol);
             jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
             console.log(jdSvc.combos.holidays);
             var selectedDays = [];
-            var days = $scope.currentJob.days.slice(0, 7);
+            var days = self.currentJob.days.slice(0, 7);
             for (let i = 0; i < days.length; i++) {
                 if (days[i] === '1') {
                     selectedDays.push(jdSvc.pickDays[i]);
@@ -1308,11 +1309,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             console.log(selectedDays);
             jdSvc.combos.days = selectedDays;
             var jobs = [];
-            jobs.push($scope.currentJob);
+            jobs.push(self.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(self.currentJob.bookedDate), self.currentJob.jobNo).then(function (data) {
                 $scope.scanList = data;
 
                 $timeout(function () {
@@ -1336,16 +1337,16 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         angular.element("#box-jobDetail").find(".loading").show();
 
         uCSData.getBulkJobDetail(id).then(function (data) {
-            $scope.currentJob = data;
-            jdSvc.setJob($scope.currentJob);
+            self.currentJob = data;
+            jdSvc.setJob(self.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Bulk Job " + data.jobNo;
             var jobs = [];
-            jobs.push($scope.currentJob);
+            jobs.push(self.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            uCSData.getScanDetail(moment($scope.currentJob.bookedDate), $scope.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(self.currentJob.bookedDate), self.currentJob.jobNo).then(function (data) {
                 $scope.scanList = data;
 
                 $timeout(function () {
@@ -1541,7 +1542,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     $scope.createJobEvent = function (job, $event) {
-        $scope.currentJob = job;
+        self.currentJob = job;
         $mdDialog.show({
             locals: {dataToPass: undefined},
             controller: $scope.eventDialogController,
@@ -1557,12 +1558,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     $scope.eventDialogController = function ($scope, $mdDialog, dataToPass) {
-        console.log($scope.currentJob);
+        console.log(self.currentJob);
         console.log(dataToPass);
         $scope.book = {};
 
-        $scope.book.courier = $scope.currentJob.courierCode;
-        $scope.book.job = $scope.currentJob.jobNumber;
+        $scope.book.courier = self.currentJob.courierCode;
+        $scope.book.job = self.currentJob.jobNumber;
 
         if (dataToPass !== undefined) {
             $scope.book.notes = (" - " + moment().format("DD/MM/YY HH:mm") + " " + ClientName + "\r\n" + dataToPass.notes);
@@ -1609,15 +1610,15 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
             var event = {
                 "dataType": "json",
-                "BulkJobID": $scope.currentJob.bulkJobID,
-                "CourierID": $scope.currentJob.courierID,
+                "BulkJobID": self.currentJob.bulkJobID,
+                "CourierID": self.currentJob.courierID,
                 "Name": `${ClientName}-${$scope.book.name}`,
                 "Notes": $scope.book.notes,
                 "Internal": $scope.isAdmin ? !$scope.book.internal : 0,
                 "ClientCreated": !$scope.isAdmin,
                 "ClientFollowup": $scope.book.account !== "UCL" ? 1 : 0,
                 "EventDate": $scope.pickDateService.date,
-                "ClientID": $scope.currentJob.clientID
+                "ClientID": self.currentJob.clientID
             };
 
             uCSData.createEvent(event, $scope.isAdmin ? $scope.book.notify : true)

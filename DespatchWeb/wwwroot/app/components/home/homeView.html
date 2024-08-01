@@ -192,6 +192,14 @@
                                 <div class="box-details" ng-if="ctrl.currentJob"
                                      ng-show="boxes[box.name].showDetailButtons">
                                     <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button
+                                                class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.selectAndDispatchJob($event, currentJob)"
+                                                ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier == null"
+                                                title="Dispatch to Courier Code"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">local_shipping</i>
+                                        </button>
                                         <button class="btn btn-sm btn-secondary"
                                                 ng-click="ctrl.otherEventForm(ctrl.currentJob.jobNo)" title="Add Event"
                                                 type="button">
@@ -299,9 +307,7 @@
                                            type="text">
                                 </div>
 
-                                <div class="box-handle"><i
-                                        class="material-symbols-outlined small-icon">drag_indicator</i>
-                                </div>
+
                             </div>
                         </div>
                         <div class="box-content"

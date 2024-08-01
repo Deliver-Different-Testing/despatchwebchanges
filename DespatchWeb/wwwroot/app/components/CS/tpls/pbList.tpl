@@ -15,7 +15,7 @@
         <th>S</th>
         <th>V</th>
 
-        
+
         </tr>
         </thead>
     </table>
@@ -53,31 +53,32 @@
             <td><div></div></td>
         </tr>
     </tbody>
-    <tfoot>  
-        <tr>  
-            <td align="center" colspan="6">  
-                <!--<span class="form-group pull-left page-size form-inline">  
-                    <select id="ddlPageSize" class="form-control control-color"  
-                            ng-model="pageSizeSelected"  
-                            ng-change="changePageSize(pageSizeSelected)">  
-                        <option value="5">5</option>  
-                        <option value="10">10</option>  
-                        <option value="25">25</option>  
-                        <option value="50">50</option>  
-                    </select>  
+        <tfoot>
+        <tr>
+            <td align="center" colspan="6">
+                <!--<span class="form-group pull-left page-size form-inline">
+                    <select id="ddlPageSize" class="form-control control-color"
+                            ng-model="pageSizeSelected"
+                            ng-change="changePageSize(pageSizeSelected)">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                    </select>
                 </span>  -->
-            
-                 <div class="pull-right">  
-                    <uib-pagination total-items="pbTotalCount" ng-change="pbPageChanged(pbPageIndex)" items-per-page="pbPageSizeSelected" 
+
+                <div class="pull-right">
+                    <uib-pagination items-per-page="pbPageSizeSelected" ng-change="pbPageChanged(pbPageIndex)"
+                                    num-pages="pbNumPages"
                     direction-links="true" ng-model="pbPageIndex" max-size="maxSize" class="pagination" boundary-links="true" rotate="false"
-                    num-pages="pbNumPages"></uib-pagination>  
-                    <a class="btn btn-primary">Page: {{pbPageIndex}} / {{pbNumPages}}</a>  
-                </div>  
-            </td>  
-        </tr>  
-    </tfoot>  
+                                    total-items="pbTotalCount"></uib-pagination>
+                    <md-button class="md-raised md-primary">Page: {{pbPageIndex}} / {{pbNumPages}}</md-button>
+                </div>
+            </td>
+        </tr>
+        </tfoot>
 </table>
-    
+
 
 </div>
 
@@ -88,15 +89,9 @@
     </div>
 </div>
 
-
-
 <script>
-
-    $(".box-content").on("scroll", function() {
-
-        var newTop2 = $(this).scrollTop(); 
-        $(this).find(".box-calculator").css({"top":newTop2});
-
+    angular.element(".box-content").on("scroll", function () {
+        var newTop2 = angular.element(this).scrollTop();
+        angular.element(this).find(".box-calculator").css({"top": newTop2});
     });
-
 </script>
