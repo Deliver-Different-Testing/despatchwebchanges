@@ -1,5 +1,5 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
-                        loadingService, NgMap, $mdDialog, $parse, $q, $scope, $state,
+                        loadingService, $mdDialog, $parse, $q, $scope, $state,
                         $window, $timeout, toastrService, DispatchData, uCSData) {
     const self = this;
 
@@ -3447,7 +3447,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 }
 
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", 'greetingService', 'hotkeys', "JobDetailService",
-    'loadingService', "NgMap", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", HomeController]);
+    'loadingService', "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", HomeController]);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
