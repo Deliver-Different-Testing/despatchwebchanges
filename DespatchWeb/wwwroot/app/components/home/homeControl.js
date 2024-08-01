@@ -1740,6 +1740,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     self.selectedCourierChange = function (courier) {
         if (courier === undefined) {
             self.selectedCourier = null;
+            $scope.currentCourier = null;
         } else {
             this.updateCourierData(courier.id, courier.text);
         }
