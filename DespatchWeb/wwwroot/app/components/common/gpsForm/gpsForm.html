@@ -99,7 +99,6 @@
             <md-button class="md-raised md-primary" class="md-accent" ng-click="ctrl.submit(ctrl.addressDetails)">
                 <md-progress-circular class="md-accent" md-mode="indeterminate"
                                       ng-if="ctrl.isLoading"></md-progress-circular>
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!ctrl.isLoading">save</md-icon>
                 <span ng-if="!ctrl.isLoading">{{ ctrl.submitLabel }}</span>
             </md-button>
         </md-dialog-actions>
