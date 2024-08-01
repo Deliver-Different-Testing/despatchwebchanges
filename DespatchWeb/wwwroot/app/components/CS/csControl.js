@@ -31,7 +31,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     self.dispatchJobService = dispatchJobService;
 
     self.greetUser = function () {
-        greetingService.greetUser($scope.userName);
+        greetingService.greetUser(FirstName);
     }
 
     $scope.updateGPS = function (currentJob, field, fromRightClick) {
