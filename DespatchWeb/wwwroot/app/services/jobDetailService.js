@@ -788,7 +788,9 @@ class JobDetailService {
                 "value": result,
                 "jobID": job.jobID
             };
-            this.updateField(false, job, callData)
+            this.updateField(false, job, callData).then(() => {
+                this.selectJobDetail(job.id);
+            })
         }, () => {
             console.log(`Edit ${title} Cancelled!`)
         });
