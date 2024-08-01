@@ -1,4 +1,8 @@
-﻿<!doctype html>
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Microsoft.Extensions.Hosting
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment
+
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -230,34 +234,43 @@
 <script src="lib/ng-map-autocomplete.js"></script>
 <script src="lib/ModernizerLocalStorage.js"></script>
 <script src="lib/angular-promise-buttons.js"></script>
-
 <script src="js/Loading.js"></script>
-<script src="app/app.min.js"></script>
-<script src="app/filters.min.js"></script>
-<script src="app/services/jobDetailService.min.js" asp-append-version="true"></script>
-<script src="app/components/home/homeService.min.js" asp-append-version="true"></script>
-<script src="app/components/home/homeControl.min.js" asp-append-version="true"></script>
-<script src="app/components/Nationwide/nationwideService.min.js" asp-append-version="true"></script>
-<script src="app/components/Nationwide/nationwideControl.min.js" asp-append-version="true"></script>
-<script src="app/components/CS/csService.min.js" asp-append-version="true"></script>
-<script src="app/components/CS/csControl.min.js" asp-append-version="true"></script>
-<script src="app/components/prebooks/prebookService.min.js" asp-append-version="true"></script>
-<script src="app/components/prebooks/prebookControl.min.js" asp-append-version="true"></script>
-<script src="app/components/common/gpsForm/gpsFormController.min.js" asp-append-version="true"></script>
-<script src="app/components/common/autoCompleteDialog/autoCompleteDialogController.min.js"
-        asp-append-version="true"></script>
-<script src="app/components/common/sendMessageDialog/sendMessageDialogController.min.js"
-        asp-append-version="true"></script>
-<script src="app/components/common/selectDialog/selectDialogController.min.js" asp-append-version="true"></script>
-<script src="app/components/common/addNotesDialog/addNotesDialogController.min.js" asp-append-version="true"></script>
-<script src="app/components/common/createJobDialog/createJobDialogController.min.js" asp-append-version="true"></script>
-<script src="app/components/common/interCourierChargeDialog/interCourierChargeDialogController.min.js"
-        asp-append-version="true"></script>
-<script src="app/services/toastrService.min.js" asp-append-version="true"></script>
-<script src="app/services/loadingService.min.js" asp-append-version="true"></script>
-<script src="app/services/greetingService.min.js" asp-append-version="true"></script>
-<script src="app/services/rateJobService.min.js" asp-append-version="true"></script>
-<script src="app/services/dispatchJobService.min.js" asp-append-version="true"></script>
+
+@{
+    var isDevelopment = Environment.IsDevelopment();
+    var scripts = new[]
+    {
+        "app/app.js",
+        "app/filters.js",
+        "app/services/jobDetailService.js",
+        "app/components/home/homeService.js",
+        "app/components/home/homeControl.js",
+        "app/components/Nationwide/nationwideService.js",
+        "app/components/Nationwide/nationwideControl.js",
+        "app/components/CS/csService.js",
+        "app/components/CS/csControl.js",
+        "app/components/prebooks/prebookService.js",
+        "app/components/prebooks/prebookControl.js",
+        "app/components/common/gpsForm/gpsFormController.js",
+        "app/components/common/autoCompleteDialog/autoCompleteDialogController.js",
+        "app/components/common/sendMessageDialog/sendMessageDialogController.js",
+        "app/components/common/selectDialog/selectDialogController.js",
+        "app/components/common/addNotesDialog/addNotesDialogController.js",
+        "app/components/common/createJobDialog/createJobDialogController.js",
+        "app/components/common/interCourierChargeDialog/interCourierChargeDialogController.js",
+        "app/services/toastrService.js",
+        "app/services/loadingService.js",
+        "app/services/greetingService.js",
+        "app/services/rateJobService.js",
+        "app/services/dispatchJobService.js",
+    };
+
+    foreach (var script in scripts)
+    {
+        var src = isDevelopment ? script : script?.Replace(".js", ".min.js");
+        <script src="@src" asp-append-version="true"></script>
+    }
+}
 
 </body>
 </html>
