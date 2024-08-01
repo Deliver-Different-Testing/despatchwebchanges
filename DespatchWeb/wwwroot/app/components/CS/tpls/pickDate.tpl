@@ -43,7 +43,7 @@
                     md-clear-button="true"
                     md-item-text="item.text"
                     md-items="item in clientQuerySearch(clientSearchText)"
-                    md-min-length="3"
+                    md-min-length="2"
                     md-search-text="clientSearchText"
                     md-selected-item="clientSelectedItem"
                     md-selected-item-change="selectedClientChange(item)"
@@ -65,7 +65,7 @@
                     md-selected-item="courierSelectedItem"
                     md-selected-item-change="selectedCourierChange(item)"
                     md-item-text="item.text"
-                    md-min-length="3"
+                    md-min-length="1"
                     placeholder="Start typing to enter new courier..."
                     input-aria-labelledby="courierLabel"
                     md-clear-button="true">
