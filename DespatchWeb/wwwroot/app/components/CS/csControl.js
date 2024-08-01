@@ -620,7 +620,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }
     };
 
-    $scope.openSearch = function (boxID) {
+    self.openSearch = function (boxID) {
 
         if (angular.element("#box-" + boxID).find(".box-search").hasClass("open")) {
 
@@ -752,18 +752,18 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $scope.refreshPreBookData(true);
     };
 
-    $scope.unlockJob = function () {
+    self.unlockJob = function () {
         return jdSvc
             .unlockJob(self.currentJob);
     };
 
-    $scope.lockJob = function () {
+    self.lockJob = function () {
         return jdSvc
             .lockJob(self.currentJob);
     };
 
-    $scope.unSplitJob = function () {
-        var confirm = $mdDialog.confirm()
+    self.unSplitJob = function () {
+        const confirm = $mdDialog.confirm()
             .title('Un-Split Job?')
             .textContent('Are you sure you wish to un-split this job?')
             .ok('Yes')
@@ -772,7 +772,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $mdDialog.show(confirm).then(function () {
             uCSData.unSplitJob(self.currentJob.id).then(function (msg) {
                 if ((msg || "").length > 2) {
-                    var alert = $mdDialog.alert()
+                    const alert = $mdDialog.alert()
                         .title('Error')
                         .textContent(msg)
                         .ok('Close');
@@ -822,7 +822,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }
     };
 
-    $scope.swapPOD = function () {
+    self.swapPOD = function () {
         $scope.gather.form = {
             id: "swapPOD",
             title: "Enter the other job number",
@@ -885,7 +885,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $scope.gather.showForm();
     }
 
-    $scope.sendPOD = function () {
+    self.sendPOD = function () {
         if (!self.currentJob.podPhoto) {
             $mdDialog.show(
                 $mdDialog.alert()

@@ -132,7 +132,7 @@
                                     <button
                                             class="btn btn-sm btn-secondary"
                                             ng-click="ctrl.selectAndDispatchJob($event, currentJob)"
-                                            ng-show="currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier == null"
+                                            ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier == null"
                                             title="Dispatch to Courier Code"
                                             type="button">
                                         <i class="material-symbols-outlined small-icon">local_shipping</i>
@@ -162,7 +162,7 @@
                                     <button
                                             class="btn btn-sm btn-secondary"
                                             ng-click="restoreJob(currentJob)"
-                                            ng-show="currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier != null && !ctrl.currentJob.done"
+                                            ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier != null && !ctrl.currentJob.done"
                                             title="Restore Job"
                                             type="button">
                                         <i class="material-symbols-outlined small-icon">undo</i>
@@ -171,8 +171,8 @@
                                 <div aria-label="Basic example" class="btn-group" role="group">
                                     <button
                                             class="btn btn-sm btn-secondary"
-                                            ng-click="swapPOD()"
-                                            ng-show="currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
+                                            ng-click="ctrl.swapPOD()"
+                                            ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
                                             title="Swap POD"
                                             type="button">
                                         <i class="material-symbols-outlined small-icon">swap_horiz</i>
@@ -181,8 +181,8 @@
                                 <div aria-label="Basic example" class="btn-group" role="group">
                                     <button
                                             class="btn btn-sm btn-secondary"
-                                            ng-click="sendPOD()"
-                                            ng-show="currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
+                                            ng-click="ctrl.sendPOD()"
+                                            ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
                                             title="Email Photo POD"
                                             type="button">
                                         <i class="material-symbols-outlined small-icon">send</i>
@@ -191,8 +191,8 @@
                                 <div aria-label="Basic example" class="btn-group" role="group">
                                     <button
                                             class="btn btn-sm btn-secondary"
-                                            ng-click="unlockJob()"
-                                            ng-show="currentJob && !ctrl.currentJob.preBook && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
+                                            ng-click="ctrl.unlockJob()"
+                                            ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
                                             title="Unlock Job"
                                             type="button">
                                         <i class="material-symbols-outlined small-icon">lock</i>
@@ -201,8 +201,8 @@
                                 <div aria-label="Basic example" class="btn-group" role="group">
                                     <button
                                             class="btn btn-sm btn-secondary"
-                                            ng-click="lockJob()"
-                                            ng-show="currentJob && !ctrl.currentJob.preBook && !ctrl.currentJob.bulkJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
+                                            ng-click="ctrl.lockJob()"
+                                            ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && !ctrl.currentJob.bulkJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
                                             title="Lock Job"
                                             type="button">
                                         <i class="material-symbols-outlined small-icon">lock_open</i>
@@ -211,8 +211,8 @@
                                 <div aria-label="Basic example" class="btn-group" role="group">
                                     <button
                                             class="btn btn-sm btn-secondary"
-                                            ng-click="unSplitJob()"
-                                            ng-show="currentJob && !ctrl.currentJob.preBook && (!ctrl.currentJob.locked && ctrl.currentJob.jobRelationshipTypeID ==8)"
+                                            ng-click="ctrl.unSplitJob()"
+                                            ng-show="ctrl.currentJob && !ctrl.currentJob.preBook && (!ctrl.currentJob.locked && ctrl.currentJob.jobRelationshipTypeID ==8)"
                                             title="UnSplit Job"
                                             type="button">
                                         <i class="material-symbols-outlined small-icon">undo</i>
@@ -227,7 +227,7 @@
 
                             <div class="box-search" ng-show="boxes[box.name].showSearch">
                                 <i class="material-symbols-outlined small-icon"
-                                   ng-click="openSearch(box.name)">search</i>
+                                   ng-click="ctrl.openSearch(box.name)">search</i>
                                 <input ng-model="box.searchBox" ng-model-options="{debounce: 300}" placeholder="Search..."
                                        type="text"></div>
 
