@@ -47,6 +47,20 @@ class InterCourierChargeDialogController {
         }
     }
 
+
+    /**
+     * Updates amount by 7 for each zone.
+     *
+     * @param {number} zones - The number of zones.
+     */
+    updateAmountByZones(zones) {
+        if (typeof zones !== 'number' || isNaN(zones)) {
+            throw new Error('zones must be a valid number');
+        }
+
+        this.data.amount = (this.data.amount || 0) + zones * 7;
+    }
+
     /**
      * @param {data} data
      */
