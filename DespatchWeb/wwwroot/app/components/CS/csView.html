@@ -1,4 +1,5 @@
 <div ng-cloak ng-controller="CSControl as ctrl">
+
 <div class="top-bar">
     <img class="logo" src="/images/menu-urgent.png"/>
     <div class="topbar-NavButtons" role="navigation">
@@ -161,7 +162,7 @@
                                 <div aria-label="Basic example" class="btn-group" role="group">
                                     <button
                                             class="btn btn-sm btn-secondary"
-                                            ng-click="restoreJob(currentJob)"
+                                            ng-click="ctrl.restoreJob(ctrl.currentJob)"
                                             ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier != null && !ctrl.currentJob.done"
                                             title="Restore Job"
                                             type="button">
@@ -171,7 +172,7 @@
                                 <div aria-label="Basic example" class="btn-group" role="group">
                                     <button
                                             class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.swapPOD()"
+                                            ng-click="ctrl.swapPOD($event)"
                                             ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
                                             title="Swap POD"
                                             type="button">
@@ -181,7 +182,7 @@
                                 <div aria-label="Basic example" class="btn-group" role="group">
                                     <button
                                             class="btn btn-sm btn-secondary"
-                                            ng-click="ctrl.sendPOD()"
+                                            ng-click="ctrl.sendPOD($event)"
                                             ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook"
                                             title="Email Photo POD"
                                             type="button">
