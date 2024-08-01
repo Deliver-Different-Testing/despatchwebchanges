@@ -1,11 +1,11 @@
 /**
  * @name data
  * @type {object}
- * @property {number} fromCourierId - Represents the source courier ID.
- * @property {number} toCourierId - Represents the destination courier ID.
- * @property {string} reference - Provides a reference value for the data.
- * @property {number} zones - Represents the number of zones involved in courier service.
- * @property {number} amount - Represents the amount to be paid for the courier service.
+ * @property {number} fromCourierId
+ * @property {number} toCourierId
+ * @property {string} reference
+ * @property {number} zones
+ * @property {number} amount
  */
 
 class InterCourierChargeDialogController {
