@@ -1,5 +1,7 @@
 function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys,
                       $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService) {
+    const self = this;
+
     $scope.isAdmin = (ClientInternal === "True");
     $scope.mapSetting = {
         "allCouriers": false,
@@ -22,14 +24,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->
     $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
     $scope.name = "POD";
-    $scope.jdSvc = jdSvc;
 
-    $scope.greetUser = function () {
+    self.greetUser = function () {
         greetingService.greetUser($scope.userName);
     }
 
     $scope.updateGPS = function (currentJob, field, fromRightClick) {
-        $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
+        jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
     $scope.createNewJob = function (event) {
@@ -112,7 +113,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         submitValue: "Save"
     };
 
-    $scope.jdSvc.setGather($scope.gather);
+    jdSvc.setGather($scope.gather);
 
     $scope.options = {
         "detail": {
@@ -447,7 +448,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         layoutsObject[0] = defaultLayout[0];
     }
 
-    $scope.layouts = layoutsObject || defaultLayout;
+    self.layouts = layoutsObject || defaultLayout;
     $scope.userName = FirstName;
 
 
@@ -471,41 +472,41 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         name: "All"
     };
 
-    var layoutToUse = angular.copy($scope.layouts[0].layout);
+    var layoutToUse = angular.copy(self.layouts[0].layout);
 
     if (!$scope.isAdmin) {
         //layoutToUse.columns[0].boxes.splice(0, 1);
         //layoutToUse.columns.splice(2, 1);
     }
 
-    $scope.layout = layoutToUse;
-    $scope.currentLayoutName = $scope.layouts[0].name;
+    self.layout = layoutToUse;
+    self.currentLayoutName = self.layouts[0].name;
 
-    $scope.deleteLayout = function (i) {
-        $scope.layouts.splice(i, 1);
+    self.deleteLayout = function (i) {
+        self.layouts.splice(i, 1);
         if (Modernizr.localstorage) {
-            localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
+            localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify(self.layouts));
         }
     }
 
-    $scope.setLastActiveLayoutName = function (layoutName) {
+    self.setLastActiveLayoutName = function (layoutName) {
         if (Modernizr.localstorage) {
             localStorage.setItem("lastActiveLayoutCS-" + ContactID, layoutName);
         }
     };
 
-    $scope.loadLayout = function (i) {
-        $scope.currentLayoutName = $scope.layouts[i].name;
-        $scope.layout = angular.copy($scope.layouts[i].layout);
+    self.loadLayout = function (i) {
+        self.currentLayoutName = self.layouts[i].name;
+        self.layout = angular.copy(self.layouts[i].layout);
 
         // save layout as last active
-        $scope.setLastActiveLayoutName($scope.currentLayoutName);
+        self.setLastActiveLayoutName(self.currentLayoutName);
 
         $timeout($scope.initFilters, 1000);
     };
 
-    $scope.saveLayout = function () {
-        angular.forEach($scope.layout.columns,
+    self.saveLayout = function () {
+        angular.forEach(self.layout.columns,
             function (column, colKey) {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
                 angular.forEach(column.boxes,
@@ -532,20 +533,20 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 var callData = {
                     "call": "saveLayout",
                     "layoutName": layoutName,
-                    "layout": $scope.layout
+                    "layout": self.layout
                 };
 
 
                 if (Modernizr.localstorage) {
-                    $scope.layouts = $scope.layouts.concat(
+                    self.layouts = self.layouts.concat(
                         {
                             name: layoutName,
-                            layout: angular.copy($scope.layout)
+                            layout: angular.copy(self.layout)
                         });
-                    localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
+                    localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify(self.layouts));
 
                     // save last active layout
-                    $scope.setLastActiveLayoutName(layoutName);
+                    self.setLastActiveLayoutName(layoutName);
                 }
 
                 var deferred = $q.defer();
@@ -724,12 +725,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     $scope.unlockJob = function () {
-        return $scope.jdSvc
+        return jdSvc
             .unlockJob($scope.currentJob);
     };
 
     $scope.lockJob = function () {
-        return $scope.jdSvc
+        return jdSvc
             .lockJob($scope.currentJob);
     };
 
@@ -1386,8 +1387,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     };
 
-    $scope.jdSvc.setSelectJobDetail($scope.selectJobDetail);
-    $scope.jdSvc.setSelectBulkJobDetail($scope.selectBulkJobDetail);
+    jdSvc.setSelectJobDetail($scope.selectJobDetail);
+    jdSvc.setSelectBulkJobDetail($scope.selectBulkJobDetail);
 
     //This method is calling from pagination number
     $scope.pageChanged = function (i) {
@@ -1730,14 +1731,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutCS-" + ContactID);
 
             if (storedLayouts) {
-                $scope.layouts = JSON.parse(storedLayouts);
+                self.layouts = JSON.parse(storedLayouts);
 
                 if (lastActiveLayoutName) {
-                    const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
+                    const lastActiveLayoutIndex = self.layouts.findIndex(l => l.name === lastActiveLayoutName);
 
                     // if the last active layout is found among stored layouts
                     if (lastActiveLayoutIndex !== -1) {
-                        $scope.loadLayout(lastActiveLayoutIndex);
+                        self.loadLayout(lastActiveLayoutIndex);
                     }
                 }
             }
