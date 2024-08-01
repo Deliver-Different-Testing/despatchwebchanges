@@ -1722,7 +1722,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             courierID,
             courier: courierName
         };
-        $scope.currentSelection = ` for Courier ${courierID}  ${courierName}`;
+        self.currentSelection = ` for Courier ${courierID}  ${courierName}`;
         $scope.getCurrentJobs(courierID);
         DispatchData.truckCourierStatus(courierID).then(result => {
             $scope.truckCourierStatus = result.data;
@@ -1832,7 +1832,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
 
         $scope.currentWorkSelection = " for Courier " + courier.label;
-        $scope.currentSelection = " for Courier " + courier.label;
+        self.currentSelection = " for Courier " + courier.label;
 
         $timeout(() => {
             $document.ready(() => {
@@ -1896,7 +1896,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         $scope.currentCourier = courier;
 
-        $scope.currentSelection = " for Courier " + courier.courier;
+        self.currentSelection = " for Courier " + courier.courier;
 
         $timeout(() => {
             $document.ready((event) => {
@@ -2017,7 +2017,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.currentSupport = null;
         $scope.potentialCouriers = false;
         $scope.potentialCouriersSelection = " for Job " + job.jobNo;
-        $scope.currentSelection = " for Job " + job.jobNo;
+        self.currentSelection = " for Job " + job.jobNo;
         if (self.currentJob.rootParentID) {
             DispatchData.getRelatedJobs(self.currentJob.rootParentID, self.currentJob.clientID).then(data => {
                 self.currentJob.relatedJobs = data;
@@ -2030,7 +2030,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         DispatchData.getJobDetail(id).then(data => {
             self.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
-            $scope.currentSelection = " for Job " + jn;
+            self.currentSelection = " for Job " + jn;
         });
     };
 
@@ -2043,7 +2043,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         DispatchData.getJobDetail(support.jobId).then(data => {
             self.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
-            $scope.currentSelection = " for Job " + support.jobNumber;
+            self.currentSelection = " for Job " + support.jobNumber;
             let jobs = [];
             jobs.push(self.currentJob);
             displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
@@ -2104,7 +2104,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 $scope.getPotentialCouriers(job.id);
                 $scope.potentialCouriersSelection = " for Job " + job.jobNo;
                 $scope.currentCourier = null;
-                $scope.currentSelection = " for Job " + job.jobNo;
+                self.currentSelection = " for Job " + job.jobNo;
 
                 const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                 displayPickupPoints(unDispatchedData, true, job);

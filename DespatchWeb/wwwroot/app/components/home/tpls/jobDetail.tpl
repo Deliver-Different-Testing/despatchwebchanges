@@ -37,7 +37,8 @@
                                 {{ctrl.currentJob.fromContactName}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.editJobFromPhone($event, ctrl.currentJob)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.editJobFromPhone($event, ctrl.currentJob)"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">From Phone: </label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''">
@@ -109,7 +110,8 @@
                             <label class="disabled">Status</label>
                             <div class="disabled value">{{ctrl.currentJob.statusName}}</div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.contactClick(ctrl.currentJob)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.contactClick(ctrl.currentJob)"
                              ng-show="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">Booked by Contact</label>&nbsp;<i
                                 class="fa fa-info-circle" ng-class="ctrl.currentJob.locked ? 'disabled' : ''"
@@ -197,7 +199,8 @@
                                 {{ctrl.currentJob.trackingEmail}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.internalStatusClick($event, ctrl.currentJob)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.internalStatusClick($event, ctrl.currentJob)"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">Job FollowUp</label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''">
@@ -212,12 +215,14 @@
                                 {{ctrl.currentJob.conNote}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.currentJob.internalStatusID !=1 && ctrl.currentJob.internalStatusID !=4 && ctrl.jdSvc.editDetailField(ctrl.currentJob, 'FollowupTime','FollowUp Time',ctrl.currentJob.followupTime,ctrl.currentJob.id,'datetime')"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.currentJob.internalStatusID !=1 && ctrl.currentJob.internalStatusID !=4 && ctrl.jdSvc.editDetailField(ctrl.currentJob, 'FollowupTime','FollowUp Time',ctrl.currentJob.followupTime,ctrl.currentJob.id,'datetime')"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked || ctrl.currentJob.internalStatusID ===1 || ctrl.currentJob.internalStatusID ===4 ? 'disabled' : ''">FollowUp
                                 Time</label>
                             <div class="value"
-                                 ng-class="ctrl.currentJob.locked || ctrl.currentJob.internalStatusID ===1 || ctrl.currentJob.internalStatusID ===4  ? 'disabled' : ''">{{ctrl.currentJob.followupTime | date: "dd/MM/yyyy h:mm a"}}
+                                 ng-class="ctrl.currentJob.locked || ctrl.currentJob.internalStatusID ===1 || ctrl.currentJob.internalStatusID ===4  ? 'disabled' : ''">
+                                {{ctrl.currentJob.followupTime | date: "dd/MM/yyyy h:mm a"}}
                             </div>
                         </div>
 
@@ -230,14 +235,16 @@
                                 {{ctrl.currentJob.speedName}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.notifyClick($event, ctrl.currentJob)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.notifyClick($event, ctrl.currentJob)"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">Speed Notified</label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''">
                                 {{ctrl.currentJob.notifiedName}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.currentJob.direct && ctrl.jdSvc.acceptedClick($event, ctrl.currentJob)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.currentJob.direct && ctrl.jdSvc.acceptedClick($event, ctrl.currentJob)"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">Speed Accepted</label>
                             <div class="value"
@@ -245,7 +252,8 @@
                                 {{ctrl.currentJob.acceptedName}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.jobTypeClick($event, ctrl.currentJob)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.jobTypeClick($event, ctrl.currentJob)"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">Job Type</label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''">
@@ -270,14 +278,16 @@
                                 {{ctrl.currentJob.sigNotRequired || "Signature Required"}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.undeliverableClick($event, ctrl.currentJob)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.undeliverableClick($event, ctrl.currentJob)"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">UD status</label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''">
                                 {{ctrl.currentJob.udStatus}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.currentJob, 'DGClass','DG Class',ctrl.currentJob.dgClass,ctrl.currentJob.id, 'select', options.detail.DGClass)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.currentJob, 'DGClass','DG Class',ctrl.currentJob.dgClass,ctrl.currentJob.id, 'select', options.detail.DGClass)"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">DG# / Docs</label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''">
@@ -288,7 +298,7 @@
                         <div class="field">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">Courier</label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''"
-                                 ng-click="courierClick($event, job)">{{ctrl.currentJob.courier}}
+                                 ng-click="courierClick($event, job)">{{ctrl.currentJob.courierData.courier}}
                             </div>
                         </div>
                         <div class="field">
@@ -373,7 +383,8 @@
                                     : "h:mm a"}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.currentJob, 'CompletedTime','Completed Time',ctrl.currentJob.completedTime,ctrl.currentJob.id,'time')"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.currentJob, 'CompletedTime','Completed Time',ctrl.currentJob.completedTime,ctrl.currentJob.id,'time')"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">POD Time</label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''">
@@ -381,7 +392,8 @@
                             | date: "h:mm a"}}
                             </div>
                         </div>
-                        <div class="field" ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.currentJob, 'PODName','POD Name',ctrl.currentJob.podName,ctrl.currentJob.id)"
+                        <div class="field"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.currentJob, 'PODName','POD Name',ctrl.currentJob.podName,ctrl.currentJob.id)"
                              ng-if="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">POD Name</label>
                             <div class="value" ng-class="ctrl.currentJob.locked ? 'disabled' : ''">
@@ -833,7 +845,8 @@
                             <b>Frequency:</b>&nbsp;<i ng-if="ctrl.jdSvc.combos.frequency.length === 0"
                                                       class="fa fa-exclamation"></i> <br/>
                             <i><span ng-repeat="item in ctrl.jdSvc.combos.frequency">{{item.label}}  </span></i>
-                            <div class="multi-element" events="ctrl.jdSvc.combos.frequencyEvents" ng-dropdown-multiselect=""
+                            <div class="multi-element" events="ctrl.jdSvc.combos.frequencyEvents"
+                                 ng-dropdown-multiselect=""
                                  extra-settings="{selectionLimit:1, showUncheckAll:false, closeOnSelect:true}"
                                  options="ctrl.jdSvc.pickFrequency"
                                  selected-model="ctrl.jdSvc.combos.frequency"></div>
@@ -844,13 +857,14 @@
                             <i><span ng-repeat="item in ctrl.jdSvc.combos.days">{{item.label}}  </span></i>
                             <div class="multi-element" events="ctrl.jdSvc.combos.daysEvents" ng-dropdown-multiselect=""
                                  extra-settings="{showUncheckAll:false, closeOnSelect:true, closeOnDeselect:true}"
-                                 options="ctrl.jdSvc.pickDays" selected-model="ctrl.jdSvc.combos.days"></div>
+                                 option="ctrl.jdSvc.pickDays" selected-model="ctrl.jdSvc.combos.days"></div>
                         </div>
                         <div class="field" ng-class="ctrl.jdSvc.combos.holidays.length > 0 ? '' : 'red'">
                             <b>Holidays:</b>&nbsp;<i ng-if="ctrl.jdSvc.combos.holidays.length === 0"
                                                      class="fa fa-exclamation"></i><br/>
                             <i><span ng-repeat="item in ctrl.jdSvc.combos.holidays">{{item.label}}  </span></i>
-                            <div class="multi-element" events="ctrl.jdSvc.combos.holidaysEvents" ng-dropdown-multiselect=""
+                            <div class="multi-element" events="ctrl.jdSvc.combos.holidaysEvents"
+                                 ng-dropdown-multiselect=""
                                  extra-settings="{selectionLimit:1, showUncheckAll:false, closeOnSelect:true}"
                                  options="ctrl.jdSvc.pickHolidays"
                                  selected-model="ctrl.jdSvc.combos.holidays"></div>
