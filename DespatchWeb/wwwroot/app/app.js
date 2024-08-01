@@ -85,6 +85,15 @@ angular
             });
         }
     })
+    .config($mdDateLocaleProvider => {
+        $mdDateLocaleProvider.formatDate = date => {
+            const day = date.getDate();
+            const monthIndex = date.getMonth();
+            const year = date.getFullYear();
+
+            return day + '/' + (monthIndex + 1) + '/' + year;
+        };
+    })
     .config(["HereMapsConfigProvider", HereMapsConfigProvider => {
         HereMapsConfigProvider.setOptions({
             "app_id": "bBPfh2x8Cauun3ygLMAx",
