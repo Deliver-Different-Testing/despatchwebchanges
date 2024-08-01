@@ -1,6 +1,6 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         loadingService, $mdDialog, $parse, $q, $scope, $state,
-                        $window, $timeout, toastrService, DispatchData, uCSData) {
+                        $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService) {
     const self = this;
 
     $scope.isInternal = (ClientInternal === "True");
@@ -1014,195 +1014,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // DISPATCH THE JOBS
     ///////////////////////////////////////
     $scope.dispatchJobs = courier => {
-        let foundCourier = $scope.pickCouriers.find(c => c.id === courier);
-        if (foundCourier === undefined) {
-            const confirm = $mdDialog.confirm()
-                .title('Courier Offline')
-                .textContent('Dispatch anyway?')
-                .ok('Yes')
-                .cancel('No');
-
-            $mdDialog.show(confirm).then(() => {
-                foundCourier = $scope.pickAllCouriers.find(c => c.id === courier);
-                return $scope.dispatchJobsContinue(courier, foundCourier, true);
-            }, () => {
-                // No action on No
-            });
-
-            return;
-        }
-
-        return $scope.dispatchJobsContinue(courier, foundCourier, false);
-    };
-
-    $scope.dispatchJobsContinue = (courier, foundCourier, offline) => {
-        const callData = {
-            "call": "dispatchJobs",
-            "courier": courier,
-            "jobs": []
-        };
-
-        const reset = () => {
-            const activeElements = angular.element('.activeTable .active');
-            for (let i = 0; i < activeElements.length; i++) {
-                const jobId = angular.element(activeElements[i]).data("jobid");
-                let job = $scope.jobList.find(jo => jo.id === jobId);
-                if (job) {
-                    job.courier = null;
-                }
-            }
-        };
-
-        let activeElements = angular.element('#jobList .active');
-        for (let i = 0; i < activeElements.length; i++) {
-            const currentElement = angular.element(activeElements[i]);
-            const jobId = currentElement.data("jobid");
-            let job = $scope.jobList.find(jo => jo.id === jobId);
-            if (job) {
-                const jobNo = job.jobNo;
-                if (job.courierData.courierID !== null) {
-                    $mdDialog.alert()
-                        .title('Alert')
-                        .textContent(`restore ${jobNo} prior to despatching to another courier`)
-                        .ok('Close')
-                        .show();
-
-                    reset();
-                    return;
-                }
-
-                if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-                    $mdDialog.alert()
-                        .title('Alert')
-                        .textContent(`DG job ${jobNo} can not be despatched to courier ${courier} - doesn't have DGLicense.`)
-                        .ok('Close')
-                        .show();
-
-                    reset();
-                    return;
-                }
-
-                if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-                    $mdDialog.alert()
-                        .title('Alert')
-                        .textContent(`Courier ${courier} doesn't have a DGLicense or license has expired.`)
-                        .ok('Close')
-                        .show();
-
-                    reset();
-                    return;
-                }
-
-                if (job.dgClass !== null && job.dgClass > 0) {
-                    DispatchData.addFollowupEvent(jobNo, job.clientID, job.contactName, ContactID, foundCourier.courierID, job.id, job.jobType, FirstName);
-                }
-
-                callData.jobs.push(currentElement.attr("data-jobid"));
-            }
-        }
-
-        return DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(response => {
-            self.getData().then(() => {
-                angular.element('#box-map .loading').css('display', '');
-
-                $scope.courier = {gpsCourier: foundCourier.id};
-                if (!offline) {
-                    $scope.searchCourier();
-                } else {
-                    $scope.getCurrentJobs(foundCourier.id);
-                }
-                $timeout(() => {
-                    let firstRow = angular.element('#jobList tr:first-child');
-                    firstRow.addClass('active');
-                    firstRow.find('.dispatchField').focus();
-                }, 200);
-
-            });
-            return response;
-        });
-
-    }
-
-    $scope.dispatchJobsFromPotentialCouriers = courier => {
-        const foundCourier = $scope.pickCouriers.find(c => c.id === courier);
-        if (foundCourier === undefined) {
-            alert("Invalid Courier");
-            return;
-        }
-
-        let callData = {
-            "call": "dispatchJobs",
-            "courier": courier,
-            "jobs": []
-        };
-
-        const reset = () => {
-            let activeElements = angular.element('#jobList .active');
-            for (let i = 0; i < activeElements.length; i++) {
-                const currentElement = angular.element(activeElements[i]);
-                const jobId = currentElement.data("jobid");
-                let job = $scope.jobList.find(jo => jo.id === jobId);
-                if (job) {
-                    job.courier = null;
-                }
-            }
-        };
-
-        let activeElements = angular.element('#jobList .active');
-        for (let i = 0; i < activeElements.length; i++) {
-            const currentElement = angular.element(activeElements[i]);
-            const jobId = currentElement.attr("data-jobid");
-            let job = $scope.jobList.find(jo => jo.id === jobId);
-            if (job) {
-                const jobNo = job.jobNo;
-                if (job.courierData.courierID !== null) {
-                    $mdDialog.alert()
-                        .clickOutsideToClose(true)
-                        .title('Alert')
-                        .textContent(`Restore ${jobNo} prior to despatching to another courier`)
-                        .ok('Close');
-                    $mdDialog.show(alert);
-                    reset();
-                    return;
-                }
-                if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-                    $mdDialog.alert()
-                        .clickOutsideToClose(true)
-                        .title('Dangerous Goods Job Alert')
-                        .textContent(`DG job ${jobNo} can not be despatched to courier ${courier} - doesn't have DGLicense.`)
-                        .ok('Close');
-                    $mdDialog.show(alert);
-                    reset();
-                    return;
-                }
-                if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-                    reset();
-                    $mdDialog.alert()
-                        .clickOutsideToClose(true)
-                        .title('Courier Alert')
-                        .textContent(`Courier ${courier} doesn't have a DGLicense or license has expired.`)
-                        .ok('Close');
-                    $mdDialog.show(alert);
-                    return;
-                }
-                if (job.dgClass !== null && job.dgClass > 0) {
-                    DispatchData.addFollowupEvent(jobNo, job.clientID, job.contactName, ContactID, foundCourier.courierID, job.id, job.jobType, FirstName);
-                }
-                callData.jobs.push(jobId);
-            }
-        }
-
-        return DispatchData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(response => {
-            self.getData().then(() => {
-                angular.element('#box-map .loading').css('display', '');
-
-                $scope.courier = {gpsCourier: foundCourier.id};
-                $scope.searchCourier();
-
-
-            });
-            return response;
-        });
+        return dispatchJobService.dispatchJob(courier);
     };
 
     ////////////////////////////////////////
@@ -3446,8 +3258,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 }
 
-angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", 'greetingService', 'hotkeys', "JobDetailService",
-    'loadingService', "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", HomeController]);
+angular.module("uDispatch").controller("HomeControl", ['$document', "$filter",
+    'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "$mdDialog",
+    "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService',
+    "DispatchData", "uCSData", "dispatchJobService", HomeController]);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;

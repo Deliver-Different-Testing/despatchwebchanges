@@ -1,5 +1,6 @@
 function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys,
-                      $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService) {
+                      $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document,
+                      $timeout, loadingService, dispatchJobService) {
     const self = this;
 
     $scope.isAdmin = (ClientInternal === "True");
@@ -24,6 +25,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->
     $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
     $scope.name = "POD";
+
+    self.jdSvc = jdSvc;
+    self.dispatchJobService = dispatchJobService;
 
     self.greetUser = function () {
         greetingService.greetUser($scope.userName);
@@ -792,90 +796,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 return $scope.selectJobDetail(job.id);
             });
         }
-
-
     };
-
-    self.dispatchJobs = function (courier, job) {
-        let foundCourier = $scope.pickCouriers.find(c => c.id === courier);
-        if (foundCourier === undefined) {
-            const confirm = $mdDialog.confirm()
-                .title('Courier Offline')
-                .textContent('Dispatch anyway?')
-                .ok('Yes')
-                .cancel('No');
-
-            $mdDialog.show(confirm).then(function () {
-                foundCourier = $scope.pickAllCouriers.find(c => c.id === courier);
-                return self.dispatchJobsContinue(courier, foundCourier, true, job);
-            }, function () {
-                // user clicked 'No'
-            });
-            return;
-        }
-
-        return self.dispatchJobsContinue(courier, foundCourier, false, job);
-    };
-
-    self.dispatchJobsContinue = function (courier, foundCourier, offline, job) {
-        const callData = {
-            "call": "dispatchJobs",
-            "courier": courier,
-            "jobs": []
-        };
-
-
-        const jobNumber = job.jobNo;
-        if (job.courierData.courierID !== null) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .parent(angular.element($document.body))
-                    .clickOutsideToClose(true)
-                    .title('Message')
-                    .textContent('Restore ' + jobNumber + ' prior to despatching to another courier')
-                    .ariaLabel('Alert')
-                    .ok('OK')
-            );
-
-            return;
-        }
-
-        if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .parent(angular.element($document.body))
-                    .clickOutsideToClose(true)
-                    .title('Message')
-                    .textContent("DG job " + jobNumber + " can not be despatched to courier " + courier + " - doesn't have DGLicense.")
-                    .ariaLabel('Alert')
-                    .ok('OK')
-            );
-            return;
-        }
-
-        if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .parent(angular.element($document.body))
-                    .clickOutsideToClose(true)
-                    .title('Message')
-                    .textContent("Courier " + courier + " doesn't have a DGLicense or license has expired.")
-                    .ariaLabel('Alert')
-                    .ok('OK')
-            );
-
-            return;
-        }
-
-        callData.jobs.push(job.id);
-
-        return uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs).then(function (response) {
-            angular.element("input.pod-DispatchField:visible").val("");
-            $scope.selectJobDetail(job.id);
-            return response;
-        });
-
-    }
 
     $scope.swapPOD = function () {
         $scope.gather.form = {
@@ -1824,8 +1745,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.onSearchRangeChange($scope.dateSearchRange);
 }
 
-angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state", "$stateParams", "$filter", '$parse', "hotkeys",
-    "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog', 'greetingService', '$document', '$timeout', 'loadingService', CSController]);
+angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state",
+    "$stateParams", "$filter", '$parse', "hotkeys", "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog',
+    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', CSController]);
 
 // Convert Degress to Radians
 function Deg2Rad(deg) {

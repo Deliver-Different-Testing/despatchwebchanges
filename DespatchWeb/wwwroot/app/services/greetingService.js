@@ -20,5 +20,4 @@ class GreetingService {
     }
 }
 
-// Register the service with the AngularJS module
 angular.module('uDispatch').service('greetingService', GreetingService);

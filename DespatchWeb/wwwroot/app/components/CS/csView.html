@@ -129,7 +129,7 @@
 
                             <div class="box-details" ng-show="box.name == 'jobDetail'">
                                 <input class="pod-DispatchField" id="pod-DispatchField"
-                                       ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(dispatchCourier, currentJob)"
+                                       ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobService.dispatchJob(dispatchCourier, currentJob)"
                                        ng-model="dispatchCourier"
                                        ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier == null"
                                        placeholder="dispatch"

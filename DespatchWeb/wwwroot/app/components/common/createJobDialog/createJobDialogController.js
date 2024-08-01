@@ -41,6 +41,8 @@
  * @class
  */
 class CreateJobDialogController {
+    dispatchJobService;
+
     /**
      * @param {Object} $scope - The active AngularJS scope.
      * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
@@ -48,10 +50,19 @@ class CreateJobDialogController {
      * @param {Object} toastrService - The service used for toast notifications.
      * @param {Object} $http - Angular's built-in $http service.
      * @param {Object} $document - Angular's built-in $document service.
+     * @param {Object }dispatchJobService
      * @param {number} staffId - The ID of the staff member initiating the action.
      * @param {string} despatcherName
      */
-    constructor($scope, $mdDialog, DispatchData, toastrService, $http, $document, staffId, despatcherName) {
+    constructor($scope,
+                $mdDialog,
+                DispatchData,
+                toastrService,
+                $http,
+                $document,
+                dispatchJobService,
+                staffId,
+                despatcherName) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
@@ -60,6 +71,7 @@ class CreateJobDialogController {
         this.$document = $document;
         this._staffId = staffId;
         this._despatcherName = despatcherName;
+        this.dispatchJobService = dispatchJobService;
 
         this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
@@ -265,16 +277,17 @@ class CreateJobDialogController {
             job.date = this.jobDate.toISOString();
             job.speedId = this.selectedSpeed.id;
 
+            // Create Job
+            const response = await this._createJob(job);
+            const jobId = response.data.jobId;
+
+            // Dispatch to courier if selected
             if (this.selectedCourier) {
-                job.courierId = this.selectedCourier.id;
+                await this.dispatchJobService.dispatchJobByJobId(this.selectedCourier.id, jobId)
             }
 
-            // Create Job
-            const response = await this.createJob(job);
-            const newJobId = response.data.jobId;
-
             // Pass new jobId back to function that called dialog
-            this.$mdDialog.hide(newJobId);
+            this.$mdDialog.hide(jobId);
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         } finally {
@@ -287,19 +300,15 @@ class CreateJobDialogController {
      * @param {Job} job - A job object to create.
      * @returns {Promise<Object>} - A Promise that fulfills with the server's response to job creation.
      */
-    async createJob(job) {
-        try {
-            const url = "job/QuickCreateJob/";
-            const callData = {
-                job,
-                staffId: this._staffId,
-                despatcherName: this._despatcherName
-            };
+    async _createJob(job) {
+        const url = "job/QuickCreateJob/";
+        const callData = {
+            job,
+            staffId: this._staffId,
+            despatcherName: this._despatcherName
+        };
 
-            return await this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
-        } catch (error) {
-            this.toastrService.showErrorToast(error.message);
-        }
+        return await this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
     }
 
     /**
