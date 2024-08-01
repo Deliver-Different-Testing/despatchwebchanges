@@ -1,3 +1,177 @@
+/**
+ * @typedef {Object} Job
+ * @property {number} id - The unique identifier for the job.
+ * @property {number} rootParentID - The root parent's unique identifier.
+ * @property {string} time - The time associated with the job in ISO 8601 date string format.
+ * @property {?string} bookedDate - The date the job was booked, if applicable.
+ * @property {boolean} direct - Whether the job is direct or not.
+ * @property {boolean} van - Whether the job is associated with a van.
+ * @property {?number} jobRelationshipTypeID - The unique identifier for the job relationship type.
+ * @property {boolean} vanOK - Whether a van is OK for the job.
+ * @property {boolean} done - Whether the job is done.
+ * @property {boolean} void - Whether the job is void.
+ * @property {boolean} truck - Whether the job is associated with a truck.
+ * @property {boolean} saturdayDelivery - Whether the job is for Saturday delivery.
+ * @property {boolean} return - Whether the job is a return.
+ * @property {boolean} pedal - Whether the job involves pedaling.
+ * @property {?boolean} reprice - Whether the job is repriced.
+ * @property {boolean} attention - Whether the job requires attention.
+ * @property {?number} pickupFrom - The pick up from location unique identifier.
+ * @property {string} jobNo - The job number.
+ * @property {string} speed - The speed category associated with the job.
+ * @property {string} speedName - The name of the speed category associated with the job.
+ * @property {?string} source - The source associated with the job.
+ * @property {string} notifiedName - The name of the notified speed category associated with the job.
+ * @property {string} acceptedName - The name of the accepted speed category associated with the job.
+ * @property {number} speedId - The unique identifier for the speed category.
+ * @property {string} notify - The notification status or value for the job.
+ * @property {Object} vehicle - The vehicle detail object.
+ * @property {number} vehicle.id - The unique identifier for the vehicle.
+ * @property {string} vehicle.label - The label of the vehicle type. * @property {Array<object>} palletInfo - An array of objects containing pallet information.
+ * @property {number} clientId - The unique identifier for the client.
+ * @property {number} jobType - The unique identifier for the job type.
+ * @property {string} client - The client's code or short name.
+ * @property {string} clientName - The full name of the client.
+ * @property {string} from - The start location for the job.
+ * @property {number} fromSuburbId - The unique identifier for the suburb of the start location.
+ * @property {string} fromSuburbName - The name of the suburb of the start location.
+ * @property {string} fromPostCode - The postcode of the start location.
+ * @property {string} fromAddress - The full address of the start location.
+ * @property {string} to - The end location for the job.
+ * @property {number} toSuburbID - The unique identifier for the suburb of the end location.
+ * @property {string} toSuburbName - The name of the suburb of the end location.
+ * @property {string} toPostCode - The postcode of the end location.
+ * @property {string} toAddress - The full address of the end location.
+ * @property {string} toCity - The city of the end location.
+ * @property {?string} courier - The courier assigned to the job.
+ * @property {number} gstRate - The Goods and Services Tax (GST) rate applied to the job.
+ * @property {number} remain - Remaining quantity or value pertaining to the job.
+ * @property {number} pickupTime - The scheduled pickup time for the job.
+ * @property {number} deliveryTime - The scheduled delivery time for the job.
+ * @property {number} alertLatePickup - Alert flag for a late pickup.
+ * @property {number} alertLateDelivery - Alert for a late delivery.
+ * @property {number} minutes - The estimated duration of the job in minutes.
+ * @property {number} statusID - The status ID of the job.
+ * @property {string} status - The status of the job.
+ * @property {string} statusName - The name representing the job's status.
+ * @property {?string} lp - Uncertain property, could relate to "last pickup" or other aspect of the job based context.
+ * @property {?string} ld - Uncertain property, could relate to "last delivery" or other aspect of the job based context.
+ * @property {string} contactName - The name of the main contact for the job.
+ * @property {string} loggedInContactName - The name of the contact who logged in.
+ * @property {string} deliverToContact - The name of the contact to who delivery should be made.
+ * @property {number} trackingMethod - The tracking method used for the job.
+ * @property {string} trackingMobile - The mobile number for tracking.
+ * @property {?string} trackingEmail - The email address for tracking.
+ * @property {?string} udStatus - Uncertain property, could relate to a status or identifier in the system.
+ * @property {?string} podPhoto - Proof of Delivery photo if available.
+ * @property {?string} deliverySignature - The signature made upon delivery.
+ * @property {?string} podPhotos - Array of Proof of Delivery photos if available.
+ * @property {?string} podName - Proof of Delivery name if available.
+ * @property {string} description - Description of the job.
+ * @property {string} reference1 - Reference data related to the job.
+ * @property {string} reference2 - Additional reference data related to the job.
+ * @property {boolean} autoSize - Whether the size was automatically determined.
+ * @property {boolean} autoPrice - Whether the price was automatically determined.
+ * @property {number} price - The price for the job.
+ * @property {number} size - The size associated with the job.
+ * @property {string} distance - The distance associated with the job.
+ * @property {string} quantity - The quantity associated with the job.
+ * @property {string} weight - The weight associated with the job.
+ * @property {?string} height - The height associated with the job.
+ * @property {?string} width - The width associated with the job.
+ * @property {?string} depth - The depth associated with the job.
+ * @property {string} contractName - The name of the contract associated with the job.
+ * @property {number} contractId - The unique identifier for the contract.
+ * @property {string} contractingChainName - The name of the contract chain associated with the job.
+ * @property {number} contractingChainId - The unique identifier for the contract chain.
+ * @property {number} pricingBandId - The unique identifier for the pricing band.
+ * @property {string} pricingBandName - The name of the pricing band.
+ * @property {number} charged - The amount charged for the job.
+ * @property {string} chargeCode - The code representing the charge for the job.
+ * @property {number} volumeCubed - The cubed volume associated with the job.
+ * @property {boolean} express - Indicates if the job is an express delivery.
+ * @property {string} itemDescription - Description of the item for the job.
+ * @property {number} directDriveJobId - The unique identifier for direct drive job.
+ * @property {string} transportType - The type of transport used for the job.
+ * @property {number} deliveryCharge - The charge for delivery.
+ * @property {number} totalCharge - The total charge for the job.
+ * @property {string} deliverySuburb - The suburb for delivery.
+ * @property {?string} deliveryPostCode - The postcode for delivery.
+ * @property {?string} deliveryState - The state for delivery.
+ * @property {?string} deliveryContactName - The contact name for delivery.
+ * @property {?string} deliveryContactNumber - The contact number for delivery.
+ * @property {?string} deliveryContactEmail - The contact email for delivery.
+ * @property {string} pickupSuburb - The suburb for pickup.
+ * @property {?string} pickupPostCode - The postcode for pickup.
+ * @property {?string} pickupState - The state for pickup.
+ * @property {?string} pickupContactName - The contact name for pickup.
+ * @property {?string} pickupContactNumber - The contact number for pickup.
+ * @property {?string} pickupContactEmail - The contact email for pickup.
+ * @property {string} formattedDeliveryAddress - The formatted delivery address.
+ * @property {string} formattedPickupAddress - The formatted pickup address.
+ * @property {?boolean} isPickup - Flag determining if this location is meant for pickup.
+ * @property {?boolean} isDelivery - Flag determining if this location is meant for delivery.
+ * @property {string} createdDate - The date the job was created on.
+ * @property {string} updatedDate - The date the job was last updated on.
+ * @property {?string} deliveredDate - The date the job was delivered on.
+ * @property {?string} pickedUpDate - The date the job was picked up on.
+ * @property {?string} eta - The estimated time of arrival for delivery.
+ * @property {?string} pickupEta - The estimated time of arrival for pickup.
+ * @property {boolean} isDeleted - Flag determining if the job is deleted.
+ * @property {Array<object>} additionalProperties - An array of additional properties associated with the job.
+ * @property {?string} locationType - The type of location (pick up, delivery, etc.)
+ * @property {number} locationId - The unique identifier for the location.
+ * @property {string} locationName - The name of the location.
+ * @property {?string} locationSuburb - The suburb of the location.
+ * @property {?string} locationPostCode - The postal code of the location.
+ * @property {?string} locationState - The state where the location is situated.
+ * @property {?string} locationContactName - The contact name for the location.
+ * @property {?string} locationContactNumber - The contact number for the location.
+ * @property {?string} locationContactEmail - The contact email for the location.
+ * @property {?string} serviceLevel - The service level for the job.
+ * @property {?boolean} isExpedited - Flag indicating whether the job is expedited.
+ * @property {?string} jobStatus - The current status of the job.
+ * @property {?string} jobType - The type of the job.
+ * @property {?string} jobPriority - The priority assigned to the job.
+ * @property {?boolean} isHighValue - Flag indicating whether the job is of high value.
+ * @property {Array<object>} attachments - An array of attachments related to the job.
+ * @property {Array<object>} comments - An array of comments related to the job.
+ * @property {?string} specialInstructions - Any special instructions related to the job.
+ * @property {?string} termsAndConditions - The terms and conditions for the job.
+ * @property {?string} clientReferenceNumber - The client's reference number for the job.
+ * @property {?string} clientJobId - The ID of the job as provided by the client.
+ * @property {Array<object>} jobRoutes - An array of routes related to the job.
+ * @property {?number} estimatedJobDuration - The estimated duration of the job in minutes.
+ * @property {?string} driverNotes - Any relevant notes for the driver regarding the job.
+ * @property {?string} pickupWindowStart - The start of the pickup window in ISO 8601 format.
+ * @property {?string} pickupWindowEnd - The end of the pickup window in ISO 8601 format.
+ * @property {?string} deliveryWindowStart - The start of the delivery window in ISO 8601 format.
+ * @property {?string} deliveryWindowEnd - The end of the delivery window in ISO 8601 format.
+ * @property {?string} deliveryDate - The delivery date in ISO 8601 format.
+ * @property {?string} holdAtLocation - A designated location where the goods can be held.
+ * @property {?string} specialHandling - Any special handling requirements for the delivery.
+ * @property {number} numberOfPieces - The total number of pieces in the delivery.
+ * @property {number} totalWeight - The total weight of the delivery items.
+ * @property {?string} weightUnit - The unit of measure used for the weight.
+ * @property {?string} totalVolume - The total volume of the delivery items.
+ * @property {?string} volumeUnit - The unit of measure used for the volume.
+ * @property {?boolean} isDangerousGoods - Flag indicating whether the job involves dangerous goods.
+ * @property {?string} originNote - A note related to the origin of the job.
+ * @property {?string} destinationNote - A note related to the destination of the job.
+ * @property {?number} temperatureControlledMin - The minimum temperature to be maintained (if the job is temperature controlled).
+ * @property {?number} temperatureControlledMax - The maximum temperature to be maintained (if the job is temperature controlled).
+ * @property {?boolean} isLiveAnimals - Flag indicating whether the job involves live animals.
+ * @property {?string} animalInfo - Any additional information related to the animals (if the job involves live animals).
+ * @property {?boolean} isPerishable - Flag indicating whether the job involves perishable items.
+ * @property {?string} perishableInfo - Any additional information related to the perishable items (if the job involves perishable items).
+ * @property {?string} customerSignature - The signature of the customer at delivery.
+ * @property {?string} deliveryConfirmationName - The name of the person who confirmed the delivery.
+ * @property {?string} deliveryConfirmationDate - The date and time (in ISO 8601 format) when the delivery was confirmed.
+ * @property {?string} correctionNote - A note made in case there were any corrections to the job details.
+ * @property {Array<object>} relatedJobs - An array of objects containing related jobs.
+ * @property {?string} $hashKey - Internal AngularJS property for object hashing.
+ */
+
 class JobDetailService {
     static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout"];
 
@@ -8,7 +182,7 @@ class JobDetailService {
         loadingService,
         rateJobService,
         $document,
-        $timeout
+        $timeout,
     ) {
         this.DispatchData = DispatchData;
         this.$mdDialog = $mdDialog;
@@ -376,6 +550,9 @@ class JobDetailService {
         this.selectBulkJobDetail = f;
     }
 
+    /**
+     * @param {Job} job
+     */
     setJob(job) {
         this.currentJob = job;
         this.DispatchData.getContactList(job.clientID).then(data => {
@@ -383,6 +560,10 @@ class JobDetailService {
         });
     }
 
+    /**
+     * @param {Event} $event
+     * @param {Job} job
+     */
     getClientContactDetail($event, job) {
         $event.stopPropagation();
         this.DispatchData.getContactDetailList(job.clientID).then(data => {
@@ -411,6 +592,9 @@ class JobDetailService {
         return selected !== undefined ? selected.text : "";
     }
 
+    /**
+     * @param {Job} job
+     */
     hasDGDocs(job) {
         if (job.dgClass) {
             return ((job.dgDocumentation || 0) === 1) || ((job.dgDocumentation || false) === true)
@@ -419,9 +603,12 @@ class JobDetailService {
         } else {
             return "";
         }
-
     }
 
+    /**
+     * @param {Event} $event
+     * @param {Job} job
+     */
     displayPriceBreakdown($event, job) {
         $event.stopPropagation();
         console.log(job);
@@ -1355,7 +1542,7 @@ class JobDetailService {
 
     /**
      * @param {Event} event
-     * @param job
+     * @param {Job} job
      * @param {[]} data
      * @param {string} fieldName
      * @param {string} title
@@ -1508,6 +1695,10 @@ class JobDetailService {
         this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
     }
 
+    /**
+     * @param {Event} event
+     * @param {*} job
+     */
     courierClick(event, job) {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
