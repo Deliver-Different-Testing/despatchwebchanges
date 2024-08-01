@@ -798,29 +798,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.gather.showForm();
     };
 
-    self.selectAndDispatchJob = (event, job) => {
-        const confirm = $mdDialog.prompt()
-            .title("Despatch To Courier")
-            .textContent('Select courier to despatch job to.')
-            .ariaLabel("courier to dispatch too")
-            .targetEvent(event)
-            .required(true)
-            .ok("Despatch")
-            .cancel('Cancel');
-
-        $mdDialog.show(confirm).then(courierNumber => {
-            try {
-                dispatchJobService.dispatchJob(courierNumber, job).then(() => {
-                    toastrService.showSuccessToast(`Job despatched to courier ${courierNumber} successfully`);
-                });
-            } catch (error) {
-                toastrService.showErrorToast(error.message);
-            }
-        }, () => {
-            // User clicked cancel
-        });
-    }
-
     self.messageClick = (event, job) => {
         const title = "Send Message";
 

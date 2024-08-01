@@ -1,8 +1,7 @@
 class DispatchJobService {
-    static $inject = ["$scope", "$mdDialog", "$document", "uCSData", "DispatchData"];
+    static $inject = ["$mdDialog", "$document", "uCSData", "DispatchData"];
 
-    constructor($scope, $mdDialog, $document, uCSData, DispatchData) {
-        this.$scope = $scope;
+    constructor($mdDialog, $document, uCSData, DispatchData) {
         this.$mdDialog = $mdDialog;
         this.$document = $document;
         this.uCSData = uCSData;
@@ -47,7 +46,7 @@ class DispatchJobService {
                 .cancel('No');
 
             this.$mdDialog.show(confirm).then(() => {
-                foundCourier = this.$scope.pickAllCouriers.find(c => c.id === courierNumber);
+                foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
                 return this._dispatchJobsContinue(courierNumber, foundCourier, true, job);
             }, () => {
                 // user clicked 'No'
@@ -119,7 +118,6 @@ class DispatchJobService {
         const response = await this.uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
         angular.element("input.pod-DispatchField:visible").val("");
 
-        this.$scope.selectJobDetail(job.id);
         return response;
     }
 }

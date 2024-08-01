@@ -1,6 +1,6 @@
 function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys,
                       $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document,
-                      $timeout, loadingService, dispatchJobService) {
+                      $timeout, loadingService, dispatchJobService, toastrService) {
     const self = this;
 
     $scope.isAdmin = (ClientInternal === "True");
@@ -36,6 +36,29 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.updateGPS = function (currentJob, field, fromRightClick) {
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
+
+    self.selectAndDispatchJob = (event, job) => {
+        const confirm = $mdDialog.prompt()
+            .title("Despatch To Courier")
+            .textContent('Select courier to despatch job to.')
+            .ariaLabel("courier to dispatch too")
+            .targetEvent(event)
+            .required(true)
+            .ok("Despatch")
+            .cancel('Cancel');
+
+        $mdDialog.show(confirm).then(courierNumber => {
+            try {
+                dispatchJobService.dispatchJob(courierNumber, job).then(() => {
+                    toastrService.showSuccessToast(`Job despatched to courier ${courierNumber} successfully`);
+                });
+            } catch (error) {
+                toastrService.showErrorToast(error.message);
+            }
+        }, () => {
+            // User clicked cancel
+        });
+    }
 
     self.createNewJob = function (event) {
         // Dialog
@@ -1747,7 +1770,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
 angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state",
     "$stateParams", "$filter", '$parse', "hotkeys", "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog',
-    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', CSController]);
+    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', CSController]);
 
 // Convert Degress to Radians
 function Deg2Rad(deg) {

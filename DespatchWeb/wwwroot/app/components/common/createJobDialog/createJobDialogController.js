@@ -283,7 +283,9 @@ class CreateJobDialogController {
 
             // Dispatch to courier if selected
             if (this.selectedCourier) {
-                await this.dispatchJobService.dispatchJobByJobId(this.selectedCourier.id, jobId)
+                await this.dispatchJobService.dispatchJobByJobId(this.selectedCourier.id, jobId).then(() => {
+                    this.$scope.selectJobDetail(job.id);
+                })
             }
 
             // Pass new jobId back to function that called dialog
