@@ -452,10 +452,10 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.userName = FirstName;
 
 
-    var now = new Date();
-    var sevenDaysBefore = new Date();
+    const now = new Date();
+    let sevenDaysBefore = new Date();
     sevenDaysBefore.setDate(now.getDate() - 7);
-    var sevenDaysAfter = new Date();
+    let sevenDaysAfter = new Date();
     sevenDaysAfter.setDate(now.getDate() + 7);
 
     $scope.pickDateService = {
