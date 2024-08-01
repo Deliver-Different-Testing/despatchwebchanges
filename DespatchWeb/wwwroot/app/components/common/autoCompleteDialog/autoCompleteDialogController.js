@@ -1,7 +1,6 @@
 // Controller to handle the autocomplete popups
 class AutoCompleteDialogController {
-    constructor($scope, $mdDialog, DispatchData, toastrService, loadingService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
-        this.$scope = $scope;
+    constructor($mdDialog, DispatchData, toastrService, loadingService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;

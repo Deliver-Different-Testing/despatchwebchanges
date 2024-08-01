@@ -3,7 +3,6 @@
  */
 class AddNotesDialogController {
     /**
-     * @param {Object} $scope - The active AngularJS scope.
      * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
      * @param {Object} toastrService - The service to display toasters
      * @param {Object} DispatchData - The service used for data dispatching.
@@ -12,15 +11,14 @@ class AddNotesDialogController {
      * @param {string} title - The title of the dialog.
      * @param {Job} job - The job for which the selection is being made.
      */
-    constructor($scope,
-                $mdDialog,
-                toastrService,
-                DispatchData,
-                id,
-                fieldName,
-                title,
-                job) {
-        this.$scope = $scope;
+    constructor(
+        $mdDialog,
+        toastrService,
+        DispatchData,
+        id,
+        fieldName,
+        title,
+        job) {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;

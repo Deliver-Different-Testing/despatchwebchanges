@@ -1,10 +1,9 @@
 class SendMessageDialogController {
-    constructor($scope, $mdDialog, DispatchData, toastrService, selectedCourierId) {
-        this.$scope = $scope;
+    constructor($mdDialog, DispatchData, toastrService, selectedCourierId) {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
-        this.selectedCourierId = selectedCourierId;
+        this._selectedCourierId = selectedCourierId;
 
         this.message = "";
     }
@@ -12,9 +11,9 @@ class SendMessageDialogController {
     async submit(message) {
         try {
             console.log("Message", message);
-            console.log("Courier", this.selectedCourierId);
+            console.log("Courier", this._selectedCourierId);
 
-            await this.DispatchData.sendSMS(this.selectedCourierId, ContactID, FirstName, message);
+            await this.DispatchData.sendSMS(this._selectedCourierId, ContactID, FirstName, message);
 
             this.toastrService.showSuccessToast("Message Sent!");
         } catch (error) {

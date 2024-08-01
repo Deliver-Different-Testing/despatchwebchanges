@@ -1,40 +1,49 @@
 <md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
-    <form ng-cloak>
-        <md-toolbar>
-            <div class="md-toolbar-tools">
-                <h2>Enter your Message</h2>
-                <span flex></span>
-                <md-button class="md-icon-button" ng-click="ctrl.cancel()">
-                    <md-tooltip md-direction="bottom">Cancel</md-tooltip>
-                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
-                        close
-                    </md-icon>
-                </md-button>
-            </div>
-        </md-toolbar>
-
-        <md-dialog-content ng-cloak>
-            <div class="md-dialog-content">
-                <form ng-submit="ctrl.submit(ctrl.message, ctrl.selectedItem)">
-
-                    <p style="align-items: center;">Your message can be a max of 160 characters</p>
-
-                    <md-input-container class="md-block">
-                        <label for="message">Message</label>
-                        <textarea id="message" md-maxlength="160" md-no-asterisk md-select-on-focus ng-model="ctrl.message"
-                                  rows="5"
-                                  required></textarea>
-                    </md-input-container>
-
-                </form>
-            </div>
-        </md-dialog-content>
-
-        <md-dialog-actions layout="row" layout-align="center center">
-            <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.message, ctrl.selectedItem)">
-                <md-icon md-font-set="material-symbols-outlined">send</md-icon>
-                Send
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Enter your Message</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
             </md-button>
-        </md-dialog-actions>
-    </form>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content ng-cloak>
+        <div class="md-dialog-content">
+            <form ng-submit="ctrl.submit(ctrl.message)">
+
+                <p style="align-items: center;">Your message can be a max of 160 characters</p>
+
+                <md-input-container class="md-block">
+                    <label for="message">Message</label>
+                    <textarea
+                            id="message"
+                            md-maxlength="160"
+                            md-no-asterisk
+                            md-select-on-focus
+                            ng-model="ctrl.message"
+                            required
+                            rows="5"></textarea>
+                </md-input-container>
+
+            </form>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-button class="md-primary" ng-click="ctrl.cancel()">
+            Cancel
+        </md-button>
+
+        <md-button
+                class="md-raised md-primary"
+                ng-click="ctrl.submit(ctrl.message)"
+                ng-disabled="!ctrl.message">
+            Send
+        </md-button>
+    </md-dialog-actions>
 </md-dialog>

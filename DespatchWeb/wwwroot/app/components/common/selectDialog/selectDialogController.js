@@ -5,7 +5,6 @@
 class SelectDialogController {
     /**
      * Create a SelectDialogController
-     * @param {Object} $scope - The active AngularJS scope.
      * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
      * @param {Object} DispatchData - The service used for data dispatching.
      * @param {number|string} id - The ID related to the selection.
@@ -14,8 +13,7 @@ class SelectDialogController {
      * @param {Job} job - The job for which the selection is being made.
      * @param {Array} options - The array of selectable options.
      */
-    constructor($scope, $mdDialog, DispatchData, id, fieldName, title, job, options) {
-        this.$scope = $scope;
+    constructor($mdDialog, DispatchData, id, fieldName, title, job, options) {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
 

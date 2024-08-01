@@ -41,8 +41,6 @@
  * @class
  */
 class CreateJobDialogController {
-    dispatchJobService;
-
     /**
      * @param {Object} $scope - The active AngularJS scope.
      * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
