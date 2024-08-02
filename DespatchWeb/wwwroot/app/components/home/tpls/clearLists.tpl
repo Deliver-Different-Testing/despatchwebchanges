@@ -207,8 +207,8 @@
                         </tr>
                     </table>
                 </div>
-            </div> 
-            
+            </div>
+
         </div>
         <div class="col-xs-3">
             <div class="clearLists-list" height="{{clearLists.mangere.percentHeight}}%">
@@ -236,7 +236,7 @@
                     </table>
                 </div>
             </div>
-            
+
             <div class="clearLists-list" height="{{clearLists.deepSouth.percentHeight}}%">
                 <div class="clearLists-list-title" ng-click="selectClearList(4, $event, 'deep south');">Deep South {{clearLists.deepSouth.totalRemaining}}</div>
                 <div class="clearLists-list-items">
@@ -262,7 +262,7 @@
                     </table>
                 </div>
             </div>
-            
+
             <div class="clearLists-list" height="{{clearLists.deepEast.percentHeight}}%">
                 <div class="clearLists-list-title" ng-click="selectClearList(3, $event, 'deep east');">Deep East {{clearLists.deepEast.totalRemaining}}</div>
                 <div class="clearLists-list-items">
@@ -321,7 +321,7 @@
                     </table>
                 </div>
             </div>
-           
+
         </div>
         <div class="col-xs-3">
             <div class="clearLists-list" height="{{clearLists.parnell.percentHeight}}%">
@@ -349,7 +349,7 @@
                     </table>
                 </div>
             </div>
-           
+
         </div>
         <div class="col-xs-3">
             <div class="clearLists-list" height="{{clearLists.newMarket.percentHeight}}%">
@@ -378,8 +378,7 @@
                 </div>
             </div>
 
-           
-            
+
         </div>
         <div class="col-xs-3">
             <div class="clearLists-list" height="{{clearLists.ponsonby.percentHeight}}%">
@@ -407,7 +406,7 @@
                     </table>
                 </div>
             </div>
-            
+
             <div class="clearLists-list" height="{{clearLists.eden.percentHeight}}%">
                 <div class="clearLists-list-title" ng-click="selectClearList(14, $event, 'eden terrace');">Eden Terrace {{clearLists.eden.totalRemaining}}</div>
                 <div class="clearLists-list-items">
@@ -433,17 +432,16 @@
                     </table>
                 </div>
             </div>
-            
-          
+
 
         </div>
     </div>
 </div>
 
-<div class="loading" style="display:none">
-    <div class="text">
-        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
-        <span class="sr-only">Loading...</span>
+    <div class="loading">
+        <div class="text">
+            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+            <span class="sr-only">Loading...</span>
+        </div>
     </div>
-</div>
 </div>
