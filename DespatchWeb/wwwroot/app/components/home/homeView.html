@@ -181,7 +181,7 @@
                                             <i class="material-symbols-outlined small-icon">send</i>
                                         </button>
                                         <button class="btn btn-sm btn-secondary"
-                                                ng-click="ctrl.messageClick($event, currentJob)"
+                                                ng-click="ctrl.messageClick($event, ctrl.currentJob)"
                                                 title="Send Message"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">sms</i>
@@ -227,7 +227,7 @@
                                             <i class="material-symbols-outlined small-icon">lock</i>
                                         </button>
                                         <button class="btn btn-sm btn-secondary"
-                                                ng-click="ctrl.splitJob($event, currentJob)"
+                                                ng-click="ctrl.splitJob($event, ctrl.currentJob)"
                                                 ng-show="ctrl.currentJob && (ctrl.currentJob.allowSplit)"
                                                 title="Split Job"
                                                 type="button">
@@ -242,14 +242,14 @@
                                     </div>
                                 </div>
 
-                                <div class="btn-group " ng-show="box.name === 'jobsList'" style="padding:8px 5px;">
+                                <div class="btn-group " ng-show="box.name === 'jobsList'">
                                     <md-autocomplete
                                             md-item-text="item.text"
                                             md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
                                             md-min-length="1"
                                             md-search-text="ctrl.courierSearchText"
                                             md-selected-item-change="ctrl.selectedCourierChange(item)"
-                                            placeholder="gps courier (enter code)...">
+                                            placeholder="Search Courier by Code...">
                                         <md-item-template>
                                             <span md-highlight-flags="^i"
                                                   md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
