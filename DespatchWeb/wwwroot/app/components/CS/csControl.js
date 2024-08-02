@@ -30,9 +30,10 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     self.jdSvc = jdSvc;
     self.dispatchJobService = dispatchJobService;
 
-    self.greetUser = function () {
-        greetingService.greetUser(FirstName);
+    self.greetUser = () => {
+        return greetingService.greetUser(FirstName);
     }
+    s
 
     $scope.updateGPS = function (currentJob, field, fromRightClick) {
         jdSvc.updateGPS(currentJob, field, fromRightClick);
