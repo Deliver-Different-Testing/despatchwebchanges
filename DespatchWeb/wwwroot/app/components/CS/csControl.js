@@ -695,32 +695,6 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }
     });
 
-    $scope.createForm = (fieldName, fieldType) => ({
-        id: "chooseDate",
-        title: "Choose Date",
-        fields: [
-            {
-                name: fieldName,
-                type: fieldType
-            }
-        ],
-        onSubmit: () => $scope.onFormSubmit(fieldName),
-        submitValue: "Choose"
-    });
-
-    $scope.onFormSubmit = (dateKey) => {
-        $scope.gather.cancel();
-        const {[dateKey]: pdsDate, [dateKey]: scopeDate} = $scope;
-
-        if (scopeDate !== pdsDate) {
-            $scope[dateKey] = pdsDate;
-            dateChanged = true;
-        }
-
-        // $scope.refreshData(true);
-    };
-
-
     $scope.filterRegion = function (region) {
         var sr = $scope.pickRegions.find(obj => {
 
