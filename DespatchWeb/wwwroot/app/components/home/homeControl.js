@@ -950,7 +950,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 } else {
                     dispTo = dispTo + ' ' + foundCourier.code;
                 }
-
             }
         }
 
