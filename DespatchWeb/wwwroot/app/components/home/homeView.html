@@ -91,7 +91,7 @@
                  extra-settings="pickService.settings"
                  ng-dropdown-multiselect=""
                  ng-show="!isInternal" options="pickClients" selected-model="pickService.clients"
-                 style="display: inline-block; margin-top: -5px; padding-left: 0px; padding-right: 50px;">
+                 style="display: inline-block; margin-top: -5px; padding-left: 0; padding-right: 50px;">
             </div>
 
             <div style="display: flex; align-items: center;">
@@ -195,8 +195,8 @@
                                     <div aria-label="Basic example" class="btn-group" role="group">
                                         <button
                                                 class="btn btn-sm btn-secondary"
-                                                ng-click="ctrl.selectAndDispatchJob($event, currentJob)"
-                                                ng-show="currentJob && !currentJob.bulkJob && !currentJob.preBook && currentJob.courier == null"
+                                                ng-click="ctrl.selectAndDispatchJob($event, ctrl.currentJob)"
+                                                ng-show="ctrl.currentJob && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook && ctrl.currentJob.courier == null"
                                                 title="Dispatch to Courier Code"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">local_shipping</i>
@@ -212,7 +212,8 @@
                                                 title="Close Event" type="button">
                                             <i class="material-symbols-outlined small-icon">event_available</i>
                                         </button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.unlockJob(currentJob)"
+                                        <button class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.unlockJob(ctrl.currentJob)"
                                                 ng-show="ctrl.currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
                                                 title="Unlock Job"
                                                 type="button">
