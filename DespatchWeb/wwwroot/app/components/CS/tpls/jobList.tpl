@@ -82,7 +82,7 @@
 
 <div class="loading">
     <div class="text">
-        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+        <md-progress-circular md-mode="indeterminate"></md-progress-circular>
         <span class="sr-only">Loading...</span>
     </div>
 </div>
