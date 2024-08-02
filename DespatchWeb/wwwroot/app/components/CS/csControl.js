@@ -33,7 +33,6 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     self.greetUser = () => {
         return greetingService.greetUser(FirstName);
     }
-    s
 
     $scope.updateGPS = function (currentJob, field, fromRightClick) {
         jdSvc.updateGPS(currentJob, field, fromRightClick);
@@ -752,8 +751,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             .ok('Yes')
             .cancel('No');
 
-        $mdDialog.show(confirm).then(function () {
-            uCSData.unSplitJob(self.currentJob.id).then(function (msg) {
+        $mdDialog.show(confirm).then(() => {
+            uCSData.unSplitJob(self.currentJob.id).then(msg => {
                 if ((msg || "").length > 2) {
                     const alert = $mdDialog.alert()
                         .title('Error')
@@ -1345,10 +1344,6 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $scope.refreshData();
     };
 
-
-    self.pickDateService.from_date = self.pickDateService.from_date;
-    self.pickDateService.to_date = self.pickDateService.to_date;
-
     // New Material Autocompletes
     self.clientSelectedItem = self.pickDateService.client;
     self.courierSelectedItem = self.pickDateService.client;
@@ -1472,7 +1467,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             scope: $scope,
             preserveScope: true,
             templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
-            parent: angular.element(document.body),
+            parent: angular.element($document.body),
             //targetEvent: $event,
             clickOutsideToClose: true,
             onComplete: afterShowAnimation
@@ -1488,7 +1483,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             scope: $scope,
             preserveScope: true,
             templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
-            parent: angular.element(document.body),
+            parent: angular.element($document.body),
             //targetEvent: $event,
             clickOutsideToClose: true
 
@@ -1564,7 +1559,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 .then(function (returnData) {
                     if ((returnData === undefined ||
                         returnData !== "OK")) {
-                        alert("Sorry, create event failed");
+                        $mdDialog.show(
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Error')
+                                .textContent('Sorry, create event failed')
+                                .ok('OK')
+                        );
+
                         angular.element(".wait").hide();
                         $scope.cancel();
                     } else {
@@ -1576,7 +1578,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                             });
                         }
 
-                        alert("Event Created!");
+                        $mdDialog.show(
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Success')
+                                .textContent('Event Created')
+                                .ok('OK')
+                        );
                     }
 
                     $scope.refreshData(true, true);
@@ -1584,8 +1592,6 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
 
         }
-
-
     };
 
 
@@ -1621,10 +1627,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
                     } else {
 
-                        alert(data.response);
-
+                        $mdDialog.show(
+                            $mdDialog.alert()
+                                .clickOutsideToClose(true)
+                                .title('Alert')
+                                .textContent(data.response)
+                                .ok('OK')
+                        );
                     }
-
                 });
 
             },
