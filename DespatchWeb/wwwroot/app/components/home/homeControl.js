@@ -3026,7 +3026,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     $scope.sendPOD = () => {
         if (!self.currentJob.podPhoto) {
-            alert("Sorry no photo for this Job");
+            $mdDialog.show(
+                $mdDialog.alert()
+                    .clickOutsideToClose(true)
+                    .title('Alert')
+                    .textContent('Sorry no photo for this Job')
+                    .ok('OK')
+            );
+
             return;
         }
 
