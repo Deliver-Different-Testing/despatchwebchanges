@@ -258,17 +258,30 @@
                                     </md-autocomplete>
                                 </div>
 
-                                <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
-                                    <button class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown"
-                                            type="button">
-                                        Trucks <span>{{truckMode}} </span>
-                                        <span class="caret"></span>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a href="#" ng-click="ctrl.setTruckMode('On');">On</a></li>
-                                        <li><a href="#" ng-click="ctrl.setTruckMode('Off');">Off</a></li>
-                                        <li><a href="#" ng-click="ctrl.setTruckMode('Only');">Only</a></li>
-                                    </ul>
+                                <div ng-show="box.name === 'clearLists'">
+                                    <md-menu>
+                                        <md-button aria-label="Open demo menu" class="md-raised md-primary"
+                                                   ng-click="$mdMenu.open($event)">
+                                            Trucks <span>{{truckMode}} </span>
+                                        </md-button>
+                                        <md-menu-content width="4">
+                                            <md-menu-item>
+                                                <md-button ng-click="ctrl.setTruckMode('On');">
+                                                    On
+                                                </md-button>
+                                            </md-menu-item>
+                                            <md-menu-item>
+                                                <md-button ng-click="ctrl.setTruckMode('Off');">
+                                                    Off
+                                                </md-button>
+                                            </md-menu-item>
+                                            <md-menu-item>
+                                                <md-button ng-click="ctrl.setTruckMode('Only');">
+                                                    Only
+                                                </md-button>
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
                                 </div>
 
                                 <div class="multi-element btn-sm btn-primary dropdown-toggle" events="pickService.channelEvents"
