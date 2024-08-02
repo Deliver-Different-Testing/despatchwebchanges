@@ -715,62 +715,65 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.jobForDispatch = job;
     };
 
-    self.swapPOD = () => {
-        $scope.gather.form = {
-            id: "swapPOD",
-            title: "Enter the other job number",
-            fields: [
-                {
-                    "name": "JobNumber",
-                    "label": "Job Number",
-                    "type": "text"
-                }
-            ],
-            onSubmit() {
-                return DispatchData.validateSwapPOD($scope.gather.form.fields[0].value).then(function (data) {
-                    if (!data) {
+    self.swapPOD = function (event) {
+        const jobNumberPrompt = $mdDialog.prompt()
+            .title('Enter the other job number')
+            .textContent('Please enter the Job Number to swap the POD.')
+            .placeholder('Job Number')
+            .ariaLabel('Job Number')
+            .initialValue('')
+            .targetEvent(event)
+            .required(true)
+            .ok('Submit')
+            .cancel('Cancel');
+
+        $mdDialog.show(jobNumberPrompt).then(jobNumber => uCSData.validateSwapPOD(jobNumber).then(data => {
+            if (!data) {
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .clickOutsideToClose(true)
+                        .title('Invalid Job')
+                        .textContent('This job is invalid.')
+                        .ok('OK')
+                );
+            } else {
+                const secondJobId = data;
+                const firstJobId = self.currentJob.id;
+
+                const confirmSwap = $mdDialog.confirm()
+                    .title('Swap Delivery Info?')
+                    .textContent(`Are you sure you wish to swap delivery info between ${self.currentJob.jobNo} and ${jobNumber}?`)
+                    .ariaLabel('Lucky day')
+                    .targetEvent(event)
+                    .ok('Yes')
+                    .cancel('No');
+
+                $mdDialog.show(confirmSwap).then(() => {
+                    uCSData.swapPOD(self.currentJob.jobNo, jobNumber).then(() => {
+
                         $mdDialog.show(
                             $mdDialog.alert()
-                                .title('Error')
-                                .textContent('Invalid Job')
+                                .clickOutsideToClose(true)
+                                .title('Successful')
+                                .textContent('POD Swap Completed Successfully')
                                 .ok('OK')
                         );
-                    } else {
-                        const self = this;
-                        const secondJobId = data;
-                        const firstJobId = self.currentJob.id;
 
-                        const content = `Are you sure you wish to swap delivery info between ${self.currentJob.jobNo} and ${self.gather.form.fields[0].value}?`;
-
-                        const confirmDialog = $mdDialog.confirm()
-                            .title('Swap Delivery Info')
-                            .textContent(content)
-                            .ok('Yes')
-                            .cancel('No');
-
-                        $mdDialog.show(confirmDialog).then(() => {
-                            self.DispatchData.swapPOD(self.currentJob.jobNo, $scope.gather.form.fields[0].value).then((data) => {
-                                $mdDialog.show(
-                                    $mdDialog.alert()
-                                        .title('Success')
-                                        .textContent('POD Swap Completed Successfully')
-                                        .ok('OK')
-                                );
-                                self.DispatchData.resendJobs(secondJobId);
-                                self.DispatchData.reAssignJobs(firstJobId).then(() => {
-                                    self.DispatchData.resendJobs(firstJobId).then(() => {
-                                        self.getData();
-                                    });
-                                });
+                        uCSData.reSendJobs(secondJobId);
+                        uCSData.reAssignJobs(firstJobId).then(() => {
+                            uCSData.reSendJobs(firstJobId).then(() => {
+                                $scope.refreshData(true);
                             });
                         });
-                    }
-                });
 
-            },
-            submitValue: "Submit"
-        };
-        $scope.gather.showForm();
+                    });
+                }, () => {
+                    console.log("POD Swap Canceled");
+                });
+            }
+        }), () => {
+            // action when cancel is clicked
+        });
     }
 
     self.selectAndDispatchJob = (event, job) => {
@@ -798,28 +801,24 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     }
 
-    $scope.voidJobForm = (jobNumber, jobId) => {
-        $scope.gather.form = {
-            id: "voidJob",
-            title: `Void Job ${jobNumber}?`,
-            fields: [
-                {
-                    "name": "notes",
-                    "label": "Add Note...",
-                    "type": "textarea",
-                    "value": ""
-                }
-            ],
-            onSubmit() {
-                return DispatchData.addNote(jobId, $scope.gather.form.fields[0].value, FirstName, false).then(() => {
-                    return DispatchData.voidJob(jobId);
+    self.voidJobForm = (jobNumber, jobId) => {
+        const voidJobPrompt = $mdDialog.prompt()
+            .title("Void Job")
+            .textContent("Add Note")
+            .placeholder('Note')
+            .ariaLabel('Void job')
+            .required(true)
+            .ok('Cancel')
+            .cancel('Cancel');
 
-                });
-            },
-            submitValue: "Confirm"
-        };
-        $scope.gather.showForm();
-    };
+        $mdDialog.show(voidJobPrompt).then(note => {
+            return DispatchData.addNote(jobId, note, FirstName, false).then(() => {
+                return DispatchData.voidJob(jobId);
+            }, () => {
+                console.log("Job void canceled!")
+            });
+        });
+    }
 
     self.messageClick = (event, job) => {
         const title = "Send Message";
@@ -2188,7 +2187,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Void Job",
                 click($itemScope, $event, modelValue, text, $li) {
-                    $scope.voidJobForm(self.currentJob.jobNo, self.currentJob.id);
+                    self.voidJobForm(self.currentJob.jobNo, self.currentJob.id);
                 }
             },
 
@@ -2486,7 +2485,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Void Job",
                     click($itemScope, $event, modelValue, text, $li) {
-                        $scope.voidJobForm($itemScope.support.jobNumber, $itemScope.support.jobId);
+                        self.voidJobForm($itemScope.support.jobNumber, $itemScope.support.jobId);
                     },
                     enabled($itemScope, $event, modelValue, text, $li) {
                         return ($itemScope.support.jobId);
