@@ -301,14 +301,15 @@ angular
                                 );
 
                             } else {
-
-                                alert("Critial Error");
-
+                                $mdDialog.show(
+                                    $mdDialog.alert()
+                                        .clickOutsideToClose(true)
+                                        .title('Error')
+                                        .textContent('Critical Error Occured')
+                                        .ok('OK')
+                                );
                             }
-
                         });
-
-
                     },
                     submitValue: "Save"
                 };
@@ -591,7 +592,7 @@ angular
             $scope.jdSvc.setSelectJobDetail($scope.selectJobDetail);
 
             $scope.voidPrebookJob = function (jobId) {
-                var confirm = $mdDialog.confirm()
+                const confirm = $mdDialog.confirm()
                     .title('Void Prebook')
                     .textContent("This will void TODAY'S copy of this prebook but not cancel it for good. Please confirm that you wish to do this?")
                     .ok('Yes')
@@ -608,7 +609,7 @@ angular
             }
 
             $scope.sendPrebookJob = function (jobId) {
-                var confirm = $mdDialog.confirm()
+                const confirm = $mdDialog.confirm()
                     .title('Accelerate Prebook')
                     .textContent("This will send this prebook to the live dispatch screen now. Please confirm that you wish to do this?")
                     .ok('Yes')
