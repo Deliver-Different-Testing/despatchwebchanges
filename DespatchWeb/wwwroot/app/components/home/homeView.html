@@ -293,7 +293,8 @@
                                      option="pickChannels" selected-model="pickService.channel"
                                      style="background-color: inherit; display: inline-block; box-shadow: none; z-index: 100000" translation-texts="pickService.channelTexts"></div>
 
-                                <div layout="row" ng-show="box.name === 'map'">
+                                <div layout="row" ng-show="box.name === 'map'"
+                                     style="overflow-x: auto; white-space: nowrap;">
                                     <md-switch class="md-primary" ng-model="areaListCity"
                                                ng-show="box.name === 'clearLists'">
                                         City

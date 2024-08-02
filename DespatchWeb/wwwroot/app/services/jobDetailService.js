@@ -1745,140 +1745,24 @@ class JobDetailService {
         this.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
     }
 
-    newPallet() {
-        const self = this;
-
-        self.gather.form = {
-            id: "newPallet",
-            tpl: "multi",
-            title: "Add Pallet",
-            fields: [
-                {
-                    "name": "amount",
-                    "label": "# of pallets...",
-                    "colSize": "6"
-                },
-                {
-                    "name": "weight",
-                    "label": "Weight (KG)",
-                    "colSize": "6"
-                },
-                {
-                    "name": "length",
-                    "label": "Length (m)",
-                    "colSize": "6"
-                },
-                {
-                    "name": "depth",
-                    "label": "Depth (m)",
-                    "colSize": "6"
-                },
-                {
-                    "name": "height",
-                    "label": "Height (m)",
-                    "colSize": "6"
-                },
-                {
-                    "name": "pu",
-                    "label": "PU",
-                    "type": "checkbox",
-                    "colSize": "6"
-                },
-                {
-                    "name": "do",
-                    "label": "DO",
-                    "type": "checkbox",
-                    "colSize": "6"
-                },
-                {
-                    "name": "dgclass",
-                    "label": "DG Class",
-                    "colSize": "6"
-                },
-                {
-                    "name": "notes",
-                    "label": "Notes...",
-                    "colSize": "12",
-                    "type": "textarea"
-                }
-            ],
-            onSubmit: function () {
-                const newP = {};
-
-                self.gather.form.fields.forEach(function (field) {
-                    if (field.name === "amount") {
-                        newP["Quantity"] = field.value;
-                    }
-                    if (field.name === "weight") {
-                        newP["Weight"] = field.value;
-                    }
-                    if (field.name === "length") {
-                        newP["Length"] = field.value;
-                    }
-                    if (field.name === "depth") {
-                        newP["Depth"] = field.value;
-                    }
-                    if (field.name === "height") {
-                        newP["Height"] = field.value;
-                    }
-                    if (field.name === "pu") {
-                        newP["PU"] = field.value;
-                    }
-                    if (field.name === "do") {
-                        newP["DO"] = field.value;
-                    }
-                    if (field.name === "dgclass") {
-                        newP["DGClass"] = field.value;
-                    }
-                    if (field.name === "notes") {
-                        newP["Notes"] = field.value;
-                    }
-
-                });
-
-                newP["id"] = this.currentJob.id;
-
-
-                return self.DispatchData.addPallet(newP, this.currentJob.preBook, FirstName).then(function (response) {
-
-                    console.log(response);
-
-                    if (response === "OK") {
-
-                        if (!self.currentJob.palletInfo) {
-                            self.currentJob.palletInfo = [];
-                        }
-
-                        self.currentJob.palletInfo.push(newP);
-
-                        return self.rateJob(self.currentJob).then(function (rate) {
-                            console.log(rate);
-                            if (rate !== self.currentJob.charge) {
-                                return self.DispatchData
-                                    .updateJobDetail(self.currentJob.id,
-                                        "rate",
-                                        Number(rate.replace(/[^0-9.-]+/g, "")),
-                                        Number(rate.replace(/[^0-9.-]+/g, "")),
-                                        FirstName,
-                                        ContactID,
-                                        self.currentJob.preBook).then(function (response) {
-                                        this.selectJobDetail(self.currentJob.id);
-                                        return response;
-                                    });
-                            }
-                        });
-                    } else {
-                        console.log("Critical Error Add Pallet");
-                    }
-
-                });
-            },
-            submitValue: "Add Pallet"
-        };
-        this.$timeout(() => {
-                this.gather.showForm();
-            },
-            200);
+    newPallet(event, job) {
+        return this.$mdDialog.show({
+            controller: AddPalletDialogController,
+            controllerAs: "ctrl",
+            templateUrl: "app/components/common/addPalletDialog/addPalletDialog.html",
+            parent: angular.element(this.$document.body),
+            targetEvent: event,
+            clickOutsideToClose: true,
+            fullscreen: true,
+            locals: {
+                job: job,
+                dispatherName: FirstName,
+                contactId: ContactID
+            }
+        }).then(() => {
+            this.selectJobDetail(job.id);
+            console.log('Pallet Dialog closed!');
+        });
     }
 
     /**

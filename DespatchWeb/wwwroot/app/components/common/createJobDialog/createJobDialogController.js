@@ -71,7 +71,7 @@ class CreateJobDialogController {
         this._despatcherName = despatcherName;
         this.dispatchJobService = dispatchJobService;
 
-        this.jobForm = $scope.jobForm;
+        this.addPalletForm = $scope.jobForm;
         this.fromAddressSearchText = "";
         this.toAddressSearchText = "";
         this.searchClientText = "";
