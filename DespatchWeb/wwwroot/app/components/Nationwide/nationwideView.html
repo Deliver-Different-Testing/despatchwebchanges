@@ -210,11 +210,6 @@
                                     </md-autocomplete>
                                 </div>
 
-                                <md-button aria-label="Refresh" class="md-fab md-mini md-accent" ng-click="getData()"
-                                           ng-show="boxes[box.name].showRefresh">
-                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                                </md-button>
-
                                 <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
                                     <md-menu>
                                         <md-button aria-label="Open demo menu" class="md-raised md-primary"
@@ -317,6 +312,18 @@
             </div>
 
         </div>
+
+        <ul active-icon="refresh"
+            effect="slidein"
+            label="Refresh"
+            main-action="getData()"
+            mfb-menu
+            position="bl"
+            resting-icon="refresh"
+            template-url="ng-mfb-menu-md.tpl.html"
+            toggling-method="click">
+        </ul>
+
 
     </div>
 
