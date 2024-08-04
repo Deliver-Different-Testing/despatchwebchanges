@@ -71,33 +71,21 @@ class CreateJobDialogController {
         this._despatcherName = despatcherName;
         this.dispatchJobService = dispatchJobService;
 
-        this.addPalletForm = $scope.jobForm;
+        this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
         this.toAddressSearchText = "";
         this.searchClientText = "";
         this.courierSearchText = "";
         this.isLoading = false;
-
         this.selectedCourier = null;
         this.selectedClient = null;
         this.selectedSpeed = null;
-
-        console.log("staffId: ", staffId);
-        console.log("despatcherName: ", despatcherName);
-
-        // Initialize pickSpeeds
         this.speedOptions = [];
-        DispatchData.getSpeedList().then(data => {
-            this.speedOptions = data;
-        });
-
-        // Set default booking date to today
         this.jobDate = new Date();
 
         // Define job form
         this.job = {
             clientID: "",
-            courierId: null,
             deliverToContact: "",
             fromAddress: "",
             toAddress: "",
@@ -118,6 +106,14 @@ class CreateJobDialogController {
             refA: "",
             refB: "",
         };
+
+        this._fetchDataLists();
+    }
+
+    _fetchDataLists() {
+        this.DispatchData.getSpeedList().then(data => {
+            this.speedOptions = data;
+        });
     }
 
 
@@ -265,15 +261,12 @@ class CreateJobDialogController {
     async submit(job) {
         try {
             this.isLoading = true;
-            if (!this.jobForm.$valid) {
-                this.toastrService.showWarningToast("Please complete all the required fields.");
+            if (!this._isFormValid()) {
                 return;
             }
 
             // Apply form values to job
-            job.clientID = this.selectedClient.id;
-            job.date = this.jobDate.toISOString();
-            job.speedId = this.selectedSpeed.id;
+            this._applyFormValuesToJob(job);
 
             // Create Job
             const response = await this._createJob(job);
@@ -281,9 +274,7 @@ class CreateJobDialogController {
 
             // Dispatch to courier if selected
             if (this.selectedCourier) {
-                await this.dispatchJobService.dispatchJobByJobId(this.selectedCourier.id, jobId).then(() => {
-                    this.$scope.selectJobDetail(job.id);
-                })
+                await this._dispatchJobIfCourierSelected(this.selectedCourier.id, jobId);
             }
 
             // Pass new jobId back to function that called dialog
@@ -293,6 +284,29 @@ class CreateJobDialogController {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    /**
+     * Check if the form is valid; if not, show a warning message to user.
+     * @returns {boolean} - Form validity status
+     */
+    _isFormValid() {
+        if (this.jobForm.$valid) {
+            return true;
+        }
+
+        this.toastrService.showWarningToast("Please complete all the required fields.");
+        return false;
+    }
+
+    /**
+     * Apply form values to the given job object
+     * @param {Job} job - The job object where to apply form values.
+     */
+    _applyFormValuesToJob(job) {
+        job.clientID = this.selectedClient.id;
+        job.date = this.jobDate.toISOString();
+        job.speedId = this.selectedSpeed.id;
     }
 
     /**
@@ -309,6 +323,17 @@ class CreateJobDialogController {
         };
 
         return await this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
+    }
+
+    /**
+     * Dispatch to courier if a courier is selected
+     * @param {number} courierId - The id of the selected courier.
+     * @param {number} jobId - The id of the job.
+     */
+    async _dispatchJobIfCourierSelected(courierId, jobId) {
+        await this.dispatchJobService.dispatchJobByJobId(courierId, jobId).then(() => {
+            this.$scope.selectJobDetail(jobId);
+        });
     }
 
     /**

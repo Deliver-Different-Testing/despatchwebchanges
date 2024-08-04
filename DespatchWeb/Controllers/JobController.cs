@@ -838,39 +838,39 @@ public partial class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> QuickCreateJob([FromBody] CreateJobRequest request)
     {
-        try
+        if (!IsValidRequest(request))
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Bad Request" });
+
+        var jobId = await _jobRepo.QuickAddJob(request.Job, request.StaffId.Value);
+
+        //Check if jobId is valid before continuing
+        if (jobId == 0) return StatusCode(StatusCodes.Status500InternalServerError, "Created Job Id is null");
+
+        var notesList = GenerateNotesList(request.Job);
+        await AddNotesToJob(notesList, jobId, request.DespatcherName);
+
+        return Json(new { jobId });
+    }
+
+    private static bool IsValidRequest(CreateJobRequest request) =>
+        !(request?.Job == null || request.Job.ClientId == 0 || request.StaffId == null);
+
+    private static List<string> GenerateNotesList(JobCreateViewModel job)
+    {
+        return new List<string>
         {
-            if (request is null) return StatusCode(StatusCodes.Status500InternalServerError, "Request is null!");
+            FormatNote($"Job Notes: {job.JobNotes}"),
+            FormatNote($"Pickup Notes: {job.PickupNotes}"),
+            FormatNote($"Delivery Notes: {job.DeliveryNotes}")
+        };
+    }
 
-            var job = request.Job;
-            var staffId = request.StaffId;
-            var despatcherName = request.DespatcherName;
-
-            if (job is null || staffId is null)
-                return BadRequest("Input parameters are null");
-
-            var jobId = await _jobRepo.QuickAddJob(job, staffId.Value);
-
-            // Assign job to courier if needed
-            if (job.CourierId is not null) await _jobRepo.ReAssignSelectedJobs($"{jobId.ToString()},")!;
-
-            // Add all the notes to the newly created job
-            var notesList = new List<string>
-            {
-                FormatNote($"Job Notes: {job.JobNotes}"),
-                FormatNote($"Pickup Notes: {job.PickupNotes}"),
-                FormatNote($"Delivery Notes: {job.DeliveryNotes}")
-            };
-
-            foreach (var note in notesList) await AddNote(jobId, note, despatcherName);
-
-            if (jobId == 0) return StatusCode(StatusCodes.Status500InternalServerError, "Created Job Id is null");
-
-            return Json(new { jobId });
-        }
-        catch (Exception e)
+    private async Task AddNotesToJob(List<string> notesList, int jobId, string despatcherName)
+    {
+        if (notesList != null)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = e.Message });
+            foreach (var note in notesList)
+                await AddNote(jobId, note, despatcherName);
         }
     }
 

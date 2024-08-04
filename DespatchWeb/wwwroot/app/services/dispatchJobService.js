@@ -23,7 +23,7 @@ class DispatchJobService {
     }
 
     /**
-     * @param {string} courierNumber
+     * @param {number} courierNumber
      * @param {number} jobId
      */
     async dispatchJobByJobId(courierNumber, jobId) {
@@ -33,7 +33,7 @@ class DispatchJobService {
     }
 
     /**
-     * @param {string} courierNumber
+     * @param {number} courierNumber
      * @param job
      */
     dispatchJob(courierNumber, job) {
@@ -59,7 +59,7 @@ class DispatchJobService {
     };
 
     /**
-     * @param {string} courierNumber
+     * @param {number} courierNumber
      * @param {boolean} foundCourier
      * @param {boolean} offline
      * @param job
