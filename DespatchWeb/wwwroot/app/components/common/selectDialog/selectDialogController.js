@@ -12,8 +12,9 @@ class SelectDialogController {
      * @param {string} title - The title of the dialog.
      * @param {Job} job - The job for which the selection is being made.
      * @param {Array} options - The array of selectable options.
+     * @param {string} initialValue
      */
-    constructor($mdDialog, DispatchData, id, fieldName, title, job, options) {
+    constructor($mdDialog, DispatchData, id, fieldName, title, job, options, initialValue) {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
 
@@ -21,12 +22,17 @@ class SelectDialogController {
         this.title = title;
         this.job = job;
         this.fieldName = fieldName;
-        this.field = {
-            value: null,
-            options: options
-        };
+        this.options = options;
+        this.selectedOption = null;
+
+        if (initialValue) {
+            this.selectedOption = this._findInitialValue(options, initialValue);
+        }
     }
 
+    _findInitialValue(options, initialValue) {
+        return options.items.find(option => option.text === initialValue) ?? null;
+    }
 
     /**
      * Submits the selected value, updates the job detail, and closes the dialog.

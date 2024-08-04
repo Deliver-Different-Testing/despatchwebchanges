@@ -1564,19 +1564,19 @@ class JobDetailService {
     }
 
     trackingMethodClick(event, job) {
-        this.showSelectDialog(event, job, this.options.detail.tracking, "TrackingMethod", "Tracking Method", "Select new tracking method..");
+        this.showSelectDialog(event, job, this.options.detail.tracking, "TrackingMethod", "Tracking Method", this.getTrackingMethod(job.trackingMethod));
     }
 
     leaveClick(event, job) {
-        this.showSelectDialog(event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", "Select new location..");
+        this.showSelectDialog(event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
     undeliverableClick(event, job) {
-        this.showSelectDialog(event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", "Select new location..");
+        this.showSelectDialog(event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", job.udStatus);
     }
 
     sizeClick(event, job) {
-        this.showSelectDialog(event, job, this.options.detail.size, "Size", "Size", "Select new size..");
+        this.showSelectDialog(event, job, this.options.detail.size, "Size", "Size", job.size.label);
     }
 
     /**
@@ -1585,14 +1585,14 @@ class JobDetailService {
      * @param {[]} data
      * @param {string} fieldName
      * @param {string} title
-     * @param {string} placeholder
+     * @param {string|null} initialValue
      * @param {string} id
      */
-    showSelectDialog(event, job, data, fieldName, title, placeholder, id = "editField") {
+    showSelectDialog(event, job, data, fieldName, title, initialValue = null, id = "editField") {
         const options = {
             minimumInputLength: 1,
             items: data,
-            placeholder: placeholder
+            placeholder: title
         };
 
         this.$mdDialog.show({
@@ -1604,11 +1604,12 @@ class JobDetailService {
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                id: id,
-                fieldName: fieldName,
-                title: title,
-                job: job,
-                options: options
+                id,
+                fieldName,
+                title,
+                job,
+                options,
+                initialValue
             },
         }).then(_ => {
             this.selectJobDetail(job.id);
@@ -1617,19 +1618,19 @@ class JobDetailService {
     }
 
     notifyClick(event, job) {
-        this.showSelectDialog(event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", "Select new speed....");
+        this.showSelectDialog(event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", job.notifiedName);
     }
 
     acceptedClick(event, job) {
-        this.showSelectDialog(event, job, this.pickSpeeds, "AcceptedJobTypeID", "Accepted", "Select new speed....");
+        this.showSelectDialog(event, job, this.pickSpeeds, "AcceptedJobTypeID", "Accepted", job.acceptedName);
     }
 
     speedClick(event, job) {
-        this.showSelectDialog(event, job, this.pickSpeeds, "SpeedID", "Speed", "Select new speed....");
+        this.showSelectDialog(event, job, this.pickSpeeds, "SpeedID", "Speed", job.speedName);
     }
 
     contactClick(event, job) {
-        this.showSelectDialog(event, job, this.pickSpeeds, "ContactID", "Contact", "Select new contact....");
+        this.showSelectDialog(event, job, this.pickContacts, "ContactID", "Contact", job.contactName);
     }
 
     /**

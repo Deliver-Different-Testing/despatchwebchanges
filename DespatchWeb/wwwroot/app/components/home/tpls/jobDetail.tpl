@@ -111,7 +111,7 @@
                             <div class="disabled value">{{ctrl.currentJob.statusName}}</div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.contactClick(ctrl.currentJob)"
+                             ng-click="!ctrl.currentJob.locked && ctrl.jdSvc.contactClick($event, ctrl.currentJob)"
                              ng-show="!ctrl.currentJob.bulkJob">
                             <label ng-class="ctrl.currentJob.locked ? 'disabled' : ''">Booked by Contact</label>&nbsp;<i
                                 class="fa fa-info-circle" ng-class="ctrl.currentJob.locked ? 'disabled' : ''"

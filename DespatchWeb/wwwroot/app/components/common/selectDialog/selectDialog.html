@@ -7,12 +7,12 @@
 
     <md-dialog-content>
         <div class="md-dialog-content">
-            <form ng-submit="ctrl.submit(ctrl.field.value)">
+            <form ng-submit="ctrl.submit(ctrl.selectedOption)">
 
                 <!-- Select field -->
-                <md-select aria-label="Select an option" ng-model="ctrl.field.value"
-                           placeholder="{{ ctrl.field.options.placeholder }}">
-                    <md-option ng-repeat="item in ctrl.field.options.items" ng-value="item">
+                <md-select aria-label="Select an option" ng-model="ctrl.selectedOption"
+                           placeholder="{{ ctrl.options.placeholder }}">
+                    <md-option ng-repeat="item in ctrl.options.items" ng-value="item">
                         {{ item.text }}
                     </md-option>
                 </md-select>
@@ -25,7 +25,7 @@
             Cancel
         </md-button>
 
-        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.field.value)" ng-disabled="!ctrl.field.value">
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.selectedOption)" ng-disabled="!ctrl.selectedOption">
             Save
         </md-button>
     </md-dialog-actions>
