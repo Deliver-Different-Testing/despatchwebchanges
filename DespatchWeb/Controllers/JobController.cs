@@ -879,15 +879,19 @@ public partial class JobController : Controller
     {
         try
         {
-            if (viewModel is null) return StatusCode(StatusCodes.Status500InternalServerError, "View is null!");
+            if (viewModel == null) throw new ArgumentNullException(nameof(viewModel), "ViewModel is null");
 
             await _jobRepo.AddInterCourierCharge(viewModel);
-
             return Json("OK");
         }
         catch (Exception e)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = e.Message });
+            var errorResponse = new
+            {
+                message = e is ArgumentNullException ? e.Message : "An error has occurred."
+            };
+
+            return StatusCode(StatusCodes.Status500InternalServerError, errorResponse);
         }
     }
 
