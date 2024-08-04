@@ -2043,7 +2043,7 @@ function NationwideController($scope, jdSvc, NWData, $state,
 
     $scope.sort["jobList"] = "remain";
 
-    $scope.setFiltersFromTopBar = function (data) {
+    self.setFiltersFromTopBar = function (data) {
         angular.element('.clearLists-list-title').removeClass('listActive');
         $scope.setFilters(data);
     };

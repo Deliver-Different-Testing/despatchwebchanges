@@ -4,40 +4,42 @@
         <img class="logo" src="/images/menu-urgent.png"/>
 
         <div class="btn-group" id="status-group" role="group">
-            <button class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})"
+            <button class="btn all btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'status':'all'})"
                     type="button">All
             </button>
-            <button class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})"
+            <button class="btn active btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'status':'active'})"
                     type="button">Active
             </button>
-            <button class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})"
+            <button class="btn done btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'status':'done'})"
                     type="button">Done
             </button>
         </div>
 
         <div aria-label="Basic example" class="btn-group" id="area-group" ng-show="isInternal" role="group">
-            <button class="btn mainfu btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'mainfu'})"
+            <button class="btn mainfu btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'mainfu'})"
                     type="button">Main-FU
             </button>
-            <button class="btn nwakl btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwakl'})"
+            <button class="btn nwakl btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'nwakl'})"
                     type="button">NW-AKL
             </button>
-            <button class="btn baggage btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'baggage'})"
+            <button class="btn baggage btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'baggage'})"
                     type="button">Baggage
             </button>
-            <button class="btn chch btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'chch'})"
+            <button class="btn chch btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'chch'})"
                     type="button">ChCh
             </button>
-            <button class="btn int btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'int'})" type="button">
+            <button class="btn int btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'int'})"
+                    type="button">
                 International
             </button>
-            <button class="btn nwother btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwother'})"
+            <button class="btn nwother btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'nwother'})"
                     type="button">NW-Other
             </button>
-            <button class="btn sameday btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'sameday'})"
+            <button class="btn sameday btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'sameday'})"
                     type="button">SameDay
             </button>
-            <button class="btn wlg btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'wlg'})" type="button">
+            <button class="btn wlg btn-sm btn-secondary" ng-click="ctrl.setFiltersFromTopBar({'area':'wlg'})"
+                    type="button">
                 WLG
             </button>
 
