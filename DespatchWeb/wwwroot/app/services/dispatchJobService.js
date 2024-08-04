@@ -36,7 +36,7 @@ class DispatchJobService {
      * @param {number} courierNumber
      * @param job
      */
-    dispatchJob(courierNumber, job) {
+    async dispatchJob(courierNumber, job) {
         let foundCourier = this.pickCouriers.find(c => c.id === courierNumber);
 
         if (foundCourier === undefined) {
@@ -46,16 +46,15 @@ class DispatchJobService {
                 .ok('Yes')
                 .cancel('No');
 
-            this.$mdDialog.show(confirm).then(() => {
+            try {
+                await this.$mdDialog.show(confirm);
                 foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
-                return this._dispatchJobsContinue(courierNumber, foundCourier, true, job);
-            }, () => {
+                return await this._dispatchJobsContinue(courierNumber, foundCourier, true, job);
+            } catch (error) {
                 // user clicked 'No'
-            });
-            return;
+            }
         }
-
-        return this._dispatchJobsContinue(courierNumber, foundCourier, false, job);
+        return await this._dispatchJobsContinue(courierNumber, foundCourier, false, job);
     };
 
     /**
