@@ -1,19 +1,23 @@
-function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window) {
+function NationwideController($scope, jdSvc, NWData, $state,
+                              $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService,
+                              $mdDialog, $document, $window, toastrService) {
+    const self = this;
+
     $scope.isInternal = (ClientInternal === "True");
-    $scope.jdSvc = jdSvc;
+    self.jdSvc = jdSvc;
     $scope.name = "Nationwide";
 
-    $scope.greetUser = function () {
+    self.greetUser = function () {
         return greetingService.greetUser($scope.userName);
     }
 
     $scope.updateGPS = function (currentJob, field, fromRightClick) {
-        $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
+        self.jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
-    $scope.jdSvc.setSelectJobDetail(function () {
-        const j = $scope.currentJob;
-        jdSvc.setJob($scope.currentJob);
+    jdSvc.setSelectJobDetail(function () {
+        const j = self.currentJob;
+        jdSvc.setJob(self.currentJob);
         $scope.getData().then(() => {
             if (j === null || j === undefined || j === false) {
                 return;
@@ -107,7 +111,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 //console.log("pointer 3");
 
                 angular.element('.gatherForm').css('display', 'none');
-                //var j = $scope.currentJob;
+                //var j = self.currentJob;
                 $scope.getData().then(function () {
                     //if (j === null || j === undefined || j === false) {
                     //    return;
@@ -151,7 +155,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         cancelValue: "Cancel"
     };
 
-    $scope.jdSvc.setGather($scope.gather);
+    self.jdSvc.setGather($scope.gather);
     $scope.allCouriers = {display: false, includeUA: false};
     $scope.mapZoom = {display: true};
 
@@ -453,9 +457,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         layoutsObject[0] = defaultLayout[0];
     }
 
-    $scope.layouts = layoutsObject || defaultLayout;
+    self.layouts = layoutsObject || defaultLayout;
     $scope.userName = FirstName;
-    $scope.currentLayoutName = "default";
+    self.currentLayoutName = "default";
     $scope.truckMode = "On";
     $scope.supportChannel = "All";
 
@@ -469,9 +473,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         }
     }
 
-    $scope.layout = angular.copy($scope.layouts[0].layout);
+    self.layout = angular.copy(self.layouts[0].layout);
 
-    $scope.deleteLayout = function (event, i) {
+    self.deleteLayout = function (event, i) {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
@@ -481,9 +485,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             .cancel('Cancel');
 
         $mdDialog.show(deleteConfirm).then(() => {
-            $scope.layouts.splice(index, 1);
+            self.layouts.splice(index, 1);
             if (Modernizr.localstorage) {
-                localStorage.setItem("layoutsNW-" + ContactID, JSON.stringify($scope.layouts));
+                localStorage.setItem("layoutsNW-" + ContactID, JSON.stringify(self.layouts));
             }
         }, () => {
             console.log("Delete layout canceled!");
@@ -496,18 +500,18 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         }
     };
 
-    $scope.loadLayout = function (i) {
-        $scope.currentLayoutName = $scope.layouts[i].name;
-        $scope.layout = angular.copy($scope.layouts[i].layout);
+    self.loadLayout = function (i) {
+        self.currentLayoutName = self.layouts[i].name;
+        self.layout = angular.copy(self.layouts[i].layout);
 
         // save layout as last active
-        $scope.setLastActiveLayoutName($scope.currentLayoutName);
+        $scope.setLastActiveLayoutName(self.currentLayoutName);
 
         $timeout($scope.getData, 1000);
     };
 
-    $scope.saveLayout = function (event) {
-        angular.forEach($scope.layout.columns,
+    self.saveLayout = function (event) {
+        angular.forEach(self.layout.columns,
             (column, colKey) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
                 angular.forEach(column.boxes,
@@ -527,12 +531,12 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         $mdDialog.show(saveLayoutPrompt).then(layoutName => {
             if (Modernizr.localstorage) {
-                $scope.layouts = $scope.layouts.concat(
+                self.layouts = self.layouts.concat(
                     {
                         name: layoutName,
-                        layout: angular.copy($scope.layout)
+                        layout: angular.copy(self.layout)
                     });
-                localStorage.setItem("layoutsNW-" + ContactID, JSON.stringify($scope.layouts));
+                localStorage.setItem("layoutsNW-" + ContactID, JSON.stringify(self.layouts));
 
                 // save last active layout
                 $scope.setLastActiveLayoutName(layoutName);
@@ -730,14 +734,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     });
 
     $scope.unlockJob = function () {
-        return $scope.jdSvc
-            .unlockJob($scope.currentJob);
+        return self.jdSvc
+            .unlockJob(self.currentJob);
 
     };
 
     $scope.lockJob = function () {
-        return $scope.jdSvc
-            .lockJob($scope.currentJob);
+        return self.jdSvc
+            .lockJob(self.currentJob);
 
     };
 
@@ -791,14 +795,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         $scope.eventForm = {
             "data": {
-                "jobNum": $scope.currentJob.jobNo,
-                "client": $scope.currentJob.client,
+                "jobNum": self.currentJob.jobNo,
+                "client": self.currentJob.client,
                 "event": "Other",
                 "date": new Date(),
                 "time": time
             },
             submit: function () {
-                return NWData.addOtherEvent($scope.currentJob.jobNo, $scope.currentJob.clientID, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(function () {
+                return NWData.addOtherEvent(self.currentJob.jobNo, self.currentJob.clientID, self.currentJob.contactName, ContactID, self.currentJob.courierData.courierID, self.currentJob.id, self.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(function () {
                     angular.element(".eventForm").hide();
                 });
             },
@@ -997,7 +1001,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.dispatchJobsFromNew = function (courier) {
         var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
         if (foundCourier === undefined) {
-            alert("Invalid Courier");
+            $mdDialog.show(
+                $mdDialog.alert()
+                    .clickOutsideToClose(true)
+                    .title('Error')
+                    .textContent('Invalid Courier')
+                    .ok('OK')
+            );
+
             return;
         }
 
@@ -1018,7 +1029,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             if (j.courierData.courierID !== null) {
-                alert("restore " + jn + " prior to despatching to another courier");
+                $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Notice').textContent('Restore ' + jn + ' prior to despatching to another courier').ok('OK'));
                 reset();
                 return;
             }
@@ -1028,13 +1039,13 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             //    return;
             //}
             if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
-                alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+                $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Error').textContent(`DG job ${jn} can not be despatched to courier ${courier} - doesn't have DGLicense.`).ok('OK'));
                 reset();
                 return;
             }
             if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
                 reset();
-                alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+                $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Error').textContent(`DG job ${jn} can not be despatched to courier ${courier} - doesn't have DGLicense.`).ok('OK'));
                 return;
             }
 
@@ -1109,7 +1120,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             }
             if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
                 reset();
-                alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+                $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Notice').textContent(`Courier ${courier} doesn't have a DGLicense or license has expired.`).ok('OK'));
                 return;
             }
 
@@ -1140,7 +1151,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.dispatchJobsFromPotentialCouriers = function (courier) {
         var foundCourier = $scope.pickCouriers.find(c => c.id === courier);
         if (foundCourier === undefined) {
-            alert("Invalid Courier");
+            $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Error').textContent('Invalid Courier').ok('OK'));
             return;
         }
 
@@ -1161,23 +1172,19 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             var jn = j.jobNo;
             if (j.courierData.courierID !== null) {
-                alert("restore " + jn + " prior to despatching to another courier");
+                $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Notice').textContent(`Restore ${jn} prior to despatching to another courier`).ok('OK'));
                 reset();
                 return;
             }
-            //if (!j.allowDispatch) {
-            //    alert("Can not despatch " + jn + " until all other child jobs have been despatched.");
-            //    reset();
-            //    return;
-            //}
+
             if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
-                alert("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.");
+                $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Error').textContent(`DG job ${jn} cannot be dispatched to courier ${courier} - doesn't have DGLicense.`).ok('OK'));
                 reset();
                 return;
             }
             if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
                 reset();
-                alert("Courier " + courier + " doesn't have a DGLicense or license has expired.");
+                $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Error').textContent(`Courier ${courier} doesn't have a DGLicense or license has expired.`).ok('OK'));
                 return;
             }
 
@@ -1664,7 +1671,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         jid = angular.element(".activeTable .active").first().data("jobid");
         var j = $scope.jobList.find(jo => jo.id === jid);
         if (!j.allowSplit) {
-            alert("Can not split " + j.JobNo + ".");
+            $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Error').textContent(`Cannot split ${j.JobNo}.`).ok('OK'));
             return;
         }
 
@@ -1677,7 +1684,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
                     var $parentDiv = angular.element("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
                     var goTop = angular.element("#jobList tr[data-jobid='" + j.id + "']").offset().top;
-
 
                     try {
                         goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
@@ -1705,8 +1711,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             click: function ($itemScope, $event, modelValue, text, $li) {
                 //$scope.items.splice($itemScope.$index, 1);
 
-                var index = $scope.currentJob.PalletInfo.indexOf($itemScope.pallet);
-                $scope.currentJob.PalletInfo.splice(index, 1);
+                var index = self.currentJob.PalletInfo.indexOf($itemScope.pallet);
+                self.currentJob.PalletInfo.splice(index, 1);
 
                 //LOCK WITH CURRENT USER
 
@@ -1797,7 +1803,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         if (ac === undefined) {
             angular.element("#box-currentWork").find(".loading").fadeOut();
             angular.element("#box-map").find(".loading").show();
-            alert("courier not found");
+            $mdDialog.show($mdDialog.alert().clickOutsideToClose(true).title('Error').textContent('Courier not found.').ok('OK'));
             return;
         }
         $scope.currentWorkSelection = " for Courier " + ac.id + " " + ac.name;
@@ -1839,7 +1845,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         $scope.currentWorkSelection = " for Courier " + courier.courier;
 
         //SHOW MAP
-        //$scope.currentJob = null;
+        //self.currentJob = null;
         $scope.currentCourier = courier;
 
         //$scope.currentSelection = " for Courier " + + courier.courier;
@@ -1922,8 +1928,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         var code = $scope.pickCouriers.find(x => x.courierID === courier.courierID).id;
         NWData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(function (data) {
             angular.element("#box-currentWork").find(".loading").fadeOut();
-            if ($scope.currentJob !== null && $scope.currentJob.courier !== code) {
-                $scope.currentJob = null;
+            if (self.currentJob !== null && self.currentJob.courier !== code) {
+                self.currentJob = null;
             }
             $scope.jobsCurrentList = data;
             if (data.length > 0) {
@@ -1999,8 +2005,8 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         NWData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(function (data) {
             angular.element("#box-currentWork").find(".loading").fadeOut();
             /*
-            if ($scope.currentJob !== undefined && $scope.currentJob !== null && $scope.currentJob.courier !== code) {
-                $scope.currentJob = null;
+            if (self.currentJob !== undefined && self.currentJob !== null && self.currentJob.courier !== code) {
+                self.currentJob = null;
             }
             */
             $scope.jobsCurrentList = data;
@@ -2068,7 +2074,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     $scope.selectJobDetail = function (job) {
-        $scope.currentJob = job;
+        self.currentJob = job;
         $scope.currentSupport = null;
         $scope.potentialCouriers = false;
         $scope.potentialCouriersSelection = " for Job " + job.jobNo;
@@ -2081,11 +2087,11 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         angular.element("#box-jobDetail").find(".loading").show();
 
         NWData.getJobDetail(support.jobId).then(function (data) {
-            $scope.currentJob = data;
+            self.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + support.jobNumber;
             var jobs = [];
-            jobs.push($scope.currentJob);
+            jobs.push(self.currentJob);
             displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
 
             if ($scope.mapZoom.display) {
@@ -2101,7 +2107,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.loadRelatedJobDetail = function (id, jn) {
         angular.element("#box-jobDetail").find(".loading").show();
         NWData.getJobDetail(id).then(function (data) {
-            $scope.currentJob = data;
+            self.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + jn;
         });
@@ -2124,21 +2130,21 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                     jobRow = angular.element(this);
                 });
                 console.log("selectJob");
-                $scope.currentJob = job;
+                self.currentJob = job;
                 $scope.$apply();
 
                 console.log(job);
 
-                jdSvc.setJob($scope.currentJob);
+                jdSvc.setJob(self.currentJob);
 
                 NWData.getActiveCouriers().then(function (data) {
                     $scope.pickCouriers = data;
                 });
 
-                if ($scope.currentJob.rootParentID) {
-                    NWData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(function (data) {
-                        //data = data.filter(item => item.id !== $scope.currentJob.id);
-                        $scope.currentJob.relatedJobs = data;
+                if (self.currentJob.rootParentID) {
+                    NWData.getRelatedJobs(self.currentJob.rootParentID, self.currentJob.clientID).then(function (data) {
+                        //data = data.filter(item => item.id !== self.currentJob.id);
+                        self.currentJob.relatedJobs = data;
                     });
                 }
 
@@ -2184,7 +2190,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     $scope.setCurrentWorkMenu = function () {
         var multiple = angular.element(".activeTable .active").length > 1;
 
-        var menu = [
+        return [
             {
                 text: "Restore",
                 click: function ($itemScope, $event, modelValue, text, $li) {
@@ -2205,8 +2211,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             }
 
         ];
-
-        return menu;
     };
 
 
@@ -2222,7 +2226,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 // this is right click
                 waitingDialog.show();
                 $timeout(function () {
-                    $scope.jdSvc.updateGPS($scope.currentJob, 'fromAddress', true);
+                    self.jdSvc.updateGPS(self.currentJob, 'fromAddress', true);
                 }, 100);
 
                 break;
@@ -2246,7 +2250,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 // this is right click
                 waitingDialog.show();
                 $timeout(function () {
-                    $scope.jdSvc.updateGPS($scope.currentJob, 'toAddress', true);
+                    self.jdSvc.updateGPS(self.currentJob, 'toAddress', true);
                 }, 100);
 
                 break;
@@ -2269,7 +2273,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             case 3:
                 // this is right click
                 $timeout(function () {
-                    var dueTime = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
+                    var dueTime = moment(self.currentJob.booked).add(self.currentJob.lp || self.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
                     var items = [];
                     for (var i = 1; i < 37; i++) {
                         if (parseInt(dueTime) < (i * 5))
@@ -2278,21 +2282,21 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
                     $scope.lateForm = {
                         "data": {
-                            "jobNum": $scope.currentJob.jobNo,
-                            "client": $scope.currentJob.client,
+                            "jobNum": self.currentJob.jobNo,
+                            "client": self.currentJob.client,
                             "dueMins": dueTime,
                             "choose": ""
                         },
                         submit: function () {
                             var pickupETAValue = parseInt($scope.lateForm.choose.value);
-                            var dueMins = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
+                            var dueMins = moment(self.currentJob.booked).add(self.currentJob.lp || self.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
 
-                            if ($scope.currentJob.lp !== pickupETAValue) {
-                                var window = $scope.currentJob.lp || $scope.currentJob.pickupTime;
+                            if (self.currentJob.lp !== pickupETAValue) {
+                                var window = self.currentJob.lp || self.currentJob.pickupTime;
                                 var lateMins = pickupETAValue - dueMins + window;
-                                $scope.currentJob.lp = lateMins;
+                                self.currentJob.lp = lateMins;
                                 console.log(lateMins);
-                                $scope.lateCall(lateMins, 1, $scope.currentJob, false);
+                                $scope.lateCall(lateMins, 1, self.currentJob, false);
                                 $scope.lateForm.data = null;
                                 angular.element("#AwayMins").select2().empty();
                                 angular.element("#AwayMins").select2('destroy');
@@ -2342,7 +2346,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             case 3:
                 // this is right click
                 $timeout(function () {
-                    $scope.jdSvc.speedClick($scope.currentJob);
+                    self.jdSvc.speedClick(self.currentJob);
                     $scope.$apply();
                 }, 400);
 
@@ -2366,7 +2370,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             case 3:
                 // this is right click
                 $timeout(function () {
-                    $scope.jdSvc.clientClick($scope.currentJob);
+                    self.jdSvc.clientClick(self.currentJob);
                     $scope.$apply();
                 }, 400);
 
@@ -2390,7 +2394,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
             case 3:
                 // this is right click
                 $timeout(function () {
-                    $scope.jdSvc.notifyClick($scope.currentJob);
+                    self.jdSvc.notifyClick(self.currentJob);
                     $scope.$apply();
                 }, 400);
 
@@ -2410,14 +2414,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 {
                     text: "Void Job",
                     click: function ($itemScope, $event, modelValue, text, $li) {
-                        $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
+                        $scope.voidJobForm(self.currentJob.jobNo, self.currentJob.id);
                     }
                 },
 
                 {
                     text: "Add Event - Other",
                     click: function ($itemScope, $event, modelValue, text, $li) {
-                        $scope.otherEventForm($scope.currentJob.jobNo);
+                        $scope.otherEventForm(self.currentJob.jobNo);
                     }
                 }
             ];
@@ -2757,7 +2761,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         angular.element("#box-jobsList").find(".loading").show();
         $scope.jobList = [];
         $scope.jobListPOD = [];
-        $scope.currentJob = false;
+        self.currentJob = false;
         $scope.potentialCouriers = false;
         $scope.jobGroups = false;
         $scope.jobsCurrentList = false;
@@ -2814,7 +2818,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
                 console.log($event.currentTarget.attributes["data-field"].nodeValue);
 
-                $scope.jdSvc.updateGPS($scope.currentJob, $event.currentTarget.attributes["data-field"].nodeValue);
+                self.jdSvc.updateGPS(self.currentJob, $event.currentTarget.attributes["data-field"].nodeValue);
 
             }
         }
@@ -2868,7 +2872,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 console.log("Suburb = " + locn.Address.District);
                 console.log("PostCode = " + locn.Address.PostalCode);
                 angular.element("#suburb").val(locn.Address.District);
-                var mappedSub = $scope.jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
+                var mappedSub = self.jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
                 if (mappedSub !== undefined) {
                     console.log(mappedSub);
                     angular.element('#our_suburb').val(mappedSub.id).trigger('change');
@@ -2877,9 +2881,9 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                 }
 
 
-                $scope.jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                $scope.jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                $scope.jdSvc.gpsForm.data.address = locn.Address.Label;
+                self.jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
+                self.jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
+                self.jdSvc.gpsForm.data.address = locn.Address.Label;
                 var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
                 $scope.map.setCenter(ll);
                 $scope.marker.setPosition(ll);
@@ -2889,7 +2893,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
 
         var suburbOptions = {
             minimumInputLength: 1,
-            data: $scope.jdSvc.pickSuburbs
+            data: self.jdSvc.pickSuburbs
         };
 
         angular.element("#our_suburb").select2(suburbOptions);
@@ -2897,159 +2901,6 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         waitingDialog.hide();
     };
 
-    //$scope.onMapReady();
-
-
-    $scope.setSplitJobMeetingPoint = function () {
-
-        var lat;
-        var long;
-        var q;
-        if ($scope.currentJob.deliveryLongitude) {
-
-            lat = $scope.currentJob.deliveryLatitude;
-            long = $scope.currentJob.deliveryLongitude;
-            q = angular.element("#gpsMap").attr("data-src") + lat + "," + long;
-        } else {
-            lat = "";
-            long = "";
-            q = angular.element("#gpsMap").attr("data-src") + encodeURIComponent($scope.currentJob.toAddress);
-        }
-
-        console.log($scope.currentJob.pickupLatitude);
-        console.log(q);
-        angular.element("#gpsMap").attr("src", q);
-
-        $scope.gpsForm = {
-            "data": {
-                "address": $scope.currentJob.toAddress,
-                "lat": lat,
-                "long": long
-            },
-            submit: function (location) {
-
-                var job = $scope.currentJob;
-                if ($scope.gpsForm.data.our_suburb === undefined) {
-                    alert("You must pick one of our suburbs to map this address to");
-                    return $scope.gpsFormPromise;
-                }
-
-                job.toAddress = $scope.gpsForm.data.address;
-                job.toSuburbID = parseInt($scope.gpsForm.data.our_suburb);
-                var callData = {
-                    "call": "updateSplitJobData",
-                    "lat": $scope.gpsForm.data.lat,
-                    "long": $scope.gpsForm.data.long,
-                    "toSuburbId": job.toSuburbID,
-                    "toAddress": job.toAddress,
-                    "jobID": $scope.currentJob.id
-                };
-                //TODO
-                NWData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long).then(function (response) {
-                    NWData.reRateJobData(callData.jobID).then(function (response) {
-
-                    });
-                });
-                //Set Toaddress/tosuburb/togps of Child Job 1
-                //Set Fromaddress/Fromsuburb/Fromgps of Child Job 2
-                // Rate Split Jobs Parent STP
-                //DES_stpJob_ColsolidateMarsInformation
-                //DES_stpJob_DisplayInDespatch parentJobID
-                //Close Form and Refresh, scroll to child jobs
-
-
-            },
-            cancel: function () {
-                angular.element(".gpsForm").hide(0);
-            },
-            placeChanged: function (place) {
-                if (place !== null) {
-                    $scope.place = place;
-                } else {
-                    $scope.place = this.getPlace();
-                }
-
-                //$scope.gpsForm.address = $scope.place.formatted_address;
-                $scope.gpsForm.data.lat = $scope.place.geometry.location.lat();
-                $scope.gpsForm.data.long = $scope.place.geometry.location.lng();
-                if ($scope.place.address_components.find(x => x.types[0] === "postal_code")) {
-                    $scope.gpsForm.data.postCode = $scope.place.address_components
-                        .find(x => x.types[0] === "postal_code").long_name;
-                }
-                $scope.map.setCenter($scope.place.geometry.location);
-            },
-            moveMarker: function (event) {
-                var latlng = event.latLng;
-            },
-            markerDragend: function () {
-                //Geo coder for drag marker
-                var location = $scope.marker.getPosition();
-                $.getJSON("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
-                    app_id: "bBPfh2x8Cauun3ygLMAx",
-                    app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                    mode: "retrieveAddresses",
-                    prox: location.lat().toString() + "," + location.lng().toString() + "," + "250"
-                }).done(function (data) {
-                    var locn = data.Response.View[0].Result[0].Location;
-                    //$scope.gpsForm.data.address = locn.Address.Label;
-                    console.log("Suburb = " + locn.Address.District);
-                    console.log("PostCode = " + locn.Address.PostalCode);
-                    angular.element("#suburb").val(locn.Address.District);
-                    var mappedSub = $scope.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
-                    if (mappedSub !== undefined) {
-                        console.log(mappedSub);
-                        angular.element('#our_suburb').val(mappedSub.id).trigger('change');
-                    } else {
-                        angular.element('#our_suburb').val(null).trigger('change');
-                    }
-
-
-                    $scope.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                    $scope.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                });
-
-            }
-        };
-
-
-        angular.element(".gpsForm").show(0, function () {
-            $scope.$apply();
-            $scope.onMapReady();
-            //var auckland = { lat: -36.8804466, lng: 174.6117981 };
-            //$scope.heremaps.setCenter(auckland);
-            $scope.markers = [];
-            //$scope.heremaps.updateMarkers($scope.markers, true);
-            //$scope.heremaps.refresh();
-            //$scope.heremaps.setZoom(10);
-            $timeout(function () {
-                angular.element('#location').select2('open');
-                var search = angular.element('#location').data('select2').dropdown.$search;
-                if ($scope.gpsForm.data.address.indexOf(',') > 0) {
-                    var parts = $scope.gpsForm.data.address.split(',');
-                    search.val(parts[1].split());
-                    $scope.gpsForm.data.extras = parts[0];
-                } else {
-                    search.val($scope.gpsForm.data.address);
-                }
-                search.trigger("input");
-            }, 200);
-
-        });
-
-
-        $scope.copyGpsAddress = function () {
-            angular.element('#location').select2('open');
-            var search = angular.element('#location').data('select2').dropdown.$search;
-            if ($scope.gpsForm.data.address.indexOf(',') > 0) {
-                var parts = $scope.gpsForm.data.address.split(',');
-                search.val(parts[1].split());
-                $scope.gpsForm.data.extras = parts[0];
-            } else {
-                search.val($scope.gpsForm.data.address);
-            }
-            search.trigger("input");
-        };
-    };
 
     $scope.createEvent = function () {
 
@@ -3057,12 +2908,12 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         time.setSeconds(0);
         time.setMilliseconds(0);
         $timeout(function () {
-            console.log($scope.currentJob);
+            console.log(self.currentJob);
             $scope.eventForm = {
                 "data": {
-                    "jobNum": $scope.currentJob.jobNo,
-                    "client": $scope.currentJob.client,
-                    "clientId": $scope.currentJob.clientID,
+                    "jobNum": self.currentJob.jobNo,
+                    "client": self.currentJob.client,
+                    "clientId": self.currentJob.clientID,
                     "event": "Other",
                     "date": new Date(),
                     "time": time
@@ -3087,14 +2938,14 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
                         $scope.eventForm.data.event === "6") {
                         //Add Notes
                         var newNote = eventName + ":" + ($scope.eventForm.data.notes || "");
-                        NWData.addNote($scope.currentJob.id, newNote, FirstName, false).then(function () {
+                        NWData.addNote(self.currentJob.id, newNote, FirstName, false).then(function () {
                             //return DispatchData.voidJob(jobId);
 
                         });
                     }
-                    return NWData.addEvent($scope.currentJob.jobNo, $scope.currentJob.clientID, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes, $scope.eventForm.data.event).then(function () {
+                    return NWData.addEvent(self.currentJob.jobNo, self.currentJob.clientID, self.currentJob.contactName, ContactID, self.currentJob.courierData.courierID, self.currentJob.id, self.currentJob.jobType, FirstName, $scope.eventForm.data.notes, $scope.eventForm.data.event).then(function () {
                         if ($scope.eventForm.data.event === "6") {
-                            NWData.voidJob($scope.currentJob.id);
+                            NWData.voidJob(self.currentJob.id);
                         }
                         angular.element(".eventForm").hide();
                         $scope.getData();
@@ -3138,20 +2989,42 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
         angular.element(".truckCourierStatusForm").show(0);
     };
 
+    self.courierSearchText = "";
+    /**
+     * @param {string} searchText
+     */
+    self.courierSearch = async searchText => {
+        try {
+            const url = "/courier/AllActiveSearch";
+            return await DispatchData.autocompleteSearch(searchText, url);
+        } catch (error) {
+            toastrService.showErrorToast(error.message);
+        }
+    }
+
+    self.selectedCourierChange = function (courier) {
+        if (courier === undefined) {
+            self.selectedCourier = null;
+            $scope.currentCourier = null;
+        } else {
+            this.updateCourierData(courier.id, courier.text);
+        }
+    };
+
     // Load custom layout
-    NationwideController.prototype.init = function () {
+    self.init = function () {
         if (Modernizr.localstorage) {
             const storedLayouts = localStorage.getItem("layoutsNW-" + ContactID);
             const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutNW-" + ContactID);
 
             if (storedLayouts) {
-                $scope.layouts = JSON.parse(storedLayouts);
+                self.layouts = JSON.parse(storedLayouts);
                 if (lastActiveLayoutName) {
-                    const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
+                    const lastActiveLayoutIndex = self.layouts.findIndex(l => l.name === lastActiveLayoutName);
 
                     // if the last active layout is found among stored layouts
                     if (lastActiveLayoutIndex !== -1) {
-                        $scope.loadLayout(lastActiveLayoutIndex);
+                        self.loadLayout(lastActiveLayoutIndex);
                     }
                 }
             }
@@ -3159,7 +3032,7 @@ function NationwideController($scope, jdSvc, NWData, $state, $filter, $parse, ho
     };
 
     // Call the init function when the controller loads
-    NationwideController.prototype.init();
+    self.init();
 
     let keyIsDown = {};
     let mouseDown = 0;
@@ -3420,6 +3293,7 @@ angular
         "$mdDialog",
         "$document",
         "$window",
+        "toastrService",
         NationwideController]);
 
 

@@ -1,186 +1,262 @@
-<div class="top-bar">
-    <img src="/images/menu-urgent.png" class="logo" />
+<div ng-cloak ng-controller="NationwideControl as ctrl">
 
-    <div id="status-group" class="btn-group" role="group">
-        <button type="button" class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})">All</button>
-        <button type="button" class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})">Active</button>
-        <button type="button" class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})">Done</button>
-    </div>
+    <div class="top-bar">
+        <img class="logo" src="/images/menu-urgent.png"/>
 
-    <div id="area-group" class="btn-group" role="group" aria-label="Basic example" ng-show="isInternal">
-        <button type="button" class="btn mainfu btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'mainfu'})">Main-FU</button>
-        <button type="button" class="btn nwakl btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwakl'})">NW-AKL</button>
-        <button type="button" class="btn baggage btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'baggage'})">Baggage</button>
-        <button type="button" class="btn chch btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'chch'})">ChCh</button>
-        <button type="button" class="btn int btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'int'})">International</button>
-        <button type="button" class="btn nwother btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwother'})">NW-Other</button>
-        <button type="button" class="btn sameday btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'sameday'})">SameDay</button>
-        <button type="button" class="btn wlg btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'wlg'})">WLG</button>
-
-    </div>
-    <div class="topbar-NavButtons" role="navigation">
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks</div>
-
-    </div>
-
-    <div class="btn-group box-search chat" ng-show="showChat">
-
-        <i class="fa fa-search" ng-click="openChat()"></i>
-        <i class="fa fa-remove" ng-click="chatBox = ''" title="Clear"></i>
-        <input type="text" ng-model="chatBox" placeholder="Chat to..." ng-model-options="{debounce: 300}">
-    </div>
-
-    <div class="topbar-buttons">
-        <span ng-show="!isInternal" style="color:white;">Clients:</span>
-        <div ng-show="!isInternal" class="multi-element btn-sm topbar-active" style="display: inline-block; margin-top: -5px; padding-left: 0px; padding-right: 50px;" disabled="false" extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickClients" selected-model="pickService.clients">
-
+        <div class="btn-group" id="status-group" role="group">
+            <button class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})"
+                    type="button">All
+            </button>
+            <button class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})"
+                    type="button">Active
+            </button>
+            <button class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})"
+                    type="button">Done
+            </button>
         </div>
 
-        <div style="display: flex; align-items: center;">
-            <div class="btn topbar-button" style="color: white;">
-                <span>{{greetUser()}}</span>
+        <div aria-label="Basic example" class="btn-group" id="area-group" ng-show="isInternal" role="group">
+            <button class="btn mainfu btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'mainfu'})"
+                    type="button">Main-FU
+            </button>
+            <button class="btn nwakl btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwakl'})"
+                    type="button">NW-AKL
+            </button>
+            <button class="btn baggage btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'baggage'})"
+                    type="button">Baggage
+            </button>
+            <button class="btn chch btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'chch'})"
+                    type="button">ChCh
+            </button>
+            <button class="btn int btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'int'})" type="button">
+                International
+            </button>
+            <button class="btn nwother btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwother'})"
+                    type="button">NW-Other
+            </button>
+            <button class="btn sameday btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'sameday'})"
+                    type="button">SameDay
+            </button>
+            <button class="btn wlg btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'wlg'})" type="button">
+                WLG
+            </button>
+
+        </div>
+        <div class="topbar-NavButtons" role="navigation">
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks
             </div>
-            <md-menu md-position-mode="target-right target">
-                <md-button aria-label="Open layout options menu"
-                           class="md-fab md-mini md-primary"
-                           ng-click="$mdMenu.open($event)">
-                    <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
-                    <md-tooltip md-direction="bottom">Layouts</md-tooltip>
-                </md-button>
-                <md-menu-content width="2">
-                    <md-menu-item>
-                        <md-button ng-click="saveLayout($event)">
-                            <md-icon md-font-set="material-symbols-outlined">save</md-icon>
-                            Save Layout
-                        </md-button>
-                    </md-menu-item>
-                    <md-menu-item ng-repeat="lo in layouts track by $index">
-                        <md-button>
-                            <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($event, $index)">
-                                delete
-                            </md-icon>
-                            <span ng-click="loadLayout($index)"
-                                  ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
-                        </md-button>
-                    </md-menu-item>
-                </md-menu-content>
-            </md-menu>
+
         </div>
 
-    </div>
-</div>
+        <div class="btn-group box-search chat" ng-show="showChat">
 
-<div class="">
+            <i class="fa fa-search" ng-click="openChat()"></i>
+            <i class="fa fa-remove" ng-click="chatBox = ''" title="Clear"></i>
+            <input ng-model="chatBox" ng-model-options="{debounce: 300}" placeholder="Chat to..." type="text">
+        </div>
 
-    <div class="columns">
+        <div class="topbar-buttons">
+            <span ng-show="!isInternal" style="color:white;">Clients:</span>
+            <div class="multi-element btn-sm topbar-active" disabled="false"
+                 extra-settings="pickService.settings"
+                 ng-dropdown-multiselect="" ng-show="!isInternal" options="pickClients" selected-model="pickService.clients"
+                 style="display: inline-block; margin-top: -5px; padding-left: 0px; padding-right: 50px;">
 
-        <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in layout.columns" r-directions="['right']"
-             r-flex="true" resizable style="flex-basis: {{column.width}}">
-            <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
-                <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
-                     r-directions="['bottom']"
-                     r-flex="true" resizable style="flex-basis: {{box.height}}">
-                    <div class="box-bar">
-                        <div class="box-bar-title">
-                            {{boxes[box.name].title}}
-                            <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
-                            <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
-                            <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
-                            <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
-                            <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1" ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span ng-click="loadRelatedJobDetail(jo.id, jo.label)" ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}" style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
-                        </div>
-                        <div class="box-buttons">
-                            <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
+            </div>
 
-                                <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Truck Loading Status" ng-if="truckCourierStatus.length >0" ng-click="truckLoadingStatus()"><i class="fa fa-truck"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Restore All" ng-click="restoreAll()"><i class="fa fa-undo"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Redispatch All" ng-click="redispatchAll()"><i class="fa fa-repeat"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Resend All" ng-click="resendAll()"><i class="fa fa-send"></i></button>
-                                </div>
-
-                            </div>
-
-                            <div class="box-details" ng-show="boxes[box.name].showDetailButtons" ng-if="currentJob">
-                                <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="ADD EVENT" ng-click="createEvent()"><i class="fa fa-calendar-plus-o"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="CLOSE EVENT" ng-disabled="!currentSupport" ng-click="closeSupport(currentSupport);"><i class="fa fa-calendar-check-o"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job" ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)" ng-click="unlockJob()"><i class="fa fa-lock"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Lock Job" ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)" ng-click="lockJob()"><i class="fa fa-unlock"></i></button>
-
-                                    <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
-            <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
-                                </div>
-
-                            </div>
-                            <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
-                                <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
-                                <input type="text" style="color: black;display:inline-block!important;" placeholder="gps courier (enter code)..." ng-model="$parent.$parent.courier.gpsCourier" id="gps" />
-                                <i class="fa fa-remove" ng-click="courier.gpsCourier = ''" title="Clear"></i>
-                            </div>
-                            <div class="btn btn-sm btn-primary box-refresh" ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
-                            <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
-                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-toggle="dropdown">
-                                    Trucks <span>{{truckMode}} </span>
-                                    <span class="caret"></span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a href="#" ng-click="setTruckMode('On');">On</a></li>
-                                    <li><a href="#" ng-click="setTruckMode('Off');">Off</a></li>
-                                    <li><a href="#" ng-click="setTruckMode('Only');">Only</a></li>
-                                </ul>
-                            </div>
-                            <div class="dropdown box-trucks" ng-show="box.name === 'supports'">
-                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-toggle="dropdown">
-                                    Channel <span>{{supportChannel}} </span>
-                                    <span class="caret"></span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a href="#" ng-click="setSupportChannel('City');">City</a></li>
-                                    <li><a href="#" ng-click="setSupportChannel('Main');">Main</a></li>
-                                    <li><a href="#" ng-click="setSupportChannel('Trucks');">Trucks</a></li>
-                                    <li><a href="#" ng-click="setSupportChannel('All');">All</a></li>
-                                </ul>
-                            </div>
-                            <div class="btn btn-sm box-refresh" ng-show="box.name === 'clearLists'" ng-click="areaListCity = !areaListCity">City <i ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
-                            <div class="btn btn-sm box-toggle" ng-show="box.name === 'map'" ng-click="allCouriers.display = !allCouriers.display;getAvailableCourierLocation();">All <i ng-class="allCouriers.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
-                            <div class="btn btn-sm box-toggleZoom" ng-show="box.name === 'map'" ng-click="mapZoom.display = !mapZoom.display;storeMapZoomDisplay()">Auto Zoom <i ng-class="mapZoom.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
-                            <div class="btn btn-sm box-toggleUA" ng-show="box.name === 'map'" ng-click="allCouriers.includeUA = !allCouriers.includeUA;getAvailableCourierLocation();">Include UA <i ng-class="allCouriers.includeUA ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
-
-                            <div class="box-search" ng-show="boxes[box.name].showSearch">
-                                <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
-                                <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
-                                <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}">
-
-                            </div>
-
-                            <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
-                        </div>
-                    </div>
-                    <div class="box-content" ng-include="boxes[box.name].tpl"></div>
+            <div style="display: flex; align-items: center;">
+                <div class="btn topbar-button" style="color: white;">
+                    <span>{{ctrl.greetUser()}}</span>
                 </div>
-
+                <md-menu md-position-mode="target-right target">
+                    <md-button aria-label="Open layout options menu"
+                               class="md-fab md-mini md-primary"
+                               ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
+                        <md-tooltip md-direction="bottom">Layouts</md-tooltip>
+                    </md-button>
+                    <md-menu-content width="2">
+                        <md-menu-item>
+                            <md-button ng-click="ctrl.saveLayout($event)">
+                                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                                Save Layout
+                            </md-button>
+                        </md-menu-item>
+                        <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
+                            <md-button>
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.deleteLayout($event, $index)">
+                                    delete
+                                </md-icon>
+                                <span ng-click="ctrl.loadLayout($index)"
+                                      ng-style="lo.name == ctrl.currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                            </md-button>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
             </div>
+
+        </div>
+    </div>
+
+    <div class="">
+
+        <div class="columns">
+
+            <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in ctrl.layout.columns"
+                 r-directions="['right']"
+                 r-flex="true" resizable style="flex-basis: {{column.width}}">
+                <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
+                    <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
+                         r-directions="['bottom']"
+                         r-flex="true" resizable style="flex-basis: {{box.height}}">
+                        <div class="box-bar">
+                            <div class="box-bar-title">
+                                {{boxes[box.name].title}}
+                                <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
+                                <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
+                                <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
+                                <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
+                                <span ng-repeat="jo in ctrl.currentJob.relatedJobs"
+                                      ng-show="box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 1">&nbsp;<span
+                                        ng-click="loadRelatedJobDetail(jo.id, jo.label)"
+                                        ng-style="ctrl.currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
+                                        style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
+                            </div>
+                            <div class="box-buttons">
+                                <div class="box-details" ng-if="currentCourier" ng-show="box.name === 'currentWork'">
+
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-secondary" ng-click="truckLoadingStatus()"
+                                                ng-if="truckCourierStatus.length >0" title="Truck Loading Status"
+                                                type="button"><i class="fa fa-truck"></i></button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="restoreAll()" title="Restore All"
+                                                type="button"><i class="fa fa-undo"></i></button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="redispatchAll()" title="Redispatch All"
+                                                type="button"><i class="fa fa-repeat"></i></button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="resendAll()" title="Resend All"
+                                                type="button"><i class="fa fa-send"></i></button>
+                                    </div>
+
+                                </div>
+
+                                <div class="box-details" ng-if="ctrl.currentJob"
+                                     ng-show="boxes[box.name].showDetailButtons">
+                                    <div aria-label="Basic example" class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-secondary" ng-click="createEvent()" title="ADD EVENT"
+                                                type="button"><i class="fa fa-calendar-plus-o"></i></button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="closeSupport(currentSupport);" ng-disabled="!currentSupport"
+                                                title="CLOSE EVENT" type="button">
+                                            <i class="fa fa-calendar-check-o"></i></button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="unlockJob()" ng-show="ctrl.currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
+                                                title="Unlock Job"
+                                                type="button"><i class="fa fa-lock"></i></button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="lockJob()" ng-show="ctrl.currentJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)"
+                                                title="Lock Job"
+                                                type="button"><i class="fa fa-unlock"></i></button>
+
+                                        <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
+                <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
+                <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
+                <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
+                                    </div>
+
+                                </div>
+                                <div class="btn-group " ng-show="box.name === 'jobsList'" style="padding:8px 5px;">
+                                    <md-autocomplete
+                                            md-item-text="item.text"
+                                            md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
+                                            md-min-length="1"
+                                            md-search-text="ctrl.courierSearchText"
+                                            md-selected-item-change="ctrl.selectedCourierChange(item)"
+                                            placeholder="Search Courier by Code...">
+                                        <md-item-template>
+                                            <span md-highlight-flags="^i"
+                                                  md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
+                                        </md-item-template>
+                                        <md-not-found>
+                                            No couriers matching "{{ctrl.courierSearchText}}" were found.
+                                        </md-not-found>
+                                    </md-autocomplete>
+                                </div>
+
+                                <div class="btn btn-sm btn-primary box-refresh" ng-click="getData()"
+                                     ng-show="boxes[box.name].showRefresh"><i class="fa fa-refresh"></i></div>
+                                <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
+                                    <button class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown"
+                                            type="button">
+                                        Trucks <span>{{truckMode}} </span>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="#" ng-click="setTruckMode('On');">On</a></li>
+                                        <li><a href="#" ng-click="setTruckMode('Off');">Off</a></li>
+                                        <li><a href="#" ng-click="setTruckMode('Only');">Only</a></li>
+                                    </ul>
+                                </div>
+                                <div class="dropdown box-trucks" ng-show="box.name === 'supports'">
+                                    <button class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown"
+                                            type="button">
+                                        Channel <span>{{supportChannel}} </span>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="#" ng-click="setSupportChannel('City');">City</a></li>
+                                        <li><a href="#" ng-click="setSupportChannel('Main');">Main</a></li>
+                                        <li><a href="#" ng-click="setSupportChannel('Trucks');">Trucks</a></li>
+                                        <li><a href="#" ng-click="setSupportChannel('All');">All</a></li>
+                                    </ul>
+                                </div>
+                                <div class="btn btn-sm box-refresh" ng-click="areaListCity = !areaListCity"
+                                     ng-show="box.name === 'clearLists'">City <i
+                                        ng-class="areaListCity ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
+                                <div class="btn btn-sm box-toggle" ng-click="allCouriers.display = !allCouriers.display;getAvailableCourierLocation();"
+                                     ng-show="box.name === 'map'">
+                                    All <i ng-class="allCouriers.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i>
+                                </div>
+                                <div class="btn btn-sm box-toggleZoom" ng-click="mapZoom.display = !mapZoom.display;storeMapZoomDisplay()"
+                                     ng-show="box.name === 'map'">Auto Zoom <i
+                                        ng-class="mapZoom.display ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i></div>
+                                <div class="btn btn-sm box-toggleUA" ng-click="allCouriers.includeUA = !allCouriers.includeUA;getAvailableCourierLocation();"
+                                     ng-show="box.name === 'map'">
+                                    Include UA <i
+                                        ng-class="allCouriers.includeUA ? 'fa fa-toggle-on' : 'fa fa-toggle-off'"></i>
+                                </div>
+
+                                <div class="box-search" ng-show="boxes[box.name].showSearch">
+                                    <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
+                                    <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
+                                    <input ng-model="box.searchBox" ng-model-options="{debounce: 300}" placeholder="Search..."
+                                           type="text">
+
+                                </div>
+
+                                <div class="box-handle"><i class="fa fa-ellipsis-v"></i></div>
+                            </div>
+                        </div>
+                        <div class="box-content" ng-include="boxes[box.name].tpl"></div>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
 
     </div>
 
+
+    <div ng-include="'app/components/Nationwide/tpls/eventForm.tpl?v=1.1'"></div>
+
+    <div ng-include="'app/components/home/tpls/truckCourierStatus.tpl?v=1.7'"></div>
+
+    <div ng-include="'app/components/home/tpls/lateForm.tpl?v=1.1'"></div>
+
+    <div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.14'"></div>
+
+    <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
+
+    <div id='draggingItems'></div>
 </div>
-
-
-<div ng-include="'app/components/Nationwide/tpls/eventForm.tpl?v=1.1'"></div>
-
-<div ng-include="'app/components/home/tpls/truckCourierStatus.tpl?v=1.7'"></div>
-
-<div ng-include="'app/components/home/tpls/lateForm.tpl?v=1.1'"></div>
-
-<div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.14'"></div>
-
-<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
-
-<div id='draggingItems'></div>

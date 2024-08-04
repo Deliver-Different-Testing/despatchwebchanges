@@ -16,6 +16,7 @@ class DispatchJobService {
         this.DispatchData.getActiveCouriers().then(data => {
             this.pickCouriers = data;
         });
+
         this.DispatchData.getAllCouriers().then(data => {
             this.pickAllCouriers = data;
         });
