@@ -132,18 +132,26 @@
                                 <div class="box-details" ng-if="currentCourier" ng-show="box.name === 'currentWork'">
 
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="truckLoadingStatus()"
-                                                ng-if="truckCourierStatus.length >0" title="Truck Loading Status"
-                                                type="button"><i class="fa fa-truck"></i></button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="restoreAll()"
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.truckLoadingStatus()"
+                                                ng-if="truckCourierStatus.length >0"
+                                                title="Truck Loading Status" type="button">
+                                            <i class="material-symbols-outlined small-icon">local_shipping</i>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.restoreAll($event)"
                                                 title="Restore All"
-                                                type="button"><i class="fa fa-undo"></i></button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="redispatchAll()"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">undo</i>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.redispatchAll()"
                                                 title="Redispatch All"
-                                                type="button"><i class="fa fa-repeat"></i></button>
-                                        <button class="btn btn-sm btn-secondary" ng-click="resendAll()"
-                                                title="Resend All"
-                                                type="button"><i class="fa fa-send"></i></button>
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">repeat</i>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.resendAll($event)"
+                                                title="Resend All Jobs"
+                                                type="button">
+                                            <i class="material-symbols-outlined small-icon">send</i>
+                                        </button>
                                     </div>
 
                                 </div>

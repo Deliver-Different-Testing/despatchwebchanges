@@ -1433,7 +1433,7 @@ function NationwideController($scope, jdSvc, NWData, $state,
 
     };
 
-    $scope.restoreAll = function () {
+    self.restoreAll = function () {
         let dialog = $mdDialog.confirm()
             .title('Restore All Jobs')
             .textContent('Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier)
@@ -1482,7 +1482,7 @@ function NationwideController($scope, jdSvc, NWData, $state,
         });
     };
 
-    $scope.redispatchAll = function () {
+    self.redispatchAll = function () {
         let dialog = $mdDialog.confirm()
             .title('Restore All Jobs')
             .textContent('Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier)
@@ -1518,7 +1518,7 @@ function NationwideController($scope, jdSvc, NWData, $state,
         });
     };
 
-    $scope.resendAll = function () {
+    self.resendAll = function () {
         let dialog = $mdDialog.confirm()
             .title('Resend All Jobs')
             .textContent('Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier)
@@ -2973,7 +2973,7 @@ function NationwideController($scope, jdSvc, NWData, $state,
         }, 300);
     };
 
-    $scope.truckLoadingStatus = function () {
+    self.truckLoadingStatus = function () {
         $scope.truckCourierStatusForm = {
             "data": $scope.truckCourierStatus[0],
             refresh: function () {
