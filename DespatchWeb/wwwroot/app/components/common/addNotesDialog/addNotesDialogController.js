@@ -27,7 +27,6 @@ class AddNotesDialogController {
         this.title = title;
         this.job = job;
         this._fieldName = fieldName;
-        this.isLoading = false;
 
         this.note = "";
     }
@@ -38,8 +37,6 @@ class AddNotesDialogController {
      */
     async submit(note) {
         try {
-            this.isLoading = true;
-
             const callData = {
                 "call": "updateDetailField",
                 "field": this._fieldName,
@@ -52,10 +49,8 @@ class AddNotesDialogController {
                 : await this.DispatchData.addNote(this.job.id, callData.value, FirstName, this.job.preBook);
 
             this.toastrService.showSuccessToast("Note added to job successfully");
-            this.isLoading = false;
             this.$mdDialog.hide();
         } catch (error) {
-            this.isLoading = false;
             this.toastrService.showErrorToast(error.message);
         }
     }
