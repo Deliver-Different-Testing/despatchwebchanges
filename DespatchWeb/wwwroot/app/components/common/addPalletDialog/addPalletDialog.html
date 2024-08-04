@@ -13,7 +13,7 @@
     </md-toolbar>
 
     <md-dialog-content ng-cloak>
-        <form name="ctrl.addPalletForm" ng-cloak ng-submit="ctrl.addPalletForm.$valid && ctrl.submit(ctrl.pallet)">
+        <form name="ctrl.palletForm" ng-cloak ng-submit="ctrl.palletForm.$valid && ctrl.submit(ctrl.pallet)">
             <div class="md-dialog-content">
 
                 <div layout-gt-sm="row">
@@ -67,10 +67,20 @@
 
     <md-dialog-actions layout="row" layout-align="center center">
         <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.pallet)">
-            <md-progress-circular class="md-accent" md-diameter="20px" md-mode="indeterminate"
-                                  ng-disabled="ctrl.addPalletForm.$invalid"
+            <md-progress-circular class="md-accent loader-center" md-diameter="20px" md-mode="indeterminate"
+                                  ng-disabled="ctrl.palletForm.$invalid"
                                   ng-if="ctrl.isLoading"></md-progress-circular>
             <span ng-if="!ctrl.isLoading">Create</span>
         </md-button>
     </md-dialog-actions>
 </md-dialog>
+
+
+<style>
+    .loader-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+</style>
