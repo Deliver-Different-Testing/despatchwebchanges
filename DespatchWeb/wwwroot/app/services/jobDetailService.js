@@ -1735,10 +1735,6 @@ class JobDetailService {
         this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
     }
 
-    changeSuburbClick(event, job) {
-
-    }
-
     /**
      * @param {Event} event
      * @param {*} job
