@@ -1665,7 +1665,7 @@ class JobDetailService {
             }
         ];
 
-        this.showSelectDialog(event, job, data, "JobTypeID", "Job Type", "Select new job type....");
+        this.showSelectDialog(event, job, data, "JobTypeID", "Job Type", this.getJobTypeDescription(job.jobType));
     }
 
     internalStatusClick(event, job) {
