@@ -786,7 +786,7 @@ class JobDetailService {
                 "call": "updateDetailField",
                 "field": field,
                 "value": result,
-                "jobID": job.jobID
+                "jobID": job.id
             };
             this.updateField(false, job, callData).then(() => {
                 this.selectJobDetail(job.id);
@@ -1733,6 +1733,10 @@ class JobDetailService {
         }
 
         this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
+    }
+
+    changeSuburbClick(event, job) {
+
     }
 
     /**
