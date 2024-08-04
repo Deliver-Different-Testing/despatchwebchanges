@@ -87,8 +87,6 @@
     </div>
 </div>
 
-
-
 <script>
     angular.element(".box-content").on("scroll", function () {
         var newTop2 = angular.element(this).scrollTop();

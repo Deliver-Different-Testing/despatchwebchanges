@@ -27,7 +27,7 @@
     <table class="table  table-responsive table-rows" id="jobListReprice" data-group="jobsGroup">
         <tbody>
         <tr class="clickable-row draggable-row noselect" ng-class="job.direct ? 'direct' : ''" ng-repeat="job in jobListReprice | filter: box.searchBox"  data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
-		    <td>{{job.time | date : "HH:mm"}}</td>	
+            <td>{{job.time | date: "HH:mm"}}</td>
             <td right-click action="speedColumnClick(event)">{{job.speed}}</td>
 			<td context-menu="setEventsMenu">{{job.jobNo}}</td>
 			<td right-click action="clientColumnClick(event)">{{job.client}}</td>
@@ -56,24 +56,21 @@
             <td><div></div></td>
             <td><div></div></td>
             <td><div></div></td>
-            
+
         </tr>
         </tbody>
     </table>
 
-
-<div class="loading" style="display:block">
-    <div class="text">
-        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
-        <span class="sr-only">Loading...</span>
+    <div class="loading">
+        <div class="text">
+            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+            <span class="sr-only">Loading...</span>
+        </div>
     </div>
-</div>
 
 <script>
-
-    $(".box-content").on("scroll", function() {
-        var newTop = $(this).scrollTop();
-        $(this).find(".table-headings").css({"top":newTop});
+    angular.element(".box-content").on("scroll", function () {
+        var newTop = angular.element(this).scrollTop();
+        angular.element(this).find(".table-headings").css({"top": newTop});
     });
-
 </script>
