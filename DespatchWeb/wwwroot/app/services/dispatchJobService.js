@@ -33,7 +33,7 @@ class DispatchJobService {
 
     /**
      * @param {number} courierNumber
-     * @param job
+     * @param {Job} job
      */
     async dispatchJob(courierNumber, job) {
         let foundCourier = this.pickCouriers.find(c => c.id === courierNumber);
@@ -60,7 +60,7 @@ class DispatchJobService {
      * @param {number} courierNumber
      * @param {boolean} foundCourier
      * @param {boolean} offline
-     * @param job
+     * @param {Job} job
      */
     async _dispatchJobsContinue(courierNumber, foundCourier, offline, job) {
         const callData = {
