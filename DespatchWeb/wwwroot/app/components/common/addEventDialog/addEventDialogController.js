@@ -19,6 +19,7 @@ class AddEventDialogController {
         this._contactId = contactId;
         this._job = job;
 
+        this.isLoading = false;
         this.eventTypes = [];
         this.selectedEvent = null;
         this.eventForm = $scope.eventForm;
@@ -60,6 +61,8 @@ class AddEventDialogController {
                 return;
             }
 
+            this.isLoading = true;
+
             const eventId = this.selectedEvent.id;
             const eventName = this.selectedEvent.text;
 
@@ -80,10 +83,10 @@ class AddEventDialogController {
             if (eventId === "6") {
                 this.NWData.voidJob(this._job.id);
             }
-
-            angular.element(".eventForm").hide();
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
+        } finally {
+            this.isLoading = false;
         }
 
         this.$mdDialog.hide();

@@ -64,22 +64,20 @@
         </form>
     </md-dialog-content>
 
-    <md-dialog-actions layout="row" layout-align="center center">
-        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.event)">
-            <md-progress-circular class="md-accent loader-center" md-diameter="20px" md-mode="indeterminate"
-                                  ng-disabled="ctrl.eventForm.$invalid"
-                                  ng-if="ctrl.isLoading"></md-progress-circular>
-            <span ng-if="!ctrl.isLoading">Create</span>
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-accent"
+                md-diameter="20px"
+                md-mode="indeterminate"
+                ng-disabled="ctrl.eventForm.$invalid"
+                ng-if="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button
+                class="md-primary"
+                ng-click="ctrl.submit(ctrl.event)"
+                ng-disabled="!ctrl.event">
+            Save
         </md-button>
     </md-dialog-actions>
 </md-dialog>
-
-
-<style>
-    .loader-center {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-</style>
