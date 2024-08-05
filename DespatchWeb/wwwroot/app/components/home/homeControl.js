@@ -833,7 +833,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                selectedCourierId: job.courierData.courierId,
+                selectedCourierId: job.courier,
                 contactId: ContactID,
                 dispatcherName: FirstName,
             },
