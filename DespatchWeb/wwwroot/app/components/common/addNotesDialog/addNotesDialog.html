@@ -21,11 +21,20 @@
     </md-dialog-content>
 
     <md-dialog-actions>
-        <md-button class="md-primary" ng-click="ctrl.cancel()">
+        <md-progress-circular
+                class="md-accent"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="!ctrl.note"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-primary" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
             Cancel
         </md-button>
 
-        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.note)" ng-disabled="!ctrl.note">
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.note)" ng-disabled="!ctrl.note"
+                   ng-show="!ctrl.isLoading">
             Save
         </md-button>
     </md-dialog-actions>
