@@ -585,32 +585,33 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {string} boxID
      */
     self.openSearch = (boxID) => {
-        const box = angular.element("#box-" + boxID);
-        const boxSearch = box.find(".box-search");
-
-        if (boxSearch.hasClass("open")) {
-            boxSearch.find("input").css('display', 'none');
-            boxSearch.removeClass("open");
-            boxSearch.css('width', '31px');
+        if (angular.element("#box-" + boxID).find(".box-search").hasClass("open")) {
+            angular.element("#box-" + boxID).find(".box-search input").fadeOut(function () {
+                angular.element("#box-" + boxID).find(".box-search").removeClass("open");
+                angular.element("#box-" + boxID).find(".box-search").animate({"width": "31px"}, 500);
+            });
         } else {
-            boxSearch.css('width', '200px');
-            boxSearch.addClass("open");
-            boxSearch.find("input").css('display', 'block');
+            angular.element("#box-" + boxID).find(".box-search").animate({"width": "200px"},
+                500,
+                function () {
+                    angular.element("#box-" + boxID).find(".box-search").addClass("open");
+                    angular.element("#box-" + boxID).find(".box-search input").fadeIn();
+                });
         }
     };
 
 
     self.openChat = () => {
-        let chatElement = angular.element(".chat");
-
-        if (chatElement.hasClass("open")) {
-            chatElement.find("input").css('display', 'none');
-            chatElement.removeClass("open");
-            chatElement.css('width', '31px');
+        if (angular.element(".chat").hasClass("open")) {
+            angular.element(".chat input").fadeOut(function () {
+                angular.element(".chat").removeClass("open");
+                angular.element(".chat").animate({"width": "31px"}, 500);
+            });
         } else {
-            chatElement.css('width', '250px');
-            chatElement.addClass("open");
-            chatElement.find("input").css('display', 'block');
+            angular.element(".chat").animate({"width": "250px"}, 500, function () {
+                angular.element(".chat").addClass("open");
+                angular.element(".chat").find("input").fadeIn();
+            });
         }
     };
 
@@ -743,7 +744,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 const confirmSwap = $mdDialog.confirm()
                     .title('Swap Delivery Info?')
                     .textContent(`Are you sure you wish to swap delivery info between ${self.currentJob.jobNo} and ${jobNumber}?`)
-                    .ariaLabel('Lucky day')
                     .targetEvent(event)
                     .ok('Yes')
                     .cancel('No');
@@ -777,7 +777,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     self.selectAndDispatchJob = (event, job) => {
-        const despatchJobPrompt = $mdDialog.prompt()
+        const dispatchDialog = $mdDialog.prompt()
             .title("Despatch To Courier")
             .textContent('Enter the courier number to despatch job to')
             .placeholder("Courier Number")
@@ -787,7 +787,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             .ok("Despatch")
             .cancel('Cancel');
 
-        $mdDialog.show(despatchJobPrompt).then(courierNumber => {
+        $mdDialog.show(dispatchDialog).then(courierNumber => {
             try {
                 dispatchJobService.dispatchJob(courierNumber, job).then(() => {
                     $scope.selectJobDetail(job.id);
