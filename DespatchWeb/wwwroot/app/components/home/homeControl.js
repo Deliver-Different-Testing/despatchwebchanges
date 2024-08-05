@@ -795,7 +795,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             } catch (error) {
                 toastrService.showErrorToast(error.message);
             }
-        }, function () {
+        }, () => {
             // User clicked cancel
         });
     }

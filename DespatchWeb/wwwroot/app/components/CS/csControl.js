@@ -49,12 +49,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             .ok("Despatch")
             .cancel('Cancel');
 
-        $mdDialog.show(confirm).then(courierNumber => {
+        return $mdDialog.show(dispatchDialog).then(async courierNumber => {
             try {
-                dispatchJobService.dispatchJob(courierNumber, job).then(() => {
-                    $scope.selectJobDetail(job.id);
-                    toastrService.showSuccessToast(`Job despatched to courier ${courierNumber} successfully`);
-                });
+                await dispatchJobService.dispatchJob(courierNumber, job);
+                $scope.selectJobDetail(job.id);
+                toastrService.showSuccessToast('Job despatched to courier ' + courierNumber + ' successfully');
             } catch (error) {
                 toastrService.showErrorToast(error.message);
             }
@@ -684,9 +683,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         combo: 'enter',
         description: 'Submit gather form',
         allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: function () {
+        callback: function (event, hk) {
             if (angular.element(".gatherForm").is(":visible") === true) {
-                $timeout($scope.gather.submit(), 0);
+                $timeout(() => $scope.gather.submit(), 0);
             }
             if (event.srcElement.id === "Wild" || event.srcElement.id === "Job") {
                 $scope.refreshAllData(true);
@@ -736,14 +735,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                     $mdDialog.show(alert);
                 }
             });
-        }, function () {
+        }, () => {
             // user clicked 'No'
         });
     };
 
     self.restoreJob = function (job) {
         angular.element("#box-jobDetail").find(".loading").show();
-        var callData = {
+        let callData = {
             "call": "restoreJobs",
             "jobs": [],
             "splitJobs": [],
@@ -751,10 +750,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             "courierID": null
         };
 
-        var foundCourier = null;
+        let foundCourier = null;
+        const jn = job.jobNo;
 
-
-        var jn = job.jobNo;
         uCSData.addRestoreEvent(jn, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
         if (callData.courierID === null) {
             callData.courierID = job.courierData.courierID;
