@@ -1426,11 +1426,7 @@ function NationwideController($scope, jdSvc, NWData, $state,
 
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
-
-
         });
-
-
     };
 
     self.restoreAll = function () {
@@ -2900,77 +2896,25 @@ function NationwideController($scope, jdSvc, NWData, $state,
         });
     }
 
-    self.createEvent = function () {
-
-        var time = new Date();
-        time.setSeconds(0);
-        time.setMilliseconds(0);
-        $timeout(function () {
-            console.log(self.currentJob);
-            $scope.eventForm = {
-                "data": {
-                    "jobNum": self.currentJob.jobNo,
-                    "client": self.currentJob.client,
-                    "clientId": self.currentJob.clientID,
-                    "event": "Other",
-                    "date": new Date(),
-                    "time": time
-                },
-                selectEventType: function () {
-
-                },
-                submit: function () {
-                    var eventType = $scope.pickEventTypes.find(jo => jo.id === parseInt($scope.eventForm.data.event));
-                    var eventName = eventType.text;
-                    if ($scope.eventForm.data.event === "7" || $scope.eventForm.data.event === "92") {
-                        NWData.exsalerateActivity(eventName,
-                            $scope.eventForm.data.notes || "",
-                            $scope.eventForm.data.clientId,
-                            $scope.eventForm.data.jobNum, FirstName);
-                    }
-                    //Process Event
-                    if ($scope.eventForm.data.event === "48" ||
-                        $scope.eventForm.data.event === "52" ||
-                        $scope.eventForm.data.event === "54" ||
-                        $scope.eventForm.data.event === "60" ||
-                        $scope.eventForm.data.event === "6") {
-                        //Add Notes
-                        var newNote = eventName + ":" + ($scope.eventForm.data.notes || "");
-                        NWData.addNote(self.currentJob.id, newNote, FirstName, false).then(function () {
-                            //return DispatchData.voidJob(jobId);
-
-                        });
-                    }
-                    return NWData.addEvent(self.currentJob.jobNo, self.currentJob.clientID, self.currentJob.contactName, ContactID, self.currentJob.courierData.courierID, self.currentJob.id, self.currentJob.jobType, FirstName, $scope.eventForm.data.notes, $scope.eventForm.data.event).then(function () {
-                        if ($scope.eventForm.data.event === "6") {
-                            NWData.voidJob(self.currentJob.id);
-                        }
-                        angular.element(".eventForm").hide();
-                        $scope.getData();
-                    });
-
-                },
-                cancel: function () {
-                    angular.element(".eventForm").hide(0);
-                }
-            };
-
-            angular.element(".eventForm").show(0, function () {
-                $scope.$apply();
-                $timeout(function () {
-                    const statusOptions = {
-                        minimumInputLength: 0,
-                        data: $scope.pickEventTypes,
-                        placeholder: "Start typing to choose event type..."
-                    };
-
-                    angular.element(".eventForm #event-type").select2(statusOptions);
-                    angular.element(".eventForm #event-type").select2('open');
-
-
-                }, 200);
+    self.createEvent = function (event, job) {
+        $mdDialog.show({
+            controller: AddEventDialogController,
+            controllerAs: "ctrl",
+            templateUrl: "app/components/common/addEventDialog/addEventDialog.html",
+            parent: angular.element($document.body),
+            targetEvent: event,
+            clickOutsideToClose: true,
+            fullscreen: true,
+            locals: {
+                job: job,
+                dispatherName: FirstName,
+                contactId: ContactID
+            }
+        }).then(() => {
+            $scope.getData().then(() => {
+                console.log('Pallet Dialog closed!');
             });
-        }, 300);
+        });
     };
 
     self.truckLoadingStatus = function () {

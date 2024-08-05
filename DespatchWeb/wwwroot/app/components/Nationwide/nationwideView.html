@@ -160,7 +160,7 @@
                                      ng-show="boxes[box.name].showDetailButtons">
                                     <div aria-label="Basic example" class="btn-group" role="group">
                                         <button class="btn btn-sm btn-secondary"
-                                                ng-click="ctrl.createEvent(ctrl.currentJob.jobNo)" title="Add Event"
+                                                ng-click="ctrl.createEvent($event, ctrl.currentJob)" title="Add Event"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">edit_calendar</i>
                                         </button>
