@@ -776,30 +776,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     }
 
-    self.selectAndDispatchJob = (event, job) => {
-        const dispatchDialog = $mdDialog.prompt()
-            .title("Dispatch To Courier")
-            .textContent('Enter the courier number to dispatch job to')
-            .placeholder("Courier Number")
-            .ariaLabel("courier to dispatch to")
-            .targetEvent(event)
-            .required(true)
-            .ok("Dispatch")
-            .cancel('Cancel');
-
-        return $mdDialog.show(dispatchDialog).then(async courierNumber => {
-            try {
-                await dispatchJobService.dispatchJob(courierNumber, job);
-                $scope.selectJobDetail(job.id);
-                toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
-            } catch (error) {
-                toastrService.showErrorToast(error.message);
-            }
-        }, () => {
-            // User clicked cancel
-        });
-    }
-
     /**
      * @param {string} jobNumber
      * @param {number} jobId
@@ -906,6 +882,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.gather.showForm();
     };
 
+    /**
+     * @param {number} lat
+     * @param {number} lng
+     * @param {Object} flags
+     * @param {*} carMarker
+     * @param {number} jobNumber
+     */
     $scope.dispatchDroppedMarkerToClosestCourier = (lat, lng, flags, carMarker, jobNumber) => {
         if (flags.length === 0 && carMarker === null) {
             const confirm = $mdDialog.confirm()
