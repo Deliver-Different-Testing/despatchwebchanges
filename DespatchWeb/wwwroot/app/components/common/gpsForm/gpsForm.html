@@ -95,11 +95,18 @@
             </div>
         </md-dialog-content>
 
-        <md-dialog-actions layout="row" layout-align="center center">
-            <md-button class="md-raised md-primary" class="md-accent" ng-click="ctrl.submit(ctrl.addressDetails)">
-                <md-progress-circular class="md-accent" md-diameter="20px" md-mode="indeterminate"
-                                      ng-if="ctrl.isLoading"></md-progress-circular>
-                <span ng-if="!ctrl.isLoading">{{ ctrl.submitLabel }}</span>
+        <md-dialog-actions>
+            <md-progress-circular
+                    class="md-primary"
+                    md-diameter="40"
+                    md-mode="indeterminate"
+                    ng-disabled="ctrl.selectedItem === null"
+                    ng-show="ctrl.isLoading">
+            </md-progress-circular>
+
+            <md-button class="md-primary" ng-click="ctrl.submit(ctrl.addressDetails)" ng-disabled="ctrl.selectedItem === null"
+                       ng-show="!ctrl.isLoading">
+                {{ ctrl.submitLabel }}
             </md-button>
         </md-dialog-actions>
     </form>
