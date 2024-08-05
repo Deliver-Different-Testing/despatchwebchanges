@@ -67,13 +67,14 @@
     <md-dialog-actions>
         <md-progress-circular
                 class="md-accent"
-                md-diameter="20px"
+                md-diameter="40"
                 md-mode="indeterminate"
                 ng-disabled="ctrl.eventForm.$invalid"
                 ng-if="ctrl.isLoading">
         </md-progress-circular>
 
         <md-button
+                ng-if="!ctrl.isLoading"
                 class="md-primary"
                 ng-click="ctrl.submit(ctrl.event)"
                 ng-disabled="!ctrl.event">

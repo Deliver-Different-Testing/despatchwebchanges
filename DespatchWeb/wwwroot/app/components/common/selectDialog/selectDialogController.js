@@ -18,6 +18,7 @@ class SelectDialogController {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
 
+        this.isLoading = false;
         this.id = id;
         this.title = title;
         this.job = job;
@@ -39,6 +40,8 @@ class SelectDialogController {
      * @param {Object} value - The selected value from the options.
      */
     async submit(value) {
+        this.isLoading = true;
+
         const callData = {
             "call": "updateDetailField",
             "field": this.fieldName,
@@ -50,6 +53,7 @@ class SelectDialogController {
             await this.DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, FirstName, ContactID) :
             await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this.job.charge, FirstName, ContactID);
 
+        this.isLoading = false;
         this.$mdDialog.hide();
     }
 
