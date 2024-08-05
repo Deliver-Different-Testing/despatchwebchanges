@@ -202,7 +202,8 @@
                                             <i class="material-symbols-outlined small-icon">send_to_mobile</i>
                                         </button>
                                         <button class="btn btn-sm btn-secondary"
-                                                ng-click="ctrl.otherEventForm(ctrl.currentJob.jobNo)" title="Add Event"
+                                                ng-click="ctrl.otherEventForm($event, ctrl.currentJob)"
+                                                title="Add Event"
                                                 type="button">
                                             <i class="material-symbols-outlined small-icon">edit_calendar</i>
                                         </button>

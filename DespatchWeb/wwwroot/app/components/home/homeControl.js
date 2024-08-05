@@ -843,32 +843,28 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param {string} jobNumber
+     * @param {$event} event
+     * @param {Job} job
      */
-    self.otherEventForm = jobNumber => {
-        let time = new Date();
-        time.setSeconds(0);
-        time.setMilliseconds(0);
-
-        $scope.eventForm = {
-            "data": {
-                "jobNum": jobNumber,
-                "client": self.currentJob.client,
-                "event": "Other",
-                "date": new Date(),
-                "time": time
-            },
-            submit() {
-                return DispatchData.addOtherEvent(self.currentJob.jobNo, self.currentJob.clientID, self.currentJob.contactName, ContactID, self.currentJob.courierData.courierID, self.currentJob.id, self.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(() => {
-                    angular.element('.eventForm').css('display', 'none');
-                });
-            },
-            cancel() {
-                angular.element('.eventForm').css('display', 'none');
+    self.otherEventForm = (event, job) => {
+        $mdDialog.show({
+            controller: AddEventDialogController,
+            controllerAs: "ctrl",
+            templateUrl: "app/components/common/addEventDialog/addEventDialog.html",
+            parent: angular.element($document.body),
+            targetEvent: event,
+            clickOutsideToClose: true,
+            fullscreen: true,
+            locals: {
+                job: job,
+                dispatherName: FirstName,
+                contactId: ContactID
             }
-        };
-
-        angular.element('.eventForm').css('display', '');
+        }).then(() => {
+            $scope.getData().then(() => {
+                console.log('Pallet Dialog closed!');
+            });
+        });
     };
 
 
@@ -3021,6 +3017,27 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             console.log("Inter-courier Charge Added!")
         }).then(() => "Inter-courier Charge Canceled!");
     }
+
+    self.createEvent = function (event, job) {
+        $mdDialog.show({
+            controller: AddEventDialogController,
+            controllerAs: "ctrl",
+            templateUrl: "app/components/common/addEventDialog/addEventDialog.html",
+            parent: angular.element($document.body),
+            targetEvent: event,
+            clickOutsideToClose: true,
+            fullscreen: true,
+            locals: {
+                job: job,
+                dispatherName: FirstName,
+                contactId: ContactID
+            }
+        }).then(() => {
+            $scope.getData().then(() => {
+                console.log('Pallet Dialog closed!');
+            });
+        });
+    };
 
     $scope.sendPOD = () => {
         if (!self.currentJob.podPhoto) {
