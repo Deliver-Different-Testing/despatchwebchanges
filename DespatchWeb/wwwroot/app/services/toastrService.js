@@ -12,12 +12,13 @@ class ToastrService {
      * @param {string} errorMessage
      */
     showErrorToast(errorMessage) {
+        const defaultMessage = "An unexpected error occurred. Please try again";
         if (!errorMessage) {
-            errorMessage = "An unexpected error occurred. Please try again";
+            errorMessage = defaultMessage;
         }
 
         console.log('Error:', errorMessage);
-        this.showToast("Oops an unexpected error occured. Please try again or contact support.", "error");
+        this.showToast(defaultMessage, "error");
     }
 
     /**
