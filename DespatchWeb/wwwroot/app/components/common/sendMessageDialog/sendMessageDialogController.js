@@ -5,13 +5,13 @@ class SendMessageDialogController {
         this.toastrService = toastrService;
         this._selectedCourierId = selectedCourierId;
 
+        this.isLoading = false;
         this.message = "";
     }
 
     async submit(message) {
         try {
-            console.log("Message", message);
-            console.log("Courier", this._selectedCourierId);
+            this.isLoading = true;
 
             await this.DispatchData.sendSMS(this._selectedCourierId, ContactID, FirstName, message);
 
@@ -19,6 +19,7 @@ class SendMessageDialogController {
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         } finally {
+            this.isLoading = false;
             this.$mdDialog.hide();
         }
     }

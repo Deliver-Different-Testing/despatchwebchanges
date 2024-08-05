@@ -35,14 +35,23 @@
     </md-dialog-content>
 
     <md-dialog-actions>
-        <md-button class="md-primary" ng-click="ctrl.cancel()">
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="!ctrl.message"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-primary" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
             Cancel
         </md-button>
 
         <md-button
                 class="md-raised md-primary"
                 ng-click="ctrl.submit(ctrl.message)"
-                ng-disabled="!ctrl.message">
+                ng-disabled="!ctrl.message"
+                ng-show="!ctrl.isLoading">
             Send
         </md-button>
     </md-dialog-actions>
