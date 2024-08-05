@@ -1,10 +1,9 @@
 // Controller to handle the autocomplete popups
 class AutoCompleteDialogController {
-    constructor($mdDialog, DispatchData, toastrService, loadingService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
+    constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
-        this.loadingService = loadingService;
         this.rateJobService = rateJobService;
 
         this.id = id;
@@ -13,6 +12,7 @@ class AutoCompleteDialogController {
         this.job = job;
         this.options = options;
 
+        this.isLoading = false;
         this.searchText = "";
         this.selectedItem = existingItem;
         this.showRerateOption = showRerateOption;
@@ -40,7 +40,7 @@ class AutoCompleteDialogController {
      * @return {Promise<void>}
      */
     async submit(selectedItem) {
-        this.loadingService.showLoader();
+        this.isLoading = true;
 
         try {
             const reRate = this.shouldRerateJob;
@@ -69,8 +69,8 @@ class AutoCompleteDialogController {
         } catch (error) {
             this.toastrService.showErrorToast();
         } finally {
+            this.isLoading = false;
             this.$mdDialog.hide();
-            this.loadingService.closeLoader();
             this.toastrService.showSuccessToast(this.title + " successfully updated to " + selectedItem.text);
         }
     }
