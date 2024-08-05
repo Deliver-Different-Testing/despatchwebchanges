@@ -54,7 +54,7 @@ class DispatchJobService {
             }
         }
         return await this._dispatchJobsContinue(courierNumber, foundCourier, false, job);
-    };
+    }
 
     /**
      * @param {number} courierNumber
@@ -114,10 +114,7 @@ class DispatchJobService {
 
         callData.jobs.push(job.id);
 
-        const response = await this.uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
-        angular.element("input.pod-DispatchField:visible").val("");
-
-        return response;
+        return await this.uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
     }
 }
 

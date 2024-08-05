@@ -650,9 +650,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         combo: "ctrl+d",
         description: "Dispatch selected jobs",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback: () => {
+        callback: (event, hk) => {
             if (angular.element(".activeTable .active").length > 0) {
-                $scope.dispatchJobsForm();
+                self.selectAndDispatchJob(event, self.currentJob);
             }
         }
     });
@@ -781,26 +781,29 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             .title("Despatch To Courier")
             .textContent('Enter the courier number to despatch job to')
             .placeholder("Courier Number")
-            .ariaLabel("courier to dispatch too")
+            .ariaLabel("courier to dispatch to")
             .targetEvent(event)
             .required(true)
             .ok("Despatch")
             .cancel('Cancel');
 
-        $mdDialog.show(dispatchDialog).then(courierNumber => {
+        return $mdDialog.show(dispatchDialog).then(async courierNumber => {
             try {
-                dispatchJobService.dispatchJob(courierNumber, job).then(() => {
-                    $scope.selectJobDetail(job.id);
-                    toastrService.showSuccessToast(`Job despatched to courier ${courierNumber} successfully`);
-                });
+                await dispatchJobService.dispatchJob(courierNumber, job);
+                $scope.selectJobDetail(job.id);
+                toastrService.showSuccessToast('Job despatched to courier ' + courierNumber + ' successfully');
             } catch (error) {
                 toastrService.showErrorToast(error.message);
             }
-        }, () => {
+        }, function () {
             // User clicked cancel
         });
     }
 
+    /**
+     * @param {string} jobNumber
+     * @param {number} jobId
+     */
     self.voidJobForm = (jobNumber, jobId) => {
         const voidJobPrompt = $mdDialog.prompt()
             .title("Void Job")
@@ -1134,14 +1137,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         };
 
         angular.element("#jobList .active").each(function () {
-            const j = $scope.jobList.find(function (jo) {
-                return jo.id === angular.element(this).data("jobid")
-            });
-            const foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => {
-                return c.courierID === j.courierData.courierID
-            });
+            var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
+            foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
             callData.jobs.push(angular.element(this).attr("data-jobid"));
         });
+
 
         if (callData.jobs.length > 0) {
             DispatchData.resendJobs(callData.jobs);
@@ -1155,7 +1155,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
-     * @param       {Event}  event
+     * @param  {Event}  event
      */
     self.restoreAll = event => {
         let confirm = $mdDialog.confirm()
@@ -1885,9 +1885,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     self.currentJob.relatedJobs = data;
                 });
             }
-
         });
-
     };
 
 // Select Job
@@ -2235,7 +2233,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Dispatch Selected",
                 click($itemScope, $event, modelValue, text, $li) {
-                    $scope.dispatchJobsForm();
+                    self.selectAndDispatchJob(event, self.currentJob);
                 }
             },
             {
@@ -2275,7 +2273,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     {
                         text: "Dispatch Selected",
                         click($itemScope, $event, modelValue, text, $li) {
-                            $scope.dispatchJobsForm();
+                            self.selectAndDispatchJob(null, self.currentJob);
+
                         }
 
                     }
@@ -2288,7 +2287,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Dispatch",
                     click($itemScope, $event, modelValue, text, $li) {
-                        $scope.dispatchJobsForm();
+                        self.selectAndDispatchJob(null, self.currentJob);
+
                     }
                 }
             ];
