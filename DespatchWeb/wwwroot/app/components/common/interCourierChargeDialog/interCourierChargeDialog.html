@@ -85,14 +85,18 @@
         </form>
     </md-dialog-content>
 
-    <md-dialog-actions layout="row" layout-align="center center">
-        <md-progress-circular md-mode="indeterminate" ng-if="ctrl.isLoading"></md-progress-circular>
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="ctrl.courierChargeForm.$invalid"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
 
-        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.data)">
-            <md-progress-circular class="md-accent" md-diameter="20px" md-mode="indeterminate"
-                                  ng-disabled="ctrl.courierChargeForm.$invalid"
-                                  ng-if="ctrl.isLoading"></md-progress-circular>
-            <span ng-if="!ctrl.isLoading">Create</span>
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.data)" ng-disabled="ctrl.courierChargeForm.$invalid"
+                   ng-show="!ctrl.isLoading">
+            Create
         </md-button>
     </md-dialog-actions>
 </md-dialog>
