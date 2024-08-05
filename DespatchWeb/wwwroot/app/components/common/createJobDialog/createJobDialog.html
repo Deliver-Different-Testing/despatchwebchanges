@@ -215,12 +215,18 @@
         </form>
     </md-dialog-content>
 
-    <md-dialog-actions layout="row" layout-align="center center">
-        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.job)">
-            <md-progress-circular class="md-accent" md-diameter="20px" md-mode="indeterminate"
-                                  ng-disabled="ctrl.jobForm.$invalid"
-                                  ng-if="ctrl.isLoading"></md-progress-circular>
-            <span ng-if="!ctrl.isLoading">Create</span>
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-accent"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="ctrl.jobForm.$invalid"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.job)" ng-disabled="ctrl.jobForm.$invalid"
+                   ng-show="!ctrl.isLoading">
+            Save
         </md-button>
     </md-dialog-actions>
 </md-dialog>
