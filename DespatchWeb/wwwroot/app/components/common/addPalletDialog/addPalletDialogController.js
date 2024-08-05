@@ -28,6 +28,7 @@ class AddPalletDialogController {
         this._dispatherName = dispatherName;
         this._contactId = contactId;
 
+        this.isLoading = false;
         this.palletForm = $scope.palletForm;
 
         /** @type {Pallet} */
@@ -54,6 +55,7 @@ class AddPalletDialogController {
                 this.toastrService.showWarningToast("Please complete all the required fields.");
                 return;
             }
+            this.isLoading = true;
 
             const response = await this.DispatchData.addPallet(newPallet, this._job.preBook, this._dispatherName);
 
@@ -82,6 +84,8 @@ class AddPalletDialogController {
             }
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
+        } finally {
+            this.isLoading = false;
         }
 
         this.$mdDialog.hide();

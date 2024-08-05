@@ -65,22 +65,22 @@
         </form>
     </md-dialog-content>
 
-    <md-dialog-actions layout="row" layout-align="center center">
-        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.pallet)">
-            <md-progress-circular class="md-accent loader-center" md-diameter="20px" md-mode="indeterminate"
-                                  ng-disabled="ctrl.palletForm.$invalid"
-                                  ng-if="ctrl.isLoading"></md-progress-circular>
-            <span ng-if="!ctrl.isLoading">Create</span>
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-accent"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="ctrl.palletForm.$invalid"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-primary" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
+            Cancel
+        </md-button>
+
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.pallet)" ng-disabled="ctrl.palletForm.$invalid"
+                   ng-show="!ctrl.isLoading">
+            Save
         </md-button>
     </md-dialog-actions>
 </md-dialog>
-
-
-<style>
-    .loader-center {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-</style>
