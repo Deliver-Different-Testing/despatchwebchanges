@@ -603,6 +603,10 @@ class DispatchData {
         return await this.$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
+    /**
+     * @param {number} jobId
+     * @param {string} despatcherName
+     */
     async finishSplitJobProcess(jobId, despatcherName) {
         return await this.$http.post("job/finishSplitJobProcess?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }

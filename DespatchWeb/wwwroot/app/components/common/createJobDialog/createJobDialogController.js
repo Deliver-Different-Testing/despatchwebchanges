@@ -211,8 +211,6 @@ class CreateJobDialogController {
      * @param {number} item.id - The id of the selected item.
      *
      * @param {boolean} isToAddress - A boolean value to indicate whether the address is a 'to address'.
-     *
-     * @return {Promise<void>}
      */
     async addressSearchItemSelected(item, isToAddress) {
         try {
