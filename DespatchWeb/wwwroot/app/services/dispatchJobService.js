@@ -28,8 +28,7 @@ class DispatchJobService {
      */
     async dispatchJobByJobId(courierNumber, jobId) {
         const job = this.DispatchData.getJobDetail(jobId);
-
-        return this.dispatchJob(courierNumber, job);
+        return await this.dispatchJob(courierNumber, job);
     }
 
     /**

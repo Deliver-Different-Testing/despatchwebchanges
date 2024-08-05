@@ -331,9 +331,7 @@ class CreateJobDialogController {
      * @param {number} jobId - The id of the job.
      */
     async _dispatchJobIfCourierSelected(courierId, jobId) {
-        await this.dispatchJobService.dispatchJobByJobId(courierId, jobId).then(() => {
-            this.$scope.selectJobDetail(jobId);
-        });
+        await this.dispatchJobService.dispatchJobByJobId(courierId, jobId);
     }
 
     /**
