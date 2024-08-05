@@ -40,7 +40,9 @@
 			<td style="width:50px; white-space:nowrap; overflow-x:hidden;" right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
 			<td colspan="2"title="{{job.toAddress}}"><div right-click action="toColumnClick(event)" style="width:450px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}"><i ng-if="!job.deliveryLongitude"  class="fa fa-exclamation"></i>{{job.to}} {{job.toAddress}}</div></td>
 			<!--<td><div style="width:280px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>	-->
-			<td><input type="text" class="dispatchField" ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)" ng-model="job.courier" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" placeholder="" /></td>
+            <td><input class="dispatchField" ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(job.courier, job)" ng-model="job.courier"
+                       ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)"
+                       placeholder="" type="text"/></td>
             <td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
             <td class="status" ng-class="job.status">{{job.status}}</td>
 			<td><input type="text" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField" ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();"  ng-model="job.lp" ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, $this)"  placeholder="LP" /></td>

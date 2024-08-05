@@ -10,12 +10,12 @@
  * @property {string} notes Additional notes for the event
  */
 class AddEventDialogController {
-    constructor($scope, $mdDialog, NWData, toastrService, rateJobService, job, dispatherName, contactId) {
+    constructor($scope, $mdDialog, NWData, toastrService, rateJobService, job, dispatcherName, contactId) {
         this.$mdDialog = $mdDialog;
         this.NWData = NWData;
         this.toastrService = toastrService;
         this.rateJobService = rateJobService;
-        this._dispatherName = dispatherName;
+        this._dispatcherName = dispatcherName;
         this._contactId = contactId;
         this._job = job;
 
@@ -54,6 +54,9 @@ class AddEventDialogController {
         });
     }
 
+    /**
+     * @param {Event} event
+     */
     async submit(event) {
         try {
             if (!this.eventForm.$valid) {
@@ -68,7 +71,7 @@ class AddEventDialogController {
 
             // Exsalerate Event
             if (eventId === "7" || eventId === "92") {
-                this.NWData.exsalerateActivity(eventName, event.notes, this._clientId, event.jobNumber, this._dispatherName);
+                this.NWData.exsalerateActivity(eventName, event.notes, this._clientId, event.jobNumber, this._dispatcherName);
             }
 
             //Process Event
@@ -78,7 +81,8 @@ class AddEventDialogController {
                 await this.NWData.addNote(event.jobId, newNote, FirstName, false);
             }
 
-            await this.NWData.addEvent(event.jobNumber, this._job.clientId, this._job.contact, this._contactId, this._job.courierData.courierID, this._job.id, this._job.jobType, this._dispatherName, event.notes, eventId);
+            await this.NWData.addEvent(event.jobNumber, this._job.clientId, this._job.contact, this._contactId,
+                this._job.courierData.courierID, this._job.id, this._job.jobType, this._dispatcherName, event.notes, eventId);
 
             if (eventId === "6") {
                 this.NWData.voidJob(this._job.id);

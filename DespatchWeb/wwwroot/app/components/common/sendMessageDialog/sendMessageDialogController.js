@@ -1,9 +1,11 @@
 class SendMessageDialogController {
-    constructor($mdDialog, DispatchData, toastrService, selectedCourierId) {
+    constructor($mdDialog, DispatchData, toastrService, selectedCourierId, contactId, dispatcherName) {
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
         this._selectedCourierId = selectedCourierId;
+        this._contactId = contactId;
+        this._dispatcherName = dispatcherName;
 
         this.isLoading = false;
         this.message = "";
@@ -13,9 +15,9 @@ class SendMessageDialogController {
         try {
             this.isLoading = true;
 
-            await this.DispatchData.sendSMS(this._selectedCourierId, ContactID, FirstName, message);
+            await this.DispatchData.sendSMS(this._selectedCourierId, this._contactId, this._dispatcherName, message);
 
-            this.toastrService.showSuccessToast("Message Sent!");
+            this.toastrService.showSuccessToast("Message sent to " + this._selectedCourierId);
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         } finally {
