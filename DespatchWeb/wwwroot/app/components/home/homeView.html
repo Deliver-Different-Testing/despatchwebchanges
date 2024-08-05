@@ -245,6 +245,8 @@
 
                                 <div class="btn-group " ng-show="box.name === 'jobsList'">
                                     <md-autocomplete
+                                            md-autoselect
+                                            md-escape-options="clear"
                                             md-item-text="item.text"
                                             md-items="item in ctrl.courierSearch(ctrl.courierSearchText)"
                                             md-min-length="1"
