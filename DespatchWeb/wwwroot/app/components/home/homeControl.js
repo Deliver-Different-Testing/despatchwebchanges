@@ -996,6 +996,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /////////////////////////////////////
     // LATE CALLS
     /////////////////////////////////////
+    /**
+     * @param {Date} lateTime
+     * @param {number} lateType
+     * @param {*} j
+     * @param {*} calc
+     */
     $scope.lateCall = (lateTime, lateType, j, calc) => {
         return DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName, calc).then(response => {
             self.getData().then(() => {
@@ -1142,7 +1148,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
-     * @param  {Event}  event
+     * @param  {$event}  event
      */
     self.restoreAll = event => {
         let confirm = $mdDialog.confirm()
@@ -1859,9 +1865,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.currentSupport = support;
         angular.element("#box-jobDetail").find(".loading").show();
 
-        $scope.selectJob(support);
-
         DispatchData.getJobDetail(support.jobId).then(data => {
+            $scope.selectJob(support);
+
             self.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
             self.currentSelection = " for Job " + support.jobNumber;
