@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -87,20 +86,5 @@ public class CourierController : Controller
         await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
             despatcherName, "Follow up dangerous goods license with courier", 69);
         return Json("OK");
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> GetSingleCourier(int courierId)
-    {
-        var result = await _courierRepo.ActiveCouriers();
-        var currentCourier = result.FirstOrDefault(c => c.CourierID == courierId);
-
-        var courier = new
-        {
-            id = currentCourier.CourierID,
-            text = currentCourier.Text
-        };
-
-        return Json(courier);
     }
 }
