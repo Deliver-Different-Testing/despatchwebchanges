@@ -17,7 +17,7 @@ class SendMessageDialogController {
 
             await this.DispatchData.sendSMS(this._selectedCourierId, this._contactId, this._dispatcherName, message);
 
-            this.toastrService.showSuccessToast("Message sent to " + this._selectedCourierId);
+            this.toastrService.showSuccessToast("Message sent!");
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         } finally {

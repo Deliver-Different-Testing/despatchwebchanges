@@ -800,6 +800,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     self.messageClick = (event, job) => {
+        const selectedCourierId = self.selectedCourier ? self.selectedCourier.id : job.courierData.courierID;
+
         $mdDialog.show({
             controller: SendMessageDialogController,
             controllerAs: 'ctrl',
@@ -809,7 +811,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                selectedCourierId: job.courier,
+                selectedCourierId,
                 contactId: ContactID,
                 dispatcherName: FirstName,
             },
@@ -1529,12 +1531,17 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     }
 
+    /**
+     * @param {number} courierID
+     * @param {string} courierName
+     */
     self.updateCourierData = (courierID, courierName) => {
         $scope.currentWorkSelection = ` for Courier  ${courierID}  ${courierName}`;
         $scope.currentCourier = {
             courierID,
             courier: courierName
         };
+
         self.currentSelection = ` for Courier ${courierID}  ${courierName}`;
         $scope.getCurrentJobs(courierID);
         DispatchData.truckCourierStatus(courierID).then(result => {
@@ -1550,12 +1557,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         loadingService.closeLoader();
     };
 
+    self.selectedCourier = null;
     self.selectedCourierChange = function (courier) {
         if (courier === undefined) {
-            self.selectedCourier = null;
             $scope.currentCourier = null;
         } else {
-            this.updateCourierData(courier.id, courier.text);
+            self.updateCourierData(courier.id, courier.text);
         }
     };
 
