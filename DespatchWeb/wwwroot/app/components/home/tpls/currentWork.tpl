@@ -61,7 +61,8 @@
         <tbody>
         <tr class="droppable-row draggable-row clickable-row noselect"
             data-courier="{{job.courier}}" data-jobNo="{{job.jobNo}}"
-            data-jobid="{{job.id}}" ng-click="selectJobDetail(job);" ng-repeat="job in jobsCurrentList | filter: box.searchBox">
+            data-jobid="{{job.id}}" ng-click="selectJob(job);"
+            ng-repeat="job in jobsCurrentList | filter: box.searchBox">
 
             <td>{{job.time | date: "HH:mm"}}</td>
             <td style="min-width:30px;" right-click action="speedColumnClick(event)">{{job.speed}}</td>

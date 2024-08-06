@@ -1852,6 +1852,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.currentSupport = support;
         angular.element("#box-jobDetail").find(".loading").show();
 
+        $scope.selectJob(support);
+
         DispatchData.getJobDetail(support.jobId).then(data => {
             self.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
