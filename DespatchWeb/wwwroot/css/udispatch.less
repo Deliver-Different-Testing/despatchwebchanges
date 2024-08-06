@@ -3,11 +3,37 @@
 @yellow: #fddd00;
 
 body {
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
 md-dialog {
   min-width: 400px;
+}
+
+.row-overflow {
+  overflow-x: auto;
+
+  /* For Chrome and Safari */
+
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f7f7f7;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 2px;
+  }
+
+  /* For Firefox */
+  scrollbar-color: #888 #f7f7f7;
+  scrollbar-width: thin;
 }
 
 .material-button-mixin(@bgColor) {
@@ -605,7 +631,6 @@ md-divider {
             margin-right: 10px;
 
             span {
-              font-size: 15px;
               font-size: 15px;
             }
 

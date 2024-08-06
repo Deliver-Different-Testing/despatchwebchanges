@@ -1,8 +1,32 @@
 body {
+    font-family: 'Roboto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 md-dialog {
   min-width: 400px;
+}
+
+.row-overflow {
+    overflow-x: auto;
+    /* For Chrome and Safari */
+    /* For Firefox */
+    scrollbar-color: #888 #f7f7f7;
+    scrollbar-width: thin;
+}
+
+.row-overflow ::-webkit-scrollbar {
+    width: 12px;
+}
+
+.row-overflow ::-webkit-scrollbar-track {
+    background: #f7f7f7;
+}
+
+.row-overflow ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 2px;
 }
 .btn-primary {
   background-color: #fddd00;
