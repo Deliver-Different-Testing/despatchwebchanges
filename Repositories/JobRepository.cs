@@ -336,20 +336,7 @@ namespace DespatchWeb.Repositories
                         label = rel.Number
                     }
                 ).ToList();
-                job.PODPhotos = new List<byte[]>();
-                if (job.PODPhoto != null)
-                {
-                    job.PODPhotos.Add(job.PODPhoto);
-                }
 
-                if (job.DeliverySignature != null)
-                {
-                    job.PODPhotos.Add(job.DeliverySignature);
-                }
-
-                job.PODPhotos.AddRange(
-                    from del in context.DeliveryPhotos.Where(d => d.JobId == job.ID)
-                    select del.Photo);
                 job.Size = job.Vehicle;
                 job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
                 job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +

@@ -14,6 +14,9 @@ using StackExchange.Redis;
 using System;
 using System.Threading.Tasks;
 using Amazon.Runtime;
+using Serilog;
+using Amazon.Runtime.CredentialManagement;
+using Amazon.S3;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +25,17 @@ builder.Services.AddHealthChecks();
 builder.Services.AddRaygun(builder.Configuration);
 builder.Services.AddControllersWithViews();
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+Log.Logger =  new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).WriteTo.Console().CreateLogger();
+
 builder.Services.AddDataProtection().PersistKeysToAWSSystemsManager("/Hub/DataProtection").SetApplicationName("DeliverDifferent");
-//builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
+{
+    var ssoCreds = LoadSsoCredentials("default");
+    return new AmazonS3Client(ssoCreds); 
+});
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     // This lambda determines whether user consent for non-essential cookies is needed for a given request.
@@ -123,3 +135,19 @@ app.MapControllerRoute(
 
 
 app.Run();
+return;
+
+//
+// Method to get SSO credentials from the information in the shared config file.
+static AWSCredentials LoadSsoCredentials(string profile)
+{
+    var chain = new CredentialProfileStoreChain();
+    if (!chain.TryGetAWSCredentials(profile, out var credentials))
+    {
+        // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
+        credentials = FallbackCredentialsFactory.GetCredentials();
+        if (credentials == null)
+            throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
+    }
+    return credentials;
+}

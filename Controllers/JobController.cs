@@ -13,10 +13,13 @@ using System.Net;
 using System.Net.Mail;
 using System.Reflection;
 using System.Threading.Tasks;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Serilog;
 
 namespace DespatchWeb.Controllers
 {
-    public class JobController(JobRepository jobRepository, CourierRepository courierRepo, ClientRepository clientRepo) : Controller
+    public class JobController(JobRepository jobRepository, CourierRepository courierRepo, ClientRepository clientRepo, IAmazonS3 s3Client) : Controller
     {
 
         public async Task<IActionResult> Index(string status, string area, string order, string asc, bool isInternal,
@@ -188,16 +191,94 @@ namespace DespatchWeb.Controllers
 
         }
 
+        private async Task<List<S3Object>> SearchFilesByPatternAsync(string bucketName, string pattern)
+        {
+            var request = new ListObjectsV2Request
+            {
+                BucketName = bucketName,
+                Prefix = pattern,
+                MaxKeys = 1000 // Adjust if needed, but 1000 is the maximum allowed
+            };
+
+            var result = new List<S3Object>();
+
+            try
+            {
+                ListObjectsV2Response response;
+                do
+                {
+                    response = await s3Client.ListObjectsV2Async(request);
+                    // Filter the results to match our specific pattern
+                    var filteredObjects = response.S3Objects.Where(obj =>
+                        obj.Key.StartsWith($"{pattern}DS") || obj.Key.StartsWith($"{pattern}DeliveryPhoto-"));
+
+                    result.AddRange(filteredObjects);
+                    request.ContinuationToken = response.NextContinuationToken;
+                } while (response.IsTruncated);
+            }
+            catch (AmazonS3Exception e)
+            {
+
+                Log.Error(e, $"Error encountered on server. Message:'{e.Message}' when writing an object");
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"Unknown encountered on server. Message:'{e.Message}' when writing an object");
+            }
+
+
+
+            return result;
+        }
+
+        private async Task<List<byte[]>> GetJobDeliveryPhotosAndSignature(int jobId)
+        {
+
+            var all = new List<byte[]>();
+            try
+            {
+
+                var bucketName = Environment.GetEnvironmentVariable("S3Bucket");
+                var key = $"{jobId}-";
+                Log.Debug($"Get S3 Object List for {key}");
+                var s3List = await SearchFilesByPatternAsync(bucketName, key);
+                Log.Debug($"Found {s3List.Count} objects for {key}");
+                foreach (var s3Object in s3List)
+                {
+                    var getObjectRequest = new GetObjectRequest
+                    {
+                        BucketName = bucketName,
+                        Key = s3Object.Key
+                    };
+                    using var response = await s3Client.GetObjectAsync(getObjectRequest);
+                    await using var responseStream = response.ResponseStream;
+                    using var reader = new StreamReader(responseStream);
+                    using var memoryStream = new MemoryStream();
+                    await response.ResponseStream.CopyToAsync(memoryStream);
+                    all.Add(memoryStream.ToArray());
+
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"{nameof(GetJobDeliveryPhotosAndSignature)} Error: ");
+            }
+
+            return all;
+        }
+
         public async Task<IActionResult> Detail(int jobId)
         {
             var result = await jobRepository.JobDetail(jobId);
+            var photos = await GetJobDeliveryPhotosAndSignature(jobId);
+            result.PODPhotos = photos;
             return Json(result);
         }
 
         [HttpGet]
         public async Task<IActionResult> ScanJobDetailAsync(DateTime? runDate, string scan)
         {
-            var data = await  jobRepository.ScanList(runDate, scan);
+            var data = await jobRepository.ScanList(runDate, scan);
             return Json(data);
         }
 
@@ -259,7 +340,7 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> BulkSearch(int? courierId, int? clientId, string job, string wild, DateTime fromDate, DateTime toDate,
             int pageIndex, int pageSize)
         {
-            var result = await jobRepository.BulkSearchAsync(courierId, job ?? "",wild ?? "", fromDate.ResetTimeToStartOfDay(),
+            var result = await jobRepository.BulkSearchAsync(courierId, job ?? "", wild ?? "", fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
             return Json(result);
@@ -268,7 +349,7 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> PreBookSearch(int? courierId, int? clientId, string wild, string job, DateTime fromDate, DateTime toDate,
             int pageIndex, int pageSize)
         {
-            var result = await jobRepository.PreBookSearchAsync(courierId, wild ?? "", job ?? "",fromDate.ResetTimeToStartOfDay(),
+            var result = await jobRepository.PreBookSearchAsync(courierId, wild ?? "", job ?? "", fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
             return Json(result);
@@ -446,7 +527,7 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> UnSplitJob(int jobId)
         {
-            var message =await jobRepository.UnSplitJob(jobId);
+            var message = await jobRepository.UnSplitJob(jobId);
             return Json(message);
         }
 
@@ -523,7 +604,7 @@ namespace DespatchWeb.Controllers
             int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType)
         {
 
-            await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes,eventType);
+            await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes, eventType);
 
             return Json("OK");
         }
@@ -535,7 +616,7 @@ namespace DespatchWeb.Controllers
             var pw = Environment.GetEnvironmentVariable("ExsalerateAPIPW");
 
 
-            var rco = new RestClientOptions() { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl)};
+            var rco = new RestClientOptions() { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl) };
             var client = new RestClient(rco);
 
             var body = new ExsalerateActivity()
@@ -576,7 +657,7 @@ namespace DespatchWeb.Controllers
             return Json(data);
         }
 
-        public IActionResult ContactList(int clientId )
+        public IActionResult ContactList(int clientId)
         {
             var data = jobRepository.Contacts(clientId);
             return Json(data);
@@ -621,7 +702,7 @@ namespace DespatchWeb.Controllers
             var description = await jobRepository.RateTruckJobDescription(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp,
                 dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours);
             description += ($"\rTotal = {rate:C}");
-            description += ($"\rTotal (+GST) = {rate * (1+ gstRate):C}");
+            description += ($"\rTotal (+GST) = {rate * (1 + gstRate):C}");
             return Json(description);
         }
 
@@ -639,7 +720,7 @@ namespace DespatchWeb.Controllers
             bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
             string ourRef, string refA, string refB, int quantity, DateTime booked, decimal gstRate, decimal amount)
         {
-            
+
             var currentRateAmount = await jobRepository.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
                 includeFuelSurcharge, direct, acceptedJobTypeId,
                 ourRef, refA, refB, quantity, booked);
@@ -654,8 +735,8 @@ namespace DespatchWeb.Controllers
             if (currentRateAmount != amount)
             {
                 var fs = includeFuelSurcharge ? await jobRepository.FuelSurchargeInclusiveAmount(clientId, amount, fromId, toId, booked, size) : 0;
-                var ppd = includeFuelSurcharge ? await jobRepository.PPDInclusiveAmount(clientId, amount) : 0; 
-                finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}" );
+                var ppd = includeFuelSurcharge ? await jobRepository.PPDInclusiveAmount(clientId, amount) : 0;
+                finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}");
                 if (fs > 0)
                 {
                     //strDescription = strDescription & vbCrLf & "Plus fuel surcharge = $" & Format(curFuelSurcharge, "0.00")
@@ -724,7 +805,7 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> UpdateJobType(int jobId, int jobType, string despatcherName)
         {
-            await jobRepository.UpdateJobType(jobId, jobType,despatcherName);
+            await jobRepository.UpdateJobType(jobId, jobType, despatcherName);
             return Json("OK");
         }
 
@@ -799,7 +880,7 @@ namespace DespatchWeb.Controllers
         private static string FormatNote(string note) => $"\n{note}";
 
         [HttpPost]
-        public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId,string currentSpeed)
+        public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId, string currentSpeed)
         {
             var jobData = await jobRepository.DirectToASAP(jobId);
             var settingData = await jobRepository.Settings();
@@ -834,77 +915,77 @@ namespace DespatchWeb.Controllers
 
 
 
-    private string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
-    {
-        var message = "";
-        while (format?.Length > 0)
+        private string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
         {
-
-            var c = Strings.Left(format, 1);
-            format = Strings.Mid(format, 2);
-            if (c == startDelim)
+            var message = "";
+            while (format?.Length > 0)
             {
-                var fieldName = Strings.Left(format, Strings.InStr(format, endDelim) - 1);
-                format = Strings.Mid(format, Strings.InStr(format, endDelim) + 1);
-                var props = typeof(T).GetRuntimeProperties();
-                var p = props.First(x => String.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
 
-                message += p?.GetValue(data)?.ToString();
-            }
-            else
+                var c = Strings.Left(format, 1);
+                format = Strings.Mid(format, 2);
+                if (c == startDelim)
+                {
+                    var fieldName = Strings.Left(format, Strings.InStr(format, endDelim) - 1);
+                    format = Strings.Mid(format, Strings.InStr(format, endDelim) + 1);
+                    var props = typeof(T).GetRuntimeProperties();
+                    var p = props.First(x => String.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
+
+                    message += p?.GetValue(data)?.ToString();
+                }
+                else
+                {
+                    message += c;
+                }
+
+            };
+
+            message = message.Replace("  ", " ");
+            message = Strings.Trim(message);
+            return message;
+        }
+
+        public async Task<IActionResult> SendPOD(int jobId, string toEmail)
+        {
+
+            var selectedJob = await jobRepository.JobDetail(jobId);
+
+            if (selectedJob == null)
             {
-                message += c;
+                return NotFound();
             }
 
-        };
+            Attachment att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo.ToString() + ".png");
 
-        message = message.Replace("  ", " ");
-        message = Strings.Trim(message);
-        return message;
-    }
+            SendEmail(toEmail, Environment.GetEnvironmentVariable("FromAddress"), $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.", $"Delivery Photo for {selectedJob.JobNo}", att);
 
-    public async Task<IActionResult> SendPOD(int jobId, string toEmail)
-    {
-
-        var selectedJob = await jobRepository.JobDetail(jobId);
-
-        if (selectedJob == null)
-        {
-            return NotFound();
+            return Json("OK");
         }
-
-        Attachment att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo.ToString() + ".png");
-
-        SendEmail(toEmail, Environment.GetEnvironmentVariable("FromAddress"), $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.", $"Delivery Photo for {selectedJob.JobNo}", att);
-
-        return Json("OK");
-    }
-    private void SendEmail(string toAddress, string fromAddress, string body, string subject, Attachment attachment = null, string replyTo = null)
-    {
-        using var message = new MailMessage();
-        message.IsBodyHtml = true;
-        message.From = new MailAddress(fromAddress);
-        message.Subject = subject;
-        message.Body = body;
-        message.Priority = MailPriority.High;
-        message.To.Add(toAddress);
-        message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@urgent.co.nz>");
-        if (attachment != null)
+        private void SendEmail(string toAddress, string fromAddress, string body, string subject, Attachment attachment = null, string replyTo = null)
         {
-            message.Attachments.Add(attachment);
-        }
-        if (!string.IsNullOrEmpty(replyTo))
-        {
-            message.ReplyToList.Add(new MailAddress(replyTo));
-        }
+            using var message = new MailMessage();
+            message.IsBodyHtml = true;
+            message.From = new MailAddress(fromAddress);
+            message.Subject = subject;
+            message.Body = body;
+            message.Priority = MailPriority.High;
+            message.To.Add(toAddress);
+            message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@urgent.co.nz>");
+            if (attachment != null)
+            {
+                message.Attachments.Add(attachment);
+            }
+            if (!string.IsNullOrEmpty(replyTo))
+            {
+                message.ReplyToList.Add(new MailAddress(replyTo));
+            }
 
-        using var smtp = new SmtpClient();
-        smtp.Host = Environment.GetEnvironmentVariable("SMTPServer");
-        smtp.UseDefaultCredentials = false;
-        smtp.EnableSsl = true;
-        smtp.Credentials = new NetworkCredential(Environment.GetEnvironmentVariable("SMTPUser"), Environment.GetEnvironmentVariable("SMTPPass"));
-        smtp.Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_Port"));
-        smtp.Send(message);
+            using var smtp = new SmtpClient();
+            smtp.Host = Environment.GetEnvironmentVariable("SMTPServer");
+            smtp.UseDefaultCredentials = false;
+            smtp.EnableSsl = true;
+            smtp.Credentials = new NetworkCredential(Environment.GetEnvironmentVariable("SMTPUser"), Environment.GetEnvironmentVariable("SMTPPass"));
+            smtp.Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_Port"));
+            smtp.Send(message);
+        }
     }
-}
 }
