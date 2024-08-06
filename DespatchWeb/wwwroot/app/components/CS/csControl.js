@@ -52,7 +52,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         return $mdDialog.show(dispatchDialog).then(async courierNumber => {
             try {
                 await dispatchJobService.dispatchJob(courierNumber, job);
-                $scope.selectJobDetail(job.id);
+                $scope.selectJob(job);
                 toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
             } catch (error) {
                 toastrService.showErrorToast(error.message);
