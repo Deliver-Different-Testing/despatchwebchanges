@@ -863,26 +863,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // LOAD DISPATCH JOBS SCREEN
     ///////////////////////////////////////
-    $scope.dispatchJobsForm = () => {
-        $scope.gather.form = {
-            id: "dispatchJobs",
-            title: "Dispatch Jobs",
-            fields: [
-                {
-                    "name": "courierNumber",
-                    "label": "Courier number...",
-                    "value": ""
-                }
-            ],
-            onSubmit: () => {
-                const courierNumber = angular.element('#gather-courierNumber').val();
-                return $scope.dispatchJobs(courierNumber);
-            },
-            submitValue: "Dispatch"
-        };
 
-        $scope.gather.showForm();
-    };
 
     /**
      * @param {number} lat
@@ -1025,8 +1006,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {number} courierNumber
      * @param {Job} job
      */
-    self.dispatchJobs = (courierNumber, job) => {
-        return dispatchJobService.dispatchJob(courierNumber, job);
+    self.dispatchJobs = async (courierNumber, job) => {
+        try {
+            await dispatchJobService.dispatchJob(courierNumber, job);
+            return await self.getData();
+        } catch (error) {
+            toastrService.showErrorToast(error.message);
+        }
     };
 
     ////////////////////////////////////////
@@ -2516,7 +2502,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     self.getData = () => {
-
         ///////////////////////////////
         // JOB LIST
         ///////////////////////////////
@@ -2524,12 +2509,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         //Get Job Data
         angular.element("#box-jobsList").find(".loading").show();
         $scope.jobList = [];
-        self.currentJob = false;
-        $scope.potentialCouriers = false;
+        self.currentJob = null;
+        self.jdSvc.currentJob = null;
+        $scope.potentialCouriers = null;
         $scope.jobGroups = false;
         if (!$scope.courier) {
             $scope.jobsCurrentList = false;
-            $scope.currentCourier = false;
+            $scope.currentCourier = null;
         }
 
 
