@@ -132,7 +132,8 @@
                                 <div class="box-details" ng-if="currentCourier" ng-show="box.name === 'currentWork'">
 
                                     <div aria-label="Basic example" class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-secondary" ng-click="ctrl.truckLoadingStatus()"
+                                        <button class="btn btn-sm btn-secondary"
+                                                ng-click="ctrl.truckLoadingStatus($event)"
                                                 ng-if="truckCourierStatus.length >0"
                                                 title="Truck Loading Status" type="button">
                                             <i class="material-symbols-outlined small-icon">local_shipping</i>

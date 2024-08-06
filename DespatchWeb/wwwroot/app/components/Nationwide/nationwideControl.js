@@ -2917,18 +2917,21 @@ function NationwideController($scope, jdSvc, NWData, $state,
         });
     };
 
-    self.truckLoadingStatus = function () {
-        $scope.truckCourierStatusForm = {
-            "data": $scope.truckCourierStatus[0],
-            refresh: function () {
-                $scope.refreshTruckCourierStatus();
+    self.truckLoadingStatus = function (event) {
+        $mdDialog.show({
+            controller: TruckCourierStatusDialogController,
+            controllerAs: 'ctrl',
+            parent: angular.element($document.body),
+            targetEvent: event,
+            templateUrl: "app/components/common/truckCourierStatusDialog/truckCourierStatusDialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                data: $scope.truckCourierStatus[0],
             },
-            close: function () {
-                angular.element(".truckCourierStatusForm").hide(0);
-            }
-        };
-
-        angular.element(".truckCourierStatusForm").show(0);
+        }).then(() => {
+            // Dialog Closed
+        });
     };
 
     self.courierSearchText = "";

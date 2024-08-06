@@ -2933,18 +2933,21 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         angular.element('.eventForm').css('display', '');
     };
 
-    self.truckLoadingStatus = () => {
-        $scope.truckCourierStatusForm = {
-            "data": $scope.truckCourierStatus[0],
-            refresh: () => {
-                $scope.refreshTruckCourierStatus();
+    self.truckLoadingStatus = (event) => {
+        $mdDialog.show({
+            controller: TruckCourierStatusDialogController,
+            controllerAs: 'ctrl',
+            parent: angular.element($document.body),
+            targetEvent: event,
+            templateUrl: "app/components/common/truckCourierStatusDialog/truckCourierStatusDialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                data: $scope.truckCourierStatus[0],
             },
-            close: () => {
-                angular.element('.truckCourierStatusForm').css('display', 'none');
-            }
-        };
-
-        angular.element('.truckCourierStatusForm').css('display', '');
+        }).then(() => {
+            // Dialog Closed
+        });
     };
 
     /**
