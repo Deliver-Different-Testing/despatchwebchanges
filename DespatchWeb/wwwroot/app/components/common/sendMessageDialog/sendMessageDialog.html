@@ -2,13 +2,6 @@
     <md-toolbar>
         <div class="md-toolbar-tools">
             <h2>Enter your Message</h2>
-            <span flex></span>
-            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
-                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
-                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
-                    close
-                </md-icon>
-            </md-button>
         </div>
     </md-toolbar>
 
@@ -42,6 +35,10 @@
                 ng-disabled="!ctrl.message"
                 ng-show="ctrl.isLoading">
         </md-progress-circular>
+
+        <md-button class="md-primary" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
+            Cancel
+        </md-button>
 
         <md-button
                 class="md-primary"
