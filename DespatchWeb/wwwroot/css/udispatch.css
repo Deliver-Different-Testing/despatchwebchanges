@@ -626,13 +626,14 @@ md-divider {
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-search input {
   display: none;
-  width: 161px;
+  width: 150px;
   margin-left: 2px;
   height: 29px;
   border: 0;
   color: #656565;
   font-size: 11px;
-  padding-left: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-details {
   display: inline-flex;
