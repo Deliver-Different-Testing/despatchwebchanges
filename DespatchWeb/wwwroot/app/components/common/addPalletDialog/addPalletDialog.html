@@ -74,10 +74,6 @@
                 ng-show="ctrl.isLoading">
         </md-progress-circular>
 
-        <md-button class="md-primary" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
-            Cancel
-        </md-button>
-
         <md-button class="md-primary" ng-click="ctrl.submit(ctrl.pallet)" ng-disabled="ctrl.palletForm.$invalid"
                    ng-show="!ctrl.isLoading">
             Save
