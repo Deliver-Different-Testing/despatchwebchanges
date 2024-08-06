@@ -850,20 +850,6 @@ class DispatchData {
         });
         return await response.data;
     }
-
-    /**
-     * Retrieves information of the courier from provided courier ID.
-     *
-     * @param {number} courierId - The unique identifier of the courier.
-     */
-    async getSingleCourier(courierId) {
-        let response = await this.$http.get("courier/GetSingleCourier", {
-            params: {
-                courierId
-            }
-        });
-        return await response.data;
-    }
 }
 
 angular.module("uDispatch").factory("DispatchData", DispatchData);
