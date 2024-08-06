@@ -20,4 +20,8 @@ class TruckCourierStatusDialogController {
             this.toastrService.showErrorToast(error.message);
         }
     }
+
+    cancel() {
+        this.$mdDialog.cancel();
+    }
 }
