@@ -39,21 +39,21 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     self.selectAndDispatchJob = (event, job) => {
-        const confirm = $mdDialog.prompt()
-            .title("Despatch To Courier")
-            .textContent('Enter the courier number to despatch job to')
+        const dispatchDialog = $mdDialog.prompt()
+            .title("Dispatch To Courier")
+            .textContent('Enter the courier number to dispatch job to')
             .placeholder("Courier Number")
             .ariaLabel("courier to dispatch too")
             .targetEvent(event)
             .required(true)
-            .ok("Despatch")
+            .ok("Dispatch")
             .cancel('Cancel');
 
         return $mdDialog.show(dispatchDialog).then(async courierNumber => {
             try {
                 await dispatchJobService.dispatchJob(courierNumber, job);
                 $scope.selectJobDetail(job.id);
-                toastrService.showSuccessToast('Job despatched to courier ' + courierNumber + ' successfully');
+                toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
             } catch (error) {
                 toastrService.showErrorToast(error.message);
             }

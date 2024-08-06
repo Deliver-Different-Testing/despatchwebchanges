@@ -1013,8 +1013,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // DISPATCH THE JOBS
     ///////////////////////////////////////
-    self.dispatchJobs = (courier, job) => {
-        return dispatchJobService.dispatchJob(courier, job);
+    /**
+     * @param {number} courierNumber
+     * @param {Job} job
+     */
+    self.dispatchJobs = (courierNumber, job) => {
+        return dispatchJobService.dispatchJob(courierNumber, job);
     };
 
     ////////////////////////////////////////

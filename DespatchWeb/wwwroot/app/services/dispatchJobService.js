@@ -1,10 +1,9 @@
 class DispatchJobService {
-    static $inject = ["$mdDialog", "$document", "uCSData", "DispatchData"];
+    static $inject = ["$mdDialog", "$document", "DispatchData"];
 
-    constructor($mdDialog, $document, uCSData, DispatchData) {
+    constructor($mdDialog, $document, DispatchData) {
         this.$mdDialog = $mdDialog;
         this.$document = $document;
-        this.uCSData = uCSData;
         this.DispatchData = DispatchData;
         this.pickCouriers = [];
         this.pickAllCouriers = [];
@@ -28,7 +27,9 @@ class DispatchJobService {
      */
     async dispatchJobByJobId(courierNumber, jobId) {
         const job = this.DispatchData.getJobDetail(jobId);
-        return await this.dispatchJob(courierNumber, job);
+        const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierNumber);
+
+        return await this.dispatchJob(selectedCourier.id, job);
     }
 
     /**
@@ -48,35 +49,30 @@ class DispatchJobService {
             try {
                 await this.$mdDialog.show(confirm);
                 foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
-                return await this._dispatchJobsContinue(courierNumber, foundCourier, true, job);
+                return await this._dispatchJobsContinue(courierNumber, foundCourier, job);
             } catch (error) {
                 // user clicked 'No'
             }
         }
-        return await this._dispatchJobsContinue(courierNumber, foundCourier, false, job);
+        return await this._dispatchJobsContinue(courierNumber, foundCourier, job);
     }
 
     /**
      * @param {number} courierNumber
-     * @param {boolean} foundCourier
-     * @param {boolean} offline
+     * @param {*} foundCourier
      * @param {Job} job
      */
-    async _dispatchJobsContinue(courierNumber, foundCourier, offline, job) {
-        const callData = {
-            "call": "dispatchJobs",
-            "courier": courierNumber,
-            "jobs": []
-        };
+    async _dispatchJobsContinue(courierNumber, foundCourier, job) {
+        let jobs = [];
 
         const jobNumber = job.jobNo;
-        if (job.courierData.courierID !== null) {
+        if (job.courierData && job.courierData.courierID !== null) {
             this.$mdDialog.show(
                 this.$mdDialog.alert()
                     .parent(angular.element(this.$document.body))
                     .clickOutsideToClose(true)
                     .title('Message')
-                    .textContent('Restore ' + jobNumber + ' prior to despatching to another courier')
+                    .textContent('Restore ' + jobNumber + ' prior to dispatching to another courier')
                     .ariaLabel('Alert')
                     .ok('OK')
             );
@@ -90,10 +86,11 @@ class DispatchJobService {
                     .parent(angular.element(this.$document.body))
                     .clickOutsideToClose(true)
                     .title('Message')
-                    .textContent("DG job " + jobNumber + " can not be despatched to courier " + courierNumber + " - doesn't have DGLicense.")
+                    .textContent("DG job " + jobNumber + " can not be dispatched to courier " + courierNumber + " - doesn't have DGLicense.")
                     .ariaLabel('Alert')
                     .ok('OK')
             );
+
             return;
         }
 
@@ -112,9 +109,8 @@ class DispatchJobService {
             return;
         }
 
-        callData.jobs.push(job.id);
-
-        return await this.uCSData.allocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+        jobs.push(job.id);
+        return await this.DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
     }
 }
 
