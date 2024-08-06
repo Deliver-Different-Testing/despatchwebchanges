@@ -251,12 +251,11 @@
 
         <ul active-icon="close"
             effect="slidein"
-            label="Menu"
             mfb-menu
             position="bl"
             resting-icon="menu"
             template-url="ng-mfb-menu-md.tpl.html"
-            toggling-method="hover">
+            toggling-method="click">
             <mfb-button
                     icon="add"
                     label="Add New Job"
@@ -285,11 +284,11 @@
         var keyIsDown = {};
 
 
-        $(document).on('focus', '.searchBox input', function () {
-            $(".results").fadeIn(100);
+        angular.element(document).on('focus', '.searchBox input', function () {
+            angular.element(".results").fadeIn(100);
         });
-        $(document).on('blur', '.searchBox input', function () {
-            $(".results").fadeOut(100);
+        angular.element(document).on('blur', '.searchBox input', function () {
+            angular.element(".results").fadeOut(100);
         });
 
         function overrideKeyboardEvent(e) {
@@ -330,18 +329,18 @@
         }
 
 
-        $(document).on('click', '.top-bar .btn-group .btn', function (event) {
-            $(this).parent().find('.topBarActive').removeClass('topBarActive');
-            $(this).addClass('topBarActive');
+        angular.element(document).on('click', '.top-bar .btn-group .btn', function (event) {
+            angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
+            angular.element(this).addClass('topBarActive');
         });
 
 
-        $(document).ready(function () {
+        angular.element(document).ready(function () {
             const favicon = document.getElementById("favicon");
             favicon.setAttribute("href", "/POD_favicon.ico");
             var isDown = false;   // Tracks status of mouse button
 
-            $(document).mousedown(function () {
+            angular.element(document).mousedown(function () {
                 isDown = true;      // When mouse goes down, set isDown to true
             })
                 .mouseup(function () {
@@ -351,28 +350,28 @@
             var isOnRow = false;
 
 
-            $(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
+            angular.element(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
 
                 if (event.ctrlKey) {
                     if (isDown) {        // Only change css if mouse is down
-                        $(this).addClass("active");
+                        angular.element(this).addClass("active");
                     }
                 }
 
             });
 
-            $(document).on("hover", ".activeTable .clickable-row", function (event) {
+            angular.element(document).on("hover", ".activeTable .clickable-row", function (event) {
                 isOnRow = true;
             });
 
-            $(document).on("mouseleave", ".activeTable .clickable-row", function (event) {
+            angular.element(document).on("mouseleave", ".activeTable .clickable-row", function (event) {
                 isOnRow = false;
             });
 
-            $(document).on('click', '.box-content', function (event) {
+            angular.element(document).on('click', '.box-content', function (event) {
                 event.stopPropagation();
                 if (isOnRow) {
-                    $(".activeTable .active").removeClass("active");
+                    angular.element(".activeTable .active").removeClass("active");
                 }
 
             });
@@ -382,12 +381,12 @@
 
         var mouseDown = 0;
 
-        $(document).on('mousedown', '.clickable-row', function (event) {
+        angular.element(document).on('mousedown', '.clickable-row', function (event) {
 
-            if ($(".activeTable .clickable-row.active").length > 1) {
-                var jobNo = $(".activeTable .clickable-row.active").length + " Jobs";
+            if (angular.element(".activeTable .clickable-row.active").length > 1) {
+                var jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
             } else {
-                var jobNo = $(this).attr("data-jobno");
+                var jobNo = angular.element(this).attr("data-jobno");
             }
 
 
@@ -396,47 +395,50 @@
 
                 if (event.which === 1) {
                     if (event.ctrlKey) {
-                        if ($(this).hasClass("active")) {
-                            $(this).removeClass('active');
+                        if (angular.element(this).hasClass("active")) {
+                            angular.element(this).removeClass('active');
                         } else {
-                            $(this).addClass('active');
+                            angular.element(this).addClass('active');
                         }
                     } else {
-                        if (!$(this).hasClass("active")) {
+                        if (!angular.element(this).hasClass("active")) {
 
-                            var group = $(this).parents(".table-rows").attr("data-group");
-                            $('*[data-group="' + group + '"]').each(function () {
-                                $(this).find('.active').removeClass('active');
+                            var group = angular.element(this).parents(".table-rows").attr("data-group");
+                            angular.element('*[data-group="' + group + '"]').each(function () {
+                                angular.element(this).find('.active').removeClass('active');
                             });
 
-                            $(this).addClass('active');
+                            angular.element(this).addClass('active');
                         }
                     }
 
-                    $(".activeTable").removeClass("activeTable");
-                    $(this).parents(".table").addClass("activeTable");
+                    angular.element(".activeTable").removeClass("activeTable");
+                    angular.element(this).parents(".table").addClass("activeTable");
                 }
 
                 if (!event.ctrlKey) {
-                    if ($(this).hasClass("draggable-row")) {
+                    if (angular.element(this).hasClass("draggable-row")) {
 
-                        if (!$(this).hasClass("active")) {
+                        if (!angular.element(this).hasClass("active")) {
 
-                            var group = $(this).parents(".table-rows").attr("data-group");
-                            $('*[data-group="' + group + '"]').each(function () {
-                                $(this).find('.active').removeClass('active');
+                            var group = angular.element(this).parents(".table-rows").attr("data-group");
+                            angular.element('*[data-group="' + group + '"]').each(function () {
+                                angular.element(this).find('.active').removeClass('active');
                             });
-                            $(this).addClass('active');
+                            angular.element(this).addClass('active');
 
                         }
                         setTimeout(function () {
                             if (mouseDown === 1) {
-                                $("#draggingItems").show();
-                                $("#draggingItems").html(jobNo);
+                                angular.element("#draggingItems").show();
+                                angular.element("#draggingItems").html(jobNo);
 
-                                $("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
-                                $("#draggingItems").draggable();
-                                $("#draggingItems").trigger(event);
+                                angular.element("#draggingItems").css({
+                                    "top": event.pageY - 25,
+                                    "left": event.pageX - 50
+                                });
+                                angular.element("#draggingItems").draggable();
+                                angular.element("#draggingItems").trigger(event);
                             }
                         }, 200);
                     }
@@ -446,23 +448,23 @@
 
         });
 
-        $(document).on('mouseup', '.clickable-row', function (event) {
+        angular.element(document).on('mouseup', '.clickable-row', function (event) {
 
             if (event.which === 3) {
 
-                $(".rightActiveTable").removeClass("rightActiveTable");
-                $(this).parents(".table").addClass("rightActiveTable");
+                angular.element(".rightActiveTable").removeClass("rightActiveTable");
+                angular.element(this).parents(".table").addClass("rightActiveTable");
             }
             if (!event.ctrlKey) {
 
-                if ($(this).hasClass("active")) {
+                if (angular.element(this).hasClass("active")) {
                 } else {
-                    var group = $(this).parents(".table-rows").attr("data-group");
+                    var group = angular.element(this).parents(".table-rows").attr("data-group");
 
-                    $('*[data-group="' + group + '"]').each(function () {
-                        $(this).find('.active').removeClass('active');
+                    angular.element('*[data-group="' + group + '"]').each(function () {
+                        angular.element(this).find('.active').removeClass('active');
                     });
-                    $(this).addClass('active');
+                    angular.element(this).addClass('active');
                 }
 
             }
@@ -470,22 +472,22 @@
         });
 
 
-        $(document).on('click', '.clickable-row', function (event) {
+        angular.element(document).on('click', '.clickable-row', function (event) {
             event.stopPropagation();
         });
 
 
-        $(document).on("mouseup", function (ev) {
-            $("#draggingItems").hide();
+        angular.element(document).on("mouseup", function (ev) {
+            angular.element("#draggingItems").hide();
             mouseDown = 0;
         });
 
-        $(document).on("keydown", function (e) {
+        angular.element(document).on("keydown", function (e) {
             var code = (e.keyCode ? e.keyCode : e.which);
             if (code === 40) {
-                $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+                angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
             } else if (code === 38) {
-                $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+                angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
             }
         });
 
@@ -493,24 +495,24 @@
         //var delay = 250; // delay between calls
         //var throttled = false; // are we currently throttled?
 
-        //setTimeout(function(){ sizeHeadings($("#jobList").parents(".column")); }, 100);
+        //setTimeout(function(){ sizeHeadings(angular.element("#jobList").parents(".column")); }, 100);
 
         function sizeHeadings(ele) {
 
-            $("body").find(".box").each(function () {
-                var box = $(this);
+            angular.element("body").find(".box").each(function () {
+                var box = angular.element(this);
                 box.find(".table-headings thead tr th").each(function (index) {
                     var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
-                    $(this).width(newWidth);
+                    angular.element(this).width(newWidth);
                 });
                 box.find(".table-headings table").width(box.find(".table").width());
             });
 
-            $("body").find(".box").each(function () {
-                var box = $(this);
+            angular.element("body").find(".box").each(function () {
+                var box = angular.element(this);
                 box.find(".table-b-headings thead tr th").each(function (index) {
                     var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
-                    $(this).width(newWidth);
+                    angular.element(this).width(newWidth);
                 });
                 box.find(".table-b-headings table").width(box.find(".table").width());
             });

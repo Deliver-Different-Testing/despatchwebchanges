@@ -268,11 +268,6 @@ md-divider {
   margin-left: 10px;
   height: 26px;
 }
-.top-bar .box-search {
-  margin-left: auto;
-  margin-right: auto;
-  color: #FFF;
-}
 .top-bar .box-search input {
   display: none;
   width: 161px;
@@ -628,33 +623,6 @@ md-divider {
   flex-basis: auto;
   flex-shrink: 0;
   gap: 5px;
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-handle {
-  padding: 8px;
-  background-color: #000;
-  cursor: move;
-  display: inline-flex;
-  vertical-align: top;
-  border-radius: 4px;
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-handle:hover {
-  background-color: rgba(0, 0, 0, 0.08);
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-search {
-  padding: 8px;
-  background-color: #000;
-  cursor: pointer;
-  display: inline-flex;
-  vertical-align: top;
-  height: 40px;
-  border-radius: 4px;
-  align-items: center;
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-search:hover {
-  background-color: rgba(0, 0, 0, 0.08);
-}
-.columns .column .column-sortable .box .box-bar .box-buttons .box-search .fa {
-  padding: 8px 5px;
 }
 .columns .column .column-sortable .box .box-bar .box-buttons .box-search input {
   display: none;
