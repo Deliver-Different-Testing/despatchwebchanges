@@ -29,7 +29,7 @@ class DispatchJobService {
         const job = this.DispatchData.getJobDetail(jobId);
         const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierNumber);
 
-        return await this.dispatchJob(selectedCourier.id, job);
+        await this.dispatchJob(selectedCourier.id, job);
     }
 
     /**
@@ -37,8 +37,10 @@ class DispatchJobService {
      * @param {Job} job
      */
     async dispatchJob(courierNumber, job) {
-        let foundCourier = this.pickCouriers.find(c => c.id === courierNumber);
+        // Refresh list
+        this._fetchCouriersData();
 
+        let foundCourier = this.pickCouriers.find(c => c.id === courierNumber);
         if (foundCourier === undefined) {
             const confirm = this.$mdDialog.confirm()
                 .title('Courier Offline')
@@ -49,12 +51,13 @@ class DispatchJobService {
             try {
                 await this.$mdDialog.show(confirm);
                 foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
-                return await this._dispatchJobsContinue(courierNumber, foundCourier, job);
+                await this._dispatchJobsContinue(courierNumber, foundCourier, job);
             } catch (error) {
                 // user clicked 'No'
             }
         }
-        return await this._dispatchJobsContinue(courierNumber, foundCourier, job);
+
+        await this._dispatchJobsContinue(courierNumber, foundCourier, job);
     }
 
     /**
@@ -110,7 +113,7 @@ class DispatchJobService {
         }
 
         jobs.push(job.id);
-        return await this.DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
+        await this.DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
     }
 }
 
