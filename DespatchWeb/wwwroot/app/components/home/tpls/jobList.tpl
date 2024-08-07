@@ -2,46 +2,48 @@
         <table>
             <thead class="thead-dark no select">
             <tr>
-                <th ng-click="orderList('jobList','time')" scope="col"><i class="fa fa-caret-down"
-                                                                          ng-show="sort.jobList == 'time'"></i><i
+                <th ng-click="orderList('jobList','time')" scope="col"><i class="material-symbols-outlined small-icon"
+                                                                          ng-show="sort.jobList == 'time'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-time'"></i>T
                 </th>
-                <th ng-click="orderList('jobList', 'speed')" scope="col"><i class="fa fa-caret-down"
-                                                                            ng-show="sort.jobList == 'speed'"></i><i
+                <th ng-click="orderList('jobList', 'speed')" scope="col"><i class="material-symbols-outlined small-icon"
+                                                                            ng-show="sort.jobList == 'speed'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-speed'"></i>Speed
                 </th>
-                <th ng-click="orderList('jobList','notify')" scope="col"><i class="fa fa-caret-down"
-                                                                            ng-show="sort.jobList == 'notify'"></i><i
+                <th ng-click="orderList('jobList','notify')" scope="col"><i class="material-symbols-outlined small-icon"
+                                                                            ng-show="sort.jobList == 'notify'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-notify'"></i>N
                 </th>
-                <th ng-click="orderList('jobList','vehicle')" scope="col"><i class="fa fa-caret-down"
-                                                                             ng-show="sort.jobList == 'vehicle'"></i><i
+                <th ng-click="orderList('jobList','vehicle')" scope="col"><i
+                        class="material-symbols-outlined small-icon"
+                        ng-show="sort.jobList == 'vehicle'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-vehicle'"></i>V
                 </th>
-                <th ng-click="orderList('jobList','jobNo')" scope="col"><i class="fa fa-caret-down"
-                                                                           ng-show="sort.jobList == 'jobNo'"></i><i
+                <th ng-click="orderList('jobList','jobNo')" scope="col"><i class="material-symbols-outlined small-icon"
+                                                                           ng-show="sort.jobList == 'jobNo'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-jobNo'"></i>Job
                 </th>
-                <th ng-click="orderList('jobList','client')" scope="col"><i class="fa fa-caret-down"
-                                                                            ng-show="sort.jobList == 'client'"></i><i
+                <th ng-click="orderList('jobList','client')" scope="col"><i class="material-symbols-outlined small-icon"
+                                                                            ng-show="sort.jobList == 'client'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-client'"></i>Client
                 </th>
-                <th ng-click="orderList('jobList','from')" scope="col"><i class="fa fa-caret-down"
-                                                                          ng-show="sort.jobList == 'from'"></i><i
+                <th ng-click="orderList('jobList','from')" scope="col"><i class="material-symbols-outlined small-icon"
+                                                                          ng-show="sort.jobList == 'from'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i>From
                 </th>
-                <th colspan="2" ng-click="orderList('jobList','to')" scope="col"><i class="fa fa-caret-down"
-                                                                                    ng-show="sort.jobList == 'to'"></i><i
+                <th colspan="2" ng-click="orderList('jobList','to')" scope="col"><i
+                        class="material-symbols-outlined small-icon"
+                        ng-show="sort.jobList == 'to'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i>To
                 </th>
 
                 <th></th>
-                <th ng-click="orderList('jobList','remain')" scope="col"><i class="fa fa-caret-down"
-                                                                            ng-show="sort.jobList == 'remain'"></i><i
+                <th ng-click="orderList('jobList','remain')" scope="col"><i class="material-symbols-outlined small-icon"
+                                                                            ng-show="sort.jobList == 'remain'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i>Remain
                 </th>
-                <th ng-click="orderList('jobList','status')" scope="col"><i class="fa fa-caret-down"
-                                                                            ng-show="sort.jobList == 'status'"></i><i
+                <th ng-click="orderList('jobList','status')" scope="col"><i class="material-symbols-outlined small-icon"
+                                                                            ng-show="sort.jobList == 'status'">arrow_drop_down</i><i
                         class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i>S
                 </th>
                 <th></th>
@@ -74,13 +76,15 @@
             </td>
             <td context-menu="setEventsMenu">{{job.jobNo}}</td>
             <td action="ctrl.clientColumnClick($event, job)" right-click>{{job.client}}</td>
-            <td action="ctrl.fromColumnClick(event)" right-click
+            <td action="ctrl.fromColumnClick(event, job)" right-click
                 style="width:50px; white-space:nowrap; overflow-x:hidden;">
-                {{job.from}} <i class="fa fa-exclamation" ng-if="!job.pickUpLongitude"></i></td>
+                {{job.from}} <i class="material-symbols-outlined small-icon"
+                                ng-if="!job.pickUpLongitude">exclamation</i></td>
             <td colspan="2" title="{{job.toAddress}}">
                 <div action="ctrl.toColumnClick($event, job)" right-click
                      style="width:450px; white-space:nowrap; overflow-x:hidden;"
-                     title="{{job.toAddress}}"><i class="fa fa-exclamation" ng-if="!job.deliveryLongitude"></i>{{job.to}}
+                     title="{{job.toAddress}}"><i class="material-symbols-outlined small-icon"
+                                                  ng-if="!job.deliveryLongitude">exclamation</i>{{job.to}}
                     {{job.toAddress}}
                 </div>
             </td>

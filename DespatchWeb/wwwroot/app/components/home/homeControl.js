@@ -1944,6 +1944,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }
         }, 0);
     };
+
     $scope.setCurrentWorkMenu = () => {
         let multiple = angular.element(".activeTable .active").length > 1;
 
@@ -1970,8 +1971,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         ];
     };
 
-
-    $scope.fromColumnClick = (evt, job) => {
+    self.fromColumnClick = (evt, job) => {
         switch (evt.which) {
               case 1:
                   // this is left click
