@@ -11,11 +11,19 @@ class DispatchJobService {
         this._fetchCouriersData();
     }
 
+
     _fetchCouriersData() {
+        this._fetchActiveCouriersData();
+        this._fetchAllCouriersData();
+    }
+
+    _fetchActiveCouriersData() {
         this.DispatchData.getActiveCouriers().then(data => {
             this.pickCouriers = data;
         });
+    }
 
+    _fetchAllCouriersData() {
         this.DispatchData.getAllCouriers().then(data => {
             this.pickAllCouriers = data;
         });
@@ -38,26 +46,31 @@ class DispatchJobService {
      */
     async dispatchJob(courierNumber, job) {
         // Refresh list
-        this._fetchCouriersData();
+        this._fetchActiveCouriersData();
 
         let foundCourier = this.pickCouriers.find(c => c.id === courierNumber);
         if (foundCourier === undefined) {
-            const confirm = this.$mdDialog.confirm()
-                .title('Courier Offline')
-                .textContent('Dispatch anyway?')
-                .ok('Yes')
-                .cancel('No');
+            const confirm = this._generateOfflineCourierDialog();
 
             try {
                 await this.$mdDialog.show(confirm);
                 foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
                 await this._dispatchJobsContinue(courierNumber, foundCourier, job);
             } catch (error) {
-                // user clicked 'No'
+                console.log("User chose not to dispatch job as courier is offline");
+                return; // Return if user chose not to dispatch job
             }
         }
 
         await this._dispatchJobsContinue(courierNumber, foundCourier, job);
+    }
+
+    _generateOfflineCourierDialog() {
+        return this.$mdDialog.confirm()
+            .title('Courier Offline')
+            .textContent('Dispatch anyway?')
+            .ok('Yes')
+            .cancel('No');
     }
 
     /**
@@ -69,51 +82,41 @@ class DispatchJobService {
         let jobs = [];
 
         const jobNumber = job.jobNo;
+
         if (job.courierData && job.courierData.courierID !== null) {
-            this.$mdDialog.show(
-                this.$mdDialog.alert()
-                    .parent(angular.element(this.$document.body))
-                    .clickOutsideToClose(true)
-                    .title('Message')
-                    .textContent('Restore ' + jobNumber + ' prior to dispatching to another courier')
-                    .ariaLabel('Alert')
-                    .ok('OK')
-            );
-
+            this._showAlertMessage('Restore ' + jobNumber + ' prior to dispatching to another courier');
             return;
         }
-
         if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-            this.$mdDialog.show(
-                this.$mdDialog.alert()
-                    .parent(angular.element(this.$document.body))
-                    .clickOutsideToClose(true)
-                    .title('Message')
-                    .textContent("DG job " + jobNumber + " can not be dispatched to courier " + courierNumber + " - doesn't have DGLicense.")
-                    .ariaLabel('Alert')
-                    .ok('OK')
-            );
-
+            this._showAlertMessage("DG job " + jobNumber + " can not be dispatched to courier "
+                + courierNumber + " - doesn't have DGLicense.");
             return;
         }
-
         if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null ||
             moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-            this.$mdDialog.show(
-                this.$mdDialog.alert()
-                    .parent(angular.element(this.$document.body))
-                    .clickOutsideToClose(true)
-                    .title('Message')
-                    .textContent("Courier " + courierNumber + " doesn't have a DGLicense or license has expired.")
-                    .ariaLabel('Alert')
-                    .ok('OK')
-            );
-
+            this._showAlertMessage("Courier " + courierNumber + " doesn't have a DGLicense or license has expired.");
             return;
         }
 
         jobs.push(job.id);
         await this.DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
+    }
+
+
+    /**
+     * @param {string} textContent
+     */
+    _showAlertMessage(textContent) {
+        const alert =
+            this.$mdDialog.alert()
+                .parent(angular.element(this.$document.body))
+                .clickOutsideToClose(true)
+                .title('Message')
+                .textContent(textContent)
+                .ariaLabel('Alert')
+                .ok('OK');
+
+        this.$mdDialog.show(alert);
     }
 }
 
