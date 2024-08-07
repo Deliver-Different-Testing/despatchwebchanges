@@ -11,7 +11,6 @@ class DispatchJobService {
         this._fetchCouriersData();
     }
 
-
     _fetchCouriersData() {
         this._fetchActiveCouriersData();
         this._fetchAllCouriersData();
