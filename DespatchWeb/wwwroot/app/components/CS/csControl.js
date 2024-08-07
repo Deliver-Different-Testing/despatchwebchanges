@@ -69,7 +69,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
+            templateUrl: "app/components/dialogs/createJobDialog/createJobDialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -92,7 +92,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/common/interCourierChargeDialog/interCourierChargeDialog.html",
+            templateUrl: "app/components/dialogs/interCourierChargeDialog/interCourierChargeDialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {

@@ -710,7 +710,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         self.setFilters({'clearList': area});
     };
 
-    $scope.selectForDispatch = job => {
+    self.selectForDispatch = job => {
         console.log("In SelectForDispatch");
         $scope.jobForDispatch = job;
     };
@@ -786,18 +786,22 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             .placeholder('Note')
             .ariaLabel('Void job')
             .required(true)
-            .ok('Cancel')
+            .ok('Void')
             .cancel('Cancel');
 
         $mdDialog.show(voidJobPrompt).then(note => {
             return DispatchData.addNote(jobId, note, FirstName, false).then(() => {
                 return DispatchData.voidJob(jobId);
             }, () => {
-                console.log("Job void canceled!")
+                // User canceled the void
             });
         });
     }
 
+    /**
+     * @param {$event} event
+     * @param {Job} job
+     */
     self.messageClick = (event, job) => {
         const selectedCourierId = self.selectedCourier ? self.selectedCourier.id : job.courierData.courierID;
 
@@ -806,7 +810,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: 'app/components/common/sendMessageDialog/sendMessageDialog.html',
+            templateUrl: 'app/components/dialogs/sendMessageDialog/sendMessageDialog.html',
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -828,7 +832,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/common/addEventDialog/addEventDialog.html",
+            templateUrl: "app/components/dialogs/addEventDialog/addEventDialog.html",
             parent: angular.element($document.body),
             targetEvent: event,
             clickOutsideToClose: true,
@@ -953,7 +957,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
 
     };
-    $scope.selectAllContent = $event => {
+
+    self.selectAllContent = $event => {
         $event.target.select();
     };
 
@@ -965,7 +970,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     }
 
-    $scope.lateDelivery = (minsAway, j, obj) => {
+    self.lateDelivery = (minsAway, j, obj) => {
         console.log("current = " + j.ld);
         console.log("param minsAway = " + minsAway);
         console.log(obj);
@@ -1017,7 +1022,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // RESTORE JOB
     ///////////////////////////////////////
-    $scope.restoreJobs = () => {
+    self.restoreJobs = () => {
 
         let callData = {
             "call": "restoreJobs",
@@ -1068,7 +1073,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // REDESPATCHED JOB
     ///////////////////////////////////////
-    $scope.reAllocateJobs = () => {
+    self.reAllocateJobs = () => {
         const callData = {
             "call": "redespatchJobs",
             "jobs": [],
@@ -1276,7 +1281,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     };
 
-    $scope.reAllocateJobsFromCurrentWindow = () => {
+    self.reAllocateJobsFromCurrentWindow = () => {
         let callData = {
             "call": "redespatchJobs",
             "jobs": [],
@@ -1330,7 +1335,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    $scope.restoreJobsFromCurrentWindow = () => {
+    self.restoreJobsFromCurrentWindow = () => {
         let callData = {
             "call": "restoreJobs",
             "jobs": [],
@@ -1844,16 +1849,16 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    $scope.selectSupportJobDetail = support => {
+    self.selectSupportJobDetail = support => {
         console.log("select Job  " + support.jobId);
 
         $scope.currentSupport = support;
         angular.element("#box-jobDetail").find(".loading").show();
 
         DispatchData.getJobDetail(support.jobId).then(data => {
-            $scope.selectJob(support);
-
+            $scope.selectJob(data);
             self.currentJob = data;
+
             angular.element("#box-jobDetail").find(".loading").hide();
             self.currentSelection = " for Job " + support.jobNumber;
             let jobs = [];
@@ -1880,7 +1885,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.selectedJobs = [];
             $scope.currentSupport = null;
 
-            angular.element(document.querySelector(".activeTable .active")).each((_, el) => {
+            angular.element(".activeTable .active").each((_, el) => {
                 const jobRowElement = angular.element(el).find(".selectjob");
                 jobRowElement.click();
 
@@ -1946,13 +1951,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Restore",
                 click($itemScope, $event, modelValue, text, $li) {
-                    $scope.restoreJobsFromCurrentWindow();
+                    self.restoreJobsFromCurrentWindow();
                 }
             },
             {
                 text: "Redispatch",
                 click($itemScope, $event, modelValue, text, $li) {
-                    $scope.reAllocateJobsFromCurrentWindow();
+                    self.reAllocateJobsFromCurrentWindow();
                 }
             },
             {
@@ -1966,10 +1971,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
 
-    $scope.fromColumnClick = evt => {
-        // Temp disabled to prevent endless loading
-        return false;
-        /*  switch (evt.which) {
+    $scope.fromColumnClick = (evt, job) => {
+        switch (evt.which) {
               case 1:
                   // this is left click
                   break;
@@ -1980,41 +1983,40 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                   // this is right click
                   loadingService.showLoader();
                   $timeout(() => {
-                      jdSvc.updateGPS(self.currentJob, 'fromAddress', true);
+                      jdSvc.updateGPS(job, 'fromAddress', true);
                   }, 100);
+                  loadingService.closeLoader();
                   break;
               default:
                   console.log("you have a strange mouse!");
                   break;
 
           }
-          return false;*/
+        return false;
     };
 
-    $scope.toColumnClick = evt => {
-        // Temp disabled to prevent endless loading
+    self.toColumnClick = (evt, job) => {
+        switch (evt.which) {
+            case 1:
+                // this is left click
+                break;
+            case 2:
+                // in case you need some middle click things
+                break;
+            case 3:
+                // this is right click
+                loadingService.showLoader();
+                $timeout(function () {
+                    jdSvc.updateGPS(job, 'toAddress', true);
+                }, 100);
+                loadingService.closeLoader();
+                break;
+            default:
+                console.log("you have a strange mouse!");
+                break;
+
+        }
         return false;
-        /*     switch (evt.which) {
-                 case 1:
-                     // this is left click
-                     break;
-                 case 2:
-                     // in case you need some middle click things
-                     break;
-                 case 3:
-                     // this is right click
-                     waitingDialog.show();
-                     $timeout(function () {
-                         jdSvc.updateGPS(self.currentJob, 'toAddress', true);
-                     }, 100);
-
-                     break;
-                 default:
-                     console.log("you have a strange mouse!");
-                     break;
-
-             }
-             return false;*/
     };
 
     $scope.latePickColumnClick = evt => {
@@ -2089,7 +2091,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    $scope.speedColumnClick = evt => {
+    self.speedColumnClick = (evt, job) => {
         switch (evt.which) {
             case 1:
                 // this is left click
@@ -2100,7 +2102,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             case 3:
                 // this is right click
                 $timeout(() => {
-                    jdSvc.speedClick(self.currentJob);
+                    jdSvc.speedClick(job);
                     $scope.$apply();
                 }, 400);
 
@@ -2113,7 +2115,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    $scope.clientColumnClick = evt => {
+    self.clientColumnClick = (evt, job) => {
         switch (evt.which) {
             case 1:
                 // this is left click
@@ -2124,7 +2126,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             case 3:
                 // this is right click
                 $timeout(() => {
-                    jdSvc.clientClick(self.currentJob);
+                    jdSvc.clientClick(job);
                     $scope.$apply();
                 }, 400);
 
@@ -2137,7 +2139,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    $scope.notifyColumnClick = evt => {
+    self.notifyColumnClick = (evt, job) => {
         switch (evt.which) {
             case 1:
                 // this is left click
@@ -2148,7 +2150,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             case 3:
                 // this is right click
                 $timeout(() => {
-                    jdSvc.notifyClick(self.currentJob);
+                    jdSvc.notifyClick(job);
                     $scope.$apply();
                 }, 400);
 
@@ -2233,13 +2235,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Restore Selected",
                     click($itemScope, $event, modelValue, text, $li) {
-                        $scope.restoreJobs();
+                        self.restoreJobs();
                     }
                 },
                 {
                     text: "Redispatch Selected",
                     click($itemScope, $event, modelValue, text, $li) {
-                        $scope.reAllocateJobs();
+                        self.reAllocateJobs();
                     }
                 },
                 {
@@ -2286,13 +2288,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Restore",
                     click($itemScope, $event, modelValue, text, $li) {
-                        $scope.restoreJobs();
+                        self.restoreJobs();
                     }
                 },
                 {
                     text: "Redispatch",
                     click($itemScope, $event, modelValue, text, $li) {
-                        $scope.reAllocateJobs();
+                        self.reAllocateJobs();
                     }
                 },
                 {
@@ -2411,7 +2413,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     }
 
-    $scope.lockSupport = support => {
+    self.lockSupport = support => {
         console.log(support);
         if (support.lockedBy === Dispatcher) {
             DispatchData.unLockSupport(support.eventId, Dispatcher).then(data => {
@@ -2458,7 +2460,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     text: "Toggle Lock",
                     click($itemScope, $event, modelValue, text, $li) {
 
-                        $scope.lockSupport($itemScope.support);
+                        self.lockSupport($itemScope.support);
 
 
                     }
@@ -2863,7 +2865,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     controllerAs: 'ctrl',
                     parent: angular.element($document.body),
                     targetEvent: event,
-                    templateUrl: "app/components/common/gpsForm/gpsForm.html",
+                    templateUrl: "app/components/dialogs/gpsForm/gpsForm.html",
                     clickOutsideToClose: false,
                     fullscreen: true,
                     locals: {
@@ -2943,7 +2945,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/common/truckCourierStatusDialog/truckCourierStatusDialog.html",
+            templateUrl: "app/components/dialogs/truckCourierStatusDialog/truckCourierStatusDialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -2964,7 +2966,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: event,
-                templateUrl: "app/components/common/createJobDialog/createJobDialog.html",
+                templateUrl: "app/components/dialogs/createJobDialog/createJobDialog.html",
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
@@ -2995,7 +2997,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/common/interCourierChargeDialog/interCourierChargeDialog.html",
+            templateUrl: "app/components/dialogs/interCourierChargeDialog/interCourierChargeDialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -3010,7 +3012,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/common/addEventDialog/addEventDialog.html",
+            templateUrl: "app/components/dialogs/addEventDialog/addEventDialog.html",
             parent: angular.element($document.body),
             targetEvent: event,
             clickOutsideToClose: true,

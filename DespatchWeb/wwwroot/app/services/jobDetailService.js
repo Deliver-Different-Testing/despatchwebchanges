@@ -744,7 +744,7 @@ class JobDetailService {
         return this.$mdDialog.show({
             controller: AddNotesDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/common/addNotesDialog/addNotesDialog.html",
+            templateUrl: "app/components/dialogs/addNotesDialog/addNotesDialog.html",
             parent: angular.element(this.$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
@@ -1147,7 +1147,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this.$document.body),
             targetEvent: event,
-            templateUrl: "app/components/common/gpsForm/gpsForm.html",
+            templateUrl: "app/components/dialogs/gpsForm/gpsForm.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -1600,7 +1600,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this.$document.body),
             targetEvent: event,
-            templateUrl: 'app/components/common/selectDialog/selectDialog.html',
+            templateUrl: 'app/components/dialogs/selectDialog/selectDialog.html',
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1705,7 +1705,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this.$document.body),
             targetEvent: event,
-            templateUrl: 'app/components/common/autocompleteDialog/autoCompleteDialog.html',
+            templateUrl: 'app/components/dialogs/autocompleteDialog/autoCompleteDialog.html',
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1750,7 +1750,7 @@ class JobDetailService {
         return this.$mdDialog.show({
             controller: AddPalletDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/common/addPalletDialog/addPalletDialog.html",
+            templateUrl: "app/components/dialogs/addPalletDialog/addPalletDialog.html",
             parent: angular.element(this.$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
