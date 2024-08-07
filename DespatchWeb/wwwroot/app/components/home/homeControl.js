@@ -581,22 +581,21 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     };
 
+    self.showInput = {};
+    self.inputWidth = {};
+
     /**
-     * @param {string} boxID
+     * @param {string} boxName
+     * @param {number} index
      */
-    self.openSearch = (boxID) => {
-        if (angular.element("#box-" + boxID).find(".box-search").hasClass("open")) {
-            angular.element("#box-" + boxID).find(".box-search input").fadeOut(function () {
-                angular.element("#box-" + boxID).find(".box-search").removeClass("open");
-                angular.element("#box-" + boxID).find(".box-search").animate({"width": "31px"}, 500);
-            });
+    self.openSearch = function (boxName, index) {
+        const boxID = boxName + '-' + index;
+        if (self.showInput[boxID]) {
+            self.showInput[boxID] = false;
+            self.inputWidth[boxID] = 31;
         } else {
-            angular.element("#box-" + boxID).find(".box-search").animate({"width": "200px"},
-                500,
-                function () {
-                    angular.element("#box-" + boxID).find(".box-search").addClass("open");
-                    angular.element("#box-" + boxID).find(".box-search input").fadeIn();
-                });
+            self.inputWidth[boxID] = 200;
+            self.showInput[boxID] = true;
         }
     };
 
