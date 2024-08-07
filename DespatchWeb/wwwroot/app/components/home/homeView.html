@@ -157,6 +157,11 @@
                                     </span>
                                 </h4>
 
+                                <md-button class="md-icon-button md-primary" ng-click="ctrl.getData()"
+                                           ng-show="boxes[box.name].showRefresh">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                </md-button>
+
                                 <!-- Courier Card Buttons-->
                                 <div class="row-overflow" layout="row" ng-if="currentCourier"
                                      ng-show="box.name === 'currentWork'">
@@ -295,24 +300,21 @@
                                     </md-switch>
                                 </div>
 
-                                <div class="box-search" id="box-{{box.name}}-{{$index}}"
-                                     ng-show="boxes[box.name].showSearch">
+                                <div id="box-{{box.name}}-{{$index}}" ng-show="boxes[box.name].showSearch">
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.openSearch(box.name, $index)">
                                         <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                                     </md-button>
-                                    <input ng-model="box.searchBox"
-                                           ng-model-options="{debounce: 300}"
-                                           placeholder="Search..."
-                                           ng-show="ctrl.showInput[box.name + '-' + $index]"
-                                           ng-style="{'width': ctrl.inputWidth[box.name + '-' + $index] + 'px'}"
-                                           type="text">
-                                </div>
 
-                                <md-button class="md-icon-button" ng-click="ctrl.getData()"
-                                           ng-show="boxes[box.name].showRefresh">
-                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                                </md-button>
+                                    <md-input-container flex md-no-float
+                                                        md-theme="input"
+                                                        ng-show="ctrl.showInput[box.name + '-' + $index]"
+                                                        ng-style="{'width': ctrl.inputWidth[box.name + '-' + $index] + 'px'}">
+                                        <input id="searchInput" ng-model="box.searchBox"
+                                               ng-model-options="{debounce: 300}"
+                                               placeholder="Search...">
+                                    </md-input-container>
+                                </div>
 
                                 <div class="md-icon-button box-handle">
                                     <md-icon md-font-set="material-symbols-outlined">drag_indicator</md-icon>

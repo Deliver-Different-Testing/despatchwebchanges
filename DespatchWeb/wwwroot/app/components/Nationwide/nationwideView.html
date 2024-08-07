@@ -136,6 +136,11 @@
                                     </span>
                                 </h4>
 
+                                <md-button class="md-icon-button md-primary" ng-click="getData()"
+                                           ng-show="boxes[box.name].showRefresh">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                </md-button>
+
                                 <!-- Courier Card Buttons-->
                                 <div class="row-overflow" layout="row" ng-if="currentCourier"
                                      ng-show="box.name === 'currentWork'">
@@ -286,11 +291,6 @@
                                                placeholder="Search...">
                                     </md-input-container>
                                 </div>
-
-                                <md-button class="md-icon-button" ng-click="getData()"
-                                           ng-show="boxes[box.name].showRefresh">
-                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                                </md-button>
 
                                 <div class="md-icon-button box-handle">
                                     <md-icon md-font-set="material-symbols-outlined">drag_indicator</md-icon>
