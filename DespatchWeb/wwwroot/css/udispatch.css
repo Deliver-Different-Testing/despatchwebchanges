@@ -4,6 +4,22 @@ body {
 md-dialog {
   min-width: 400px;
 }
+
+.md-headline-title {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 28px;
+    letter-spacing: 0.15px;
+}
+
+.box-handle {
+    padding: 8px;
+    height: 48px;
+}
+
+.md-drag-button {
+    font-size: 24px;
+}
 .row-overflow {
   overflow-x: auto;
   /* For Chrome and Safari */

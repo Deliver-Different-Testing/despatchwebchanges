@@ -120,7 +120,7 @@
                         <md-toolbar class="md-accent" layout="row" layout-align="center center">
                             <div class="md-toolbar-tools">
 
-                                <h4 class="row-overflow" flex>
+                                <span class="md-headline-title" flex md-truncate>
                                     {{boxes[box.name].title}}
                                     <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
                                     <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
@@ -134,7 +134,7 @@
                                         {{jo.label}}
                                     </span>
                                     </span>
-                                </h4>
+                                </span>
 
                                 <md-button class="md-icon-button md-primary" ng-click="getData()"
                                            ng-show="boxes[box.name].showRefresh">
@@ -292,8 +292,10 @@
                                     </md-input-container>
                                 </div>
 
-                                <div class="md-icon-button box-handle">
-                                    <md-icon md-font-set="material-symbols-outlined">drag_indicator</md-icon>
+                                <div class="box-handle md-icon-button">
+                                    <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
+                                        drag_indicator
+                                    </md-icon>
                                 </div>
 
                             </div>
@@ -307,17 +309,5 @@
 
         </div>
     </div>
-
-
-    <div ng-include="'app/components/Nationwide/tpls/eventForm.tpl?v=1.1'"></div>
-
-    <div ng-include="'app/components/home/tpls/truckCourierStatus.tpl?v=1.7'"></div>
-
-    <div ng-include="'app/components/home/tpls/lateForm.tpl?v=1.1'"></div>
-
-    <div ng-include="'app/components/home/tpls/gatherForm.tpl?v=1.14'"></div>
-
-    <div ng-include="'app/components/home/tpls/gatherFormMulti.tpl?v=1.1'"></div>
-
     <div id='draggingItems'></div>
 </div>
