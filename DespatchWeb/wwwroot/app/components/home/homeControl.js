@@ -1533,6 +1533,20 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
+     * @param {string} searchText
+     */
+    self.jobRecordSearch = searchText => {
+        return $scope.jobList
+            .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
+            .map(job => ({id: job.id, text: job.jobNo}));
+    }
+
+    self.JobRecordSelected = selectedJobId => {
+        const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
+        $scope.selectJob(selectedJob);
+    }
+
+    /**
      * @param {number} courierID
      * @param {string} courierName
      */
