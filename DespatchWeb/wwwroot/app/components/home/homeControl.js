@@ -792,7 +792,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         $mdDialog.show(voidJobPrompt).then(note => {
             return DispatchData.addNote(jobId, note, FirstName, false).then(() => {
-                return DispatchData.voidJob(jobId);
+                return DispatchData.voidJob(jobId).then(() => {
+                    return self.getData();
+                })
             }, () => {
                 // User canceled the void
             });

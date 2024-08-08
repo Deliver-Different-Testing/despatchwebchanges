@@ -17,13 +17,13 @@ class DispatchData {
     }
 
     /**
-     * @param {number} id
+     * @param {number} bulkJobId
      * @param {string} note
      * @param {string} despatcherName
      * @param {boolean} preBook
      */
-    async addBulkJobNote(id, note, despatcherName, preBook) {
-        return await this.$http.post("job/AddBulkJobNote?BulkJobId=" + id + "&note=" + note + "&despatcher=" + despatcherName);
+    async addBulkJobNote(bulkJobId, note, despatcherName, preBook) {
+        return await this.$http.post("job/AddBulkJobNote?BulkJobId=" + bulkJobId + "&note=" + note + "&despatcher=" + despatcherName);
     }
 
     /**
@@ -228,6 +228,9 @@ class DispatchData {
         return response.data;
     }
 
+    /**
+     * @param {[]|number} jobIds
+     */
     async resendJobs(jobIds) {
         let response = await this.$http.post("job/ResendSelected?jobIds=" + jobIds);
         return response.data;
@@ -261,19 +264,19 @@ class DispatchData {
     }
 
     /**
-     * @param {number} id
+     * @param {number} jobId
      */
-    async getJobDetail(id) {
-        let response = await this.$http.get('/Job/Detail?jobId=' + id);
+    async getJobDetail(jobId) {
+        let response = await this.$http.get('/Job/Detail?jobId=' + jobId);
         return response.data;
     }
 
     /**
-     * @param {number} id
+     * @param {number} parentId
      * @param {number} clientId
      */
-    async getRelatedJobs(id, clientId) {
-        let response = await this.$http.get('/Job/Related?parentId=' + id + '&clientId=' + clientId);
+    async getRelatedJobs(parentId, clientId) {
+        let response = await this.$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
         return response.data;
     }
 
@@ -342,21 +345,21 @@ class DispatchData {
     /**
      * Locks a support request with the provided id and locks it by the provided dispatcher.
      *
-     * @param {number} id - The unique identifier of the support request.
+     * @param {number} supportId - The unique identifier of the support request.
      * @param {number|string} dispatcher - The unique identifier of the dispatcher locking the request.
      */
-    async lockSupport(id, dispatcher) {
-        return await this.$http.post("job/LockSupport?id=" + id + "&dispatcher=" + dispatcher);
+    async lockSupport(supportId, dispatcher) {
+        return await this.$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
     }
 
     /**
      * Unlocks a support request with the provided id and unlocks it by the provided dispatcher.
      *
-     * @param {number} id - The unique identifier of the support request.
+     * @param {number} supportId - The unique identifier of the support request.
      * @param {number|string} dispatcher - The unique identifier of the dispatcher unlocking the request.
      */
-    async unLockSupport(id, dispatcher) {
-        return await this.$http.post("job/UnLockSupport?id=" + id + "&dispatcher=" + dispatcher);
+    async unLockSupport(supportId, dispatcher) {
+        return await this.$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
     }
 
     async getLateCalls() {
