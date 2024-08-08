@@ -348,10 +348,10 @@
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.openSearch(box.name, $index)">
                                         <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-show="ctrl.showInput[box.name + '-' + $index]">search
+                                                 ng-show="!ctrl.showInput[box.name + '-' + $index]">search
                                         </md-icon>
                                         <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-show="!ctrl.showInput[box.name + '-' + $index]">close
+                                                 ng-show="ctrl.showInput[box.name + '-' + $index]">close
                                         </md-icon>
                                     </md-button>
 
@@ -363,7 +363,7 @@
                                             md-min-length="1"
                                             md-search-text="ctrl.jobRecordSearchText"
                                             md-selected-item="ctrl.selectedJobRecord"
-                                            md-selected-item-change="ctrl.JobRecordSelected(item.text)"
+                                            md-selected-item-change="ctrl.JobRecordSelected(item.id)"
                                             ng-show="ctrl.showInput[box.name + '-' + $index]"
                                             placeholder="Search Job Numbers...">
                                         <md-item-template>

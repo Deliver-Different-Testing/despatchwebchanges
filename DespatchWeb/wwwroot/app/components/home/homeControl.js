@@ -1541,6 +1541,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             .map(job => ({id: job.id, text: job.jobNo}));
     }
 
+    /**
+     * @param {number} selectedJobId
+     */
     self.JobRecordSelected = selectedJobId => {
         const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
         $scope.selectJob(selectedJob);
