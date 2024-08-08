@@ -54,11 +54,12 @@ class DispatchJobService {
             try {
                 await this.$mdDialog.show(confirm);
                 foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
-                await this._dispatchJobsContinue(courierNumber, foundCourier, job);
             } catch (error) {
                 console.log("User chose not to dispatch job as courier is offline");
             }
         }
+
+        await this._dispatchJobsContinue(courierNumber, foundCourier, job);
     }
 
     _generateOfflineCourierDialog() {
