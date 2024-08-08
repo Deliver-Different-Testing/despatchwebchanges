@@ -22,6 +22,36 @@ md-dialog {
   height: 48px;
 }
 
+/* Autocomplete Animations */
+@animationDuration: 1s;
+
+md-autocomplete.ng-enter {
+  animation: fadeIn @animationDuration;
+}
+
+md-autocomplete.ng-leave {
+  animation: fadeOut @animationDuration;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+
 .md-drag-button {
   font-size: 24px;
 }
