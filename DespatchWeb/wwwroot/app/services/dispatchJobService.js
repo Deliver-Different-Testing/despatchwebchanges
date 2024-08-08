@@ -57,11 +57,8 @@ class DispatchJobService {
                 await this._dispatchJobsContinue(courierNumber, foundCourier, job);
             } catch (error) {
                 console.log("User chose not to dispatch job as courier is offline");
-                return; // Return if user chose not to dispatch job
             }
         }
-
-        await this._dispatchJobsContinue(courierNumber, foundCourier, job);
     }
 
     _generateOfflineCourierDialog() {

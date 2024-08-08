@@ -7,7 +7,7 @@ class EditDateDialogController {
      * @param {string} id - The ID related to the selection.
      * @param {string} fieldName - The name of the field for which the selection is being made.
      * @param {string} title - The title of the dialog.
-     * @param {string} date - The date to edit
+     * @param {Date} date - The date to edit
      */
     constructor($scope, $mdDialog, toastrService, DispatchData, title, fieldName, date, id) {
         this.$scope = $scope;
@@ -16,7 +16,7 @@ class EditDateDialogController {
         this.DispatchData = DispatchData;
         this.title = title;
         this.fieldName = fieldName;
-        this.date = date ? new Date(date) : new Date();
+        this.date = date;
         this.id = id;
 
         this.isLoading = false;

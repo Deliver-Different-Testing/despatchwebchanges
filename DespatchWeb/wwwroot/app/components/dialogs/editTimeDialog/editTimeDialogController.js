@@ -1,5 +1,5 @@
 class EditTimeDialogController {
-    constructor($scope, $mdDialog, DispatchData, mdpTimePicker, toastrService, time, title) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, time, title) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;

@@ -18,9 +18,9 @@ angular
         "ngMessages",
         "ngSanitize",
         "ngMaterial",
+
         "angularPromiseButtons",
         "ng-mfb",
-        "md.data.table",
         "md.time.picker"
     ])
     .config($mdThemingProvider => {
