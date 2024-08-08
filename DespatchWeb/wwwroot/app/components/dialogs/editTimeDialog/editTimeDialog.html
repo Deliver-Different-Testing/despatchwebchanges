@@ -1,0 +1,37 @@
+<md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Edit {{ ctrl.title }}</h2>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <form ng-submit="ctrl.submit(ctrl.time)">
+
+                <md-time-picker mandatory="true" message="message" ng-model="time" no-auto-switch
+                                no-meridiem></md-time-picker>
+
+            </form>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="!ctrl.time"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-primary" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
+            Cancel
+        </md-button>
+
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.time)" ng-disabled="!ctrl.time"
+                   ng-show="!ctrl.isLoading">
+            Save
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

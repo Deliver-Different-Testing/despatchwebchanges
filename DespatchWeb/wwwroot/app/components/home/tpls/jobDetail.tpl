@@ -347,7 +347,7 @@
                     <div class="col-md-4">
 
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Date','Date',ctrl.jdSvc.currentJob.date,ctrl.jdSvc.currentJob.id, 'date')">
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editJobDate($event, ctrl.jdSvc.currentJob)">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">Date</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{ctrl.jdSvc.currentJob.date | date:
@@ -364,7 +364,7 @@
                         </div>
 
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Time','Time',ctrl.jdSvc.currentJob.time,ctrl.jdSvc.currentJob.id,'time')">
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.editLogTime($event, ctrl.jdSvc.currentJob.time)">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">Log time</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{ctrl.jdSvc.currentJob.time | date:
@@ -386,7 +386,7 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'CompletedTime','Completed Time',ctrl.jdSvc.currentJob.completedTime,ctrl.jdSvc.currentJob.id,'time')"
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editCompletedTime($event, ctrl.jdSvc.currentJob)"
                              ng-if="!ctrl.jdSvc.currentJob.bulkJob">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">POD Time</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
@@ -395,7 +395,7 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'PODName','POD Name',ctrl.jdSvc.currentJob.podName,ctrl.jdSvc.currentJob.id)"
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editPodName($event, ctrl.jdSvc.currentJob)"
                              ng-if="!ctrl.jdSvc.currentJob.bulkJob">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">POD Name</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
@@ -684,7 +684,7 @@
                     <div class="col-md-6">
                         <div class="field">
                             <label>Client</label><i class="fa fa-edit" title="Change Client Code"
-                                                    ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'ClientCode','Client Code',ctrl.jdSvc.currentJob.client,ctrl.jdSvc.currentJob.id)"></i>
+                                                    ng-click="ctrl.jdSvc.editClientCode($event, ctrl.jdSvc.currentJob)"></i>
 
                             <div class="value"><a class="uline" src="#"
                                                   ng-click="ctrl.jdSvc.clientClick($event, ctrl.jdSvc.currentJob)">{{ctrl.jdSvc.currentJob.client}}
@@ -697,12 +697,12 @@
                             <div class="value">{{ctrl.jdSvc.currentJob.fromAddress}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'FromContactName','From Contact Name',ctrl.jdSvc.currentJob.fromContactName,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editFromJobContact($event, ctrl.jdSvc.currentJob)">
                             <label>From Contact:</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.fromContactName}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'FromContactPhone','From Contact Phone',ctrl.jdSvc.currentJob.fromContactNumber,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editJobFromPhone($event, ctrl.jdSvc.currentJob)">
                             <label>From Phone: </label>
                             <div class="value">{{ctrl.jdSvc.currentJob.fromContactNumber}}</div>
                         </div>
@@ -720,12 +720,12 @@
                             <div class="value">{{ctrl.jdSvc.currentJob.toAddress}}</div>
                         </div>
                         <div class="field contact"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'ToContactName','To Contact Name',ctrl.jdSvc.currentJob.deliverToContact,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editToJobContact($event, ctrl.jdSvc.currentJob))">
                             <label>To Contact</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.deliverToContact}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'ToContactPhone','To Contact Phone',ctrl.jdSvc.currentJob.phone,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editJobToPhone($event, ctrl.jdSvc.currentJob)">
                             <label>To Phone</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.phone}}</div>
                         </div>
@@ -736,7 +736,7 @@
                 <div class="notes field">
                     <label>Notes</label>
                     <md-button class="md-fab md-mini md-primary" style="float: right;"
-                               ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Notes','Note','',ctrl.jdSvc.currentJob.id, 'textarea')">
+                               ng-click="ctrl.jdSvc.showNotesDialog($event, ctrl.jdSvc.currentJob, 'Notes','Note')">
                         <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
                         <md-tooltip md-direction="bottom">Add New Note</md-tooltip>
                     </md-button>
@@ -768,27 +768,27 @@
                             <div class="value">{{ctrl.jdSvc.currentJob.size.label}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Items','Items',ctrl.jdSvc.currentJob.items,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editItems($event, ctrl.jdSvc.currentJob)">
                             <label>Items</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.items}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Weight','Weight',ctrl.jdSvc.currentJob.weight,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editJobWeight($event, ctrl.jdSvc.currentJob)">
                             <label>Weight</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.weight}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'RefA','RefA',ctrl.jdSvc.currentJob.refA,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editRef($event, ctrl.jdSvc.currentJob, true)">
                             <label>Ref A</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.refA}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'RefB','RefB',ctrl.jdSvc.currentJob.refB,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editRef($event, ctrl.jdSvc.currentJob, false)">
                             <label>Ref B</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.refB}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'OurRef','OurRef',ctrl.jdSvc.currentJob.ourRef,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editOurRef($event, ctrl.jdSvc.currentJob)">
                             <label>Our Ref</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.ourRef}}</div>
                         </div>
@@ -799,12 +799,12 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'TrackingMobile','Tracking Mobile',ctrl.jdSvc.currentJob.trackingMobile,ctrl.jdSvc.currentJob.id)">
+                             ng-click="ctrl.jdSvc.editTrackingMobile($event, ctrl.jdSvc.currentJob)">
                             <label>Tracking Mobile</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.trackingMobile}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'TrackingEmail','Tracking Email',ctrl.jdSvc.currentJob.trackingEmail,ctrl.jdSvc.currentJob.id)">
+                             ng-click=" ctrl.jdSvc.editTrackingEmail($event, ctrl.jdSvc.currentJob)">
                             <label>Tracing Email</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.trackingEmail}}</div>
                         </div>

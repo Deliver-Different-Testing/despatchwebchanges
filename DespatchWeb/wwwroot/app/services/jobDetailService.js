@@ -785,7 +785,9 @@ class JobDetailService {
                 date,
                 id
             },
-        }).then()
+        }).then(_ => {
+            // User closed date dialog
+        });
     }
 
     /**
@@ -794,6 +796,47 @@ class JobDetailService {
      */
     editFollowUpTime(event, job) {
         this.showEditDateDialog(event, job, "FollowUp Time", "FollowupTime", job.followupTime);
+    }
+
+    editJobDate(event, job) {
+        this.showEditDateDialog(event, job, "Date", "Date", job.date);
+    }
+
+
+    /**
+     * @param {$event} event
+     * @param {Job} job
+     * @param {string} title
+     * @param {string} fieldName
+     * @param {Date} time
+     * @param {string} id
+     */
+    showEditTimeDialog(event, job, title, fieldName, time, id = "editForm") {
+        this.$mdDialog.show({
+            controller: EditTimeDialogController,
+            controllerAs: 'ctrl',
+            parent: angular.element(this.$document.body),
+            targetEvent: event,
+            templateUrl: "app/components/dialogs/editTimeDialog/editTimeDialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                title,
+                fieldName,
+                time,
+                id
+            },
+        }).then(_ => {
+            // User closed time dialog
+        });
+    }
+
+    editLogTime(event, job) {
+        this.showEditTimeDialog(event, job, "Time", "Time", job.time);
+    }
+
+    editCompletedTime(event, job) {
+        this.showEditTimeDialog(event, job, "CompletedTime", "Completed Time", job.completedTime);
     }
 
 
@@ -850,6 +893,10 @@ class JobDetailService {
 
     editToJobContact(event, job) {
         this.showEditPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
+    }
+
+    editPodName(event, job) {
+        this.showEditPrompt(event, job, 'Edit POD Name', 'POD Name...', 'pod name', job.podName, 'PODName');
     }
 
     editFromJobContact(event, job) {
