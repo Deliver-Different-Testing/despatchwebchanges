@@ -163,7 +163,7 @@
                                 </md-button>
 
                                 <!-- Courier Card Buttons-->
-                                <div class="row-overflow" layout="row" ng-if="currentCourier"
+                                <div ng-if="currentCourier"
                                      ng-show="box.name === 'currentWork'">
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.truckLoadingStatus($event)"
@@ -194,43 +194,62 @@
                                 </div>
 
                                 <!-- Detail Buttons-->
-                                <div class="row-overflow" layout="row" ng-if="ctrl.currentJob"
-                                     ng-show="boxes[box.name].showDetailButtons">
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.otherEventForm($event, ctrl.currentJob)">
-                                        <md-tooltip md-direction="bottom">Add Event</md-tooltip>
-                                        <md-icon md-font-set="material-symbols-outlined">edit_calendar</md-icon>
-                                    </md-button>
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.closeSupport(currentSupport);"
-                                               ng-disabled="!currentSupport">
-                                        <md-tooltip md-direction="bottom">Close Event</md-tooltip>
-                                        <md-icon md-font-set="material-symbols-outlined">event_available</md-icon>
-                                    </md-button>
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.unlockJob(ctrl.currentJob)"
-                                               ng-show="ctrl.currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
-                                        <md-tooltip md-direction="bottom">Unlock Job</md-tooltip>
-                                        <md-icon md-font-set="material-symbols-outlined">lock_open</md-icon>
-                                    </md-button>
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.lockJob(ctrl.currentJob)"
-                                               ng-show="ctrl.currentJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
-                                        <md-tooltip md-direction="bottom">Lock Job</md-tooltip>
-                                        <md-icon md-font-set="material-symbols-outlined">lock</md-icon>
-                                    </md-button>
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.splitJob($event, ctrl.currentJob)"
-                                               ng-show="ctrl.currentJob && (ctrl.currentJob.allowSplit)">
-                                        <md-tooltip md-direction="bottom">Split Job</md-tooltip>
-                                        <md-icon md-font-set="material-symbols-outlined">shuffle</md-icon>
-                                    </md-button>
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.swapPOD($event)"
-                                               ng-show="ctrl.currentJob && ctrl.currentJob.done && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook">
-                                        <md-tooltip md-direction="bottom">Swap POD</md-tooltip>
-                                        <md-icon md-font-set="material-symbols-outlined">swap_calls</md-icon>
-                                    </md-button>
+                                <div ng-if="ctrl.currentJob" ng-show="boxes[box.name].showDetailButtons">
+                                    <md-fab-speed-dial class="md-scale" md-direction="left"
+                                                       md-open="ctrl.jobListFabIsOpen"
+                                                       ng-class="{ 'md-hover-full': true }"
+                                                       ng-mouseenter="ctrl.jobListFabIsOpen=true"
+                                                       ng-mouseleave="ctrl.jobListFabIsOpen=false">
+                                        <md-fab-trigger>
+                                            <md-button aria-label="menu" class="md-fab md-mini md-primary">
+                                                <md-tooltip md-direction="bottom">Options</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">page_info</md-icon>
+                                            </md-button>
+                                        </md-fab-trigger>
+
+                                        <md-fab-actions>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.otherEventForm($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Add Event</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">edit_calendar
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.closeSupport(currentSupport);"
+                                                       ng-disabled="!currentSupport">
+                                                <md-tooltip md-direction="bottom">Close Event</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">event_available
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.unlockJob(ctrl.currentJob)"
+                                                       ng-show="ctrl.currentJob && (ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
+                                                <md-tooltip md-direction="bottom">Unlock Job</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">lock_open</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.lockJob(ctrl.currentJob)"
+                                                       ng-show="ctrl.currentJob && (!ctrl.currentJob.locked && !ctrl.currentJob.invoiced)">
+                                                <md-tooltip md-direction="bottom">Lock Job</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">lock</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.splitJob($event, ctrl.currentJob)"
+                                                       ng-show="ctrl.currentJob && (ctrl.currentJob.allowSplit)">
+                                                <md-tooltip md-direction="bottom">Split Job</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">shuffle</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.swapPOD($event)"
+                                                       ng-show="ctrl.currentJob && ctrl.currentJob.done && !ctrl.currentJob.bulkJob && !ctrl.currentJob.preBook">
+                                                <md-tooltip md-direction="bottom">Swap POD</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">swap_calls
+                                                </md-icon>
+                                            </md-button>
+
+
+                                        </md-fab-actions>
+                                    </md-fab-speed-dial>
                                 </div>
 
                                 <!-- Courier Search-->

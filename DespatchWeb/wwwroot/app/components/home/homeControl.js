@@ -8,6 +8,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     self.jdSvc = jdSvc;
 
     self.courierSearchText = "";
+    self.jobListFabIsOpen = false;
 
     self.greetUser = () => {
         return greetingService.greetUser(FirstName);
