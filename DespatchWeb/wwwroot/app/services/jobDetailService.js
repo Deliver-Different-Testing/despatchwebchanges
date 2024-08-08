@@ -757,9 +757,45 @@ class JobDetailService {
             }
         }).then(_ => {
             this.selectJobDetail(job.id);
-            console.log('Notes Dialog closed!');
+            // User closed notes dialog
         });
     }
+
+
+    /**
+     * @param {$event} event
+     * @param {Job} job
+     * @param {string} title
+     * @param {string} fieldName
+     * @param {Date} date
+     * @param {string} id
+     */
+    showEditDateDialog(event, job, title, fieldName, date, id = "editForm") {
+        this.$mdDialog.show({
+            controller: EditDateDialogController,
+            controllerAs: 'ctrl',
+            parent: angular.element(this.$document.body),
+            targetEvent: event,
+            templateUrl: "app/components/dialogs/editDateDialog/editDateDialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                title,
+                fieldName,
+                date,
+                id
+            },
+        }).then()
+    }
+
+    /**
+     * @param {$event} event
+     * @param {{id: number, rootParentID: number, time: string, bookedDate: ?string, direct: boolean, van: boolean, jobRelationshipTypeID: ?number, vanOK: boolean, done: boolean, void: boolean, truck: boolean, saturdayDelivery: boolean, return: boolean, pedal: boolean, reprice: ?boolean, attention: boolean, pickupFrom: ?number, jobNo: string, speed: string, speedName: string, source: ?string, notifiedName: string, acceptedName: string, speedId: number, notify: string, vehicle: {id: number, label: string}, clientId: number, jobType: ?string, client: string, clientName: string, from: string, fromSuburbId: number, fromSuburbName: string, fromPostCode: string, fromAddress: string, to: string, toSuburbID: number, toSuburbName: string, toPostCode: string, toAddress: string, toCity: string, courier: ?string, gstRate: number, remain: number, pickupTime: number, deliveryTime: number, alertLatePickup: number, alertLateDelivery: number, minutes: number, statusID: number, status: string, statusName: string, lp: ?string, ld: ?string, contactName: string, loggedInContactName: string, deliverToContact: string, trackingMethod: number, trackingMobile: string, trackingEmail: ?string, udStatus: ?string, podPhoto: ?string, deliverySignature: ?string, podPhotos: ?string, podName: ?string, description: string, reference1: string, reference2: string, autoSize: boolean, autoPrice: boolean, price: number, size: number, distance: string, quantity: string, weight: string, height: ?string, width: ?string, depth: ?string, contractName: string, contractId: number, contractingChainName: string, contractingChainId: number, pricingBandId: number, pricingBandName: string, charged: number, chargeCode: string, volumeCubed: number, express: boolean, itemDescription: string, directDriveJobId: number, transportType: string, deliveryCharge: number, totalCharge: number, deliverySuburb: string, deliveryPostCode: ?string, deliveryState: ?string, deliveryContactName: ?string, deliveryContactNumber: ?string, deliveryContactEmail: ?string, pickupSuburb: string, pickupPostCode: ?string, pickupState: ?string, pickupContactName: ?string, pickupContactNumber: ?string, pickupContactEmail: ?string, formattedDeliveryAddress: string, formattedPickupAddress: string, isPickup: ?boolean, isDelivery: ?boolean, createdDate: string, updatedDate: string, deliveredDate: ?string, pickedUpDate: ?string, eta: ?string, pickupEta: ?string, isDeleted: boolean, additionalProperties: Array<Object>, locationType: ?string, locationId: number, locationName: string, locationSuburb: ?string, locationPostCode: ?string, locationState: ?string, locationContactName: ?string, locationContactNumber: ?string, locationContactEmail: ?string, serviceLevel: ?string, isExpedited: ?boolean, jobStatus: ?string, jobPriority: ?string, isHighValue: ?boolean, attachments: Array<Object>, comments: Array<Object>, specialInstructions: ?string, termsAndConditions: ?string, clientReferenceNumber: ?string, clientJobId: ?string, jobRoutes: Array<Object>, estimatedJobDuration: ?number, driverNotes: ?string, pickupWindowStart: ?string, pickupWindowEnd: ?string, deliveryWindowStart: ?string, deliveryWindowEnd: ?string, deliveryDate: ?string, holdAtLocation: ?string, specialHandling: ?string, numberOfPieces: number, totalWeight: number, weightUnit: ?string, totalVolume: ?string, volumeUnit: ?string, isDangerousGoods: ?boolean, originNote: ?string, destinationNote: ?string, temperatureControlledMin: ?number, temperatureControlledMax: ?number, isLiveAnimals: ?boolean, animalInfo: ?string, isPerishable: ?boolean, perishableInfo: ?string, customerSignature: ?string, deliveryConfirmationName: ?string, deliveryConfirmationDate: ?string, correctionNote: ?string, relatedJobs: Array<Object>, $hashKey: ?string}} job
+     */
+    editFollowUpTime(event, job) {
+        this.showEditDateDialog(event, job, "FollowUp Time", "FollowupTime", job.followupTime);
+    }
+
 
     /**
      * @param {Event} event

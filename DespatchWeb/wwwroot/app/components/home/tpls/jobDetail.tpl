@@ -172,7 +172,7 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'ContactNote','ContactNote',ctrl.jdSvc.currentJob.contactNote,ctrl.jdSvc.currentJob.id)">
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.showNotesDialog($event, ctrl.jdSvc.currentJob, 'ContactNote','ContactNote')">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">Con Note</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{ctrl.jdSvc.currentJob.conNote}}
@@ -208,7 +208,7 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'ConNote','Connote',ctrl.jdSvc.currentJob.conNote,ctrl.jdSvc.currentJob.id)"
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.showNotesDialog($event, ctrl.jdSvc.currentJob, 'ConNote','Connote')"
                              ng-if="(name=='Nationwide' || name=='POD') && !ctrl.jdSvc.currentJob.bulkJob && ctrl.jdSvc.currentJob.hasNationwide">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">Connote</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
@@ -216,7 +216,9 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.currentJob.internalStatusID !=1 && ctrl.jdSvc.currentJob.internalStatusID !=4 && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'FollowupTime','FollowUp Time',ctrl.jdSvc.currentJob.followupTime,ctrl.jdSvc.currentJob.id,'datetime')"
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.currentJob.internalStatusID !=1
+                             && ctrl.jdSvc.currentJob.internalStatusID !=4
+                             && ctrl.jdSvc.editFollowUpTime($event, ctrl.jdSvc.currentJob)"
                              ng-if="!ctrl.jdSvc.currentJob.bulkJob">
                             <label ng-class="ctrl.jdSvc.currentJob.locked || ctrl.jdSvc.currentJob.internalStatusID ===1 || ctrl.jdSvc.currentJob.internalStatusID ===4 ? 'disabled' : ''">FollowUp
                                 Time</label>

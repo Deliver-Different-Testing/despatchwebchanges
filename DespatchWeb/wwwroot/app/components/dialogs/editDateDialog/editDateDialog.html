@@ -1,0 +1,49 @@
+<md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Edit {{ ctrl.title }}</h2>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <form ng-submit="ctrl.submit(ctrl.date)">
+
+                <!-- Calendar-->
+                <div flex-order="1" flex-order-gt-sm="0" layout="column">
+                    <md-subheader>{{ ctrl.fieldName }}</md-subheader>
+                    <md-calendar ng-model="ctrl.date"></md-calendar>
+                </div>
+                <div flex-order="0" flex-order-gt-sm="2" layout="column">
+                    <md-subheader>Dates</md-subheader>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="date-text-input">{{ ctrl.fieldName }}</label>
+                        <input id="date-text-input" md-no-asterisk ng-model="ctrl.date" required>
+                    </md-input-container>
+
+                </div>
+
+            </form>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="!ctrl.date"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-primary" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
+            Cancel
+        </md-button>
+
+        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.date)" ng-disabled="!ctrl.date"
+                   ng-show="!ctrl.isLoading">
+            Save
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>
