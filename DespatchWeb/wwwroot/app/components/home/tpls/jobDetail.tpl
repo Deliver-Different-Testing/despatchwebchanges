@@ -130,14 +130,14 @@
                             <div class="value" ng-class="disabled">{{ctrl.jdSvc.currentJob.source}}</div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Size','Size',ctrl.jdSvc.currentJob.size,ctrl.jdSvc.currentJob.id, 'select', options.detail.size)">
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.sizeClick($event, ctrl.jdSvc.currentJob)">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">Size</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{ctrl.jdSvc.currentJob.size.label}}
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Items','Items',ctrl.jdSvc.currentJob.items,ctrl.jdSvc.currentJob.id)">
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editItems($event, ctrl.jdSvc.currentJob)">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">Items</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{ctrl.jdSvc.currentJob.items}}

@@ -770,7 +770,7 @@ class JobDetailService {
      * @param {string} initialValue
      * @param {string} field
      */
-    editPrompt(event, job, title, placeholder, ariaLabel, initialValue, field) {
+    showEditPrompt(event, job, title, placeholder, ariaLabel, initialValue, field) {
         const prompt = this.$mdDialog.prompt()
             .title(title)
             .placeholder(placeholder)
@@ -797,47 +797,51 @@ class JobDetailService {
     }
 
     editClientCode(event, job) {
-        this.editPrompt(event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
+        this.showEditPrompt(event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
+    }
+
+    editItems(event, job) {
+        this.showEditPrompt(event, job, 'Edit Items', 'Items...', 'items', job.items, 'Items');
     }
 
     editJobToPhone(event, job) {
-        this.editPrompt(event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
+        this.showEditPrompt(event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
     }
 
     editJobFromPhone(event, job) {
-        this.editPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
+        this.showEditPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
     }
 
     editToJobContact(event, job) {
-        this.editPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
+        this.showEditPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
     }
 
     editFromJobContact(event, job) {
-        this.editPrompt(event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
+        this.showEditPrompt(event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
     }
 
     editJobWeight(event, job) {
-        this.editPrompt(event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
+        this.showEditPrompt(event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
     }
 
     editRef(event, job, isRefA) {
         if (isRefA) {
-            this.editPrompt(event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
+            this.showEditPrompt(event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
         } else {
-            this.editPrompt(event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
+            this.showEditPrompt(event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
         }
     }
 
     editOurRef(event, job) {
-        this.editPrompt(event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
+        this.showEditPrompt(event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
     }
 
     editTrackingMobile(event, job) {
-        this.editPrompt(event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
+        this.showEditPrompt(event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
     }
 
     editTrackingEmail(event, job) {
-        this.editPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
+        this.showEditPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
     }
 
     updateField(reRate, job, callData) {
