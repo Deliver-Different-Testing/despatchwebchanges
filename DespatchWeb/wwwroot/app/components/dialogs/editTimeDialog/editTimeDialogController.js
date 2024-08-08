@@ -1,11 +1,8 @@
 class EditTimeDialogController {
-    static $inject = ["mdpTimePicker"];
-
     constructor($scope, $mdDialog, DispatchData, mdpTimePicker, toastrService, time, title) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
-        this.mdpTimePicker = mdpTimePicker;
         this.toastrService = toastrService;
 
         this.isLoading = false;
@@ -31,5 +28,9 @@ class EditTimeDialogController {
         } finally {
             this.isLoading = false;
         }
+    }
+
+    cancel() {
+        this.$mdDialog.cancel();
     }
 }

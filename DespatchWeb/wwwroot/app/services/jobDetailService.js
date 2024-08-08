@@ -802,6 +802,8 @@ class JobDetailService {
         this.showEditDateDialog(event, job, "Date", "Date", job.date);
     }
 
+    edit
+
 
     /**
      * @param {$event} event

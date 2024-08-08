@@ -83,4 +83,8 @@ class EditDateDialogController {
     _formatDate(date) {
         return new Date(moment(date).format("YYYY-MM-DDTHH:mm"))
     }
+
+    cancel() {
+        this.$mdDialog.cancel();
+    }
 }

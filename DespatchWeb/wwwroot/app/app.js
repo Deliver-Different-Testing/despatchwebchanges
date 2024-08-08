@@ -21,7 +21,7 @@ angular
         "angularPromiseButtons",
         "ng-mfb",
         "md.data.table",
-        "ngTimePicker"
+        "md.time.picker"
     ])
     .config($mdThemingProvider => {
         $mdThemingProvider.definePalette("urgentPrimary", {
