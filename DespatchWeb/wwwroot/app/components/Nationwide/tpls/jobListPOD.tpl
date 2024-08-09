@@ -26,7 +26,10 @@
 
     <table class="table  table-responsive table-rows" id="jobListPOD" data-group="jobsGroup">
         <tbody>
-        <tr class="clickable-row draggable-row noselect status" ng-class="getStatusClass(job)" ng-repeat="job in jobListPOD | filter: box.searchBox"  data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}" data-allowDispatch="{{job.allowDispatch}}" data-index="{{$index}}" ng-mouseup="selectJob(job, true)">
+        <tr class="clickable-row draggable-row noselect status" data-allowDispatch="{{job.allowDispatch}}"
+            data-courier="{{job.courier}}" data-index="{{$index}}" data-jobid="{{job.id}}"
+            data-jobno="{{job.jobNo}}" ng-class="getStatusClass(job)" ng-mouseup="selectJob(job)"
+            ng-repeat="job in jobListPOD | filter: box.searchBox">
             <td>{{job.time | date: "HH:mm"}}</td>
             <td right-click action="speedColumnClick(event)">{{job.speed}}</td>
 			<td context-menu="setEventsMenu">{{job.jobNo}}</td>

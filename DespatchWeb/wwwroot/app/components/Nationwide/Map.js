@@ -97,7 +97,7 @@ function initialize() {
     });
     const trafficLayer = new google.maps.TrafficLayer();
     trafficLayer.setMap(map);
-    
+
 }
 
 //google.maps.event.addDomListener(window, 'load', initialize);
@@ -129,12 +129,12 @@ function addClickHandler(m, iw) {
                 $("#jobList tr").removeClass("active");
                 $("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
                 angular.element(".columns").scope().selectForDispatch(sel[0]);
-                angular.element(".columns").scope().selectJob(sel[0], true);
-                
+                angular.element(".columns").scope().selectJob(sel[0]);
+
             }
-            
+
         });
-        
+
         //google.maps.event.addListener(m, 'dragstart', function (marker) {
         //    var latLng = marker.latLng;
         //    console.log("marker drag start");
@@ -328,7 +328,7 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
             if ((truckChannel === false && truckMode === "Off" && c.vehicleType === "T") || (truckChannel === false && truckMode === "Only" && c.vehicleType !== "T"))
             {
                 return true;
-                
+
             } else {
                 drawItem(col, ll, pad(c.code + '-' + c.vehicleType + c.totalJobs, 5, '_', 2), c.courierID, c.code, className);
             }
@@ -425,7 +425,7 @@ function highlightJobPoints(courierJobs) {
             return obj.jobNumber === job.jobNo;
         });
         if (marker === undefined) return;
-        
+
         marker.setAnimation(google.maps.Animation.BOUNCE);
         window.setTimeout(function () {
             if (marker.getAnimation() !== null) {
@@ -433,7 +433,7 @@ function highlightJobPoints(courierJobs) {
             }
         }, 2000);
     }
-    
+
 }
 
 function displayRoutePointsOnly(courierJobs, clear) {
@@ -529,8 +529,6 @@ function displayRoutePointsOnly(courierJobs, clear) {
 
     }
 
-    
-
 
 }
 
@@ -569,8 +567,8 @@ function displayRoutePoints(courierJobs, clear, zoom) {
         if (courierJobs[i].status === "V") {
             pinColor = "yellow";
         }
-        
-        
+
+
         var pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (courierJobs[i].runOrder || "").toString() + ".png",
             new google.maps.Size(131, 154),
             new google.maps.Point(0, 0),
@@ -605,7 +603,7 @@ function displayRoutePoints(courierJobs, clear, zoom) {
             addClickHandler(pickupMarker, infoWindow);
             zoomMarkers.push(pickupMarker);
         }
-        
+
 
         var deliveryMarker = new google.maps.Marker({
             position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
@@ -645,7 +643,7 @@ function displayRoutePoints(courierJobs, clear, zoom) {
     } else {
         map.panToBounds(bounds);
     }
-    
+
 
     for (var y = 0; y < zoomMarkers.length; y++) {
         var thisMarker = zoomMarkers[y];
@@ -660,9 +658,9 @@ function displayRoutePoints(courierJobs, clear, zoom) {
                 bounceMarker.setAnimation(null);
             }
         }
-        
+
     }, 2000);
-    
+
 
     if (courierJobs.length === 0) return;
 
@@ -688,7 +686,6 @@ function displayRoutePoints(courierJobs, clear, zoom) {
     if (zoom) {
         map.setZoom(13);
     }
-    
 
 
 }

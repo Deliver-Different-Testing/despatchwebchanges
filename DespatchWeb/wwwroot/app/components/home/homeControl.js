@@ -451,10 +451,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     self.saveLayout = event => {
         angular.forEach(self.layout.columns,
-            (column, colKey) => {
+            (column) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
                 angular.forEach(column.boxes,
-                    (box, boxKey) => {
+                    (box) => {
                         box.height = angular.element("#box-" + box.name).css("flex-basis");
                     });
             });
@@ -638,7 +638,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         combo: "ctrl+d",
         description: "Dispatch selected jobs",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback: (event, hk) => {
+        callback: (event) => {
             if (angular.element(".activeTable .active").length > 0) {
                 self.selectAndDispatchJob(event, self.currentJob);
             }
@@ -649,7 +649,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         combo: "esc",
         description: "Close gather screen",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback(event, hk) {
+        callback(event) {
             angular.element(".gatherForm").css("display", "none");
             angular.element('.eventForm').css('display', 'none');
             if (event.srcElement && event.srcElement.classList.contains("dispatchField")) {
@@ -662,7 +662,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         combo: "enter",
         description: "Submit gather form",
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback(event, hk) {
+        callback(event) {
             let gatherForm = angular.element('.gatherForm');
 
             if (gatherForm.css('display') !== 'none') {
@@ -1079,7 +1079,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             const jobId = currentElement.attr("data-jobid");
             let job = $scope.jobList.find(jo => jo.id === jobId);
             if (job) {
-                const jobNo = job.jobNo;
+
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === job.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierID);
                 callData.jobs.push(jobId);
             }
@@ -1428,7 +1428,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         // NEW IMPLEMENTATION
         {
             text: "Delete",
-            click($itemScope, $event, modelValue, text, $li) {
+            click($itemScope) {
                 //$scope.items.splice($itemScope.$index, 1);
 
                 const index = self.currentJob.PalletInfo.indexOf($itemScope.pallet);
@@ -1449,7 +1449,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         classes: {
                             "ui-droppable-hover": "active"
                         },
-                        drop(event, ui) {
+                        drop() {
 
                             let parent = angular.element(this).parents(".box");
                             let parentOffset = parent.offset();
@@ -1491,11 +1491,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.potentialCouriers = data;
 
             $timeout(() => {
-                sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
+                sizeHeadings();
             }, 1000);
 
             $timeout(() => {
-                sizeHeadings(angular.element("#potentialCouriers").parents(".column"));
+                sizeHeadings();
             }, 2000);
 
             angular.element('#box-potentialCouriers .loading').css('display', 'none');
@@ -1644,11 +1644,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.activateDrop();
 
             $timeout(() => {
-                sizeHeadings(angular.element("#currentWork").parentNode.parentNode);
+                sizeHeadings();
             }, 1000);
 
             $timeout(() => {
-                sizeHeadings(angular.element("#currentWork").parentNode.parentNode);
+                sizeHeadings();
             }, 2000);
         });
 
@@ -1705,10 +1705,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }
             $scope.activateDrop();
             $timeout(() => {
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
+                sizeHeadings();
             }, 1000);
             $timeout(() => {
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
+                sizeHeadings();
             }, 2000);
             self.getAvailableCourierLocation();
         });
@@ -1720,7 +1720,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         self.currentSelection = " for Courier " + courier.courier;
 
         $timeout(() => {
-            $document.ready((event) => {
+            $document.ready(() => {
                 angular.element('#box-jobDetail').find(".loading").css('display', 'none');
                 angular.element('#box-map').find(".loading").css('display', 'none');
             });
@@ -1730,7 +1730,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // GROUPED JOBS
     ////////////////////////////
 
-    $scope.getGroupedJobs = (jobs, courier) => {
+    $scope.getGroupedJobs = () => {
         angular.element('#box-jobGroups').find(".loading").css('display', 'block');
         DispatchData.getJobsGrouped().then((data) => {
 
@@ -1738,10 +1738,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.jobGroups = data;
 
             $timeout(() => {
-                sizeHeadings(angular.element("#jobGroups").parents(".column"));
+                sizeHeadings();
             }, 1000);
             $timeout(() => {
-                sizeHeadings(angular.element("#jobGroups").parents(".column"));
+                sizeHeadings();
             }, 2000);
 
         });
@@ -1771,10 +1771,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.activateDrop();
 
             $timeout(() => {
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
+                sizeHeadings();
             }, 1000);
             $timeout(() => {
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
+                sizeHeadings();
             }, 2000);
         });
     };
@@ -1885,7 +1885,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     // Select Job
-    $scope.selectJob = (job, clear) => {
+    $scope.selectJob = (job) => {
         $timeout(() => {
             let jobRow = null;
             self.selectedJobs = [];
@@ -1952,24 +1952,24 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     $scope.setCurrentWorkMenu = () => {
-        let multiple = angular.element(".activeTable .active").length > 1;
+        angular.element(".activeTable .active").length > 1;
 
         return [
             {
                 text: "Restore",
-                click($itemScope, $event, modelValue, text, $li) {
+                click() {
                     self.restoreJobsFromCurrentWindow();
                 }
             },
             {
                 text: "Redispatch",
-                click($itemScope, $event, modelValue, text, $li) {
+                click() {
                     self.reAllocateJobsFromCurrentWindow();
                 }
             },
             {
                 text: "Resend",
-                click($itemScope, $event, modelValue, text, $li) {
+                click() {
                     $scope.resendJobsFromCurrentWindow();
                 }
             }
@@ -2173,31 +2173,31 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return [
             {
                 text: "Void Job",
-                click($itemScope, $event, modelValue, text, $li) {
+                click() {
                     self.voidJobForm(self.currentJob.jobNo, self.currentJob.id);
                 }
             },
 
             {
                 text: "Add Event - Other",
-                click($itemScope, $event, modelValue, text, $li) {
+                click() {
                     self.otherEventForm(self.currentJob.jobNo);
                 }
             },
 
             {
                 text: "Split Job",
-                click($itemScope, $event, modelValue, text, $li) {
+                click() {
                     $scope.splitJob(self.currentJob);
                 },
-                enabled($itemScope, $event, modelValue, text, $li) {
+                enabled($itemScope) {
                     return $itemScope.job.allowSplit;
                 },
             },
 
             {
                 text: "Set First Job",
-                click($itemScope, $event, modelValue, text, $li) {
+                click() {
                     $scope.setFirstJob(self.currentJob);
                 }
             }
@@ -2225,13 +2225,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         let multipleMenu = [
             {
                 text: "Dispatch Selected",
-                click($itemScope, $event, modelValue, text, $li) {
-                    self.selectAndDispatchJob(event, self.currentJob);
+                click($itemScope, $event) {
+                    self.selectAndDispatchJob($event, self.currentJob);
                 }
             },
             {
                 text: "Re-dispatch Selected",
-                click($itemScope, $event, modelValue, text, $li) {
+                click() {
                     //$scope.items.splice($itemScope.$index, 1);
                 }
             }
@@ -2240,19 +2240,19 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             multipleMenu.push(
                 {
                     text: "Restore Selected",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         self.restoreJobs();
                     }
                 },
                 {
                     text: "Redispatch Selected",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         self.reAllocateJobs();
                     }
                 },
                 {
                     text: "Resend Selected",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         $scope.resendJobs();
                     }
                 }
@@ -2265,7 +2265,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 [
                     {
                         text: "Dispatch Selected",
-                        click($itemScope, $event, modelValue, text, $li) {
+                        click() {
                             self.selectAndDispatchJob(null, self.currentJob);
 
                         }
@@ -2279,7 +2279,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             [
                 {
                     text: "Dispatch",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         self.selectAndDispatchJob(null, self.currentJob);
 
                     }
@@ -2293,19 +2293,19 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             fullMenu.push(
                 {
                     text: "Restore",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         self.restoreJobs();
                     }
                 },
                 {
                     text: "Redispatch",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         self.reAllocateJobs();
                     }
                 },
                 {
                     text: "Resend",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         $scope.resendJobs();
                     }
                 }
@@ -2376,7 +2376,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         // NEW IMPLEMENTATION
         {
             text: "Dispatch Selected",
-            click($itemScope, $event, modelValue, text, $li) {
+            click($itemScope) {
                 $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
             }
         }
@@ -2385,7 +2385,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.potentialCourierMenu = [
         {
             text: "Dispatch Selected",
-            click($itemScope, $event, modelValue, text, $li) {
+            click($itemScope) {
                 $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
             }
         }
@@ -2401,7 +2401,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             angular.element("#box-jobsList .loading").fadeOut();
             $timeout(() => {
 
-                sizeHeadings(angular.element("#jobList").parents(".column"));
+                sizeHeadings();
                 if (data.length > 0) {
                     const unDispatchedData = data.filter(x => x.courierData.courierID === null);
                     displayPickupPoints(unDispatchedData, true, null);
@@ -2432,7 +2432,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     }
 
-    function SetSelectedChannels(item, index) {
+    function SetSelectedChannels(item) {
         const sr = $scope.pickChannels.find(obj => obj.label === item);
         $scope.pickService.channel.push(sr);
     }
@@ -2456,7 +2456,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 // NEW IMPLEMENTATION
                 {
                     text: "Complete",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope) {
 
                         $scope.closeSupport($itemScope.support);
 
@@ -2464,7 +2464,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 },
                 {
                     text: "Toggle Lock",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope) {
 
                         self.lockSupport($itemScope.support);
 
@@ -2473,10 +2473,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 },
                 {
                     text: "Void Job",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope) {
                         self.voidJobForm($itemScope.support.jobNumber, $itemScope.support.jobId);
                     },
-                    enabled($itemScope, $event, modelValue, text, $li) {
+                    enabled($itemScope) {
                         return ($itemScope.support.jobId);
                     },
                 },
@@ -2494,10 +2494,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
 
             $timeout(() => {
-                sizeHeadings(angular.element("#supports").parents(".column"));
+                sizeHeadings();
             }, 1000);
             $timeout(() => {
-                sizeHeadings(angular.element("#supports").parents(".column"));
+                sizeHeadings();
             }, 2000);
         });
     }
@@ -2568,7 +2568,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.couriersThroughMenu = [
                 {
                     text: "Delete",
-                    click: ($itemScope, $event, modelValue, text, $li) => {
+                    click: () => {
                         angular.element(".rightActiveTable .active").fadeOut();
                     }
                 }
@@ -2579,10 +2579,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }, 100);
 
             $timeout(() => {
-                sizeHeadings(angular.element("#couriersThrough").parents(".column"));
+                sizeHeadings();
             }, 1000);
             $timeout(() => {
-                sizeHeadings(angular.element("#couriersThrough").parents(".column"));
+                sizeHeadings();
             }, 2000);
         });
 
@@ -2600,7 +2600,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 // NEW IMPLEMENTATION
                 {
                     text: "Hold",
-                    click: ($itemScope, $event, modelValue, text, $li) => {
+                    click: ($itemScope) => {
                         const callData = {
                             "call": "holdCourier",
                             "courier": $itemScope.courier
@@ -2621,7 +2621,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 },
                 {
                     text: "Head",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope) {
                         const callData = {
                             "call": "headCourier",
                             "courier": $itemScope.courier
@@ -2641,7 +2641,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 },
                 {
                     text: "Delete",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         angular.element(".rightActiveTable .active").fadeOut();
                     }
                 }
@@ -2654,10 +2654,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }, 100);
 
             $timeout(() => {
-                sizeHeadings(angular.element("#couriersPicked").parents(".column"));
+                sizeHeadings();
             }, 1000);
             $timeout(() => {
-                sizeHeadings(angular.element("#couriersPicked").parents(".column"));
+                sizeHeadings();
             }, 2000);
         });
 
@@ -2672,7 +2672,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
             $scope.couriersClearMenu = [
                 {
-                    click: ($itemScope, $event, modelValue, text, $li) => {
+                    click: ($itemScope) => {
                         let callData = {
                             "call": "holdCourier",
                             "courier": $itemScope.courier
@@ -2695,7 +2695,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 },
                 {
                     text: "Move",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope) {
                         let callData = {
                             "call": "moveCourier",
                             "courier": $itemScope.courier
@@ -2717,7 +2717,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 },
                 {
                     text: "Delete",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         angular.element(".rightActiveTable .active").fadeOut();
                     }
                 }
@@ -2730,11 +2730,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }, 100);
 
             $timeout(() => {
-                sizeHeadings(angular.element("#couriersClear").parents(".column"));
+                sizeHeadings();
             }, 1000);
 
             $timeout(() => {
-                sizeHeadings(angular.element("#couriersClear").parents(".column"));
+                sizeHeadings();
             }, 2000);
         });
 
@@ -2755,10 +2755,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 100);
 
             $timeout(() => {
-                sizeHeadings(angular.element("#areaList").parents(".column"));
+                sizeHeadings();
             }, 1000);
             $timeout(() => {
-                sizeHeadings(angular.element("#areaList").parents(".column"));
+                sizeHeadings();
             }, 2000);
         });
 
@@ -2774,7 +2774,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 // NEW IMPLEMENTATION
                 {
                     text: "Complete",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click($itemScope) {
                         //$scope.selected = $itemScope.item.name;
 
                         let callData = {
@@ -2794,7 +2794,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 },
                 {
                     text: "Lock",
-                    click($itemScope, $event, modelValue, text, $li) {
+                    click() {
                         //$scope.items.splice($itemScope.$index, 1)
                         //LOCK WITH CURRENT USER
                     }
@@ -2809,10 +2809,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 100);
 
             $timeout(() => {
-                sizeHeadings(angular.element("#getLastCalls").parents(".column"));
+                sizeHeadings();
             }, 1000);
             $timeout(() => {
-                sizeHeadings(angular.element("#getLastCalls").parents(".column"));
+                sizeHeadings();
             }, 2000);
         });
 
@@ -2839,7 +2839,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.getSupports();
 
     // on first focus (bubbles up to document), open the menu
-    $document.on('focus', '.select2-selection.select2-selection--single', function (e) {
+    $document.on('focus', '.select2-selection.select2-selection--single', function () {
         angular.element(this).closest(".select2-container").siblings('select:enabled').select2('open');
     });
 
@@ -3135,7 +3135,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     }
 
-    function sizeHeadings(ele) {
+    function sizeHeadings() {
         angular.element("body").find(".box").each(function () {
             const box = angular.element(this);
             box.find(".table-headings thead tr th").each(function (index) {
