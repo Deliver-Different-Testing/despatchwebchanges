@@ -7,7 +7,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.name = "Home";
     self.jdSvc = jdSvc;
 
-    self.courierSearchIsOpen = false;
     self.courierSearchText = "";
     self.jobDetailFabIsOpen = false;
     self.courierListFabIsOpen = false;

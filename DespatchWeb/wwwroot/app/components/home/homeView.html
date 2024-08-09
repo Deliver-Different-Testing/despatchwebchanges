@@ -268,18 +268,7 @@
 
                                 <!-- Courier Search-->
                                 <div layout="row" ng-show="box.name === 'jobsList'">
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.courierSearchIsOpen = !ctrl.courierSearchIsOpen">
-                                        <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-show="!ctrl.courierSearchIsOpen">person_search
-                                        </md-icon>
-                                        <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-show="ctrl.courierSearchIsOpen">close
-                                        </md-icon>
-                                    </md-button>
-
                                     <md-autocomplete
-                                            ng-show="ctrl.courierSearchIsOpen"
                                             md-autoselect
                                             md-escape-options="clear"
                                             md-item-text="item.text"
