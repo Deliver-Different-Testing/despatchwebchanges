@@ -1628,7 +1628,14 @@ class JobDetailService {
     }
 
     trackingMethodClick(event, job) {
-        this.showSelectDialog(event, job, this.options.detail.tracking, "TrackingMethod", "Tracking Method", this.getTrackingMethod(job.trackingMethod));
+        const trackingArray = this.options.detail.tracking.map(item => {
+            return {
+                id: item.id,
+                text: item.label
+            };
+        });
+
+        this.showSelectDialog(event, job, trackingArray, "TrackingMethod", "Tracking Method", this.getTrackingMethod(job.trackingMethod));
     }
 
     leaveClick(event, job) {
