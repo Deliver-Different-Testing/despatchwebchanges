@@ -32,6 +32,8 @@ angular
              * @param {number} clientId
              * @param {string} wild
              * @param {string} job
+             * @param {Date} fromDate
+             * @param {Date} toDate
              * @param {number} pageIndex
              * @param {number} pageSize
              */

@@ -1,8 +1,9 @@
 class DispatchData {
-    static $inject = ["$http"];
+    static $inject = ["$http", "moment"];
 
-    constructor($http) {
+    constructor($http, moment) {
         this.$http = $http;
+        this.moment = moment;
     }
 
     /**
@@ -33,9 +34,7 @@ class DispatchData {
      */
     async addPallet(pallet, preBook, despatcherName) {
         let response = await this.$http({
-            url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName,
-            method: "POST",
-            data: pallet
+            url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
     }
@@ -47,9 +46,7 @@ class DispatchData {
      */
     async editPallet(pallet, preBook, despatcherName) {
         let response = await this.$http({
-            url: "job/EditPallet?preBook=" + preBook + "&despatcher=" + despatcherName,
-            method: "POST",
-            data: pallet
+            url: "job/EditPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
     }
@@ -61,9 +58,7 @@ class DispatchData {
      */
     async deletePallet(pallet, preBook, despatcherName) {
         let response = await this.$http({
-            url: "job/DeletePallet?preBook=" + preBook + "&despatcher=" + despatcherName,
-            method: "POST",
-            data: pallet
+            url: "job/DeletePallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
     }
@@ -510,10 +505,7 @@ class DispatchData {
      * @param {string} calc
      */
     async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId, jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calc) {
-        let response = await this.$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup +
-            "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact +
-            "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed +
-            "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc);
+        let response = await this.$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup + "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed + "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc);
         return response.data;
     }
 
@@ -536,9 +528,7 @@ class DispatchData {
      * @param {number|string} truckHours
      */
     async rateTruckJob(cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
-        let response = await this.$http.get("job/RateTruckJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate +
-            "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass +
-            "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours);
+        let response = await this.$http.get("job/RateTruckJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours);
         return response.data;
     }
 
@@ -562,27 +552,17 @@ class DispatchData {
      * @param {number} gstRate
      */
     async truckJobAmountBreakdown(cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours, gstRate) {
-        let response = await this.$http.get("job/TruckJobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate +
-            "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass +
-            "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours + "&gstRate=" + gstRate);
+        let response = await this.$http.get("job/TruckJobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours + "&gstRate=" + gstRate);
         return response.data;
     }
 
-    async rateJob(cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
-                  ourRef, refA, refB, quantity, booked) {
-        let response = await this.$http.get("job/RateJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van +
-            "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct +
-            "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity +
-            "&booked=" + booked);
+    async rateJob(cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
+        let response = await this.$http.get("job/RateJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
         return response.data;
     }
 
-    async jobAmountBreakdown(cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
-                             ourRef, refA, refB, quantity, booked, gstRate, amount) {
-        let response = await this.$http.get("job/JobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van +
-            "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct +
-            "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity +
-            "&booked=" + booked + "&gstRate=" + gstRate + "&amount=" + amount);
+    async jobAmountBreakdown(cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked, gstRate, amount) {
+        let response = await this.$http.get("job/JobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked + "&gstRate=" + gstRate + "&amount=" + amount);
         return response.data;
     }
 
@@ -722,7 +702,7 @@ class DispatchData {
      * @param {Date} bookDate
      */
     async releaseBulkJob(jobNumber, bookDate) {
-        const dt = moment(bookDate).format("YYYY-MM-DD");
+        const dt = this.moment(bookDate).format("YYYY-MM-DD");
         return await this.$http.post("job/ReleaseBulkJob?jobNumber=" + jobNumber + "&bookDate=" + dt);
     }
 
@@ -737,17 +717,13 @@ class DispatchData {
      */
     async updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
         if (field === "Time" || field === "CompletedTime") {
-            value = moment().format("YYYY-MM-DD") +
-                " " +
-                moment(value).format("HH:mm:ss");
+            value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
         if (field === "FollowupTime") {
-            value = moment(value).format("YYYY-MM-DD") +
-                " " +
-                moment(value).format("HH:mm:ss");
+            value = this.moment(value).format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-            value = moment(value).format("YYYY-MM-DD");
+            value = this.moment(value).format("YYYY-MM-DD");
         }
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
         return await this.$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
@@ -763,12 +739,10 @@ class DispatchData {
      */
     async updateBulkJobDetail(bulkJobId, field, value, rate, despatcherName, staffId) {
         if (field === "Time" || field === "CompletedTime") {
-            value = moment().format("YYYY-MM-DD") +
-                " " +
-                moment(value).format("HH:mm:ss");
+            value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-            value = moment(value).format("YYYY-MM-DD");
+            value = this.moment(value).format("YYYY-MM-DD");
         }
         return await this.$http.post("job/UpdateBulkJob?bulkJobId=" + bulkJobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
@@ -795,13 +769,8 @@ class DispatchData {
      */
     async autocompleteAddressSearch(text) {
         let response = await this.$http({
-            url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
-            method: 'GET',
-            params: {
-                query: text,
-                app_id: "bBPfh2x8Cauun3ygLMAx",
-                app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                country: "NZL"
+            url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json', method: 'GET', params: {
+                query: text, app_id: "bBPfh2x8Cauun3ygLMAx", app_code: "yjfwTdkin_R2rGXYTrwWVg", country: "NZL"
             }
         });
         return await response.data;
@@ -813,9 +782,7 @@ class DispatchData {
     async getGeoCodeInformation(item) {
         let response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
             params: {
-                app_id: "bBPfh2x8Cauun3ygLMAx",
-                app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                locationId: item.id
+                app_id: "bBPfh2x8Cauun3ygLMAx", app_code: "yjfwTdkin_R2rGXYTrwWVg", locationId: item.id
             }
         });
         return await response.data;

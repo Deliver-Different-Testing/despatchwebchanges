@@ -1,6 +1,6 @@
 function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys,
                       $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document,
-                      $timeout, loadingService, dispatchJobService, toastrService) {
+                      $timeout, loadingService, dispatchJobService, toastrService, moment) {
     const self = this;
 
     $scope.isAdmin = (ClientInternal === "True");
@@ -1689,7 +1689,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
 angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state",
     "$stateParams", "$filter", '$parse', "hotkeys", "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog',
-    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', CSController]);
+    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', 'moment', CSController]);
 
 // Convert Degress to Radians
 function Deg2Rad(deg) {
@@ -1704,8 +1704,7 @@ function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
     var R = 6371; // km
     var x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
     var y = (lat2 - lat1);
-    var d = Math.sqrt(x * x + y * y) * R;
-    return d;
+    return Math.sqrt(x * x + y * y) * R;
 }
 
 function closestLocation(latitude, longitude, locations) {
@@ -1721,8 +1720,7 @@ function closestLocation(latitude, longitude, locations) {
     }
 
     // return the nearest location
-    var closestLocation = (locations[closest]);
-    return closestLocation;
+    return (locations[closest]);
 }
 
 function inStruct(val, structure) {

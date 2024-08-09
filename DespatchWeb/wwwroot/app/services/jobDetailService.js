@@ -173,7 +173,7 @@
  */
 
 class JobDetailService {
-    static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout"];
+    static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", "moment"];
 
     constructor(
         DispatchData,
@@ -183,6 +183,7 @@ class JobDetailService {
         rateJobService,
         $document,
         $timeout,
+        moment
     ) {
         this.DispatchData = DispatchData;
         this.$mdDialog = $mdDialog;
@@ -191,6 +192,7 @@ class JobDetailService {
         this.rateJobService = rateJobService;
         this.$document = $document;
         this.$timeout = $timeout;
+        this.moment = moment;
 
         this.options = {
             "detail": {
@@ -610,7 +612,7 @@ class JobDetailService {
                     itemSummary.overSize,
                     itemSummary.overWeight,
                     itemSummary.dgClass,
-                    job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
+                    job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"),
                     job.truckHours || 2,
                     job.gstRate).then(function (description) {
                     alert(description);
@@ -679,7 +681,7 @@ class JobDetailService {
                         itemSummary.overSize,
                         itemSummary.overWeight,
                         itemSummary.dgClass,
-                        job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
+                        job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"),
                         job.truckHours || 2);
 
                 });
@@ -742,8 +744,6 @@ class JobDetailService {
      * @param {string} id
      */
     showEditDateDialog(event, job, title, fieldName, date, id = "editForm") {
-        const formattedDate = date ? new Date(date) : new Date();
-
         this.$mdDialog.show({
             controller: EditDateDialogController,
             controllerAs: 'ctrl',
@@ -753,9 +753,10 @@ class JobDetailService {
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
+                job,
                 title,
                 fieldName,
-                formattedDate,
+                date,
                 id
             },
         }).then(_ => {
@@ -953,7 +954,7 @@ class JobDetailService {
         }
 
         if (type === "datetime") {
-            value = new Date(moment(value).format("YYYY-MM-DDTHH:mm"))
+            value = new Date(this.moment(value).format("YYYY-MM-DDTHH:mm"))
         }
 
         let max = "";

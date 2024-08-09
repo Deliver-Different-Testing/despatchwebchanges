@@ -7,24 +7,21 @@
 
     <md-dialog-content>
         <div class="md-dialog-content">
-            <form ng-submit="ctrl.submit(ctrl.date)">
+            <!-- Calendar-->
+            <div flex-order="1" flex-order-gt-sm="0" layout="column">
+                <md-subheader>{{ ctrl.title }}</md-subheader>
+                <md-calendar ng-model="ctrl.date"></md-calendar>
+            </div>
+            <div flex-order="0" flex-order-gt-sm="2" layout="column">
+                <md-subheader>Dates</md-subheader>
 
-                <!-- Calendar-->
-                <div flex-order="1" flex-order-gt-sm="0" layout="column">
-                    <md-subheader>{{ ctrl.fieldName }}</md-subheader>
-                    <md-calendar ng-model="ctrl.date"></md-calendar>
-                </div>
-                <div flex-order="0" flex-order-gt-sm="2" layout="column">
-                    <md-subheader>Dates</md-subheader>
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label for="date-text-input">{{ ctrl.fieldName }}</label>
+                    <input id="date-text-input" md-no-asterisk ng-model="ctrl.date" required>
+                </md-input-container>
 
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="date-text-input">{{ ctrl.fieldName }}</label>
-                        <input id="date-text-input" md-no-asterisk ng-model="ctrl.date" required>
-                    </md-input-container>
+            </div>
 
-                </div>
-
-            </form>
         </div>
     </md-dialog-content>
 

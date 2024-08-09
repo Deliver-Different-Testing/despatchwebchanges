@@ -2,7 +2,7 @@ angular
     .module("uDispatch")
     .factory("NWData",
         [
-            "$http", function ($http) {
+            "$http", "moment", function ($http, moment) {
             return {
                 /**
                  * @param {number} jobId

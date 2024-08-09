@@ -18,10 +18,10 @@ angular
         "ngMessages",
         "ngSanitize",
         "ngMaterial",
-
         "angularPromiseButtons",
         "ng-mfb",
-        "md.time.picker"
+        "md.time.picker",
+        "angularMoment"
     ])
     .config($mdThemingProvider => {
         $mdThemingProvider.definePalette("urgentPrimary", {
