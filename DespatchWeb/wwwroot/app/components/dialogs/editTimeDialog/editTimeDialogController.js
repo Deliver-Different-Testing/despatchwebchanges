@@ -9,7 +9,7 @@ class EditTimeDialogController {
         this._fieldName = fieldName;
 
         this.isLoading = false;
-        this.time = time ? new Date(time) : new Date();
+        this.time = new Date(time);
         this.title = title;
         this.message = {
             hour: 'Hour is required', minute: 'Minute is required',

@@ -1640,7 +1640,14 @@ class JobDetailService {
     }
 
     sizeClick(event, job) {
-        this.showSelectDialog(event, job, this.options.detail.size, "Size", "Size", job.size.label);
+        const sizeArray = this.options.detail.size.map(item => {
+            return {
+                id: item.id,
+                text: item.label
+            };
+        });
+
+        this.showSelectDialog(event, job, sizeArray, "Size", "Size", job.size.label);
     }
 
     /**
