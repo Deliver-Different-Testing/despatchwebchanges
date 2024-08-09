@@ -474,7 +474,7 @@ class JobDetailService {
                             const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
                             $itemScope.currentJob.palletInfo.splice(index, 1);
 
-                            return self.rateJob(this.currentJob).then(rate => {
+                            return self.rateJobService.rateJob(this.currentJob).then(rate => {
                                 console.log(rate);
                                 if (rate !== self.currentJob.charge) {
                                     return self.DispatchData
@@ -760,7 +760,8 @@ class JobDetailService {
                 id
             },
         }).then(_ => {
-            // User closed date dialog
+            this.selectJobDetail(job.id);
+            console.log('Dialog closed!');
         });
     }
 
@@ -805,7 +806,8 @@ class JobDetailService {
                 id
             },
         }).then(_ => {
-            // User closed time dialog
+            this.selectJobDetail(job.id);
+            console.log('Dialog closed!');
         });
     }
 
@@ -816,7 +818,6 @@ class JobDetailService {
     editCompletedTime(event, job) {
         this.showEditTimeDialog(event, job, "CompletedTime", "Completed Time", job.completedTime);
     }
-
 
     /**
      * @param {Event} event
@@ -1150,7 +1151,7 @@ class JobDetailService {
                         });
                 }
                 if (reRate && !job.bulkJob) {
-                    return self.rateJob(job).then(rate => self.DispatchData
+                    return self.rateJobService.rateJob(job).then(rate => self.DispatchData
                         .updateJobDetail(callData.jobID,
                             callData.field,
                             callData.value,
@@ -1953,7 +1954,7 @@ class JobDetailService {
                 newP["itemId"] = self.currentPallet.itemID;
 
                 return self.DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function () {
-                    return self.rateJob(self.currentJob).then(function (rate) {
+                    return self.rateJobService.rateJob(self.currentJob).then(function (rate) {
                         console.log(rate);
                         if (rate !== self.currentJob.charge) {
                             return self.DispatchData
