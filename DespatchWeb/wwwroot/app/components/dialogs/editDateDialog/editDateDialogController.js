@@ -22,7 +22,6 @@ class EditDateDialogController {
         this.title = title;
         this.fieldName = fieldName;
         this.date = moment(date, "DD/MM/YYYY").toDate();
-        this.dateString = moment().format('DD/MM/YYYY');
         this.id = id;
 
         this.isLoading = false;
