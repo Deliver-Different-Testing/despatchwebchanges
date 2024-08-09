@@ -1,10 +1,10 @@
 class LoadingService {
     constructor($mdDialog, $document) {
-        this.$mdDialog = $mdDialog;
-        this.$document = $document;
+        this._$mdDialog = $mdDialog;
+        this._$document = $document;
     }
 
-    get dialogTemplate() {
+    get _dialogTemplate() {
         return `
             <md-dialog style="background-color:transparent; box-shadow:none; overflow: hidden">
                 <div layout="row" layout-sm="column" layout-align="center center">
@@ -14,17 +14,17 @@ class LoadingService {
     }
 
     showLoader() {
-        const template = this.dialogTemplate;
-        this.$mdDialog.show({
+        const template = this._dialogTemplate;
+        this._$mdDialog.show({
             template,
-            parent: angular.element(this.$document.body),
+            parent: angular.element(this._$document.body),
             clickOutsideToClose: false,
             fullscreen: false
         });
     }
 
     closeLoader() {
-        this.$mdDialog.hide();
+        this._$mdDialog.hide();
     }
 }
 
