@@ -1,10 +1,11 @@
 class DispatchJobService {
-    static $inject = ["$mdDialog", "$document", "DispatchData"];
+    static $inject = ["$mdDialog", "$document", "DispatchData", "moment"];
 
-    constructor($mdDialog, $document, DispatchData) {
-        this.$mdDialog = $mdDialog;
-        this.$document = $document;
-        this.DispatchData = DispatchData;
+    constructor($mdDialog, $document, DispatchData, moment) {
+        this._$mdDialog = $mdDialog;
+        this._$document = $document;
+        this._dispatchData = DispatchData;
+        this._moment = moment;
         this.pickCouriers = [];
         this.pickAllCouriers = [];
 
@@ -17,13 +18,13 @@ class DispatchJobService {
     }
 
     _fetchActiveCouriersData() {
-        this.DispatchData.getActiveCouriers().then(data => {
+        this._dispatchData.getActiveCouriers().then(data => {
             this.pickCouriers = data;
         });
     }
 
     _fetchAllCouriersData() {
-        this.DispatchData.getAllCouriers().then(data => {
+        this._dispatchData.getAllCouriers().then(data => {
             this.pickAllCouriers = data;
         });
     }
@@ -33,7 +34,7 @@ class DispatchJobService {
      * @param {number} jobId
      */
     async dispatchJobByJobId(courierNumber, jobId) {
-        const job = this.DispatchData.getJobDetail(jobId);
+        const job = this._dispatchData.getJobDetail(jobId);
         const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierNumber);
 
         await this.dispatchJob(selectedCourier.id, job);
@@ -52,7 +53,7 @@ class DispatchJobService {
             const confirm = this._generateOfflineCourierDialog();
 
             try {
-                await this.$mdDialog.show(confirm);
+                await this._$mdDialog.show(confirm);
                 foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
             } catch (error) {
                 console.log("User chose not to dispatch job as courier is offline");
@@ -63,7 +64,7 @@ class DispatchJobService {
     }
 
     _generateOfflineCourierDialog() {
-        return this.$mdDialog.confirm()
+        return this._$mdDialog.confirm()
             .title('Courier Offline')
             .textContent('Dispatch anyway?')
             .ok('Yes')
@@ -90,13 +91,13 @@ class DispatchJobService {
             return;
         }
         if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null ||
-            moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
+            this._moment(foundCourier.dgLicenseExpiry) < this._moment().add(1, 'days'))) {
             this._showAlertMessage("Courier " + courierNumber + " doesn't have a DGLicense or license has expired.");
             return;
         }
 
         jobs.push(job.id);
-        await this.DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
+        await this._dispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
     }
 
 
@@ -105,15 +106,15 @@ class DispatchJobService {
      */
     _showAlertMessage(textContent) {
         const alert =
-            this.$mdDialog.alert()
-                .parent(angular.element(this.$document.body))
+            this._$mdDialog.alert()
+                .parent(angular.element(this._$document.body))
                 .clickOutsideToClose(true)
                 .title('Message')
                 .textContent(textContent)
                 .ariaLabel('Alert')
                 .ok('OK');
 
-        this.$mdDialog.show(alert);
+        this._$mdDialog.show(alert);
     }
 }
 

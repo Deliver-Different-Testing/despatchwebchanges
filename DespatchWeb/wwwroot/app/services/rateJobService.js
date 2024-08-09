@@ -27,14 +27,16 @@
  * @class
  */
 class RateJobService {
-    static $inject = ["DispatchData"];
+    static $inject = ["DispatchData", "moment"];
 
     /**
      * Create a RateJobService
-     * @param {Object} DispatchData - A service for working with job data
+     * @param DispatchData - A service for working with job data
+     * @param moment - AngularJS directive for moment.js
      */
-    constructor(DispatchData) {
-        this.DispatchData = DispatchData;
+    constructor(DispatchData, moment) {
+        this._dispatchData = DispatchData;
+        this._moment = moment;
     }
 
     /**
@@ -61,8 +63,8 @@ class RateJobService {
                 job.speedID === 152
             )) {
             //Truck Job
-            const itemSummary = await this.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit);
-            return this.DispatchData.rateTruckJob(job.clientID,
+            const itemSummary = await this._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit);
+            return this._dispatchData.rateTruckJob(job.clientID,
                 job.fromSuburbID,
                 job.toSuburbID,
                 itemSummary.weight,
@@ -76,10 +78,10 @@ class RateJobService {
                 itemSummary.overSize,
                 itemSummary.overWeight,
                 itemSummary.dgClass,
-                job.truckStartTime || moment().format("YYYY-MM-DDThh:mm:ss"),
+                job.truckStartTime || this._moment().format("YYYY-MM-DDThh:mm:ss"),
                 job.truckHours || 2);
         } else {
-            return this.DispatchData.rateJob(job.clientID,
+            return this._dispatchData.rateJob(job.clientID,
                 job.fromSuburbID,
                 job.toSuburbID,
                 job.speedID,
