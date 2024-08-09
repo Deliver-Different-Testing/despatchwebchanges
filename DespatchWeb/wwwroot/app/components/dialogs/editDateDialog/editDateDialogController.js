@@ -4,7 +4,7 @@ class EditDateDialogController {
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
      * @param toastrService - The service to display toast messages
      * @param DispatchData - The Home Service
-     * @param moment - The AngularJS directive to interact with momentjs
+     * @param moment - The AngularJS directive to interact with moment.js
      * @param {Job} job
      * @param {string} id - The ID related to the selection.
      * @param {string} fieldName - The name of the field for which the selection is being made.
@@ -16,11 +16,13 @@ class EditDateDialogController {
         this.$mdDialog = $mdDialog;
         this.toastrService = toastrService;
         this.DispatchData = DispatchData;
+        this.moment = moment;
 
         this._job = job;
         this.title = title;
         this.fieldName = fieldName;
         this.date = moment(date, "DD/MM/YYYY").toDate();
+        this.dateString = moment().format('DD/MM/YYYY');
         this.id = id;
 
         this.isLoading = false;
@@ -85,7 +87,7 @@ class EditDateDialogController {
      * @param date
      */
     _formatDate(date) {
-        return new Date(moment(date).format("YYYY-MM-DDTHH:mm"))
+        return new Date(this.moment(date).format("YYYY-MM-DDTHH:mm"))
     }
 
     cancel() {

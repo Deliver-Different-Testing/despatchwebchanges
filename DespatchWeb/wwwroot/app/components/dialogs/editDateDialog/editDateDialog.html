@@ -8,20 +8,13 @@
     <md-dialog-content>
         <div class="md-dialog-content">
             <!-- Calendar-->
-            <div flex-order="1" flex-order-gt-sm="0" layout="column">
-                <md-subheader>{{ ctrl.title }}</md-subheader>
-                <md-calendar ng-model="ctrl.date"></md-calendar>
-            </div>
-            <div flex-order="0" flex-order-gt-sm="2" layout="column">
-                <md-subheader>Dates</md-subheader>
-
-                <md-input-container class="md-block" flex-gt-sm>
-                    <label for="date-text-input">{{ ctrl.fieldName }}</label>
-                    <input id="date-text-input" md-no-asterisk ng-model="ctrl.date" required>
-                </md-input-container>
-
-            </div>
-
+            <md-datepicker
+                    class="md-block"
+                    input-aria-describedby="datepicker-description"
+                    input-aria-labelledby="datepicker-header "
+                    md-placeholder="Enter date"
+                    ng-model="ctrl.date">
+            </md-datepicker>
         </div>
     </md-dialog-content>
 
