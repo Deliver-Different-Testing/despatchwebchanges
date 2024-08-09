@@ -23,13 +23,10 @@ class EditTimeDialogController {
         try {
             this.isLoading = true;
 
-            const callData = {
-                "call": "updateDetailField", "field": this._fieldName, "value": time, "jobID": this._job.id
-            };
-
+            // Update job with new time
             this._job.bulkJob ? await this.DispatchData
-                .updateBulkJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID) : await this.DispatchData
-                .updateJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID, this._job.preBook);
+                .updateBulkJobDetail(this._job.id, this._fieldName, time, this._job.charge, FirstName, ContactID) : await this.DispatchData
+                .updateJobDetail(this._job.id, this._fieldName, time, this._job.charge, FirstName, ContactID, this._job.preBook);
 
             this.$mdDialog.hide();
         } catch (error) {

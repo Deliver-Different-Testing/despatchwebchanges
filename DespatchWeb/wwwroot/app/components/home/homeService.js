@@ -729,7 +729,7 @@ class DispatchData {
     /**
      * @param {number} jobId
      * @param {string} field
-     * @param {string} value
+     * @param {string|Date|number} value
      * @param {number} rate
      * @param {string} despatcherName
      * @param {number} staffId
@@ -756,7 +756,7 @@ class DispatchData {
     /**
      * @param {number} bulkJobId
      * @param {string} field
-     * @param {string} value
+     * @param {string|number|Date} value
      * @param {number} rate
      * @param {string} despatcherName
      * @param {number} staffId
