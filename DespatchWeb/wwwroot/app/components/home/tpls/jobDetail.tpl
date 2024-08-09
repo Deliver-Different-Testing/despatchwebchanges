@@ -364,7 +364,7 @@
                         </div>
 
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.editLogTime($event, ctrl.jdSvc.currentJob.time)">
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editLogTime($event, ctrl.jdSvc.currentJob)">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">Log time</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{ctrl.jdSvc.currentJob.time | date:
@@ -941,12 +941,12 @@
 
                     <div class="col-md-6">
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Date','Date',ctrl.jdSvc.currentJob.date,ctrl.jdSvc.currentJob.id, 'date')">
+                             ng-click="ctrl.jdSvc.editJobDate($event, ctrl.jdSvc.currentJob)">
                             <label>Date</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.date | date: "dd/MM/yyyy"}}</div>
                         </div>
                         <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Time','Time',ctrl.jdSvc.currentJob.time,ctrl.jdSvc.currentJob.id,'time')">
+                             ng-click="ctrl.jdSvc.editLogTime($event, ctrl.jdSvc.currentJob)">
                             <label>Log time</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.time | date: "h:mm a"}}</div>
                         </div>

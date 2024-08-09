@@ -384,35 +384,6 @@ class JobDetailService {
         this.combos = {
             "frequency": [],
             "frequencyEvents": {
-                onSelectionChanged: function (item) {
-                    const self = this;
-
-                    console.log("Freq =");
-                    console.log(self.combos.frequency);
-                    if (self.combos.frequency.length > 0 &&
-                        self.combos.days.length > 0 &&
-                        self.combos.holidays.length > 0) {
-                        let newDays = "0000000";
-                        for (let i = 0; i < self.combos.days.length; i++) {
-                            newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
-                        }
-                        newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
-                        console.log(newDays);
-                        return self.DispatchData
-                            .updateJobDetail(self.currentJob.id,
-                                "Frequency",
-                                newDays,
-                                self.currentJob.charge,
-                                FirstName,
-                                ContactID,
-                                self.currentJob.preBook).then(response => {
-                                self.selectJobDetail(self.currentJob.id);
-                                return response;
-                            });
-                    } else {
-                        console.log("invalid data");
-                    }
-                }
             },
             "days": [],
             "daysEvents": {
@@ -826,9 +797,10 @@ class JobDetailService {
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
+                job,
+                time,
                 title,
                 fieldName,
-                time,
                 id
             },
         }).then(_ => {
@@ -1114,7 +1086,7 @@ class JobDetailService {
                     return self.DispatchData
                         .updateJobType(callData.jobID,
                             callData.value,
-                            FirstName).then(response => {
+                            FirstName).then(() => {
 
                         });
                 }

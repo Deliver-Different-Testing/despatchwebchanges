@@ -7,12 +7,9 @@
 
     <md-dialog-content>
         <div class="md-dialog-content">
-            <form ng-submit="ctrl.submit(ctrl.time)">
 
-                <md-time-picker mandatory="true" message="message" ng-model="time" no-auto-switch
-                                no-meridiem></md-time-picker>
+            <md-time-picker message="ctrl.message" ng-model="ctrl.time"></md-time-picker>
 
-            </form>
         </div>
     </md-dialog-content>
 

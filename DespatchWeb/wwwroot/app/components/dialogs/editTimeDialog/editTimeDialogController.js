@@ -1,18 +1,18 @@
 class EditTimeDialogController {
-    constructor($scope, $mdDialog, DispatchData, toastrService, time, title) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, job, time, title, fieldName, id) {
         this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
         this.toastrService = toastrService;
+        this.id = id;
+        this._job = job;
+        this._fieldName = fieldName;
 
         this.isLoading = false;
-
-        // Time to Use
-        this.time = time ? time : new Date();
+        this.time = time ? new Date(time) : new Date();
         this.title = title;
         this.message = {
-            hour: 'Hour is required',
-            minute: 'Minute is required',
+            hour: 'Hour is required', minute: 'Minute is required',
         }
     }
 
@@ -23,6 +23,15 @@ class EditTimeDialogController {
         try {
             this.isLoading = true;
 
+            const callData = {
+                "call": "updateDetailField", "field": this._fieldName, "value": time, "jobID": this._job.id
+            };
+
+            this._job.bulkJob ? await this.DispatchData
+                .updateBulkJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID) : await this.DispatchData
+                .updateJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID, this._job.preBook);
+
+            this.$mdDialog.hide();
         } catch (error) {
             this.toastrService.showErrorToast(error.message);
         } finally {
