@@ -1,6 +1,6 @@
 function NationwideController($scope, jdSvc, NWData, $state,
                               $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService,
-                              $mdDialog, $document, $window, toastrService, DispatchData) {
+                              $mdDialog, $document, $window, toastrService, DispatchData, moment) {
     const self = this;
 
     $scope.isInternal = (ClientInternal === "True");
@@ -3233,6 +3233,7 @@ angular
         "$window",
         "toastrService",
         "DispatchData",
+        "moment",
         NationwideController]);
 
 
