@@ -930,6 +930,19 @@ public partial class JobController : Controller
         return Json("OK");
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetClientItemsForSingleJob(int jobId)
+    {
+        var clientItems = await _jobRepo.GetClientItemsForJob(jobId);
+        return Json(clientItems);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllClientItems(int clientId)
+    {
+        var clientItems = await _jobRepo.GetAllClientItems(clientId);
+        return Json(clientItems);
+    }
 
     private static string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
     {

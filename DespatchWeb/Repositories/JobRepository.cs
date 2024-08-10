@@ -2535,4 +2535,50 @@ public class JobRepository : IJobRepository
             StaffId: viewModel.StaffId
         );
     }
+
+    public async Task<List<ClientItemsViewModel>?> GetClientItemsForJob(int jobId)
+    {
+        var currentJob = await _context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        if (currentJob == null || string.IsNullOrWhiteSpace(currentJob.ClientItemIds))
+            return null;
+
+        var clientItemIds = currentJob.ClientItemIds.Split(',')
+            .Select(int.Parse)
+            .ToList();
+
+        var clientItems = await _context.TucClientItems
+            .Where(ci => clientItemIds.Contains(ci.ItemId))
+            .Select(ci => new ClientItemsViewModel
+            {
+                ItemId = ci.ItemId,
+                ClientId = ci.ClientId,
+                Name = ci.Name,
+                Description = ci.Description,
+                PerItem = ci.PerItem,
+                Rate = ci.Rate,
+                OnlyVan = ci.OnlyVan
+            })
+            .ToListAsync();
+
+        return clientItems;
+    }
+
+    public async Task<List<ClientItemsViewModel>?> GetAllClientItems(int clientId)
+    {
+        var clientItems = await _context.TucClientItems
+            .Where(ci => ci.ClientId == clientId)
+            .Select(ci => new ClientItemsViewModel
+            {
+                ItemId = ci.ItemId,
+                ClientId = ci.ClientId,
+                Name = ci.Name,
+                Description = ci.Description,
+                PerItem = ci.PerItem,
+                Rate = ci.Rate,
+                OnlyVan = ci.OnlyVan
+            })
+            .ToListAsync();
+
+        return clientItems;
+    }
 }

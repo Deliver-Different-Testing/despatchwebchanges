@@ -14,6 +14,10 @@ namespace DespatchWeb.EntityClasses
             TblBulkRunScheduleSpeeds = new HashSet<TblBulkRunSchedule>();
             TblUndeliverableLocations = new HashSet<TblUndeliverableLocation>();
             TucEvents = new HashSet<TucEvent>();
+            TucJobAcceptedJobTypes = new HashSet<TucJob>();
+            TucJobDesiredJobTypes = new HashSet<TucJob>();
+            TucJobNotifiedJobTypes = new HashSet<TucJob>();
+            TucJobUcjbSpeedNavigations = new HashSet<TucJob>();
         }
 
         public int UcjtId { get; set; }
@@ -56,5 +60,9 @@ namespace DespatchWeb.EntityClasses
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleSpeeds { get; set; }
         public virtual ICollection<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
+        public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; }
+        public virtual ICollection<TucJob> TucJobDesiredJobTypes { get; set; }
+        public virtual ICollection<TucJob> TucJobNotifiedJobTypes { get; set; }
+        public virtual ICollection<TucJob> TucJobUcjbSpeedNavigations { get; set; }
     }
 }
