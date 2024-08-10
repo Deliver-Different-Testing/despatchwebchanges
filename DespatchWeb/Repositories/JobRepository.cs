@@ -2581,4 +2581,20 @@ public class JobRepository : IJobRepository
 
         return clientItems;
     }
+
+    public async Task AddClientsItemToJob(int jobId, List<int> clientItems)
+    {
+        var clientItemsString = string.Join(",", clientItems);
+
+        // Find the job.
+        var job = await _context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+
+        if (job is null)
+            return;
+
+        job.ClientItemIds = string.IsNullOrEmpty(job.ClientItemIds)
+            ? $"{job.ClientItemIds}, {clientItemsString}"
+            : clientItemsString;
+        await _context.SaveChangesAsync();
+    }
 }

@@ -156,4 +156,5 @@ public interface IJobRepository
     Task AddInterCourierCharge(InterCourierChargeViewModel viewModel);
     Task<List<ClientItemsViewModel>?> GetClientItemsForJob(int jobId);
     Task<List<ClientItemsViewModel>?> GetAllClientItems(int clientId);
+    Task AddClientsItemToJob(int jobId, List<int> clientItems);
 }
