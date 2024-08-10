@@ -255,69 +255,6 @@ angular
                 //$scope.$apply();
             };
 
-            $scope.saveLayout = function () {
-
-
-                angular.forEach($scope.layout.columns, function (column, colKey) {
-                    column.width = angular.element("#co-" + column.id).css("flex-basis");
-                    angular.forEach(column.boxes, function (box, boxKey) {
-                        box.height = angular.element("#box-" + box.name).css("flex-basis");
-                    });
-                });
-
-
-                $scope.gather.form = {
-                    id: "saveLayout",
-                    title: "Save Layout",
-                    fields: [
-                        {
-                            "name": "layoutName",
-                            "label": "Layout Name",
-                            "value": ""
-                        }
-                    ],
-                    onSubmit: function () {
-
-                        var layoutName = angular.element("#saveLayout").find("input").val();
-
-                        var callData = {
-                            "call": "saveLayout",
-                            "layoutName": layoutName,
-                            "layout": $scope.layout
-                        };
-
-                        //DO THE API CALL
-                        uPBData.doAPI(callData).then(function (data) {
-
-                            console.log(data);
-
-                            if (data.response === "Success") {
-
-                                $scope.layouts = $scope.layouts.concat(
-                                    {
-                                        name: layoutName,
-                                        layout: angular.copy($scope.layout)
-                                    }
-                                );
-
-                            } else {
-                                $mdDialog.show(
-                                    $mdDialog.alert()
-                                        .clickOutsideToClose(true)
-                                        .title('Error')
-                                        .textContent('Critical Error Occured')
-                                        .ok('OK')
-                                );
-                            }
-                        });
-                    },
-                    submitValue: "Save"
-                };
-
-                $scope.gather.showForm();
-
-            };
-
             $scope.sortableOptions = {
                 connectWith: ".column-sortable",
                 items: '.box',
