@@ -157,4 +157,5 @@ public interface IJobRepository
     Task<List<ClientItemsViewModel>?> GetClientItemsForJob(int jobId);
     Task<List<ClientItemsViewModel>?> GetAllClientItems(int clientId);
     Task AddClientsItemToJob(int jobId, List<int> clientItems);
+    Task AddNewClientItem(ClientItemsViewModel clientItem);
 }

@@ -2597,4 +2597,21 @@ public class JobRepository : IJobRepository
             : clientItemsString;
         await _context.SaveChangesAsync();
     }
+
+    public async Task AddNewClientItem(ClientItemsViewModel clientItem)
+    {
+        await _context.TucClientItems.AddAsync(new TucClientItem
+        {
+            ClientId = clientItem.ClientId,
+            Name = clientItem.Name,
+            Created = DateTime.Now,
+            LastModified = DateTime.Now,
+            Description = clientItem.Description,
+            PerItem = clientItem.PerItem,
+            Rate = clientItem.Rate,
+            OnlyVan = clientItem.OnlyVan
+        });
+
+        await _context.SaveChangesAsync();
+    }
 }

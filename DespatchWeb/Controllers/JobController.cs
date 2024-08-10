@@ -951,6 +951,12 @@ public partial class JobController : Controller
         return Json("OK");
     }
 
+    [HttpPost]
+    public async Task<IActionResult> AddNewClientItem(ClientItemsViewModel clientItem)
+    {
+        await _jobRepo.AddNewClientItem(clientItem);
+        return Json("OK");
+    }
 
     private static string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
     {
