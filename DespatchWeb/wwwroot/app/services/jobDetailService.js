@@ -1110,7 +1110,15 @@ class JobDetailService {
      * @param {boolean} showCheckbox
      * @param {string|null} checkboxLabel
      */
-    showSelectDialog(event, job, data, fieldName, title, initialValue = null, id = "editField", showCheckbox = false, checkboxLabel) {
+    showSelectDialog(event,
+                     job,
+                     data,
+                     fieldName,
+                     title,
+                     initialValue = null,
+                     id = "editField",
+                     showCheckbox = false,
+                     checkboxLabel = null) {
         const options = {
             minimumInputLength: 1, items: data, placeholder: title
         };
@@ -1124,7 +1132,14 @@ class JobDetailService {
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel
+                id,
+                fieldName,
+                title,
+                job,
+                options,
+                initialValue,
+                showCheckbox,
+                checkboxLabel
             },
         }).then(_ => {
             this.selectJobDetail(job.id);
@@ -1138,7 +1153,19 @@ class JobDetailService {
             dgClassOptions.push({id: i, text: i.toString()});
         }
 
-        this.showSelectDialog(event, job, dgClassOptions, "DGClass", "DG Class", job.dgClass, "editField", true, "Has Documentation?")
+        const initialValue = !job.dgClass ? null : job.dgClass;
+
+        this.showSelectDialog(
+            event,
+            job,
+            dgClassOptions,
+            "DGClass",
+            "DG Class",
+            initialValue,
+            "editField",
+            true,
+            "Has Documentation?"
+        );
     }
 
     notifyClick(event, job) {

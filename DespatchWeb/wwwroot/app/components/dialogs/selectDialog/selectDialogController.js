@@ -15,7 +15,7 @@ class SelectDialogController {
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
      * @param DispatchData - The service used for data dispatching.
      * @param toastrService - The service to display toast messages
-     * @param {number|string} id - The ID related to the selection.
+     * @param {number} id - The ID related to the selection.
      * @param {string} fieldName - The name of the field for which the selection is being made.
      * @param {string} title - The title of the dialog.
      * @param {Job} job - The job for which the selection is being made.
@@ -24,7 +24,19 @@ class SelectDialogController {
      * @param {boolean} showCheckbox - Determines if the checkbox option should be shown on the view
      * @param {string/null} checkboxLabel - Label to display for the checkbox if shown to view
      */
-    constructor($mdDialog, DispatchData, toastrService, id, fieldName, title, job, options, initialValue, showCheckbox = false, checkboxLabel) {
+    constructor(
+        $mdDialog,
+        DispatchData,
+        toastrService,
+        id,
+        fieldName,
+        title,
+        job,
+        options,
+        initialValue,
+        showCheckbox = false,
+        checkboxLabel = null
+    ) {
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
         this.toastrService = toastrService;

@@ -289,7 +289,7 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'DGClass','DG Class',ctrl.jdSvc.currentJob.dgClass,ctrl.jdSvc.currentJob.id, 'select', options.detail.DGClass)"
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.dgClassClick($event, ctrl.jdSvc.currentJob)"
                              ng-if="!ctrl.jdSvc.currentJob.bulkJob">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">DG# / Docs</label>
                             <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
