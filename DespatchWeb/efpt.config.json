@@ -59,6 +59,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucClientItems]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucEvent]",
          "ObjectType": 0
       },
@@ -151,11 +155,11 @@
          "ObjectType": 1
       },
       {
-        "Name": "[dbo].[DESWEB_stpCreateInterCourierJobs]",
-        "ObjectType": 1
+         "Name": "[dbo].[DESWEB_stpCreateInterCourierJobs]",
+         "ObjectType": 1
       },
-     {
-       "Name": "[dbo].[DESWEB_stpQuickCreateJob]",
+      {
+         "Name": "[dbo].[DESWEB_stpQuickCreateJob]",
          "ObjectType": 1
       },
       {
@@ -172,7 +176,7 @@
    "UseDbContextSplitting": false,
    "UseDecimalDataAnnotationForSprocResult": true,
    "UseFluentApiOnly": true,
-  "UseHandleBars": false,
+   "UseHandleBars": false,
    "UseHierarchyId": false,
    "UseInflector": true,
    "UseLegacyPluralizer": false,
@@ -181,7 +185,7 @@
    "UseNoNavigations": false,
    "UseNoObjectFilter": false,
    "UseNodaTime": false,
-  "UseNullableReferences": false,
+   "UseNullableReferences": false,
    "UsePrefixNavigationNaming": false,
    "UseSchemaFolders": false,
    "UseSchemaNamespaces": false,

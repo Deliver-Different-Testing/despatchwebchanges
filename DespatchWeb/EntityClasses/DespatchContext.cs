@@ -36,6 +36,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
         public virtual DbSet<TucClient> TucClients { get; set; }
         public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
+        public virtual DbSet<TucClientItem> TucClientItems { get; set; }
         public virtual DbSet<TucEvent> TucEvents { get; set; }
         public virtual DbSet<TucEventType> TucEventTypes { get; set; }
         public virtual DbSet<TucJobBooking> TucJobBookings { get; set; }
@@ -163,8 +164,7 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcevJobId).HasColumnName("ucevJobID");
 
                 entity.Property(e => e.UcevJobNumber)
-                    .IsRequired()
-                    .HasMaxLength(15)
+                    .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("ucevJobNumber");
 
@@ -439,8 +439,7 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcjbMobileSend).HasColumnName("ucjbMobileSend");
 
                 entity.Property(e => e.UcjbNumber)
-                    .IsRequired()
-                    .HasMaxLength(15)
+                    .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("ucjbNumber");
 
@@ -585,9 +584,7 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.JobId).HasColumnName("JobID");
 
-                entity.Property(e => e.JobNumber)
-                    .IsRequired()
-                    .HasMaxLength(20);
+                entity.Property(e => e.JobNumber).HasMaxLength(50);
 
                 entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
 
@@ -2153,8 +2150,7 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
 
                 entity.Property(e => e.Number)
-                    .IsRequired()
-                    .HasMaxLength(15)
+                    .HasMaxLength(50)
                     .IsUnicode(false);
 
                 entity.Property(e => e.OperatorId).HasColumnName("OperatorID");
@@ -3079,6 +3075,44 @@ namespace DespatchWeb.EntityClasses
                     .HasConstraintName("FK_tucClientContact_tucClient");
             });
 
+            modelBuilder.Entity<TucClientItem>(entity =>
+            {
+                entity.HasKey(e => e.ItemId)
+                    .HasName("PK__tucClien__727E83EB0652A614");
+
+                entity.ToTable("tucClientItems");
+
+                entity.Property(e => e.ItemId).HasColumnName("ItemID");
+
+                entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Description).HasMaxLength(100);
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Rate).HasColumnType("money");
+
+                entity.HasOne(d => d.Client)
+                    .WithMany(p => p.TucClientItems)
+                    .HasForeignKey(d => d.ClientId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__tucClient__Clien__083AEE86");
+            });
+
             modelBuilder.Entity<TucEvent>(entity =>
             {
                 entity.HasKey(e => e.UcevId)
@@ -3137,8 +3171,7 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcevJobId).HasColumnName("ucevJobID");
 
                 entity.Property(e => e.UcevJobNumber)
-                    .IsRequired()
-                    .HasMaxLength(15)
+                    .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("ucevJobNumber");
 
@@ -3502,7 +3535,7 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("ucbkInActiveDate");
 
                 entity.Property(e => e.UcbkJobNumber)
-                    .HasMaxLength(15)
+                    .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("ucbkJobNumber");
 
@@ -3690,9 +3723,7 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcnwJobId).HasColumnName("ucnwJobID");
 
                 entity.Property(e => e.UcnwJobNumber)
-                    .IsRequired()
-                    .HasMaxLength(10)
-                    .IsUnicode(false)
+                    .HasMaxLength(50)
                     .HasColumnName("ucnwJobNumber");
 
                 entity.Property(e => e.UcnwNotes)
@@ -4224,7 +4255,7 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcbkId).HasColumnName("ucbkID");
 
                 entity.Property(e => e.UcbkJobNumber)
-                    .HasMaxLength(15)
+                    .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("ucbkJobNumber");
 

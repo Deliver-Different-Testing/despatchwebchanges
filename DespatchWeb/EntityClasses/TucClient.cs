@@ -12,6 +12,7 @@ namespace DespatchWeb.EntityClasses
             TblBulkRunSchedules = new HashSet<TblBulkRunSchedule>();
             TblClientContacts = new HashSet<TblClientContact>();
             TucClientContacts = new HashSet<TucClientContact>();
+            TucClientItems = new HashSet<TucClientItem>();
             TucEvents = new HashSet<TucEvent>();
         }
 
@@ -286,6 +287,7 @@ namespace DespatchWeb.EntityClasses
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual ICollection<TblClientContact> TblClientContacts { get; set; }
         public virtual ICollection<TucClientContact> TucClientContacts { get; set; }
+        public virtual ICollection<TucClientItem> TucClientItems { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
     }
 }
