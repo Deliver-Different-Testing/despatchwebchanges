@@ -9,6 +9,8 @@ md-dialog {
   font-weight: 500;
   line-height: 28px;
   letter-spacing: 0.15px;
+    width: 35%;
+    overflow: auto;
 }
 .box-handle {
   padding: 8px;
