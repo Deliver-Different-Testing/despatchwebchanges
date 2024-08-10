@@ -510,12 +510,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     self.layout = layoutToUse;
     self.currentLayoutName = self.layouts[0].name;
 
-    self.deleteLayout = function (event, index) {
+    self.deleteLayout = function (index) {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
             .ariaLabel('delete layout')
-            .targetEvent(event)
             .ok('Delete')
             .cancel('Cancel');
 
@@ -543,7 +542,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $timeout(self.initFilters, 1000);
     };
 
-    self.saveLayout = function (event) {
+    self.saveLayout = function () {
         angular.forEach(self.layout.columns,
             (column, colKey) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
@@ -557,7 +556,6 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             .title('Save Layout')
             .textContent('Please enter a name for this layout.')
             .ariaLabel('Layout name')
-            .targetEvent(event)
             .required(true)
             .ok('Save')
             .cancel('Cancel');
