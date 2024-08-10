@@ -6,6 +6,8 @@ function NationwideController($scope, jdSvc, NWData, $state,
     $scope.isInternal = (ClientInternal === "True");
     self.jdSvc = jdSvc;
     $scope.name = "Nationwide";
+    self.jobDetailFabIsOpen = false;
+    self.courierListFabIsOpen = false;
 
     self.greetUser = function () {
         return greetingService.greetUser($scope.userName);
@@ -104,6 +106,26 @@ function NationwideController($scope, jdSvc, NWData, $state,
             }
         });
     });
+
+    self.jobRecordSearchText = "";
+
+    /**
+     * @param {string} searchText
+     */
+    self.jobRecordSearch = searchText => {
+        return $scope.jobList
+            .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
+            .map(job => ({id: job.id, text: job.jobNo}));
+    }
+
+    /**
+     * @param {number} selectedJobId
+     */
+    self.JobRecordSelected = selectedJobId => {
+        const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
+        $scope.selectJob(selectedJob);
+    }
+
 
     $scope.gather = {
         submit: function () {
