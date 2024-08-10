@@ -661,9 +661,9 @@
                     <tr ng-repeat="contact in ctrl.jdSvc.currentJob.contactList">
                         <td>{{contact.fullName}}</td>
                         <td>{{contact.jobTitle}}</td>
-                        <td><a class="pointer:cursor" ng-href="tel:{{contact.directDial}}">{{contact.directDial}}<a/>
+                        <td><a class="pointer:cursor" ng-href="tel:{{contact.directDial}}">{{contact.directDial}}</a>
                         </td>
-                        <td><a class="pointer:cursor" ng-href="tel:{{contact.mobile}}">{{contact.mobile}}<a/></td>
+                        <td><a class="pointer:cursor" ng-href="tel:{{contact.mobile}}">{{contact.mobile}}</a></td>
                         <td>{{contact.email}}</td>
 
                     </tr>
@@ -833,8 +833,7 @@
                             <div class="value">{{ctrl.jdSvc.currentJob.sigNotRequired || "Signature Required"}}</div>
                         </div>
 
-                        <div class="field"
-                             ng-click="ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'DGClass','DG Class',ctrl.jdSvc.currentJob.dgClass,ctrl.jdSvc.currentJob.id, 'select', options.detail.DGClass)">
+                        <div class="field" ng-click="ctrl.jdSvc.dgClassClick($event, ctrl.jdSvc.currentJob)">
                             <label>DG# / Docs</label>
                             <div class="value">{{ctrl.jdSvc.currentJob.dgClass}} /
                                 {{ctrl.jdSvc.hasDGDocs(ctrl.jdSvc.currentJob)}}

@@ -1,190 +1,7 @@
-/**
- * @typedef {Object} Job
- * @property {number} id - The unique identifier for the job.
- * @property {number} rootParentID - The root parent's unique identifier.
- * @property {string} time - The time associated with the job in ISO 8601 date string format.
- * @property {?string} bookedDate - The date the job was booked, if applicable.
- * @property {boolean} direct - Whether the job is direct or not.
- * @property {boolean} van - Whether the job is associated with a van.
- * @property {?number} jobRelationshipTypeID - The unique identifier for the job relationship type.
- * @property {boolean} vanOK - Whether a van is OK for the job.
- * @property {boolean} done - Whether the job is done.
- * @property {boolean} void - Whether the job is void.
- * @property {boolean} truck - Whether the job is associated with a truck.
- * @property {boolean} saturdayDelivery - Whether the job is for Saturday delivery.
- * @property {boolean} return - Whether the job is a return.
- * @property {boolean} pedal - Whether the job involves pedaling.
- * @property {?boolean} reprice - Whether the job is repriced.
- * @property {boolean} attention - Whether the job requires attention.
- * @property {?number} pickupFrom - The pick up from location unique identifier.
- * @property {string} jobNo - The job number.
- * @property {string} speed - The speed category associated with the job.
- * @property {string} speedName - The name of the speed category associated with the job.
- * @property {?string} source - The source associated with the job.
- * @property {string} notifiedName - The name of the notified speed category associated with the job.
- * @property {string} acceptedName - The name of the accepted speed category associated with the job.
- * @property {number} speedId - The unique identifier for the speed category.
- * @property {string} notify - The notification status or value for the job.
- * @property {Object} vehicle - The vehicle detail object.
- * @property {number} vehicle.id - The unique identifier for the vehicle.
- * @property {string} vehicle.label - The label of the vehicle type. * @property {Array<object>} palletInfo - An array of objects containing pallet information.
- * @property {number} clientId - The unique identifier for the client.
- * @property {number} jobType - The unique identifier for the job type.
- * @property {string} client - The client's code or short name.
- * @property {string} clientName - The full name of the client.
- * @property {string} from - The start location for the job.
- * @property {number} fromSuburbId - The unique identifier for the suburb of the start location.
- * @property {string} fromSuburbName - The name of the suburb of the start location.
- * @property {string} fromPostCode - The postcode of the start location.
- * @property {string} fromAddress - The full address of the start location.
- * @property {string} to - The end location for the job.
- * @property {number} toSuburbID - The unique identifier for the suburb of the end location.
- * @property {string} toSuburbName - The name of the suburb of the end location.
- * @property {string} toPostCode - The postcode of the end location.
- * @property {string} toAddress - The full address of the end location.
- * @property {string} toCity - The city of the end location.
- * @property {?string} courier - The courier assigned to the job.
- * @property {number} gstRate - The Goods and Services Tax (GST) rate applied to the job.
- * @property {number} remain - Remaining quantity or value pertaining to the job.
- * @property {number} pickupTime - The scheduled pickup time for the job.
- * @property {number} deliveryTime - The scheduled delivery time for the job.
- * @property {number} alertLatePickup - Alert flag for a late pickup.
- * @property {number} alertLateDelivery - Alert for a late delivery.
- * @property {number} minutes - The estimated duration of the job in minutes.
- * @property {number} statusID - The status ID of the job.
- * @property {string} status - The status of the job.
- * @property {string} statusName - The name representing the job's status.
- * @property {?string} lp - Uncertain property, could relate to "last pickup" or other aspect of the job based context.
- * @property {?string} ld - Uncertain property, could relate to "last delivery" or other aspect of the job based context.
- * @property {string} contactName - The name of the main contact for the job.
- * @property {string} loggedInContactName - The name of the contact who logged in.
- * @property {string} deliverToContact - The name of the contact to who delivery should be made.
- * @property {number} trackingMethod - The tracking method used for the job.
- * @property {string} trackingMobile - The mobile number for tracking.
- * @property {?string} trackingEmail - The email address for tracking.
- * @property {?string} udStatus - Uncertain property, could relate to a status or identifier in the system.
- * @property {?string} podPhoto - Proof of Delivery photo if available.
- * @property {?string} deliverySignature - The signature made upon delivery.
- * @property {?string} podPhotos - Array of Proof of Delivery photos if available.
- * @property {?string} podName - Proof of Delivery name if available.
- * @property {string} description - Description of the job.
- * @property {string} reference1 - Reference data related to the job.
- * @property {string} reference2 - Additional reference data related to the job.
- * @property {boolean} autoSize - Whether the size was automatically determined.
- * @property {boolean} autoPrice - Whether the price was automatically determined.
- * @property {number} price - The price for the job.
- * @property {number} size - The size associated with the job.
- * @property {string} distance - The distance associated with the job.
- * @property {string} quantity - The quantity associated with the job.
- * @property {string} weight - The weight associated with the job.
- * @property {?string} height - The height associated with the job.
- * @property {?string} width - The width associated with the job.
- * @property {?string} depth - The depth associated with the job.
- * @property {string} contractName - The name of the contract associated with the job.
- * @property {number} contractId - The unique identifier for the contract.
- * @property {string} contractingChainName - The name of the contract chain associated with the job.
- * @property {number} contractingChainId - The unique identifier for the contract chain.
- * @property {number} pricingBandId - The unique identifier for the pricing band.
- * @property {string} pricingBandName - The name of the pricing band.
- * @property {number} charged - The amount charged for the job.
- * @property {string} chargeCode - The code representing the charge for the job.
- * @property {number} volumeCubed - The cubed volume associated with the job.
- * @property {boolean} express - Indicates if the job is an express delivery.
- * @property {string} itemDescription - Description of the item for the job.
- * @property {number} directDriveJobId - The unique identifier for direct drive job.
- * @property {string} transportType - The type of transport used for the job.
- * @property {number} deliveryCharge - The charge for delivery.
- * @property {number} totalCharge - The total charge for the job.
- * @property {string} deliverySuburb - The suburb for delivery.
- * @property {?string} deliveryPostCode - The postcode for delivery.
- * @property {?string} deliveryState - The state for delivery.
- * @property {?string} deliveryContactName - The contact name for delivery.
- * @property {?string} deliveryContactNumber - The contact number for delivery.
- * @property {?string} deliveryContactEmail - The contact email for delivery.
- * @property {string} pickupSuburb - The suburb for pickup.
- * @property {?string} pickupPostCode - The postcode for pickup.
- * @property {?string} pickupState - The state for pickup.
- * @property {?string} pickupContactName - The contact name for pickup.
- * @property {?string} pickupContactNumber - The contact number for pickup.
- * @property {?string} pickupContactEmail - The contact email for pickup.
- * @property {string} formattedDeliveryAddress - The formatted delivery address.
- * @property {string} formattedPickupAddress - The formatted pickup address.
- * @property {?boolean} isPickup - Flag determining if this location is meant for pickup.
- * @property {?boolean} isDelivery - Flag determining if this location is meant for delivery.
- * @property {string} createdDate - The date the job was created on.
- * @property {string} updatedDate - The date the job was last updated on.
- * @property {?string} deliveredDate - The date the job was delivered on.
- * @property {?string} pickedUpDate - The date the job was picked up on.
- * @property {?string} eta - The estimated time of arrival for delivery.
- * @property {?string} pickupEta - The estimated time of arrival for pickup.
- * @property {boolean} isDeleted - Flag determining if the job is deleted.
- * @property {Array<object>} additionalProperties - An array of additional properties associated with the job.
- * @property {?string} locationType - The type of location (pick up, delivery, etc.)
- * @property {number} locationId - The unique identifier for the location.
- * @property {string} locationName - The name of the location.
- * @property {?string} locationSuburb - The suburb of the location.
- * @property {?string} locationPostCode - The postal code of the location.
- * @property {?string} locationState - The state where the location is situated.
- * @property {?string} locationContactName - The contact name for the location.
- * @property {?string} locationContactNumber - The contact number for the location.
- * @property {?string} locationContactEmail - The contact email for the location.
- * @property {?string} serviceLevel - The service level for the job.
- * @property {?boolean} isExpedited - Flag indicating whether the job is expedited.
- * @property {?string} jobStatus - The current status of the job.
- * @property {?string} jobType - The type of the job.
- * @property {?string} jobPriority - The priority assigned to the job.
- * @property {?boolean} isHighValue - Flag indicating whether the job is of high value.
- * @property {Array<object>} attachments - An array of attachments related to the job.
- * @property {Array<object>} comments - An array of comments related to the job.
- * @property {?string} specialInstructions - Any special instructions related to the job.
- * @property {?string} termsAndConditions - The terms and conditions for the job.
- * @property {?string} clientReferenceNumber - The client's reference number for the job.
- * @property {?string} clientJobId - The ID of the job as provided by the client.
- * @property {Array<object>} jobRoutes - An array of routes related to the job.
- * @property {?number} estimatedJobDuration - The estimated duration of the job in minutes.
- * @property {?string} driverNotes - Any relevant notes for the driver regarding the job.
- * @property {?string} pickupWindowStart - The start of the pickup window in ISO 8601 format.
- * @property {?string} pickupWindowEnd - The end of the pickup window in ISO 8601 format.
- * @property {?string} deliveryWindowStart - The start of the delivery window in ISO 8601 format.
- * @property {?string} deliveryWindowEnd - The end of the delivery window in ISO 8601 format.
- * @property {?string} deliveryDate - The delivery date in ISO 8601 format.
- * @property {?string} holdAtLocation - A designated location where the goods can be held.
- * @property {?string} specialHandling - Any special handling requirements for the delivery.
- * @property {number} numberOfPieces - The total number of pieces in the delivery.
- * @property {number} totalWeight - The total weight of the delivery items.
- * @property {?string} weightUnit - The unit of measure used for the weight.
- * @property {?string} totalVolume - The total volume of the delivery items.
- * @property {?string} volumeUnit - The unit of measure used for the volume.
- * @property {?boolean} isDangerousGoods - Flag indicating whether the job involves dangerous goods.
- * @property {?string} originNote - A note related to the origin of the job.
- * @property {?string} destinationNote - A note related to the destination of the job.
- * @property {?number} temperatureControlledMin - The minimum temperature to be maintained (if the job is temperature controlled).
- * @property {?number} temperatureControlledMax - The maximum temperature to be maintained (if the job is temperature controlled).
- * @property {?boolean} isLiveAnimals - Flag indicating whether the job involves live animals.
- * @property {?string} animalInfo - Any additional information related to the animals (if the job involves live animals).
- * @property {?boolean} isPerishable - Flag indicating whether the job involves perishable items.
- * @property {?string} perishableInfo - Any additional information related to the perishable items (if the job involves perishable items).
- * @property {?string} customerSignature - The signature of the customer at delivery.
- * @property {?string} deliveryConfirmationName - The name of the person who confirmed the delivery.
- * @property {?string} deliveryConfirmationDate - The date and time (in ISO 8601 format) when the delivery was confirmed.
- * @property {?string} correctionNote - A note made in case there were any corrections to the job details.
- * @property {Array<object>} relatedJobs - An array of objects containing related jobs.
- * @property {?string} $hashKey - Internal AngularJS property for object hashing.
- */
-
 class JobDetailService {
     static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", "moment"];
 
-    constructor(
-        DispatchData,
-        $mdDialog,
-        toastrService,
-        loadingService,
-        rateJobService,
-        $document,
-        $timeout,
-        moment
-    ) {
+    constructor(DispatchData, $mdDialog, toastrService, loadingService, rateJobService, $document, $timeout, moment) {
         this.DispatchData = DispatchData;
         this.$mdDialog = $mdDialog;
         this.toastrService = toastrService;
@@ -196,84 +13,43 @@ class JobDetailService {
 
         this.options = {
             "detail": {
-                "size": [
-                    {
-                        "id": 1,
-                        "label": "Bike"
-                    },
-                    {
-                        "id": 2,
-                        "label": "Car"
-                    },
-                    {
-                        "id": 3,
-                        "label": "Van"
-                    },
-                    {
-                        "id": 4,
-                        "label": "Truck"
-                    },
-                    {
-                        "id": 5,
-                        "label": "Scooter"
-                    }
-                ],
-                "tracking": [
-                    {
-                        "id": 1,
-                        "label": "Email"
-                    },
-                    {
-                        "id": 2,
-                        "label": "Mobile"
-                    },
-                    {
-                        "id": 3,
-                        "label": "Email & Mobile"
-                    }
-                ],
-                "DGClass": [
-                    {
-                        "id": 0,
-                        "label": "0"
-                    },
-                    {
-                        "id": 1,
-                        "label": "1"
-                    },
-                    {
-                        "id": 2,
-                        "label": "2"
-                    },
-                    {
-                        "id": 3,
-                        "label": "3"
-                    },
-                    {
-                        "id": 4,
-                        "label": "4"
-                    },
-                    {
-                        "id": 5,
-                        "label": "5"
-                    },
-                    {
-                        "id": 6,
-                        "label": "6"
-                    },
-                    {
-                        "id": 7,
-                        "label": "7"
-                    },
-                    {
-                        "id": 8,
-                        "label": "8"
-                    },
-                    {
-                        "id": 9,
-                        "label": "9"
-                    }
-                ]
+                "size": [{
+                    "id": 1, "label": "Bike"
+                }, {
+                    "id": 2, "label": "Car"
+                }, {
+                    "id": 3, "label": "Van"
+                }, {
+                    "id": 4, "label": "Truck"
+                }, {
+                    "id": 5, "label": "Scooter"
+                }], "tracking": [{
+                    "id": 1, "label": "Email"
+                }, {
+                    "id": 2, "label": "Mobile"
+                }, {
+                    "id": 3, "label": "Email & Mobile"
+                }], "DGClass": [{
+                    "id": 0, "label": "0"
+                }, {
+                    "id": 1, "label": "1"
+                }, {
+                    "id": 2, "label": "2"
+                }, {
+                    "id": 3, "label": "3"
+                }, {
+                    "id": 4, "label": "4"
+                }, {
+                    "id": 5, "label": "5"
+                }, {
+                    "id": 6, "label": "6"
+                }, {
+                    "id": 7, "label": "7"
+                }, {
+                    "id": 8, "label": "8"
+                }, {
+                    "id": 9, "label": "9"
+                }]
             }
         }
 
@@ -307,96 +83,53 @@ class JobDetailService {
         });
 
 
-        this.pickHolidays = [
-            {
-                "id": "0",
-                "label": "Don't Book"
-            },
-            {
-                "id": "1",
-                "label": "Next Business Day"
-            }
-        ];
+        this.pickHolidays = [{
+            "id": "0", "label": "Don't Book"
+        }, {
+            "id": "1", "label": "Next Business Day"
+        }];
 
-        this.pickDays = [
-            {
-                "id": "0",
-                "label": "Monday"
-            },
-            {
-                "id": "1",
-                "label": "Tuesday"
-            },
-            {
-                "id": "2",
-                "label": "Wednesday"
-            },
-            {
-                "id": "3",
-                "label": "Thursday"
-            },
-            {
-                "id": "4",
-                "label": "Friday"
-            },
-            {
-                "id": "5",
-                "label": "Saturday"
-            },
-            {
-                "id": "6",
-                "label": "Sunday"
-            }
-        ];
-        this.pickFrequency = [
-            {
-                "id": "0",
-                "label": "Weekly"
-            },
-            {
-                "id": "1",
-                "label": "Fortnightly"
-            },
-            {
-                "id": "2",
-                "label": "First of the Month"
-            },
-            {
-                "id": "3",
-                "label": "Second of the Month"
-            },
-            {
-                "id": "4",
-                "label": "Third of the Month"
-            },
-            {
-                "id": "5",
-                "label": "Last of the Month"
-            },
-            {
-                "id": "6",
-                "label": "First work day of the Month"
-            },
-            {
-                "id": "7",
-                "label": "Last work day of the Month"
-            }
-        ];
+        this.pickDays = [{
+            "id": "0", "label": "Monday"
+        }, {
+            "id": "1", "label": "Tuesday"
+        }, {
+            "id": "2", "label": "Wednesday"
+        }, {
+            "id": "3", "label": "Thursday"
+        }, {
+            "id": "4", "label": "Friday"
+        }, {
+            "id": "5", "label": "Saturday"
+        }, {
+            "id": "6", "label": "Sunday"
+        }];
+        this.pickFrequency = [{
+            "id": "0", "label": "Weekly"
+        }, {
+            "id": "1", "label": "Fortnightly"
+        }, {
+            "id": "2", "label": "First of the Month"
+        }, {
+            "id": "3", "label": "Second of the Month"
+        }, {
+            "id": "4", "label": "Third of the Month"
+        }, {
+            "id": "5", "label": "Last of the Month"
+        }, {
+            "id": "6", "label": "First work day of the Month"
+        }, {
+            "id": "7", "label": "Last work day of the Month"
+        }];
 
         this.combos = {
-            "frequency": [],
-            "frequencyEvents": {
-            },
-            "days": [],
-            "daysEvents": {
+            "frequency": [], "frequencyEvents": {}, "days": [], "daysEvents": {
                 onSelectionChanged: function (item) {
                     const self = this;
 
                     console.log("Days =");
                     console.log(self.combos.days);
-                    if (self.combos.frequency.length > 0 &&
-                        self.combos.days.length > 0 &&
-                        self.combos.holidays.length > 0) {
+                    if (self.combos.frequency.length > 0 && self.combos.days.length > 0 && self.combos.holidays.length > 0) {
                         let newDays = "0000000";
                         for (let i = 0; i < self.combos.days.length; i++) {
                             newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
@@ -404,13 +137,7 @@ class JobDetailService {
                         newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
                         console.log(newDays);
                         return self.DispatchData
-                            .updateJobDetail(self.currentJob.id,
-                                "Days",
-                                newDays,
-                                self.currentJob.charge,
-                                FirstName,
-                                ContactID,
-                                self.currentJob.preBook).then(response => {
+                            .updateJobDetail(self.currentJob.id, "Days", newDays, self.currentJob.charge, FirstName, ContactID, self.currentJob.preBook).then(response => {
                                 self.selectJobDetail(self.currentJob.id);
                                 return response;
                             });
@@ -418,17 +145,13 @@ class JobDetailService {
                         console.log("invalid data");
                     }
                 }
-            },
-            "holidays": [],
-            "holidaysEvents": {
+            }, "holidays": [], "holidaysEvents": {
                 onSelectionChanged: function (item) {
                     const self = this;
 
                     console.log("Days =");
                     console.log(self.combos.days);
-                    if (self.combos.frequency.length > 0 &&
-                        self.combos.days.length > 0 &&
-                        self.combos.holidays.length > 0) {
+                    if (self.combos.frequency.length > 0 && self.combos.days.length > 0 && self.combos.holidays.length > 0) {
                         let newDays = "0000000";
                         for (let i = 0; i < this.combos.days.length; i++) {
                             newDays = newDays.replaceAt(parseInt(self.combos.days[i].id), "1");
@@ -436,13 +159,7 @@ class JobDetailService {
                         newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
                         console.log(newDays);
                         return self.DispatchData
-                            .updateJobDetail(self.currentJob.id,
-                                "Holidays",
-                                newDays,
-                                self.currentJob.charge,
-                                FirstName,
-                                ContactID,
-                                self.currentJob.preBook).then(response => {
+                            .updateJobDetail(self.currentJob.id, "Holidays", newDays, self.currentJob.charge, FirstName, ContactID, self.currentJob.preBook).then(response => {
                                 self.selectJobDetail(self.currentJob.id);
                                 return response;
                             });
@@ -461,11 +178,9 @@ class JobDetailService {
         //  PALLET CONTROLS //
         /////////////////////////////
         let self = this;
-        this.palletMenu = [
-            // NEW IMPLEMENTATION
+        this.palletMenu = [// NEW IMPLEMENTATION
             {
-                text: "Delete",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                text: "Delete", click: function ($itemScope, $event, modelValue, text, $li) {
                     return self.DispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(response => {
 
                         console.log(response);
@@ -478,13 +193,7 @@ class JobDetailService {
                                 console.log(rate);
                                 if (rate !== self.currentJob.charge) {
                                     return self.DispatchData
-                                        .updateJobDetail(self.currentJob.id,
-                                            "rate",
-                                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                                            FirstName,
-                                            ContactID,
-                                            self.currentJob.preBook).then(response => {
+                                        .updateJobDetail(self.currentJob.id, "rate", Number(rate.replace(/[^0-9.-]+/g, "")), Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, self.currentJob.preBook).then(response => {
                                             self.selectJobDetail(self.currentJob.id);
                                             return response;
                                         });
@@ -496,8 +205,7 @@ class JobDetailService {
                         }
                     });
                 }
-            }
-        ];
+            }];
 
 
         this.currentPallet = "";
@@ -570,9 +278,7 @@ class JobDetailService {
      */
     hasDGDocs(job) {
         if (job.dgClass) {
-            return ((job.dgDocumentation || 0) === 1) || ((job.dgDocumentation || false) === true)
-                ? "Yes"
-                : "No";
+            return ((job.dgDocumentation || 0) === 1) || ((job.dgDocumentation || false) === true) ? "Yes" : "No";
         } else {
             return "";
         }
@@ -585,60 +291,16 @@ class JobDetailService {
     displayPriceBreakdown($event, job) {
         $event.stopPropagation();
         console.log(job);
-        const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
-            job.fromSuburbID === 112 && job.toSuburbID === 112 ||
-            job.fromSuburbID === 480 && job.toSuburbID === 480;
-        if (job.size.id === 4 &&
-            (job.speedID === 41 ||
-                job.speedID === 42 ||
-                job.speedID === 43 ||
-                job.speedID === 44 ||
-                job.speedID === 46 ||
-                job.speedID === 51 ||
-                job.speedID === 52)) {
+        const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
+        if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
             //Truck Job
-            this.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
-                itemSummary => this.DispatchData.truckJobAmountBreakdown(job.clientID,
-                    job.fromSuburbID,
-                    job.toSuburbID,
-                    itemSummary.weight,
-                    job.size.id,
-                    job.speedID,
-                    itemSummary.quantity,
-                    job.booked,
-                    itemSummary.pickUp,
-                    itemSummary.dropOff,
-                    job.privateRes,
-                    itemSummary.overSize,
-                    itemSummary.overWeight,
-                    itemSummary.dgClass,
-                    job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"),
-                    job.truckHours || 2,
-                    job.gstRate).then(function (description) {
-                    alert(description);
-                }));
+            this.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(itemSummary => this.DispatchData.truckJobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2, job.gstRate).then(function (description) {
+                alert(description);
+            }));
 
             return false;
         } else {
-            return this.DispatchData.jobAmountBreakdown(job.clientID,
-                job.fromSuburbID,
-                job.toSuburbID,
-                job.speedID,
-                pedal,
-                job.van,
-                job.return,
-                job.weight,
-                job.size.id,
-                true,
-                job.direct,
-                job.acceptedJobTypeID,
-                job.ourRef || '',
-                job.refA || '',
-                job.refB || '',
-                job.items,
-                job.booked,
-                job.gstRate,
-                job.charge.replace("$", "")).then(description => {
+            return this.DispatchData.jobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked, job.gstRate, job.charge.replace("$", "")).then(description => {
                 alert(description);
             });
         }
@@ -647,62 +309,15 @@ class JobDetailService {
     rateJob(job) {
         const self = this;
 
-        const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
-            job.fromSuburbID === 112 && job.toSuburbID === 112 ||
-            job.fromSuburbID === 480 && job.toSuburbID === 480;
-        if (job.size.id === 4 &&
-            (job.speedID === 41 ||
-                job.speedID === 42 ||
-                job.speedID === 43 ||
-                job.speedID === 44 ||
-                job.speedID === 46 ||
-                job.speedID === 51 ||
-                job.speedID === 52 ||
-                job.speedID === 124 ||
-                job.speedID === 125 ||
-                job.speedID === 150 ||
-                job.speedID === 151 ||
-                job.speedID === 152
-            )) {
+        const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
+        if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52 || job.speedID === 124 || job.speedID === 125 || job.speedID === 150 || job.speedID === 151 || job.speedID === 152)) {
             //Truck Job
-            return self.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(
-                function (itemSummary) {
-                    return self.DispatchData.rateTruckJob(job.clientID,
-                        job.fromSuburbID,
-                        job.toSuburbID,
-                        itemSummary.weight,
-                        job.size.id,
-                        job.speedID,
-                        itemSummary.quantity,
-                        job.booked,
-                        itemSummary.pickUp,
-                        itemSummary.dropOff,
-                        job.privateRes,
-                        itemSummary.overSize,
-                        itemSummary.overWeight,
-                        itemSummary.dgClass,
-                        job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"),
-                        job.truckHours || 2);
+            return self.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
+                return self.DispatchData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2);
 
-                });
+            });
         } else {
-            return self.DispatchData.rateJob(job.clientID,
-                job.fromSuburbID,
-                job.toSuburbID,
-                job.speedID,
-                pedal,
-                job.van,
-                job.return,
-                job.weight,
-                job.size.id,
-                true,
-                job.direct,
-                job.acceptedJobTypeID,
-                job.ourRef || '',
-                job.refA || '',
-                job.refB || '',
-                job.items,
-                job.booked);
+            return self.DispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked);
         }
     }
 
@@ -723,10 +338,7 @@ class JobDetailService {
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                id: id,
-                fieldName: fieldName,
-                title: title,
-                job: job,
+                id: id, fieldName: fieldName, title: title, job: job,
             }
         }).then(_ => {
             this.selectJobDetail(job.id);
@@ -753,11 +365,7 @@ class JobDetailService {
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                job,
-                title,
-                fieldName,
-                date,
-                id
+                job, title, fieldName, date, id
             },
         }).then(_ => {
             this.selectJobDetail(job.id);
@@ -799,11 +407,7 @@ class JobDetailService {
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                job,
-                time,
-                title,
-                fieldName,
-                id
+                job, time, title, fieldName, id
             },
         }).then(_ => {
             this.selectJobDetail(job.id);
@@ -841,10 +445,7 @@ class JobDetailService {
 
         this.$mdDialog.show(prompt).then(result => {
             const callData = {
-                "call": "updateDetailField",
-                "field": field,
-                "value": result,
-                "jobID": job.id
+                "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
             };
             this.updateField(false, job, callData).then(() => {
                 this.selectJobDetail(job.id);
@@ -909,29 +510,11 @@ class JobDetailService {
     updateField(reRate, job, callData) {
         if (reRate && !job.bulkJob) {
             return this.rateJob(job).then(rate => this.DispatchData
-                .updateJobDetail(callData.jobID,
-                    callData.field,
-                    callData.value,
-                    Number(rate.replace(/[^0-9.-]+/g, "")),
-                    FirstName,
-                    ContactID,
-                    job.preBook).then(response => response));
+                .updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => response));
         } else {
             return job.bulkJob ? this.DispatchData
-                    .updateBulkJobDetail(job.id,
-                        callData.field,
-                        callData.value,
-                        job.charge,
-                        FirstName,
-                        ContactID).then(response => response) :
-                this.DispatchData
-                    .updateJobDetail(callData.jobID,
-                        callData.field,
-                        callData.value,
-                        job.charge,
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(response => response);
+                .updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID).then(response => response) : this.DispatchData
+                .updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID, job.preBook).then(response => response);
         }
     }
 
@@ -994,56 +577,44 @@ class JobDetailService {
         this.gather.form = {
             id: "editField",
             title: (fieldName === "Notes" ? "Add " : "Edit ") + label,
-            fields: fieldName === "ClientID"
-                ? [
-                    {
-                        "name": fieldName,
-                        "label": label + "...",
-                        "value": value,
-                        "jobID": jobID,
-                        "type": type,
-                        "options": options
-                    },
-                    {
-                        "name": "Rate",
-                        "label": "Re-Rate?",
-                        "value": false,
-                        "jobID": jobID,
-                        "type": "checkbox",
-                        "options": options
-                    }
-                ]
-                : fieldName === "DGClass"
-                    ? [
-                        {
-                            "name": fieldName,
-                            "label": label + "...",
-                            "value": options[value],
-                            "jobID": jobID,
-                            "type": type,
-                            "options": options,
-                            "maxLength": max
-                        },
-                        {
-                            "name": "Documentation",
-                            "label": "Has Documentation?",
-                            "value": job.dgDocumentation,
-                            "jobID": jobID,
-                            "type": "checkbox",
-                            "options": options
-                        }
-                    ]
-                    : [
-                        {
-                            "name": fieldName,
-                            "label": label + "...",
-                            "value": valueToUse,
-                            "jobID": jobID,
-                            "type": type,
-                            "options": options,
-                            "maxLength": max
-                        }
-                    ],
+            fields: fieldName === "ClientID" ? [{
+                "name": fieldName,
+                "label": label + "...",
+                "value": value,
+                "jobID": jobID,
+                "type": type,
+                "options": options
+            }, {
+                "name": "Rate",
+                "label": "Re-Rate?",
+                "value": false,
+                "jobID": jobID,
+                "type": "checkbox",
+                "options": options
+            }] : fieldName === "DGClass" ? [{
+                "name": fieldName,
+                "label": label + "...",
+                "value": options[value],
+                "jobID": jobID,
+                "type": type,
+                "options": options,
+                "maxLength": max
+            }, {
+                "name": "Documentation",
+                "label": "Has Documentation?",
+                "value": job.dgDocumentation,
+                "jobID": jobID,
+                "type": "checkbox",
+                "options": options
+            }] : [{
+                "name": fieldName,
+                "label": label + "...",
+                "value": valueToUse,
+                "jobID": jobID,
+                "type": type,
+                "options": options,
+                "maxLength": max
+            }],
             onSubmit: function () {
                 const self = this;
                 let reRate = false;
@@ -1086,9 +657,7 @@ class JobDetailService {
                     callData.value = self.gather.form.fields[0].value;
                     job.jobType = self.gather.form.fields[0].value;
                     return self.DispatchData
-                        .updateJobType(callData.jobID,
-                            callData.value,
-                            FirstName).then(() => {
+                        .updateJobType(callData.jobID, callData.value, FirstName).then(() => {
 
                         });
                 }
@@ -1128,23 +697,11 @@ class JobDetailService {
                     let dgdocs = self.gather.form.fields[1].value;
 
                     return self.DispatchData
-                        .updateJobDetail(callData.jobID,
-                            callData.field,
-                            callData.value,
-                            job.charge,
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(response => {
+                        .updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID, job.preBook).then(response => {
                             if (job.dgDocumentation !== dgdocs) {
                                 job.dgDocumentation = dgdocs;
                                 return self.DispatchData
-                                    .updateJobDetail(callData.jobID,
-                                        "DGDocumentation",
-                                        job.dgDocumentation,
-                                        job.charge,
-                                        FirstName,
-                                        ContactID,
-                                        job.preBook).then(response => response);
+                                    .updateJobDetail(callData.jobID, "DGDocumentation", job.dgDocumentation, job.charge, FirstName, ContactID, job.preBook).then(response => response);
                             } else {
                                 return response;
                             }
@@ -1152,29 +709,11 @@ class JobDetailService {
                 }
                 if (reRate && !job.bulkJob) {
                     return self.rateJobService.rateJob(job).then(rate => self.DispatchData
-                        .updateJobDetail(callData.jobID,
-                            callData.field,
-                            callData.value,
-                            Number(rate.replace(/[^0-9.-]+/g, "")),
-                            FirstName,
-                            ContactID,
-                            job.preBook).then(response => response));
+                        .updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => response));
                 } else {
                     return job.bulkJob ? self.DispatchData
-                            .updateBulkJobDetail(job.id,
-                                callData.field,
-                                callData.value,
-                                job.charge,
-                                FirstName,
-                                ContactID).then(response => response) :
-                        self.DispatchData
-                            .updateJobDetail(callData.jobID,
-                                callData.field,
-                                callData.value,
-                                job.charge,
-                                FirstName,
-                                ContactID,
-                                job.preBook).then(response => response);
+                        .updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID).then(response => response) : self.DispatchData
+                        .updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID, job.preBook).then(response => response);
                 }
 
             },
@@ -1182,10 +721,9 @@ class JobDetailService {
         };
 
         this.$timeout(function () {
-                console.log(this.gather);
-                this.gather.showForm();
-            },
-            200);
+            console.log(this.gather);
+            this.gather.showForm();
+        }, 200);
     }
 
     /**
@@ -1195,12 +733,14 @@ class JobDetailService {
      */
     updateGPS(event, currentJob, field) {
         // Get coordinates
-        const getDeliveryLocation = currentJob => currentJob.deliveryLongitude
-            ? {lat: currentJob.deliveryLatitude, long: currentJob.deliveryLongitude}
-            : {lat: "", long: ""};
-        const getPickupLocation = currentJob => currentJob.pickUpLongitude
-            ? {lat: currentJob.pickUpLatitude, long: currentJob.pickUpLongitude}
-            : {lat: "", long: ""};
+        const getDeliveryLocation = currentJob => currentJob.deliveryLongitude ? {
+            lat: currentJob.deliveryLatitude,
+            long: currentJob.deliveryLongitude
+        } : {lat: "", long: ""};
+        const getPickupLocation = currentJob => currentJob.pickUpLongitude ? {
+            lat: currentJob.pickUpLatitude,
+            long: currentJob.pickUpLongitude
+        } : {lat: "", long: ""};
         const location = field === "toAddress" ? getDeliveryLocation(currentJob) : getPickupLocation(currentJob);
         const {lat, long} = location;
 
@@ -1218,15 +758,8 @@ class JobDetailService {
             fullscreen: true,
             locals: {
                 addressDetails: {
-                    address: currentJob[field],
-                    lat,
-                    long,
-                    suburb: suburbText,
-                    postCode: currentJob.postCode,
-                },
-                suburbOptions: this.pickSuburbs,
-                title: "Update Address and GPS",
-                submitLabel: "Update",
+                    address: currentJob[field], lat, long, suburb: suburbText, postCode: currentJob.postCode,
+                }, suburbOptions: this.pickSuburbs, title: "Update Address and GPS", submitLabel: "Update",
             },
         }).then(addressDetails => {
             try {
@@ -1352,13 +885,7 @@ class JobDetailService {
         const vanOkValue = !job.vanOK;
 
         return this.DispatchData
-            .updateJobDetail(job.id,
-                "VanOK",
-                vanOkValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook).then(response => {
+            .updateJobDetail(job.id, "VanOK", vanOkValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1372,15 +899,7 @@ class JobDetailService {
                 console.log(rate);
 
                 return this.DispatchData
-                    .updateJobDetail(
-                        job.id,
-                        "Van",
-                        vanValue,
-                        Number(rate.replace(/[^0-9.-]+/g, "")),
-                        FirstName,
-                        ContactID,
-                        job.preBook
-                    )
+                    .updateJobDetail(job.id, "Van", vanValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook)
                     .then(response => {
                         this.selectJobDetail(job.id);
                         return response;
@@ -1395,13 +914,7 @@ class JobDetailService {
         return this.rateJob(job).then(rate => {
             console.log(rate);
             return this.DispatchData
-                .updateJobDetail(job.id,
-                    "Pedal",
-                    pedalValue,
-                    Number(rate.replace(/[^0-9.-]+/g, "")),
-                    FirstName,
-                    ContactID,
-                    job.preBook).then(function (response) {
+                .updateJobDetail(job.id, "Pedal", pedalValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(function (response) {
                     this.selectJobDetail(job.id);
                     return response;
                 }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1414,15 +927,7 @@ class JobDetailService {
         return this.rateJob(job)
             .then(rate => {
                 console.log(rate);
-                return this.DispatchData.updateJobDetail(
-                    job.id,
-                    "Truck",
-                    truckValue,
-                    Number(rate.replace(/[^0-9.-]+/g, "")),
-                    FirstName,
-                    ContactID,
-                    job.preBook
-                );
+                return this.DispatchData.updateJobDetail(job.id, "Truck", truckValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook);
             })
             .then(response => {
                 this.selectJobDetail(job.id);
@@ -1439,13 +944,7 @@ class JobDetailService {
             return this.rateJob(job).then(rate => {
                 console.log(rate);
                 return this.DispatchData
-                    .updateJobDetail(job.id,
-                        "Direct",
-                        directValue,
-                        Number(rate.replace(/[^0-9.-]+/g, "")),
-                        FirstName,
-                        ContactID,
-                        job.preBook).then(response => {
+                    .updateJobDetail(job.id, "Direct", directValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => {
                         this.selectJobDetail(job.id);
                         return response;
                     }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1457,13 +956,7 @@ class JobDetailService {
         const attentionValue = !job.attention;
 
         return this.DispatchData
-            .updateJobDetail(job.id,
-                "Attention",
-                attentionValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook).then(response => {
+            .updateJobDetail(job.id, "Attention", attentionValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1473,13 +966,7 @@ class JobDetailService {
         const repriceValue = !job.reprice;
 
         return this.DispatchData
-            .updateJobDetail(job.id,
-                "Reprice",
-                repriceValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook).then(response => {
+            .updateJobDetail(job.id, "Reprice", repriceValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1489,13 +976,7 @@ class JobDetailService {
         const returnValue = !job.return;
 
         return this.DispatchData
-            .updateJobDetail(job.id,
-                "Return",
-                returnValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook).then(response => {
+            .updateJobDetail(job.id, "Return", returnValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1505,13 +986,7 @@ class JobDetailService {
         const oneoffValue = !job.oneOff;
 
         return this.DispatchData
-            .updateJobDetail(job.id,
-                "OneOff",
-                oneoffValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook).then(response => {
+            .updateJobDetail(job.id, "OneOff", oneoffValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1522,13 +997,7 @@ class JobDetailService {
         const activeValue = !job.active;
 
         return this.DispatchData
-            .updateJobDetail(job.id,
-                "Active",
-                activeValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook).then(response => {
+            .updateJobDetail(job.id, "Active", activeValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1538,26 +1007,14 @@ class JobDetailService {
         const voidValue = !job.void;
 
         return job.bulkJob ? this.DispatchData
-                .updateBulkJobDetail(job.id,
-                    "Void",
-                    voidValue,
-                    job.charge,
-                    FirstName,
-                    ContactID).then(response => {
-                    this.selectBulkJobDetail(job.id);
-                    return response;
-                }).catch(() => this.toastrService.showErrorToast())
-            : this.DispatchData
-                .updateJobDetail(job.id,
-                    "Void",
-                    voidValue,
-                    job.charge,
-                    FirstName,
-                    ContactID,
-                    job.preBook).then(response => {
-                    this.selectJobDetail(job.id);
-                    return response;
-                }).catch((error) => this.toastrService.showErrorToast(error.message));
+            .updateBulkJobDetail(job.id, "Void", voidValue, job.charge, FirstName, ContactID).then(response => {
+                this.selectBulkJobDetail(job.id);
+                return response;
+            }).catch(() => this.toastrService.showErrorToast()) : this.DispatchData
+            .updateJobDetail(job.id, "Void", voidValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
+                this.selectJobDetail(job.id);
+                return response;
+            }).catch((error) => this.toastrService.showErrorToast(error.message));
     }
 
     doneClick(event, job) {
@@ -1588,10 +1045,7 @@ class JobDetailService {
         }
 
         return this.DispatchData
-            .updatePODDetail(job.jobNo,
-                6,
-                job.podName,
-                job.completedTime).then(() => {
+            .updatePODDetail(job.jobNo, 6, job.podName, job.completedTime).then(() => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1601,13 +1055,7 @@ class JobDetailService {
         const doneValue = !job.done;
 
         return this.DispatchData
-            .updateJobDetail(job.id,
-                "Delivered",
-                doneValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook).then(response => {
+            .updateJobDetail(job.id, "Delivered", doneValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1617,13 +1065,7 @@ class JobDetailService {
         const airportOnlyValue = !job.airportOnly;
 
         return this.DispatchData
-            .updateJobDetail(job.id,
-                "AirportOnly",
-                airportOnlyValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook).then(response => {
+            .updateJobDetail(job.id, "AirportOnly", airportOnlyValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this.toastrService.showErrorToast(error.message));
@@ -1632,8 +1074,7 @@ class JobDetailService {
     trackingMethodClick(event, job) {
         const trackingArray = this.options.detail.tracking.map(item => {
             return {
-                id: item.id,
-                text: item.label
+                id: item.id, text: item.label
             };
         });
 
@@ -1651,8 +1092,7 @@ class JobDetailService {
     sizeClick(event, job) {
         const sizeArray = this.options.detail.size.map(item => {
             return {
-                id: item.id,
-                text: item.label
+                id: item.id, text: item.label
             };
         });
 
@@ -1667,12 +1107,12 @@ class JobDetailService {
      * @param {string} title
      * @param {string|null} initialValue
      * @param {string} id
+     * @param {boolean} showCheckbox
+     * @param {string|null} checkboxLabel
      */
-    showSelectDialog(event, job, data, fieldName, title, initialValue = null, id = "editField") {
+    showSelectDialog(event, job, data, fieldName, title, initialValue = null, id = "editField", showCheckbox = false, checkboxLabel) {
         const options = {
-            minimumInputLength: 1,
-            items: data,
-            placeholder: title
+            minimumInputLength: 1, items: data, placeholder: title
         };
 
         this.$mdDialog.show({
@@ -1684,17 +1124,21 @@ class JobDetailService {
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                id,
-                fieldName,
-                title,
-                job,
-                options,
-                initialValue
+                id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel
             },
         }).then(_ => {
             this.selectJobDetail(job.id);
             console.log('Dialog closed!');
         });
+    }
+
+    dgClassClick(event, job) {
+        let dgClassOptions = [];
+        for (let i = 1; i <= 9; i++) {
+            dgClassOptions.push({id: i, text: i.toString()});
+        }
+
+        this.showSelectDialog(event, job, dgClassOptions, "DGClass", "DG Class", job.dgClass, "editField", true, "Has Documentation?")
     }
 
     notifyClick(event, job) {
@@ -1730,20 +1174,13 @@ class JobDetailService {
     }
 
     jobTypeClick(event, job) {
-        const data = [
-            {
-                id: 1,
-                text: 'Pickup'
-            },
-            {
-                id: 2,
-                text: 'Delivery'
-            },
-            {
-                id: 3,
-                text: '3rd-Party'
-            }
-        ];
+        const data = [{
+            id: 1, text: 'Pickup'
+        }, {
+            id: 2, text: 'Delivery'
+        }, {
+            id: 3, text: '3rd-Party'
+        }];
 
         this.showSelectDialog(event, job, data, "JobTypeID", "Job Type", this.getJobTypeDescription(job.jobType));
     }
@@ -1763,21 +1200,9 @@ class JobDetailService {
      * @param {null} existingItem
      * @param {boolean} showRerateOption
      */
-    showAutocompleteDialog(
-        event,
-        job,
-        url,
-        placeholder,
-        fieldName,
-        title,
-        id = "editField",
-        existingItem,
-        showRerateOption
-    ) {
+    showAutocompleteDialog(event, job, url, placeholder, fieldName, title, id = "editField", existingItem, showRerateOption) {
         const options = {
-            placeholder,
-            minimumInputLength: 3,
-            searchUrl: url
+            placeholder, minimumInputLength: 3, searchUrl: url
         };
 
         this.$mdDialog.show({
@@ -1789,13 +1214,7 @@ class JobDetailService {
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                id,
-                fieldName,
-                title,
-                job,
-                options,
-                existingItem,
-                showRerateOption
+                id, fieldName, title, job, options, existingItem, showRerateOption
             },
         }).then(_ => {
             this.selectJobDetail(job.id);
@@ -1808,8 +1227,7 @@ class JobDetailService {
         const placeholder = "Start typing to enter new client...";
 
         const existingItem = {
-            id: job.clientID,
-            text: job.clientName
+            id: job.clientID, text: job.clientName
         }
 
         this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
@@ -1836,9 +1254,7 @@ class JobDetailService {
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                job: job,
-                dispatherName: FirstName,
-                contactId: ContactID
+                job: job, dispatherName: FirstName, contactId: ContactID
             }
         }).then(() => {
             this.selectJobDetail(job.id);
@@ -1854,69 +1270,25 @@ class JobDetailService {
         self.currentPallet = pallet;
 
         self.gather.form = {
-            id: "editPallet",
-            title: "Edit Pallet",
-            tpl: "multi",
-            fields: [
-                {
-                    "name": "amount",
-                    "label": "# of pallets",
-                    "colSize": "6",
-                    "value": pallet.quantity
-                },
-                {
-                    "name": "weight",
-                    "label": "Weight (KG)",
-                    "colSize": "6",
-                    "value": pallet.weight
-                },
-                {
-                    "name": "length",
-                    "label": "Length (m)",
-                    "colSize": "6",
-                    "value": pallet.length
-                },
-                {
-                    "name": "depth",
-                    "label": "Depth (m)",
-                    "colSize": "6",
-                    "value": pallet.depth
-                },
-                {
-                    "name": "height",
-                    "label": "Height (m)",
-                    "colSize": "6",
-                    "value": pallet.height
-                },
-                {
-                    "name": "pu",
-                    "label": "PU",
-                    "colSize": "6",
-                    "type": "checkbox",
-                    "value": pallet.pu
-                },
-                {
-                    "name": "do",
-                    "label": "DO",
-                    "colSize": "6",
-                    "type": "checkbox",
-                    "value": pallet.do
-                },
-                {
-                    "name": "dgclass",
-                    "label": "DG Class",
-                    "colSize": "6",
-                    "value": pallet.dgClass
-                },
-                {
-                    "name": "notes",
-                    "label": "Notes",
-                    "colSize": "12",
-                    "type": "textarea",
-                    "value": pallet.notes
-                }
-            ],
-            onSubmit: function () {
+            id: "editPallet", title: "Edit Pallet", tpl: "multi", fields: [{
+                "name": "amount", "label": "# of pallets", "colSize": "6", "value": pallet.quantity
+            }, {
+                "name": "weight", "label": "Weight (KG)", "colSize": "6", "value": pallet.weight
+            }, {
+                "name": "length", "label": "Length (m)", "colSize": "6", "value": pallet.length
+            }, {
+                "name": "depth", "label": "Depth (m)", "colSize": "6", "value": pallet.depth
+            }, {
+                "name": "height", "label": "Height (m)", "colSize": "6", "value": pallet.height
+            }, {
+                "name": "pu", "label": "PU", "colSize": "6", "type": "checkbox", "value": pallet.pu
+            }, {
+                "name": "do", "label": "DO", "colSize": "6", "type": "checkbox", "value": pallet.do
+            }, {
+                "name": "dgclass", "label": "DG Class", "colSize": "6", "value": pallet.dgClass
+            }, {
+                "name": "notes", "label": "Notes", "colSize": "12", "type": "textarea", "value": pallet.notes
+            }], onSubmit: function () {
 
                 const newP = {};
 
@@ -1958,13 +1330,7 @@ class JobDetailService {
                         console.log(rate);
                         if (rate !== self.currentJob.charge) {
                             return self.DispatchData
-                                .updateJobDetail(this.currentJob.id,
-                                    "rate",
-                                    Number(rate.replace(/[^0-9.-]+/g, "")),
-                                    Number(rate.replace(/[^0-9.-]+/g, "")),
-                                    FirstName,
-                                    ContactID,
-                                    self.currentJob.preBook).then(function (response) {
+                                .updateJobDetail(this.currentJob.id, "rate", Number(rate.replace(/[^0-9.-]+/g, "")), Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, self.currentJob.preBook).then(function (response) {
                                     self.selectJobDetail(self.currentJob.id);
                                     return response;
                                 });
@@ -1972,14 +1338,12 @@ class JobDetailService {
 
                     });
                 });
-            },
-            submitValue: "Edit Pallet"
+            }, submitValue: "Edit Pallet"
         };
 
         this.$timeout(function () {
-                this.gather.showForm();
-            },
-            200);
+            this.gather.showForm();
+        }, 200);
     }
 }
 

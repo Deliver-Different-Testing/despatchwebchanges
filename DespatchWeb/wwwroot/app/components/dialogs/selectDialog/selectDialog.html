@@ -16,6 +16,18 @@
                         {{ item.text }}
                     </md-option>
                 </md-select>
+
+                <div ng-show="ctrl.showCheckbox" style="display: flex; justify-content: center; align-items: center;">
+                    <div>
+                        <md-divider></md-divider>
+
+                        <!-- Checkbox -->
+                        <md-checkbox aria-label="Checkbox" ng-model="ctrl.checkboxValue">
+                            {{ ctrl.checkboxLabel }}
+                        </md-checkbox>
+                    </div>
+                </div>
+
             </form>
         </div>
     </md-dialog-content>
