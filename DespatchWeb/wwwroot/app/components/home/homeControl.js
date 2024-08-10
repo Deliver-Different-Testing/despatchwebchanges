@@ -404,15 +404,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     self.layout = angular.copy(self.layouts[0].layout);
 
     /**
-     * @param {Event} event
      * @param {Number} index
      */
-    self.deleteLayout = (event, index) => {
+    self.deleteLayout = (index) => {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
             .ariaLabel('delete layout')
-            .targetEvent(event)
             .ok('Delete')
             .cancel('Cancel');
 
@@ -448,7 +446,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $timeout(self.getData, 1000);
     };
 
-    self.saveLayout = event => {
+    self.saveLayout = () => {
         angular.forEach(self.layout.columns,
             (column) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
@@ -462,7 +460,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             .title('Save Layout')
             .textContent('Please enter a name for this layout.')
             .ariaLabel('Layout name')
-            .targetEvent(event)
             .required(true)
             .ok('Save')
             .cancel('Cancel');
