@@ -475,12 +475,11 @@ function NationwideController($scope, jdSvc, NWData, $state,
 
     self.layout = angular.copy(self.layouts[0].layout);
 
-    self.deleteLayout = function (event, i) {
+    self.deleteLayout = function (index) {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
             .ariaLabel('delete layout')
-            .targetEvent(event)
             .ok('Delete')
             .cancel('Cancel');
 
@@ -510,7 +509,7 @@ function NationwideController($scope, jdSvc, NWData, $state,
         $timeout($scope.getData, 1000);
     };
 
-    self.saveLayout = function (event) {
+    self.saveLayout = function () {
         angular.forEach(self.layout.columns,
             (column, colKey) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
@@ -524,7 +523,6 @@ function NationwideController($scope, jdSvc, NWData, $state,
             .title('Save Layout')
             .textContent('Please enter a name for this layout.')
             .ariaLabel('Layout name')
-            .targetEvent(event)
             .required(true)
             .ok('Save')
             .cancel('Cancel');

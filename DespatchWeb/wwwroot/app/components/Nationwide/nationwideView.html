@@ -82,7 +82,7 @@
                     </md-button>
                     <md-menu-content width="2">
                         <md-menu-item>
-                            <md-button ng-click="ctrl.saveLayout($event)">
+                            <md-button ng-click="ctrl.saveLayout()">
                                 <md-icon md-font-set="material-symbols-outlined">save</md-icon>
                                 Save Layout
                             </md-button>
@@ -90,7 +90,7 @@
                         <md-menu-item ng-repeat="lo in ctrl.layouts track by $index">
                             <md-button>
                                 <md-icon md-font-set="material-symbols-outlined"
-                                         ng-click="ctrl.deleteLayout($event, $index)">
+                                         ng-click="ctrl.deleteLayout($index)">
                                     delete
                                 </md-icon>
                                 <span ng-click="ctrl.loadLayout($index)"
