@@ -1512,6 +1512,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     }
 
+    self.jobRecordSearchText = "";
+
     /**
      * @param {string} searchText
      */

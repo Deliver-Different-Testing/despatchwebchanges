@@ -10,6 +10,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     $scope.userName = FirstName;
+    self.jobDetailFabIsOpen = false;
     self.dateSearchRange = 1; // Set to fortnight
     $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
@@ -688,6 +689,27 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         }
     });
+
+    self.jobRecordSearchText = "";
+
+    /**
+     *
+     * @param {string} searchText
+     */
+    self.jobRecordSearch = searchText => {
+        return $scope.jobList
+            .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
+            .map(job => ({id: job.id, text: job.jobNo}));
+    }
+
+    /**
+     * @param {number} selectedJobId
+     */
+    self.JobRecordSelected = selectedJobId => {
+        const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
+        $scope.selectJob(selectedJob);
+    }
+
 
     $scope.filterRegion = function (region) {
         var sr = $scope.pickRegions.find(obj => {
