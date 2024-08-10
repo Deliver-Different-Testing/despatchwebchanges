@@ -106,10 +106,10 @@ angular
         $mdThemingProvider.theme("warning-toast")
         $mdThemingProvider.theme("error-toast")
     })
-    .directive("rightClick", () => {
-        document.oncontextmenu = e => {
-            if (e.target.hasAttribute("right-click")) {
-                e.stopPropagation();
+    .directive("rightClick", ($document) => {
+        $document.oncontextmenu = event => {
+            if (event.target.hasAttribute("right-click")) {
+                event.stopPropagation();
                 return false;
             }
         };
