@@ -10,11 +10,10 @@
  * @property {string} notes Additional notes for the event
  */
 class AddEventDialogController {
-    constructor($scope, $mdDialog, NWData, toastrService, rateJobService, job, dispatcherName, contactId) {
-        this.$mdDialog = $mdDialog;
-        this.NWData = NWData;
-        this.toastrService = toastrService;
-        this.rateJobService = rateJobService;
+    constructor($scope, $mdDialog, NWData, toastrService, job, dispatcherName, contactId) {
+        this._$mdDialog = $mdDialog;
+        this._NWData = NWData;
+        this._toastrService = toastrService;
         this._dispatcherName = dispatcherName;
         this._contactId = contactId;
         this._job = job;
@@ -43,7 +42,7 @@ class AddEventDialogController {
     }
 
     _initialiseData() {
-        this.NWData.getEventTypes().then(data => {
+        this._NWData.getEventTypes().then(data => {
             this.eventTypes = data;
 
             // Find the event that matches "Other" and set it to this.selectedEvent
@@ -60,7 +59,7 @@ class AddEventDialogController {
     async submit(event) {
         try {
             if (!this.eventForm.$valid) {
-                this.toastrService.showWarningToast("Please complete all the required fields.");
+                this._toastrService.showWarningToast("Please complete all the required fields.");
                 return;
             }
 
@@ -71,32 +70,32 @@ class AddEventDialogController {
 
             // Exsalerate Event
             if (eventId === "7" || eventId === "92") {
-                this.NWData.exsalerateActivity(eventName, event.notes, this._clientId, event.jobNumber, this._dispatcherName);
+                this._NWData.exsalerateActivity(eventName, event.notes, this._clientId, event.jobNumber, this._dispatcherName);
             }
 
             //Process Event
             if (eventId === "48" || eventId === "52" || eventId === "54" || eventId === "60" || eventId === "6") {
                 //Add Notes
                 const newNote = eventName + ":" + event.notes;
-                await this.NWData.addNote(event.jobId, newNote, FirstName, false);
+                await this._NWData.addNote(event.jobId, newNote, FirstName, false);
             }
 
-            await this.NWData.addEvent(event.jobNumber, this._job.clientId, this._job.contact, this._contactId,
+            await this._NWData.addEvent(event.jobNumber, this._job.clientId, this._job.contact, this._contactId,
                 this._job.courierData.courierID, this._job.id, this._job.jobType, this._dispatcherName, event.notes, eventId);
 
             if (eventId === "6") {
-                this.NWData.voidJob(this._job.id);
+                this._NWData.voidJob(this._job.id);
             }
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
 
-        this.$mdDialog.hide();
+        this._$mdDialog.hide();
     }
 
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }
