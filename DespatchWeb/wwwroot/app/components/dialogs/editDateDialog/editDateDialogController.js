@@ -31,7 +31,7 @@ class EditDateDialogController {
     async submit(newDate) {
         try {
             this.isLoading = true;
-            await this.updateJobDetail(newDate);
+            await this._updateJobDetail(newDate);
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         } finally {
@@ -42,7 +42,7 @@ class EditDateDialogController {
     /**
      * @param {Date} newDate
      */
-    async updateJobDetail(newDate) {
+    async _updateJobDetail(newDate) {
         const formattedDate = this._formatDate(newDate);
         const callData = {
             "call": "updateDetailField",
