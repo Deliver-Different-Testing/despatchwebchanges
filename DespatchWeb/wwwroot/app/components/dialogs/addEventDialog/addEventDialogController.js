@@ -80,8 +80,7 @@ class AddEventDialogController {
                 await this._NWData.addNote(event.jobId, newNote, FirstName, false);
             }
 
-            await this._NWData.addEvent(event.jobNumber, this._job.clientId, this._job.contact, this._contactId,
-                this._job.courierData.courierID, this._job.id, this._job.jobType, this._dispatcherName, event.notes, eventId);
+            await this._NWData.addEvent(event.jobNumber, this._job.clientId, this._job.contact, this._contactId, this._job.courierData.courierID, this._job.id, this._job.jobType, this._dispatcherName, event.notes, eventId);
 
             if (eventId === "6") {
                 this._NWData.voidJob(this._job.id);
