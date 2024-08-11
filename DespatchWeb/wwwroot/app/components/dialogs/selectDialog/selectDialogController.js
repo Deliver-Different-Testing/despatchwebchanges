@@ -22,7 +22,7 @@ class SelectDialogController {
      * @param {SelectOption[]} options - The array of selectable options.
      * @param {string|null} initialValue - The currently selected option if there is one
      * @param {boolean} showCheckbox - Determines if the checkbox option should be shown on the view
-     * @param {string/null} checkboxLabel - Label to display for the checkbox if shown to view
+     * @param {string} checkboxLabel - Label to display for the checkbox if shown to view
      */
     constructor(
         $mdDialog,
@@ -34,14 +34,14 @@ class SelectDialogController {
         job,
         options,
         initialValue,
-        showCheckbox = false,
-        checkboxLabel = null
+        showCheckbox,
+        checkboxLabel
     ) {
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
         this.toastrService = toastrService;
-        this.showCheckbox = showCheckbox;
-        this.checkboxLabel = checkboxLabel;
+        this.showCheckbox = !showCheckbox ? false : showCheckbox;
+        this.checkboxLabel = !checkboxLabel ? "" : checkboxLabel;
 
         this.isLoading = false;
         this.id = id;

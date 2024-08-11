@@ -295,13 +295,29 @@ class JobDetailService {
         if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
             //Truck Job
             this.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(itemSummary => this.DispatchData.truckJobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2, job.gstRate).then(function (description) {
-                alert(description);
+                this.$mdDialog.show(
+                    this.$mdDialog.alert()
+                        .parent(angular.element(this.$document.body))
+                        .clickOutsideToClose(true)
+                        .title('Charge Infomation')
+                        .textContent(description)
+                        .ariaLabel('Alert Dialog')
+                        .ok('OK')
+                );
             }));
 
             return false;
         } else {
             return this.DispatchData.jobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked, job.gstRate, job.charge.replace("$", "")).then(description => {
-                alert(description);
+                this.$mdDialog.show(
+                    this.$mdDialog.alert()
+                        .parent(angular.element(this.$document.body))
+                        .clickOutsideToClose(true)
+                        .title('Charge Infomation')
+                        .textContent(description)
+                        .ariaLabel('Alert Dialog')
+                        .ok('OK')
+                );
             });
         }
     }
@@ -1108,7 +1124,7 @@ class JobDetailService {
      * @param {string|null} initialValue
      * @param {string} id
      * @param {boolean} showCheckbox
-     * @param {string|null} checkboxLabel
+     * @param {string|} checkboxLabel
      */
     showSelectDialog(event,
                      job,
@@ -1118,7 +1134,7 @@ class JobDetailService {
                      initialValue = null,
                      id = "editField",
                      showCheckbox = false,
-                     checkboxLabel = null) {
+                     checkboxLabel = "") {
         const options = {
             minimumInputLength: 1, items: data, placeholder: title
         };
