@@ -9,9 +9,9 @@ md-dialog {
   font-weight: 500;
   line-height: 28px;
   letter-spacing: 0.15px;
-    max-height: 64px;
-    width: 35%;
-    overflow: auto;
+  max-height: 64px;
+  width: 35%;
+  overflow: auto;
 }
 .box-handle {
   padding: 8px;
@@ -47,7 +47,7 @@ md-autocomplete.ng-leave {
   overflow-x: auto;
   /* For Chrome and Safari */
   /* For Firefox */
-  scrollbar-color: #888 #f7f7f7;
+  scrollbar-color: #fddd00 #f7f7f7;
   scrollbar-width: thin;
 }
 .row-overflow ::-webkit-scrollbar {
@@ -57,7 +57,7 @@ md-autocomplete.ng-leave {
   background: #f7f7f7;
 }
 .row-overflow ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: #fddd00;
   border-radius: 2px;
 }
 .btn-primary {
