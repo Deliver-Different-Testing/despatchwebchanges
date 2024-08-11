@@ -42,34 +42,24 @@
  */
 class CreateJobDialogController {
     /**
-     * @param {Object} $scope - The active AngularJS scope.
-     * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
-     * @param {Object} DispatchData - The service used for data dispatching.
-     * @param {Object} toastrService - The service used for toast notifications.
-     * @param {Object} $http - Angular's built-in $http service.
-     * @param {Object} $document - Angular's built-in $document service.
-     * @param {Object }dispatchJobService
+     * @param $scope - The active AngularJS scope.
+     * @param $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param DispatchData - The service used for data dispatching.
+     * @param toastrService - The service used for toast notifications.
+     * @param $http - Angular's built-in $http service.
+     * @param dispatchJobService
      * @param {number} staffId - The ID of the staff member initiating the action.
      * @param {string} despatcherName
      */
-    constructor($scope,
-                $mdDialog,
-                DispatchData,
-                toastrService,
-                $http,
-                $document,
-                dispatchJobService,
-                staffId,
-                despatcherName) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, $http, dispatchJobService, staffId, despatcherName) {
         this.$scope = $scope;
-        this.$mdDialog = $mdDialog;
-        this.DispatchData = DispatchData;
-        this.$http = $http;
-        this.toastrService = toastrService;
-        this.$document = $document;
+        this._$mdDialog = $mdDialog;
+        this._dispatchData = DispatchData;
+        this._$http = $http;
+        this._toastrService = toastrService;
         this._staffId = staffId;
         this._despatcherName = despatcherName;
-        this.dispatchJobService = dispatchJobService;
+        this._dispatchJobService = dispatchJobService;
 
         this.jobForm = $scope.jobForm;
         this.fromAddressSearchText = "";
@@ -111,7 +101,7 @@ class CreateJobDialogController {
     }
 
     _fetchDataLists() {
-        this.DispatchData.getSpeedList().then(data => {
+        this._dispatchData.getSpeedList().then(data => {
             this.speedOptions = data;
         });
     }
@@ -144,9 +134,9 @@ class CreateJobDialogController {
         const url = "/home/ActiveClients";
 
         try {
-            return await this.DispatchData.autocompleteSearch(searchTerm, url);
+            return await this._dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
@@ -156,9 +146,9 @@ class CreateJobDialogController {
     async courierSearch(searchText) {
         try {
             const url = "/courier/AllActiveSearch";
-            return await this.DispatchData.autocompleteSearch(searchText, url);
+            return await this._dispatchData.autocompleteSearch(searchText, url);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
@@ -169,10 +159,10 @@ class CreateJobDialogController {
      */
     async addressSearchAutocomplete(searchText) {
         try {
-            const suggestions = await this.DispatchData.autocompleteAddressSearch(searchText);
+            const suggestions = await this._dispatchData.autocompleteAddressSearch(searchText);
             return this.transformSuggestions(suggestions);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
@@ -183,8 +173,7 @@ class CreateJobDialogController {
      */
     transformSuggestions(data) {
         return data.suggestions.map(obj => ({
-            id: obj.locationId,
-            text: obj.label.split(", ").reverse().join(", ")
+            id: obj.locationId, text: obj.label.split(", ").reverse().join(", ")
         }))
     }
 
@@ -194,13 +183,10 @@ class CreateJobDialogController {
      * @returns {SuburbOption|null} - The matched suburb or null.
      */
     async findSuburbByDistrict(district) {
-        const ourSuburbs = await this.DispatchData.getSuburbList();
+        const ourSuburbs = await this._dispatchData.getSuburbList();
 
         let lowerCaseDistrict = district.toLowerCase();
-        return ourSuburbs.find(localSuburb =>
-            localSuburb.text.toLowerCase() === lowerCaseDistrict ||
-            (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
-        );
+        return ourSuburbs.find(localSuburb => localSuburb.text.toLowerCase() === lowerCaseDistrict || (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict));
     }
 
     /**
@@ -214,7 +200,7 @@ class CreateJobDialogController {
      */
     async addressSearchItemSelected(item, isToAddress) {
         try {
-            const data = await this.DispatchData.getGeoCodeInformation(item);
+            const data = await this._dispatchData.getGeoCodeInformation(item);
 
             const returnedLocation = data.Response.View[0].Result[0].Location;
             const lat = returnedLocation.DisplayPosition.Latitude;
@@ -276,9 +262,9 @@ class CreateJobDialogController {
             }
 
             // Pass new jobId back to function that called dialog
-            this.$mdDialog.hide(jobId);
+            this._$mdDialog.hide(jobId);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
@@ -293,7 +279,7 @@ class CreateJobDialogController {
             return true;
         }
 
-        this.toastrService.showWarningToast("Please complete all the required fields.");
+        this._toastrService.showWarningToast("Please complete all the required fields.");
         return false;
     }
 
@@ -315,12 +301,10 @@ class CreateJobDialogController {
     async _createJob(job) {
         const url = "job/QuickCreateJob/";
         const callData = {
-            job,
-            staffId: this._staffId,
-            despatcherName: this._despatcherName
+            job, staffId: this._staffId, despatcherName: this._despatcherName
         };
 
-        return await this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
+        return await this._$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
     }
 
     /**
@@ -329,13 +313,13 @@ class CreateJobDialogController {
      * @param {number} jobId - The id of the job.
      */
     async _dispatchJobIfCourierSelected(courierId, jobId) {
-        await this.dispatchJobService.dispatchJobByJobId(courierId, jobId);
+        await this._dispatchJobService.dispatchJobByJobId(courierId, jobId);
     }
 
     /**
      * Cancels the Angular Material Dialog
      */
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }

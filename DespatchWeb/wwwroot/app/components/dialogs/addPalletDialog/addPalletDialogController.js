@@ -18,14 +18,14 @@ class AddPalletDialogController {
                 toastrService,
                 rateJobService,
                 job,
-                dispatherName,
+                dispatcherName,
                 contactId) {
-        this.$mdDialog = $mdDialog;
-        this.DispatchData = DispatchData;
-        this.toastrService = toastrService;
-        this.rateJobService = rateJobService;
+        this._$mdDialog = $mdDialog;
+        this._dispatchData = DispatchData;
+        this._toastrService = toastrService;
+        this._rateJobService = rateJobService;
         this._job = job;
-        this._dispatherName = dispatherName;
+        this._dispatherName = dispatcherName;
         this._contactId = contactId;
 
         this.isLoading = false;
@@ -52,12 +52,12 @@ class AddPalletDialogController {
     async submit(newPallet) {
         try {
             if (!this.palletForm.$valid) {
-                this.toastrService.showWarningToast("Please complete all the required fields.");
+                this._toastrService.showWarningToast("Please complete all the required fields.");
                 return;
             }
             this.isLoading = true;
 
-            const response = await this.DispatchData.addPallet(newPallet, this._job.preBook, this._dispatherName);
+            const response = await this._dispatchData.addPallet(newPallet, this._job.preBook, this._dispatherName);
 
             console.log(response);
 
@@ -68,11 +68,11 @@ class AddPalletDialogController {
 
                 this._job.palletInfo.push(newPallet);
 
-                const rate = await this.rateJobService.rateJob(this._job);
+                const rate = await this._rateJobService.rateJob(this._job);
 
                 console.log(rate);
                 if (rate !== this._job.charge) {
-                    await this.DispatchData
+                    await this._dispatchData
                         .updateJobDetail(this._job.id,
                             "rate",
                             Number(rate.replace(/[^0-9.-]+/g, "")),
@@ -83,15 +83,15 @@ class AddPalletDialogController {
                 }
             }
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
 
-        this.$mdDialog.hide();
+        this._$mdDialog.hide();
     }
 
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }

@@ -1,15 +1,21 @@
-// Controller to handle the autocomplete popups
+/**
+ * @typedef SelectOption
+ *
+ * @property {number} id - The unique identifier for the select object
+ * @property {string} text - The display text for the select object
+ */
+
 class AutoCompleteDialogController {
     constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
-        this.$mdDialog = $mdDialog;
-        this.DispatchData = DispatchData;
-        this.toastrService = toastrService;
-        this.rateJobService = rateJobService;
+        this._$mdDialog = $mdDialog;
+        this._dispatchData = DispatchData;
+        this._toastrService = toastrService;
+        this._rateJobService = rateJobService;
+        this._job = job;
 
         this.id = id;
         this.fieldName = fieldName;
         this.title = title;
-        this.job = job;
         this.options = options;
 
         this.isLoading = false;
@@ -22,24 +28,22 @@ class AutoCompleteDialogController {
     /**
      * Method to search query
      * @param {string} searchTerm
-     * @return {Promise<unknown>}
      */
     async querySearch(searchTerm) {
         try {
             const url = this.options.searchUrl;
-            return await this.DispatchData.autocompleteSearch(searchTerm, url);
+            return await this._dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
 
     /**
      * Method to submit selected item
-     * @param {*} selectedItem
-     * @return {Promise<void>}
+     * @param {SelectOption} selectedOption
      */
-    async submit(selectedItem) {
+    async submit(selectedOption) {
         this.isLoading = true;
 
         try {
@@ -47,35 +51,35 @@ class AutoCompleteDialogController {
             const callData = {
                 "call": "updateDetailField",
                 "field": this.fieldName,
-                "value": selectedItem.id,
-                "jobID": this.job.id
+                "value": selectedOption.id,
+                "jobID": this._job.id
             };
 
-            if (reRate && !this.job.bulkJob) {
-                const rate = await this.rateJobService.rateJob(this.job);
-                await this.DispatchData
+            if (reRate && !this._job.bulkJob) {
+                const rate = await this._rateJobService.rateJob(this._job);
+                await this._dispatchData
                     .updateJobDetail(callData.jobID,
                         callData.field,
                         callData.value,
                         Number(rate.replace(/[^0-9.-]+/g, "")),
                         FirstName,
                         ContactID,
-                        this.job.preBook);
+                        this._job.preBook);
             } else {
-                this.job.bulkJob ?
-                    await this.DispatchData.updateBulkJobDetail(this.job.id, callData.field, callData.value, this.job.charge, FirstName, ContactID) :
-                    await this.DispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this.job.charge, FirstName, ContactID);
+                this._job.bulkJob ?
+                    await this._dispatchData.updateBulkJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID) :
+                    await this._dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this._job.charge, FirstName, ContactID);
             }
         } catch (error) {
-            this.toastrService.showErrorToast();
+            this._toastrService.showErrorToast();
         } finally {
             this.isLoading = false;
-            this.$mdDialog.hide();
-            this.toastrService.showSuccessToast(this.title + " successfully updated to " + selectedItem.text);
+            this._$mdDialog.hide();
+            this._toastrService.showSuccessToast(this.title + " successfully updated to " + selectedOption.text);
         }
     }
 
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }

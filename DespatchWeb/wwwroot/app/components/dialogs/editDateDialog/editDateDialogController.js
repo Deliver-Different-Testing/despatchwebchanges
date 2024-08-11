@@ -1,6 +1,5 @@
 class EditDateDialogController {
     /**
-     * @param $scope - The AngualrJS $scope directive
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
      * @param toastrService - The service to display toast messages
      * @param DispatchData - The Home Service
@@ -11,12 +10,11 @@ class EditDateDialogController {
      * @param {string} title - The title of the dialog.
      * @param {Date} date - The date to edit
      */
-    constructor($scope, $mdDialog, toastrService, DispatchData, moment, job, title, fieldName, date, id) {
-        this.$scope = $scope;
-        this.$mdDialog = $mdDialog;
-        this.toastrService = toastrService;
-        this.DispatchData = DispatchData;
-        this.moment = moment;
+    constructor($mdDialog, toastrService, DispatchData, moment, job, title, fieldName, date, id) {
+        this._$mdDialog = $mdDialog;
+        this._toastrService = toastrService;
+        this._dispatchData = DispatchData;
+        this._moment = moment;
 
         this._job = job;
         this.title = title;
@@ -35,7 +33,7 @@ class EditDateDialogController {
             this.isLoading = true;
             await this.updateJobDetail(newDate);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
@@ -54,7 +52,7 @@ class EditDateDialogController {
         };
 
         if (this._job.bulkJob) {
-            await this.DispatchData
+            await this._dispatchData
                 .updateBulkJobDetail(
                     this._job.id,
                     callData.field,
@@ -63,7 +61,7 @@ class EditDateDialogController {
                     FirstName,
                     ContactID);
         } else {
-            await this.DispatchData
+            await this._dispatchData
                 .updateJobDetail(
                     this._job.id,
                     callData.field,
@@ -74,22 +72,22 @@ class EditDateDialogController {
                     this._job.preBook);
         }
 
-        this.showMessageAndCloseDialog();
+        this._showMessageAndCloseDialog();
     }
 
-    showMessageAndCloseDialog() {
-        this.toastrService.showSuccessToast("Updated " + this.title);
-        this.$mdDialog.hide();
+    _showMessageAndCloseDialog() {
+        this._toastrService.showSuccessToast("Updated " + this.title);
+        this._$mdDialog.hide();
     }
 
     /**
      * @param date
      */
     _formatDate(date) {
-        return new Date(this.moment(date).format("YYYY-MM-DDTHH:mm"))
+        return new Date(this._moment(date).format("YYYY-MM-DDTHH:mm"))
     }
 
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }
