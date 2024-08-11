@@ -1,9 +1,9 @@
 class TruckCourierStatusDialogController {
     constructor($scope, $mdDialog, DispatchData, toastrService, data) {
-        this.$scope = $scope;
-        this.$mdDialog = $mdDialog;
-        this.DispatchData = DispatchData;
-        this.toastrService = toastrService;
+        this._$scope = $scope;
+        this._$mdDialog = $mdDialog;
+        this._dispatchData = DispatchData;
+        this._toastrService = toastrService;
 
         this.data = data;
     }
@@ -13,15 +13,15 @@ class TruckCourierStatusDialogController {
      */
     async refresh(courierId) {
         try {
-            const result = await this.DispatchData.truckCourierStatus(courierId);
-            this.$scope.truckCourierStatus = result.data;
+            const result = await this._dispatchData.truckCourierStatus(courierId);
+            this._$scope.truckCourierStatus = result.data;
             this.data = result.data[0];
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }

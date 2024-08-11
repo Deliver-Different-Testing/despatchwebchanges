@@ -39,12 +39,10 @@ class GpsFormController {
      * @param {string} submitLabel - The label to display on the submit button.
      */
     constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, addressDetails, suburbOptions, title, submitLabel) {
-        this.$scope = $scope;
-        this.$timeout = $timeout;
-        this.$mdDialog = $mdDialog;
+        this._$scope = $scope;
+        this._$mdDialog = $mdDialog;
         this.DispatchData = DispatchData;
-        this.toastrService = toastrService;
-        this.NgMap = NgMap;
+        this._toastrService = toastrService;
 
         this.isLoading = false;
         this.title = title;
@@ -53,7 +51,7 @@ class GpsFormController {
         this.submitLabel = submitLabel
         this.ourSuburbSearchText = "";
         this.addressSearchText = "";
-        this.ourSuburbSelectedItem = this.findSuburbByDistrict(addressDetails.suburb);
+        this.ourSuburbSelectedItem = this._findSuburbByDistrict(addressDetails.suburb);
 
         $timeout(() => {
             this.mapDisplay = true;
@@ -72,12 +70,9 @@ class GpsFormController {
      * @param {string} district - The district of the suburb.
      * @returns {SuburbOption|null} - The matched suburb or null.
      */
-    findSuburbByDistrict(district) {
+    _findSuburbByDistrict(district) {
         let lowerCaseDistrict = district.toLowerCase();
-        return this.suburbOptions.find(localSuburb =>
-            localSuburb.text.toLowerCase() === lowerCaseDistrict ||
-            (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
-        );
+        return this.suburbOptions.find(localSuburb => localSuburb.text.toLowerCase() === lowerCaseDistrict || (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict));
     }
 
     /**
@@ -85,10 +80,9 @@ class GpsFormController {
      * @param {Object} data - Suggestion data from the DispatchData service.
      * @returns {Array.<Suggestion>} - Suggestions in application-specific format.
      */
-    transformSuggestions(data) {
+    _transformSuggestions(data) {
         return data.suggestions.map(obj => ({
-            id: obj.locationId,
-            text: obj.label.split(", ").reverse().join(", ")
+            id: obj.locationId, text: obj.label.split(", ").reverse().join(", ")
         }))
     }
 
@@ -110,9 +104,9 @@ class GpsFormController {
     async addressSearchAutocomplete(searchText) {
         try {
             const suggestions = await this.DispatchData.autocompleteAddressSearch(searchText);
-            return this.transformSuggestions(suggestions);
+            return this._transformSuggestions(suggestions);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
@@ -128,15 +122,14 @@ class GpsFormController {
             console.log("Suburb = " + returnedLocation.Address.District);
             console.log("PostCode = " + returnedLocation.Address.PostalCode);
 
-            const mappedSub = this.findSuburbByDistrict(returnedLocation.Address.District);
+            const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
 
             if (mappedSub !== undefined) {
                 console.log(mappedSub);
                 this.ourSuburbSelectedItem = mappedSub;
             } else {
                 this.ourSuburbSelectedItem = null;
-                this.toastrService.showWarningToast("Matching suburb could not be found from this address." +
-                    "Please select manually.")
+                this._toastrService.showWarningToast("Matching suburb could not be found from this address." + "Please select manually.")
             }
 
             this.addressDetails.filledAddress = returnedLocation.Address.Label;
@@ -146,8 +139,7 @@ class GpsFormController {
             this.addressDetails.suburb = returnedLocation.Address.District;
             this.addressDetails.postCode = returnedLocation.Address.PostalCode;
 
-            const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude,
-                returnedLocation.DisplayPosition.Longitude);
+            const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
             this.map.setCenter(latLng);
             this.marker.setPosition(latLng);
         } catch (error) {
@@ -174,7 +166,7 @@ class GpsFormController {
 
         // Pass back to function that called dialog for processing
         this.isLoading = false;
-        this.$mdDialog.hide(addressDetails);
+        this._$mdDialog.hide(addressDetails);
     }
 
     /**
@@ -193,7 +185,7 @@ class GpsFormController {
     moveMarker(event) {
         this.addressDetails.lat = event.latLng.lat();
         this.addressDetails.long = event.latLng.lng();
-        this.$scope.$apply();
+        this._$scope.$apply();
     };
 
     /**
@@ -232,7 +224,7 @@ class GpsFormController {
 
             });
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
@@ -251,7 +243,7 @@ class GpsFormController {
 
             this.map.setCenter(place.geometry.location);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
@@ -259,6 +251,6 @@ class GpsFormController {
      * Cancels the Angular Material Dialog
      */
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }

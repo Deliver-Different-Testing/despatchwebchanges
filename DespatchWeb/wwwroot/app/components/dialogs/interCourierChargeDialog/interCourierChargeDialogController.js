@@ -10,11 +10,10 @@
 
 class InterCourierChargeDialogController {
     constructor($scope, $mdDialog, $http, DispatchData, toastrService, staffId) {
-        this.$scope = $scope;
-        this.$mdDialog = $mdDialog;
-        this.$http = $http;
-        this.DispatchData = DispatchData;
-        this.toastrService = toastrService;
+        this._$mdDialog = $mdDialog;
+        this._$http = $http;
+        this._dispatchData = DispatchData;
+        this._toastrService = toastrService;
 
         this.isLoading = false;
 
@@ -41,9 +40,9 @@ class InterCourierChargeDialogController {
     async courierSearch(searchTerm) {
         try {
             const url = "/courier/AllActiveSearch";
-            return await this.DispatchData.autocompleteSearch(searchTerm, url);
+            return await this._dispatchData.autocompleteSearch(searchTerm, url);
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         }
     }
 
@@ -69,7 +68,7 @@ class InterCourierChargeDialogController {
             this.isLoading = true;
 
             if (!this.courierChargeForm.$valid) {
-                this.toastrService.showWarningToast("Please complete all the required fields.");
+                this._toastrService.showWarningToast("Please complete all the required fields.");
                 this.isLoading = false;
                 return;
             }
@@ -79,18 +78,18 @@ class InterCourierChargeDialogController {
             data.toCourierId = this.toCourierSelectedItem.id;
 
             const url = "job/InterCourierCharge";
-            await this.$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
+            await this._$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
 
-            this.toastrService.showSuccessToast("Inter-Courier Charge saved successfully");
-            this.$mdDialog.hide();
+            this._toastrService.showSuccessToast("Inter-Courier Charge saved successfully");
+            this._$mdDialog.hide();
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
     }
 
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }

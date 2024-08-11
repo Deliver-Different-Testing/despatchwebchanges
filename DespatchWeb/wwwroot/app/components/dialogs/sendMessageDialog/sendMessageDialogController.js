@@ -1,8 +1,16 @@
 class SendMessageDialogController {
+    /**
+     * @param $mdDialog
+     * @param DispatchData
+     * @param toastrService
+     * @param selectedCourierId
+     * @param {number} contactId
+     * @param {string} dispatcherName
+     */
     constructor($mdDialog, DispatchData, toastrService, selectedCourierId, contactId, dispatcherName) {
-        this.$mdDialog = $mdDialog;
-        this.DispatchData = DispatchData;
-        this.toastrService = toastrService;
+        this._$mdDialog = $mdDialog;
+        this._dispatchData = DispatchData;
+        this._toastrService = toastrService;
         this._selectedCourierId = selectedCourierId;
         this._contactId = contactId;
         this._dispatcherName = dispatcherName;
@@ -11,22 +19,25 @@ class SendMessageDialogController {
         this.message = "";
     }
 
+    /**
+     * @param {string} message
+     */
     async submit(message) {
         try {
             this.isLoading = true;
 
-            await this.DispatchData.sendSMS(this._selectedCourierId, this._contactId, this._dispatcherName, message);
+            await this._dispatchData.sendSMS(this._selectedCourierId, this._contactId, this._dispatcherName, message);
 
-            this.toastrService.showSuccessToast("Message sent!");
+            this._toastrService.showSuccessToast("Message sent!");
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
-            this.$mdDialog.hide();
+            this._$mdDialog.hide();
         }
     }
 
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }

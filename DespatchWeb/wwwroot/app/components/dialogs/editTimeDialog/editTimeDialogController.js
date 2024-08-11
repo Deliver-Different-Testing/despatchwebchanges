@@ -1,13 +1,12 @@
 class EditTimeDialogController {
-    constructor($scope, $mdDialog, DispatchData, toastrService, job, time, title, fieldName, id) {
-        this.$scope = $scope;
-        this.$mdDialog = $mdDialog;
-        this.DispatchData = DispatchData;
-        this.toastrService = toastrService;
-        this.id = id;
+    constructor($mdDialog, DispatchData, toastrService, job, time, title, fieldName, id) {
+        this._$mdDialog = $mdDialog;
+        this._dispatchData = DispatchData;
+        this._toastrService = toastrService;
         this._job = job;
         this._fieldName = fieldName;
 
+        this.id = id;
         this.isLoading = false;
         this.time = new Date(time);
         this.title = title;
@@ -24,19 +23,19 @@ class EditTimeDialogController {
             this.isLoading = true;
 
             // Update job with new time
-            this._job.bulkJob ? await this.DispatchData
-                .updateBulkJobDetail(this._job.id, this._fieldName, time, this._job.charge, FirstName, ContactID) : await this.DispatchData
+            this._job.bulkJob ? await this._dispatchData
+                .updateBulkJobDetail(this._job.id, this._fieldName, time, this._job.charge, FirstName, ContactID) : await this._dispatchData
                 .updateJobDetail(this._job.id, this._fieldName, time, this._job.charge, FirstName, ContactID, this._job.preBook);
 
-            this.$mdDialog.hide();
+            this._$mdDialog.hide();
         } catch (error) {
-            this.toastrService.showErrorToast(error.message);
+            this._toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
         }
     }
 
     cancel() {
-        this.$mdDialog.cancel();
+        this._$mdDialog.cancel();
     }
 }
