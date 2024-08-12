@@ -376,7 +376,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/home/tpls/jobDetail.tpl?v=3.0",
+            "tpl": "app/components/common/tpls/jobDetail.tpl?v=3.0",
             "showSearch": 0,
             "showDetailButtons": 1
         },

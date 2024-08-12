@@ -2,14 +2,14 @@ class JobDetailService {
     static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", "moment"];
 
     constructor(DispatchData, $mdDialog, toastrService, loadingService, rateJobService, $document, $timeout, moment) {
-        this.DispatchData = DispatchData;
-        this.$mdDialog = $mdDialog;
-        this.toastrService = toastrService;
-        this.loadingService = loadingService;
-        this.rateJobService = rateJobService;
-        this.$document = $document;
-        this.$timeout = $timeout;
-        this.moment = moment;
+        this._dispatchData = DispatchData;
+        this._$mdDialog = $mdDialog;
+        this._toastrService = toastrService;
+        this._loadingService = loadingService;
+        this._rateJobService = rateJobService;
+        this._$document = $document;
+        this._$timeout = $timeout;
+        this._moment = moment;
 
         this.options = {
             "detail": {
@@ -74,7 +74,7 @@ class JobDetailService {
             this.pickSpeeds = data;
         });
 
-        this.DispatchData.getSuburbList().then(data => {
+        this._dispatchData.getSuburbList().then(data => {
             this.pickSuburbs = data;
         });
 
@@ -181,7 +181,7 @@ class JobDetailService {
         this.palletMenu = [// NEW IMPLEMENTATION
             {
                 text: "Delete", click: function ($itemScope, $event, modelValue, text, $li) {
-                    return self.DispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(response => {
+                    return self._dispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(response => {
 
                         console.log(response);
 
@@ -189,10 +189,10 @@ class JobDetailService {
                             const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
                             $itemScope.currentJob.palletInfo.splice(index, 1);
 
-                            return self.rateJobService.rateJob(this.currentJob).then(rate => {
+                            return self._rateJobService.rateJob(this.currentJob).then(rate => {
                                 console.log(rate);
                                 if (rate !== self.currentJob.charge) {
-                                    return self.DispatchData
+                                    return self._dispatchData
                                         .updateJobDetail(self.currentJob.id, "rate", Number(rate.replace(/[^0-9.-]+/g, "")), Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, self.currentJob.preBook).then(response => {
                                             self.selectJobDetail(self.currentJob.id);
                                             return response;
@@ -236,7 +236,7 @@ class JobDetailService {
      */
     setJob(job) {
         this.currentJob = job;
-        this.DispatchData.getContactList(job.clientID).then(data => {
+        this._dispatchData.getContactList(job.clientID).then(data => {
             this.pickContacts = data;
         });
     }
@@ -247,7 +247,7 @@ class JobDetailService {
      */
     getClientContactDetail($event, job) {
         $event.stopPropagation();
-        this.DispatchData.getContactDetailList(job.clientID).then(data => {
+        this._dispatchData.getContactDetailList(job.clientID).then(data => {
             job.contactList = data;
         });
     }
@@ -294,7 +294,7 @@ class JobDetailService {
         const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
         if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
             //Truck Job
-            this.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(itemSummary => this.DispatchData.truckJobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2, job.gstRate).then(function (description) {
+            this._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(itemSummary => this._dispatchData.truckJobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this._moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2, job.gstRate).then(function (description) {
                 this.$mdDialog.show(this.$mdDialog.alert()
                     .parent(angular.element(this.$document.body))
                     .clickOutsideToClose(true)
@@ -306,9 +306,9 @@ class JobDetailService {
 
             return false;
         } else {
-            return this.DispatchData.jobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked, job.gstRate, job.charge.replace("$", "")).then(description => {
-                this.$mdDialog.show(this.$mdDialog.alert()
-                    .parent(angular.element(this.$document.body))
+            return this._dispatchData.jobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked, job.gstRate, job.charge.replace("$", "")).then(description => {
+                this._$mdDialog.show(this._$mdDialog.alert()
+                    .parent(angular.element(this._$document.body))
                     .clickOutsideToClose(true)
                     .title('Charge Information')
                     .textContent(description)
@@ -324,12 +324,12 @@ class JobDetailService {
         const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
         if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52 || job.speedID === 124 || job.speedID === 125 || job.speedID === 150 || job.speedID === 151 || job.speedID === 152)) {
             //Truck Job
-            return self.DispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
-                return self.DispatchData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2);
+            return self._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
+                return self._dispatchData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2);
 
             });
         } else {
-            return self.DispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked);
+            return self._dispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked);
         }
     }
 
@@ -341,11 +341,11 @@ class JobDetailService {
      * @param {string} id
      */
     showNotesDialog(event, job, title, fieldName, id = "editField") {
-        return this.$mdDialog.show({
+        return this._$mdDialog.show({
             controller: AddNotesDialogController,
             controllerAs: "ctrl",
             templateUrl: "app/components/dialogs/addNotesDialog/addNotesDialog.html",
-            parent: angular.element(this.$document.body),
+            parent: angular.element(this._$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
             fullscreen: true,
@@ -368,10 +368,10 @@ class JobDetailService {
      * @param {string} id
      */
     showEditDateDialog(event, job, title, fieldName, date, id = "editForm") {
-        this.$mdDialog.show({
+        this._$mdDialog.show({
             controller: EditDateDialogController,
             controllerAs: 'ctrl',
-            parent: angular.element(this.$document.body),
+            parent: angular.element(this._$document.body),
             targetEvent: event,
             templateUrl: "app/components/dialogs/editDateDialog/editDateDialog.html",
             clickOutsideToClose: false,
@@ -410,10 +410,10 @@ class JobDetailService {
      * @param {string} id
      */
     showEditTimeDialog(event, job, title, fieldName, time, id = "editForm") {
-        this.$mdDialog.show({
+        this._$mdDialog.show({
             controller: EditTimeDialogController,
             controllerAs: 'ctrl',
-            parent: angular.element(this.$document.body),
+            parent: angular.element(this._$document.body),
             targetEvent: event,
             templateUrl: "app/components/dialogs/editTimeDialog/editTimeDialog.html",
             clickOutsideToClose: false,
@@ -445,7 +445,7 @@ class JobDetailService {
      * @param {string} field
      */
     showEditPrompt(event, job, title, placeholder, ariaLabel, initialValue, field) {
-        const prompt = this.$mdDialog.prompt()
+        const prompt = this._$mdDialog.prompt()
             .title(title)
             .placeholder(placeholder)
             .ariaLabel(ariaLabel)
@@ -455,7 +455,7 @@ class JobDetailService {
             .ok('Save')
             .cancel('Cancel');
 
-        this.$mdDialog.show(prompt).then(result => {
+        this._$mdDialog.show(prompt).then(result => {
             const callData = {
                 "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
             };
@@ -521,11 +521,11 @@ class JobDetailService {
 
     updateField(reRate, job, callData) {
         if (reRate && !job.bulkJob) {
-            return this.rateJob(job).then(rate => this.DispatchData
+            return this.rateJob(job).then(rate => this._dispatchData
                 .updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => response));
         } else {
-            return job.bulkJob ? this.DispatchData
-                .updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID).then(response => response) : this.DispatchData
+            return job.bulkJob ? this._dispatchData
+                .updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID).then(response => response) : this._dispatchData
                 .updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID, job.preBook).then(response => response);
         }
     }
@@ -550,7 +550,7 @@ class JobDetailService {
         }
 
         if (type === "datetime") {
-            value = new Date(this.moment(value).format("YYYY-MM-DDTHH:mm"))
+            value = new Date(this._moment(value).format("YYYY-MM-DDTHH:mm"))
         }
 
         let max = "";
@@ -732,7 +732,7 @@ class JobDetailService {
             submitValue: "Update Field"
         };
 
-        this.$timeout(function () {
+        this._$timeout(function () {
             console.log(this.gather);
             this.gather.showForm();
         }, 200);
@@ -758,10 +758,10 @@ class JobDetailService {
         console.log("Retrieved job coordinates!");
 
         // Dialog
-        this.$mdDialog.show({
+        this._$mdDialog.show({
             controller: GpsFormController,
             controllerAs: 'ctrl',
-            parent: angular.element(this.$document.body),
+            parent: angular.element(this._$document.body),
             targetEvent: event,
             templateUrl: "app/components/dialogs/gpsForm/gpsForm.html",
             clickOutsideToClose: false,
@@ -773,18 +773,18 @@ class JobDetailService {
             },
         }).then(addressDetails => {
             try {
-                this.loadingService.showLoader();
+                this._loadingService.showLoader();
                 const job = currentJob;
 
                 if (field === "toAddress") {
                     job.toAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
                     if (job.bulkJob) {
-                        this.DispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName)
+                        this._dispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName)
                             .then(() => {
                                 this.selectJobDetail(currentJob.id);
-                                this.$mdDialog.hide();
-                                this.toastrService.showSuccessToast("Address successfully updated");
-                                this.loadingService.closeLoader();
+                                this._$mdDialog.hide();
+                                this._toastrService.showSuccessToast("Address successfully updated");
+                                this._loadingService.closeLoader();
                             });
                     }
 
@@ -792,12 +792,12 @@ class JobDetailService {
                 } else {
                     job.fromAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
                     if (job.bulkJob) {
-                        this.DispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName)
+                        this._dispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName)
                             .then(() => {
                                 this.selectJobDetail(currentJob.id);
-                                this.$mdDialog.hide();
-                                this.toastrService.showSuccessToast("Address successfully updated");
-                                this.loadingService.closeLoader();
+                                this._$mdDialog.hide();
+                                this._toastrService.showSuccessToast("Address successfully updated");
+                                this._loadingService.closeLoader();
                             });
                     }
 
@@ -806,7 +806,7 @@ class JobDetailService {
 
                 const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
 
-                this.rateJobService.rateJob(job)
+                this._rateJobService.rateJob(job)
                     .then(rate => {
                         const callData = {
                             "call": "updateJobData",
@@ -824,25 +824,25 @@ class JobDetailService {
                         console.log(callData);
 
                         if (field === "toAddress") {
-                            this.DispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
+                            this._dispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
                                 .then(() => {
                                     this.selectJobDetail(currentJob.id);
-                                    this.$mdDialog.hide();
-                                    this.toastrService.showSuccessToast("Address successfully updated")
-                                    this.loadingService.closeLoader();
+                                    this._$mdDialog.hide();
+                                    this._toastrService.showSuccessToast("Address successfully updated")
+                                    this._loadingService.closeLoader();
                                 });
                         } else {
-                            this.DispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
+                            this._dispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
                                 .then(() => {
                                     this.selectJobDetail(currentJob.id);
-                                    this.$mdDialog.hide();
-                                    this.toastrService.showSuccessToast("Address successfully updated")
-                                    this.loadingService.closeLoader();
+                                    this._$mdDialog.hide();
+                                    this._toastrService.showSuccessToast("Address successfully updated")
+                                    this._loadingService.closeLoader();
                                 });
                         }
                     });
             } catch (error) {
-                this.toastrService.showErrorToast(error.message)
+                this._toastrService.showErrorToast(error.message)
             }
 
             console.log('Dialog closed!')
@@ -850,55 +850,55 @@ class JobDetailService {
     }
 
     unlockJob(job) {
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "Locked", false, job.charge, FirstName, ContactID, job.preBook)
             .then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((_) => {
-                this.toastrService.showErrorToast();
+                this._toastrService.showErrorToast();
             });
     }
 
     lockJob(job) {
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "Locked", true, job.charge, FirstName, ContactID, job.preBook)
             .then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     preBookDirectClick(job) {
         const directValue = !job.direct;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "Direct", directValue, job.charge, FirstName, ContactID, job.preBook)
             .then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     pushToLive(job) {
         job.done = !job.done;
 
-        return this.DispatchData
+        return this._dispatchData
             .releaseBulkJob(job.jobNo, job.bookedDate)
             .then(response => {
                 this.selectBulkJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     vanOkClick(job) {
         const vanOkValue = !job.vanOK;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "VanOK", vanOkValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     vanClick(job) {
@@ -908,13 +908,13 @@ class JobDetailService {
             .then(rate => {
                 console.log(rate);
 
-                return this.DispatchData
+                return this._dispatchData
                     .updateJobDetail(job.id, "Van", vanValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook)
                     .then(response => {
                         this.selectJobDetail(job.id);
                         return response;
-                    }).catch((error) => this.toastrService.showErrorToast(error.message));
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+                    }).catch((error) => this._toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
 
     }
 
@@ -923,12 +923,12 @@ class JobDetailService {
 
         return this.rateJob(job).then(rate => {
             console.log(rate);
-            return this.DispatchData
+            return this._dispatchData
                 .updateJobDetail(job.id, "Pedal", pedalValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(function (response) {
                     this.selectJobDetail(job.id);
                     return response;
-                }).catch((error) => this.toastrService.showErrorToast(error.message));
-        }).catch((error) => this.toastrService.showErrorToast(error.message));
+                }).catch((error) => this._toastrService.showErrorToast(error.message));
+        }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     truckClick(job) {
@@ -937,148 +937,148 @@ class JobDetailService {
         return this.rateJob(job)
             .then(rate => {
                 console.log(rate);
-                return this.DispatchData.updateJobDetail(job.id, "Truck", truckValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook);
+                return this._dispatchData.updateJobDetail(job.id, "Truck", truckValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook);
             })
             .then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     directClick(job) {
         const directValue = !job.direct;
 
         if (!directValue) {
-            return this.DispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
+            return this._dispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
         } else {
             return this.rateJob(job).then(rate => {
                 console.log(rate);
-                return this.DispatchData
+                return this._dispatchData
                     .updateJobDetail(job.id, "Direct", directValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => {
                         this.selectJobDetail(job.id);
                         return response;
-                    }).catch((error) => this.toastrService.showErrorToast(error.message));
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+                    }).catch((error) => this._toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
         }
     }
 
     attentionClick(job) {
         const attentionValue = !job.attention;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "Attention", attentionValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     repriceClick(job) {
         const repriceValue = !job.reprice;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "Reprice", repriceValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     preBookReturnClick(job) {
         const returnValue = !job.return;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "Return", returnValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     oneOffClick(job) {
         const oneoffValue = !job.oneOff;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "OneOff", oneoffValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
 
     }
 
     activeClick(job) {
         const activeValue = !job.active;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "Active", activeValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     voidClick(job) {
         const voidValue = !job.void;
 
-        return job.bulkJob ? this.DispatchData
+        return job.bulkJob ? this._dispatchData
             .updateBulkJobDetail(job.id, "Void", voidValue, job.charge, FirstName, ContactID).then(response => {
                 this.selectBulkJobDetail(job.id);
                 return response;
-            }).catch(() => this.toastrService.showErrorToast()) : this.DispatchData
+            }).catch(() => this._toastrService.showErrorToast()) : this._dispatchData
             .updateJobDetail(job.id, "Void", voidValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     doneClick(event, job) {
         job.done = !job.done;
 
         if (!job.completedTime) {
-            const confirm = this.$mdDialog.confirm()
+            const confirm = this._$mdDialog.confirm()
                 .title('You must set completed time (POD Time) first')
                 .targetEvent(event)
                 .ok('OK');
 
-            this.$mdDialog.show(confirm).then(() => {
+            this._$mdDialog.show(confirm).then(() => {
                 job.done = false;
                 return false;
             });
         }
 
         if (!job.podName) {
-            const confirm = this.$mdDialog.confirm()
+            const confirm = this._$mdDialog.confirm()
                 .title('You must set POD Name first')
                 .targetEvent(event)
                 .ok('OK');
 
-            this.$mdDialog.show(confirm).then(() => {
+            this._$mdDialog.show(confirm).then(() => {
                 job.done = false;
                 return false;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
         }
 
-        return this.DispatchData
+        return this._dispatchData
             .updatePODDetail(job.jobNo, 6, job.podName, job.completedTime).then(() => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     deliveredClick(job) {
         const doneValue = !job.done;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "Delivered", doneValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     airportOnlyClick(job) {
         const airportOnlyValue = !job.airportOnly;
 
-        return this.DispatchData
+        return this._dispatchData
             .updateJobDetail(job.id, "AirportOnly", airportOnlyValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
-            }).catch((error) => this.toastrService.showErrorToast(error.message));
+            }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
     trackingMethodClick(event, job) {
@@ -1125,10 +1125,10 @@ class JobDetailService {
             minimumInputLength: 1, items: data, placeholder: title
         };
 
-        this.$mdDialog.show({
+        this._$mdDialog.show({
             controller: SelectDialogController,
             controllerAs: 'ctrl',
-            parent: angular.element(this.$document.body),
+            parent: angular.element(this._$document.body),
             targetEvent: event,
             templateUrl: 'app/components/dialogs/selectDialog/selectDialog.html',
             clickOutsideToClose: true,
@@ -1217,10 +1217,10 @@ class JobDetailService {
             placeholder, minimumInputLength: 3, searchUrl: url
         };
 
-        this.$mdDialog.show({
+        this._$mdDialog.show({
             controller: AutoCompleteDialogController,
             controllerAs: 'ctrl',
-            parent: angular.element(this.$document.body),
+            parent: angular.element(this._$document.body),
             targetEvent: event,
             templateUrl: 'app/components/dialogs/autocompleteDialog/autoCompleteDialog.html',
             clickOutsideToClose: true,
@@ -1257,11 +1257,11 @@ class JobDetailService {
     }
 
     newPallet(event, job) {
-        return this.$mdDialog.show({
+        return this._$mdDialog.show({
             controller: AddPalletDialogController,
             controllerAs: "ctrl",
             templateUrl: "app/components/dialogs/addPalletDialog/addPalletDialog.html",
-            parent: angular.element(this.$document.body),
+            parent: angular.element(this._$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
             fullscreen: true,
@@ -1337,11 +1337,11 @@ class JobDetailService {
                 newP["id"] = self.currentPallet.id;
                 newP["itemId"] = self.currentPallet.itemID;
 
-                return self.DispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function () {
-                    return self.rateJobService.rateJob(self.currentJob).then(function (rate) {
+                return self._dispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function () {
+                    return self._rateJobService.rateJob(self.currentJob).then(function (rate) {
                         console.log(rate);
                         if (rate !== self.currentJob.charge) {
-                            return self.DispatchData
+                            return self._dispatchData
                                 .updateJobDetail(this.currentJob.id, "rate", Number(rate.replace(/[^0-9.-]+/g, "")), Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, self.currentJob.preBook).then(function (response) {
                                     self.selectJobDetail(self.currentJob.id);
                                     return response;
@@ -1353,7 +1353,7 @@ class JobDetailService {
             }, submitValue: "Edit Pallet"
         };
 
-        this.$timeout(function () {
+        this._$timeout(function () {
             this.gather.showForm();
         }, 200);
     }

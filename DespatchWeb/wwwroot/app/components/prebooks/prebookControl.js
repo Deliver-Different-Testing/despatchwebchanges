@@ -17,9 +17,8 @@ angular
             $scope.pageIndex = 1;   // Current page number. First page is 1.-->
             $scope.pageSizeSelected = 50; // Maximum number of items per page.
 
-            $scope.jdSvc = jdSvc;
             $scope.updateGPS = function (currentJob, field, fromRightClick) {
-                $scope.jdSvc.updateGPS(currentJob, field, fromRightClick);
+                jdSvc.updateGPS(currentJob, field, fromRightClick);
             };
 
             $scope.gather = {
@@ -48,7 +47,7 @@ angular
                 submitValue: "Save"
             };
 
-            $scope.jdSvc.setGather($scope.gather);
+            jdSvc.setGather($scope.gather);
 
             $scope.options = {
                 "detail": {
@@ -189,7 +188,7 @@ angular
                 },
                 "jobDetail": {
                     "title": "Detail",
-                    "tpl": "app/components/prebooks/tpls/preBookDetail.tpl?v=1.6",
+                    "tpl": "app/components/common/tpls/jobDetail.tpl",
                     "showSearch": 0,
                     "showDetailButtons": 1
                 },
@@ -526,7 +525,7 @@ angular
             };
 
 
-            $scope.jdSvc.setSelectJobDetail($scope.selectJobDetail);
+            jdSvc.setSelectJobDetail($scope.selectJobDetail);
 
             $scope.voidPrebookJob = function (jobId) {
                 const confirm = $mdDialog.confirm()
@@ -615,7 +614,7 @@ angular
                         console.log("Suburb = " + locn.Address.District);
                         console.log("PostCode = " + locn.Address.PostalCode);
                         angular.element("#suburb").val(locn.Address.District);
-                        var mappedSub = $scope.jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
+                        var mappedSub = jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
                         if (mappedSub !== undefined) {
                             console.log(mappedSub);
                             angular.element('#our_suburb').val(mappedSub.id).trigger('change');
@@ -624,9 +623,9 @@ angular
                         }
 
 
-                        $scope.jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                        $scope.jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                        $scope.jdSvc.gpsForm.data.address = locn.Address.Label;
+                        jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
+                        jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
+                        jdSvc.gpsForm.data.address = locn.Address.Label;
                         var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
                         $scope.map.setCenter(ll);
                         $scope.marker.setPosition(ll);
@@ -636,7 +635,7 @@ angular
 
                 var suburbOptions = {
                     minimumInputLength: 1,
-                    data: $scope.jdSvc.pickSuburbs
+                    data: jdSvc.pickSuburbs
                 };
 
                 angular.element("#our_suburb").select2(suburbOptions);

@@ -208,7 +208,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/home/tpls/jobDetail.tpl?v=3.0",
+            "tpl": "app/components/common/tpls/jobDetail.tpl",
             "showSearch": 0,
             "showRefresh": 0,
             "showDetailButtons": 1

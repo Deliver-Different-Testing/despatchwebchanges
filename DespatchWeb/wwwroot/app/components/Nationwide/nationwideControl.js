@@ -311,7 +311,7 @@ function NationwideController($scope, jdSvc, NWData, $state,
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/home/tpls/jobDetail.tpl?v=3.0",
+            "tpl": "app/components/common/tpls/jobDetail.tpl?v=3.0",
             "showSearch": 0,
             "showRefresh": 0,
             "showDetailButtons": 1
@@ -321,11 +321,6 @@ function NationwideController($scope, jdSvc, NWData, $state,
             "tpl": "app/components/home/tpls/potentialCouriers.tpl?v=1.0",
             "showSearch": 1
         },
-        //"jobGroups": {
-        //	"title": "Grouped Jobs",
-        //	"tpl": "app/components/home/tpls/jobGroups.tpl",
-        //	"showSearch": 1
-        //},
         "currentWork": {
             "title": "Current Work",
             "tpl": "app/components/home/tpls/currentWork.tpl?v=1.16",
