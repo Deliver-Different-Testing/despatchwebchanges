@@ -1,7 +1,5 @@
-<link href="/css/udispatch.css?v=8" rel="stylesheet">
-
 <div class="top-bar">
-    <img src="/images/menu-urgent.png" class="logo" />
+    <img class="logo" src="/images/menu-urgent.png"/>
 
     <div class="topbar-NavButtons" role="navigation">
         <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
@@ -22,34 +20,50 @@
                      r-directions="['bottom']"
                      r-flex="true" resizable style="flex-basis: {{box.height}}">
 
-                    <div class="box-bar">
-                        <div class="box-bar-title">{{boxes[box.name].title}}  <span ng-show="box.name == 'scanList'">{{currentSelection}}</span>  </div>
-                        <div class="searchBox"  ng-show="box.name == 'eventList'">
-                            <input type="text" ng-model="searchBox" placeholder="Search Events..." />
-                            <div class="results" ng-show="searchBox">
-                                <ul>
-                                    <li class="result" ng-repeat="event in filteredEvents = ( allEvents | filter: searchBox) | limitTo:10" ng-mousedown="selectEvent(event)">{{event.jobNumber}}<br /> <small class="address">{{event.courierName}} {{event.courierCode}}</small></li>
-                                </ul>
-                                <small ng-hide="filteredEvents.length">No results</small>
+                    <md-toolbar class="md-accent">
+                        <div class="md-toolbar-tools">
+
+                            <span class="md-headline-title">{{boxes[box.name].title}} <span
+                                    ng-show="box.name == 'scanList'">{{currentSelection}}</span>
+                            </span>
+
+                            <md-button class="md-icon-button md-primary" ng-click="refreshData()"
+                                       ng-show="boxes[box.name].showRefresh">
+                                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                            </md-button>
+
+                            <div class="searchBox" ng-show="box.name == 'eventList'">
+                                <input ng-model="searchBox" placeholder="Search Events..." type="text"/>
+                                <div class="results" ng-show="searchBox">
+                                    <ul>
+                                        <li class="result"
+                                            ng-mousedown="selectEvent(event)"
+                                            ng-repeat="event in filteredEvents = ( allEvents | filter: searchBox) | limitTo:10">{{event.jobNumber}}<br/> <small
+                                                class="address">{{event.courierName}} {{event.courierCode}}</small></li>
+                                    </ul>
+                                    <small ng-hide="filteredEvents.length">No results</small>
+                                </div>
                             </div>
-                        </div>
-                        <div class="box-buttons">
 
                             <div class="box-details" ng-show="box.name == 'eventList'">
                                 <label class="checkbox-inline">
-                                    <input type="checkbox" ng-model="pickDateService.includeClosed" ng-change="refreshData(true)" value="All">
+                                    <input ng-change="refreshData(true)" ng-model="pickDateService.includeClosed"
+                                           type="checkbox" value="All">
                                     Include Closed?
                                 </label>
                                 <label ng-show="isAdmin" class="checkbox-inline">
-                                    <input type="radio" ng-model="followupClient.name" ng-change="refreshData(true)" value="All">
+                                    <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                           value="All">
                                     All
                                 </label>
                                 <label ng-show="isAdmin" class="checkbox-inline">
-                                    <input type="radio" ng-model="followupClient.name" ng-change="refreshData(true)" value="UCL">
+                                    <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                           value="UCL">
                                     UCL
                                 </label>
                                 <label ng-show="isAdmin" class="checkbox-inline">
-                                    <input type="radio" ng-model="followupClient.name" ng-change="refreshData(true)" value="Client">
+                                    <input ng-change="refreshData(true)" ng-model="followupClient.name" type="radio"
+                                           value="Client">
                                     Client
                                 </label>
 
@@ -60,38 +74,45 @@
                                     F
                                     <!--<button type="button" class="btn btn-sm btn-secondary" title="Choose Date" ng-click="chooseDate()"><i class="fa fa-calendar-alt"></i></button>-->
                                 </div>
-
-
-                            </div>
-
-
-                            <div class="box-details" ng-show="box.name == 'runBuilder'">
-
-
                             </div>
 
 
                             <div class="box-details" ng-show="box.name == 'jobDetail'">
-                                <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Reply" ng-show="currentEvent && !currentEvent.closedDate" ng-click="reply(currentEvent)"><i class="fa fa-reply"></i></button>
-                                </div>
-                                <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Copy Link" ng-show="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))" ng-click="generateDirectLink(currentEvent)"><i class="fa fa-link"></i></button>
-                                </div>
-                                <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Email Photo POD" ng-show="currentJob" ng-click="sendPOD()"><i class="fa fa-mail-forward"></i></button>
-                                </div>
+                                <md-button aria-label="reply" class="md-icon-button"
+                                           ng-click="reply(currentEvent)"
+                                           ng-show="currentEvent && !currentEvent.closedDate">
+                                    <md-tooltip md-direction="bottom">Reply</md-tooltip>
+                                    <md-icon md-font-icon="reply" md-font-set="material-symbols-outlined"></md-icon>
+                                </md-button>
+
+                                <md-button aria-label="copy link" class="md-icon-button"
+                                           ng-click="generateDirectLink(currentEvent)"
+                                           ng-show="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))">
+                                    <md-tooltip md-direction="bottom">Copy Link</md-tooltip>
+                                    <md-icon md-font-icon="link" md-font-set="material-symbols-outlined"></md-icon>
+                                </md-button>
+
+                                <md-button aria-label="email photo proof of delivery" class="md-icon-button"
+                                           ng-click="sendPOD()" ng-show="currentJob">
+                                    <md-tooltip md-direction="bottom">Email Photo POD</md-tooltip>
+                                    <md-icon md-font-icon="send" md-font-set="material-symbols-outlined"></md-icon>
+                                </md-button>
                             </div>
 
-                            <div class="box-details" ng-show="box.name == 'map'">
+                            <div class="box-search" ng-show="boxes[box.name].showSearch"><i class="fa fa-search"
+                                                                                            ng-click="openSearch(box.name)"></i>
+                                <input ng-model="box.searchBox" ng-model-options="{debounce: 300}" placeholder="Search..."
+                                       type="text"></div>
 
+
+                            <div class="box-handle md-icon-button">
+                                <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
+                                    drag_indicator
+                                </md-icon>
                             </div>
-
-                            <div class="btn btn-sm btn-primary box-refresh" ng-show="boxes[box.name].showRefresh" ng-click="refreshData()"><i class="fa fa-refresh"></i></div>
-                            <div class="box-search" ng-show="boxes[box.name].showSearch"><i class="fa fa-search" ng-click="openSearch(box.name)"></i> <input type="text" ng-model="box.searchBox" placeholder="Search..." ng-model-options="{debounce: 300}"></div>
-                            <div class="box-handle"><i class="fa fa-ellipsis-v"></i> </div>
                         </div>
-                    </div>
+                    </md-toolbar>
+
                     <div class="box-content" ng-include="boxes[box.name].tpl"></div>
                 </div>
 
@@ -127,7 +148,7 @@
                 if (!keyIsDown[e.keyCode]) {
                     keyIsDown[e.keyCode] = true;
                     // do key down stuff here
-                    if (e.keyCode == 82 && e.ctrlKey) {
+                    if (e.keyCode === 82 && e.ctrlKey) {
                         //location.reload();
                     }
                 }
@@ -138,18 +159,18 @@
                 break;
         }
         disabledEventPropagation(e);
-        if (e.keyCode == 68 && e.ctrlKey) {
+        if (e.keyCode === 68 && e.ctrlKey) {
             e.preventDefault();
             return false;
         }
-        if (e.keyCode == 65 && e.ctrlKey) {
+        if (e.keyCode === 65 && e.ctrlKey) {
             e.preventDefault();
             return false;
         }
     }
 
     function disabledEventPropagation(e) {
-        if (e.keyCode == 68 && e.ctrlKey) {
+        if (e.keyCode === 68 && e.ctrlKey) {
             if (e.stopPropagation) {
                 e.stopPropagation();
             } else if (window.event) {
@@ -220,7 +241,7 @@
         }
 
 
-        if (mouseDown == 0) {
+        if (mouseDown === 0) {
             mouseDown = 1;
 
             if (event.which === 1) {
@@ -259,7 +280,7 @@
 
                     }
                     setTimeout(function () {
-                        if (mouseDown == 1) {
+                        if (mouseDown === 1) {
                             $("#draggingItems").show();
                             $("#draggingItems").html(jobNo);
 
@@ -311,9 +332,9 @@
 
     $(document).on("keydown", function (e) {
         var code = (e.keyCode ? e.keyCode : e.which);
-        if (code == 40) {
+        if (code === 40) {
             $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
-        } else if (code == 38) {
+        } else if (code === 38) {
             $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
         }
     });
