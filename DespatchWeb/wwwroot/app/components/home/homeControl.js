@@ -44,53 +44,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     });
 
-    $scope.gather = {
-        submit() {
-            return $scope.gather.form.onSubmit().then(() => {
-                console.log("pointer 3");
-
-                angular.element(".gatherForm").css("display", "none");
-                const currentJob = self.currentJob;
-                self.getData().then(() => {
-                    if (currentJob === null || currentJob === undefined || currentJob === false) {
-                        return;
-                    }
-
-                    const refreshedJob = $scope.jobList.find(jo => jo.id === currentJob.id);
-                    $scope.selectJob(refreshedJob);
-                    $timeout(() => {
-                        const elementSelector = "#jobList tr[data-jobid='" + currentJob.id + "']";
-                        const parentSelector = ".box-content";
-
-                        angular.element(elementSelector).addClass("active");
-
-                        const parentDiv = angular.element(elementSelector).parent(parentSelector);
-                        let goTop = angular.element(elementSelector)[0].getBoundingClientRect().top;
-
-                        try {
-                            goTop = goTop - parentDiv[0].getBoundingClientRect().top + parentDiv[0].scrollTop - 28;
-                            parentDiv[0].scrollTop = goTop;
-                        } catch (e) {
-                            // ignore
-                        }
-                    }, 1000);
-                });
-            });
-        },
-        cancel() {
-            angular.element(".gatherForm").css("display", "none");
-        },
-        showForm() {
-            angular.element('.gatherForm').css("display", "block");
-            $timeout(() => {
-                angular.element('.gatherForm .focusMe').focus();
-            }, 100);
-        },
-        submitValue: "Save",
-        cancelValue: "Cancel"
-    };
-
-    jdSvc.setGather($scope.gather);
     $scope.allCouriers = {display: false, includeUA: false};
     $scope.mapZoom = {display: true};
     $scope.supportSettings = {autoRefresh: true};
@@ -636,7 +589,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         allowIn: ["INPUT", "SELECT", "TEXTAREA"],
         callback: (event) => {
             if (angular.element(".activeTable .active").length > 0) {
-                self.selectAndDispatchJob(event, self.currentJob);
+                self.dispatchJobs(event, self.currentJob).then(() => console.log("Run Successfully!"));
             }
         }
     });
@@ -993,12 +946,18 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ///////////////////////////////////////
     /**
      * @param {number} courierNumber
-     * @param {Job} job
      */
-    self.dispatchJobs = async (courierNumber, job) => {
+
+    self.getJobsToDispatch = () => {
+        let activeJobs = Array.from(angular.element("#jobList .active"));
+        return $scope.jobList.filter(jo => activeJobs.some(aJob => jo.id === $(aJob).data("jobid")));
+    }
+
+    self.dispatchJobs = async (courierNumber) => {
         try {
-            await dispatchJobService.dispatchJob(courierNumber, job);
-            return await self.getData();
+            const jobsToDispatch = self.getJobsToDispatch();
+            await dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch);
+            return self.getData();
         } catch (error) {
             toastrService.showErrorToast(error.message);
         }
@@ -2224,7 +2183,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Dispatch Selected",
                 click($itemScope, $event) {
-                    self.selectAndDispatchJob($event, self.currentJob);
+                    self.dispatchJobs($event);
                 }
             },
             {
@@ -2264,7 +2223,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     {
                         text: "Dispatch Selected",
                         click() {
-                            self.selectAndDispatchJob(null, self.currentJob);
+                            self.dispatchJobs(null);
 
                         }
 
@@ -2278,7 +2237,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Dispatch",
                     click() {
-                        self.selectAndDispatchJob(null, self.currentJob);
+                        self.dispatchJobs(null);
 
                     }
                 }
@@ -3032,46 +2991,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             });
         });
     };
-
-    $scope.sendPOD = () => {
-        if (!self.currentJob.podPhoto) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .clickOutsideToClose(true)
-                    .title('Alert')
-                    .textContent('Sorry no photo for this Job')
-                    .ok('OK')
-            );
-
-            return;
-        }
-
-        $scope.gather.form = {
-            id: "sendPOD",
-            title: "Email the photo POD",
-            fields: [
-                {
-                    "name": "email",
-                    "label": "Email Address",
-                    "type": "email"
-                }
-            ],
-            onSubmit: () => {
-                uCSData.sendPOD(self.currentJob.id, $scope.gather.form.fields[0].value)
-                    .then((_) => {
-                        toastrService.showSuccessToast("Email sent!");
-                    })
-                    .catch((error) => {
-                        console.error("An error occurred:", error);
-                        toastrService.showErrorToast("Sorry, there was an error sending the email");
-                    });
-            },
-            submitValue: "Send"
-        };
-
-        $scope.gather.showForm();
-    }
-
 
     // Load custom layout
     self.init = () => {

@@ -6,8 +6,8 @@ class DispatchJobService {
         this._$document = $document;
         this._dispatchData = DispatchData;
         this._moment = moment;
-        this.pickCouriers = [];
-        this.pickAllCouriers = [];
+        this._pickCouriers = [];
+        this._pickAllCouriers = [];
 
         this._fetchCouriersData();
     }
@@ -18,15 +18,11 @@ class DispatchJobService {
     }
 
     _fetchActiveCouriersData() {
-        this._dispatchData.getActiveCouriers().then(data => {
-            this.pickCouriers = data;
-        });
+        this._dispatchData.getActiveCouriers().then(data => this._pickCouriers = data);
     }
 
     _fetchAllCouriersData() {
-        this._dispatchData.getAllCouriers().then(data => {
-            this.pickAllCouriers = data;
-        });
+        this._dispatchData.getAllCouriers().then(data => this._pickAllCouriers = data);
     }
 
     /**
@@ -35,9 +31,18 @@ class DispatchJobService {
      */
     async dispatchJobByJobId(courierNumber, jobId) {
         const job = this._dispatchData.getJobDetail(jobId);
-        const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierNumber);
+        const selectedCourier = this._pickAllCouriers.find(c => c.courierID === courierNumber);
 
         await this.dispatchJob(selectedCourier.id, job);
+    }
+
+    /**
+     * @param {number} courierNumber
+     * @param {Job[]} jobs
+     */
+    async dispatchJobs(courierNumber, jobs) {
+        let foundCourier = await this._findCourier(courierNumber);
+        await this._dispatchJobsContinue(courierNumber, foundCourier, jobs);
     }
 
     /**
@@ -45,22 +50,29 @@ class DispatchJobService {
      * @param {Job} job
      */
     async dispatchJob(courierNumber, job) {
+        let foundCourier = await this._findCourier(courierNumber);
+        let jobsArray = [job]; // Wrap the job into an array
+        await this._dispatchJobsContinue(courierNumber, foundCourier, jobsArray);
+    }
+
+    /**
+     * @param {number} courierNumber
+     */
+    async _findCourier(courierNumber) {
         // Refresh list
         this._fetchActiveCouriersData();
 
-        let foundCourier = this.pickCouriers.find(c => c.id === courierNumber);
+        let foundCourier = this._pickCouriers.find(c => c.id === courierNumber);
         if (foundCourier === undefined) {
             const confirm = this._generateOfflineCourierDialog();
-
             try {
                 await this._$mdDialog.show(confirm);
-                foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
+                foundCourier = this._pickAllCouriers.find(c => c.id === courierNumber);
             } catch (error) {
                 console.log("User chose not to dispatch job as courier is offline");
             }
         }
-
-        await this._dispatchJobsContinue(courierNumber, foundCourier, job);
+        return foundCourier;
     }
 
     _generateOfflineCourierDialog() {
@@ -74,7 +86,7 @@ class DispatchJobService {
     /**
      * @param {number} courierNumber
      * @param {*} foundCourier
-     * @param {Job} job
+     * @param {Job[]} job
      */
     async _dispatchJobsContinue(courierNumber, foundCourier, job) {
         let jobs = [];
@@ -86,12 +98,10 @@ class DispatchJobService {
             return;
         }
         if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-            this._showAlertMessage("DG job " + jobNumber + " can not be dispatched to courier "
-                + courierNumber + " - doesn't have DGLicense.");
+            this._showAlertMessage("DG job " + jobNumber + " can not be dispatched to courier " + courierNumber + " - doesn't have DGLicense.");
             return;
         }
-        if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null ||
-            this._moment(foundCourier.dgLicenseExpiry) < this._moment().add(1, 'days'))) {
+        if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || this._moment(foundCourier.dgLicenseExpiry) < this._moment().add(1, 'days'))) {
             this._showAlertMessage("Courier " + courierNumber + " doesn't have a DGLicense or license has expired.");
             return;
         }
@@ -105,14 +115,13 @@ class DispatchJobService {
      * @param {string} textContent
      */
     _showAlertMessage(textContent) {
-        const alert =
-            this._$mdDialog.alert()
-                .parent(angular.element(this._$document.body))
-                .clickOutsideToClose(true)
-                .title('Message')
-                .textContent(textContent)
-                .ariaLabel('Alert')
-                .ok('OK');
+        const alert = this._$mdDialog.alert()
+            .parent(angular.element(this._$document.body))
+            .clickOutsideToClose(true)
+            .title('Message')
+            .textContent(textContent)
+            .ariaLabel('Alert')
+            .ok('OK');
 
         this._$mdDialog.show(alert);
     }
