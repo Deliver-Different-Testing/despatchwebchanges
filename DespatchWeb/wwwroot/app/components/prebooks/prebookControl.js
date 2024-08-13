@@ -3,12 +3,15 @@ angular
     .controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys",
         "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout',
         function ($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout) {
-
+            const self = this;
             $scope.isAdmin = (ClientInternal === "True");
             $scope.mapSetting = {
                 "allCouriers": false,
                 "allRuns": false
             };
+
+            self.jdSvc = jdSvc;
+
 
             $scope.searchBox = "";
             $scope.selectedEvents = [];
@@ -20,6 +23,24 @@ angular
             $scope.updateGPS = function (currentJob, field, fromRightClick) {
                 jdSvc.updateGPS(currentJob, field, fromRightClick);
             };
+
+            self.jobRecordSearchText = "";
+
+            /**
+             * @param {string} searchText
+             */
+            self.jobRecordSearch = searchText => {
+                return $scope.jobList
+                    .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
+                    .map(job => ({id: job.id, text: job.jobNo}));
+            }
+
+            /**
+             * @param {number} selectedJobId
+             */
+            self.JobRecordSelected = selectedJobId => {
+                $scope.selectJobDetail(selectedJobId);
+            }
 
             $scope.gather = {
                 submit: function () {
@@ -133,12 +154,6 @@ angular
             };
 
             $scope.boxes = {
-                //"pickDate": {
-                //    "title": "Filters",
-                //    "tpl": "app/components/CS/tpls/pickDate.tpl?v=1.4",
-                //    "showSearch": 0
-                //},
-
                 "jobList": {
                     "title": "Job Data",
                     "tpl": "app/components/prebooks/tpls/pbList.tpl?v=1.3",
