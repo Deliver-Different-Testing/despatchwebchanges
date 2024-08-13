@@ -1,4 +1,4 @@
-class UPBData {
+class PrebookService {
     static $inject = ['$http'];
 
     constructor($http) {
@@ -6,7 +6,7 @@ class UPBData {
     }
 
     async getPreBookJobs() {
-        let response = await this._http.get('/Job/PreBookJobs');
+        const response = await this._http.get('/Job/PreBookJobs');
         return await response.data;
     }
 
@@ -14,7 +14,7 @@ class UPBData {
      * @param {number} jobId
      */
     async sendPrebookJob(jobId) {
-        let response = await this._http.post('/Job/SendPrebookJob?jobId=' + jobId);
+        const response = await this._http.post('/Job/SendPrebookJob?jobId=' + jobId);
         return await response.data;
     }
 
@@ -24,7 +24,7 @@ class UPBData {
      * @param {number} staffId
      */
     async voidPrebookJob(jobId, despatcherName, staffId) {
-        let response = await this._http.post('/Job/VoidPrebookJob?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId);
+        const response = await this._http.post('/Job/VoidPrebookJob?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId);
         return await response.data;
     }
 
@@ -32,7 +32,7 @@ class UPBData {
      * @param {number} preBookJobId
      */
     async getJobDetail(preBookJobId) {
-        let response = await this._http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
+        const response = await this._http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
         return await response.data;
     }
 
@@ -40,9 +40,9 @@ class UPBData {
      * @param {number} bulkJobId
      */
     async getBulkJobPhoto(bulkJobId) {
-        let response = await this._http.get('/CS/GetBulkJobPhoto?bulkJobId=' + bulkJobId);
+        const response = await this._http.get('/CS/GetBulkJobPhoto?bulkJobId=' + bulkJobId);
         return await response.data;
     }
 }
 
-angular.module('uDispatch').service('uPBData', UPBData);
+angular.module('uDispatch').service('uPBData', PrebookService);
