@@ -1898,7 +1898,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 displayRoutePoints(jobs, false, $scope.mapZoom.display);
             }
 
-            if (jobRow && !document.activeElement.classList.contains("lateCallField")) {
+            if (jobRow) {
                 // Check if the selected descendant is not undefined
                 const dispatchField = angular.element(jobRow).find(".dispatchField");
                 if (dispatchField && dispatchField.length > 0) {
@@ -1909,8 +1909,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     $scope.setCurrentWorkMenu = () => {
-        angular.element(".activeTable .active").length > 1;
-
         return [
             {
                 text: "Restore",
