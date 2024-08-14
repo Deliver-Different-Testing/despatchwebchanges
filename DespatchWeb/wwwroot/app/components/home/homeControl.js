@@ -2996,7 +2996,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         const speedId = job.speed;
 
         DispatchData.hasClientItemsAvailable(clientId, speedId).then(clientItemsAvailable => {
-            if (clientItemsAvailable) {
+            if (!clientItemsAvailable) {
                 $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
