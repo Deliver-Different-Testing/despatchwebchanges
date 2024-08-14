@@ -3,7 +3,7 @@ class DispatchData {
 
     constructor($http, moment) {
         this._$http = $http;
-        this.moment = moment;
+        this._moment = moment;
     }
 
     /**
@@ -66,7 +66,7 @@ class DispatchData {
     /**
      * @param {string} jobNo
      * @param {number} clientId
-     * @param {*} contact
+     * @param {string} contact
      * @param {number} staffId
      * @param {number} courierId
      * @param {number} jobId
@@ -115,7 +115,7 @@ class DispatchData {
     /**
      * @param {string} jobNo
      * @param {number} clientId
-     * @param {*} contact
+     * @param {string} contact
      * @param {number} staffId
      * @param {number} courierId
      * @param {number} jobId
@@ -138,7 +138,7 @@ class DispatchData {
     }
 
     /**
-     * @param {$scope.currentCourier.courierID|string} courierId
+     * @param {number} courierId
      * @param {number} dispId
      * @param {number[]} jobIds
      */
@@ -198,7 +198,7 @@ class DispatchData {
      * @param {number} jobId
      * @param {string} despatcherName
      * @param {number} staffId
-     * @param {*} currentSpeed
+     * @param {string} currentSpeed
      */
     async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
         let response = await this._$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
@@ -355,20 +355,20 @@ class DispatchData {
      * Locks a support request with the provided id and locks it by the provided dispatcher.
      *
      * @param {number} supportId - The unique identifier of the support request.
-     * @param {string} dispatcher - The unique identifier of the dispatcher locking the request.
+     * @param {string} dispatcherName - The unique identifier of the dispatcher locking the request.
      */
-    async lockSupport(supportId, dispatcher) {
-        return await this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
+    async lockSupport(supportId, dispatcherName) {
+        return await this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
     }
 
     /**
      * Unlocks a support request with the provided id and unlocks it by the provided dispatcher.
      *
      * @param {number} supportId - The unique identifier of the support request.
-     * @param {string} dispatcher - The unique identifier of the dispatcher unlocking the request.
+     * @param {string} dispatcherName - The unique identifier of the dispatcher unlocking the request.
      */
-    async unLockSupport(supportId, dispatcher) {
-        return await this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
+    async unLockSupport(supportId, dispatcherName) {
+        return await this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
     }
 
     async getLateCalls() {
@@ -639,7 +639,7 @@ class DispatchData {
      * @param {number} lat
      * @param {number} lng
      * @param {boolean} cbd
-     * @param {string|*} rate
+     * @param {number} rate
      * @param {string} despatcherName
      * @param {boolean} prebook
      */
@@ -715,7 +715,7 @@ class DispatchData {
      * @param {Date} bookDate
      */
     async releaseBulkJob(jobNumber, bookDate) {
-        const dt = this.moment(bookDate).format("YYYY-MM-DD");
+        const dt = this._moment(bookDate).format("YYYY-MM-DD");
         return await this._$http.post("job/ReleaseBulkJob?jobNumber=" + jobNumber + "&bookDate=" + dt);
     }
 
@@ -730,13 +730,13 @@ class DispatchData {
      */
     async updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
         if (field === "Time" || field === "CompletedTime") {
-            value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
+            value = this._moment().format("YYYY-MM-DD") + " " + this._moment(value).format("HH:mm:ss");
         }
         if (field === "FollowupTime") {
-            value = this.moment(value).format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
+            value = this._moment(value).format("YYYY-MM-DD") + " " + this._moment(value).format("HH:mm:ss");
         }
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-            value = this.moment(value).format("YYYY-MM-DD");
+            value = this._moment(value).format("YYYY-MM-DD");
         }
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
         return await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
@@ -752,10 +752,10 @@ class DispatchData {
      */
     async updateBulkJobDetail(bulkJobId, field, value, rate, despatcherName, staffId) {
         if (field === "Time" || field === "CompletedTime") {
-            value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
+            value = this._moment().format("YYYY-MM-DD") + " " + this._moment(value).format("HH:mm:ss");
         }
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-            value = this.moment(value).format("YYYY-MM-DD");
+            value = this._moment(value).format("YYYY-MM-DD");
         }
         return await this._$http.post("job/UpdateBulkJob?bulkJobId=" + bulkJobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
