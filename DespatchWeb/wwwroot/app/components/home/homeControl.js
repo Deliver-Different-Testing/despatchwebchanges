@@ -2969,7 +2969,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }).then(() => "Inter-courier Charge Canceled!");
     }
 
-    self.createEvent = function (event, job) {
+    self.createEvent = (event, job) => {
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
@@ -2990,24 +2990,44 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    self.showAdditionalServicesMenu = function (event, jobId, clientId) {
-        $mdDialog.show({
-            controller: AdditionalServicesDialogController,
-            controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
-            parent: angular.element($document.body),
-            targetEvent: event,
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                jobId,
-                clientId
+    self.showAdditionalServicesMenu = (event, job) => {
+        const jobId = job.id;
+        const clientId = job.clientId;
+        const speedId = job.speed;
+
+        DispatchData.hasClientItemsAvailable(clientId, speedId).then(clientItemsAvailable => {
+            if (clientItemsAvailable) {
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .clickOutsideToClose(true)
+                        .title('No Additional Services')
+                        .textContent('No additional services has been set up for this client. Please add a service through Admin Manger and try again.')
+                        .ok('OK')
+                );
+
+                return;
             }
-        }).then(() => {
-            $scope.getData().then(() => {
-                console.log('Additional Services Dialog closed!');
+
+            // Show additional services dialog
+            $mdDialog.show({
+                controller: AdditionalServicesDialogController,
+                controllerAs: "ctrl",
+                templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
+                parent: angular.element($document.body),
+                targetEvent: event,
+                clickOutsideToClose: false,
+                fullscreen: true,
+                locals: {
+                    jobId,
+                    clientId,
+                    speedId,
+                }
+            }).then(() => {
+                $scope.getData().then(() => {
+                    console.log('Additional Services Dialog closed!');
+                });
             });
-        });
+        })
     }
 
     // Load custom layout

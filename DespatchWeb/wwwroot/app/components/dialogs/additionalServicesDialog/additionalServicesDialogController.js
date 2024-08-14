@@ -19,17 +19,22 @@
  */
 
 class AdditionalServicesDialogController {
+    jobId;
+
     /**
      * @param $mdDialog
      * @param $http
      * @param {number} jobId
      * @param {number} clientId
+     * @param {number} speedId
      */
-    constructor($mdDialog, $http, jobId, clientId) {
+    constructor($mdDialog, $http, jobId, clientId, speedId) {
         this._$mdDialog = $mdDialog;
         this._$http = $http;
+        this._jobId = jobId;
+        this._clientId = clientId;
+        this._speedId = speedId;
 
-        this.selected = [];
         this.isLoading = false;
 
         /** @type {Query} */
@@ -38,60 +43,24 @@ class AdditionalServicesDialogController {
         };
 
         /** @type {ClientItem[]} */
-        this.allJobAdditionalServices = [];
-
-        /** @type {ClientItem[]} */
-        this.allClientAdditionalServices = [];
-
-        /** @type {ClientItem[]} */
-        this.tableList = [];
-
-        // Get Data
-        this._getAdditionalServicesForJob(jobId).then(services => {
-            this.allJobAdditionalServices = services;
-
-            // Update Table
-            this.updateTable();
-        });
-
-        this._getAllAdditionalServicesForClient(clientId).then(allClientServices => {
-            this.allClientAdditionalServices = allClientServices;
+        this.additionalServices = [];
+        this.totalServicesCount = 0;
+        this.getServices(clientId, speedId, jobId, this.query).then(serviceResponse => {
+            this.additionalServices = serviceResponse.items;
+            this.totalServicesCount = serviceResponse.totalCount;
         });
     }
 
-    /**
-     * @param {number} jobId
-     */
-    async _getAdditionalServicesForJob(jobId) {
-        const url = "job/GetClientItemsForSingleJob/";
-        const response = await this._$http.get(`${url}?jobId=${jobId}`);
+    async getServices() {
+        const url = "job/GetAllClientItemsBySpeed";
+        let response = await this._$http.get(url + '?clientId=' + this._clientId + '&speedId=' + this._speedId + '&jobId=' + this._jobId
+            + '&pageNumber=' + this.query.limit + '&pageSize=' + this.query.page);
+
         return response.data;
     }
 
-    /**
-     * @param {number} clientId
-     */
-    async _getAllAdditionalServicesForClient(clientId) {
-        const url = "job/GetAllClientItems/";
-        const response = await this._$http.get(`${url}?clientId=${clientId}`);
-        return response.data;
-    }
-
-    updateTable() {
-        const jobServices = this.allJobAdditionalServices;
-        const query = this.query;
-
-        // Sort by order
-        jobServices.sort((a, b) => a[query.order] > b[query.order] ? 1 : -1);
-
-        const startIndex = (query.page - 1) * query.limit;
-        const endIndex = startIndex + query.limit;
-
-        this.tableList = jobServices.slice(startIndex, endIndex);
-    }
-
-    async addService() {
-        // Add the service to the all job services list
+    getTotal() {
+        return 1;
     }
 
     async bookServices(allJobServices) {

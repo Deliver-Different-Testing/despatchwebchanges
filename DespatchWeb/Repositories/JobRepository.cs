@@ -2536,7 +2536,17 @@ public class JobRepository : IJobRepository
         );
     }
 
-    public async Task<List<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId)
+    public async Task<bool> HasClientItemsAvailable(int clientId, int speedId)
+    {
+        var countAsync = await _context.TblClientAvailableSpeedItems
+            .Select(x => new { x.ClientAvailableSpeedId, x.Active })
+            .CountAsync(x => x.ClientAvailableSpeedId == speedId && x.Active == true);
+
+        return countAsync != 0;
+    }
+
+    public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId,
+        int pageNumber, int pageSize)
     {
         var availableSpeedItems = await _context.TblClientAvailableSpeedItems
             .Select(x => new { x.ClientAvailableSpeedId, x.Active, x.ClientItemId })
@@ -2544,16 +2554,20 @@ public class JobRepository : IJobRepository
             .Select(x => x.ClientItemId)
             .ToListAsync();
 
-        var checkedItems = await _context.TucJobs
-            .Select(j => new { j.UcjbId, j.ClientItemIds })
+        var job = await _context.TucJobs
+            .Select(j => new { j.UcjbId, j.ClientItemIds, j.UcjbSize })
             .Where(j => j.UcjbId == jobId)
-            .Select(j => j.ClientItemIds)
+            .Select(j => new
+            {
+                j.ClientItemIds,
+                isVan = j.UcjbSize == 3
+            })
             .FirstOrDefaultAsync();
 
-        var clientItemIds = checkedItems?.Split(',')
+        var clientItemIds = job?.ClientItemIds.Split(',')
             .Select(int.Parse);
 
-        var clientItems = await _context.TucClientItems
+        var clientItemsQuery = _context.TucClientItems
             .Where(ci => ci.ClientId == clientId &&
                          availableSpeedItems.Contains(ci.ItemId))
             .Select(ci => new ClientItemsViewModel
@@ -2566,10 +2580,21 @@ public class JobRepository : IJobRepository
                 Rate = ci.Rate,
                 OnlyVan = ci.OnlyVan,
                 Selected = clientItemIds.Contains(ci.ItemId)
-            })
+            });
+
+        var count = await clientItemsQuery.CountAsync();
+        var clientItems = await clientItemsQuery
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return clientItems;
+        var pagedClientItems = new PagedList<ClientItemsViewModel>
+        {
+            Items = clientItems,
+            TotalCount = count
+        };
+
+        return pagedClientItems;
     }
 
     public async Task AddClientsItemToJob(int jobId, List<int> clientItemIds)

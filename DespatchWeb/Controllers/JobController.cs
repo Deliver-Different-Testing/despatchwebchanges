@@ -931,16 +931,24 @@ public partial class JobController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllClientItems(int clientId)
+    public async Task<IActionResult> HasClientItemsAvailable(int clientId, int speedId)
     {
-        var clientItems = await _jobRepo.GetAllClientItems(clientId);
+        var hasItems = await _jobRepo.HasClientItemsAvailable(clientId, speedId);
+        return Json(hasItems);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId,
+        int pageNumber, int pageSize)
+    {
+        var clientItems = await _jobRepo.GetAllClientItemsBySpeed(clientId, speedId, jobId, pageNumber, pageSize);
         return Json(clientItems);
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddClientItemsTobJob(int jobId, List<int> clientIds)
+    public async Task<IActionResult> AddClientItemsTobJob(int jobId, List<int> serviceIds)
     {
-        await _jobRepo.AddClientsItemToJob(jobId, clientIds);
+        await _jobRepo.AddClientsItemToJob(jobId, serviceIds);
         return Json("OK");
     }
 

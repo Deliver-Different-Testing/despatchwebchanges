@@ -253,6 +253,15 @@ class DispatchData {
         return response.data;
     }
 
+    /**
+     * @param {number} clientId
+     * @param {number} speedId
+     */
+    async hasClientItemsAvailable(clientId, speedId) {
+        let response = await this.$http.get('job/HasClientItemsAvailable?clientId=' + clientId + '&speedId=' + speedId);
+        return response.data;
+    }
+
     async getJobs() {
         let response = await this.$http.get("app/components/home/api/jobsList.php");
         return response.data;
