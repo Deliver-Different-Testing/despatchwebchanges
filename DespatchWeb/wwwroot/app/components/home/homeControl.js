@@ -2990,6 +2990,26 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
+    self.showAdditionalServicesMenu = function (event, jobId, clientId) {
+        $mdDialog.show({
+            controller: AdditionalServicesDialogController,
+            controllerAs: "ctrl",
+            templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
+            parent: angular.element($document.body),
+            targetEvent: event,
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                jobId,
+                clientId
+            }
+        }).then(() => {
+            $scope.getData().then(() => {
+                console.log('Additional Services Dialog closed!');
+            });
+        });
+    }
+
     // Load custom layout
     self.init = () => {
         if (Modernizr.localstorage) {

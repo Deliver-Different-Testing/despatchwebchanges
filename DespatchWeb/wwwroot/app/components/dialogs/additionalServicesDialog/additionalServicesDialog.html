@@ -1,0 +1,62 @@
+<md-dialog aria-label="Additional Services" style="width: 50%;">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Additional Services</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content ng-cloak>
+        <!-- Table Here -->
+        <md-table-container>
+            <table md-progress="promise" md-row-select md-table multiple ng-model="ctrl.selected">
+                <thead md-head md-on-reorder="ctrl.updateTable" md-order="ctrl.query.order">
+                <tr md-row>
+                    <th md-column md-order-by="nameToLower"><span>Name</span></th>
+                    <th md-column md-numeric md-order-by="calories.value"><span>Rate</span></th>
+                    <th md-column md-numeric>Description</th>
+                    <th md-column md-numeric>Per Item?</th>
+                    <th md-column md-numeric>Selected</th>
+                </tr>
+                </thead>
+                <tbody md-body>
+                <tr md-auto-select md-row md-select="service" md-select-id="name"
+                    ng-repeat="service in ctrl.jobAdditionalServices">
+                    <td md-cell>{{service.name}}</td>
+                    <td md-cell>{{service.rate}}</td>
+                    <td md-cell>{{service.description}}</td>
+                    <td md-cell>{{service.perItem}}</td>
+                    <td md-cell>{{service.selected}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </md-table-container>
+
+        <md-table-pagination md-limit="ctrl.query.limit" md-limit-options="[5, 10, 15]" md-on-paginate="ctrl.updateTable"
+                             md-page="ctrl.query.page"
+                             md-page-select md-total="{{ctrl.jobAdditionalServices.count}}"></md-table-pagination>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="ctrl.jobForm.$invalid"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-raised md-primary" ng-click="ctrl.bookServices(ctrl.allJobAdditionalServices)"
+                   ng-disabled="ctrl.allJobAdditionalServices.length === 0"
+                   ng-show="!ctrl.isLoading">
+            <md-icon md-font-icon="box_add" md-font-set="material-symbols-outlined"></md-icon>
+            Book
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

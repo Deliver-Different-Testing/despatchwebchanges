@@ -225,6 +225,13 @@
 
                                         <md-fab-actions>
                                             <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob.id,
+                                                       ctrl.currentJob.clientID)">
+                                                <md-tooltip md-direction="bottom">Additional Services</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">add_shopping_cart
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
                                                        ng-click="ctrl.otherEventForm($event, ctrl.currentJob)">
                                                 <md-tooltip md-direction="bottom">Add Event</md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">edit_calendar
