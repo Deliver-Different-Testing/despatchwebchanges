@@ -154,8 +154,6 @@ public interface IJobRepository
     Task AddJobBookingNote(int jobId, string note, string despatcher);
     Task<int> QuickAddJob(JobCreateViewModel job, int staffId);
     Task AddInterCourierCharge(InterCourierChargeViewModel viewModel);
-    Task<List<ClientItemsViewModel>?> GetClientItemsForJob(int jobId);
-    Task<List<ClientItemsViewModel>?> GetAllClientItems(int clientId);
-    Task AddClientsItemToJob(int jobId, List<int> clientItems);
-    Task AddNewClientItem(ClientItemsViewModel clientItem);
+    Task<List<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId);
+    Task AddClientsItemToJob(int jobId, List<int> clientItemIds);
 }

@@ -25,6 +25,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
         public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual DbSet<TblClient> TblClients { get; set; }
+        public virtual DbSet<TblClientAvailableSpeedItem> TblClientAvailableSpeedItems { get; set; }
         public virtual DbSet<TblClientContact> TblClientContacts { get; set; }
         public virtual DbSet<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; }
         public virtual DbSet<TblContact> TblContacts { get; set; }
@@ -1333,6 +1334,35 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.WebServicePassword).HasMaxLength(100);
 
                 entity.Property(e => e.XeroId).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<TblClientAvailableSpeedItem>(entity =>
+            {
+                entity.ToTable("tblClientAvailableSpeedItems");
+
+                entity.Property(e => e.Id).HasColumnName("ID");
+
+                entity.Property(e => e.ClientAvailableSpeedId).HasColumnName("ClientAvailableSpeedID");
+
+                entity.Property(e => e.ClientItemId).HasColumnName("ClientItemID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.HasOne(d => d.ClientItem)
+                    .WithMany(p => p.TblClientAvailableSpeedItems)
+                    .HasForeignKey(d => d.ClientItemId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__tblClient__Clien__0FDC104E");
             });
 
             modelBuilder.Entity<TblClientContact>(entity =>

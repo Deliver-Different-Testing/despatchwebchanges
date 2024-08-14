@@ -7,6 +7,11 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TucClientItem
     {
+        public TucClientItem()
+        {
+            TblClientAvailableSpeedItems = new HashSet<TblClientAvailableSpeedItem>();
+        }
+
         public int ItemId { get; set; }
         public int ClientId { get; set; }
         public string Name { get; set; }
@@ -20,5 +25,6 @@ namespace DespatchWeb.EntityClasses
         public bool OnlyVan { get; set; }
 
         public virtual TucClient Client { get; set; }
+        public virtual ICollection<TblClientAvailableSpeedItem> TblClientAvailableSpeedItems { get; set; }
     }
 }

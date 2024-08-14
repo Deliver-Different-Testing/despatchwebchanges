@@ -2536,18 +2536,26 @@ public class JobRepository : IJobRepository
         );
     }
 
-    public async Task<List<ClientItemsViewModel>?> GetClientItemsForJob(int jobId)
+    public async Task<List<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId)
     {
-        var currentJob = await _context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
-        if (currentJob == null || string.IsNullOrWhiteSpace(currentJob.ClientItemIds))
-            return null;
+        var availableSpeedItems = await _context.TblClientAvailableSpeedItems
+            .Select(x => new { x.ClientAvailableSpeedId, x.Active, x.ClientItemId })
+            .Where(x => x.ClientAvailableSpeedId == speedId && x.Active == true)
+            .Select(x => x.ClientItemId)
+            .ToListAsync();
 
-        var clientItemIds = currentJob.ClientItemIds.Split(',')
-            .Select(int.Parse)
-            .ToList();
+        var checkedItems = await _context.TucJobs
+            .Select(j => new { j.UcjbId, j.ClientItemIds })
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.ClientItemIds)
+            .FirstOrDefaultAsync();
+
+        var clientItemIds = checkedItems?.Split(',')
+            .Select(int.Parse);
 
         var clientItems = await _context.TucClientItems
-            .Where(ci => clientItemIds.Contains(ci.ItemId))
+            .Where(ci => ci.ClientId == clientId &&
+                         availableSpeedItems.Contains(ci.ItemId))
             .Select(ci => new ClientItemsViewModel
             {
                 ItemId = ci.ItemId,
@@ -2556,62 +2564,30 @@ public class JobRepository : IJobRepository
                 Description = ci.Description,
                 PerItem = ci.PerItem,
                 Rate = ci.Rate,
-                OnlyVan = ci.OnlyVan
+                OnlyVan = ci.OnlyVan,
+                Selected = clientItemIds.Contains(ci.ItemId)
             })
             .ToListAsync();
 
         return clientItems;
     }
 
-    public async Task<List<ClientItemsViewModel>?> GetAllClientItems(int clientId)
+    public async Task AddClientsItemToJob(int jobId, List<int> clientItemIds)
     {
-        var clientItems = await _context.TucClientItems
-            .Where(ci => ci.ClientId == clientId)
-            .Select(ci => new ClientItemsViewModel
-            {
-                ItemId = ci.ItemId,
-                ClientId = ci.ClientId,
-                Name = ci.Name,
-                Description = ci.Description,
-                PerItem = ci.PerItem,
-                Rate = ci.Rate,
-                OnlyVan = ci.OnlyVan
-            })
-            .ToListAsync();
-
-        return clientItems;
-    }
-
-    public async Task AddClientsItemToJob(int jobId, List<int> clientItems)
-    {
-        var clientItemsString = string.Join(",", clientItems);
-
-        // Find the job.
-        var job = await _context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
-
-        if (job is null)
+        if (clientItemIds is null || !clientItemIds.Any())
             return;
+
+        var clientItemsString = string.Join(",", clientItemIds);
+
+        var job = new TucJob { UcjbId = jobId };
+
+        _context.TucJobs.Attach(job);
+
+        _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
 
         job.ClientItemIds = string.IsNullOrEmpty(job.ClientItemIds)
             ? $"{job.ClientItemIds}, {clientItemsString}"
             : clientItemsString;
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task AddNewClientItem(ClientItemsViewModel clientItem)
-    {
-        await _context.TucClientItems.AddAsync(new TucClientItem
-        {
-            ClientId = clientItem.ClientId,
-            Name = clientItem.Name,
-            Created = DateTime.Now,
-            LastModified = DateTime.Now,
-            Description = clientItem.Description,
-            PerItem = clientItem.PerItem,
-            Rate = clientItem.Rate,
-            OnlyVan = clientItem.OnlyVan
-        });
-
         await _context.SaveChangesAsync();
     }
 }

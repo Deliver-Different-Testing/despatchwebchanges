@@ -931,13 +931,6 @@ public partial class JobController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetClientItemsForSingleJob(int jobId)
-    {
-        var clientItems = await _jobRepo.GetClientItemsForJob(jobId);
-        return Json(clientItems);
-    }
-
-    [HttpGet]
     public async Task<IActionResult> GetAllClientItems(int clientId)
     {
         var clientItems = await _jobRepo.GetAllClientItems(clientId);
@@ -948,13 +941,6 @@ public partial class JobController : Controller
     public async Task<IActionResult> AddClientItemsTobJob(int jobId, List<int> clientIds)
     {
         await _jobRepo.AddClientsItemToJob(jobId, clientIds);
-        return Json("OK");
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> AddNewClientItem(ClientItemsViewModel clientItem)
-    {
-        await _jobRepo.AddNewClientItem(clientItem);
         return Json("OK");
     }
 

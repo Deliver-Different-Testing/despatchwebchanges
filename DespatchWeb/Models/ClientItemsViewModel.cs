@@ -15,4 +15,6 @@ public class ClientItemsViewModel
     public decimal Rate { get; set; }
 
     public bool OnlyVan { get; set; }
+
+    public bool Selected { get; set; }
 }
