@@ -2538,11 +2538,16 @@ public class JobRepository : IJobRepository
 
     public async Task<bool> HasClientItemsAvailable(int clientId, int speedId)
     {
-        var countAsync = await _context.TblClientAvailableSpeedItems
-            .Select(x => new { x.ClientAvailableSpeedId, x.Active })
-            .CountAsync(x => x.ClientAvailableSpeedId == speedId && x.Active == true);
+        var clientItemsCount = await _context.TucClientItems
+            .Where(ci => ci.ClientId == clientId)
+            .Join(_context.TblClientAvailableSpeedItems
+                    .Where(x => x.ClientAvailableSpeedId == speedId && x.Active == true),
+                ci => ci.ItemId,
+                asi => asi.ClientItemId,
+                (ci, asi) => new { ClientItem = ci, AvailableSpeedItem = asi })
+            .CountAsync();
 
-        return countAsync != 0;
+        return clientItemsCount > 0;
     }
 
     public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId,
