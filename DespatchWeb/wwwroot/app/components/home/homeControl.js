@@ -2993,15 +2993,20 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     self.showAdditionalServicesMenu = (event, job) => {
         const jobId = job.id;
         const clientId = job.clientId;
-        const speedId = job.speed;
+        const speedId = job.speedId;
 
-        DispatchData.hasClientItemsAvailable(clientId, speedId).then(clientItemsAvailable => {
+        loadingService.showLoader();
+
+        return DispatchData.hasClientItemsAvailable(clientId, speedId).then(clientItemsAvailable => {
+            loadingService.closeLoader();
+
             if (!clientItemsAvailable) {
                 $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
                         .title('No Additional Services')
-                        .textContent('No additional services has been set up for this client. Please add a service through Admin Manger and try again.')
+                        .targetEvent(event)
+                        .textContent('No additional services has been set up for this client. Please add a service through Admin Manager and try again.')
                         .ok('OK')
                 );
 
@@ -3009,7 +3014,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }
 
             // Show additional services dialog
-            $mdDialog.show({
+            return $mdDialog.show({
                 controller: AdditionalServicesDialogController,
                 controllerAs: "ctrl",
                 templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
@@ -3023,7 +3028,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     speedId,
                 }
             }).then(() => {
-                $scope.getData().then(() => {
+                return $scope.getData().then(() => {
                     console.log('Additional Services Dialog closed!');
                 });
             });
