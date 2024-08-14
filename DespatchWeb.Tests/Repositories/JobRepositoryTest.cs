@@ -52,4 +52,59 @@ public class JobRepositoryTest
         var result = await _mockRepository.HasClientItemsAvailable(2, 2);
         Assert.That(result, Is.False);
     }
+
+    [Test]
+    public async Task GetAllClientItemsBySpeed_WithValidParams_ReturnsExpectedResult()
+    {
+        // Arrange
+        const int clientId = 1;
+        const int speedId = 1;
+        const int jobId = 1;
+        const int pageNumber = 1;
+        const int pageSize = 10;
+
+        // Assuming you have some predefined data to test with:
+        var availableSpeedItemsData = new List<TblClientAvailableSpeedItem>
+        {
+            new() { ClientAvailableSpeedId = 1, ClientItemId = 1, Active = true },
+            new() { ClientAvailableSpeedId = 1, ClientItemId = 2, Active = true },
+        }.AsQueryable().BuildMockDbSet();
+
+        var jobsData = new List<TucJob>
+        {
+            new() { UcjbId = 1, ClientItemIds = "1", UcjbSize = 3 }
+        }.AsQueryable().BuildMockDbSet();
+
+        var clientItemsData = new List<TucClientItem>
+        {
+            new()
+            {
+                ItemId = 1, ClientId = 1, Name = "Test 1", Description = "Desc 1", PerItem = true, Rate = 1.0M,
+                OnlyVan = false
+            },
+            new()
+            {
+                ItemId = 2, ClientId = 1, Name = "Test 2", Description = "Desc 2", PerItem = false, Rate = 2.0M,
+                OnlyVan = true
+            }
+        }.AsQueryable().BuildMockDbSet();
+
+        _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(availableSpeedItemsData.Object);
+        _mockContext.Setup(c => c.TucJobs).Returns(jobsData.Object);
+        _mockContext.Setup(c => c.TucClientItems).Returns(clientItemsData.Object);
+
+        // Act
+        var result = await _mockRepository.GetAllClientItemsBySpeed(clientId, speedId, jobId, pageNumber, pageSize);
+
+        Assert.That(result.TotalCount, Is.EqualTo(2));
+        Assert.That(result.Items.Count, Is.EqualTo(2));
+
+        var firstItem = result.Items[0];
+        Assert.That(firstItem.Selected, Is.EqualTo(true));
+        Assert.That(firstItem.Name, Is.EqualTo("Test 1"));
+
+        var secondItem = result.Items[1];
+        Assert.That(secondItem.Selected, Is.EqualTo(false));
+        Assert.That(secondItem.Name, Is.EqualTo("Test 2"));
+    }
 }
