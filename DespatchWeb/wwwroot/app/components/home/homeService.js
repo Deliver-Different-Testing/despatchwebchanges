@@ -548,20 +548,20 @@ class DispatchData {
     /**
      * @param {number} cid
      * @param {number} fromId
-     * @param {*} toId
+     * @param {number} toId
      * @param {number} weight
-     * @param {string} size
+     * @param {number} size
      * @param {number} speed
      * @param {number} qty
-     * @param {Date|string} bookedDate
-     * @param {*} pickUp
-     * @param {*} dropOff
-     * @param {*} privateRes
-     * @param {*} oversizeItems
-     * @param {*} overWeightItems
-     * @param {string} dGClass
-     * @param {*} truckStartTime
-     * @param {number|string} truckHours
+     * @param {Date} bookedDate
+     * @param {number} pickUp
+     * @param {number} dropOff
+     * @param {boolean} privateRes
+     * @param {number} oversizeItems
+     * @param {number} overWeightItems
+     * @param {number} dGClass
+     * @param {Date} truckStartTime
+     * @param {number} truckHours
      * @param {number} gstRate
      */
     async truckJobAmountBreakdown(cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours, gstRate) {
