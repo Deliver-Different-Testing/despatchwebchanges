@@ -50,6 +50,7 @@ public class JobRepositoryTest
     public async Task HasClientItemsAvailable_Should_Return_False_When_No_Items_Are_Available()
     {
         var result = await _mockRepository.HasClientItemsAvailable(2, 2);
+        Assert.That(result, Is.Not.Null);
         Assert.That(result, Is.False);
     }
 
@@ -96,14 +97,17 @@ public class JobRepositoryTest
         // Act
         var result = await _mockRepository.GetAllClientItemsBySpeed(clientId, speedId, jobId, pageNumber, pageSize);
 
+        Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(2));
         Assert.That(result.Items.Count, Is.EqualTo(2));
 
         var firstItem = result.Items[0];
+        Assert.That(firstItem, Is.Not.Null);
         Assert.That(firstItem.Selected, Is.EqualTo(true));
         Assert.That(firstItem.Name, Is.EqualTo("Test 1"));
 
         var secondItem = result.Items[1];
+        Assert.That(secondItem, Is.Not.Null);
         Assert.That(secondItem.Selected, Is.EqualTo(false));
         Assert.That(secondItem.Name, Is.EqualTo("Test 2"));
     }
