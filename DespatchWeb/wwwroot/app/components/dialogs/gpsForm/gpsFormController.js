@@ -1,24 +1,3 @@
-/**
- * @typedef {Object} AddressDetails - Details related to the address in use.
- * @property {string} filledAddress - The fully formed address.
- * @property {number} lat - The latitude of the address.
- * @property {number} long - The longitude of the address.
- * @property {string} address - The address.
- * @property {string} suburb - The suburb of the address.
- * @property {string} postCode - The postal code of the address.
- */
-
-/**
- * @typedef {Object} Suggestion - A suggested location returned from the autocompleteAddressSearch.
- * @property {string} id - The ID of the location.
- * @property {string} text - The textual representation of the location.
- */
-
-/**
- * @typedef {Object} SuburbOption - An option for selection in the ourSuburbSearch.
- * @property {string} text - The textual representation of the suburb.
- * @property {string=} alias - The alias of the suburb.
- */
 
 /**
  * A controller which handles the GPS Form popup
@@ -26,15 +5,14 @@
  */
 class GpsFormController {
     /**
-     * Create a GpsFormController
-     * @param {Object} $scope - The active AngularJS scope.
-     * @param {Object} $timeout - The AngularJS wrapper for window.setTimeout.
-     * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
-     * @param {Object} DispatchData - The service used for data dispatching.
-     * @param {Object} toastrService - The service used for toast notifications.
-     * @param {Object} NgMap - Wrapper for Google Maps provided by 'ngMap' library.
+     * @param $scope - The active AngularJS scope.
+     * @param $timeout - The AngularJS wrapper for window.setTimeout.
+     * @param $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param DispatchData - The service used for data dispatching.
+     * @param toastrService - The service used for toast notifications.
+     * @param NgMap - Wrapper for Google Maps provided by 'ngMap' library.
      * @param {AddressDetails} addressDetails - Details related to the address in use.
-     * @param {Array.<SuburbOption>} suburbOptions - Options for suburbs.
+     * @param {SuburbOption[]} suburbOptions - Options for suburbs.
      * @param {string} title - The title to display.
      * @param {string} submitLabel - The label to display on the submit button.
      */
@@ -78,7 +56,6 @@ class GpsFormController {
     /**
      * Transforms API suggestion data format into application-specific format.
      * @param {Object} data - Suggestion data from the DispatchData service.
-     * @returns {Array.<Suggestion>} - Suggestions in application-specific format.
      */
     _transformSuggestions(data) {
         return data.suggestions.map(obj => ({
@@ -89,7 +66,6 @@ class GpsFormController {
     /**
      * Searches amongst suburb options matching provided query.
      * @param {string} query - Query for searching amongst suburb options.
-     * @returns {Array.<SuburbOption>} - Array of suburbs which matches provided query.
      */
     ourSuburbSearch(query) {
         return query ? this.suburbOptions.filter(suburb => (suburb.text.toLowerCase()
@@ -99,7 +75,6 @@ class GpsFormController {
     /**
      * Autocomplete the given address searchText
      * @param {string} searchText - Search text of the address to autocomplete.
-     * @returns {Promise<Array.<Suggestion>>} - A promise that fulfils with a list of potential matches for the search text.
      */
     async addressSearchAutocomplete(searchText) {
         try {

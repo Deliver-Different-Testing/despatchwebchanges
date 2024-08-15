@@ -2,6 +2,7 @@
 
 /**
  * @typedef {Object} Job
+ *
  * @property {number} clientId - The ID of the client associated with the job.
  * @property {number|null} courierId - The ID of the courier associated with the job.
  * @property {string} deliverToContact - The contact to whom the job will be delivered.
@@ -51,4 +52,29 @@
  * @property {string} order
  * @property {number} limit
  * @property {number} page
+ */
+
+/**
+ * @typedef {Object} AddressDetails - Details related to the address in use.
+ *
+ * @property {string} filledAddress - The fully formed address.
+ * @property {number} lat - The latitude of the address.
+ * @property {number} long - The longitude of the address.
+ * @property {string} address - The address.
+ * @property {string} suburb - The suburb of the address.
+ * @property {string} postCode - The postal code of the address.
+ */
+
+/**
+ * @typedef {Object} Suggestion - A suggested location returned from the autocompleteAddressSearch.
+ *
+ * @property {string} id - The ID of the location.
+ * @property {string} text - The textual representation of the location.
+ */
+
+/**
+ * @typedef {Object} SuburbOption - An option for selection in the ourSuburbSearch.
+ *
+ * @property {string} text - The textual representation of the suburb.
+ * @property {string=} alias - The alias of the suburb.
  */
