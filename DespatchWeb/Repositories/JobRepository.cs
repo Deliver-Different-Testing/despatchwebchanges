@@ -2538,7 +2538,7 @@ public class JobRepository : IJobRepository
 
     public async Task<bool> HasClientItemsAvailable(int clientId, int speedId)
     {
-        var clientItemCount = await _context.TblClientAvailableSpeeds
+        var count = await _context.TblClientAvailableSpeeds
             .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
             .Join(_context.TblClientAvailableSpeedItems,
                 cas => cas.Id,
@@ -2549,20 +2549,13 @@ public class JobRepository : IJobRepository
                 x => x.casi.ClientItemId,
                 ci => ci.ItemId,
                 (x, ci) => ci)
-            .OrderBy(ci => ci.Name)
             .CountAsync();
 
-        return clientItemCount > 0;
+        return count > 0;
     }
 
     public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId)
     {
-        var availableSpeedItems = await _context.TblClientAvailableSpeedItems
-            .Select(x => new { x.ClientAvailableSpeedId, x.Active, x.ClientItemId })
-            .Where(x => x.ClientAvailableSpeedId == speedId && x.Active == true)
-            .Select(x => x.ClientItemId)
-            .ToListAsync();
-
         var job = await _context.TucJobs
             .Select(j => new { j.UcjbId, j.ClientItemIds, j.UcjbSize })
             .Where(j => j.UcjbId == jobId)
@@ -2576,9 +2569,19 @@ public class JobRepository : IJobRepository
         var clientItemIds = job?.ClientItemIds.Split(',')
             .Select(int.Parse);
 
-        var clientItemsQuery = _context.TucClientItems
-            .Where(ci => ci.ClientId == clientId &&
-                         availableSpeedItems.Contains(ci.ItemId))
+        var clientItemsQuery = _context.TblClientAvailableSpeeds
+            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .Join(_context.TblClientAvailableSpeedItems,
+                cas => cas.Id,
+                casi => casi.ClientAvailableSpeedId,
+                (cas, casi) => new { cas, casi })
+            .Where(x => x.casi.Active)
+            .Join(_context.TucClientItems,
+                x => x.casi.ClientItemId,
+                ci => ci.ItemId,
+                (x, ci) => ci)
+            .OrderBy(ci => ci.Name)
+            .Where(ci => ci.ClientId == clientId)
             .Select(ci => new ClientItemsViewModel
             {
                 ItemId = ci.ItemId,

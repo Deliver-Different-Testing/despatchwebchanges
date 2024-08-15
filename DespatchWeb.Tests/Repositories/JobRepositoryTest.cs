@@ -19,19 +19,39 @@ public class JobRepositoryTest
     {
         var clientItems = new List<TucClientItem>
         {
-            new() { ItemId = 1, ClientId = 1 },
-            new() { ItemId = 2, ClientId = 1 },
+            new()
+            {
+                ItemId = 1, ClientId = 1, Name = "Item1", Description = "Desc1", PerItem = true, Rate = 1.0M,
+                OnlyVan = false
+            },
+            new()
+            {
+                ItemId = 2, ClientId = 1, Name = "Item2", Description = "Desc2", PerItem = true, Rate = 2.0M,
+                OnlyVan = true
+            }
         }.AsQueryable().BuildMockDbSet();
 
         var availableSpeedItems = new List<TblClientAvailableSpeedItem>
         {
             new() { ClientAvailableSpeedId = 1, ClientItemId = 1, Active = true },
-            new() { ClientAvailableSpeedId = 1, ClientItemId = 2, Active = true },
+            new() { ClientAvailableSpeedId = 1, ClientItemId = 2, Active = true }
+        }.AsQueryable().BuildMockDbSet();
+
+        var availableSpeeds = new List<TblClientAvailableSpeed>
+        {
+            new() { Id = 1, ClientId = 1, SpeedId = 1 }
+        }.AsQueryable().BuildMockDbSet();
+
+        var jobs = new List<TucJob>
+        {
+            new() { UcjbId = 1, ClientItemIds = "1,2", UcjbSize = 3 }
         }.AsQueryable().BuildMockDbSet();
 
         _mockContext = new Mock<DespatchContext>();
         _mockContext.Setup(c => c.TucClientItems).Returns(clientItems.Object);
         _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(availableSpeedItems.Object);
+        _mockContext.Setup(c => c.TblClientAvailableSpeeds).Returns(availableSpeeds.Object);
+        _mockContext.Setup(c => c.TucJobs).Returns(jobs.Object);
 
         _mockRepository = new JobRepository(_mockContext.Object);
     }
@@ -55,46 +75,9 @@ public class JobRepositoryTest
     }
 
     [Test]
-    public async Task GetAllClientItemsBySpeed_WithValidParams_ReturnsExpectedResult()
+    public async Task GetAllClientItemsBySpeed_Should_Return_List_When_Items_Are_Available()
     {
-        // Arrange
-        const int clientId = 1;
-        const int speedId = 1;
-        const int jobId = 1;
-
-        // Assuming you have some predefined data to test with:
-        var availableSpeedItemsData = new List<TblClientAvailableSpeedItem>
-        {
-            new() { ClientAvailableSpeedId = 1, ClientItemId = 1, Active = true },
-            new() { ClientAvailableSpeedId = 1, ClientItemId = 2, Active = true },
-        }.AsQueryable().BuildMockDbSet();
-
-        var jobsData = new List<TucJob>
-        {
-            new() { UcjbId = 1, ClientItemIds = "1", UcjbSize = 3 }
-        }.AsQueryable().BuildMockDbSet();
-
-        var clientItemsData = new List<TucClientItem>
-        {
-            new()
-            {
-                ItemId = 1, ClientId = 1, Name = "Test 1", Description = "Desc 1", PerItem = true, Rate = 1.0M,
-                OnlyVan = false
-            },
-            new()
-            {
-                ItemId = 2, ClientId = 1, Name = "Test 2", Description = "Desc 2", PerItem = false, Rate = 2.0M,
-                OnlyVan = true
-            }
-        }.AsQueryable().BuildMockDbSet();
-
-        _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(availableSpeedItemsData.Object);
-        _mockContext.Setup(c => c.TucJobs).Returns(jobsData.Object);
-        _mockContext.Setup(c => c.TucClientItems).Returns(clientItemsData.Object);
-
-        // Act
-        var result = await _mockRepository.GetAllClientItemsBySpeed(clientId, speedId, jobId);
-
+        var result = await _mockRepository.GetAllClientItemsBySpeed(1, 1, 1);
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(2));
         Assert.That(result.Items.Count, Is.EqualTo(2));
@@ -102,11 +85,20 @@ public class JobRepositoryTest
         var firstItem = result.Items[0];
         Assert.That(firstItem, Is.Not.Null);
         Assert.That(firstItem.Selected, Is.EqualTo(true));
-        Assert.That(firstItem.Name, Is.EqualTo("Test 1"));
+        Assert.That(firstItem.Name, Is.EqualTo("Item1"));
 
         var secondItem = result.Items[1];
         Assert.That(secondItem, Is.Not.Null);
-        Assert.That(secondItem.Selected, Is.EqualTo(false));
-        Assert.That(secondItem.Name, Is.EqualTo("Test 2"));
+        Assert.That(secondItem.Selected, Is.EqualTo(true));
+        Assert.That(secondItem.Name, Is.EqualTo("Item2"));
+    }
+
+    [Test]
+    public async Task GetAllClientItemsBySpeed_Should_Return_Empty_List_When_No_Items_Are_Available()
+    {
+        var result = await _mockRepository.GetAllClientItemsBySpeed(2, 2, 2);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.TotalCount, Is.EqualTo(0));
+        Assert.That(result.Items.Count, Is.EqualTo(0));
     }
 }
