@@ -2969,6 +2969,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }).then(() => "Inter-courier Charge Canceled!");
     }
 
+    /**
+     * @param  {Event}  event
+     * @param  {Job}  job
+     */
     self.createEvent = (event, job) => {
         $mdDialog.show({
             controller: AddEventDialogController,
@@ -2990,18 +2994,24 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    self.showAdditionalServicesMenu = (event, job) => {
+    /**
+     * @param  {Event}  event
+     * @param  {Job}  job
+     */
+    self.showAdditionalServicesMenu = async (event, job) => {
         const jobId = job.id;
         const clientId = job.clientId;
         const speedId = job.speedId;
 
         loadingService.showLoader();
 
-        return DispatchData.hasClientItemsAvailable(clientId, speedId).then(clientItemsAvailable => {
+        try {
+            const clientItemsAvailable = await DispatchData.hasClientItemsAvailable(clientId, speedId);
+
             loadingService.closeLoader();
 
             if (!clientItemsAvailable) {
-                $mdDialog.show(
+                await $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
                         .title('No Additional Services')
@@ -3014,7 +3024,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }
 
             // Show additional services dialog
-            return $mdDialog.show({
+            await $mdDialog.show({
                 controller: AdditionalServicesDialogController,
                 controllerAs: "ctrl",
                 templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
@@ -3027,14 +3037,17 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     clientId,
                     speedId,
                 }
-            }).then(() => {
-                return $scope.getData().then(() => {
-                    console.log('Additional Services Dialog closed!');
-                });
             });
-        })
-    }
 
+            await $scope.getData();
+            console.log('Additional Services Dialog closed!');
+
+        } catch (error) {
+            // handle or throw the error
+            loadingService.closeLoader();
+            toastrService.showErrorToast(error.message);
+        }
+    }
     // Load custom layout
     self.init = () => {
         if (Modernizr.localstorage) {

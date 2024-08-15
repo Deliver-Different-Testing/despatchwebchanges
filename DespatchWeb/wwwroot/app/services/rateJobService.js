@@ -1,28 +1,4 @@
 /**
- * @typedef {Object} Job
- * @property {number} fromSuburbID - The ID of the suburb from where the job starts.
- * @property {number} toSuburbID - The ID of the suburb where the job ends.
- * @property {Object} size - The size of the job.
- * @property {number} size.id - The ID of the size.
- * @property {number} speedID - The ID of the job speed.
- * @property {string|null} truckStartTime - The start time of the truck for the job or current time if not set.
- * @property {number} truckHours - Duration of the truck hire in hours.
- * @property {number|null} truckWeightLimit - The weight limit for the truck.
- * @property {boolean} pedal - A Boolean indicating whether the job is a pedal job.
- * @property {boolean} van - A Boolean indicating whether the job is a van job.
- * @property {boolean} return - A Boolean indicating whether the job has return.
- * @property {number} weight - Weight of the job.
- * @property {boolean} true - A Boolean: serves unknown purpose in this context.
- * @property {boolean} direct - A Boolean indicating whether the job is direct.
- * @property {number} acceptedJobTypeID - The ID of the accepted job type.
- * @property {string} ourRef - Our reference for the job.
- * @property {string} refA - The A reference for the job.
- * @property {string} refB - The B reference for the job.
- * @property {Array} items - Items for the job.
- * @property {Date} booked - The date the job was booked.
- */
-
-/**
  * A service for rating jobs - determines the cost of hiring and dispatching for a job
  * @class
  */

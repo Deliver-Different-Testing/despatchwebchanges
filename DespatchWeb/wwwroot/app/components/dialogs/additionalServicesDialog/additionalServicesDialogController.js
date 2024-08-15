@@ -1,26 +1,8 @@
 /**
- * @typedef {Object} ClientItem
- *
- * @property {number} itemId - The ID of the item.
- * @property {number} clientId - The ID of the client that the item belongs to.
- * @property {string} name - The name of the item.
- * @property {string} description - The description of the item.
- * @property {boolean} perItem - True if the rate is calculated per item, otherwise false.
- * @property {number} rate - The rate associated to the item.
- * @property {boolean} onlyVan - True if the item should only be delivered by van, otherwise false.
+ * A service for manageing additional services for jobs
+ * @class
  */
-
-/**
- * @typedef {Object} Query
- *
- * @property {string} order
- * @property {number} limit
- * @property {number} page
- */
-
 class AdditionalServicesDialogController {
-    jobId;
-
     /**
      * @param $mdDialog
      * @param $http

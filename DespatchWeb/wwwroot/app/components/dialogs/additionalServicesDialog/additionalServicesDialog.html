@@ -52,11 +52,11 @@
 
         <md-divider></md-divider>
 
-        <md-card ng-show="ctrl.additionalServices">
+        <md-card ng-show="ctrl.totalServicesCount !== 0">
             <md-card-title>
-                <md-card-sub-text>
+                <md-card-title-text>
                     <span class="md-subhead">Selected Services</span>
-                </md-card-sub-text>
+                </md-card-title-text>
             </md-card-title>
             <md-card-content>
                 <div ng-if="service.selected" ng-repeat="service in ctrl.additionalServices">

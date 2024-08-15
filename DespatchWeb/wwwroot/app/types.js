@@ -1,0 +1,54 @@
+// This files contains all the reused JSDoc Types
+
+/**
+ * @typedef {Object} Job
+ * @property {number} clientId - The ID of the client associated with the job.
+ * @property {number|null} courierId - The ID of the courier associated with the job.
+ * @property {string} deliverToContact - The contact to whom the job will be delivered.
+ * @property {string} fromAddress - The address from which the job will be picked up.
+ * @property {string} fromSuburb - The suburb from which the job will be picked up.
+ * @property {number} fromLong - The longitude of the pickup address.
+ * @property {number} fromLat - The latitude of the pickup address.
+ * @property {string} toAddress - The address to which the job will be delivered.
+ * @property {string} toSuburb - The suburb to which the job will be delivered.
+ * @property {number} toLong - The longitude of the delivery address.
+ * @property {number} toLat - The latitude of the delivery address.
+ * @property {string} date - The date when the job is scheduled.
+ * @property {string} fromContactName - The name of the contact from whom the job will be picked up.
+ * @property {string} podNames - The name of the POD contact from whom the job will be picked up.
+ * @property {string} deliveryNotes - Any notes related to the delivery of the job.
+ * @property {string} pickupNotes - Any notes related to the pickup of the job.
+ * @property {string} jobNotes - Any other notes related to the job.
+ * @property {number} speedId - The ID of the speed at which the job will be performed.
+ * @property {boolean} van - Indicator if a van is required for the job.
+ * @property {boolean} truck - Indicator if a truck is required for the job.
+ * @property {boolean} pedal - Indicator if a pedal vehicle is required for the job.
+ * @property {boolean} attention - Indicator to draw attention to the job.
+ * @property {boolean} vanOK - Indicator if a van is acceptable for the job.
+ * @property {boolean} reprice - Indicator to reprice the job.
+ * @property {boolean} void - Indicator if the job is voided.
+ * @property {boolean} done - Indicator if the job is done.
+ * @property {number} charge - The charge for the job.
+ * @property {string} refA - Reference A for the job
+ * @property {string} refB - Reference B for the job
+ */
+
+/**
+ * @typedef {Object} ClientItem
+ *
+ * @property {number} itemId - The ID of the item.
+ * @property {number} clientId - The ID of the client that the item belongs to.
+ * @property {string} name - The name of the item.
+ * @property {string} description - The description of the item.
+ * @property {boolean} perItem - True if the rate is calculated per item, otherwise false.
+ * @property {number} rate - The rate associated to the item.
+ * @property {boolean} onlyVan - True if the item should only be delivered by van, otherwise false.
+ */
+
+/**
+ * @typedef {Object} Query
+ *
+ * @property {string} order
+ * @property {number} limit
+ * @property {number} page
+ */
