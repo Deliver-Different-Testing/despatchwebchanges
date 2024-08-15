@@ -1,6 +1,6 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         loadingService, $mdDialog, $parse, $q, $scope, $state,
-                        $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService) {
+                        $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment) {
     const self = this;
 
     $scope.isInternal = (ClientInternal === "True");
