@@ -849,7 +849,7 @@ public partial class JobController : Controller
         var notesList = GenerateNotesList(request.Job);
         await AddNotesToJob(notesList, jobId, request.DespatcherName);
 
-        return Json(new { jobId });
+        return Json(jobId);
     }
 
     private static bool IsValidRequest(CreateJobRequest request) =>

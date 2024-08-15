@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -33,6 +35,70 @@ public class JobControllerTest
     private JobController _controller;
 
     [Test]
+    public async Task QuickCreateJob_WithInvalidRequest_ReturnsInternalServerError()
+    {
+        var request = new CreateJobRequest
+        {
+            /* Invalid request data */
+        };
+
+        var result = await _controller.QuickCreateJob(request) as ObjectResult;
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.StatusCode, Is.EqualTo(StatusCodes.Status500InternalServerError));
+    }
+
+    [Test]
+    public async Task QuickCreateJob_WhenJobIdIsValid_ReturnsJsonResultWithJobId()
+    {
+        var validRequest = new CreateJobRequest
+        {
+            Job = new JobCreateViewModel
+            {
+                ClientId = 1,
+                DeliverToContact = "John Doe",
+                PodName = "PodName1",
+                FromAddress = "123 Test Street",
+                ToAddress = "456 Test Avenue",
+                Date = DateTime.Now,
+                FromContactName = "Jane Doe",
+                RefA = "RefA1",
+                RefB = "RefB1",
+                DeliveryNotes = "Leave at front door",
+                PickupNotes = "Pickup at back door",
+                JobNotes = "This is a test job",
+                Van = true,
+                Truck = false,
+                Pedal = false,
+                Attention = false,
+                VanOk = false,
+                Reprice = false,
+                Void = false,
+                Done = false,
+                Charge = 25.00m,
+                FromSuburb = 10,
+                FromLat = 35.6895m,
+                FromLong = 139.6917m,
+                ToSuburb = 20,
+                ToLat = 34.0522m,
+                ToLong = 118.2437m,
+                SpeedId = 5
+            },
+            StaffId = 2,
+            DespatcherName = "Despatcher1"
+        };
+
+        const int expectedJobId = 1;
+        _mockJobRepo.Setup(jr => jr.QuickAddJob(validRequest.Job, validRequest.StaffId.Value))
+            .ReturnsAsync(expectedJobId);
+
+        var result = await _controller.QuickCreateJob(validRequest) as JsonResult;
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(expectedJobId, Is.EqualTo(result.Value));
+    }
+
+    [Test]
     public async Task HasClientItemsAvailable_WhenCalled_ReturnsExpectedResult()
     {
         // Arrange
@@ -40,7 +106,7 @@ public class JobControllerTest
         const int speedId = 1;
         const bool hasItems = true;
 
-        _mockJobRepo.Setup(x => x.HasClientItemsAvailable(clientId, speedId)).Returns(Task.FromResult(hasItems));
+        _mockJobRepo.Setup(x => x.HasClientItemsAvailable(clientId, speedId)).ReturnsAsync(hasItems);
 
         // Act
         var result = await _controller.HasClientItemsAvailable(clientId, speedId) as JsonResult;
@@ -80,7 +146,7 @@ public class JobControllerTest
 
         _mockJobRepo
             .Setup(x => x.GetAllClientItemsBySpeed(clientId, speedId, jobId))
-            .Returns(Task.FromResult(pagedExpectedClientItems));
+            .ReturnsAsync(pagedExpectedClientItems);
 
         // Act
         var actionResult = await _controller.GetAllClientItems(clientId, speedId, jobId);
