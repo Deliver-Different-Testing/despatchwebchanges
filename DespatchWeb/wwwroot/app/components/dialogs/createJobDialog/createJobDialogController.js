@@ -1,11 +1,3 @@
-
-
-/**
- * @typedef {Object} SuburbOption - An option for selection in the ourSuburbSearch.
- * @property {string} text - The textual representation of the suburb.
- * @property {string} alias - The alias of the suburb.
- */
-
 /**
  * @class
  */

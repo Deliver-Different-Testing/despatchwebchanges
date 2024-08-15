@@ -1,4 +1,3 @@
-
 /**
  * A controller which handles the GPS Form popup
  * @class

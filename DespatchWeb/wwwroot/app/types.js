@@ -79,3 +79,45 @@
  * @property {string} text - The textual representation of the suburb.
  * @property {string} alias - The alias of the suburb.
  */
+
+/**
+ * @typedef {Object} Event
+ *
+ * @property {number} id Unique identifier of the job
+ * @property {number} jobNumber Number associated with job
+ * @property {string} clientCode Code associated with client
+ * @property {Date} eventDate Timestamp when the event is created
+ * @property {string} eventTime Time of the event
+ * @property {string} eventType Types of event
+ * @property {string} notes Additional notes for the event
+ */
+
+/**
+ * @typedef {Object} Pallet
+ * @property {number} amount - The quantity of pallets.
+ * @property {number} weight - The weight of the pallet.
+ * @property {number} length - The length of the pallet.
+ * @property {number} depth - The depth of the pallet.
+ * @property {number} height - The height of the pallet.
+ * @property {boolean} pu - (Please define what this property does)
+ * @property {boolean} do - (Please define what this property does)
+ * @property {string} dgClass - (Please define what this property does)
+ * @property {string} notes - Any additional comments or notes related to the pallet.
+ */
+
+/**
+ * @typedef SelectOption
+ *
+ * @property {number} id - The unique identifier for the select object
+ * @property {string} text - The display text for the select object
+ */
+
+/**
+ * @typedef {object} InterCourierData
+ *
+ * @property {number} fromCourierId
+ * @property {number} toCourierId
+ * @property {string} reference
+ * @property {number} zones
+ * @property {number} amount
+ */

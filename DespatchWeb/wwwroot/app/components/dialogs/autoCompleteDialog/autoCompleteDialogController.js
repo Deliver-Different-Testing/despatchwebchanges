@@ -1,10 +1,3 @@
-/**
- * @typedef SelectOption
- *
- * @property {number} id - The unique identifier for the select object
- * @property {string} text - The display text for the select object
- */
-
 class AutoCompleteDialogController {
     constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
         this._$mdDialog = $mdDialog;

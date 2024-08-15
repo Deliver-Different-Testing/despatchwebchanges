@@ -1,13 +1,3 @@
-/**
- * @name data
- * @type {object}
- * @property {number} fromCourierId
- * @property {number} toCourierId
- * @property {string} reference
- * @property {number} zones
- * @property {number} amount
- */
-
 class InterCourierChargeDialogController {
     constructor($scope, $mdDialog, $http, DispatchData, toastrService, staffId) {
         this._$mdDialog = $mdDialog;
@@ -61,7 +51,7 @@ class InterCourierChargeDialogController {
     }
 
     /**
-     * @param {data} data
+     * @param {InterCourierData} data
      */
     async submit(data) {
         try {

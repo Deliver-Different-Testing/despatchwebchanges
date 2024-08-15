@@ -1,14 +1,3 @@
-/**
- * @typedef {Object} Event
- *
- * @property {number} id Unique identifier of the job
- * @property {number} jobNumber Number associated with job
- * @property {string} clientCode Code associated with client
- * @property {Date} eventDate Timestamp when the event is created
- * @property {string} eventTime Time of the event
- * @property {string} eventType Types of event
- * @property {string} notes Additional notes for the event
- */
 class AddEventDialogController {
     constructor($scope, $mdDialog, NWData, toastrService, job, dispatcherName, contactId) {
         this._$mdDialog = $mdDialog;

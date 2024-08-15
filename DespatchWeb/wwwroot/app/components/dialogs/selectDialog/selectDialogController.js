@@ -1,11 +1,4 @@
 /**
- * @typedef SelectOption
- *
- * @property {number} id - The unique identifier for the select object
- * @property {string} text - The display text for the select object
- */
-
-/**
  * A controller which handles the Selection Dialog.
  * @class
  */

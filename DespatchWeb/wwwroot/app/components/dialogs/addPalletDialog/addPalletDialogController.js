@@ -1,16 +1,3 @@
-/**
- * @typedef {Object} Pallet
- * @property {number} amount - The quantity of pallets.
- * @property {number} weight - The weight of the pallet.
- * @property {number} length - The length of the pallet.
- * @property {number} depth - The depth of the pallet.
- * @property {number} height - The height of the pallet.
- * @property {boolean} pu - (Please define what this property does)
- * @property {boolean} do - (Please define what this property does)
- * @property {string} dgClass - (Please define what this property does)
- * @property {string} notes - Any additional comments or notes related to the pallet.
- */
-
 class AddPalletDialogController {
     constructor($scope,
                 $mdDialog,
