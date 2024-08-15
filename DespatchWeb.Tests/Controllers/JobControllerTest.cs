@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -46,5 +48,49 @@ public class JobControllerTest
         // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(hasItems, Is.EqualTo(result.Value));
+    }
+
+    [Test]
+    public async Task GetAllClientItems_WhenCalled_ReturnsExpectedResult()
+    {
+        // Arrange
+        const int clientId = 1;
+        const int speedId = 2;
+        const int jobId = 3;
+        const int pageNumber = 1;
+        const int pageSize = 10;
+
+        var expectedClientItems = new List<ClientItemsViewModel>
+        {
+            new()
+            {
+                ItemId = 1, ClientId = clientId, Name = "Item 1", Description = "Description 1", PerItem = true,
+                Rate = 1.23M, OnlyVan = false, Selected = false
+            },
+            new()
+            {
+                ItemId = 2, ClientId = clientId, Name = "Item 2", Description = "Description 2", PerItem = false,
+                Rate = 2.34M, OnlyVan = true, Selected = true
+            }
+        };
+
+        var pagedExpectedClientItems = new PagedList<ClientItemsViewModel>
+        {
+            Items = expectedClientItems,
+            TotalCount = expectedClientItems.Count
+        };
+
+        _mockJobRepo
+            .Setup(x => x.GetAllClientItemsBySpeed(clientId, speedId, jobId, pageNumber, pageSize))
+            .Returns(Task.FromResult(pagedExpectedClientItems));
+
+        // Act
+        var actionResult = await _controller.GetAllClientItems(clientId, speedId, jobId, pageNumber, pageSize);
+        var result = actionResult as JsonResult;
+
+        // Assert
+        Assert.That(result, Is.Not.Null);
+        var clientItems = result.Value as PagedList<ClientItemsViewModel>;
+        Assert.That(pagedExpectedClientItems.TotalCount, Is.EqualTo(clientItems.TotalCount));
     }
 }
