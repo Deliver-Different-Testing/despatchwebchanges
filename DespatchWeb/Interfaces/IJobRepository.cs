@@ -156,8 +156,7 @@ public interface IJobRepository
     Task AddInterCourierCharge(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailable(int clientId, int speedId);
 
-    Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId,
-        int pageNumber, int pageSize);
+    Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId);
 
     Task AddClientsItemToJob(int jobId, List<int> clientItemIds);
 }

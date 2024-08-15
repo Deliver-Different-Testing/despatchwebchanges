@@ -938,10 +938,9 @@ public partial class JobController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId,
-        int pageNumber, int pageSize)
+    public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId)
     {
-        var clientItems = await _jobRepo.GetAllClientItemsBySpeed(clientId, speedId, jobId, pageNumber, pageSize);
+        var clientItems = await _jobRepo.GetAllClientItemsBySpeed(clientId, speedId, jobId);
         return Json(clientItems);
     }
 

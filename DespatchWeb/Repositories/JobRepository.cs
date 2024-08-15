@@ -2550,8 +2550,7 @@ public class JobRepository : IJobRepository
         return clientItemsCount > 0;
     }
 
-    public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId,
-        int pageNumber, int pageSize)
+    public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId)
     {
         var availableSpeedItems = await _context.TblClientAvailableSpeedItems
             .Select(x => new { x.ClientAvailableSpeedId, x.Active, x.ClientItemId })
@@ -2588,10 +2587,7 @@ public class JobRepository : IJobRepository
             });
 
         var count = await clientItemsQuery.CountAsync();
-        var clientItems = await clientItemsQuery
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        var clientItems = await clientItemsQuery.ToListAsync();
 
         var pagedClientItems = new PagedList<ClientItemsViewModel>
         {

@@ -61,8 +61,6 @@ public class JobRepositoryTest
         const int clientId = 1;
         const int speedId = 1;
         const int jobId = 1;
-        const int pageNumber = 1;
-        const int pageSize = 10;
 
         // Assuming you have some predefined data to test with:
         var availableSpeedItemsData = new List<TblClientAvailableSpeedItem>
@@ -95,7 +93,7 @@ public class JobRepositoryTest
         _mockContext.Setup(c => c.TucClientItems).Returns(clientItemsData.Object);
 
         // Act
-        var result = await _mockRepository.GetAllClientItemsBySpeed(clientId, speedId, jobId, pageNumber, pageSize);
+        var result = await _mockRepository.GetAllClientItemsBySpeed(clientId, speedId, jobId);
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(2));

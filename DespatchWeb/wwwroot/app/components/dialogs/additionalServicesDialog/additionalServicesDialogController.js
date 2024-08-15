@@ -1,5 +1,5 @@
 /**
- * A service for manageing additional services for jobs
+ * A service for managing additional services for jobs
  * @class
  */
 class AdditionalServicesDialogController {
@@ -19,11 +19,6 @@ class AdditionalServicesDialogController {
 
         this.isLoading = false;
 
-        /** @type {Query} */
-        this.query = {
-            order: 'name', limit: 5, page: 1
-        };
-
         /** @type {ClientItem[]} */
         this.additionalServices = [];
         this.totalServicesCount = 0;
@@ -35,8 +30,7 @@ class AdditionalServicesDialogController {
 
     async getServices() {
         const url = "job/GetAllClientItemsBySpeed";
-        let response = await this._$http.get(url + '?clientId=' + this._clientId + '&speedId=' + this._speedId + '&jobId=' + this._jobId
-            + '&pageNumber=' + this.query.limit + '&pageSize=' + this.query.page);
+        let response = await this._$http.get(url + '?clientId=' + this._clientId + '&speedId=' + this._speedId + '&jobId=' + this._jobId);
 
         return response.data;
     }

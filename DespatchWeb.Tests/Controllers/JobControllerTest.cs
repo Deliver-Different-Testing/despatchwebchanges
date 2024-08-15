@@ -57,8 +57,6 @@ public class JobControllerTest
         const int clientId = 1;
         const int speedId = 2;
         const int jobId = 3;
-        const int pageNumber = 1;
-        const int pageSize = 10;
 
         var expectedClientItems = new List<ClientItemsViewModel>
         {
@@ -81,11 +79,11 @@ public class JobControllerTest
         };
 
         _mockJobRepo
-            .Setup(x => x.GetAllClientItemsBySpeed(clientId, speedId, jobId, pageNumber, pageSize))
+            .Setup(x => x.GetAllClientItemsBySpeed(clientId, speedId, jobId))
             .Returns(Task.FromResult(pagedExpectedClientItems));
 
         // Act
-        var actionResult = await _controller.GetAllClientItems(clientId, speedId, jobId, pageNumber, pageSize);
+        var actionResult = await _controller.GetAllClientItems(clientId, speedId, jobId);
         var result = actionResult as JsonResult;
 
         // Assert
