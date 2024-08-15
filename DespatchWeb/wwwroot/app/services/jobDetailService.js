@@ -318,6 +318,9 @@ class JobDetailService {
         }
     }
 
+    /**
+     * @param {Job} job
+     */
     rateJob(job) {
         const self = this;
 
@@ -427,10 +430,18 @@ class JobDetailService {
         });
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editLogTime(event, job) {
         this.showEditTimeDialog(event, job, "Time", "Time", job.time);
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editCompletedTime(event, job) {
         this.showEditTimeDialog(event, job, "CompletedTime", "Completed Time", job.completedTime);
     }
@@ -467,38 +478,76 @@ class JobDetailService {
         });
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editClientCode(event, job) {
         this.showEditPrompt(event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editItems(event, job) {
         this.showEditPrompt(event, job, 'Edit Items', 'Items...', 'items', job.items, 'Items');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editJobToPhone(event, job) {
         this.showEditPrompt(event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editJobFromPhone(event, job) {
         this.showEditPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editToJobContact(event, job) {
         this.showEditPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
     }
+
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
 
     editPodName(event, job) {
         this.showEditPrompt(event, job, 'Edit POD Name', 'POD Name...', 'pod name', job.podName, 'PODName');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editFromJobContact(event, job) {
         this.showEditPrompt(event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editJobWeight(event, job) {
         this.showEditPrompt(event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     * @param {boolean} isRefA
+     */
     editRef(event, job, isRefA) {
         if (isRefA) {
             this.showEditPrompt(event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
@@ -511,10 +560,18 @@ class JobDetailService {
         this.showEditPrompt(event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editTrackingMobile(event, job) {
         this.showEditPrompt(event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     editTrackingEmail(event, job) {
         this.showEditPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
     }
@@ -849,6 +906,9 @@ class JobDetailService {
         }).then(() => console.log("Split jobs canceled!"));
     }
 
+    /**
+     * @param {Job} job
+     */
     unlockJob(job) {
         return this._dispatchData
             .updateJobDetail(job.id, "Locked", false, job.charge, FirstName, ContactID, job.preBook)
@@ -860,6 +920,9 @@ class JobDetailService {
             });
     }
 
+    /**
+     * @param {Job} job
+     */
     lockJob(job) {
         return this._dispatchData
             .updateJobDetail(job.id, "Locked", true, job.charge, FirstName, ContactID, job.preBook)
@@ -869,6 +932,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     preBookDirectClick(job) {
         const directValue = !job.direct;
 
@@ -880,6 +946,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     pushToLive(job) {
         job.done = !job.done;
 
@@ -891,6 +960,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     vanOkClick(job) {
         const vanOkValue = !job.vanOK;
 
@@ -901,6 +973,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     vanClick(job) {
         const vanValue = !job.van;
 
@@ -918,6 +993,9 @@ class JobDetailService {
 
     }
 
+    /**
+     * @param {Job} job
+     */
     pedalClick(job) {
         const pedalValue = !job.pedal;
 
@@ -931,6 +1009,9 @@ class JobDetailService {
         }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     truckClick(job) {
         const truckValue = !job.truck;
 
@@ -945,6 +1026,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     directClick(job) {
         const directValue = !job.direct;
 
@@ -962,6 +1046,9 @@ class JobDetailService {
         }
     }
 
+    /**
+     * @param {Job} job
+     */
     attentionClick(job) {
         const attentionValue = !job.attention;
 
@@ -972,6 +1059,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     repriceClick(job) {
         const repriceValue = !job.reprice;
 
@@ -982,6 +1072,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     preBookReturnClick(job) {
         const returnValue = !job.return;
 
@@ -992,6 +1085,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     oneOffClick(job) {
         const oneoffValue = !job.oneOff;
 
@@ -1003,6 +1099,9 @@ class JobDetailService {
 
     }
 
+    /**
+     * @param {Job} job
+     */
     activeClick(job) {
         const activeValue = !job.active;
 
@@ -1013,6 +1112,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     voidClick(job) {
         const voidValue = !job.void;
 
@@ -1027,6 +1129,10 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     doneClick(event, job) {
         job.done = !job.done;
 
@@ -1061,6 +1167,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     deliveredClick(job) {
         const doneValue = !job.done;
 
@@ -1071,6 +1180,9 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Job} job
+     */
     airportOnlyClick(job) {
         const airportOnlyValue = !job.airportOnly;
 
@@ -1081,6 +1193,10 @@ class JobDetailService {
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     trackingMethodClick(event, job) {
         const trackingArray = this.options.detail.tracking.map(item => {
             return {
@@ -1091,14 +1207,26 @@ class JobDetailService {
         this.showSelectDialog(event, job, trackingArray, "TrackingMethod", "Tracking Method", this.getTrackingMethod(job.trackingMethod));
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     leaveClick(event, job) {
         this.showSelectDialog(event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     undeliverableClick(event, job) {
         this.showSelectDialog(event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", job.udStatus);
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     sizeClick(event, job) {
         const sizeArray = this.options.detail.size.map(item => {
             return {
@@ -1142,6 +1270,10 @@ class JobDetailService {
         });
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     dgClassClick(event, job) {
         let dgClassOptions = [];
         for (let i = 1; i <= 9; i++) {
@@ -1153,18 +1285,34 @@ class JobDetailService {
         this.showSelectDialog(event, job, dgClassOptions, "DGClass", "DG Class", initialValue, "editField", true, "Has Documentation?");
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     notifyClick(event, job) {
         this.showSelectDialog(event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", job.notifiedName);
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     acceptedClick(event, job) {
         this.showSelectDialog(event, job, this.pickSpeeds, "AcceptedJobTypeID", "Accepted", job.acceptedName);
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     speedClick(event, job) {
         this.showSelectDialog(event, job, this.pickSpeeds, "SpeedID", "Speed", job.speedName);
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     contactClick(event, job) {
         this.showSelectDialog(event, job, this.pickContacts, "ContactID", "Contact", job.contactName);
     }
@@ -1185,6 +1333,10 @@ class JobDetailService {
         }
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     jobTypeClick(event, job) {
         const data = [{
             id: 1, text: 'Pickup'
@@ -1197,6 +1349,10 @@ class JobDetailService {
         this.showSelectDialog(event, job, data, "JobTypeID", "Job Type", this.getJobTypeDescription(job.jobType));
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     internalStatusClick(event, job) {
         this.showSelectDialog(event, job, this.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
     }
@@ -1234,6 +1390,10 @@ class JobDetailService {
         });
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     clientClick(event, job) {
         const url = "/home/ActiveClients";
         const placeholder = "Start typing to enter new client...";
@@ -1242,12 +1402,13 @@ class JobDetailService {
             id: job.clientID, text: job.clientName
         }
 
+
         this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
     }
 
     /**
      * @param {Event} event
-     * @param {*} job
+     * @param {Job} job
      */
     courierClick(event, job) {
         const url = "/courier/AllActiveSearch";
@@ -1256,6 +1417,10 @@ class JobDetailService {
         this.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
     }
 
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
     newPallet(event, job) {
         return this._$mdDialog.show({
             controller: AddPalletDialogController,
