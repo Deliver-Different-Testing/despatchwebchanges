@@ -945,7 +945,7 @@ public partial class JobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddClientItemsTobJob(int jobId, List<int> serviceIds)
+    public async Task<IActionResult> AddClientItemsTobJob(int jobId, [FromBody] List<int> serviceIds)
     {
         await _jobRepo.AddClientsItemToJob(jobId, serviceIds);
         return Json("OK");

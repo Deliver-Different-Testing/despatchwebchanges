@@ -2269,12 +2269,18 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return multiple ? multipleMenu : fullMenu;
     };
 
-    self.setTruckMode = mode => {
+    /**
+     * @param {string} mode
+     */
+    self.setTruckMode = (mode) => {
         $scope.truckMode = mode;
         self.getData();
     };
 
-    self.setSupportChannel = channel => {
+    /**
+     * @param {string} channel
+     */
+    self.setSupportChannel = (channel) => {
         $scope.supportChannel = channel;
         if (Modernizr.localstorage) {
             localStorage.setItem("support-channel-" + ContactID, JSON.stringify($scope.supportChannel));
@@ -2352,7 +2358,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
         const selectedClients = $scope.pickService.clients.map(a => a.id);
         return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
-            $scope.jobList = data;
             angular.element("#box-jobsList .loading").fadeOut();
             $timeout(() => {
 
@@ -2387,6 +2392,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     }
 
+    /**
+     * @param {string} item
+     */
     function SetSelectedChannels(item) {
         const sr = $scope.pickChannels.find(obj => obj.label === item);
         $scope.pickService.channel.push(sr);
@@ -2808,6 +2816,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // JOB DETAILS
     /////////////////////////
 
+    /**
+     * @param {Event}  event
+     * @param {Job}  currentJob
+     */
     $scope.setSplitJobMeetingPoint = (event, currentJob) => {
         const getDeliveryLocation = currentJob => currentJob.deliveryLongitude
             ? {lat: currentJob.deliveryLatitude, long: currentJob.deliveryLongitude}
@@ -2900,6 +2912,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         angular.element('.eventForm').css('display', '');
     };
 
+    /**
+     * @param {Event}  event
+     */
     self.truckLoadingStatus = (event) => {
         $mdDialog.show({
             controller: TruckCourierStatusDialogController,
@@ -2950,7 +2965,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param       {Event}  event
+     * @param {Event}  event
      */
     self.interCourierCharge = event => {
         $mdDialog.show({
@@ -2970,8 +2985,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param  {Event}  event
-     * @param  {Job}  job
+     * @param {Event}  event
+     * @param {Job}  job
      */
     self.createEvent = (event, job) => {
         $mdDialog.show({

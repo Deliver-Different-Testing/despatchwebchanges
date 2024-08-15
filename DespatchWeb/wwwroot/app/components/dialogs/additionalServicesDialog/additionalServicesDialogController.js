@@ -6,13 +6,15 @@ class AdditionalServicesDialogController {
     /**
      * @param $mdDialog
      * @param $http
+     * @param toastrService
      * @param {number} jobId
      * @param {number} clientId
      * @param {number} speedId
      */
-    constructor($mdDialog, $http, jobId, clientId, speedId) {
+    constructor($mdDialog, $http, toastrService, jobId, clientId, speedId) {
         this._$mdDialog = $mdDialog;
         this._$http = $http;
+        this._toastrService = toastrService;
         this._jobId = jobId;
         this._clientId = clientId;
         this._speedId = speedId;
@@ -21,8 +23,11 @@ class AdditionalServicesDialogController {
 
         /** @type {ClientItem[]} */
         this.additionalServices = [];
+
+        /** @type {number} */
         this.totalServicesCount = 0;
-        this.getServices(clientId, speedId, jobId, this.query).then(serviceResponse => {
+
+        this.getServices().then(serviceResponse => {
             this.additionalServices = serviceResponse.items;
             this.totalServicesCount = serviceResponse.totalCount;
         });
@@ -39,8 +44,25 @@ class AdditionalServicesDialogController {
         return 1;
     }
 
+    /**
+     * @param {ClientItem[]} allJobServices
+     */
     async bookServices(allJobServices) {
-        // Add the services to the job here
+        try {
+            const serviceIds = allJobServices
+                .filter(service => service.selected)
+                .map(service => service.itemId);
+
+            const url = "job/AddClientItemsTobJob"
+
+            await this._$http({
+                method: 'POST', url: url + '?jobId=' + this._jobId, data: serviceIds
+            });
+
+            this._toastrService.showSuccessToast(serviceIds.length + " total services have been added to Job");
+        } catch (error) {
+            this._toastrService.showErrorToast(error.message);
+        }
     }
 
     cancel() {
