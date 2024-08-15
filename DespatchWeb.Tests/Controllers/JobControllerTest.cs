@@ -98,6 +98,36 @@ public class JobControllerTest
         Assert.That(expectedJobId, Is.EqualTo(result.Value));
     }
 
+
+    [Test]
+    public async Task InterCourierCharge_WithNullViewModel_ReturnsInternalServerError()
+    {
+        InterCourierChargeViewModel viewModel = null;
+
+        var result = await _controller.InterCourierCharge(viewModel) as ObjectResult;
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.StatusCode, Is.EqualTo(StatusCodes.Status500InternalServerError));
+    }
+
+    [Test]
+    public async Task InterCourierCharge_WithValidViewModel_ReturnsOkResult()
+    {
+        var viewModel = new InterCourierChargeViewModel
+        {
+            FromCourierId = 1,
+            ToCourierId = 2,
+            Reference = "REF123",
+            Zones = 3,
+            Amount = 50.00m,
+            StaffId = 4
+        };
+        var result = await _controller.InterCourierCharge(viewModel) as JsonResult;
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Value, Is.EqualTo("OK"));
+    }
+
     [Test]
     public async Task HasClientItemsAvailable_WhenCalled_ReturnsExpectedResult()
     {
