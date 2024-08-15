@@ -44,6 +44,7 @@
  * @property {boolean} perItem - True if the rate is calculated per item, otherwise false.
  * @property {number} rate - The rate associated to the item.
  * @property {boolean} onlyVan - True if the item should only be delivered by van, otherwise false.
+ * @property {boolean} selected - If the item is added to the job or not
  */
 
 /**
@@ -76,5 +77,5 @@
  * @typedef {Object} SuburbOption - An option for selection in the ourSuburbSearch.
  *
  * @property {string} text - The textual representation of the suburb.
- * @property {string=} alias - The alias of the suburb.
+ * @property {string} alias - The alias of the suburb.
  */
