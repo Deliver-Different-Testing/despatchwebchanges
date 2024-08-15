@@ -25,6 +25,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
         public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual DbSet<TblClient> TblClients { get; set; }
+        public virtual DbSet<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; }
         public virtual DbSet<TblClientAvailableSpeedItem> TblClientAvailableSpeedItems { get; set; }
         public virtual DbSet<TblClientContact> TblClientContacts { get; set; }
         public virtual DbSet<TblClientContactInternetPermission> TblClientContactInternetPermissions { get; set; }
@@ -1336,6 +1337,91 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.XeroId).HasMaxLength(50);
             });
 
+            modelBuilder.Entity<TblClientAvailableSpeed>(entity =>
+            {
+                entity.ToTable("tblClientAvailableSpeed");
+
+                entity.HasIndex(e => new { e.ClientId, e.SpeedId }, "idx_ClientIdSpeedId");
+
+                entity.HasIndex(e => new { e.ClientId, e.Active, e.SpeedId, e.Apivisible, e.WebVisible, e.InternalVisible }, "idx_tblClientAvailableSpeed_ClientID_Active_Visibility_SpeedID");
+
+                entity.Property(e => e.Id).HasColumnName("ID");
+
+                entity.Property(e => e.Active)
+                    .IsRequired()
+                    .HasDefaultValueSql("((1))");
+
+                entity.Property(e => e.AddonPercentage).HasColumnType("decimal(5, 4)");
+
+                entity.Property(e => e.Apivisible)
+                    .HasColumnName("APIVisible")
+                    .HasDefaultValueSql("((0))");
+
+                entity.Property(e => e.BookImmediate).HasDefaultValueSql("((1))");
+
+                entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.CourierPercentage).HasColumnType("decimal(5, 4)");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .HasMaxLength(50)
+                    .HasDefaultValueSql("('dbo')");
+
+                entity.Property(e => e.Description).HasMaxLength(500);
+
+                entity.Property(e => e.DisplayName).HasMaxLength(200);
+
+                entity.Property(e => e.EndTime).HasColumnType("datetime");
+
+                entity.Property(e => e.Faf).HasColumnName("FAF");
+
+                entity.Property(e => e.FuelPercentage).HasColumnType("decimal(5, 4)");
+
+                entity.Property(e => e.InternalVisible).HasDefaultValueSql("((1))");
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .HasMaxLength(50)
+                    .HasDefaultValueSql("('dbo')");
+
+                entity.Property(e => e.Markup).HasColumnType("decimal(18, 4)");
+
+                entity.Property(e => e.Mfv).HasColumnName("MFV");
+
+                entity.Property(e => e.NoSdailyLimit).HasColumnName("NoSDailyLimit");
+
+                entity.Property(e => e.ProcessingTime).HasDefaultValueSql("((0))");
+
+                entity.Property(e => e.SalePrice).HasColumnType("money");
+
+                entity.Property(e => e.SpeedId).HasColumnName("SpeedID");
+
+                entity.Property(e => e.StartTime).HasColumnType("datetime");
+
+                entity.Property(e => e.WebVisible).HasDefaultValueSql("((1))");
+
+                entity.Property(e => e.Weekday)
+                    .HasMaxLength(7)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.Client)
+                    .WithMany(p => p.TblClientAvailableSpeeds)
+                    .HasForeignKey(d => d.ClientId)
+                    .HasConstraintName("fk_availableSpeed_client");
+
+                entity.HasOne(d => d.Speed)
+                    .WithMany(p => p.TblClientAvailableSpeeds)
+                    .HasForeignKey(d => d.SpeedId)
+                    .HasConstraintName("fk_availableSpeed_speed");
+            });
+
             modelBuilder.Entity<TblClientAvailableSpeedItem>(entity =>
             {
                 entity.ToTable("tblClientAvailableSpeedItems");
@@ -1357,6 +1443,12 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.LastModifiedBy)
                     .IsRequired()
                     .HasMaxLength(50);
+
+                entity.HasOne(d => d.ClientAvailableSpeed)
+                    .WithMany(p => p.TblClientAvailableSpeedItems)
+                    .HasForeignKey(d => d.ClientAvailableSpeedId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__tblClient__Clien__0EE7EC15");
 
                 entity.HasOne(d => d.ClientItem)
                     .WithMany(p => p.TblClientAvailableSpeedItems)

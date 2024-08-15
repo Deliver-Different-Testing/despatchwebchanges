@@ -2358,6 +2358,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
         const selectedClients = $scope.pickService.clients.map(a => a.id);
         return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
+            $scope.jobList = data;
             angular.element("#box-jobsList .loading").fadeOut();
             $timeout(() => {
 

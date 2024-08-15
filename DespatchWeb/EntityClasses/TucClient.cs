@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucClient()
         {
             TblBulkRunSchedules = new HashSet<TblBulkRunSchedule>();
+            TblClientAvailableSpeeds = new HashSet<TblClientAvailableSpeed>();
             TblClientContacts = new HashSet<TblClientContact>();
             TucClientContacts = new HashSet<TucClientContact>();
             TucClientItems = new HashSet<TucClientItem>();
@@ -285,6 +286,7 @@ namespace DespatchWeb.EntityClasses
 
         public virtual TucSuburb UcclSuburb { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
+        public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; }
         public virtual ICollection<TblClientContact> TblClientContacts { get; set; }
         public virtual ICollection<TucClientContact> TucClientContacts { get; set; }
         public virtual ICollection<TucClientItem> TucClientItems { get; set; }

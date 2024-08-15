@@ -16,6 +16,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime LastModified { get; set; }
         public string LastModifiedBy { get; set; }
 
+        public virtual TblClientAvailableSpeed ClientAvailableSpeed { get; set; }
         public virtual TucClientItem ClientItem { get; set; }
     }
 }

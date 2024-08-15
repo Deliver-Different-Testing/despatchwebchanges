@@ -1268,7 +1268,7 @@ public class JobRepository : IJobRepository
 
 
         var whereToUse = "";
-        List<int> selectedViews = new List<int>();
+        var selectedViews = new List<int>();
         foreach (var a in selectedAreas)
         {
             switch (a)
@@ -2538,16 +2538,21 @@ public class JobRepository : IJobRepository
 
     public async Task<bool> HasClientItemsAvailable(int clientId, int speedId)
     {
-        var clientItemsCount = await _context.TucClientItems
-            .Where(ci => ci.ClientId == clientId)
-            .Join(_context.TblClientAvailableSpeedItems
-                    .Where(x => x.ClientAvailableSpeedId == speedId && x.Active == true),
+        var clientItemCount = await _context.TblClientAvailableSpeeds
+            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .Join(_context.TblClientAvailableSpeedItems,
+                cas => cas.Id,
+                casi => casi.ClientAvailableSpeedId,
+                (cas, casi) => new { cas, casi })
+            .Where(x => x.casi.Active)
+            .Join(_context.TucClientItems,
+                x => x.casi.ClientItemId,
                 ci => ci.ItemId,
-                asi => asi.ClientItemId,
-                (ci, asi) => new { ClientItem = ci, AvailableSpeedItem = asi })
+                (x, ci) => ci)
+            .OrderBy(ci => ci.Name)
             .CountAsync();
 
-        return clientItemsCount > 0;
+        return clientItemCount > 0;
     }
 
     public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId)
