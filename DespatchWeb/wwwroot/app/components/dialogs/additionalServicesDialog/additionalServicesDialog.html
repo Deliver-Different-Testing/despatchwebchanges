@@ -1,8 +1,12 @@
-<md-dialog aria-label="Additional Services" style="width: 50%;">
+<md-dialog aria-label="Additional Services" style="width: 35%; height: 35%;">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <h2>Additional Services</h2>
             <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.refreshServices()">
+                <md-tooltip md-direction="bottom">Refresh Services</md-tooltip>
+                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+            </md-button>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-tooltip md-direction="bottom">Cancel</md-tooltip>
                 <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
@@ -13,17 +17,8 @@
     </md-toolbar>
 
     <md-dialog-content ng-cloak>
-        <md-content layout="column">
-            <md-toolbar class="md-table-toolbar md-default">
-                <div class="md-toolbar-tools">
-                    <span>Services</span>
-                    <div flex></div>
-                    <md-button class="md-icon-button" ng-click="ctrl.loadStuff()">
-                        <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                    </md-button>
-                </div>
-            </md-toolbar>
 
+        <div ng-show="!ctrl.isLoading">
             <md-table-container>
                 <table md-progress="ctrl.promise" md-row-select="true" md-table multiple="true"
                        ng-model="ctrl.selected">
@@ -32,39 +27,35 @@
                         <th md-column><span>Name</span></th>
                         <th md-column md-numeric md-order-by="rate"><span>Rate</span></th>
                         <th md-column md-order-by="description">Description</th>
-                        <th md-column md-numeric md-order-by="perItem">Per Item?</th>
+                        <th md-column>Per Item?</th>
                     </tr>
                     </thead>
                     <tbody md-body>
-                    <tr ng-repeat="service in ctrl.additionalServices">
+                    <tr md-auto-select="true" md-on-select="ctrl.addToSelectList" md-row md-select="service"
+                        ng-repeat="service in ctrl.additionalServices">
                         <td md-cell>{{service.name}}</td>
                         <td md-cell>{{service.rate}}</td>
                         <td md-cell>{{service.description}}</td>
-                        <td md-cell>{{service.perItem}}</td>
+                        <td md-cell>
+                            <md-checkbox aria-label="perItem" disabled ng-model="service.perItem"></md-checkbox>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
             </md-table-container>
 
-            <div ng-show="!ctrl.additionalServices || !ctrl.additionalServices.length">
-                <p>No additional services available.</p>
-            </div>
+            <md-card class="centered-card" ng-show="ctrl.totalServicesCount !== 0">
+                <md-card-header>
+                    <md-card-avatar>
+                        <md-icon class="small-icon" md-font-set="material-symbols-outlined">shopping_bag</md-icon>
+                    </md-card-avatar>
+                    <md-card-header-text>
+                        <span class="md-title">Attached Services</span>
+                    </md-card-header-text>
+                </md-card-header>
 
-            <md-table-pagination md-limit="ctrl.query.limit" md-limit-options="[5, 10, 15]"
-                                 md-on-paginate="ctrl.getServices"
-                                 md-page="ctrl.query.page"
-                                 md-page-select md-total="{{ctrl.totalServicesCount}}"></md-table-pagination>
-
-            <md-divider></md-divider>
-
-            <md-card ng-show="ctrl.totalServicesCount !== 0">
-                <md-card-title>
-                    <md-card-title-text>
-                        <span class="md-subhead">Selected Services</span>
-                    </md-card-title-text>
-                </md-card-title>
                 <md-card-content>
-                    <div ng-if="service.selected" ng-repeat="service in ctrl.additionalServices">
+                    <div ng-repeat="service in ctrl.selected">
                         <p>{{service.name}}: {{service.rate}}</p>
                     </div>
 
@@ -73,24 +64,36 @@
                     <p>Total: (EXCL GST): {{ctrl.getTotal()}}</p>
                 </md-card-content>
             </md-card>
+        </div>
 
-        </md-content>
+        <div ng-show="ctrl.isLoading"
+             style="display: flex; justify-content: center; align-items: center; height: 100%;">
+            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+        </div>
+
     </md-dialog-content>
 
     <md-dialog-actions layout="row" layout-align="center center">
-        <md-progress-circular
-                class="md-primary"
-                md-diameter="40"
-                md-mode="indeterminate"
-                ng-disabled="ctrl.jobForm.$invalid"
-                ng-show="ctrl.isLoading">
-        </md-progress-circular>
-
-        <md-button class="md-raised md-primary" ng-click="ctrl.bookServices(ctrl.allJobAdditionalServices)"
-                   ng-disabled="!ctrl.allJobAdditionalServices"
+        <md-button class="md-raised md-primary" ng-click="ctrl.bookServices(ctrl.selected)"
+                   ng-disabled="!ctrl.selected"
                    ng-show="!ctrl.isLoading">
             <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
             Book
         </md-button>
     </md-dialog-actions>
 </md-dialog>
+
+
+<style>
+    .centered-card {
+        margin: auto;
+        width: 40%;
+        max-width: 100%;
+    }
+
+    @media screen and (max-width: 768px) {
+        .centered-card {
+            width: 100%;
+        }
+    }
+</style>

@@ -20,7 +20,7 @@ class AdditionalServicesDialogController {
         this._speedId = speedId;
 
         this.isLoading = false;
-        this.promise;
+        this.promise = null;
         this.selected = [];
 
         /** @type {ClientItem[]} */
@@ -29,10 +29,7 @@ class AdditionalServicesDialogController {
         /** @type {number} */
         this.totalServicesCount = 0;
 
-        this._getServices().then(serviceResponse => {
-            this.additionalServices = serviceResponse.items;
-            this.totalServicesCount = serviceResponse.totalCount;
-        });
+        this.refreshServices();
     }
 
     async _getServices() {
@@ -42,14 +39,21 @@ class AdditionalServicesDialogController {
         return response.data;
     }
 
-    loadStuff() {
-        this.promise = this._getServices.then(serviceResponse => {
+    refreshServices() {
+        this.isLoading = true;
+        this._getServices().then(serviceResponse => {
             this.additionalServices = serviceResponse.items;
             this.totalServicesCount = serviceResponse.totalCount;
-        }).catch((error) => {
-            // Handle your errors here
-            console.error(error);
+
+            this.isLoading = false;
         });
+    }
+
+    /**
+     * @param {ClientItem} selectedService
+     */
+    addToSelectList(selectedService) {
+        this.selected.push(selectedService);
     }
 
     getTotal() {
