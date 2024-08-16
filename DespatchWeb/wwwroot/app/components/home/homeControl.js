@@ -221,13 +221,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/home/tpls/map.tpl?v=1.19",
+            "tpl": "app/components/home/tpls/map.tpl",
             "showSearch": 0,
             "showRefresh": 1
         },
         "clearLists": {
             "title": "Clear Lists",
-            "tpl": "app/components/home/tpls/clearLists.tpl?v=1.9",
+            "tpl": "app/components/home/tpls/clearLists.tpl",
             "showSearch": 0,
             "showRefresh": 0
         }
@@ -289,7 +289,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                             {
                                 "name": "jobsList"
                             }
-
                         ]
                     },
                     {
@@ -623,10 +622,16 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     });
 
+    /**
+     * @param {Job} currentJob
+     */
     self.unlockJob = currentJob => {
         return jdSvc.unlockJob(currentJob);
     };
 
+    /**
+     * @param {Job} currentJob
+     */
     self.lockJob = currentJob => {
         return jdSvc.lockJob(currentJob);
     };
@@ -659,7 +664,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             .textContent('Please enter the Job Number to swap the POD.')
             .placeholder('Job Number')
             .ariaLabel('Job Number')
-            .initialValue('')
             .targetEvent(event)
             .required(true)
             .ok('Submit')
@@ -739,7 +743,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param {$event} event
+     * @param {Event} event
      * @param {Job} job
      */
     self.messageClick = (event, job) => {
@@ -765,7 +769,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param {$event} event
+     * @param {Event} event
      * @param {Job} job
      */
     self.otherEventForm = (event, job) => {

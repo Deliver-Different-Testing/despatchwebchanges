@@ -47,7 +47,7 @@ md-autocomplete.ng-leave {
   overflow-x: auto;
   /* For Chrome and Safari */
   /* For Firefox */
-  scrollbar-color: #fddd00 #f7f7f7;
+    scrollbar-color: #DDD #f7f7f7;
   scrollbar-width: thin;
 }
 .row-overflow ::-webkit-scrollbar {
@@ -57,7 +57,7 @@ md-autocomplete.ng-leave {
   background: #f7f7f7;
 }
 .row-overflow ::-webkit-scrollbar-thumb {
-  background: #fddd00;
+    background: #DDD;
   border-radius: 2px;
 }
 .btn-primary {

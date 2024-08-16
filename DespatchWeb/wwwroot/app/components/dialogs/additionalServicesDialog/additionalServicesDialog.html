@@ -1,4 +1,4 @@
-<md-dialog aria-label="Additional Services" layout-align="center center" style="width: 50%;">
+<md-dialog aria-label="Additional Services" style="width: 50%;">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <h2>Additional Services</h2>
@@ -13,63 +13,68 @@
     </md-toolbar>
 
     <md-dialog-content ng-cloak>
-
-        <md-table-container>
-            <table md-progress="promise" md-table>
-                <thead md-head md-order="ctrl.query.order">
-                <tr md-row>
-                    <th md-column><span>Name</span></th>
-                    <th md-column md-numeric><span>Rate</span></th>
-                    <th md-column>Description</th>
-                    <th md-column md-numeric>Per Item?</th>
-                    <th md-column md-numeric>Selected</th>
-                </tr>
-                </thead>
-                <tbody md-body>
-                <tr md-auto-select md-row md-select="service" md-select-id="name"
-                    ng-repeat="service in ctrl.additionalServices">
-                    <td md-cell>{{service.name}}</td>
-                    <td md-cell>{{service.rate}}</td>
-                    <td md-cell>{{service.description}}</td>
-                    <td md-cell>{{service.perItem}}</td>
-                    <td md-cell>
-                        <md-checkbox aria-label="Item Selected"
-                                     ng-model="service.selected"></md-checkbox>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </md-table-container>
-
-        <div ng-show="!ctrl.additionalServices || !ctrl.additionalServices.length">
-            <p>No additional services available.</p>
-        </div>
-
-        <md-table-pagination md-limit="ctrl.query.limit" md-limit-options="[5, 10, 15]"
-                             md-on-paginate="ctrl.getServices"
-                             md-page="ctrl.query.page"
-                             md-page-select md-total="{{ctrl.totalServicesCount}}"></md-table-pagination>
-
-        <md-divider></md-divider>
-
-        <md-card ng-show="ctrl.totalServicesCount !== 0">
-            <md-card-title>
-                <md-card-title-text>
-                    <span class="md-subhead">Selected Services</span>
-                </md-card-title-text>
-            </md-card-title>
-            <md-card-content>
-                <div ng-if="service.selected" ng-repeat="service in ctrl.additionalServices">
-                    <p>{{service.name}}: {{service.rate}}</p>
+        <md-content layout="column">
+            <md-toolbar class="md-table-toolbar md-default">
+                <div class="md-toolbar-tools">
+                    <span>Services</span>
+                    <div flex></div>
+                    <md-button class="md-icon-button" ng-click="ctrl.loadStuff()">
+                        <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                    </md-button>
                 </div>
+            </md-toolbar>
 
-                <md-divider></md-divider>
+            <md-table-container>
+                <table md-progress="ctrl.promise" md-row-select="true" md-table multiple="true"
+                       ng-model="ctrl.selected">
+                    <thead md-head md-order="ctrl.query.order">
+                    <tr md-row>
+                        <th md-column><span>Name</span></th>
+                        <th md-column md-numeric md-order-by="rate"><span>Rate</span></th>
+                        <th md-column md-order-by="description">Description</th>
+                        <th md-column md-numeric md-order-by="perItem">Per Item?</th>
+                    </tr>
+                    </thead>
+                    <tbody md-body>
+                    <tr ng-repeat="service in ctrl.additionalServices">
+                        <td md-cell>{{service.name}}</td>
+                        <td md-cell>{{service.rate}}</td>
+                        <td md-cell>{{service.description}}</td>
+                        <td md-cell>{{service.perItem}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </md-table-container>
 
-                <p>Total: (EXCL GST): {{ctrl.getTotal()}}</p>
-            </md-card-content>
-        </md-card>
+            <div ng-show="!ctrl.additionalServices || !ctrl.additionalServices.length">
+                <p>No additional services available.</p>
+            </div>
 
+            <md-table-pagination md-limit="ctrl.query.limit" md-limit-options="[5, 10, 15]"
+                                 md-on-paginate="ctrl.getServices"
+                                 md-page="ctrl.query.page"
+                                 md-page-select md-total="{{ctrl.totalServicesCount}}"></md-table-pagination>
 
+            <md-divider></md-divider>
+
+            <md-card ng-show="ctrl.totalServicesCount !== 0">
+                <md-card-title>
+                    <md-card-title-text>
+                        <span class="md-subhead">Selected Services</span>
+                    </md-card-title-text>
+                </md-card-title>
+                <md-card-content>
+                    <div ng-if="service.selected" ng-repeat="service in ctrl.additionalServices">
+                        <p>{{service.name}}: {{service.rate}}</p>
+                    </div>
+
+                    <md-divider></md-divider>
+
+                    <p>Total: (EXCL GST): {{ctrl.getTotal()}}</p>
+                </md-card-content>
+            </md-card>
+
+        </md-content>
     </md-dialog-content>
 
     <md-dialog-actions layout="row" layout-align="center center">

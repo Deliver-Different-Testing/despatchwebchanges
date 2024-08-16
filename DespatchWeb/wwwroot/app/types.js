@@ -32,6 +32,10 @@
  * @property {number} charge - The charge for the job.
  * @property {string} refA - Reference A for the job
  * @property {string} refB - Reference B for the job
+ * @property {string} childNotes - The jobs for the child job
+ * @property {number} pickupFrom - The suburbId the job was picked up from
+ * @property {boolean} saturdayDelivery - If job has Saturday Delivery
+ * @property {string} jobNo - The job number
  */
 
 /**
