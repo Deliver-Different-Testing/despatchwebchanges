@@ -145,10 +145,6 @@
 
                                 <span class="md-headline-title" flex md-truncate>{{boxes[box.name].title}}
                                     <span ng-show="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
-                                    <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
-                                    <span ng-show="box.name == 'supports'"> ({{supportChannel}})</span>
-                                    <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
-                                    <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
                                     <span ng-repeat="jo in ctrl.currentJob.relatedJobs"
                                           ng-show="box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 1">&nbsp;<span
                                             ng-click="loadRelatedJobDetail(jo.id, jo.label)"

@@ -10,7 +10,6 @@ md-dialog {
   line-height: 28px;
   letter-spacing: 0.15px;
   max-height: 64px;
-  width: 35%;
   overflow: auto;
 }
 .box-handle {
