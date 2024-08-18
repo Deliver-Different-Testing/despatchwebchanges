@@ -36,6 +36,7 @@
  * @property {number} pickupFrom - The suburbId the job was picked up from
  * @property {boolean} saturdayDelivery - If job has Saturday Delivery
  * @property {string} jobNo - The job number
+ * @property {*} courierData - The courier data for the job
  */
 
 /**

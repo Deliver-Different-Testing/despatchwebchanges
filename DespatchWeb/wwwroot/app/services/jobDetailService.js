@@ -268,6 +268,9 @@ class JobDetailService {
         }
     }
 
+    /**
+     * @param {number} is
+     */
     getInternalStatus(is) {
         const selected = this.pickInternalStatus.find(({id}) => id === is);
         return selected !== undefined ? selected.text : "";
@@ -935,20 +938,6 @@ class JobDetailService {
     /**
      * @param {Job} job
      */
-    preBookDirectClick(job) {
-        const directValue = !job.direct;
-
-        return this._dispatchData
-            .updateJobDetail(job.id, "Direct", directValue, job.charge, FirstName, ContactID, job.preBook)
-            .then(response => {
-                this.selectJobDetail(job.id);
-                return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
-    }
-
-    /**
-     * @param {Job} job
-     */
     pushToLive(job) {
         job.done = !job.done;
 
@@ -1359,7 +1348,7 @@ class JobDetailService {
 
     /**
      * @param {Event} event
-     * @param job
+     * @param {Job} job
      * @param {string} url
      * @param {string} placeholder
      * @param {string} fieldName
@@ -1431,7 +1420,7 @@ class JobDetailService {
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                job: job, dispatherName: FirstName, contactId: ContactID
+                job: job, dispatcherName: FirstName, contactId: ContactID
             }
         }).then(() => {
             this.selectJobDetail(job.id);
