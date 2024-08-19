@@ -2,7 +2,7 @@
  * A controller which handles the GPS Form popup
  * @class
  */
-class GpsFormController {
+class EditAddressDialogController {
     /**
      * @param $scope - The active AngularJS scope.
      * @param $timeout - The AngularJS wrapper for window.setTimeout.

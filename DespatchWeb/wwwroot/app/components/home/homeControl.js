@@ -2850,11 +2850,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         DispatchData.getSuburbList()
             .then(selectedSuburbs => {
                 $mdDialog.show({
-                    controller: GpsFormController,
+                    controller: EditAddressDialogController,
                     controllerAs: 'ctrl',
                     parent: angular.element($document.body),
                     targetEvent: event,
-                    templateUrl: "app/components/dialogs/gpsForm/gpsForm.html",
+                    templateUrl: "app/components/dialogs/editAddressDialog/editAddressDialog.html",
                     clickOutsideToClose: false,
                     fullscreen: true,
                     locals: {

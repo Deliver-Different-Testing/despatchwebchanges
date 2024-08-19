@@ -819,11 +819,11 @@ class JobDetailService {
 
         // Dialog
         this._$mdDialog.show({
-            controller: GpsFormController,
+            controller: EditAddressDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/gpsForm/gpsForm.html",
+            templateUrl: "app/components/dialogs/editAddressDialog/editAddressDialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
