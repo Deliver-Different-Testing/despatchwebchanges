@@ -3305,7 +3305,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter",
     'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "$mdDialog",
     "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService',
-    "DispatchData", "uCSData", "dispatchJobService", HomeController]);
+    "DispatchData", "uCSData", "dispatchJobService", "moment", HomeController]);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
