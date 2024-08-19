@@ -1134,7 +1134,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }
 
             $timeout(() => {
-                $scope.getCurrentJobs(foundCourier.courierID);
+                self.getCurrentJobs(foundCourier.courierID);
                 self.getData();
             }, 1000);
         }, () => {
@@ -1318,7 +1318,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
 
         $timeout(() => {
-            $scope.getCurrentJobs(foundCourier.courierID);
+            self.getCurrentJobs(foundCourier.courierID);
             self.getData();
         }, 1000);
     };
@@ -1332,7 +1332,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         $mdDialog.show(confirm).then(() => {
             DispatchData.setFirstJob(job.id, $scope.currentCourier.courierID).then(() => {
-                $scope.getCurrentJobs($scope.currentCourier.courierID);
+                self.getCurrentJobs($scope.currentCourier.courierID);
             });
         }, () => {
             // No action for 'No'
@@ -1469,7 +1469,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             self.courierSearchText = "";
         }
     }
-    
+
     /**
      * @param {string} searchText
      */
@@ -1513,7 +1513,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         };
 
         self.currentSelection = ` for Courier ${courierID}  ${courierName}`;
-        $scope.getCurrentJobs(courierID);
+        self.getCurrentJobs(courierID);
         DispatchData.truckCourierStatus(courierID).then(result => {
             $scope.truckCourierStatus = result.data;
         });
@@ -1566,7 +1566,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         console.log(courier);
 
-        $scope.getCurrentJobs(courier.courierID);
+        self.getCurrentJobs(courier.courierID);
         $scope.currentWorkSelection = " for Courier " + courier.courier;
 
         $scope.currentCourier = courier;
@@ -1719,8 +1719,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // CURRENT JOBS
     ////////////////////////////
 
-    $scope.getCurrentJobs = courierId => {
-
+    self.getCurrentJobs = courierId => {
         angular.element('#box-currentWork').find(".loading").css('display', 'block');
         const foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
         const code = foundCourier !== undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
