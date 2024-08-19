@@ -18,7 +18,7 @@ class ToastrService {
         }
 
         console.log('Error:', errorMessage);
-        this.showToast(defaultMessage, "error");
+        this._showToast(defaultMessage, "error");
     }
 
     /**
@@ -27,7 +27,7 @@ class ToastrService {
      */
     showSuccessToast(successMessage) {
         console.log('Success:', successMessage);
-        this.showToast(successMessage, "success");
+        this._showToast(successMessage, "success");
     }
 
     /**
@@ -36,7 +36,7 @@ class ToastrService {
      */
     showWarningToast(warningMessage) {
         console.log('Warning:', warningMessage);
-        this.showToast(warningMessage, "warning");
+        this._showToast(warningMessage, "warning");
     }
 
     /**
@@ -44,7 +44,7 @@ class ToastrService {
      * @param {string} message
      * @param {string} theme - This theme is defined in the css and registred in app.js
      */
-    showToast(message, theme) {
+    _showToast(message, theme) {
         this.$mdToast.show(
             this.$mdToast.simple()
                 .textContent(message)

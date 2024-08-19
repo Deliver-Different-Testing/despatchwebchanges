@@ -5,11 +5,6 @@
 class RateJobService {
     static $inject = ["DispatchData", "moment"];
 
-    /**
-     * Create a RateJobService
-     * @param DispatchData - A service for working with job data
-     * @param moment - AngularJS directive for moment.js
-     */
     constructor(DispatchData, moment) {
         this._dispatchData = DispatchData;
         this._moment = moment;
