@@ -7,9 +7,9 @@ var infoWindow = new google.maps.InfoWindow();
     google.maps.Marker.prototype.jobNumber = "";
     google.maps.Marker.prototype.courierId = 0;
     google.maps.Marker.prototype.code = "";
-    google.maps.Map.prototype.labels = new Array();
-    google.maps.Map.prototype.flags = new Array();
-    google.maps.Map.prototype.flightPaths = new Array();
+    google.maps.Map.prototype.labels = [];
+    google.maps.Map.prototype.flags = [];
+    google.maps.Map.prototype.flightPaths = [];
     google.maps.Map.prototype.addLabel = function (label) {
         this.labels[this.labels.length] = label;
     };
@@ -24,7 +24,7 @@ var infoWindow = new google.maps.InfoWindow();
 
         this.labels.length = 0;
     };
-    google.maps.Map.prototype.markers = new Array();
+    google.maps.Map.prototype.markers = [];
     google.maps.Map.prototype.addMarker = function (marker) {
         map.markers[map.markers.length] = marker;
     };
@@ -133,34 +133,13 @@ function addClickHandler(m, iw) {
             console.log(m.jobNumber || '');
             var sel = angular.element(".columns").scope().jobList.filter(x => x.jobNo === m.jobNumber);
             if (sel.length > 0) {
-                $("#jobList tr").removeClass("active");
-                $("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
+                angular.element("#jobList tr").removeClass("active");
+                angular.element("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
                 angular.element(".columns").scope().selectForDispatch(sel[0]);
                 angular.element(".columns").scope().selectJob(sel[0]);
 
             }
-
         });
-
-        //google.maps.event.addListener(m, 'dragstart', function (marker) {
-        //    var latLng = marker.latLng;
-        //    console.log("marker drag start");
-        //    console.log(marker);
-        //    console.log(latLng);
-        //    currentDrag = oms.getMarkers().find(obj => {
-        //        return obj.position.lat() === latLng.lat() && obj.position.lng() === latLng.lng();
-        //    });
-        //    console.log("drag marker = ");
-        //    console.log(currentDrag);
-        //    //angular.element(".columns").scope().dispatchDroppedMarkerToClosestCourier(latLng.lat(), latLng.lng(), map.flags, carMarker, marker.jobNumber);
-        //});
-        //google.maps.event.addListener(m, 'dragend', function (marker) {
-        //    var latLng = marker.latLng;
-        //    console.log("marker moved");
-        //    console.log(marker);
-        //    console.log(latLng);
-        //    angular.element(".columns").scope().dispatchDroppedMarkerToClosestCourier(latLng.lat(), latLng.lng(), map.flags, carMarker, currentDrag.jobNumber);
-        //});
 
         oms.addMarker(m);
 
@@ -168,7 +147,6 @@ function addClickHandler(m, iw) {
     else {
         google.maps.event.addListener(m, 'click', function () {
             console.log(m.jobNumber || '');
-            //angular.element(".columns").scope().selectJobFromMap(this.position.lat(), this.position.lng());
         });
 
     }
@@ -416,11 +394,7 @@ function displayPickupPoints(jobs, clear, currentJob) {
 
             addClickHandler(pickupMarker, infoWindow);
         }
-
-
     }
-
-
 }
 
 function highlightJobPoints(courierJobs) {
@@ -808,7 +782,7 @@ function validateGoogleJobRoute(job) {
     directionsService.route(request,
         function (response, status) {
             if (status === google.maps.DirectionsStatus.NOT_FOUND || status === google.maps.DirectionsStatus.ZERO_RESULTS) {
-                $("#box-map").find(".loading").fadeOut();
+                angular.element("#box-map").find(".loading").fadeOut();
                 alert("Job " + job.jobNumber + " Could not Route!");
                 angular.element(".columns").scope().selectJobFromMap(job.toLat, job.toLng);
 
@@ -842,7 +816,7 @@ function validateGoogleRoute(run) {
     directionsService.route(request,
         function (response, status) {
             if (status === google.maps.DirectionsStatus.OK) {
-                $("#box-map").find(".loading").fadeOut();
+                angular.element("#box-map").find(".loading").fadeOut();
                 alert("Run OK!");
             }
             if (status === google.maps.DirectionsStatus.NOT_FOUND || status === google.maps.DirectionsStatus.ZERO_RESULTS) {

@@ -2331,16 +2331,21 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }
         }
 
-        const southWestLng = map.getBounds().getSouthWest().lng();
-        const southWestLat = map.getBounds().getSouthWest().lat();
-        const northEastLng = map.getBounds().getNorthEast().lng();
-        const northEastLat = map.getBounds().getNorthEast().lat();
+        if (map && map.getBounds()) {
+            const bounds = map.getBounds();
+            const southWestLng = bounds.getSouthWest().lng();
+            const southWestLat = bounds.getSouthWest().lat();
+            const northEastLng = bounds.getNorthEast().lng();
+            const northEastLat = bounds.getNorthEast().lat();
 
-        DispatchData.getAvailableCourierLocation(southWestLng, southWestLat, northEastLng, northEastLat)
-            .then(returnData => {
-                const courierId = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
-                displayAvailableCouriers(returnData, courierId, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
-            });
+            DispatchData.getAvailableCourierLocation(southWestLng, southWestLat, northEastLng, northEastLat)
+                .then(returnData => {
+                    const courierId = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
+                    displayAvailableCouriers(returnData, courierId, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
+                });
+        } else {
+            console.log('Map or map bounds not fully loaded or initialized');
+        }
     };
 
     $scope.courierMenu = [
