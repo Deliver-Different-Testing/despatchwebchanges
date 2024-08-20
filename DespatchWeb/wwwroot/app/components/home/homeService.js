@@ -546,7 +546,7 @@ class DispatchData {
     }
 
     /**
-     * @param {number} cid
+     * @param {number} clientId
      * @param {number} fromId
      * @param {number} toId
      * @param {number} weight
@@ -564,27 +564,67 @@ class DispatchData {
      * @param {number} truckHours
      * @param {number} gstRate
      */
-    async truckJobAmountBreakdown(cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours, gstRate) {
-        let response = await this._$http.get("job/TruckJobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours + "&gstRate=" + gstRate);
-        return response.data;
-    }
-
-    async rateJob(cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
-        let response = await this._$http.get("job/RateJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
-        return response.data;
-    }
-
-    async jobAmountBreakdown(cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked, gstRate, amount) {
-        let response = await this._$http.get("job/JobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked + "&gstRate=" + gstRate + "&amount=" + amount);
+    async truckJobAmountBreakdown(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours, gstRate) {
+        let response = await this._$http.get("job/TruckJobAmountBreakdown?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours + "&gstRate=" + gstRate);
         return response.data;
     }
 
     /**
-     * @param {number} cid
+     * @param {number} clientId
+     * @param {number} fromId
+     * @param {number} toId
+     * @param {number} speed
+     * @param {boolean} pedal
+     * @param {boolean} van
+     * @param {boolean} returnJob
+     * @param {number} weight
+     * @param {number} size
+     * @param {boolean} includeFuelSurcharge
+     * @param {boolean} direct
+     * @param {number} acceptedJobTypeId
+     * @param {string} ourRef
+     * @param {string} refA
+     * @param {string} refB
+     * @param {number} quantity
+     * @param {Date} booked
+     */
+    async rateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
+        let response = await this._$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
+        return response.data;
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} fromId
+     * @param {number} toId
+     * @param {number} speed
+     * @param {boolean} pedal
+     * @param {boolean} van
+     * @param {boolean} returnJob
+     * @param {number} weight
+     * @param {number} size
+     * @param {boolean} includeFuelSurcharge
+     * @param {boolean} direct
+     * @param {number} acceptedJobTypeId
+     * @param {string} ourRef
+     * @param {string} refA
+     * @param {string} refB
+     * @param {number} quantity
+     * @param {Date} booked
+     * @param {number} gstRate
      * @param {number} amount
      */
-    async ppdExclusiveAmount(cid, amount) {
-        let response = await this._$http.get("job/PPDExclusiveAmount?clientId=" + cid + "&amount=" + amount);
+    async jobAmountBreakdown(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked, gstRate, amount) {
+        let response = await this._$http.get("job/JobAmountBreakdown?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked + "&gstRate=" + gstRate + "&amount=" + amount);
+        return response.data;
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} amount
+     */
+    async ppdExclusiveAmount(clientId, amount) {
+        let response = await this._$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
         return response.data;
     }
 
