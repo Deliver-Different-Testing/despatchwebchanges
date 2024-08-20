@@ -12,7 +12,8 @@ class AdditionalServicesDialogController {
      * @param {number} speedId
      * @param {number} quantity
      */
-    constructor($mdDialog, DispatchData, toastrService, jobId, clientId, speedId, quantity) {
+    constructor($mdDialog, DispatchData, toastrService,
+                jobId, clientId, speedId, quantity) {
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
         this._toastrService = toastrService;
@@ -20,21 +21,18 @@ class AdditionalServicesDialogController {
         this._clientId = clientId;
         this._speedId = speedId;
         this._quantity = quantity;
-
         this.isLoading = false;
-        this.promise = null;
-        this.totalCost = 0;
-
+        this.totalCost = 0.0;
         /** @type {ClientItem[]} */
         this.selected = [];
-
         /** @type {ClientItem[]} */
         this.additionalServices = [];
-
         /** @type {number} */
         this.totalServicesCount = 0;
 
         this.refreshServices();
+        this.addToSelectList = this.addToSelectList.bind(this);
+        this.getTotal = this.getTotal.bind(this);
     }
 
     refreshServices() {
@@ -47,30 +45,24 @@ class AdditionalServicesDialogController {
         });
     }
 
-    /**
-     * @param {ClientItem} selectedService
-     */
-    async addToSelectList(selectedService) {
-        this.selected.push(selectedService);
-        await this.getTotal();
+    addToSelectList() {
+        this.getTotal().then(total => this.totalCost = total);
     }
 
     async getTotal() {
-        const totalAmount = this.selected.reduce((total, item) => {
+        let totalAmount = this.selected.reduce((total, item) => {
             const itemCharge = item.perItem ? (item.rate * this._quantity) : item.rate;
             return total + itemCharge;
         }, 0.0);
-
-        this.totalCost = await this._dispatchData.ppdExclusiveAmount(this._clientId, totalAmount);
+        return this._dispatchData.ppdExclusiveAmount(this._clientId, totalAmount);
     }
 
     async bookServices() {
         try {
-            const selectedServiceIds = this.selected.filter(service => service.selected).map(service => service.itemId);
-            await this._dispatchData.addServicesToJob(this._jobId, selectedServiceIds);
+            const serviceIds = this.selected.map(service => service.itemId);
 
-            const successMessage = `${selectedServiceIds.length} total services have been added to job for ${this.totalCost}`;
-            this._toastrService.showSuccessToast(successMessage);
+            await this._dispatchData.addServicesToJob(this._jobId, serviceIds);
+            this._toastrService.showSuccessToast(serviceIds.length + " total services have been added to job for $" + this.totalCost);
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         }

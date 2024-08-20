@@ -14,7 +14,7 @@ class DispatchData {
      */
     async addNote(jobId, note, despatcherName, preBook) {
         const method = preBook ? "job/AddJobBookingNote" : "job/AddNote";
-        await this._$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
+        return await this._$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
     }
 
     /**
@@ -24,7 +24,7 @@ class DispatchData {
      * @param {boolean} preBook
      */
     async addBulkJobNote(bulkJobId, note, despatcherName, preBook) {
-        await this._$http.post("job/AddBulkJobNote?BulkJobId=" + bulkJobId + "&note=" + note + "&despatcher=" + despatcherName);
+        return await this._$http.post("job/AddBulkJobNote?BulkJobId=" + bulkJobId + "&note=" + note + "&despatcher=" + despatcherName);
     }
 
     /**
@@ -134,7 +134,7 @@ class DispatchData {
      * @param {number[]} jobIds
      */
     async allocateJobs(courierId, dispId, jobIds) {
-        await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
+        return await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
     }
 
     /**
@@ -143,7 +143,7 @@ class DispatchData {
      * @param {number[]} jobIds
      */
     async reAllocateJobs(courierId, dispId, jobIds) {
-        await this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
+        return await this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
     }
 
     /**
@@ -152,7 +152,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async transferJob(courierId, dispId, jobId) {
-        await this._$http.post("job/Transfer?jobId=" + jobId + "&courierId=" + courierId + "&dispId=" + dispId);
+        return await this._$http.post("job/Transfer?jobId=" + jobId + "&courierId=" + courierId + "&dispId=" + dispId);
     }
 
     /**
@@ -160,14 +160,14 @@ class DispatchData {
      * @param {number} courierId
      */
     async setFirstJob(jobId, courierId) {
-        await this._$http.post("job/SetFirstJob?jobId=" + jobId + "&courierId=" + courierId);
+        return await this._$http.post("job/SetFirstJob?jobId=" + jobId + "&courierId=" + courierId);
     }
 
     /**
      * @param {number} courierId
      */
     async truckCourierStatus(courierId) {
-        await this._$http.post("courier/TruckCourierStatus?courierId=" + courierId);
+        return await this._$http.post("courier/TruckCourierStatus?courierId=" + courierId);
     }
 
     /**
@@ -191,7 +191,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async voidJob(jobId) {
-        await this._$http.post("job/Void?jobId=" + jobId);
+        return await this._$http.post("job/Void?jobId=" + jobId);
     }
 
     /**
@@ -348,7 +348,7 @@ class DispatchData {
      * @param {number} staffId - The unique identifier of the staff member marking the request as closed.
      */
     async closeSupport(supportId, staffId) {
-        await this._$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
+        return await this._$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
     }
 
     /**
@@ -358,7 +358,7 @@ class DispatchData {
      * @param {string} dispatcherName - The unique identifier of the dispatcher locking the request.
      */
     async lockSupport(supportId, dispatcherName) {
-        await this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
+        return await this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
     }
 
     /**
@@ -368,7 +368,7 @@ class DispatchData {
      * @param {string} dispatcherName - The unique identifier of the dispatcher unlocking the request.
      */
     async unLockSupport(supportId, dispatcherName) {
-        await this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
+        return await this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
     }
 
     async getLateCalls() {
@@ -647,7 +647,7 @@ class DispatchData {
     async addServicesToJob(jobId, serviceIds) {
         const url = "job/AddClientItemsTobJob"
 
-        await this._$http({
+        return await this._$http({
             method: 'POST', url: url + '?jobId=' + jobId, data: serviceIds
         });
     }
@@ -657,7 +657,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async splitJob(jobId, despatcherName) {
-        await this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
+        return await this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
     /**
@@ -665,17 +665,17 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async finishSplitJobProcess(jobId, despatcherName) {
-        await this._$http.post("job/finishSplitJobProcess?jobId=" + jobId + "&despatcherName=" + despatcherName);
+        return await this._$http.post("job/finishSplitJobProcess?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
     /**
      * @param {string} jobNumber
-     * @param {number|string} jobStatus
+     * @param {number} jobStatus
      * @param {string} podName
      * @param {Date} podTime
      */
     async updatePODDetail(jobNumber, jobStatus, podName, podTime) {
-        await this._$http.post("job/UpdatePODDetails?jobNumber=" + jobNumber + "&jobStatus=" + jobStatus + "&podName=" + podName + "&podTime=" + podTime);
+        return await this._$http.post("job/UpdatePODDetails?jobNumber=" + jobNumber + "&jobStatus=" + jobStatus + "&podName=" + podName + "&podTime=" + podTime);
     }
 
     /**
@@ -693,7 +693,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async reRateSplitJob(jobId) {
-        await this._$http.post("job/ReRateSplitJob?jobId=" + jobId);
+        return await this._$http.post("job/ReRateSplitJob?jobId=" + jobId);
     }
 
     /**
@@ -709,7 +709,7 @@ class DispatchData {
      */
     async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
-        await this._$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
+        return await this._$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -722,7 +722,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateBulkDeliveryAddress(bulkJobId, toSuburb, toPostCode, address, lat, lng, despatcherName) {
-        await this._$http.post("job/UpdateBulkDeliveryAddress?bulkJobId=" + bulkJobId + "&toSuburb=" + toSuburb + "&toPostCode=" + toPostCode + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + '&despatcherName=' + despatcherName);
+        return await this._$http.post("job/UpdateBulkDeliveryAddress?bulkJobId=" + bulkJobId + "&toSuburb=" + toSuburb + "&toPostCode=" + toPostCode + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -738,7 +738,7 @@ class DispatchData {
      */
     async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
-        await this._$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
+        return await this._$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -751,7 +751,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateBulkPickupAddress(bulkJobId, fromSuburb, fromPostCode, address, lat, lng, despatcherName) {
-        await this._$http.post("job/UpdateBulkPickupAddress?bulkJobId=" + bulkJobId + "&fromSuburb=" + fromSuburb + "&fromPostCode=" + fromPostCode + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + '&despatcherName=' + despatcherName);
+        return await this._$http.post("job/UpdateBulkPickupAddress?bulkJobId=" + bulkJobId + "&fromSuburb=" + fromSuburb + "&fromPostCode=" + fromPostCode + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -760,7 +760,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateJobType(jobId, jobType, despatcherName) {
-        await this._$http.post("job/UpdateJobType?jobId=" + jobId + "&jobType=" + jobType + '&despatcherName=' + despatcherName);
+        return await this._$http.post("job/UpdateJobType?jobId=" + jobId + "&jobType=" + jobType + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -771,7 +771,7 @@ class DispatchData {
      * @param {number} lng
      */
     async updateSplitJobAddress(jobId, toSuburbId, address, lat, lng) {
-        await this._$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng);
+        return await this._$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng);
     }
 
     /**
@@ -780,7 +780,7 @@ class DispatchData {
      */
     async releaseBulkJob(jobNumber, bookDate) {
         const dt = this._moment(bookDate).format("YYYY-MM-DD");
-        await this._$http.post("job/ReleaseBulkJob?jobNumber=" + jobNumber + "&bookDate=" + dt);
+        return await this._$http.post("job/ReleaseBulkJob?jobNumber=" + jobNumber + "&bookDate=" + dt);
     }
 
     /**
@@ -803,7 +803,7 @@ class DispatchData {
             value = this._moment(value).format("YYYY-MM-DD");
         }
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
-        await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        return await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
 
     /**
@@ -821,7 +821,7 @@ class DispatchData {
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
             value = this._moment(value).format("YYYY-MM-DD");
         }
-        await this._$http.post("job/UpdateBulkJob?bulkJobId=" + bulkJobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        return await this._$http.post("job/UpdateBulkJob?bulkJobId=" + bulkJobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
 
     async doAPI(data) {
