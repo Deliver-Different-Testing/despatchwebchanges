@@ -3,6 +3,7 @@
 /**
  * @typedef {Object} Job
  *
+ * @property {number} id - The ID of the job
  * @property {number} clientId - The ID of the client associated with the job.
  * @property {number|null} courierId - The ID of the courier associated with the job.
  * @property {string} deliverToContact - The contact to whom the job will be delivered.
@@ -36,6 +37,7 @@
  * @property {number} pickupFrom - The suburbId the job was picked up from
  * @property {boolean} saturdayDelivery - If job has Saturday Delivery
  * @property {string} jobNo - The job number
+ * @property {number} items - The quantity or number of items for the job
  * @property {*} courierData - The courier data for the job
  */
 

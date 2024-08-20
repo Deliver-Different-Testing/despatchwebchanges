@@ -3033,15 +3033,16 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         const jobId = job.id;
         const clientId = job.clientId;
         const speedId = job.speedId;
+        const quantity = job.items;
 
         loadingService.showLoader();
 
         try {
-            const clientItemsAvailable = await DispatchData.hasClientItemsAvailable(clientId, speedId);
+            const isClientItemsAvailable = await DispatchData.hasClientItemsAvailable(clientId, speedId);
 
             loadingService.closeLoader();
 
-            if (!clientItemsAvailable) {
+            if (!isClientItemsAvailable) {
                 await $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
@@ -3067,6 +3068,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     jobId,
                     clientId,
                     speedId,
+                    quantity,
                 }
             });
 

@@ -1,4 +1,4 @@
-<md-dialog aria-label="Additional Services" style="width: 35%; height: 35%;">
+<md-dialog aria-label="Additional Services" style="width: 40%;">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <h2>Additional Services</h2>
@@ -44,24 +44,30 @@
                 </table>
             </md-table-container>
 
-            <md-card class="centered-card" ng-show="ctrl.totalServicesCount !== 0">
-                <md-card-header>
-                    <md-card-avatar>
-                        <md-icon class="small-icon" md-font-set="material-symbols-outlined">shopping_bag</md-icon>
-                    </md-card-avatar>
-                    <md-card-header-text>
-                        <span class="md-title">Attached Services</span>
-                    </md-card-header-text>
-                </md-card-header>
-
+            <md-card class="centered-card" ng-show="ctrl.totalServicesCount !== 0"
+                     style="margin-top: 10px; margin-bottom: 10px;">
                 <md-card-content>
-                    <div ng-repeat="service in ctrl.selected">
-                        <p>{{service.name}}: {{service.rate}}</p>
+
+                    <div style="display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; font-size: 1.2em;">
+                            <p style="font-weight: bold;">Description</p>
+                            <p></p>
+                        </div>
+
+                        <div ng-repeat="service in ctrl.selected"
+                             style="display: flex; justify-content: space-between;">
+                            <span>{{service.name}}</span>
+                            <span>{{service.rate}}</span>
+                        </div>
+
+                        <md-divider></md-divider>
+
+                        <div style="display: flex; justify-content: space-between;">
+                            <p style="font-weight: bold;">Total: (EXCL GST)</p>
+                            <p>{{ctrl.totalCost}}</p>
+                        </div>
                     </div>
 
-                    <md-divider></md-divider>
-
-                    <p>Total: (EXCL GST): {{ctrl.getTotal()}}</p>
                 </md-card-content>
             </md-card>
         </div>
@@ -73,9 +79,9 @@
 
     </md-dialog-content>
 
-    <md-dialog-actions layout="row" layout-align="center center">
-        <md-button class="md-raised md-primary" ng-click="ctrl.bookServices(ctrl.selected)"
-                   ng-disabled="!ctrl.selected"
+    <md-dialog-actions>
+        <md-button class="md-primary" ng-click="ctrl.bookServices(ctrl.selected)"
+                   ng-disabled="ctrl.selected.length == 0"
                    ng-show="!ctrl.isLoading">
             <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
             Book
@@ -87,7 +93,7 @@
 <style>
     .centered-card {
         margin: auto;
-        width: 40%;
+        width: 80%;
         max-width: 100%;
     }
 

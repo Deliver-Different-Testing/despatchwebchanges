@@ -5,22 +5,27 @@
 class AdditionalServicesDialogController {
     /**
      * @param $mdDialog
-     * @param $http
+     * @param DispatchData
      * @param toastrService
      * @param {number} jobId
      * @param {number} clientId
      * @param {number} speedId
+     * @param {number} quantity
      */
-    constructor($mdDialog, $http, toastrService, jobId, clientId, speedId) {
+    constructor($mdDialog, DispatchData, toastrService, jobId, clientId, speedId, quantity) {
         this._$mdDialog = $mdDialog;
-        this._$http = $http;
+        this._dispatchData = DispatchData;
         this._toastrService = toastrService;
         this._jobId = jobId;
         this._clientId = clientId;
         this._speedId = speedId;
+        this._quantity = quantity;
 
         this.isLoading = false;
         this.promise = null;
+        this.totalCost = 0;
+
+        /** @type {ClientItem[]} */
         this.selected = [];
 
         /** @type {ClientItem[]} */
@@ -32,16 +37,9 @@ class AdditionalServicesDialogController {
         this.refreshServices();
     }
 
-    async _getServices() {
-        const url = "job/GetAllClientItems";
-        let response = await this._$http.get(url + '?clientId=' + this._clientId + '&speedId=' + this._speedId + '&jobId=' + this._jobId);
-
-        return response.data;
-    }
-
     refreshServices() {
         this.isLoading = true;
-        this._getServices().then(serviceResponse => {
+        this._dispatchData.getServices(this._clientId, this._speedId, this._jobId).then(serviceResponse => {
             this.additionalServices = serviceResponse.items;
             this.totalServicesCount = serviceResponse.totalCount;
 
@@ -52,30 +50,27 @@ class AdditionalServicesDialogController {
     /**
      * @param {ClientItem} selectedService
      */
-    addToSelectList(selectedService) {
+    async addToSelectList(selectedService) {
         this.selected.push(selectedService);
+        await this.getTotal();
     }
 
-    getTotal() {
-        return 1;
+    async getTotal() {
+        const totalAmount = this.selected.reduce((total, item) => {
+            const itemCharge = item.perItem ? (item.rate * this._quantity) : item.rate;
+            return total + itemCharge;
+        }, 0.0);
+
+        this.totalCost = await this._dispatchData.ppdExclusiveAmount(this._clientId, totalAmount);
     }
 
-    /**
-     * @param {ClientItem[]} allJobServices
-     */
-    async bookServices(allJobServices) {
+    async bookServices() {
         try {
-            const serviceIds = allJobServices
-                .filter(service => service.selected)
-                .map(service => service.itemId);
+            const selectedServiceIds = this.selected.filter(service => service.selected).map(service => service.itemId);
+            await this._dispatchData.addServicesToJob(this._jobId, selectedServiceIds);
 
-            const url = "job/AddClientItemsTobJob"
-
-            await this._$http({
-                method: 'POST', url: url + '?jobId=' + this._jobId, data: serviceIds
-            });
-
-            this._toastrService.showSuccessToast(serviceIds.length + " total services have been added to Job");
+            const successMessage = `${selectedServiceIds.length} total services have been added to job for ${this.totalCost}`;
+            this._toastrService.showSuccessToast(successMessage);
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         }
