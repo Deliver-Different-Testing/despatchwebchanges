@@ -28,7 +28,7 @@ class DispatchData {
     }
 
     /**
-     * @param {{}} pallet
+     * @param {Pallet} pallet
      * @param {boolean} preBook
      * @param {string} despatcherName
      */
@@ -40,7 +40,7 @@ class DispatchData {
     }
 
     /**
-     * @param {{}} pallet
+     * @param {Pallet} pallet
      * @param {boolean} preBook
      * @param {string} despatcherName
      */
@@ -52,7 +52,7 @@ class DispatchData {
     }
 
     /**
-     * @param {{}} pallet
+     * @param {Pallet} pallet
      * @param {boolean} preBook
      * @param {string} despatcherName
      */
