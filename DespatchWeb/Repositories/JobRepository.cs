@@ -2630,10 +2630,7 @@ public class JobRepository : IJobRepository
 
         var clientItemsString = string.Join(",", clientItemIds);
 
-        var jobCost = await _context.TucJobs.Select(x => x.UcjbAmount).FirstOrDefaultAsync();
-        jobCost += totalCost;
-
-        var job = new TucJob { UcjbId = jobId, ClientItemIds = clientItemsString, UcjbAmount = jobCost };
+        var job = new TucJob { UcjbId = jobId, ClientItemIds = clientItemsString, UcjbAmount = totalCost };
 
         _context.TucJobs.Attach(job);
         _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
