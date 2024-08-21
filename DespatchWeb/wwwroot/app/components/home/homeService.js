@@ -96,23 +96,6 @@ class DispatchData {
     }
 
     /**
-     * Sends a request to add a price suburb change event for a specific job.
-     *
-     * @param {string} jobNo - The number identifier of the job.
-     * @param {number} clientId - The identifier of the client.
-     * @param {string} contact - Contact related to the event.
-     * @param {number} staffId - The identifier of the staff member involved.
-     * @param {number} courierId - The identifier of the courier.
-     * @param {number} jobId - The identifier of the job.
-     * @param {string} jobType - The type of the job.
-     * @param {string} despatcherName - The name of the despatcher.
-     */
-    async addPriceSuburbChangeEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        let response = await this._$http.post("job/addPriceSuburbChangeEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
-        return response.data;
-    }
-
-    /**
      * @param {string} jobNo
      * @param {number} clientId
      * @param {string} contact
@@ -144,15 +127,6 @@ class DispatchData {
      */
     async reAllocateJobs(courierId, dispatcherId, jobIds) {
         return await this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-    }
-
-    /**
-     * @param {number} courierId
-     * @param {number} dispatcherId
-     * @param {number} jobId
-     */
-    async transferJob(courierId, dispatcherId, jobId) {
-        return await this._$http.post("job/Transfer?jobId=" + jobId + "&courierId=" + courierId + "&dispId=" + dispatcherId);
     }
 
     /**
@@ -324,12 +298,6 @@ class DispatchData {
     async getAreaList() {
         let response = await this._$http.get("app/components/home/api/areaList.json");
         return response.data;
-    }
-
-    async getJobUpdates() {
-        let response = await this._$http.get("app/components/home/api/jobUpdates.json");
-        return response.data;
-
     }
 
     /**
