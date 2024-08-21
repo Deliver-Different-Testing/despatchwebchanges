@@ -1784,36 +1784,12 @@ public class JobRepository : IJobRepository
 
     public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount)
     {
-        DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("UTL_stpPPD_ExclusiveAmount")
-            .WithSqlParam("@ClientID", clientId)
-            .WithSqlParam("@Amount", amount)
-            .WithSqlParam("@PPD", (dbParam) =>
-            {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Currency;
-                outputMaxParam = dbParam;
-            })
-            .ExecuteStoredNonQueryAsync();
-
-        return (decimal)outputMaxParam.Value;
+        return await CalculateAmount(clientId, amount);
     }
 
     public async Task<decimal> PpdInclusiveAmount(int clientId, decimal amount)
     {
-        DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("UTL_stpPPD_ExclusiveAmount")
-            .WithSqlParam("@ClientID", clientId)
-            .WithSqlParam("@Amount", amount)
-            .WithSqlParam("@PPD", (dbParam) =>
-            {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Currency;
-                outputMaxParam = dbParam;
-            })
-            .ExecuteStoredNonQueryAsync();
-
-        return (decimal)outputMaxParam.Value;
+        return await CalculateAmount(clientId, amount);
     }
 
 
@@ -2635,5 +2611,22 @@ public class JobRepository : IJobRepository
         _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
         _context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
         await _context.SaveChangesAsync();
+    }
+
+    private async Task<decimal> CalculateAmount(int clientId, decimal amount)
+    {
+        DbParameter outputMaxParam = null;
+        await _context.LoadStoredProc("UTL_stpPPD_ExclusiveAmount")
+            .WithSqlParam("@ClientID", clientId)
+            .WithSqlParam("@Amount", amount)
+            .WithSqlParam("@PPD", (DbParameter dbParam) =>
+            {
+                dbParam.Direction = System.Data.ParameterDirection.Output;
+                dbParam.DbType = System.Data.DbType.Currency;
+                outputMaxParam = dbParam;
+            })
+            .ExecuteStoredNonQueryAsync();
+
+        return (decimal)outputMaxParam.Value;
     }
 }
