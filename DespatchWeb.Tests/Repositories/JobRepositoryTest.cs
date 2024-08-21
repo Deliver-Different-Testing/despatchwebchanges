@@ -1,9 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
+using Microsoft.EntityFrameworkCore;
 using MockQueryable.Moq;
 using Moq;
 using NUnit.Framework;
@@ -16,6 +19,28 @@ public class JobRepositoryTest
 {
     [SetUp]
     public void SetUp()
+    {
+        _mockContext = new Mock<DespatchContext>();
+        _mockContext.Setup(c => c.TucClientItems).Returns(CreateClientItems()?.Object);
+        _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(CreateAvailableSpeedItems()?.Object);
+        _mockContext.Setup(c => c.TblClientAvailableSpeeds).Returns(CreateAvailableClientSpeeds()?.Object);
+        _mockContext.Setup(c => c.TucJobs).Returns(CreateJobs()?.Object);
+
+        _mockContext
+            .Setup(context => context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
+                It.IsAny<int?>(),
+                It.IsAny<int?>(),
+                It.IsAny<decimal?>(),
+                It.IsAny<string>(),
+                It.IsAny<int?>(),
+                It.IsAny<OutputParameter<int>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+        _repository = new JobRepository(_mockContext.Object);
+    }
+
+    // Set Up Data
+    private static Mock<DbSet<TucClientItem>> CreateClientItems()
     {
         var clientItems = new List<TucClientItem>
         {
@@ -31,33 +56,66 @@ public class JobRepositoryTest
             }
         }.AsQueryable().BuildMockDbSet();
 
+        return clientItems;
+    }
+
+    private static Mock<DbSet<TblClientAvailableSpeedItem>> CreateAvailableSpeedItems()
+    {
         var availableSpeedItems = new List<TblClientAvailableSpeedItem>
         {
             new() { ClientAvailableSpeedId = 1, ClientItemId = 1, Active = true },
             new() { ClientAvailableSpeedId = 1, ClientItemId = 2, Active = true }
         }.AsQueryable().BuildMockDbSet();
 
+        return availableSpeedItems;
+    }
+
+    private static Mock<DbSet<TblClientAvailableSpeed>> CreateAvailableClientSpeeds()
+    {
         var availableSpeeds = new List<TblClientAvailableSpeed>
         {
             new() { Id = 1, ClientId = 1, SpeedId = 1 }
         }.AsQueryable().BuildMockDbSet();
 
+        return availableSpeeds;
+    }
+
+    private static Mock<DbSet<TucJob>> CreateJobs()
+    {
         var jobs = new List<TucJob>
         {
             new() { UcjbId = 1, ClientItemIds = "1,2", UcjbSize = 3 }
         }.AsQueryable().BuildMockDbSet();
 
-        _mockContext = new Mock<DespatchContext>();
-        _mockContext.Setup(c => c.TucClientItems).Returns(clientItems.Object);
-        _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(availableSpeedItems.Object);
-        _mockContext.Setup(c => c.TblClientAvailableSpeeds).Returns(availableSpeeds.Object);
-        _mockContext.Setup(c => c.TucJobs).Returns(jobs.Object);
-
-        _repository = new JobRepository(_mockContext.Object);
+        return jobs;
     }
 
     private Mock<DespatchContext> _mockContext;
     private IJobRepository _repository;
+
+    [Test]
+    public async Task Test_AddInterCourierCharge_Calls_Procedures_DSEWEB_Correctly()
+    {
+        // Arrange
+        var viewModel = new InterCourierChargeViewModel
+        {
+            FromCourierId = 1,
+            ToCourierId = 2,
+            Amount = 100m,
+            Reference = "test",
+            StaffId = 1
+        };
+
+        await _repository.AddInterCourierCharge(viewModel);
+        _mockContext.Verify(c => c.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
+            viewModel.FromCourierId,
+            viewModel.ToCourierId,
+            viewModel.Amount,
+            viewModel.Reference,
+            viewModel.StaffId,
+            It.IsAny<OutputParameter<int>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
 
     [Test]
     public async Task HasClientItemsAvailable_Should_Return_True_When_Items_Are_Available()
