@@ -64,7 +64,12 @@
 
                         <div style="display: flex; justify-content: space-between;">
                             <p style="font-weight: bold;">Total: (EXCL GST)</p>
-                            <p>{{ctrl.totalCost}}</p>
+
+                            <div ng-if="ctrl.isTotalCostCalcuating">
+                                <md-progress-circular md-diameter="20px" md-mode="indeterminate"></md-progress-circular>
+                            </div>
+
+                            <p ng-if="!ctrl.isTotalCostCalcuating">{{ctrl.totalCost}}</p>
                         </div>
                     </div>
 

@@ -22,6 +22,7 @@ class AdditionalServicesDialogController {
         this._speedId = speedId;
         this._quantity = quantity;
         this.isLoading = false;
+        this.isTotalCostCalcuating = false;
         this.totalCost = 0.0;
         /** @type {ClientItem[]} */
         this.selected = [];
@@ -46,7 +47,11 @@ class AdditionalServicesDialogController {
     }
 
     addToSelectList() {
-        this.getTotal().then(total => this.totalCost = total);
+        this.isTotalCostCalcuating = true;
+        this.getTotal().then(total => {
+            this.totalCost = total;
+            this.isTotalCostCalcuating = false;
+        });
     }
 
     async getTotal() {

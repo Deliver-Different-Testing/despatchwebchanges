@@ -91,7 +91,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
      * @param  {Event}  event
      * @param  {Job}  job
      */
-    self.showAdditionalServicesMenu = async (event, job) => {
+    self.showAdditionalServicesMenu = (event, job) => {
         const jobId = job.id;
         const clientId = job.clientId;
         const speedId = job.speedId;
@@ -99,13 +99,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         loadingService.showLoader();
 
-        try {
-            const isClientItemsAvailable = await DispatchData.hasClientItemsAvailable(clientId, speedId);
-
+        DispatchData.hasClientItemsAvailable(clientId, speedId).then(isClientItemsAvailable => {
             loadingService.closeLoader();
 
             if (!isClientItemsAvailable) {
-                await $mdDialog.show(
+                return $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
                         .title('No Additional Services')
@@ -113,12 +111,10 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                         .textContent('No additional services has been set up for this client. Please add a service through Admin Manager and try again.')
                         .ok('OK')
                 );
-
-                return;
             }
 
             // Show additional services dialog
-            await $mdDialog.show({
+            return $mdDialog.show({
                 controller: AdditionalServicesDialogController,
                 controllerAs: "ctrl",
                 templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
@@ -133,15 +129,15 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                     quantity,
                 }
             });
-
-            await $scope.getData();
+        }).then(() => {
+            return $scope.getData();
+        }).then(() => {
             console.log('Additional Services Dialog closed!');
-
-        } catch (error) {
+        }).catch(error => {
             // handle or throw the error
             loadingService.closeLoader();
             toastrService.showErrorToast(error.message);
-        }
+        });
     }
 
     self.interCourierCharge = function (event) {
