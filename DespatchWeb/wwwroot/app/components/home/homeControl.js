@@ -787,7 +787,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 contactId: ContactID
             }
         }).then(() => {
-            $scope.getData().then(() => {
+            self.getData().then(() => {
                 console.log('Pallet Dialog closed!');
             });
         });
@@ -3019,7 +3019,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 contactId: ContactID
             }
         }).then(() => {
-            $scope.getData().then(() => {
+            self.getData().then(() => {
                 console.log('Pallet Dialog closed!');
             });
         });
@@ -3068,13 +3068,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 }
             });
         }).then(() => {
-            return $scope.getData();
+            return self.getData();
         }).then(() => {
             console.log('Additional Services Dialog closed!');
         }).catch(error => {
             // handle or throw the error
             loadingService.closeLoader();
-            toastrService.showErrorToast(error.message);
+            toastrService.showErrorToast("An unexpected error occured with additional services!");
         });
     }
 

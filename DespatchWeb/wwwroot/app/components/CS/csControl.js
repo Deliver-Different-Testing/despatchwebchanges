@@ -130,7 +130,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 }
             });
         }).then(() => {
-            return $scope.getData();
+            // Refresh data
+            $scope.refreshData(true);
+
+            // Then load the new job
+            $scope.selectJobDetail(jobId);
+            console.log('Dialog closed!')
         }).then(() => {
             console.log('Additional Services Dialog closed!');
         }).catch(error => {
