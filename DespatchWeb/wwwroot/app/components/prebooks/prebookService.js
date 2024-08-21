@@ -36,13 +36,6 @@ class PrebookService {
         return await response.data;
     }
 
-    /**
-     * @param {number} bulkJobId
-     */
-    async getBulkJobPhoto(bulkJobId) {
-        const response = await this._http.get('/CS/GetBulkJobPhoto?bulkJobId=' + bulkJobId);
-        return await response.data;
-    }
 }
 
 angular.module('uDispatch').service('uPBData', PrebookService);
