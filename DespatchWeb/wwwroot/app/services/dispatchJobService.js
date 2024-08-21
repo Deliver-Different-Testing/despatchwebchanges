@@ -65,6 +65,7 @@ class DispatchJobService {
         let foundCourier = this._pickCouriers.find(c => c.id === courierNumber);
         if (foundCourier === undefined) {
             const confirm = this._generateOfflineCourierDialog();
+
             try {
                 await this._$mdDialog.show(confirm);
                 foundCourier = this._pickAllCouriers.find(c => c.id === courierNumber);

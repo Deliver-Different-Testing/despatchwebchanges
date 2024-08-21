@@ -948,23 +948,19 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // DISPATCH THE JOBS
     ///////////////////////////////////////
-    /**
-     * @param {number} courierNumber
-     */
-
     self.getJobsToDispatch = () => {
         let activeJobs = Array.from(angular.element("#jobList .active"));
         return $scope.jobList.filter(jo => activeJobs.some(aJob => jo.id === $(aJob).data("jobid")));
     }
 
-    self.dispatchJobs = async (courierNumber) => {
-        try {
-            const jobsToDispatch = self.getJobsToDispatch();
-            await dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch);
-            return self.getData();
-        } catch (error) {
-            toastrService.showErrorToast(error.message);
-        }
+    /**
+     * @param {number} courierNumber
+     */
+    self.dispatchJobs = (courierNumber) => {
+        const jobsToDispatch = self.getJobsToDispatch();
+        dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch).then(() => self.getData()).catch(error => {
+            console.log(error);
+        });
     };
 
     ////////////////////////////////////////
@@ -1473,15 +1469,15 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {string} searchText
      */
-    self.courierSearch = async searchText => {
-        try {
-            const url = "/courier/AllActiveSearch";
-            return await DispatchData.autocompleteSearch(searchText, url);
-        } catch (error) {
-            toastrService.showErrorToast(error.message);
-        }
-    }
+    self.courierSearch = searchText => {
+        const url = "/courier/AllActiveSearch";
 
+        return DispatchData.autocompleteSearch(searchText, url)
+            .then(result => result)
+            .catch(error => {
+                toastrService.showErrorToast(error.message);
+            });
+    };
     self.jobRecordSearchText = "";
 
     /**
@@ -3068,13 +3064,18 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 }
             });
         }).then(() => {
-            return self.getData();
+            DispatchData.getJobDetail(jobId).then(job => {
+                self.getData().then(() => {
+                    $scope.selectJobDetail(job);
+                    loadingService.closeLoader();
+                });
+            })
         }).then(() => {
             console.log('Additional Services Dialog closed!');
         }).catch(error => {
             // handle or throw the error
+            console.log(error);
             loadingService.closeLoader();
-            toastrService.showErrorToast("An unexpected error occured with additional services!");
         });
     }
 

@@ -2630,15 +2630,10 @@ public class JobRepository : IJobRepository
 
         var clientItemsString = string.Join(",", clientItemIds);
 
-        var job = new TucJob { UcjbId = jobId };
+        var job = new TucJob { UcjbId = jobId, ClientItemIds = clientItemsString };
 
         _context.TucJobs.Attach(job);
-
         _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
-
-        job.ClientItemIds = string.IsNullOrEmpty(job.ClientItemIds)
-            ? $"{job.ClientItemIds}, {clientItemsString}"
-            : clientItemsString;
         await _context.SaveChangesAsync();
     }
 }

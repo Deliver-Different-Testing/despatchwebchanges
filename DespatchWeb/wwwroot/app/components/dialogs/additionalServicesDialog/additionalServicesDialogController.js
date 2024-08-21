@@ -42,6 +42,11 @@ class AdditionalServicesDialogController {
             this.additionalServices = serviceResponse.items;
             this.totalServicesCount = serviceResponse.totalCount;
 
+            Array.prototype.push.apply(
+                this.selected,
+                this.additionalServices.filter(item => item.selected)
+            );
+
             this.isLoading = false;
         });
     }
@@ -68,6 +73,8 @@ class AdditionalServicesDialogController {
 
             await this._dispatchData.addServicesToJob(this._jobId, serviceIds);
             this._toastrService.showSuccessToast(serviceIds.length + " total services have been added to job for $" + this.totalCost);
+
+            this._$mdDialog.hide();
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         }
