@@ -7,11 +7,11 @@ class CsService {
 
     /**
      * @param {number} courierId
-     * @param {number} dispId
+     * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    allocateJobs(courierId, dispId, jobIds) {
-        return this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(response => response);
+    allocateJobs(courierId, dispatcherId, jobIds) {
+        return this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds).then(response => response);
     }
 
     /**
@@ -83,11 +83,11 @@ class CsService {
     }
 
     /**
-     * @param {number} id
+     * @param {number} parentId
      * @param {number} clientId
      */
-    getRelatedJobs(id, clientId) {
-        return this._$http.get('/Job/Related?parentId=' + id + '&clientId=' + clientId).then(response => response.data);
+    getRelatedJobs(parentId, clientId) {
+        return this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId).then(response => response.data);
     }
 
     /**
@@ -143,11 +143,11 @@ class CsService {
 
     /**
      * @param {number} courierId
-     * @param {number} dispId
+     * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    restoreSplitJobs(courierId, dispId, jobIds) {
-        return this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(response => response.data);
+    restoreSplitJobs(courierId, dispatcherId, jobIds) {
+        return this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds).then(response => response.data);
     }
 
     /**
