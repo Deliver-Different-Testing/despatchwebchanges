@@ -38,6 +38,8 @@
  * @property {boolean} saturdayDelivery - If job has Saturday Delivery
  * @property {string} jobNo - The job number
  * @property {number} items - The quantity or number of items for the job
+ * @property {string} speedName - The name of the jobs selected speed
+ * @property {string} notifiedName - The name of the jobs notified name
  * @property {*} courierData - The courier data for the job
  */
 

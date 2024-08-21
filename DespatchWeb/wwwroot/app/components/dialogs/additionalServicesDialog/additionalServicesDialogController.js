@@ -7,25 +7,42 @@ class AdditionalServicesDialogController {
      * @param $mdDialog
      * @param DispatchData
      * @param toastrService
-     * @param {number} jobId
-     * @param {number} clientId
-     * @param {number} speedId
-     * @param {number} quantity
+     * @param {Job} job
      */
-    constructor($mdDialog, DispatchData, toastrService,
-                jobId, clientId, speedId, quantity) {
+    constructor($mdDialog, DispatchData, toastrService, job) {
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
         this._toastrService = toastrService;
-        this._jobId = jobId;
-        this._clientId = clientId;
-        this._speedId = speedId;
-        this._quantity = quantity;
+
+        // Job Fields
+        this._jobId = job.id;
+        this._clientId = job.clientId;
+        this._speedId = job.speedId;
+        this._quantity = job.items;
+
+        let charge = job.charge.replace(/\$/g, "");
+        let chargeNumber = parseFloat(charge);
+
         this.isLoading = false;
         this.isTotalCostCalcuating = false;
-        this.totalCost = 0.0;
+        this.totalCost = chargeNumber || 0.0;
+
         /** @type {ClientItem[]} */
         this.selected = [];
+
+        /** @type {ClientItem} */
+        const jobSpeed = {
+            itemId: -1,
+            clientId: job.clientId,
+            name: job.speedName + ' rate',
+            description: job.speedName + ' rate',
+            perItem: false,
+            rate: chargeNumber,
+            onlyVan: false,
+            selected: true
+        };
+        this.selected.push(jobSpeed);
+
         /** @type {ClientItem[]} */
         this.additionalServices = [];
         /** @type {number} */
@@ -69,7 +86,9 @@ class AdditionalServicesDialogController {
 
     async bookServices() {
         try {
-            const serviceIds = this.selected.map(service => service.itemId);
+            const serviceIds = this.selected
+                .filter(service => service.itemId !== -1)
+                .map(service => service.itemId);
 
             await this._dispatchData.addServicesToJob(this._jobId, serviceIds, this.totalCost);
             this._toastrService.showSuccessToast(serviceIds.length + " total services have been added to job for $" + this.totalCost);

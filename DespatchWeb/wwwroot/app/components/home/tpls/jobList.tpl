@@ -98,7 +98,6 @@
                 {{job.toAddress}}
             </div>
         </td>
-        <!--<td><div style="width:280px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>	-->
         <td><input class="dispatchField" ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(job.courier, job)"
                    ng-model="job.courier"
                    ng-readonly="job.courierData.courierID !== null"

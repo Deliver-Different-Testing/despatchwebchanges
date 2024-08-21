@@ -3026,14 +3026,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param  {Job}  job
      */
     self.showAdditionalServicesMenu = (event, job) => {
-        const jobId = job.id;
-        const clientId = job.clientId;
-        const speedId = job.speedId;
-        const quantity = job.items;
-
         loadingService.showLoader();
 
-        DispatchData.hasClientItemsAvailable(clientId, speedId).then(isClientItemsAvailable => {
+        DispatchData.hasClientItemsAvailable(job.clientId, job.speedId).then(isClientItemsAvailable => {
             loadingService.closeLoader();
 
             if (!isClientItemsAvailable) {
@@ -3042,7 +3037,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         .clickOutsideToClose(true)
                         .title('No Additional Services')
                         .targetEvent(event)
-                        .textContent('No additional services has been set up for this client. Please add a service through Admin Manager and try again.')
+                        .textContent('No additional services  has been set up for this client. Please add a service through Admin Manager and try again.')
                         .ok('OK')
                 );
             }
@@ -3057,10 +3052,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
-                    jobId,
-                    clientId,
-                    speedId,
-                    quantity,
+                    job
                 }
             });
         }).then(() => {
