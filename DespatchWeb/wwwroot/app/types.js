@@ -110,7 +110,7 @@
  * @property {number} height - The height of the pallet.
  * @property {boolean} pu - (Please define what this property does)
  * @property {boolean} do - (Please define what this property does)
- * @property {string} dgClass - (Please define what this property does)
+ * @property {number} dgClass - (Please define what this property does)
  * @property {string} notes - Any additional comments or notes related to the pallet.
  */
 
