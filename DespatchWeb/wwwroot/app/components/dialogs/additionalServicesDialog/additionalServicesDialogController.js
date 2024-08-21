@@ -10,26 +10,36 @@ class AdditionalServicesDialogController {
      * @param {Job} job
      */
     constructor($mdDialog, DispatchData, toastrService, job) {
+        this._initializeProperties($mdDialog, DispatchData, toastrService, job);
+        this._addFunctionsToContext();
+        this.refreshServices();
+    }
+
+    _initializeProperties($mdDialog, DispatchData, toastrService, job) {
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
         this._toastrService = toastrService;
-
         // Job Fields
         this._jobId = job.id;
         this._clientId = job.clientId;
         this._speedId = job.speedId;
         this._quantity = job.items;
-
-        let charge = job.charge.replace(/\$/g, "");
-        let chargeNumber = parseFloat(charge);
-
+        this._setChargeNumber(job.charge);
         this.isLoading = false;
-        this.isTotalCostCalcuating = false;
-        this.totalCost = chargeNumber || 0.0;
-
-        /** @type {ClientItem[]} */
+        this.isTotalCostCalculating = false;
         this.selected = [];
+        this.additionalServices = [];
+        this.totalServicesCount = 0;
+        this._addJobSpeedToSelected(job);
+    }
 
+    _setChargeNumber(charge) {
+        let cleanedCharge = charge.replace(/\$/g, "");
+        let chargeNumber = parseFloat(cleanedCharge);
+        this.totalCost = chargeNumber || 0.0;
+    }
+
+    _addJobSpeedToSelected(job) {
         /** @type {ClientItem} */
         const jobSpeed = {
             itemId: -1,
@@ -37,18 +47,15 @@ class AdditionalServicesDialogController {
             name: job.speedName + ' rate',
             description: job.speedName + ' rate',
             perItem: false,
-            rate: chargeNumber,
+            rate: this.totalCost,
             onlyVan: false,
             selected: true
         };
+
         this.selected.push(jobSpeed);
+    }
 
-        /** @type {ClientItem[]} */
-        this.additionalServices = [];
-        /** @type {number} */
-        this.totalServicesCount = 0;
-
-        this.refreshServices();
+    _addFunctionsToContext() {
         this.addToSelectList = this.addToSelectList.bind(this);
         this.getTotal = this.getTotal.bind(this);
     }
@@ -69,10 +76,10 @@ class AdditionalServicesDialogController {
     }
 
     addToSelectList() {
-        this.isTotalCostCalcuating = true;
+        this.isTotalCostCalculating = true;
         this.getTotal().then(total => {
             this.totalCost = total;
-            this.isTotalCostCalcuating = false;
+            this.isTotalCostCalculating = false;
         });
     }
 
