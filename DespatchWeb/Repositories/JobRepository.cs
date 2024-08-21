@@ -2625,10 +2625,9 @@ public class JobRepository : IJobRepository
 
     public async Task AddClientsItemToJob(int jobId, List<int> clientItemIds, decimal totalCost)
     {
-        if (clientItemIds is null || !clientItemIds.Any())
-            return;
-
-        var clientItemsString = string.Join(",", clientItemIds);
+        var clientItemsString = clientItemIds is null || !clientItemIds.Any()
+            ? string.Empty
+            : string.Join(",", clientItemIds);
 
         var job = new TucJob { UcjbId = jobId, ClientItemIds = clientItemsString, UcjbAmount = totalCost };
 
