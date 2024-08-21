@@ -133,7 +133,6 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }).catch(error => {
             // handle or throw the error
             loadingService.closeLoader();
-            toastrService.showErrorToast(error.message);
         });
     }
 
