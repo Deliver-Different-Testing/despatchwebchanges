@@ -3056,12 +3056,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 }
             });
         }).then(() => {
-            DispatchData.getJobDetail(jobId).then(job => {
                 self.getData().then(() => {
                     $scope.selectJobDetail(job);
                     loadingService.closeLoader();
                 });
-            })
         }).then(() => {
             console.log('Additional Services Dialog closed!');
         }).catch(error => {

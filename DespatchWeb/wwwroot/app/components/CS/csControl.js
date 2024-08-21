@@ -92,14 +92,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
      * @param  {Job}  job
      */
     self.showAdditionalServicesMenu = (event, job) => {
-        const jobId = job.id;
-        const clientId = job.clientId;
-        const speedId = job.speedId;
-        const quantity = job.items;
-
         loadingService.showLoader();
 
-        DispatchData.hasClientItemsAvailable(clientId, speedId).then(isClientItemsAvailable => {
+        DispatchData.hasClientItemsAvailable(job.clientId, job.speedId).then(isClientItemsAvailable => {
             loadingService.closeLoader();
 
             if (!isClientItemsAvailable) {
@@ -123,10 +118,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
-                    jobId,
-                    clientId,
-                    speedId,
-                    quantity,
+                    job
                 }
             });
         }).then(() => {
@@ -134,7 +126,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             $scope.refreshData(true);
 
             // Then load the new job
-            $scope.selectJobDetail(jobId);
+            $scope.selectJobDetail(job.id);
             console.log('Dialog closed!')
         }).then(() => {
             console.log('Additional Services Dialog closed!');
