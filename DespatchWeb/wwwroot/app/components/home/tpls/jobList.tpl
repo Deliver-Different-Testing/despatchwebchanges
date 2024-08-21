@@ -71,7 +71,7 @@
     <tr class="clickable-row draggable-row noselect" data-allowDispatch="{{job.allowDispatch}}"
         data-courier="{{job.courier}}" data-index="{{$index}}" data-jobid="{{job.id}}"
         data-jobno="{{job.jobNo}}" ng-class="jobClass(job)"
-        ng-mouseup="job.courier == null ? selectJob(job): selectJob(job)"
+        ng-mouseup="ctrl.focusInputField(job)"
         ng-repeat="job in jobList | filter: box.searchBox">
         <td>{{job.time | date: "HH:mm"}}</td>
         <td action="ctrl.speedColumnClick($event, job)" right-click>{{job.speed}}</td>
@@ -98,11 +98,13 @@
                 {{job.toAddress}}
             </div>
         </td>
-        <td><input class="dispatchField" ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(job.courier, job)"
+        <td><input class="dispatchField" id="input_{{job.id}}"
+                   ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(job.courier, job)"
                    ng-model="job.courier"
                    ng-readonly="job.courierData.courierID !== null"
                    ng-style="getJobStyle(job.courierData.courierID !== null)"
                    placeholder="" type="text"/></td>
+
         <td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
         <td class="status" ng-class="job.status">{{job.status}}</td>
         <td><input type="text" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField"

@@ -443,6 +443,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         console.log($scope.pickService.channel);
     };
 
+    self.focusInputField = function (job) {
+        if (job.courier == null) $scope.selectJob(job);
+        angular.element("#input_" + job.id).focus();
+    }
 
     $scope.attention = job => {
         let temp = "";
