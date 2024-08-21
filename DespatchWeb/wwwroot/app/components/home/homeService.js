@@ -130,29 +130,29 @@ class DispatchData {
 
     /**
      * @param {number} courierId
-     * @param {number} dispId
+     * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    async allocateJobs(courierId, dispId, jobIds) {
-        return await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
+    async allocateJobs(courierId, dispatcherId, jobIds) {
+        return await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
      * @param {number} courierId
-     * @param {number} dispId
+     * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    async reAllocateJobs(courierId, dispId, jobIds) {
-        return await this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
+    async reAllocateJobs(courierId, dispatcherId, jobIds) {
+        return await this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
      * @param {number} courierId
-     * @param {number} dispId
+     * @param {number} dispatcherId
      * @param {number} jobId
      */
-    async transferJob(courierId, dispId, jobId) {
-        return await this._$http.post("job/Transfer?jobId=" + jobId + "&courierId=" + courierId + "&dispId=" + dispId);
+    async transferJob(courierId, dispatcherId, jobId) {
+        return await this._$http.post("job/Transfer?jobId=" + jobId + "&courierId=" + courierId + "&dispId=" + dispatcherId);
     }
 
     /**
@@ -179,11 +179,11 @@ class DispatchData {
     }
 
     /**
-     * @param {string} job1
-     * @param {string} job2
+     * @param {string} jobNumber1
+     * @param {string} jobNumber2
      */
-    async swapPOD(job1, job2) {
-        let response = await this._$http.post('Job/SwapPOD?job1=' + job1 + '&job2=' + job2);
+    async swapPOD(jobNumber1, jobNumber2) {
+        let response = await this._$http.post('Job/SwapPOD?job1=' + jobNumber1 + '&job2=' + jobNumber2);
         return response.data;
     }
 
@@ -207,11 +207,11 @@ class DispatchData {
 
     /**
      * @param {number} courierId
-     * @param {number} dispId
+     * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    async restoreJobs(courierId, dispId, jobIds) {
-        let response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
+    async restoreJobs(courierId, dispatcherId, jobIds) {
+        let response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
         return response.data;
     }
 
