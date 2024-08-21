@@ -443,9 +443,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         console.log($scope.pickService.channel);
     };
 
-    self.focusInputField = function (job) {
-        if (job.courier == null) $scope.selectJob(job);
-        angular.element("#input_" + job.id).focus();
+    self.focusInputField = job => {
+        $scope.selectJob(job);
+        angular.element("#input_" + job.id).select();
     }
 
     $scope.attention = job => {
