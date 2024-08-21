@@ -121,6 +121,13 @@
                                         </md-fab-trigger>
 
                                         <md-fab-actions>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)">
+                                                <md-tooltip md-direction="bottom">Additional Services</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">add_shopping_cart
+                                                </md-icon>
+                                            </md-button>
+
                                             <md-button aria-label="Dispatch to Courier"
                                                        class="md-fab md-raised md-mini"
                                                        ng-click="ctrl.selectAndDispatchJob($event, ctrl.currentJob)"

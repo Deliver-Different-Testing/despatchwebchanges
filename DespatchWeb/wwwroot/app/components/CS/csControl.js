@@ -1,6 +1,6 @@
 function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys,
                       $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document,
-                      $timeout, loadingService, dispatchJobService, toastrService, moment) {
+                      $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData) {
     const self = this;
 
     $scope.isAdmin = (ClientInternal === "True");
@@ -85,6 +85,63 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             $scope.selectJobDetail(newJobId);
             console.log('Dialog closed!')
         });
+    }
+
+    /**
+     * @param  {Event}  event
+     * @param  {Job}  job
+     */
+    self.showAdditionalServicesMenu = async (event, job) => {
+        const jobId = job.id;
+        const clientId = job.clientId;
+        const speedId = job.speedId;
+        const quantity = job.items;
+
+        loadingService.showLoader();
+
+        try {
+            const isClientItemsAvailable = await DispatchData.hasClientItemsAvailable(clientId, speedId);
+
+            loadingService.closeLoader();
+
+            if (!isClientItemsAvailable) {
+                await $mdDialog.show(
+                    $mdDialog.alert()
+                        .clickOutsideToClose(true)
+                        .title('No Additional Services')
+                        .targetEvent(event)
+                        .textContent('No additional services has been set up for this client. Please add a service through Admin Manager and try again.')
+                        .ok('OK')
+                );
+
+                return;
+            }
+
+            // Show additional services dialog
+            await $mdDialog.show({
+                controller: AdditionalServicesDialogController,
+                controllerAs: "ctrl",
+                templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
+                parent: angular.element($document.body),
+                targetEvent: event,
+                clickOutsideToClose: false,
+                fullscreen: true,
+                locals: {
+                    jobId,
+                    clientId,
+                    speedId,
+                    quantity,
+                }
+            });
+
+            await $scope.getData();
+            console.log('Additional Services Dialog closed!');
+
+        } catch (error) {
+            // handle or throw the error
+            loadingService.closeLoader();
+            toastrService.showErrorToast(error.message);
+        }
     }
 
     self.interCourierCharge = function (event) {
@@ -1439,7 +1496,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 txtElement.focus();
                 txtElement.setSelectionRange(0, 0);
             } else if (txtElement.createTextRange) {
-                var range = txtElement.createTextRange();
+                let range = txtElement.createTextRange();
                 range.moveStart('character', 0);
                 range.select();
             }
@@ -1531,7 +1588,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         function processEventBooking() {
 
-            var event = {
+            const event = {
                 "dataType": "json",
                 "BulkJobID": self.currentJob.bulkJobID,
                 "CourierID": self.currentJob.courierID,
@@ -1709,7 +1766,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
 angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state",
     "$stateParams", "$filter", '$parse', "hotkeys", "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog',
-    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', 'moment', CSController]);
+    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', 'moment', 'DispatchData', CSController]);
 
 // Convert Degress to Radians
 function Deg2Rad(deg) {
