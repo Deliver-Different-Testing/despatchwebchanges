@@ -71,7 +71,7 @@ class AdditionalServicesDialogController {
         try {
             const serviceIds = this.selected.map(service => service.itemId);
 
-            await this._dispatchData.addServicesToJob(this._jobId, serviceIds);
+            await this._dispatchData.addServicesToJob(this._jobId, serviceIds, this.totalCost);
             this._toastrService.showSuccessToast(serviceIds.length + " total services have been added to job for $" + this.totalCost);
 
             this._$mdDialog.hide();

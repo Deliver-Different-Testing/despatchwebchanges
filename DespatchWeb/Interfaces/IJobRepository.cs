@@ -158,5 +158,5 @@ public interface IJobRepository
 
     Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId);
 
-    Task AddClientsItemToJob(int jobId, List<int> clientItemIds);
+    Task AddClientsItemToJob(int jobId, List<int> clientItemIds, decimal totalCost);
 }

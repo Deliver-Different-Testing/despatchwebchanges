@@ -2623,17 +2623,21 @@ public class JobRepository : IJobRepository
         return pagedClientItems;
     }
 
-    public async Task AddClientsItemToJob(int jobId, List<int> clientItemIds)
+    public async Task AddClientsItemToJob(int jobId, List<int> clientItemIds, decimal totalCost)
     {
         if (clientItemIds is null || !clientItemIds.Any())
             return;
 
         var clientItemsString = string.Join(",", clientItemIds);
 
-        var job = new TucJob { UcjbId = jobId, ClientItemIds = clientItemsString };
+        var jobCost = await _context.TucJobs.Select(x => x.UcjbAmount).FirstOrDefaultAsync();
+        jobCost += totalCost;
+
+        var job = new TucJob { UcjbId = jobId, ClientItemIds = clientItemsString, UcjbAmount = jobCost };
 
         _context.TucJobs.Attach(job);
         _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
+        _context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
         await _context.SaveChangesAsync();
     }
 }

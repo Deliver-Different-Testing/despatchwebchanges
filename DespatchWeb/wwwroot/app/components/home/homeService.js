@@ -643,12 +643,13 @@ class DispatchData {
     /**
      * @param {number} jobId
      * @param {number[]} serviceIds
+     * @param {number} totalCost
      */
-    async addServicesToJob(jobId, serviceIds) {
-        const url = "job/AddClientItemsTobJob"
+    async addServicesToJob(jobId, serviceIds, totalCost) {
+        const url = "job/AddClientItemsToJob"
 
         return await this._$http({
-            method: 'POST', url: url + '?jobId=' + jobId, data: serviceIds
+            method: 'POST', url: url + '?jobId=' + jobId, data: {serviceIds, totalCost}
         });
     }
 

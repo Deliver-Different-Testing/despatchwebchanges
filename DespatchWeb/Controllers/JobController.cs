@@ -945,9 +945,9 @@ public partial class JobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddClientItemsTobJob(int jobId, [FromBody] List<int> serviceIds)
+    public async Task<IActionResult> AddClientItemsToJob(int jobId, [FromBody] ClientItemsModel itemsModel)
     {
-        await _jobRepo.AddClientsItemToJob(jobId, serviceIds);
+        if (itemsModel != null) await _jobRepo.AddClientsItemToJob(jobId, itemsModel.ServiceIds, itemsModel.TotalCost);
         return Json("OK");
     }
 
@@ -1027,5 +1027,11 @@ public partial class JobController : Controller
             Port = int.Parse(_configuration["SMTP_Port"])
         };
         smtp.Send(message);
+    }
+
+    public class ClientItemsModel
+    {
+        public List<int> ServiceIds { get; set; }
+        public decimal TotalCost { get; set; }
     }
 }
