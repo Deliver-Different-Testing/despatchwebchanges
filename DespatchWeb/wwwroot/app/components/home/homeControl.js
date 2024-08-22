@@ -579,52 +579,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         if (serverOrder) {
             self.setFilters({"order": prop});
         }
-
     };
 
-    ///////////////////////////
-    // HOTKEYS
-    //////////////////////////
-
-    hotkeys.add({
-        combo: "ctrl+d",
-        description: "Dispatch selected jobs",
-        allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback: (event) => {
-            if (angular.element(".activeTable .active").length > 0) {
-                self.dispatchJobs(event, self.currentJob).then(() => console.log("Run Successfully!"));
-            }
-        }
-    });
-
-    hotkeys.add({
-        combo: "esc",
-        description: "Close gather screen",
-        allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback(event) {
-            angular.element(".gatherForm").css("display", "none");
-            angular.element('.eventForm').css('display', 'none');
-            if (event.srcElement && event.srcElement.classList.contains("dispatchField")) {
-                event.srcElement.value = "";
-            }
-        }
-    });
-
-    hotkeys.add({
-        combo: "enter",
-        description: "Submit gather form",
-        allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-        callback(event) {
-            let gatherForm = angular.element('.gatherForm');
-
-            if (gatherForm.css('display') !== 'none') {
-                $timeout($scope.gather.submit, 0);
-            }
-            if (event.srcElement.id === "gps") {
-                $scope.searchCourier(event.srcElement.value);
-            }
-        }
-    });
 
     /**
      * @param {Job} currentJob
@@ -855,20 +811,20 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         let closestCourier = closestIndex[0] === 9999 ? carMarker : flags[closestIndex[0]];
         let foundCourier = $scope.pickCouriers.find(c => c.courierID === closestCourier.courierId);
 
-        let dispTo = closestCourier.code;
+        let dispatchToCourierCode = closestCourier.code;
         if (closestIndex[0] !== 9999) {
             if (foundCourier !== undefined) {
                 if (foundCourier.code === undefined) {
-                    dispTo = foundCourier.label;
+                    dispatchToCourierCode = foundCourier.label;
                 } else {
-                    dispTo = dispTo + ' ' + foundCourier.code;
+                    dispatchToCourierCode = dispatchToCourierCode + ' ' + foundCourier.code;
                 }
             }
         }
 
         const confirm = $mdDialog.confirm()
             .title('Dispatch Job ' + jobNumber)
-            .textContent('Dispatch to ' + dispTo + '?')
+            .textContent('Dispatch to ' + dispatchToCourierCode + '?')
             .ok('Yes')
             .cancel('No');
 
