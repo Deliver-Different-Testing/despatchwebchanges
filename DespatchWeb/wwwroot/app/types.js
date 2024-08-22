@@ -1,4 +1,4 @@
-// This files contains all the reused JSDoc Types
+// This files contains all the JSDoc types for front end classes/objects
 
 /**
  * @typedef {Object} Job
@@ -40,6 +40,7 @@
  * @property {number} items - The quantity or number of items for the job
  * @property {string} speedName - The name of the jobs selected speed
  * @property {string} notifiedName - The name of the jobs notified name
+ * @property {Date} DGLicenseExpiry - Expiry of the DG License attached to the job
  * @property {*} courierData - The courier data for the job
  */
 
@@ -129,4 +130,17 @@
  * @property {string} reference
  * @property {number} zones
  * @property {number} amount
+ */
+
+/**
+ * @typedef {object} Courier
+ *
+ * @property {number} courierID - The primary key of for the courier
+ * @property {number} id - The courier number
+ * @property {string} name - The name of the courier
+ * @property {number} dangerousGoods - 1 or 0 to show if courier can carry dangerous goods
+ * @property {Date} dgLicenseExpiry - Date the couriers dangerous goods license
+ * @property {string} label - The label for use in select/autocomplete
+ * @property {string} text - The text for use in select/autocomplete. This looks to be a duplicate of label.
+
  */

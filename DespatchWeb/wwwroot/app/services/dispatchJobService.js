@@ -6,7 +6,15 @@ class DispatchJobService {
         this._$document = $document;
         this._dispatchData = DispatchData;
         this._moment = moment;
+
+        /**
+         * @type {Courier[]}
+         */
         this._pickCouriers = [];
+
+        /**
+         * @type {Courier[]}
+         */
         this._pickAllCouriers = [];
 
         this._fetchCouriersData();
@@ -50,8 +58,8 @@ class DispatchJobService {
      * @param {Job} job
      */
     async dispatchJob(courierNumber, job) {
-        let foundCourier = await this._findCourier(courierNumber);
-        let jobsArray = [job]; // Wrap the job into an array
+        const foundCourier = await this._findCourier(courierNumber);
+        const jobsArray = [job];
         await this._dispatchJobsContinue(courierNumber, foundCourier, jobsArray);
     }
 
@@ -86,29 +94,32 @@ class DispatchJobService {
 
     /**
      * @param {number} courierNumber
-     * @param {*} foundCourier
-     * @param {Job[]} job
+     * @param {Courier} foundCourier
+     * @param {Job[]} jobs
      */
-    async _dispatchJobsContinue(courierNumber, foundCourier, job) {
-        let jobs = [];
+    async _dispatchJobsContinue(courierNumber, foundCourier, jobs) {
+        let jobIds = [];
 
-        const jobNumber = job.jobNo;
+        for (let i = 0; i < jobs.length; i++) {
+            const job = jobs[i];
+            const jobNumber = job.jobNo;
 
-        if (job.courierData && job.courierData.courierID !== null) {
-            this._showAlertMessage('Restore ' + jobNumber + ' prior to dispatching to another courier');
-            return;
-        }
-        if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-            this._showAlertMessage("DG job " + jobNumber + " can not be dispatched to courier " + courierNumber + " - doesn't have DGLicense.");
-            return;
-        }
-        if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || this._moment(foundCourier.dgLicenseExpiry) < this._moment().add(1, 'days'))) {
-            this._showAlertMessage("Courier " + courierNumber + " doesn't have a DGLicense or license has expired.");
-            return;
-        }
+            if (job.courierData && job.courierData.courierID !== null) {
+                this._showAlertMessage('Restore ' + jobNumber + ' prior to dispatching to another courier');
+                continue;
+            }
+            if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
+                this._showAlertMessage("DG job " + jobNumber + " can not be dispatched to courier " + courierNumber + " - doesn't have DGLicense.");
+                continue;
+            }
+            if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || this._moment(foundCourier.dgLicenseExpiry) < this._moment().add(1, 'days'))) {
+                this._showAlertMessage("Courier " + courierNumber + " doesn't have a DGLicense or license has expired.");
+                continue;
+            }
 
-        jobs.push(job.id);
-        await this._dispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
+            jobIds.push(job.id);
+            await this._dispatchData.allocateJobs(foundCourier.courierID, ContactID, jobIds);
+        }
     }
 
 
