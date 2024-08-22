@@ -50,14 +50,15 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             .ok("Dispatch")
             .cancel('Cancel');
 
-        return $mdDialog.show(dispatchDialog).then(async courierNumber => {
-            try {
-                await dispatchJobService.dispatchJob(courierNumber, job);
-                $scope.selectJob(job);
-                toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
-            } catch (error) {
-                toastrService.showErrorToast(error.message);
-            }
+        return $mdDialog.show(dispatchDialog).then(courierNumber => {
+            return dispatchJobService.dispatchJob(courierNumber, job)
+                .then(() => {
+                    $scope.selectJob(job);
+                    toastrService.showSuccessToast('Job dispatched to courier ' + courierNumber);
+                })
+                .catch(error => {
+                    console.log(error);
+                });
         }, () => {
             // User clicked cancel
         });
