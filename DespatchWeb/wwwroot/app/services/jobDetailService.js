@@ -236,7 +236,7 @@ class JobDetailService {
      */
     setJob(job) {
         this.currentJob = job;
-        this._dispatchData.getContactList(job.clientID).then(data => {
+        this._dispatchData.getContactList(job.clientId).then(data => {
             this.pickContacts = data;
         });
     }
@@ -247,7 +247,7 @@ class JobDetailService {
      */
     getClientContactDetail($event, job) {
         $event.stopPropagation();
-        this._dispatchData.getContactDetailList(job.clientID).then(data => {
+        this._dispatchData.getContactDetailList(job.clientId).then(data => {
             job.contactList = data;
         });
     }
@@ -297,7 +297,7 @@ class JobDetailService {
         const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
         if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52)) {
             //Truck Job
-            this._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(itemSummary => this._dispatchData.truckJobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this._moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2, job.gstRate).then(function (description) {
+            this._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(itemSummary => this._dispatchData.truckJobAmountBreakdown(job.clientId, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this._moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2, job.gstRate).then(function (description) {
                 this.$mdDialog.show(this.$mdDialog.alert()
                     .parent(angular.element(this.$document.body))
                     .clickOutsideToClose(true)
@@ -309,7 +309,7 @@ class JobDetailService {
 
             return false;
         } else {
-            return this._dispatchData.jobAmountBreakdown(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked, job.gstRate, job.charge.replace("$", "")).then(description => {
+            return this._dispatchData.jobAmountBreakdown(job.clientId, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked, job.gstRate, job.charge.replace("$", "")).then(description => {
                 this._$mdDialog.show(this._$mdDialog.alert()
                     .parent(angular.element(this._$document.body))
                     .clickOutsideToClose(true)
@@ -331,11 +331,11 @@ class JobDetailService {
         if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52 || job.speedID === 124 || job.speedID === 125 || job.speedID === 150 || job.speedID === 151 || job.speedID === 152)) {
             //Truck Job
             return self._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
-                return self._dispatchData.rateTruckJob(job.clientID, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2);
+                return self._dispatchData.rateTruckJob(job.clientId, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2);
 
             });
         } else {
-            return self._dispatchData.rateJob(job.clientID, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked);
+            return self._dispatchData.rateJob(job.clientId, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked);
         }
     }
 
@@ -649,7 +649,7 @@ class JobDetailService {
         this.gather.form = {
             id: "editField",
             title: (fieldName === "Notes" ? "Add " : "Edit ") + label,
-            fields: fieldName === "ClientID" ? [{
+            fields: fieldName === "clientId" ? [{
                 "name": fieldName,
                 "label": label + "...",
                 "value": value,
@@ -758,9 +758,9 @@ class JobDetailService {
                     callData.value = self.gather.form.fields[0].value;
                     job.UDStatus = angular.element("#gather-UndeliverableLocationID option:selected").text();
                 }
-                if (fieldName === "ClientID") {
+                if (fieldName === "clientId") {
                     callData.value = self.gather.form.fields[0].value;
-                    job.clientID = self.gather.form.fields[0].value;
+                    job.clientId = self.gather.form.fields[0].value;
                     reRate = self.gather.form.fields[1].value;
                 }
                 if (fieldName === "DGClass") {
@@ -1388,11 +1388,11 @@ class JobDetailService {
         const placeholder = "Start typing to enter new client...";
 
         const existingItem = {
-            id: job.clientID, text: job.clientName
+            id: job.clientId, text: job.clientName
         }
 
 
-        this.showAutocompleteDialog(event, job, url, placeholder, "ClientId", "Client", job.id, existingItem, true)
+        this.showAutocompleteDialog(event, job, url, placeholder, "clientId", "Client", job.id, existingItem, true)
     }
 
     /**

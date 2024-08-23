@@ -41,6 +41,17 @@
  * @property {string} speedName - The name of the jobs selected speed
  * @property {string} notifiedName - The name of the jobs notified name
  * @property {Date} DGLicenseExpiry - Expiry of the DG License attached to the job
+ * @property {number} deliveryLongitude
+ * @property {number} deliveryLatitude
+ * @property {number} pickUpLongitude
+ * @property {number} pickUpLatitude
+ * @property {string} toSuburbName
+ * @property {string} fromSuburbName
+ * @property {number} postCode
+ * @property {string} extras
+ * @property {boolean} bulkJob - If job is a bulk job
+ * @property {boolean} preBook - If job is a prebook job
+ * @property {number} truckWeightLimit
  * @property {*} courierData - The courier data for the job
  */
 
@@ -74,6 +85,7 @@
  * @property {string} address - The address.
  * @property {string} suburb - The suburb of the address.
  * @property {string} postCode - The postal code of the address.
+ * @property {number} our_suburb - The id of the suburb in urgents db
  */
 
 /**

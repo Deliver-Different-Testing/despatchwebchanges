@@ -18,7 +18,7 @@ class EditAddressDialogController {
     constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, addressDetails, suburbOptions, title, submitLabel) {
         this._$scope = $scope;
         this._$mdDialog = $mdDialog;
-        this.DispatchData = DispatchData;
+        this._dispatchData = DispatchData;
         this._toastrService = toastrService;
 
         this.isLoading = false;
@@ -77,7 +77,7 @@ class EditAddressDialogController {
      */
     async addressSearchAutocomplete(searchText) {
         try {
-            const suggestions = await this.DispatchData.autocompleteAddressSearch(searchText);
+            const suggestions = await this._dispatchData.autocompleteAddressSearch(searchText);
             return this._transformSuggestions(suggestions);
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
@@ -90,7 +90,7 @@ class EditAddressDialogController {
      */
     async addressSearchItemSelected(item) {
         try {
-            const data = await this.DispatchData.getGeoCodeInformation(item);
+            const data = await this._dispatchData.getGeoCodeInformation(item);
             const returnedLocation = data.Response.View[0].Result[0].Location;
 
             console.log("Suburb = " + returnedLocation.Address.District);
@@ -173,7 +173,7 @@ class EditAddressDialogController {
         try {
             // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
             // that return the latitude and longitude values of your location
-            this.DispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
+            this._dispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
                 const returnedLocation = data.Response.View[0].Result[0].Location;
 
                 // Updating scope variables with new data
