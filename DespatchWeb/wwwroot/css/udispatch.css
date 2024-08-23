@@ -1262,6 +1262,11 @@ md-toast.md-warning-toast-theme .md-toast-content {
 .job-table-icon {
   font-size: 14px;
 }
+
+.colum-table-icon {
+    font-size: 7px;
+    color: red;
+}
 .resizeable-checkbox-container {
   display: flex;
   flex-wrap: wrap;

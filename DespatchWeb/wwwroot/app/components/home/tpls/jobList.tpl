@@ -93,7 +93,7 @@
         <td colspan="2" title="{{job.toAddress}}">
             <div action="ctrl.toColumnClick($event, job)" right-click
                  style="width:450px; white-space:nowrap; overflow-x:hidden;"
-                 title="{{job.toAddress}}"><i class="material-symbols-outlined job-table-icon"
+                 title="{{job.toAddress}}"><i class="material-symbols-outlined colum-table-icon"
                                               ng-if="!job.deliveryLongitude">exclamation</i>{{job.to}}
                 {{job.toAddress}}
             </div>
