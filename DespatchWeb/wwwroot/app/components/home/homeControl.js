@@ -1523,7 +1523,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         console.log(courier);
 
         self.getCurrentJobs(courier.courierID);
-        $scope.currentWorkSelection = " for Courier " + courier.courier;
+        $scope.currentWorkSelection = " for Courier " + courier.label;
 
         $scope.currentCourier = courier;
 
@@ -1637,11 +1637,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             self.getAvailableCourierLocation();
         });
 
-        $scope.currentWorkSelection = " for Courier " + courier.courier;
+        $scope.currentWorkSelection = " for Courier " + courier.label;
 
         $scope.currentCourier = courier;
 
-        self.currentSelection = " for Courier " + courier.courier;
+        self.currentSelection = " for Courier " + courier.label;
 
         $timeout(() => {
             $document.ready(() => {

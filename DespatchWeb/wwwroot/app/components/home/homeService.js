@@ -801,7 +801,7 @@ class DispatchData {
     /**
      * @param {*|{area: string, asc: string, status: string, order: string}} data
      * @param {*[]|string} selectedClients
-     * @param {boolean|} internal
+     * @param {boolean} internal
      */
     async getJobsFilter(data, selectedClients, internal) {
         let response = await this._$http.get("job?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
