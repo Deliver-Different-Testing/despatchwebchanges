@@ -52,6 +52,7 @@
  * @property {boolean} bulkJob - If job is a bulk job
  * @property {boolean} preBook - If job is a prebook job
  * @property {number} truckWeightLimit
+ * @property {boolean} invoiced
  * @property {*} courierData - The courier data for the job
  */
 
