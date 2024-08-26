@@ -2392,18 +2392,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Complete",
                     click($itemScope) {
-
-                        $scope.closeSupport($itemScope.support);
-
+                        ctrl.closeSupport($itemScope.support);
                     }
                 },
                 {
                     text: "Toggle Lock",
                     click($itemScope) {
-
                         ctrl.lockSupport($itemScope.support);
-
-
                     }
                 },
                 {
