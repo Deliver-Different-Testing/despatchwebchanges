@@ -239,7 +239,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             buttonDefaultText: "Select Channel..."
         },
         "channelEvents": {
-            "onSelectionChanged": function () {
+            "onSelectionChanged": () => {
                 const temp = $scope.pickService.channel.map(el => el.label);
 
                 ctrl.setSupportChannel(String(temp) || "All");
@@ -443,12 +443,19 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         console.log($scope.pickService.channel);
     };
 
+    ctrl.onCourierSearchClick = ($event) => {
+        // Check if the click target is the input field itself
+        if ($event.target.tagName === 'INPUT') {
+            ctrl.courierSearchText = '';
+        }
+    };
+
     ctrl.handleRowClick = ($event, job) => {
         // Check if the click target is not one of the special input fields
         if (!$event.target.classList.contains('lateCallField') &&
             !$event.target.classList.contains('dispatchField')) {
             // Use $timeout to ensure this runs after the current digest cycle
-            $timeout(function () {
+            $timeout(() => {
                 $scope.selectJob(job);
                 angular.element("#input_" + job.id).select();
             });
@@ -536,7 +543,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {string} boxName
      * @param {number} index
      */
-    ctrl.openSearch = function (boxName, index) {
+    ctrl.openSearch = (boxName, index) => {
         const boxID = boxName + '-' + index;
         if (ctrl.showInput[boxID]) {
             ctrl.showInput[boxID] = false;
@@ -550,12 +557,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     ctrl.openChat = () => {
         if (angular.element(".chat").hasClass("open")) {
-            angular.element(".chat input").fadeOut(function () {
+            angular.element(".chat input").fadeOut(() => {
                 angular.element(".chat").removeClass("open");
                 angular.element(".chat").animate({"width": "31px"}, 500);
             });
         } else {
-            angular.element(".chat").animate({"width": "250px"}, 500, function () {
+            angular.element(".chat").animate({"width": "250px"}, 500, () => {
                 angular.element(".chat").addClass("open");
                 angular.element(".chat").find("input").fadeIn();
             });
@@ -625,7 +632,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.jobForDispatch = job;
     };
 
-    ctrl.swapPOD = function (event) {
+    ctrl.swapPOD = event => {
         const jobNumberPrompt = $mdDialog.prompt()
             .title('Enter the other job number')
             .textContent('Please enter the Job Number to swap the POD.')
@@ -1484,7 +1491,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     ctrl.selectedCourier = null;
-    ctrl.selectedCourierChange = function (courier) {
+    ctrl.selectedCourierChange = courier => {
         if (courier === undefined) {
             $scope.currentCourier = null;
         } else {
@@ -1933,7 +1940,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             case 3:
                 // this is right click
                 loadingService.showLoader();
-                $timeout(function () {
+                $timeout(() => {
                     jdSvc.updateGPS(job, 'toAddress', true);
                 }, 100);
                 loadingService.closeLoader();
@@ -2125,7 +2132,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         ];
     };
 
-    $scope.setJobsMenu = function () {
+    $scope.setJobsMenu = () => {
         let multiple = angular.element(".activeTable .active").length > 1;
         let lastCourier = null;
         let sameCourier = true;
@@ -3120,13 +3127,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
 
 
-        $document.on('ready', function () {
+        $document.on('ready', () => {
             let isDown = false;   // Tracks status of mouse button
 
-            $document.on('mousedown', function () {
+            $document.on('mousedown', () => {
                 isDown = true;      // When mouse goes down, set isDown to true
             })
-                .on('mouseup', function () {
+                .on('mouseup', () => {
                     isDown = false;    // When mouse goes up, set isDown to false
                 });
 

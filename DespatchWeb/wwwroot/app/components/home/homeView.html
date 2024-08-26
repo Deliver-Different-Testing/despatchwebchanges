@@ -284,7 +284,7 @@
                                             md-search-text="ctrl.courierSearchText"
                                             md-selected-item="ctrl.selectedCourier"
                                             md-selected-item-change="ctrl.selectedCourierChange(item)"
-                                            ng-focus="ctrl.courierSearchText = ''"
+                                            ng-click="ctrl.onCourierSearchClick($event)"
                                             placeholder="Search Courier...">
                                         <md-item-template>
                                             <span md-highlight-flags="^i"
