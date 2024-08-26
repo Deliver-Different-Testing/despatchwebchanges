@@ -1426,13 +1426,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    ctrl.courierSearchTextOnFocus = (selectedCourier) => {
-        // If courier was previously selected, reset the search input
-        if (selectedCourier) {
-            ctrl.courierSearchText = "";
-        }
-    }
-
     /**
      * @param {string} searchText
      */

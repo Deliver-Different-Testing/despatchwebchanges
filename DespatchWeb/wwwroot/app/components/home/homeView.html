@@ -144,16 +144,16 @@
                             <div class="md-toolbar-tools">
 
                                 <span class="md-headline-title" flex md-truncate>{{boxes[box.name].title}}
-                                          <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
-                            <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
-                            <span ng-show="box.name == 'supports'"> ({{supportChannel}})</span>
-                            <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
-                            <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
-                            <span ng-repeat="jo in currentJob.relatedJobs"
-                                  ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1">&nbsp;<span
-                                    ng-click="loadRelatedJobDetail(jo.id, jo.label)"
-                                    ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
-                                    style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span>
+                                    <span ng-show="box.name == 'jobDetail'">{{ctrl.currentSelection}}</span>
+                                    <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
+                                    <span ng-show="box.name == 'supports'"> ({{supportChannel}})</span>
+                                    <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
+                                    <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
+                                    <span ng-repeat="jo in ctrl.currentJob.relatedJobs"
+                                          ng-show="box.name == 'jobDetail' && ctrl.currentJob.relatedJobs.length > 1">&nbsp;<span
+                                            ng-click="loadRelatedJobDetail(jo.id, jo.label)"
+                                            ng-style="ctrl.currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}">
+                                        {{jo.label}}</span>
                                     </span>
                                 </span>
 
@@ -284,7 +284,7 @@
                                             md-search-text="ctrl.courierSearchText"
                                             md-selected-item="ctrl.selectedCourier"
                                             md-selected-item-change="ctrl.selectedCourierChange(item)"
-                                            ng-focus="ctrl.courierSearchTextOnFocus(ctrl.selectedCourier)"
+                                            ng-focus="ctrl.courierSearchText = ''"
                                             placeholder="Search Courier...">
                                         <md-item-template>
                                             <span md-highlight-flags="^i"
