@@ -1,17 +1,17 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         loadingService, $mdDialog, $parse, $q, $scope, $state,
                         $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment) {
-    const self = this;
+    const ctrl = this;
 
     $scope.isInternal = (ClientInternal === "True");
     $scope.name = "Home";
-    self.jdSvc = jdSvc;
+    ctrl.jdSvc = jdSvc;
 
-    self.courierSearchText = "";
-    self.jobDetailFabIsOpen = false;
-    self.courierListFabIsOpen = false;
+    ctrl.courierSearchText = "";
+    ctrl.jobDetailFabIsOpen = false;
+    ctrl.courierListFabIsOpen = false;
 
-    self.greetUser = () => {
+    ctrl.greetUser = () => {
         return greetingService.greetUser(FirstName);
     }
 
@@ -19,7 +19,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         const currentJob = $scope.currentJob;
         jdSvc.setJob($scope.currentJob);
 
-        self.getData().then(() => {
+        ctrl.getData().then(() => {
             if (currentJob === null || currentJob === undefined || currentJob === false) {
                 return;
             }
@@ -242,7 +242,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             "onSelectionChanged": function () {
                 const temp = $scope.pickService.channel.map(el => el.label);
 
-                self.setSupportChannel(String(temp) || "All");
+                ctrl.setSupportChannel(String(temp) || "All");
             }
         },
         "settings": {
@@ -338,8 +338,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         layoutsObject[0] = defaultLayout[0];
     }
 
-    self.layouts = layoutsObject || defaultLayout;
-    self.currentLayoutName = "default";
+    ctrl.layouts = layoutsObject || defaultLayout;
+    ctrl.currentLayoutName = "default";
     $scope.truckMode = "On";
     $scope.supportChannel = JSON.parse(localStorage.getItem("support-channel-" + ContactID)) || "All";
 
@@ -347,18 +347,18 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.currentWorkSelection = "";
     $scope.potentialCouriersSelection = "";
 
-    self.storeMapZoomDisplay = () => {
+    ctrl.storeMapZoomDisplay = () => {
         if (Modernizr.localstorage) {
             localStorage.setItem("mapZoom-" + ContactID, JSON.stringify($scope.mapZoom));
         }
     }
 
-    self.layout = angular.copy(self.layouts[0].layout);
+    ctrl.layout = angular.copy(ctrl.layouts[0].layout);
 
     /**
      * @param {Number} index
      */
-    self.deleteLayout = (index) => {
+    ctrl.deleteLayout = (index) => {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
@@ -367,9 +367,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             .cancel('Cancel');
 
         $mdDialog.show(deleteConfirm).then(() => {
-            self.layouts.splice(index, 1);
+            ctrl.layouts.splice(index, 1);
             if (Modernizr.localstorage) {
-                localStorage.setItem("layouts-" + ContactID, JSON.stringify(self.layouts));
+                localStorage.setItem("layouts-" + ContactID, JSON.stringify(ctrl.layouts));
             }
         }, () => {
             console.log("Delete layout canceled!");
@@ -379,7 +379,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {string} layoutName
      */
-    self.setLastActiveLayoutName = layoutName => {
+    ctrl.setLastActiveLayoutName = layoutName => {
         if (Modernizr.localstorage) {
             localStorage.setItem("lastActiveLayout-" + ContactID, layoutName);
         }
@@ -388,18 +388,18 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {number} index
      */
-    self.loadLayout = (index) => {
-        self.currentLayoutName = self.layouts[index].name;
-        self.layout = angular.copy(self.layouts[index].layout);
+    ctrl.loadLayout = (index) => {
+        ctrl.currentLayoutName = ctrl.layouts[index].name;
+        ctrl.layout = angular.copy(ctrl.layouts[index].layout);
 
         // save layout as last active
-        self.setLastActiveLayoutName(self.currentLayoutName);
+        ctrl.setLastActiveLayoutName(ctrl.currentLayoutName);
 
-        $timeout(self.getData, 1000);
+        $timeout(ctrl.getData, 1000);
     };
 
-    self.saveLayout = () => {
-        angular.forEach(self.layout.columns,
+    ctrl.saveLayout = () => {
+        angular.forEach(ctrl.layout.columns,
             (column) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
                 angular.forEach(column.boxes,
@@ -418,15 +418,15 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         $mdDialog.show(saveLayoutPrompt).then(layoutName => {
             if (Modernizr.localstorage) {
-                self.layouts = self.layouts.concat(
+                ctrl.layouts = ctrl.layouts.concat(
                     {
                         name: layoutName,
-                        layout: angular.copy(self.layout)
+                        layout: angular.copy(ctrl.layout)
                     });
-                localStorage.setItem("layouts-" + ContactID, JSON.stringify(self.layouts));
+                localStorage.setItem("layouts-" + ContactID, JSON.stringify(ctrl.layouts));
 
                 // save last active layout
-                self.setLastActiveLayoutName(layoutName);
+                ctrl.setLastActiveLayoutName(layoutName);
             }
 
             const deferred = $q.defer();
@@ -443,10 +443,17 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         console.log($scope.pickService.channel);
     };
 
-    self.focusInputField = job => {
-        $scope.selectJob(job);
-        angular.element("#input_" + job.id).select();
-    }
+    ctrl.handleRowClick = ($event, job) => {
+        // Check if the click target is not one of the special input fields
+        if (!$event.target.classList.contains('lateCallField') &&
+            !$event.target.classList.contains('dispatchField')) {
+            // Use $timeout to ensure this runs after the current digest cycle
+            $timeout(function () {
+                $scope.selectJob(job);
+                angular.element("#input_" + job.id).select();
+            });
+        }
+    };
 
     $scope.attention = job => {
         let temp = "";
@@ -522,26 +529,26 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
     };
 
-    self.showInput = {};
-    self.inputWidth = {};
+    ctrl.showInput = {};
+    ctrl.inputWidth = {};
 
     /**
      * @param {string} boxName
      * @param {number} index
      */
-    self.openSearch = function (boxName, index) {
+    ctrl.openSearch = function (boxName, index) {
         const boxID = boxName + '-' + index;
-        if (self.showInput[boxID]) {
-            self.showInput[boxID] = false;
-            self.inputWidth[boxID] = 31;
+        if (ctrl.showInput[boxID]) {
+            ctrl.showInput[boxID] = false;
+            ctrl.inputWidth[boxID] = 31;
         } else {
-            self.inputWidth[boxID] = 200;
-            self.showInput[boxID] = true;
+            ctrl.inputWidth[boxID] = 200;
+            ctrl.showInput[boxID] = true;
         }
     };
 
 
-    self.openChat = () => {
+    ctrl.openChat = () => {
         if (angular.element(".chat").hasClass("open")) {
             angular.element(".chat input").fadeOut(function () {
                 angular.element(".chat").removeClass("open");
@@ -577,7 +584,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
 
         if (serverOrder) {
-            self.setFilters({"order": prop});
+            ctrl.setFilters({"order": prop});
         }
     };
 
@@ -585,14 +592,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {Job} currentJob
      */
-    self.unlockJob = currentJob => {
+    ctrl.unlockJob = currentJob => {
         return jdSvc.unlockJob(currentJob);
     };
 
     /**
      * @param {Job} currentJob
      */
-    self.lockJob = currentJob => {
+    ctrl.lockJob = currentJob => {
         return jdSvc.lockJob(currentJob);
     };
 
@@ -610,15 +617,15 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.getClearListEnvelope(id);
         }
 
-        self.setFilters({'clearList': area});
+        ctrl.setFilters({'clearList': area});
     };
 
-    self.selectForDispatch = job => {
+    ctrl.selectForDispatch = job => {
         console.log("In SelectForDispatch");
         $scope.jobForDispatch = job;
     };
 
-    self.swapPOD = function (event) {
+    ctrl.swapPOD = function (event) {
         const jobNumberPrompt = $mdDialog.prompt()
             .title('Enter the other job number')
             .textContent('Please enter the Job Number to swap the POD.')
@@ -681,7 +688,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {string} jobNumber
      * @param {number} jobId
      */
-    self.voidJobForm = (jobNumber, jobId) => {
+    ctrl.voidJobForm = (jobNumber, jobId) => {
         const voidJobPrompt = $mdDialog.prompt()
             .title("Void Job")
             .textContent("Add Note")
@@ -694,7 +701,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $mdDialog.show(voidJobPrompt).then(note => {
             return DispatchData.addNote(jobId, note, FirstName, false).then(() => {
                 return DispatchData.voidJob(jobId).then(() => {
-                    return self.getData();
+                    return ctrl.getData();
                 })
             }, () => {
                 // User canceled the void
@@ -706,8 +713,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {Event} event
      * @param {Job} job
      */
-    self.messageClick = (event, job) => {
-        const selectedCourierId = self.selectedCourier ? self.selectedCourier.id : job.courierData.courierID;
+    ctrl.messageClick = (event, job) => {
+        const selectedCourierId = ctrl.selectedCourier ? ctrl.selectedCourier.id : job.courierData.courierID;
 
         $mdDialog.show({
             controller: SendMessageDialogController,
@@ -732,7 +739,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {Event} event
      * @param {Job} job
      */
-    self.otherEventForm = (event, job) => {
+    ctrl.otherEventForm = (event, job) => {
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
@@ -747,7 +754,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 contactId: ContactID
             }
         }).then(() => {
-            self.getData().then(() => {
+            ctrl.getData().then(() => {
                 console.log('Pallet Dialog closed!');
             });
         });
@@ -790,7 +797,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $mdDialog.show(confirm).then(() => {
                 const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                 displayPickupPoints(unDispatchedData, true, null);
-                self.getAvailableCourierLocation();
+                ctrl.getAvailableCourierLocation();
             });
             return;
         }
@@ -847,7 +854,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             let jobs = [];
             jobs.push(j.id);
             return DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(() => {
-                self.getData().then(() => {
+                ctrl.getData().then(() => {
                     angular.element('#box-map .loading').css('display', '');
 
                     $scope.courier = {gpsCourier: foundCourier.id};
@@ -857,11 +864,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }, () => {
             let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
             displayPickupPoints(unDispatchedData, true, null);
-            self.getAvailableCourierLocation();
+            ctrl.getAvailableCourierLocation();
         });
     };
 
-    self.selectAllContent = $event => {
+    ctrl.selectAllContent = $event => {
         $event.target.select();
     };
 
@@ -872,7 +879,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.lateCall(minsAway, 1, j, true);
     }
 
-    self.lateDelivery = (minsAway, j, obj) => {
+    ctrl.lateDelivery = (minsAway, j, obj) => {
         console.log("current = " + j.ld);
         console.log("param minsAway = " + minsAway);
         console.log(obj);
@@ -891,7 +898,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      */
     $scope.lateCall = (lateTime, lateType, j, calc) => {
         return DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName, calc).then(response => {
-            self.getData().then(() => {
+            ctrl.getData().then(() => {
 
 
             });
@@ -908,7 +915,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // DISPATCH THE JOBS
     ///////////////////////////////////////
-    self.getJobsToDispatch = () => {
+    ctrl.getJobsToDispatch = () => {
         let activeJobs = Array.from(angular.element("#jobList .active"));
         return $scope.jobList.filter(jo => activeJobs.some(aJob => jo.id === $(aJob).data("jobid")));
     }
@@ -916,9 +923,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {number} courierNumber
      */
-    self.dispatchJobs = (courierNumber) => {
-        const jobsToDispatch = self.getJobsToDispatch();
-        dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch).then(() => self.getData()).catch(error => {
+    ctrl.dispatchJobs = (courierNumber) => {
+        const jobsToDispatch = ctrl.getJobsToDispatch();
+        dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch).then(() => ctrl.getData()).catch(error => {
             console.log(error);
         });
     };
@@ -926,7 +933,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // RESTORE JOB
     ///////////////////////////////////////
-    self.restoreJobs = () => {
+    ctrl.restoreJobs = () => {
 
         let callData = {
             "call": "restoreJobs",
@@ -966,7 +973,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
 
 
-        self.getData().then(() => {
+        ctrl.getData().then(() => {
             angular.element('#box-map .loading').css('display', '');
 
             $scope.courier = {gpsCourier: foundCourier.id};
@@ -977,7 +984,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // REDESPATCHED JOB
     ///////////////////////////////////////
-    self.reAllocateJobs = () => {
+    ctrl.reAllocateJobs = () => {
         const callData = {
             "call": "redespatchJobs",
             "jobs": [],
@@ -1004,7 +1011,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             DispatchData.reAllocateJobs(foundCourier.courierID, ContactID, callData.jobs);
         }
 
-        self.getData().then(() => {
+        ctrl.getData().then(() => {
             angular.element('#box-map .loading').css('display', '');
 
             $scope.courier = {gpsCourier: foundCourier.id};
@@ -1034,7 +1041,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             DispatchData.resendJobs(callData.jobs);
         }
 
-        self.getData().then(() => {
+        ctrl.getData().then(() => {
             angular.element('#box-map .loading').css('display', '');
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1044,7 +1051,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param  {$event}  event
      */
-    self.restoreAll = event => {
+    ctrl.restoreAll = event => {
         let confirm = $mdDialog.confirm()
             .title('Restore All Jobs')
             .textContent('Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier)
@@ -1090,8 +1097,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             }
 
             $timeout(() => {
-                self.getCurrentJobs(foundCourier.courierID);
-                self.getData();
+                ctrl.getCurrentJobs(foundCourier.courierID);
+                ctrl.getData();
             }, 1000);
         }, () => {
             // Cancelled dialog.
@@ -1101,7 +1108,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param       {Event}  event
      */
-    self.redispatchAll = event => {
+    ctrl.redispatchAll = event => {
         const confirm = $mdDialog.confirm()
             .title('Restore All Jobs')
             .textContent('Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier)
@@ -1129,7 +1136,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
             }
 
-            self.getData().then(() => {
+            ctrl.getData().then(() => {
                 angular.element('#box-map .loading').css('display', '');
                 $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
@@ -1174,7 +1181,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 DispatchData.resendAllJobs(callData.courierID);
             }
 
-            self.getData().then(() => {
+            ctrl.getData().then(() => {
                 angular.element('#box-map .loading').css('display', '');
                 $scope.courier = {gpsCourier: foundCourier.id};
                 $scope.searchCourier();
@@ -1185,7 +1192,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     };
 
-    self.reAllocateJobsFromCurrentWindow = () => {
+    ctrl.reAllocateJobsFromCurrentWindow = () => {
         let callData = {
             "call": "redespatchJobs",
             "jobs": [],
@@ -1205,7 +1212,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
         }
 
-        self.getData().then(() => {
+        ctrl.getData().then(() => {
             angular.element('#box-map .loading').css('display', '');
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
@@ -1232,14 +1239,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             DispatchData.resendJobs(callData.jobs);
         }
 
-        self.getData().then(() => {
+        ctrl.getData().then(() => {
             angular.element('#box-map .loading').css('display', '');
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
         });
     };
 
-    self.restoreJobsFromCurrentWindow = () => {
+    ctrl.restoreJobsFromCurrentWindow = () => {
         let callData = {
             "call": "restoreJobs",
             "jobs": [],
@@ -1274,8 +1281,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }
 
         $timeout(() => {
-            self.getCurrentJobs(foundCourier.courierID);
-            self.getData();
+            ctrl.getCurrentJobs(foundCourier.courierID);
+            ctrl.getData();
         }, 1000);
     };
 
@@ -1288,7 +1295,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         $mdDialog.show(confirm).then(() => {
             DispatchData.setFirstJob(job.id, $scope.currentCourier.courierID).then(() => {
-                self.getCurrentJobs($scope.currentCourier.courierID);
+                ctrl.getCurrentJobs($scope.currentCourier.courierID);
             });
         }, () => {
             // No action for 'No'
@@ -1298,7 +1305,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     //////////////////////////////
     //  SPLIT JOB //
     /////////////////////////////
-    self.splitJob = (event, job) => {
+    ctrl.splitJob = (event, job) => {
         if (!job.allowSplit) {
             $mdDialog.show(
                 $mdDialog.alert()
@@ -1419,17 +1426,17 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    self.courierSearchTextOnFocus = (selectedCourier) => {
+    ctrl.courierSearchTextOnFocus = (selectedCourier) => {
         // If courier was previously selected, reset the search input
         if (selectedCourier) {
-            self.courierSearchText = "";
+            ctrl.courierSearchText = "";
         }
     }
 
     /**
      * @param {string} searchText
      */
-    self.courierSearch = searchText => {
+    ctrl.courierSearch = searchText => {
         const url = "/courier/AllActiveSearch";
 
         return DispatchData.autocompleteSearch(searchText, url)
@@ -1438,12 +1445,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 toastrService.showErrorToast(error.message);
             });
     };
-    self.jobRecordSearchText = "";
+    ctrl.jobRecordSearchText = "";
 
     /**
      * @param {string} searchText
      */
-    self.jobRecordSearch = searchText => {
+    ctrl.jobRecordSearch = searchText => {
         return $scope.jobList
             .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
             .map(job => ({id: job.id, text: job.jobNo}));
@@ -1452,7 +1459,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {number} selectedJobId
      */
-    self.JobRecordSelected = selectedJobId => {
+    ctrl.JobRecordSelected = selectedJobId => {
         const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
         $scope.selectJob(selectedJob);
     }
@@ -1461,43 +1468,43 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {number} courierID
      * @param {string} courierName
      */
-    self.updateCourierData = (courierID, courierName) => {
+    ctrl.updateCourierData = (courierID, courierName) => {
         $scope.currentWorkSelection = ` for Courier  ${courierID}  ${courierName}`;
         $scope.currentCourier = {
             courierID,
             courier: courierName
         };
 
-        self.currentSelection = ` for Courier ${courierID}  ${courierName}`;
-        self.getCurrentJobs(courierID);
+        ctrl.currentSelection = ` for Courier ${courierID}  ${courierName}`;
+        ctrl.getCurrentJobs(courierID);
         DispatchData.truckCourierStatus(courierID).then(result => {
             $scope.truckCourierStatus = result.data;
         });
     };
 
-    self.displayLoadingIndicators = () => {
+    ctrl.displayLoadingIndicators = () => {
         loadingService.showLoader();
     };
 
-    self.hideLoadingIndicators = () => {
+    ctrl.hideLoadingIndicators = () => {
         loadingService.closeLoader();
     };
 
-    self.selectedCourier = null;
-    self.selectedCourierChange = function (courier) {
+    ctrl.selectedCourier = null;
+    ctrl.selectedCourierChange = function (courier) {
         if (courier === undefined) {
             $scope.currentCourier = null;
         } else {
-            self.updateCourierData(courier.id, courier.text);
+            ctrl.updateCourierData(courier.id, courier.text);
         }
     };
 
     $scope.searchCourier = () => {
-        self.displayLoadingIndicators();
+        ctrl.displayLoadingIndicators();
         let foundCourier = $scope.pickAllCouriers.find(c => c.id === $scope.courier.gpsCourier);
         console.log(foundCourier);
         if (foundCourier === undefined) {
-            self.hideLoadingIndicators();
+            ctrl.hideLoadingIndicators();
             $mdDialog.show(
                 $mdDialog.alert()
                     .clickOutsideToClose(true)
@@ -1507,8 +1514,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             );
             return;
         }
-        self.updateCourierData(foundCourier.id, foundCourier.name);
-        self.hideLoadingIndicators();
+        ctrl.updateCourierData(foundCourier.id, foundCourier.name);
+        ctrl.hideLoadingIndicators();
     };
 
     // Select the courier
@@ -1523,7 +1530,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         console.log(courier);
 
         $scope.currentWorkSelection = " for Courier " + courier.label;
-        self.getCurrentJobs(courier.courierID);
+        ctrl.getCurrentJobs(courier.courierID);
 
         $scope.currentCourier = courier;
 
@@ -1577,7 +1584,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
 
         $scope.currentWorkSelection = " for Courier " + courier.label;
-        self.currentSelection = " for Courier " + courier.label;
+        ctrl.currentSelection = " for Courier " + courier.label;
 
         $timeout(() => {
             $document.ready(() => {
@@ -1634,14 +1641,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $timeout(() => {
                 sizeHeadings();
             }, 2000);
-            self.getAvailableCourierLocation();
+            ctrl.getAvailableCourierLocation();
         });
 
         $scope.currentWorkSelection = " for Courier " + courier.label;
 
         $scope.currentCourier = courier;
 
-        self.currentSelection = " for Courier " + courier.label;
+        ctrl.currentSelection = " for Courier " + courier.label;
 
         $timeout(() => {
             $document.ready(() => {
@@ -1675,7 +1682,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // CURRENT JOBS
     ////////////////////////////
 
-    self.getCurrentJobs = courierId => {
+    ctrl.getCurrentJobs = courierId => {
         angular.element('#box-currentWork').find(".loading").css('display', 'block');
         const foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
         const code = foundCourier !== undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
@@ -1718,12 +1725,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     $scope.sort["jobList"] = "remain";
 
-    self.setFiltersFromTopBar = data => {
+    ctrl.setFiltersFromTopBar = data => {
         angular.element('.clearLists-list-title').removeClass('listActive');
-        self.setFilters(data);
+        ctrl.setFilters(data);
     };
 
-    self.setFilters = data => {
+    ctrl.setFilters = data => {
         $timeout(() => {
             if (data.status) {
                 $scope.jobFilters.status = data.status;
@@ -1752,16 +1759,16 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 $scope.jobFilters.order = data.order;
             }
 
-            self.getData();
+            ctrl.getData();
         }, 300);
     };
 
     $scope.selectJobDetail = job => {
         $scope.currentJob = job;
-        self.currentSupport = null;
+        ctrl.currentSupport = null;
         $scope.potentialCouriers = false;
         $scope.potentialCouriersSelection = " for Job " + job.jobNo;
-        self.currentSelection = " for Job " + job.jobNo;
+        ctrl.currentSelection = " for Job " + job.jobNo;
         if ($scope.currentJob.rootParentID) {
             DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
                 $scope.currentJob.relatedJobs = data;
@@ -1774,14 +1781,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         DispatchData.getJobDetail(id).then(data => {
             $scope.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
-            self.currentSelection = " for Job " + jn;
+            ctrl.currentSelection = " for Job " + jn;
         });
     };
 
-    self.selectSupportJobDetail = support => {
+    ctrl.selectSupportJobDetail = support => {
         console.log("select Job  " + support.jobId);
 
-        self.currentSupport = support;
+        ctrl.currentSupport = support;
         angular.element("#box-jobDetail").find(".loading").show();
 
         DispatchData.getJobDetail(support.jobId).then(data => {
@@ -1789,7 +1796,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.currentJob = data;
 
             angular.element("#box-jobDetail").find(".loading").hide();
-            self.currentSelection = " for Job " + support.jobNumber;
+            ctrl.currentSelection = " for Job " + support.jobNumber;
             let jobs = [];
             jobs.push($scope.currentJob);
             displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
@@ -1811,14 +1818,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.selectJob = (job) => {
         $timeout(() => {
             let jobRow = null;
-            self.selectedJobs = [];
-            self.currentSupport = null;
+            ctrl.selectedJobs = [];
+            ctrl.currentSupport = null;
 
             angular.element(".activeTable .active").each((_, el) => {
                 const jobRowElement = angular.element(el).find(".selectjob");
                 jobRowElement.click();
 
-                self.selectedJobs.push($scope.jobForDispatch.ID);
+                ctrl.selectedJobs.push($scope.jobForDispatch.ID);
 
                 if (jobRowElement && jobRowElement.length > 0) {
                     jobRow = jobRowElement[0];
@@ -1848,7 +1855,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 $scope.getPotentialCouriers(job.id);
                 $scope.potentialCouriersSelection = " for Job " + job.jobNo;
                 $scope.currentCourier = null;
-                self.currentSelection = " for Job " + job.jobNo;
+                ctrl.currentSelection = " for Job " + job.jobNo;
 
                 const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                 displayPickupPoints(unDispatchedData, true, job);
@@ -1879,13 +1886,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Restore",
                 click() {
-                    self.restoreJobsFromCurrentWindow();
+                    ctrl.restoreJobsFromCurrentWindow();
                 }
             },
             {
                 text: "Redispatch",
                 click() {
-                    self.reAllocateJobsFromCurrentWindow();
+                    ctrl.reAllocateJobsFromCurrentWindow();
                 }
             },
             {
@@ -1898,7 +1905,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         ];
     };
 
-    self.fromColumnClick = (evt, job) => {
+    ctrl.fromColumnClick = (evt, job) => {
         switch (evt.which) {
             case 1:
                 // this is left click
@@ -1922,7 +1929,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    self.toColumnClick = (evt, job) => {
+    ctrl.toColumnClick = (evt, job) => {
         switch (evt.which) {
             case 1:
                 // this is left click
@@ -2018,7 +2025,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    self.speedColumnClick = (evt, job) => {
+    ctrl.speedColumnClick = (evt, job) => {
         switch (evt.which) {
             case 1:
                 // this is left click
@@ -2042,7 +2049,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    self.clientColumnClick = (evt, job) => {
+    ctrl.clientColumnClick = (evt, job) => {
         switch (evt.which) {
             case 1:
                 // this is left click
@@ -2066,7 +2073,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    self.notifyColumnClick = (evt, job) => {
+    ctrl.notifyColumnClick = (evt, job) => {
         switch (evt.which) {
             case 1:
                 // this is left click
@@ -2095,14 +2102,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Void Job",
                 click() {
-                    self.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
+                    ctrl.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
                 }
             },
 
             {
                 text: "Add Event - Other",
                 click() {
-                    self.otherEventForm($scope.currentJob.jobNo);
+                    ctrl.otherEventForm($scope.currentJob.jobNo);
                 }
             },
 
@@ -2147,7 +2154,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Dispatch Selected",
                 click($itemScope, $event) {
-                    self.dispatchJobs($event);
+                    ctrl.dispatchJobs($event);
                 }
             },
             {
@@ -2162,13 +2169,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Restore Selected",
                     click() {
-                        self.restoreJobs();
+                        ctrl.restoreJobs();
                     }
                 },
                 {
                     text: "Redispatch Selected",
                     click() {
-                        self.reAllocateJobs();
+                        ctrl.reAllocateJobs();
                     }
                 },
                 {
@@ -2187,7 +2194,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     {
                         text: "Dispatch Selected",
                         click() {
-                            self.dispatchJobs(null);
+                            ctrl.dispatchJobs(null);
 
                         }
 
@@ -2201,7 +2208,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Dispatch",
                     click() {
-                        self.dispatchJobs(null);
+                        ctrl.dispatchJobs(null);
 
                     }
                 }
@@ -2215,13 +2222,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Restore",
                     click() {
-                        self.restoreJobs();
+                        ctrl.restoreJobs();
                     }
                 },
                 {
                     text: "Redispatch",
                     click() {
-                        self.reAllocateJobs();
+                        ctrl.reAllocateJobs();
                     }
                 },
                 {
@@ -2238,15 +2245,15 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {string} mode
      */
-    self.setTruckMode = (mode) => {
+    ctrl.setTruckMode = (mode) => {
         $scope.truckMode = mode;
-        self.getData();
+        ctrl.getData();
     };
 
     /**
      * @param {string} channel
      */
-    self.setSupportChannel = (channel) => {
+    ctrl.setSupportChannel = (channel) => {
         $scope.supportChannel = channel;
         if (Modernizr.localstorage) {
             localStorage.setItem("support-channel-" + ContactID, JSON.stringify($scope.supportChannel));
@@ -2254,7 +2261,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.getSupports();
     };
 
-    self.getAvailableCourierLocation = () => {
+    ctrl.getAvailableCourierLocation = () => {
         if (!$scope.allCouriers.display) {
             map.clearLabels();
             map.clearFlags();
@@ -2338,20 +2345,20 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     const unDispatchedData = data.filter(x => x.courierData.courierID === null);
                     displayPickupPoints(unDispatchedData, true, null);
                 }
-                self.getAvailableCourierLocation();
+                ctrl.getAvailableCourierLocation();
             }, 200);
 
         });
     };
 
-    self.closeSupport = support => {
+    ctrl.closeSupport = support => {
         DispatchData.closeSupport(support.eventId, ContactID).then(() => {
             $scope.getSupports();
-            self.currentSupport = null;
+            ctrl.currentSupport = null;
         });
     }
 
-    self.lockSupport = support => {
+    ctrl.lockSupport = support => {
         console.log(support);
         if (support.lockedBy === Dispatcher) {
             DispatchData.unLockSupport(support.eventId, Dispatcher).then(() => {
@@ -2401,7 +2408,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     text: "Toggle Lock",
                     click($itemScope) {
 
-                        self.lockSupport($itemScope.support);
+                        ctrl.lockSupport($itemScope.support);
 
 
                     }
@@ -2409,7 +2416,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 {
                     text: "Void Job",
                     click($itemScope) {
-                        self.voidJobForm($itemScope.support.jobNumber, $itemScope.support.jobId);
+                        ctrl.voidJobForm($itemScope.support.jobNumber, $itemScope.support.jobId);
                     },
                     enabled($itemScope) {
                         return ($itemScope.support.jobId);
@@ -2420,8 +2427,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
             $timeout(() => {
                     $document.ready(() => {
-                        if (self.currentSupport) {
-                            angular.element("#supports tr[data-id='" + self.currentSupport.eventId + "']").addClass("active");
+                        if (ctrl.currentSupport) {
+                            angular.element("#supports tr[data-id='" + ctrl.currentSupport.eventId + "']").addClass("active");
                         }
                     });
                 },
@@ -2443,7 +2450,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    self.getData = () => {
+    ctrl.getData = () => {
         ///////////////////////////////
         // JOB LIST
         ///////////////////////////////
@@ -2452,7 +2459,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         angular.element("#box-jobsList").find(".loading").show();
         $scope.jobList = [];
         $scope.currentJob = null;
-        self.jdSvc.currentJob = null;
+        ctrl.jdSvc.currentJob = null;
         $scope.potentialCouriers = null;
         $scope.jobGroups = false;
         if (!$scope.courier) {
@@ -2467,7 +2474,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
                 map.fitBounds(new google.maps.LatLngBounds(swll, nell));
                 map.setZoom(13);
-                self.getAvailableCourierLocation();
+                ctrl.getAvailableCourierLocation();
             });
         };
 
@@ -2766,7 +2773,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.getClientContacts();
     }
 
-    self.getData();
+    ctrl.getData();
 
     $document.everyTime("30s", "SP", () => {
         $scope.getSupports();
@@ -2846,7 +2853,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                             .then(_ => DispatchData.reRateSplitJob(callData.jobID)
                                 .then(_ => DispatchData.finishSplitJobProcess(callData.jobID, FirstName)
                                     .then(_ => {
-                                        self.getData().then(_ => {
+                                        ctrl.getData().then(_ => {
                                             loadingService.closeLoader();
                                             console.log("Job splitting complete!");
                                             console.log('Dialog closed!');
@@ -2887,7 +2894,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {Event}  event
      */
-    self.truckLoadingStatus = (event) => {
+    ctrl.truckLoadingStatus = (event) => {
         $mdDialog.show({
             controller: TruckCourierStatusDialogController,
             controllerAs: 'ctrl',
@@ -2907,7 +2914,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {Event}  event
      */
-    self.createNewJob = event => {
+    ctrl.createNewJob = event => {
         try {
             $mdDialog.show({
                 controller: CreateJobDialogController,
@@ -2923,7 +2930,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 },
             }).then(newJobId => {
                 DispatchData.getJobDetail(newJobId).then(job => {
-                    self.getData().then(() => {
+                    ctrl.getData().then(() => {
                         $scope.selectJobDetail(job);
 
                         toastrService.showSuccessToast("New Job Created Successfully")
@@ -2939,7 +2946,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {Event}  event
      */
-    self.interCourierCharge = event => {
+    ctrl.interCourierCharge = event => {
         $mdDialog.show({
             controller: InterCourierChargeDialogController,
             controllerAs: 'ctrl',
@@ -2960,7 +2967,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {Event}  event
      * @param {Job}  job
      */
-    self.createEvent = (event, job) => {
+    ctrl.createEvent = (event, job) => {
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
@@ -2975,7 +2982,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 contactId: ContactID
             }
         }).then(() => {
-            self.getData().then(() => {
+            ctrl.getData().then(() => {
                 console.log('Pallet Dialog closed!');
             });
         });
@@ -2985,7 +2992,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param  {Event}  event
      * @param  {Job}  job
      */
-    self.showAdditionalServicesMenu = (event, job) => {
+    ctrl.showAdditionalServicesMenu = (event, job) => {
         loadingService.showLoader();
 
         DispatchData.hasClientItemsAvailable(job.clientId, job.speedId).then(isClientItemsAvailable => {
@@ -3016,7 +3023,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 }
             });
         }).then(() => {
-                self.getData().then(() => {
+            ctrl.getData().then(() => {
                     $scope.selectJobDetail(job);
                     loadingService.closeLoader();
                 });
@@ -3030,20 +3037,20 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     // Load custom layout
-    self.init = () => {
+    ctrl.init = () => {
         if (Modernizr.localstorage) {
             const storedLayouts = localStorage.getItem("layouts-" + ContactID);
             const lastActiveLayoutName = localStorage.getItem("lastActiveLayout-" + ContactID);
 
             if (storedLayouts) {
-                self.layouts = JSON.parse(storedLayouts);
+                ctrl.layouts = JSON.parse(storedLayouts);
 
                 if (lastActiveLayoutName) {
-                    const lastActiveLayoutIndex = self.layouts.findIndex(l => l.name === lastActiveLayoutName);
+                    const lastActiveLayoutIndex = ctrl.layouts.findIndex(l => l.name === lastActiveLayoutName);
 
                     // if the last active layout is found among stored layouts
                     if (lastActiveLayoutIndex !== -1) {
-                        self.loadLayout(lastActiveLayoutIndex);
+                        ctrl.loadLayout(lastActiveLayoutIndex);
                     }
                 }
             }
@@ -3051,7 +3058,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     // Call the init function when the controller loads
-    self.init();
+    ctrl.init();
 
     // Code from html
     let keyIsDown = {};

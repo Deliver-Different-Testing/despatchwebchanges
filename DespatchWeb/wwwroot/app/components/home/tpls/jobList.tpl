@@ -71,7 +71,7 @@
     <tr class="clickable-row draggable-row noselect" data-allowDispatch="{{job.allowDispatch}}"
         data-courier="{{job.courier}}" data-index="{{$index}}" data-jobid="{{job.id}}"
         data-jobno="{{job.jobNo}}" ng-class="jobClass(job)"
-        ng-mouseup="ctrl.focusInputField(job)"
+        ng-mousedown="ctrl.handleRowClick($event, job)"
         ng-repeat="job in jobList | filter: box.searchBox">
         <td>{{job.time | date: "HH:mm"}}</td>
         <td action="ctrl.speedColumnClick($event, job)" right-click>{{job.speed}}</td>
