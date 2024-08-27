@@ -331,14 +331,13 @@ public class JobController : Controller
 
     private async Task<(bool createEvent, int jobStatus, int late)> DeterminePickupLateStatus(LateCallRequest request)
     {
-        var createEvent = false;
         const int jobStatus = 4;
         var late = request.LateTime;
 
-        if (request.AlertLatePickup < 0) return (createEvent, jobStatus, late);
+        if (request.AlertLatePickup < 0) return (false, jobStatus, late);
 
         var maxAutoLate = await _jobRepo.MaxAutoLatePickupAlert();
-        createEvent = request.Minutes < maxAutoLate
+        var createEvent = request.Minutes < maxAutoLate
             ? late > request.PickupTime
             : late - request.PickupTime > request.AlertLatePickup;
 
@@ -379,7 +378,7 @@ public class JobController : Controller
 
     private async Task UpdateJobStatus(LateCallRequest request)
     {
-        if (request.LateType == 1)
+        if (request is { LateType: 1 })
         {
             await _jobRepo.LatePickup(
                 request.JobId,
