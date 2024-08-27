@@ -84,7 +84,7 @@
                 {{attention(job)}}
             </div>
         </td>
-        <td context-menu="setEventsMenu">{{job.jobNo}}</td>
+        <td context-menu="setEventsMenu($event)">{{job.jobNo}}</td>
         <td action="ctrl.clientColumnClick($event, job)" right-click>{{job.client}}</td>
         <td action="ctrl.fromColumnClick(event, job)" right-click
             style="width:50px; white-space:nowrap; overflow-x:hidden;">

@@ -5,6 +5,7 @@
  *
  * @property {number} id - The ID of the job
  * @property {number} clientId - The ID of the client associated with the job.
+ * @property {number} JobNo - The job number
  * @property {number|null} courierId - The ID of the courier associated with the job.
  * @property {string} deliverToContact - The contact to whom the job will be delivered.
  * @property {string} fromAddress - The address from which the job will be picked up.
@@ -53,9 +54,7 @@
  * @property {boolean} preBook - If job is a prebook job
  * @property {number} truckWeightLimit
  * @property {boolean} invoiced
- * @property {number} rootParentID
  * @property {boolean} allowSplit
- * @property {boolean} dgDocumentation
  * @property {*} courierData - The courier data for the job
  */
 

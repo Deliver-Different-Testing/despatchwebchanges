@@ -1295,7 +1295,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }, 1000);
     };
 
-    $scope.setFirstJob = job => {
+    ctrl.setFirstJob = job => {
         let confirm = $mdDialog.confirm()
             .title('Set First Job?')
             .textContent('Are you sure you wish to set this as the First Job?')
@@ -2106,7 +2106,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    $scope.setEventsMenu = () => {
+    $scope.setEventsMenu = ($event) => {
         return [
             {
                 text: "Void Job",
@@ -2118,14 +2118,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Add Event - Other",
                 click() {
-                    ctrl.otherEventForm($scope.currentJob.jobNo);
+                    ctrl.otherEventForm($event, $scope.currentJob);
                 }
             },
 
             {
                 text: "Split Job",
                 click() {
-                    $scope.splitJob($scope.currentJob);
+                    ctrl.splitJob($event, $scope.currentJob);
                 },
                 enabled($itemScope) {
                     return $itemScope.job.allowSplit;
@@ -2135,7 +2135,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Set First Job",
                 click() {
-                    $scope.setFirstJob($scope.currentJob);
+                    ctrl.setFirstJob($scope.currentJob);
                 }
             }
         ];
