@@ -996,7 +996,7 @@ public class JobController : Controller
             return NotFound();
         }
 
-        var att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo.ToString() + ".png");
+        var att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo + ".png");
 
         SendEmail(toEmail, _configuration["FromAddress"],
             $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.",
