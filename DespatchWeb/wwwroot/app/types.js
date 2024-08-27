@@ -55,6 +55,14 @@
  * @property {number} truckWeightLimit
  * @property {boolean} invoiced
  * @property {boolean} allowSplit
+ * @property {number} remain
+ * @property {number} minutes
+ * @property {Date} pickupTime
+ * @property {boolean} alertLatePickup
+ * @property {Date} deliveryTime
+ * @property {boolean} alertLateDelivery
+ * @property {boolean} allowDispatch
+ * @property {string} courier - Name of the courier
  * @property {*} courierData - The courier data for the job
  */
 

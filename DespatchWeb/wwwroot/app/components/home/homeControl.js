@@ -881,18 +881,18 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $event.target.select();
     };
 
-    $scope.latePickup = (minsAway, j, obj) => {
+    ctrl.latePickup = (minsAway, j, obj) => {
         console.log("current = " + j.lp);
         console.log("param minsAway = " + minsAway);
         console.log(obj);
-        $scope.lateCall(minsAway, 1, j, true);
+        ctrl.lateCall(minsAway, 1, j, true);
     }
 
     ctrl.lateDelivery = (minsAway, j, obj) => {
         console.log("current = " + j.ld);
         console.log("param minsAway = " + minsAway);
         console.log(obj);
-        $scope.lateCall(minsAway, 2, j, true);
+        ctrl.lateCall(minsAway, 2, j, true);
 
     }
 
@@ -902,11 +902,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {Date} lateTime
      * @param {number} lateType
-     * @param {*} j
+     * @param {Job} job
      * @param {number} calc
      */
-    $scope.lateCall = (lateTime, lateType, j, calc) => {
-        return DispatchData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName, calc).then(response => {
+    ctrl.lateCall = (lateTime, lateType, job, calc) => {
+        return DispatchData.lateCall(lateType, lateTime, job.minutes, job.pickupTime, job.alertLatePickup, job.deliveryTime, job.alertLateDelivery, job.jobNo, job.clientID, job.contactName, ContactID, job.time, job.id, job.jobType, job.speed, job.notify || job.speed, FirstName, calc).then(response => {
             ctrl.getData().then(() => {
 
 
@@ -1996,7 +1996,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                                 const lateMins = pickupETAValue - dueMins + window;
                                 $scope.currentJob.lp = lateMins;
                                 console.log(lateMins);
-                                $scope.lateCall(lateMins, 1, $scope.currentJob, false);
+                                ctrl.lateCall(lateMins, 1, $scope.currentJob, false);
                                 $scope.lateForm.data = null;
                                 angular.element("#AwayMins").select2().empty();
                                 angular.element("#AwayMins").select2('destroy');
@@ -2714,9 +2714,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         angular.element("#box-lateCalls").find(".loading").show();
         DispatchData.getLateCalls().then(data => {
-            $scope.lateCalls = data;
+            ctrl.lateCalls = data;
 
-            $scope.lateCallsMenu = [
+            ctrl.lateCallsMenu = [
                 // NEW IMPLEMENTATION
                 {
                     text: "Complete",

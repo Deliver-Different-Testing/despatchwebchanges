@@ -109,7 +109,7 @@
         <td class="status" ng-class="job.status">{{job.status}}</td>
         <td><input type="text" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField"
             ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();" ng-model="job.lp"
-            ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, $this)" placeholder="LP" />
+            ng-keydown="$event.keyCode === 13 && ctrl.latePickup(job.lp, job, this)" placeholder="LP" />
         </td>
         <td><input class="lateCallField" ng-focus="ctrl.selectAllContent($event)"
                    ng-keydown="$event.keyCode === 13 && ctrl.lateDelivery(job.ld, job, this)"
