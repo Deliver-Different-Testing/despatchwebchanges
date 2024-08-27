@@ -63,6 +63,9 @@
  * @property {boolean} alertLateDelivery
  * @property {boolean} allowDispatch
  * @property {string} courier - Name of the courier
+ * @property {number} rootParentID
+ * @property {boolean} allowSplit
+ * @property {boolean} dgDocumentation
  * @property {*} courierData - The courier data for the job
  */
 
