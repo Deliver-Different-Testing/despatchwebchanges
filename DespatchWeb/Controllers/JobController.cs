@@ -293,7 +293,7 @@ public class JobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> LateCall(LateCallRequest request)
+    public async Task<IActionResult> LateCall([FromBody] LateCallRequest request)
     {
         var (createEvent, _, late) = await DetermineLateStatus(request);
 
@@ -365,7 +365,7 @@ public class JobController : Controller
             request.JobNo,
             request.ClientId,
             request.Contact,
-            request.StaffId,
+            int.Parse(request.StaffId),
             null,
             request.JobId,
             request.JobType,
@@ -1073,27 +1073,5 @@ public class JobController : Controller
     {
         public List<int> ServiceIds { get; set; }
         public decimal TotalCost { get; set; }
-    }
-
-    public class LateCallRequest
-    {
-        public int LateType { get; set; }
-        public int LateTime { get; set; }
-        public int Minutes { get; set; }
-        public int PickupTime { get; set; }
-        public int AlertLatePickup { get; set; }
-        public int DeliveryTime { get; set; }
-        public int AlertLateDelivery { get; set; }
-        public string JobNo { get; set; }
-        public int ClientId { get; set; }
-        public string Contact { get; set; }
-        public int StaffId { get; set; }
-        public DateTime JobTime { get; set; }
-        public int JobId { get; set; }
-        public int JobType { get; set; }
-        public string BookedSpeed { get; set; }
-        public string NotifiedSpeed { get; set; }
-        public string DespatcherName { get; set; }
-        public bool CalculationRequired { get; set; }
     }
 }

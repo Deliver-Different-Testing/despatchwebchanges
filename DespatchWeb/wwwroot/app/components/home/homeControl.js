@@ -906,10 +906,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {boolean} calc
      */
     ctrl.lateCall = (lateTime, lateType, job, calc) => {
-        return DispatchData.lateCall(lateType, lateTime, job.minutes, job.pickupTime, job.alertLatePickup, job.deliveryTime, job.alertLateDelivery, job.jobNo, job.clientID, job.contactName, ContactID, job.time, job.id, job.jobType, job.speed, job.notify || job.speed, FirstName, calc).then(response => {
+        return DispatchData.lateCall(lateType, lateTime, job.minutes, job.pickupTime,
+            job.alertLatePickup, job.deliveryTime, job.alertLateDelivery, job.jobNo,
+            job.clientId, job.contactName, ContactID, job.time, job.id, job.jobType, job.speed, job.notify || job.speed, FirstName, calc)
+            .then(response => {
             ctrl.getData().then(() => {
-
-
+                toastrService.showSuccessToast("Late call applied successfully");
             });
             return response;
         });

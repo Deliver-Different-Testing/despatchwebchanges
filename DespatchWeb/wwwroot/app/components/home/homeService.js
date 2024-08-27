@@ -510,7 +510,7 @@ class DispatchData {
         };
 
         try {
-            const response = await this._$http.post(url, data);
+            const response = await this._$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
             return response.data;
         } catch (error) {
             console.error('Error in lateCall:', error);

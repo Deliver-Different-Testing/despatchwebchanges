@@ -107,14 +107,14 @@
 
         <td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
         <td class="status" ng-class="job.status">{{job.status}}</td>
-        <td><input type="text" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField"
+        <td><input type="number" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField no-spinners"
             ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();" ng-model="job.lp"
             ng-keydown="$event.keyCode === 13 && ctrl.latePickup(job.lp, job, this)" placeholder="LP" />
         </td>
-        <td><input class="lateCallField" ng-focus="ctrl.selectAllContent($event)"
+        <td><input class="lateCallField no-spinners" ng-focus="ctrl.selectAllContent($event)"
                    ng-keydown="$event.keyCode === 13 && ctrl.lateDelivery(job.ld, job, this)"
                    ng-model="job.ld" ng-mouseup="$event.preventDefault();"
-                   placeholder="LD" type="text"/>
+                   placeholder="LD" type="number"/>
         </td>
         <td class="selectjob" ng-click="ctrl.selectForDispatch(job); $event.stopPropagation();"
             style="display:none"
@@ -190,3 +190,17 @@
         angular.element(this).find(".table-headings").css({"top": newTop});
     });
 </script>
+
+<style>
+    /* Remove spinners for Chrome, Safari, Edge, Opera */
+    .no-spinners::-webkit-outer-spin-button,
+    .no-spinners::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Remove spinners for Firefox */
+    .no-spinners {
+        -moz-appearance: textfield;
+    }
+</style>
