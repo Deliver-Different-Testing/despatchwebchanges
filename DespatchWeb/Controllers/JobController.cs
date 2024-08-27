@@ -18,7 +18,7 @@ using RestSharp.Authenticators;
 
 namespace DespatchWeb.Controllers;
 
-public partial class JobController : Controller
+public class JobController : Controller
 {
     private readonly IClientRepository _clientRepo;
     private readonly IConfiguration _configuration;
@@ -71,7 +71,7 @@ public partial class JobController : Controller
         return Json(result);
     }
 
-    public async Task<IActionResult> NationwideJobListPOD(string status, string area, string order, string asc,
+    public async Task<IActionResult> NationwideJobListPod(string status, string area, string order, string asc,
         bool isInternal,
         int cid, string clientIds)
     {
@@ -194,16 +194,10 @@ public partial class JobController : Controller
     public async Task<IActionResult> UnLockSupport(int id, string dispatcher)
     {
         var support = await _jobRepo.GetSupportEvent(id);
-        if (support.UcevDespatcher == dispatcher)
-        {
-            support.UcevDespatcher = "";
-            var result = await _jobRepo.UpdateSupportEvent(support);
-            return Json(result > 0);
-        }
-        else
-        {
-            return Json(false);
-        }
+        if (support.UcevDespatcher != dispatcher) return Json(false);
+        support.UcevDespatcher = "";
+        var result = await _jobRepo.UpdateSupportEvent(support);
+        return Json(result > 0);
     }
 
     public async Task<IActionResult> Detail(int jobId)
@@ -251,7 +245,7 @@ public partial class JobController : Controller
         return Json(result);
     }
 
-    public IActionResult PODSearch(int? courierId, int? clientId, string wild, string job, DateTime fromDate,
+    public IActionResult PodSearch(int? courierId, int? clientId, string wild, string job, DateTime fromDate,
         DateTime toDate,
         int pageIndex, int pageSize)
     {
@@ -261,22 +255,16 @@ public partial class JobController : Controller
         return Json(result);
     }
 
-    public IActionResult ValidateSwapPOD(string job)
+    public IActionResult ValidateSwapPod(string job)
     {
         var fromDate = DateTime.Today;
         var result = _jobRepo.PodSearch(null, "", job, fromDate.ResetTimeToStartOfDay(),
             fromDate.ResetTimeToEndOfDay(), null, 1, 5);
-        if (result.Item1 == 0)
-        {
-            return Json(false);
-        }
-        else
-        {
-            return Json(result.Item2.First().ID);
-        }
+
+        return result.Item1 == 0 ? Json(false) : Json(result.Item2.First().ID);
     }
 
-    public async Task<IActionResult> SwapPOD(string job1, string job2)
+    public async Task<IActionResult> SwapPod(string job1, string job2)
     {
         await _jobRepo.SwapPod(job1, job2);
         return Json("OK");
@@ -305,93 +293,114 @@ public partial class JobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> LateCall(int lateType, int lateTime, int minutes, int pickupTime,
-        int alertLatePickup, int deliveryTime, int alertLateDelivery, string jobNo, int clientId, string contact,
-        int staffId, DateTime jobTime, int jobId, int jobType, string bookedSpeed, string notifiedSpeed,
-        string despatcherName, bool calculationRequired)
+    public async Task<IActionResult> LateCall(LateCallRequest request)
     {
-        var late = lateTime;
-        var createEvent = false;
+        var (createEvent, _, late) = await DetermineLateStatus(request);
+
+        if (createEvent) await CreateLateEvent(request, late);
+
+        await _jobRepo.ResetLateEvent(request.JobId, request.LateType);
+
+        await UpdateJobStatus(request);
+
+        return Json("OK");
+    }
+
+    private async Task<(bool createEvent, int jobStatus, int late)> DetermineLateStatus(LateCallRequest request)
+    {
+        bool createEvent;
         var jobStatus = 0;
+        var late = request.LateTime;
 
-
-        if (lateType == 1 || lateType == 2)
+        if (request.LateType is 1 or 2)
         {
-            switch (lateType)
+            (createEvent, jobStatus, late) = request.LateType switch
             {
-                case 1:
-                    jobStatus = 4;
-                    if (alertLatePickup >= 0)
-                    {
-                        var maxAutoLate = await _jobRepo.MaxAutoLatePickupAlert();
-                        if (minutes < maxAutoLate)
-                        {
-                            if (lateTime > pickupTime)
-                            {
-                                createEvent = true;
-                            }
-                        }
-                        else
-                        {
-                            if ((lateTime - pickupTime) > alertLatePickup)
-                            {
-                                createEvent = true;
-                            }
-                        }
-                    }
-
-                    break;
-                case 2:
-                    jobStatus = 8;
-                    late = lateTime + deliveryTime;
-                    if (alertLateDelivery >= 0)
-                    {
-                        var maxAutoLateDelAlert = await _jobRepo.MaxAutoLateDeliveryAlert();
-                        if (minutes < maxAutoLateDelAlert)
-                        {
-                            createEvent = true;
-                        }
-                        else
-                        {
-                            if (late > alertLateDelivery)
-                            {
-                                createEvent = true;
-                            }
-                        }
-                    }
-
-                    break;
-                default:
-                    break;
-            }
+                1 => await DeterminePickupLateStatus(request),
+                2 => await DetermineDeliveryLateStatus(request),
+                _ => throw new ArgumentException("Invalid LateType")
+            };
         }
         else
         {
             createEvent = true;
         }
 
-        if (createEvent)
-        {
-            //Event_Insert Me.ucjbNumber, Me.ucjbClientID, Me.ucjbContact, intLateType, intLateTime, DateAdd("n", intLate, Me.ucjbTime), _
-            //    lngUserID, 0, Null, "Late Call from Despatch", False, False, 2, Null, Null, Me.ucjbID, Null, Me.ucjbType, Date, Now
-            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, null, jobId, jobType, null,
-                "Late Call from Despatch", lateType, lateTime, jobTime.AddMinutes(late));
-        }
+        return (createEvent, jobStatus, late);
+    }
 
-        await _jobRepo.ResetLateEvent(jobId, lateType);
+    private async Task<(bool createEvent, int jobStatus, int late)> DeterminePickupLateStatus(LateCallRequest request)
+    {
+        var createEvent = false;
+        const int jobStatus = 4;
+        var late = request.LateTime;
 
-        if (lateType == 1)
+        if (request.AlertLatePickup < 0) return (createEvent, jobStatus, late);
+
+        var maxAutoLate = await _jobRepo.MaxAutoLatePickupAlert();
+        createEvent = request.Minutes < maxAutoLate
+            ? late > request.PickupTime
+            : late - request.PickupTime > request.AlertLatePickup;
+
+        return (createEvent, jobStatus, late);
+    }
+
+    private async Task<(bool createEvent, int jobStatus, int late)> DetermineDeliveryLateStatus(LateCallRequest request)
+    {
+        var createEvent = false;
+        const int jobStatus = 8;
+        var late = request.LateTime + request.DeliveryTime;
+
+        if (request.AlertLateDelivery < 0) return (createEvent, jobStatus, late);
+
+        var maxAutoLateDelAlert = await _jobRepo.MaxAutoLateDeliveryAlert();
+        createEvent = request.Minutes < maxAutoLateDelAlert || late > request.AlertLateDelivery;
+
+        return (createEvent, jobStatus, late);
+    }
+
+    private async Task CreateLateEvent(LateCallRequest request, int late)
+    {
+        await _courierRepo.AddEventAsync(
+            request.JobNo,
+            request.ClientId,
+            request.Contact,
+            request.StaffId,
+            null,
+            request.JobId,
+            request.JobType,
+            null,
+            "Late Call from Despatch",
+            request.LateType,
+            request.LateTime,
+            request.JobTime.AddMinutes(late)
+        );
+    }
+
+    private async Task UpdateJobStatus(LateCallRequest request)
+    {
+        if (request.LateType == 1)
         {
-            await _jobRepo.LatePickup(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName,
-                calculationRequired);
+            await _jobRepo.LatePickup(
+                request.JobId,
+                request.BookedSpeed,
+                request.NotifiedSpeed,
+                request.LateTime,
+                request.DespatcherName,
+                request.CalculationRequired
+            );
         }
         else
         {
-            await _jobRepo.LateDelivery(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName,
-                calculationRequired);
+            await _jobRepo.LateDelivery(
+                request.JobId,
+                request.BookedSpeed,
+                request.NotifiedSpeed,
+                request.LateTime,
+                request.DespatcherName,
+                request.CalculationRequired
+            );
         }
-
-        return Json("OK");
     }
 
     [HttpPost]
@@ -480,7 +489,7 @@ public partial class JobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdatePODDetails(string jobNumber, int jobStatus, string podName,
+    public async Task<IActionResult> UpdatePodDetails(string jobNumber, int jobStatus, string podName,
         DateTime podTime)
     {
         await _jobRepo.UpdatePodDetails(jobNumber, jobStatus, podName, podTime);
@@ -501,7 +510,7 @@ public partial class JobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> SendSMS(int courierId, int dispId, string despatcherName, string message)
+    public async Task<IActionResult> SendSms(int courierId, int dispId, string despatcherName, string message)
     {
         await _jobRepo.MessageCourier(courierId, dispId, despatcherName, message);
         return Json("OK");
@@ -711,7 +720,7 @@ public partial class JobController : Controller
         return Json($"{rate:C}");
     }
 
-    public async Task<IActionResult> PPDExclusiveAmount(int clientId, decimal amount)
+    public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)
     {
         var ppd = await _jobRepo.PpdExclusiveAmount(clientId, amount);
         return Json(ppd);
@@ -1029,40 +1038,31 @@ public partial class JobController : Controller
         smtp.Send(message);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
-    {
-        return Json(false);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> GetAttachedFiles(int jobId)
-    {
-        return Json("OK");
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UploadFile(int jobId, [FromBody] IFormFile file)
-    {
-        return Json("OK");
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> DownloadFile(int jobId, string fileName)
-    {
-        return Json("OK");
-    }
-
-    [HttpDelete]
-    public async Task<IActionResult> DeleteFile(int jobId, string fileName)
-    {
-        return Json("OK");
-    }
-
-
     public class ClientItemsModel
     {
         public List<int> ServiceIds { get; set; }
         public decimal TotalCost { get; set; }
+    }
+
+    public class LateCallRequest
+    {
+        public int LateType { get; set; }
+        public int LateTime { get; set; }
+        public int Minutes { get; set; }
+        public int PickupTime { get; set; }
+        public int AlertLatePickup { get; set; }
+        public int DeliveryTime { get; set; }
+        public int AlertLateDelivery { get; set; }
+        public string JobNo { get; set; }
+        public int ClientId { get; set; }
+        public string Contact { get; set; }
+        public int StaffId { get; set; }
+        public DateTime JobTime { get; set; }
+        public int JobId { get; set; }
+        public int JobType { get; set; }
+        public string BookedSpeed { get; set; }
+        public string NotifiedSpeed { get; set; }
+        public string DespatcherName { get; set; }
+        public bool CalculationRequired { get; set; }
     }
 }

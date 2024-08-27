@@ -464,7 +464,6 @@ class DispatchData {
         let response = await this._$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
         return response.data;
     }
-
     /**
      * @param {number} lateType
      * @param {number} lateTime
@@ -480,14 +479,43 @@ class DispatchData {
      * @param {Date} jobTime
      * @param {number} jobId
      * @param {number} jobType
-     * @param {number} bookedSpeed
-     * @param {number} notifiedSpeed
+     * @param {string} bookedSpeed
+     * @param {string} notifiedSpeed
      * @param {string} despatcherName
-     * @param {boolean} calc
+     * @param {boolean} calculationRequired
      */
-    async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId, jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calc) {
-        let response = await this._$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup + "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed + "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc);
-        return response.data;
+    async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup,
+                   deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId,
+                   jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calculationRequired) {
+        const url = 'job/LateCall';
+        const data = {
+            lateType,
+            lateTime,
+            minutes,
+            pickupTime,
+            alertLatePickup,
+            deliveryTime,
+            alertLateDelivery,
+            jobNo,
+            clientId,
+            contact,
+            staffId,
+            jobTime,
+            jobId,
+            jobType,
+            bookedSpeed,
+            notifiedSpeed,
+            despatcherName,
+            calculationRequired
+        };
+
+        try {
+            const response = await this._$http.post(url, data);
+            return response.data;
+        } catch (error) {
+            console.error('Error in lateCall:', error);
+            throw error;
+        }
     }
 
     /**
@@ -864,16 +892,6 @@ class DispatchData {
                 searchTerm: searchTerm
             }
         });
-        return await response.data;
-    }
-
-    /**
-     * Checks if job has any attached files
-     *
-     * @param {number} jobId
-     */
-    async isFilesAttachedToJob(jobId) {
-        let response = await this._$http.get(`job/IsFilesAttachedToJob/${jobId}`);
         return await response.data;
     }
 }

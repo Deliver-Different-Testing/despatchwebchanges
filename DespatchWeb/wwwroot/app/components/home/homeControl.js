@@ -903,7 +903,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {Date} lateTime
      * @param {number} lateType
      * @param {Job} job
-     * @param {number} calc
+     * @param {boolean} calc
      */
     ctrl.lateCall = (lateTime, lateType, job, calc) => {
         return DispatchData.lateCall(lateType, lateTime, job.minutes, job.pickupTime, job.alertLatePickup, job.deliveryTime, job.alertLateDelivery, job.jobNo, job.clientID, job.contactName, ContactID, job.time, job.id, job.jobType, job.speed, job.notify || job.speed, FirstName, calc).then(response => {
