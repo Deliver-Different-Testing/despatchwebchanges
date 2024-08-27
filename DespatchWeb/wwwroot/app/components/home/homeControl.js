@@ -157,7 +157,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.boxes = {
         "jobsList": {
             "title": "Jobs List",
-            "tpl": "app/components/home/tpls/jobList.tpl?v=2.0",
+            "tpl": "app/components/home/tpls/jobList.tpl",
             "showSearch": 1,
             "showRefresh": 1
         },
@@ -170,12 +170,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         },
         "potentialCouriers": {
             "title": "Potential Couriers",
-            "tpl": "app/components/home/tpls/potentialCouriers.tpl?v=1.0",
+            "tpl": "app/components/home/tpls/potentialCouriers.tpl",
             "showSearch": 1
         },
         "currentWork": {
             "title": "Current Work",
-            "tpl": "app/components/home/tpls/currentWork.tpl?v=1.27",
+            "tpl": "app/components/home/tpls/currentWork.tpl",
             "showSearch": 1,
             "showRefresh": 0
         },
@@ -193,7 +193,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         },
         "courierMoveClear": {
             "title": "Couriers Movement Clear List",
-            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?1.3",
+            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl",
             "showSearch": 1,
             "showRefresh": 0
         },
@@ -1845,6 +1845,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             console.log(job);
 
             jdSvc.setJob($scope.currentJob);
+
+            // Check for attachments
+            ctrl.checkForAttachments(job.id);
 
             DispatchData.getActiveCouriers().then((data) => {
                 $scope.pickCouriers = data;
