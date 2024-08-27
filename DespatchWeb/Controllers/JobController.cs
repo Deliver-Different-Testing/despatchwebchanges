@@ -1029,6 +1029,37 @@ public partial class JobController : Controller
         smtp.Send(message);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
+    {
+        return Json(false);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAttachedFiles(int jobId)
+    {
+        return Json("OK");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UploadFile(int jobId, [FromBody] IFormFile file)
+    {
+        return Json("OK");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DownloadFile(int jobId, string fileName)
+    {
+        return Json("OK");
+    }
+
+    [HttpDelete]
+    public async Task<IActionResult> DeleteFile(int jobId, string fileName)
+    {
+        return Json("OK");
+    }
+
+
     public class ClientItemsModel
     {
         public List<int> ServiceIds { get; set; }

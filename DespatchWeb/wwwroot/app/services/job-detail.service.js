@@ -350,7 +350,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: AddNotesDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/addNotesDialog/addNotesDialog.html",
+            templateUrl: "app/components/dialogs/add-notes-dialog/add-notes-dialog.html",
             parent: angular.element(this._$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
@@ -379,7 +379,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/editDateDialog/editDateDialog.html",
+            templateUrl: "app/components/dialogs/edit-date-dialog/edit-date-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -421,7 +421,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/editTimeDialog/editTimeDialog.html",
+            templateUrl: "app/components/dialogs/edit-time-dialog/edit-time-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -823,7 +823,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/editAddressDialog/editAddressDialog.html",
+            templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -842,7 +842,6 @@ class JobDetailService {
                         this._dispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName)
                             .then(() => {
                                 this.selectJobDetail(currentJob.id);
-                                this._$mdDialog.hide();
                                 this._toastrService.showSuccessToast("Address successfully updated");
                                 this._loadingService.closeLoader();
                             });
@@ -855,7 +854,6 @@ class JobDetailService {
                         this._dispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName)
                             .then(() => {
                                 this.selectJobDetail(currentJob.id);
-                                this._$mdDialog.hide();
                                 this._toastrService.showSuccessToast("Address successfully updated");
                                 this._loadingService.closeLoader();
                             });
@@ -887,7 +885,6 @@ class JobDetailService {
                             this._dispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
                                 .then(() => {
                                     this.selectJobDetail(currentJob.id);
-                                    this._$mdDialog.hide();
                                     this._toastrService.showSuccessToast("Address successfully updated")
                                     this._loadingService.closeLoader();
                                 });
@@ -895,7 +892,6 @@ class JobDetailService {
                             this._dispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
                                 .then(() => {
                                     this.selectJobDetail(currentJob.id);
-                                    this._$mdDialog.hide();
                                     this._toastrService.showSuccessToast("Address successfully updated")
                                     this._loadingService.closeLoader();
                                 });
@@ -1078,10 +1074,10 @@ class JobDetailService {
      * @param {Job} job
      */
     oneOffClick(job) {
-        const oneoffValue = !job.oneOff;
+        const oneOffValue = !job.oneOff;
 
         return this._dispatchData
-            .updateJobDetail(job.id, "OneOff", oneoffValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
+            .updateJobDetail(job.id, "OneOff", oneOffValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
@@ -1247,7 +1243,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: 'app/components/dialogs/selectDialog/selectDialog.html',
+            templateUrl: 'app/components/dialogs/select-dialog/selectDialog.html',
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1367,7 +1363,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: 'app/components/dialogs/autocompleteDialog/autoCompleteDialog.html',
+            templateUrl: 'app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html',
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1414,7 +1410,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: AddPalletDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/addPalletDialog/addPalletDialog.html",
+            templateUrl: "app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html",
             parent: angular.element(this._$document.body),
             targetEvent: event,
             clickOutsideToClose: true,

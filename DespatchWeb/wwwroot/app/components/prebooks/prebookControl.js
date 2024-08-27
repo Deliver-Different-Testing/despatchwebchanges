@@ -1,12 +1,12 @@
 function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout) {
-    const self = this;
+    const ctrl = this;
     $scope.isAdmin = (ClientInternal === "True");
     $scope.mapSetting = {
         "allCouriers": false,
         "allRuns": false
     };
 
-    self.jdSvc = jdSvc;
+    ctrl.jdSvc = jdSvc;
 
     $scope.searchBox = "";
     $scope.selectedEvents = [];
@@ -15,16 +15,16 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     $scope.pageIndex = 1;   // Current page number. First page is 1.-->
     $scope.pageSizeSelected = 50; // Maximum number of items per page.
 
-    $scope.updateGPS = function (currentJob, field, fromRightClick) {
+    $scope.updateGPS = (currentJob, field, fromRightClick) => {
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
-    self.jobRecordSearchText = "";
+    ctrl.jobRecordSearchText = "";
 
     /**
      * @param {string} searchText
      */
-    self.jobRecordSearch = searchText => {
+    ctrl.jobRecordSearch = searchText => {
         return $scope.jobList
             .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
             .map(job => ({id: job.id, text: job.jobNo}));
@@ -33,14 +33,14 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     /**
      * @param {number} selectedJobId
      */
-    self.JobRecordSelected = selectedJobId => {
+    ctrl.JobRecordSelected = selectedJobId => {
         $scope.selectJobDetail(selectedJobId);
     }
 
     $scope.gather = {
-        submit: function () {
+        submit: () => {
             angular.element(".gatherForm").hide();
-            $scope.gather.form.onSubmit().then(function (response) {
+            $scope.gather.form.onSubmit().then(response => {
 
                 $scope.selectJobDetail($scope.currentJob.id);
             });
@@ -49,13 +49,13 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
 
         },
-        cancel: function () {
+        cancel: () => {
             angular.element(".gatherForm").hide();
         },
-        showForm: function () {
+        showForm: () => {
             console.log("Prebook gather form showForm");
-            angular.element(".gatherForm").show(0, function () {
-                $timeout(function () {
+            angular.element(".gatherForm").show(0, () => {
+                $timeout(() => {
                     angular.element(".gatherForm .focusMe").focus();
                 }, 100);
             });
@@ -256,8 +256,8 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     $scope.layout = layoutToUse;
 
-    $scope.loadLayout = function (i) {
-        $scope.layout = angular.copy($scope.layouts[i].layout, function () {
+    $scope.loadLayout = i => {
+        $scope.layout = angular.copy($scope.layouts[i].layout, () => {
             $timeout(sizeHeadings(), 1000);
 
         });
@@ -272,15 +272,15 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         scrollSensitivity: 100,
         scrollSpeed: 20,
         handle: '.box-handle',
-        activate: function (e, ui) {
+        activate: (e, ui) => {
             var box = angular.element("#" + ui.item.context.id);
             var parent = box.parent();
             parent.find(".box").each(function () {
                 angular.element(this).attr("data-height", angular.element(this).height() + "px");
             });
         },
-        update: function (e, ui) {
-            $timeout(function () {
+        update: (e, ui) => {
+            $timeout(() => {
                 var box = angular.element("#" + ui.item.context.id);
                 var parent = box.parent();
                 parent.find(".box").each(function () {
@@ -291,11 +291,11 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         }
     };
 
-    $scope.openSearch = function (boxID) {
+    $scope.openSearch = boxID => {
 
         if (angular.element("#box-" + boxID).find(".box-search").hasClass("open")) {
 
-            angular.element("#box-" + boxID).find(".box-search input").fadeOut(function () {
+            angular.element("#box-" + boxID).find(".box-search input").fadeOut(() => {
 
                 angular.element("#box-" + boxID).find(".box-search").removeClass("open");
                 angular.element("#box-" + boxID).find(".box-search").animate({"width": "31px"}, 500);
@@ -304,7 +304,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
         } else {
 
-            angular.element("#box-" + boxID).find(".box-search").animate({"width": "200px"}, 500, function () {
+            angular.element("#box-" + boxID).find(".box-search").animate({"width": "200px"}, 500, () => {
                 angular.element("#box-" + boxID).find(".box-search").addClass("open");
                 angular.element("#box-" + boxID).find(".box-search input").fadeIn();
             });
@@ -313,14 +313,14 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     };
 
-    $scope.goToRunViewer = function () {
+    $scope.goToRunViewer = () => {
         console.log("goToRunViewer.");
         $state.go('home');
     };
 
     //Column Sorting
     $scope.sort = [];
-    $scope.orderList = function (list, prop) {
+    $scope.orderList = (list, prop) => {
 
 
         if ($scope.sort[list] !== prop) {
@@ -343,7 +343,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         combo: 'esc',
         description: 'Close gather screen',
         allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: function () {
+        callback: () => {
             angular.element(".gatherForm").hide();
             angular.element(".eventForm").hide();
         }
@@ -363,7 +363,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         combo: 'enter',
         description: 'Submit gather form',
         allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: function () {
+        callback: () => {
             if (angular.element(".gatherForm").is(":visible") === true) {
                 $timeout($scope.gather.submit(), 0);
             }
@@ -377,7 +377,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     //$scope.freu
 
 
-    $scope.refreshData = function (wait) {
+    $scope.refreshData = wait => {
 
         //var goTop = angular.element("#jobList").offset().top;
         //var $parentDiv = angular.element("#jobList").parents(".box-content");
@@ -393,10 +393,10 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         //console.log("about to call data - page " + $scope.pageIndex);
         //$scope.getData();
         uPBData.getPreBookJobs().then(
-            function (data) {
+            data => {
                 $scope.jobList = data;
                 angular.element("#box-jobList").find(".loading").hide();
-                $timeout(function () {
+                $timeout(() => {
                     sizeHeadings(angular.element("#jobList").parents(".column"));
 
                 }, 1000);
@@ -406,11 +406,11 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     };
 
 
-    $scope.selectJobData = function (lat, lng) {
+    $scope.selectJobData = (lat, lng) => {
 
         var toCompare = [];
 
-        angular.forEach($scope.runBuilder, function (job, key) {
+        angular.forEach($scope.runBuilder, (job, key) => {
             toCompare.push([key, job.toLat, job.toLng]);
         });
 
@@ -423,7 +423,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     };
 
 
-    $scope.showItems = function (job) {
+    $scope.showItems = job => {
         if (job.clientCode !== "Other") {
 
             if ($scope.cancelledSelected) {
@@ -452,11 +452,11 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     /////////////////////////////////
 
-    $scope.showJobs = function (group) {
+    $scope.showJobs = group => {
 
         angular.element("#box-jobsList").find(".loading").show();
         $scope.jobList = group.jobs;
-        $timeout(function () {
+        $timeout(() => {
             sizeHeadings(angular.element("#jobList").parents(".column"));
         }, 1000);
         angular.element("#box-jobsList .loading").fadeOut();
@@ -464,7 +464,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     };
 
-    $scope.sizeName = function (sizeId) {
+    $scope.sizeName = sizeId => {
         if (!sizeId) {
             return "";
         }
@@ -477,7 +477,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     };
 
     //Select Job
-    $scope.selectJobDetail = function (id) {
+    $scope.selectJobDetail = id => {
         console.log("select Job  " + id);
         //angular.element("#jobList").find(".active").removeClass("active");
         clearTimeout($scope.myTimer);
@@ -485,7 +485,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
         angular.element("#box-jobDetail").find(".loading").show();
 
-        uPBData.getJobDetail(id).then(function (data) {
+        uPBData.getJobDetail(id).then(data => {
             $scope.currentJob = data;
             jdSvc.setJob($scope.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
@@ -520,7 +520,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
 
     //This method is calling from pagination number
-    $scope.pageChanged = function (i) {
+    $scope.pageChanged = i => {
 
         $scope.pageIndex = i;
         $scope.refreshData();
@@ -528,7 +528,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     };
 
     //This method is calling from dropDown
-    $scope.changePageSize = function (i) {
+    $scope.changePageSize = i => {
         $scope.pageIndex = 1;
         $scope.pageSizeSelected = i;
         $scope.refreshData();
@@ -537,42 +537,38 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     jdSvc.setSelectJobDetail($scope.selectJobDetail);
 
-    $scope.voidPrebookJob = function (jobId) {
+    $scope.voidPrebookJob = jobId => {
         const confirm = $mdDialog.confirm()
             .title('Void Prebook')
             .textContent("This will void TODAY'S copy of this prebook but not cancel it for good. Please confirm that you wish to do this?")
             .ok('Yes')
             .cancel('No');
 
-        $mdDialog.show(confirm).then(function () {
-            return uPBData.voidPrebookJob(jobId, FirstName, ContactID).then(function (response) {
-                $scope.currentJob = null;
-                $scope.refreshData();
-            });
-        }, function () {
+        $mdDialog.show(confirm).then(() => uPBData.voidPrebookJob(jobId, FirstName, ContactID).then(response => {
+            $scope.currentJob = null;
+            $scope.refreshData();
+        }), () => {
             // User clicked 'No'
         });
     }
 
-    $scope.sendPrebookJob = function (jobId) {
+    $scope.sendPrebookJob = jobId => {
         const confirm = $mdDialog.confirm()
             .title('Accelerate Prebook')
             .textContent("This will send this prebook to the live dispatch screen now. Please confirm that you wish to do this?")
             .ok('Yes')
             .cancel('No');
 
-        $mdDialog.show(confirm).then(function () {
-            return uPBData.sendPrebookJob(jobId).then(function (response) {
-                $scope.currentJob = null;
-                $scope.refreshData();
-            });
-        }, function () {
+        $mdDialog.show(confirm).then(() => uPBData.sendPrebookJob(jobId).then(response => {
+            $scope.currentJob = null;
+            $scope.refreshData();
+        }), () => {
             // User clicked 'No'
         });
     }
 
 
-    NgMap.getMap().then(function (map) {
+    NgMap.getMap().then(map => {
         $scope.map = map;
         $scope.marker = map.markers[0];
         $scope.onMapReady();
@@ -582,7 +578,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     $scope.refreshData();
 
-    $scope.onMapReady = function () {
+    $scope.onMapReady = () => {
         //$scope.heremaps = heremaps;
 
         var options = {
@@ -591,35 +587,30 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
                 url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
                 delay: 250,
                 dataType: "json",
-                data: function (params) {
-                    return {
-                        query: params.term,
-                        app_id: "bBPfh2x8Cauun3ygLMAx",
-                        app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                        beginHighlight: "<b>",
-                        endHighlight: "</b>",
-                        country: "NZL"
-                    };
-                },
-                processResults: function (data) {
-                    return {
-                        results: $.map(data.suggestions, function (obj) {
-                            return {id: obj.locationId, text: obj.label.split(", ").reverse().join(", ")};
-                        })
-                    };
-                }
+                data: params => ({
+                    query: params.term,
+                    app_id: "bBPfh2x8Cauun3ygLMAx",
+                    app_code: "yjfwTdkin_R2rGXYTrwWVg",
+                    beginHighlight: "<b>",
+                    endHighlight: "</b>",
+                    country: "NZL"
+                }),
+                processResults: data => ({
+                    results: $.map(data.suggestions, obj => ({
+                        id: obj.locationId,
+                        text: obj.label.split(", ").reverse().join(", ")
+                    }))
+                })
             },
-            escapeMarkup: function (markup) {
-                return markup;
-            }
+            escapeMarkup: markup => markup
         };
 
-        angular.element("#location").select2(options).on("select2:select", function (e) {
+        angular.element("#location").select2(options).on("select2:select", e => {
             $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json", {
                 app_id: "bBPfh2x8Cauun3ygLMAx",
                 app_code: "yjfwTdkin_R2rGXYTrwWVg",
                 locationId: e.params.data.id
-            }).done(function (data) {
+            }).done(data => {
                 var locn = data.Response.View[0].Result[0].Location;
                 console.log("Suburb = " + locn.Address.District);
                 console.log("PostCode = " + locn.Address.PostalCode);
@@ -653,13 +644,13 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         waitingDialog.hide();
     };
 
-    $scope.highlightEvent = function () {
+    $scope.highlightEvent = () => {
         angular.element("#jobList .active").each(function () {
             angular.element(this).removeClass("active");
         });
         //loop actives
 
-        $timeout(function () {
+        $timeout(() => {
             $scope.selectedEvents = [];
             angular.element("#jobList .active").each(function () {
                 var eventIndex = angular.element(this).data("index");
@@ -670,7 +661,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         }, 10);
 
 
-        $timeout(function () {
+        $timeout(() => {
             sizeHeadings(angular.element("#jobList").parents(".column"));
         }, 1000);
 
@@ -680,7 +671,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         [
             {
                 text: "Close Event",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click: ($itemScope, $event, modelValue, text, $li) => {
 
                     $scope.gather.form = {
                         id: "closeEvent",
@@ -692,11 +683,11 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
                                 "value": ""
                             }
                         ],
-                        onSubmit: function () {
+                        onSubmit: () => {
                             angular.element("#box-jobList").find(".loading").show();
                             angular.element("#box-map").find(".loading").show();
                             var userName = angular.element("#gather-editName").val();
-                            uPBData.closeEvent($itemScope.event.bulkEventID, userName).then(function () {
+                            uPBData.closeEvent($itemScope.event.bulkEventID, userName).then(() => {
                                 $scope.refreshData(1, true);
                             });
 
@@ -712,10 +703,11 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         ];
 }
 
-angular
-    .module('uDispatch')
-    .controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys",
-        "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout', PrebookController]);
+PrebookController.$inject = ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys",
+    "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout'];
+
+
+angular.module('uDispatch').controller('PBControl', PrebookController);
 
 
 // Convert Degress to Radians
@@ -738,8 +730,8 @@ function closestLocation(latitude, longitude, locations) {
     var mindif = 99999;
     var closest;
 
-    for (index = 0; index < locations.length; ++index) {
-        var dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
+    for (let index = 0; index < locations.length; ++index) {
+        const dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
         if (dif < mindif) {
             closest = index;
             mindif = dif;

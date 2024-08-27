@@ -10,6 +10,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ctrl.courierSearchText = "";
     ctrl.jobDetailFabIsOpen = false;
     ctrl.courierListFabIsOpen = false;
+    ctrl.isCheckingAttachments = false
+    ctrl.hasAttachedFile = false;
 
     ctrl.greetUser = () => {
         return greetingService.greetUser(FirstName);
@@ -155,7 +157,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.boxes = {
         "jobsList": {
             "title": "Jobs List",
-            "tpl": "app/components/home/tpls/jobList.tpl?v=2.0",
+            "tpl": "app/components/home/tpls/jobList.tpl",
             "showSearch": 1,
             "showRefresh": 1
         },
@@ -168,12 +170,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         },
         "potentialCouriers": {
             "title": "Potential Couriers",
-            "tpl": "app/components/home/tpls/potentialCouriers.tpl?v=1.0",
+            "tpl": "app/components/home/tpls/potentialCouriers.tpl",
             "showSearch": 1
         },
         "currentWork": {
             "title": "Current Work",
-            "tpl": "app/components/home/tpls/currentWork.tpl?v=1.27",
+            "tpl": "app/components/home/tpls/currentWork.tpl",
             "showSearch": 1,
             "showRefresh": 0
         },
@@ -191,7 +193,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         },
         "courierMoveClear": {
             "title": "Couriers Movement Clear List",
-            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?1.3",
+            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl",
             "showSearch": 1,
             "showRefresh": 0
         },
@@ -728,7 +730,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: 'app/components/dialogs/sendMessageDialog/sendMessageDialog.html',
+            templateUrl: 'app/components/dialogs/send-message-dialog/send-message-dialog.html',
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -750,7 +752,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/addEventDialog/addEventDialog.html",
+            templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
             parent: angular.element($document.body),
             targetEvent: event,
             clickOutsideToClose: true,
@@ -1769,9 +1771,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.potentialCouriers = false;
         $scope.potentialCouriersSelection = " for Job " + job.jobNo;
         ctrl.currentSelection = " for Job " + job.jobNo;
-        if ($scope.currentJob.rootParentID) {
-            DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
-                $scope.currentJob.relatedJobs = data;
+
+        // Check attachments
+        ctrl.hasAttachedFile(job.id);
+
+        if ($scope.job.rootParentID) {
+            DispatchData.getRelatedJobs(job.rootParentID, job.clientID).then(data => {
+                job.relatedJobs = data;
             });
         }
     };
@@ -1839,6 +1845,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             console.log(job);
 
             jdSvc.setJob($scope.currentJob);
+
+            // Check for attachments
+            ctrl.checkForAttachments(job.id);
 
             DispatchData.getActiveCouriers().then((data) => {
                 $scope.pickCouriers = data;
@@ -2812,7 +2821,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     controllerAs: 'ctrl',
                     parent: angular.element($document.body),
                     targetEvent: event,
-                    templateUrl: "app/components/dialogs/editAddressDialog/editAddressDialog.html",
+                    templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
                     clickOutsideToClose: false,
                     fullscreen: true,
                     locals: {
@@ -2895,7 +2904,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/truckCourierStatusDialog/truckCourierStatusDialog.html",
+            templateUrl: "app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -2916,7 +2925,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: event,
-                templateUrl: "app/components/dialogs/createJobDialog/createJobDialog.html",
+                templateUrl: "app/components/dialogs/create-job-dialog/create-job-dialog.html",
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
@@ -2943,11 +2952,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      */
     ctrl.interCourierCharge = event => {
         $mdDialog.show({
-            controller: InterCourierChargeDialogController,
+            controller: InterCourierChargeDialog,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/interCourierChargeDialog/interCourierChargeDialog.html",
+            templateUrl: "app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -2966,7 +2975,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/addEventDialog/addEventDialog.html",
+            templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
             parent: angular.element($document.body),
             targetEvent: event,
             clickOutsideToClose: true,
@@ -2980,6 +2989,48 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             ctrl.getData().then(() => {
                 console.log('Pallet Dialog closed!');
             });
+        });
+    };
+
+    /**
+     * @param {number} jobId
+     */
+    ctrl.checkForAttachments = (jobId) => {
+        ctrl.isCheckingAttachments = true;
+        ctrl.hasAttachedFile = false;
+
+        DispatchData.isFilesAttachedToJob(jobId)
+            .then(response => {
+                ctrl.hasAttachedFile = response;
+            })
+            .catch(error => {
+                console.error('Error checking for attachments:', error);
+                ctrl.hasAttachedFile = false;
+            })
+            .finally(() => {
+                ctrl.isCheckingAttachments = false;
+            });
+    };
+
+    /**
+     * @param {Event}  event
+     * @param {Job} job
+     */
+    ctrl.openFileAttachmentDialog = (event, job) => {
+        $mdDialog.show({
+            controller: JobFileUploadController,
+            controllerAs: 'ctrl',
+            parent: angular.element($document.body),
+            targetEvent: event,
+            templateUrl: "app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                jobId: job.id
+            },
+        }).then(() => {
+            // Dialog Closed
+            console.log('Job File Upload Dialog Closed!')
         });
     };
 
@@ -3008,7 +3059,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             return $mdDialog.show({
                 controller: AdditionalServicesDialogController,
                 controllerAs: "ctrl",
-                templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
+                templateUrl: "app/components/dialogs/additional-services-dialog/additional-services-dialog.html",
                 parent: angular.element($document.body),
                 targetEvent: event,
                 clickOutsideToClose: false,
@@ -3019,9 +3070,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             });
         }).then(() => {
             ctrl.getData().then(() => {
-                    $scope.selectJobDetail(job);
-                    loadingService.closeLoader();
-                });
+                $scope.selectJobDetail(job);
+                loadingService.closeLoader();
+            });
         }).then(() => {
             console.log('Additional Services Dialog closed!');
         }).catch(error => {

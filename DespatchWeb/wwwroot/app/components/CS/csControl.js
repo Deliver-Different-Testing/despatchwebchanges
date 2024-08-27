@@ -1,7 +1,7 @@
 function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys,
                       $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document,
                       $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData) {
-    const self = this;
+    const ctrl = this;
 
     $scope.isAdmin = (ClientInternal === "True");
     $scope.mapSetting = {
@@ -10,8 +10,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     $scope.userName = FirstName;
-    self.jobDetailFabIsOpen = false;
-    self.dateSearchRange = 1; // Set to fortnight
+    ctrl.jobDetailFabIsOpen = false;
+    ctrl.dateSearchRange = 1; // Set to fortnight
     $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
     $scope.searchBox = "";
@@ -28,10 +28,10 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
     $scope.name = "POD";
 
-    self.jdSvc = jdSvc;
-    self.dispatchJobService = dispatchJobService;
+    ctrl.jdSvc = jdSvc;
+    ctrl.dispatchJobService = dispatchJobService;
 
-    self.greetUser = () => {
+    ctrl.greetUser = () => {
         return greetingService.greetUser(FirstName);
     }
 
@@ -39,7 +39,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
-    self.selectAndDispatchJob = (event, job) => {
+    ctrl.selectAndDispatchJob = (event, job) => {
         const dispatchDialog = $mdDialog.prompt()
             .title("Dispatch To Courier")
             .textContent('Enter the courier number to dispatch job to')
@@ -64,14 +64,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    self.createNewJob = function (event) {
+    ctrl.createNewJob = function (event) {
         // Dialog
         $mdDialog.show({
             controller: CreateJobDialogController,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/createJobDialog/createJobDialog.html",
+            templateUrl: "app/components/dialogs/create-job-dialog/create-job-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -92,7 +92,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
      * @param  {Event}  event
      * @param  {Job}  job
      */
-    self.showAdditionalServicesMenu = (event, job) => {
+    ctrl.showAdditionalServicesMenu = (event, job) => {
         loadingService.showLoader();
 
         DispatchData.hasClientItemsAvailable(job.clientId, job.speedId).then(isClientItemsAvailable => {
@@ -113,7 +113,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             return $mdDialog.show({
                 controller: AdditionalServicesDialogController,
                 controllerAs: "ctrl",
-                templateUrl: "app/components/dialogs/additionalServicesDialog/additionalServicesDialog.html",
+                templateUrl: "app/components/dialogs/additional-services-dialog/additional-services-dialog.html",
                 parent: angular.element($document.body),
                 targetEvent: event,
                 clickOutsideToClose: false,
@@ -137,13 +137,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    self.interCourierCharge = function (event) {
+    ctrl.interCourierCharge = function (event) {
         $mdDialog.show({
-            controller: InterCourierChargeDialogController,
+            controller: InterCourierChargeDialog,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/interCourierChargeDialog/interCourierChargeDialog.html",
+            templateUrl: "app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -158,8 +158,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         submit() {
             angular.element(".gatherForm").css("display", "none");
             $scope.gather.form.onSubmit().then(() => {
-                if (self.currentJob) {
-                    self.currentJob.bulkJob ? $scope.selectBulkJobDetail(self.currentJob.id) : self.currentJob.preBook ? $scope.selectPreBookDetail(self.currentJob.id) : $scope.selectJobDetail(self.currentJob.id);
+                if (ctrl.currentJob) {
+                    ctrl.currentJob.bulkJob ? $scope.selectBulkJobDetail(ctrl.currentJob.id) : ctrl.currentJob.preBook ? $scope.selectPreBookDetail(ctrl.currentJob.id) : $scope.selectJobDetail(ctrl.currentJob.id);
                 }
             });
         },
@@ -175,8 +175,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         submit: function () {
             angular.element(".gatherForm").hide();
             $scope.gather.form.onSubmit().then(function (response) {
-                if (self.currentJob) {
-                    self.currentJob.bulkJob ? $scope.selectBulkJobDetail(self.currentJob.id) : self.currentJob.preBook ? $scope.selectPreBookDetail(self.currentJob.id) : $scope.selectJobDetail(self.currentJob.id);
+                if (ctrl.currentJob) {
+                    ctrl.currentJob.bulkJob ? $scope.selectBulkJobDetail(ctrl.currentJob.id) : ctrl.currentJob.preBook ? $scope.selectPreBookDetail(ctrl.currentJob.id) : $scope.selectJobDetail(ctrl.currentJob.id);
                 }
             });
         },
@@ -528,7 +528,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         layoutsObject[0] = defaultLayout[0];
     }
 
-    self.layouts = layoutsObject || defaultLayout;
+    ctrl.layouts = layoutsObject || defaultLayout;
 
 
     const now = new Date();
@@ -537,7 +537,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     let sevenDaysAfter = new Date();
     sevenDaysAfter.setDate(now.getDate() + 7);
 
-    self.pickDateService = {
+    ctrl.pickDateService = {
         "client": '',
         "courier": "",
         "date": now,
@@ -551,17 +551,17 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         name: "All"
     };
 
-    const layoutToUse = angular.copy(self.layouts[0].layout);
+    const layoutToUse = angular.copy(ctrl.layouts[0].layout);
 
     if (!$scope.isAdmin) {
         //layoutToUse.columns[0].boxes.splice(0, 1);
         //layoutToUse.columns.splice(2, 1);
     }
 
-    self.layout = layoutToUse;
-    self.currentLayoutName = self.layouts[0].name;
+    ctrl.layout = layoutToUse;
+    ctrl.currentLayoutName = ctrl.layouts[0].name;
 
-    self.deleteLayout = function (index) {
+    ctrl.deleteLayout = function (index) {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
@@ -570,31 +570,31 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             .cancel('Cancel');
 
         $mdDialog.show(deleteConfirm).then(() => {
-            self.layouts.splice(index, 1);
+            ctrl.layouts.splice(index, 1);
             if (Modernizr.localstorage) {
-                localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify(self.layouts));
+                localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify(ctrl.layouts));
             }
         }, () => console.log("Delete layout canceled!"));
     }
 
-    self.setLastActiveLayoutName = function (layoutName) {
+    ctrl.setLastActiveLayoutName = function (layoutName) {
         if (Modernizr.localstorage) {
             localStorage.setItem("lastActiveLayoutCS-" + ContactID, layoutName);
         }
     };
 
-    self.loadLayout = function (i) {
-        self.currentLayoutName = self.layouts[i].name;
-        self.layout = angular.copy(self.layouts[i].layout);
+    ctrl.loadLayout = function (i) {
+        ctrl.currentLayoutName = ctrl.layouts[i].name;
+        ctrl.layout = angular.copy(ctrl.layouts[i].layout);
 
         // save layout as last active
-        self.setLastActiveLayoutName(self.currentLayoutName);
+        ctrl.setLastActiveLayoutName(ctrl.currentLayoutName);
 
-        $timeout(self.initFilters, 1000);
+        $timeout(ctrl.initFilters, 1000);
     };
 
-    self.saveLayout = function () {
-        angular.forEach(self.layout.columns,
+    ctrl.saveLayout = function () {
+        angular.forEach(ctrl.layout.columns,
             (column, colKey) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
                 angular.forEach(column.boxes,
@@ -613,15 +613,15 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         $mdDialog.show(saveLayoutPrompt).then(layoutName => {
             if (Modernizr.localstorage) {
-                self.layouts = self.layouts.concat(
+                ctrl.layouts = ctrl.layouts.concat(
                     {
                         name: layoutName,
-                        layout: angular.copy(self.layout)
+                        layout: angular.copy(ctrl.layout)
                     });
-                localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify(self.layouts));
+                localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify(ctrl.layouts));
 
                 // save last active layout
-                self.setLastActiveLayoutName(layoutName);
+                ctrl.setLastActiveLayoutName(layoutName);
             }
 
             const deferred = $q.defer();
@@ -660,21 +660,21 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }
     };
 
-    self.showInput = {};
-    self.inputWidth = {};
+    ctrl.showInput = {};
+    ctrl.inputWidth = {};
 
     /**
      * @param {string} boxName
      * @param {number} index
      */
-    self.openSearch = function (boxName, index) {
+    ctrl.openSearch = function (boxName, index) {
         const boxID = boxName + '-' + index;
-        if (self.showInput[boxID]) {
-            self.showInput[boxID] = false;
-            self.inputWidth[boxID] = 31;
+        if (ctrl.showInput[boxID]) {
+            ctrl.showInput[boxID] = false;
+            ctrl.inputWidth[boxID] = 31;
         } else {
-            self.inputWidth[boxID] = 200;
-            self.showInput[boxID] = true;
+            ctrl.inputWidth[boxID] = 200;
+            ctrl.showInput[boxID] = true;
         }
     };
 
@@ -740,13 +740,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }
     });
 
-    self.jobRecordSearchText = "";
+    ctrl.jobRecordSearchText = "";
 
     /**
      *
      * @param {string} searchText
      */
-    self.jobRecordSearch = searchText => {
+    ctrl.jobRecordSearch = searchText => {
         return $scope.jobList
             .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
             .map(job => ({id: job.id, text: job.jobNo}));
@@ -755,7 +755,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     /**
      * @param {number} selectedJobId
      */
-    self.JobRecordSelected = selectedJobId => {
+    ctrl.JobRecordSelected = selectedJobId => {
         const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
         $scope.selectJob(selectedJob);
     }
@@ -767,24 +767,24 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             return obj.id === region.id;
 
         });
-        self.pickDateService.regions = [];
-        self.pickDateService.regions.push(sr);
+        ctrl.pickDateService.regions = [];
+        ctrl.pickDateService.regions.push(sr);
         $scope.refreshData(true);
         $scope.refreshBulkData(true);
         $scope.refreshPreBookData(true);
     };
 
-    self.unlockJob = function () {
+    ctrl.unlockJob = function () {
         return jdSvc
-            .unlockJob(self.currentJob);
+            .unlockJob(ctrl.currentJob);
     };
 
-    self.lockJob = function () {
+    ctrl.lockJob = function () {
         return jdSvc
-            .lockJob(self.currentJob);
+            .lockJob(ctrl.currentJob);
     };
 
-    self.unSplitJob = function () {
+    ctrl.unSplitJob = function () {
         const confirm = $mdDialog.confirm()
             .title('Un-Split Job?')
             .textContent('Are you sure you wish to un-split this job?')
@@ -792,7 +792,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             .cancel('No');
 
         $mdDialog.show(confirm).then(() => {
-            uCSData.unSplitJob(self.currentJob.id).then(msg => {
+            uCSData.unSplitJob(ctrl.currentJob.id).then(msg => {
                 if ((msg || "").length > 2) {
                     const alert = $mdDialog.alert()
                         .title('Error')
@@ -807,7 +807,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     };
 
-    self.restoreJob = function (job) {
+    ctrl.restoreJob = function (job) {
         angular.element("#box-jobDetail").find(".loading").show();
         let callData = {
             "call": "restoreJobs",
@@ -843,7 +843,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }
     };
 
-    self.swapPOD = function (event) {
+    ctrl.swapPOD = function (event) {
         const jobNumberPrompt = $mdDialog.prompt()
             .title('Enter the other job number')
             .textContent('Please enter the Job Number to swap the POD.')
@@ -866,18 +866,18 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 );
             } else {
                 const secondJobId = data;
-                const firstJobId = self.currentJob.id;
+                const firstJobId = ctrl.currentJob.id;
 
                 const confirmSwap = $mdDialog.confirm()
                     .title('Swap Delivery Info?')
-                    .textContent(`Are you sure you wish to swap delivery info between ${self.currentJob.jobNo} and ${jobNumber}?`)
+                    .textContent(`Are you sure you wish to swap delivery info between ${ctrl.currentJob.jobNo} and ${jobNumber}?`)
                     .ariaLabel('Lucky day')
                     .targetEvent(event)
                     .ok('Yes')
                     .cancel('No');
 
                 $mdDialog.show(confirmSwap).then(() => {
-                    uCSData.swapPOD(self.currentJob.jobNo, jobNumber).then(() => {
+                    uCSData.swapPOD(ctrl.currentJob.jobNo, jobNumber).then(() => {
 
                         $mdDialog.show(
                             $mdDialog.alert()
@@ -904,8 +904,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    self.sendPOD = function (event) {
-        if (!self.currentJob.podPhoto) {
+    ctrl.sendPOD = function (event) {
+        if (!ctrl.currentJob.podPhoto) {
             $mdDialog.show(
                 $mdDialog.alert()
                     .clickOutsideToClose(true)
@@ -928,7 +928,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         $mdDialog.show(confirm).then(email => {
             // code to send POD when ok is clicked
-            uCSData.sendPOD(self.currentJob.id, email).then(data => {
+            uCSData.sendPOD(ctrl.currentJob.id, email).then(data => {
                 $mdDialog.show(
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
@@ -944,12 +944,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     $scope.refreshAllData = function (wait) {
         // Empty search criteria
-        console.log(self.pickDateService);
+        console.log(ctrl.pickDateService);
 
-        if ((self.pickDateService.client || "") === "" &&
-            (self.pickDateService.courier || "") === "" &&
-            (self.pickDateService.job || "") === "" &&
-            (self.pickDateService.wild || "") === "") {
+        if ((ctrl.pickDateService.client || "") === "" &&
+            (ctrl.pickDateService.courier || "") === "" &&
+            (ctrl.pickDateService.job || "") === "" &&
+            (ctrl.pickDateService.wild || "") === "") {
 
             $mdDialog.show(
                 $mdDialog.alert()
@@ -990,12 +990,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         console.log("about to call data - page " + $scope.pageIndex);
 
-        uCSData.getPodJobs(self.pickDateService.courier,
-            self.pickDateService.client,
-            (self.pickDateService.wild || ""),
-            (self.pickDateService.job || ""),
-            moment(self.pickDateService.from_date),
-            moment(self.pickDateService.to_date),
+        uCSData.getPodJobs(ctrl.pickDateService.courier,
+            ctrl.pickDateService.client,
+            (ctrl.pickDateService.wild || ""),
+            (ctrl.pickDateService.job || ""),
+            moment(ctrl.pickDateService.from_date),
+            moment(ctrl.pickDateService.to_date),
             $scope.pageIndex,
             $scope.pageSizeSelected).then(
             function (data) {
@@ -1025,12 +1025,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         console.log("about to call bulk data - page " + $scope.bulkPageIndex);
 
-        uCSData.searchBulkJobs(self.pickDateService.courier,
-            self.pickDateService.client,
-            (self.pickDateService.job || ""),
-            (self.pickDateService.wild || ""),
-            moment(self.pickDateService.from_date),
-            moment(self.pickDateService.to_date),
+        uCSData.searchBulkJobs(ctrl.pickDateService.courier,
+            ctrl.pickDateService.client,
+            (ctrl.pickDateService.job || ""),
+            (ctrl.pickDateService.wild || ""),
+            moment(ctrl.pickDateService.from_date),
+            moment(ctrl.pickDateService.to_date),
             $scope.bulkPageIndex,
             $scope.bulkPageSizeSelected).then(
             function (data) {
@@ -1057,12 +1057,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         console.log("about to call prebook data - page " + $scope.pbPageIndex);
 
-        uCSData.searchPreBookJobs(self.pickDateService.courier,
-            self.pickDateService.client,
-            (self.pickDateService.wild || ""),
-            (self.pickDateService.job || ""),
-            moment(self.pickDateService.from_date),
-            moment(self.pickDateService.to_date),
+        uCSData.searchPreBookJobs(ctrl.pickDateService.courier,
+            ctrl.pickDateService.client,
+            (ctrl.pickDateService.wild || ""),
+            (ctrl.pickDateService.job || ""),
+            moment(ctrl.pickDateService.from_date),
+            moment(ctrl.pickDateService.to_date),
             $scope.pbPageIndex,
             $scope.pbPageSizeSelected).then(
             function (data) {
@@ -1150,7 +1150,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.loadRelatedJobDetail = function (id, jn) {
         angular.element("#box-jobDetail").find(".loading").show();
         uCSData.getJobDetail(id).then(function (data) {
-            self.currentJob = data;
+            ctrl.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + jn;
         });
@@ -1167,23 +1167,23 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         angular.element("#box-jobDetail").find(".loading").show();
 
         uCSData.getJobDetail(jobId).then(function (data) {
-            self.currentJob = data;
-            jdSvc.setJob(self.currentJob);
+            ctrl.currentJob = data;
+            jdSvc.setJob(ctrl.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + data.jobNo;
             var jobs = [];
-            jobs.push(self.currentJob);
+            jobs.push(ctrl.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            if (self.currentJob.rootParentID) {
-                uCSData.getRelatedJobs(self.currentJob.rootParentID, self.currentJob.clientID).then(function (data) {
+            if (ctrl.currentJob.rootParentID) {
+                uCSData.getRelatedJobs(ctrl.currentJob.rootParentID, ctrl.currentJob.clientID).then(function (data) {
                     //data = data.filter(item => item.id !== self.currentJob.id);
-                    self.currentJob.relatedJobs = data;
+                    ctrl.currentJob.relatedJobs = data;
                 });
             }
             angular.element("#box-scanList").find(".loading").show();
-            uCSData.getScanDetail(moment(self.currentJob.bookedDate), self.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(function (data) {
                 $scope.scanList = data;
 
                 $timeout(function () {
@@ -1192,9 +1192,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 }, 200);
             });
 
-            if (self.currentJob.courier && self.currentJob.completedTime) {
+            if (ctrl.currentJob.courier && ctrl.currentJob.completedTime) {
                 angular.element("#box-map").find(".loading").show();
-                uCSData.getCourierRoute(self.currentJob.courier, moment(self.currentJob.completedTime).subtract(5, 'm'), moment(self.currentJob.completedTime).add(5, 'm')).then(function (data) {
+                uCSData.getCourierRoute(ctrl.currentJob.courier, moment(ctrl.currentJob.completedTime).subtract(5, 'm'), moment(ctrl.currentJob.completedTime).add(5, 'm')).then(function (data) {
                     var flightPathCoordinates = [];
 
                     angular.element("#box-map").find(".loading").fadeOut();
@@ -1263,21 +1263,21 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         angular.element("#box-jobDetail").find(".loading").show();
 
         uCSData.getPreBookDetail(id).then(function (data) {
-            self.currentJob = data;
-            jdSvc.setJob(self.currentJob);
+            ctrl.currentJob = data;
+            jdSvc.setJob(ctrl.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + data.jobNo;
-            console.log(self.currentJob.days);
-            var freq = self.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : self.currentJob.days.slice(8, 9);
+            console.log(ctrl.currentJob.days);
+            var freq = ctrl.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : ctrl.currentJob.days.slice(8, 9);
             console.log(freq);
             jdSvc.combos.frequency = [jdSvc.pickFrequency[freq]];
             console.log(jdSvc.combos.frequency);
-            var hol = self.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : self.currentJob.days.slice(9, 10);
+            var hol = ctrl.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : ctrl.currentJob.days.slice(9, 10);
             console.log(hol);
             jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
             console.log(jdSvc.combos.holidays);
             var selectedDays = [];
-            var days = self.currentJob.days.slice(0, 7);
+            var days = ctrl.currentJob.days.slice(0, 7);
             for (let i = 0; i < days.length; i++) {
                 if (days[i] === '1') {
                     selectedDays.push(jdSvc.pickDays[i]);
@@ -1286,11 +1286,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             console.log(selectedDays);
             jdSvc.combos.days = selectedDays;
             var jobs = [];
-            jobs.push(self.currentJob);
+            jobs.push(ctrl.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            uCSData.getScanDetail(moment(self.currentJob.bookedDate), self.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(function (data) {
                 $scope.scanList = data;
 
                 $timeout(function () {
@@ -1314,16 +1314,16 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         angular.element("#box-jobDetail").find(".loading").show();
 
         uCSData.getBulkJobDetail(id).then(function (data) {
-            self.currentJob = data;
-            jdSvc.setJob(self.currentJob);
+            ctrl.currentJob = data;
+            jdSvc.setJob(ctrl.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Bulk Job " + data.jobNo;
             var jobs = [];
-            jobs.push(self.currentJob);
+            jobs.push(ctrl.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            uCSData.getScanDetail(moment(self.currentJob.bookedDate), self.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(function (data) {
                 $scope.scanList = data;
 
                 $timeout(function () {
@@ -1384,31 +1384,31 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     // New Material Autocompletes
-    self.clientSelectedItem = self.pickDateService.client;
-    self.courierSelectedItem = self.pickDateService.client;
-    self.clientSearchText = '';
-    self.courierSearchText = '';
+    ctrl.clientSelectedItem = ctrl.pickDateService.client;
+    ctrl.courierSelectedItem = ctrl.pickDateService.client;
+    ctrl.clientSearchText = '';
+    ctrl.courierSearchText = '';
 
-    self.clientQuerySearch = function (searchText) {
+    ctrl.clientQuerySearch = function (searchText) {
         return uCSData.getActiveClients(searchText);
     };
 
-    self.selectedClientChange = function (item) {
+    ctrl.selectedClientChange = function (item) {
         if (!item) {
-            self.pickDateService.client = null;
+            ctrl.pickDateService.client = null;
         }
-        self.pickDateService.client = item.id;
+        ctrl.pickDateService.client = item.id;
     };
 
-    self.courierQuerySearch = function (searchText) {
+    ctrl.courierQuerySearch = function (searchText) {
         return uCSData.getActiveCouriersSearch(searchText);
     };
 
-    self.selectedCourierChange = function (item) {
+    ctrl.selectedCourierChange = function (item) {
         if (!item) {
-            self.pickDateService.courier = null;
+            ctrl.pickDateService.courier = null;
         }
-        self.pickDateService.courier = item.id;
+        ctrl.pickDateService.courier = item.id;
     };
 
     uCSData.getActiveCouriers().then(data => {
@@ -1515,7 +1515,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     $scope.createJobEvent = function (job, $event) {
-        self.currentJob = job;
+        ctrl.currentJob = job;
         $mdDialog.show({
             locals: {dataToPass: undefined},
             controller: $scope.eventDialogController,
@@ -1531,12 +1531,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     $scope.eventDialogController = function ($scope, $mdDialog, dataToPass) {
-        console.log(self.currentJob);
+        console.log(ctrl.currentJob);
         console.log(dataToPass);
         $scope.book = {};
 
-        $scope.book.courier = self.currentJob.courierCode;
-        $scope.book.job = self.currentJob.jobNumber;
+        $scope.book.courier = ctrl.currentJob.courierCode;
+        $scope.book.job = ctrl.currentJob.jobNumber;
 
         if (dataToPass !== undefined) {
             $scope.book.notes = (" - " + moment().format("DD/MM/YY HH:mm") + " " + ClientName + "\r\n" + dataToPass.notes);
@@ -1583,15 +1583,15 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
             const event = {
                 "dataType": "json",
-                "BulkJobID": self.currentJob.bulkJobID,
-                "CourierID": self.currentJob.courierID,
+                "BulkJobID": ctrl.currentJob.bulkJobID,
+                "CourierID": ctrl.currentJob.courierID,
                 "Name": `${ClientName}-${$scope.book.name}`,
                 "Notes": $scope.book.notes,
                 "Internal": $scope.isAdmin ? !$scope.book.internal : 0,
                 "ClientCreated": !$scope.isAdmin,
                 "ClientFollowup": $scope.book.account !== "UCL" ? 1 : 0,
-                "EventDate": self.pickDateService.date,
-                "ClientID": self.currentJob.clientID
+                "EventDate": ctrl.pickDateService.date,
+                "ClientID": ctrl.currentJob.clientID
             };
 
             uCSData.createEvent(event, $scope.isAdmin ? $scope.book.notify : true)
@@ -1685,20 +1685,20 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
 
     // Load custom layout
-    self.init = function () {
+    ctrl.init = function () {
         if (Modernizr.localstorage) {
             const storedLayouts = localStorage.getItem("layoutsCS-" + ContactID);
             const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutCS-" + ContactID);
 
             if (storedLayouts) {
-                self.layouts = JSON.parse(storedLayouts);
+                ctrl.layouts = JSON.parse(storedLayouts);
 
                 if (lastActiveLayoutName) {
-                    const lastActiveLayoutIndex = self.layouts.findIndex(l => l.name === lastActiveLayoutName);
+                    const lastActiveLayoutIndex = ctrl.layouts.findIndex(l => l.name === lastActiveLayoutName);
 
                     // if the last active layout is found among stored layouts
                     if (lastActiveLayoutIndex !== -1) {
-                        self.loadLayout(lastActiveLayoutIndex);
+                        ctrl.loadLayout(lastActiveLayoutIndex);
                     }
                 }
             }
@@ -1706,12 +1706,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     // Call the init function when the controller loads
-    self.init();
+    ctrl.init();
 
     /**
      * @param {number} dateRangeOption
      */
-    self.onSearchRangeChange = (dateRangeOption) => {
+    ctrl.onSearchRangeChange = (dateRangeOption) => {
         try {
             let now = new Date();
             now.setHours(0, 0, 0, 0);
@@ -1733,16 +1733,16 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
             switch (dateRangeOption) {
                 case '1':
-                    self.pickDateService.from_date = oneWeekAgo;
-                    self.pickDateService.to_date = oneWeekAhead;
+                    ctrl.pickDateService.from_date = oneWeekAgo;
+                    ctrl.pickDateService.to_date = oneWeekAhead;
                     break;
                 case '2':
-                    self.pickDateService.from_date = now;
-                    self.pickDateService.to_date = now;
+                    ctrl.pickDateService.from_date = now;
+                    ctrl.pickDateService.to_date = now;
                     break;
                 case '3':
-                    self.pickDateService.from_date = firstDayOfMonth;
-                    self.pickDateService.to_date = lastDayOfMonth;
+                    ctrl.pickDateService.from_date = firstDayOfMonth;
+                    ctrl.pickDateService.to_date = lastDayOfMonth;
                     break;
                 case '4':
                     // This option is empty as ng-if is used on the page to show custom date range options
@@ -1754,7 +1754,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     // Default to fortnight
-    self.onSearchRangeChange(self.dateSearchRange);
+    ctrl.onSearchRangeChange(ctrl.dateSearchRange);
 }
 
 angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state",

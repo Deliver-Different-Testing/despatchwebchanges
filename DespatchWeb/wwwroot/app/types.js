@@ -53,6 +53,9 @@
  * @property {boolean} preBook - If job is a prebook job
  * @property {number} truckWeightLimit
  * @property {boolean} invoiced
+ * @property {number} rootParentID
+ * @property {boolean} allowSplit
+ * @property {boolean} dgDocumentation
  * @property {*} courierData - The courier data for the job
  */
 

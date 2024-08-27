@@ -1,4 +1,4 @@
-class InterCourierChargeDialogController {
+class InterCourierChargeDialog {
     constructor($scope, $mdDialog, $http, DispatchData, toastrService, staffId) {
         this._$mdDialog = $mdDialog;
         this._$http = $http;

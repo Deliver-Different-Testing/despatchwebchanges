@@ -1,0 +1,68 @@
+<md-dialog flex="50">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Attached Files</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Close</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">close</md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div layout="column">
+            <div
+                    class="drop-box"
+                    ng-model="ctrl.filesToUpload"
+                    ngf-accept="'image/*,application/pdf'"
+                    ngf-allow-dir="true"
+                    ngf-drag-over-class="'dragover'"
+                    ngf-drop
+                    ngf-max-size="10MB"
+                    ngf-multiple="true"
+                    ngf-select
+            >
+                <div ng-if="!ctrl.filesToUpload.length">
+                    <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">cloud_upload</md-icon>
+                    <p>Drag and drop files here or click to upload</p>
+                    <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
+                </div>
+                <div ng-if="ctrl.filesToUpload.length">
+                    <p>{{ctrl.filesToUpload.length}} file(s) selected</p>
+                    <md-button class="md-raised" ng-click="ctrl.uploadFiles()">Upload Files</md-button>
+                </div>
+            </div>
+
+            <md-table-container>
+                <table md-table>
+                    <thead md-head>
+                    <tr md-row>
+                        <th md-column>File Name</th>
+                        <th md-column>Size</th>
+                        <th md-column>Last Modified</th>
+                        <th md-column>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody md-body>
+                    <tr md-row ng-repeat="file in ctrl.files">
+                        <td md-cell>{{file.Name}}</td>
+                        <td md-cell>{{file.Size | bytes}}</td>
+                        <td md-cell>{{file.LastModified | date:'medium'}}</td>
+                        <td md-cell>
+                            <md-button class="md-icon-button" ng-click="ctrl.downloadFile(file)">
+                                <md-tooltip>Download</md-tooltip>
+                                <md-icon md-font-set="material-symbols-outlined">cloud_download</md-icon>
+                            </md-button>
+                            <md-button class="md-icon-button" ng-click="ctrl.deleteFile(file)">
+                                <md-tooltip>Delete</md-tooltip>
+                                <md-icon md-font-set="material-symbols-outlined">delete</md-icon>
+                            </md-button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </md-table-container>
+        </div>
+    </md-dialog-content>
+</md-dialog>
