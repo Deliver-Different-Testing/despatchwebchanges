@@ -10,6 +10,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ctrl.courierSearchText = "";
     ctrl.jobDetailFabIsOpen = false;
     ctrl.courierListFabIsOpen = false;
+    ctrl.isCheckingAttachments = false
+    ctrl.hasAttachedFile = false;
 
     ctrl.greetUser = () => {
         return greetingService.greetUser(FirstName);
@@ -1769,9 +1771,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $scope.potentialCouriers = false;
         $scope.potentialCouriersSelection = " for Job " + job.jobNo;
         ctrl.currentSelection = " for Job " + job.jobNo;
-        if ($scope.currentJob.rootParentID) {
-            DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
-                $scope.currentJob.relatedJobs = data;
+
+        // Check attachments
+        ctrl.hasAttachedFile(job.id);
+
+        if ($scope.job.rootParentID) {
+            DispatchData.getRelatedJobs(job.rootParentID, job.clientID).then(data => {
+                job.relatedJobs = data;
             });
         }
     };
@@ -2984,6 +2990,48 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
+     * @param {number} jobId
+     */
+    ctrl.checkForAttachments = (jobId) => {
+        ctrl.isCheckingAttachments = true;
+        ctrl.hasAttachedFile = false;
+
+        DispatchData.isFilesAttachedToJob(jobId)
+            .then(response => {
+                ctrl.hasAttachedFile = response;
+            })
+            .catch(error => {
+                console.error('Error checking for attachments:', error);
+                ctrl.hasAttachedFile = false;
+            })
+            .finally(() => {
+                ctrl.isCheckingAttachments = false;
+            });
+    };
+
+    /**
+     * @param {Event}  event
+     * @param {Job} job
+     */
+    ctrl.openFileAttachmentDialog = (event, job) => {
+        $mdDialog.show({
+            controller: JobFileUploadController,
+            controllerAs: 'ctrl',
+            parent: angular.element($document.body),
+            targetEvent: event,
+            templateUrl: "app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                jobId: job.id
+            },
+        }).then(() => {
+            // Dialog Closed
+            console.log('Job File Upload Dialog Closed!')
+        });
+    };
+
+    /**
      * @param  {Event}  event
      * @param  {Job}  job
      */
@@ -3019,9 +3067,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             });
         }).then(() => {
             ctrl.getData().then(() => {
-                    $scope.selectJobDetail(job);
-                    loadingService.closeLoader();
-                });
+                $scope.selectJobDetail(job);
+                loadingService.closeLoader();
+            });
         }).then(() => {
             console.log('Additional Services Dialog closed!');
         }).catch(error => {

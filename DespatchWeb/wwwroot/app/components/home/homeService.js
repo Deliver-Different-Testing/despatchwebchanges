@@ -866,6 +866,16 @@ class DispatchData {
         });
         return await response.data;
     }
+
+    /**
+     * Checks if job has any attached files
+     *
+     * @param {number} jobId
+     */
+    async isFilesAttachedToJob(jobId) {
+        let response = await this._$http.get(`job/IsFilesAttachedToJob/${jobId}`);
+        return await response.data;
+    }
 }
 
 angular.module("uDispatch").factory("DispatchData", DispatchData);

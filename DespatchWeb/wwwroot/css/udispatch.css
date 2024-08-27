@@ -1262,14 +1262,36 @@ md-toast.md-warning-toast-theme .md-toast-content {
 .job-table-icon {
   font-size: 14px;
 }
-
 .colum-table-icon {
-    font-size: 7px;
-    color: red;
+  font-size: 7px;
+  color: red;
 }
 .resizeable-checkbox-container {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.drop-box {
+  background: #f0f0f0;
+  border: 2px dashed #999;
+  border-radius: 5px;
+  padding: 25px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.drop-box.dragover {
+  border-color: #3f51b5;
+  background: #e8eaf6;
+}
+
+.drop-box md-icon {
+  color: #999;
+  margin-bottom: 10px;
+}
+
+.drop-box p {
+  margin: 5px 0;
 }
 /*# sourceMappingURL=udispatch.css.map */

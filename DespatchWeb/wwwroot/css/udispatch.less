@@ -1253,20 +1253,17 @@ span.courierRed {
     z-index: 99999;
   }
 }
-md-toast.md-success-toast-theme {
-  .md-toast-content {
+
+.md-toast .md-toast-content {
+  &.md-success-toast-theme {
     background-color: #4CAF50;
   }
-}
 
-md-toast.md-error-toast-theme {
-  .md-toast-content {
+  &.md-error-toast-theme {
     background-color: #F44336;
   }
-}
 
-md-toast.md-warning-toast-theme {
-  .md-toast-content {
+  &.md-warning-toast-theme {
     background-color: #FF9800;
   }
 }
@@ -1288,4 +1285,27 @@ md-toast.md-warning-toast-theme {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.DropBox {
+  background: #f0f0f0;
+  border: 2px dashed #999;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  padding: 25px;
+  text-align: center;
+
+  .DragOver {
+    background: #e8eaf6;
+    border-color: @yellow;
+  }
+
+  md-icon {
+    color: @yellow;
+    margin-bottom: 10px;
+  }
+
+  p {
+    margin: 5px 0;
+  }
 }
