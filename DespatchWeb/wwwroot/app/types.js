@@ -67,7 +67,20 @@
  * @property {boolean} allowSplit
  * @property {boolean} dgDocumentation
  * @property {string} contactName
- * @property {*} courierData - The courier data for the job
+ * @property {number} dgClass
+ * @property {number} fromSuburbID
+ * @property {number} toSuburbID
+ * @property {number} speedID
+ * @property {number} weight
+ * @property {number} acceptedJobTypeID
+ * @property {number} speedAccepted
+ * @property {number} UDStatus
+ * @property {number} internalStatusID
+ * @property {string} speed
+ * @property {boolean} direct
+ * @property {boolean} return
+ * @property {Date} completedTime
+ * @property {*} courierData
  */
 
 /**
@@ -140,6 +153,7 @@
  * @property {boolean} do - (Please define what this property does)
  * @property {number} dgClass - (Please define what this property does)
  * @property {string} notes - Any additional comments or notes related to the pallet.
+ * @property {number} itemID
  */
 
 /**

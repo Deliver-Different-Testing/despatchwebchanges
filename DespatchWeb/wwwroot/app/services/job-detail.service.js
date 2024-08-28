@@ -158,7 +158,7 @@ class JobDetailService {
                         }
                         newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
                         console.log(newDays);
-                        return self.DispatchData
+                        return DispatchData
                             .updateJobDetail(self.currentJob.id, "Holidays", newDays, self.currentJob.charge, FirstName, ContactID, self.currentJob.preBook).then(response => {
                                 self.selectJobDetail(self.currentJob.id);
                                 return response;
