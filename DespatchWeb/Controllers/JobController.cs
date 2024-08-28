@@ -1040,7 +1040,7 @@ public class JobController : Controller
     [HttpGet]
     public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
     {
-        return Json(false);
+        return Json(true);
     }
 
     [HttpGet]
@@ -1050,9 +1050,30 @@ public class JobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> UploadFile(int jobId, [FromBody] IFormFile file)
+    public async Task<IActionResult> UploadFile([FromForm] FileUploadRequest request)
     {
-        return Json("OK");
+        try
+        {
+            if (request?.File == null || request.File.Length == 0)
+                return BadRequest("No file uploaded");
+
+
+            // Validate file type
+            var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "application/pdf" };
+            if (!allowedTypes.Contains(request.File.ContentType.ToLower()))
+                return BadRequest("Invalid file type. Only images and PDFs are allowed.");
+
+            // Validate file size (10MB max)
+            if (request.File.Length > 10 * 1024 * 1024)
+                return BadRequest("File size exceeds the limit of 10MB.");
+
+            return Ok(new { message = "File uploaded successfully", fileName = request.File.FileName });
+        }
+        catch (Exception ex)
+        {
+            // Log the exception
+            return StatusCode(500, ex.Message);
+        }
     }
 
     [HttpGet]

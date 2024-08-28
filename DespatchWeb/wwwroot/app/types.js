@@ -6,7 +6,7 @@
  * @property {number} id - The ID of the job
  * @property {number} clientId - The ID of the client associated with the job.
  * @property {number} JobNo - The job number
- * @property {number|null} courierId - The ID of the courier associated with the job.
+ * @property {number} courierId - The ID of the courier associated with the job.
  * @property {string} deliverToContact - The contact to whom the job will be delivered.
  * @property {string} fromAddress - The address from which the job will be picked up.
  * @property {string} fromSuburb - The suburb from which the job will be picked up.
@@ -169,5 +169,13 @@
  * @property {Date} dgLicenseExpiry - Date the couriers dangerous goods license
  * @property {string} label - The label for use in select/autocomplete
  * @property {string} text - The text for use in select/autocomplete. This looks to be a duplicate of label.
+ */
 
+/**
+ * @typedef {object} FileAttachment
+ *
+ * @property {string} fileName
+ * @property {number} jobId
+ * @property {number} size
+ * @property {Date} lastModified
  */

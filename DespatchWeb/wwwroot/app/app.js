@@ -1,24 +1,31 @@
 angular
-    .module("uDispatch", ["ui.router", "ct.ui.router.extras", "angularResizable", "ui.sortable", "ui.bootstrap", "ui.bootstrap.pagination", "ui.bootstrap.contextMenu", "cfp.hotkeys", "ui.timepicker", "pickadate", "ngMap", "ngMapAutocomplete", "angularjs-dropdown-multiselect", "heremaps", "ngAnimate", "ngMessages", "ngSanitize", "ngMaterial", "angularPromiseButtons", "ng-mfb", "md.time.picker", "angularMoment", "md.data.table"])
+    .module('uDispatch', [
+        'ui.router', 'ct.ui.router.extras', 'angularResizable',
+        'ui.sortable', 'ui.bootstrap', 'ui.bootstrap.pagination',
+        'ui.bootstrap.contextMenu', 'cfp.hotkeys', 'ui.timepicker',
+        'pickadate', 'ngMap', 'ngMapAutocomplete', 'angularjs-dropdown-multiselect',
+        'heremaps', 'ngAnimate', 'ngMessages', 'ngSanitize', 'ngMaterial',
+        'angularPromiseButtons', 'ng-mfb', 'md.time.picker', 'angularMoment',
+        'md.data.table', 'ngFileUpload'])
     .config($mdThemingProvider => {
-        $mdThemingProvider.definePalette("urgentPrimary", {
-            "50": "fffbe0",
-            "100": "fef5b3",
-            "200": "feee80",
-            "300": "fee74d",
-            "400": "fde226",
-            "500": "fddd00",
-            "600": "fdd900",
-            "700": "fcd400",
-            "800": "fccf00",
-            "900": "fcc700",
-            "A100": "ffffff",
-            "A200": "fffbef",
-            "A400": "ffefbc",
-            "A700": "ffe9a2",
-            "contrastDefaultColor": "light",
-            "contrastDarkColors": ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "A100", "A200", "A400", "A700"],
-            "contrastLightColors": []
+        $mdThemingProvider.definePalette('urgentPrimary', {
+            '50': 'fffbe0',
+            '100': 'fef5b3',
+            '200': 'feee80',
+            '300': 'fee74d',
+            '400': 'fde226',
+            '500': 'fddd00',
+            '600': 'fdd900',
+            '700': 'fcd400',
+            '800': 'fccf00',
+            '900': 'fcc700',
+            'A100': 'ffffff',
+            'A200': 'fffbef',
+            'A400': 'ffefbc',
+            'A700': 'ffe9a2',
+            'contrastDefaultColor': 'light',
+            'contrastDarkColors': ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', 'A100', 'A200', 'A400', 'A700'],
+            'contrastLightColors': []
         });
 
         $mdThemingProvider.definePalette('urgentAccent', {
@@ -43,66 +50,66 @@ angular
 
 
         // Material Theme
-        $mdThemingProvider.theme("default")
-            .primaryPalette("urgentPrimary")
-            .accentPalette("urgentAccent");
+        $mdThemingProvider.theme('default')
+            .primaryPalette('urgentPrimary')
+            .accentPalette('urgentAccent');
 
         // Register Toast themes
-        $mdThemingProvider.theme("success-toast")
-        $mdThemingProvider.theme("warning-toast")
-        $mdThemingProvider.theme("error-toast")
+        $mdThemingProvider.theme('success-toast')
+        $mdThemingProvider.theme('warning-toast')
+        $mdThemingProvider.theme('error-toast')
     })
-    .directive("rightClick", ($document) => {
+    .directive('rightClick', ($document) => {
         $document.oncontextmenu = event => {
-            if (event.target.hasAttribute("right-click")) {
+            if (event.target.hasAttribute('right-click')) {
                 event.stopPropagation();
                 return false;
             }
         };
         return (scope, el, attrs) => {
-            el.bind("contextmenu", e => {
+            el.bind('contextmenu', e => {
                 scope.$apply(scope.$eval(attrs.action, {
-                    "event": e
+                    'event': e
                 }));
             });
         }
     })
-    .config(["HereMapsConfigProvider", HereMapsConfigProvider => {
+    .config(['HereMapsConfigProvider', HereMapsConfigProvider => {
         HereMapsConfigProvider.setOptions({
-            "app_id": "bBPfh2x8Cauun3ygLMAx",
-            "app_code": "yjfwTdkin_R2rGXYTrwWVg",
-            "useHTTPS": true,
-            "useCIT": true,
-            "mapTileConfig": {
+            'app_id': 'bBPfh2x8Cauun3ygLMAx',
+            'app_code': 'yjfwTdkin_R2rGXYTrwWVg',
+            'useHTTPS': true,
+            'useCIT': true,
+            'mapTileConfig': {
                 metadataQueryParams: {
-                    "lg2": "ara"
+                    'lg2': 'ara'
                 }
             }
         });
     }])
-    .config(["$qProvider", $qProvider => {
+    .config(['$qProvider', $qProvider => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
-    .config(["$urlRouterProvider", "$stateProvider", ($urlRouterProvider, $stateProvider) => {
-        $urlRouterProvider.otherwise("/");
+    .config(['$urlRouterProvider', '$stateProvider', ($urlRouterProvider, $stateProvider) => {
+        $urlRouterProvider.otherwise('/');
 
         $stateProvider
-            .state("home", {
-                url: "/", templateUrl: "app/components/home/homeView.html", controller: "HomeControl"
+            .state('home', {
+                url: '/', templateUrl: 'app/components/home/homeView.html', controller: 'HomeControl'
             })
-            .state("nw", {
-                url: "/Nationwide",
-                templateUrl: "app/components/Nationwide/nationwideView.html",
-                controller: "NationwideControl",
+            .state('nw', {
+                url: '/Nationwide',
+                templateUrl: 'app/components/Nationwide/nationwideView.html',
+                controller: 'NationwideControl',
                 reloadOnSearch: false
             })
-            .state("cs", {
-                url: "/CS", templateUrl: "app/components/CS/csView.html", controller: "CSControl", reloadOnSearch: false
+            .state('cs', {
+                url: '/CS', templateUrl: 'app/components/CS/csView.html', controller: 'CSControl', reloadOnSearch: false
             })
-            .state("prebooks", {
-                url: "/prebooks",
-                templateUrl: "app/components/prebooks/prebookView.html",
-                controller: "PBControl",
+            .state('prebooks', {
+                url: '/prebooks',
+                templateUrl: 'app/components/prebooks/prebookView.html',
+                controller: 'PBControl',
                 reloadOnSearch: false
             });
     }]);

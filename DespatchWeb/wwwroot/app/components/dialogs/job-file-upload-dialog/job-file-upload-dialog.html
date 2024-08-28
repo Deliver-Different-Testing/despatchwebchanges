@@ -14,26 +14,27 @@
         <div layout="column">
             <div
                     class="drop-box"
-                    ng-model="ctrl.filesToUpload"
-                    ngf-accept="'image/*,application/pdf'"
-                    ngf-allow-dir="true"
-                    ngf-drag-over-class="'dragover'"
+                    ng-model="ctrl.files"
+                    ngf-change="ctrl.uploadFiles($files)"
                     ngf-drop
-                    ngf-max-size="10MB"
                     ngf-multiple="true"
+                    ngf-accept="'image/*,application/pdf'"
+                    ngf-drag-over-class="'dragover'"
+                    ngf-max-size="10MB"
                     ngf-select
             >
-                <div ng-if="!ctrl.filesToUpload.length">
-                    <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">cloud_upload</md-icon>
-                    <p>Drag and drop files here or click to upload</p>
-                    <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
-                </div>
-                <div ng-if="ctrl.filesToUpload.length">
-                    <p>{{ctrl.filesToUpload.length}} file(s) selected</p>
-                    <md-button class="md-raised" ng-click="ctrl.uploadFiles()">Upload Files</md-button>
-                </div>
+                <md-icon md-font-set="material-symbols-outlined" style="font-size: 48px;">cloud_upload</md-icon>
+                <p>Drag and drop files here or click to upload</p>
+                <p class="md-caption">Accepted file types: Images, PDF. Max size: 10MB</p>
             </div>
 
+            <!-- Uploading Files Progress -->
+            <div ng-repeat="file in ctrl.uploadingFiles">
+                <p>{{file.name}}</p>
+                <md-progress-linear md-mode="determinate" value="{{file.progress}}"></md-progress-linear>
+            </div>
+
+            <!-- File List -->
             <md-table-container>
                 <table md-table>
                     <thead md-head>

@@ -4,6 +4,8 @@ using DespatchWeb.Repositories;
 using EntityFrameworkCore.UseRowNumberForPaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +27,17 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => true;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
+builder.Services.Configure<FormOptions>(x =>
+{
+    x.ValueLengthLimit = int.MaxValue;
+    x.MultipartBodyLengthLimit = int.MaxValue;
+    x.MultipartHeadersLengthLimit = int.MaxValue;
+});
+builder.Services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = int.MaxValue; });
+
+builder.Services.Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = int.MaxValue; });
+
+
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();

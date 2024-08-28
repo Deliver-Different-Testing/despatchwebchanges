@@ -1,6 +1,7 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         loadingService, $mdDialog, $parse, $q, $scope, $state,
-                        $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment) {
+                        $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment,
+                        Upload, bytesFilter) {
     const ctrl = this;
 
     $scope.isInternal = (ClientInternal === "True");
@@ -3310,7 +3311,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter",
     'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "$mdDialog",
     "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService',
-    "DispatchData", "uCSData", "dispatchJobService", "moment", HomeController]);
+    "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", HomeController]);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
