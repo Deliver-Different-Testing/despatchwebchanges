@@ -2,6 +2,13 @@
     <md-toolbar>
         <div class="md-toolbar-tools">
             <h2>Edit {{ ctrl.title }}</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
         </div>
     </md-toolbar>
 
@@ -27,11 +34,7 @@
                 ng-show="ctrl.isLoading">
         </md-progress-circular>
 
-        <md-button class="md-primary" ng-click="ctrl.cancel()" ng-show="!ctrl.isLoading">
-            Cancel
-        </md-button>
-
-        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.date)" ng-disabled="!ctrl.date"
+        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.date)" ng-disabled="!ctrl.date"
                    ng-show="!ctrl.isLoading">
             Save
         </md-button>

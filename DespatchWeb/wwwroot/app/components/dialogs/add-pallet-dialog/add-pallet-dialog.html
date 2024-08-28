@@ -74,7 +74,8 @@
                 ng-show="ctrl.isLoading">
         </md-progress-circular>
 
-        <md-button class="md-primary" ng-click="ctrl.submit(ctrl.pallet)" ng-disabled="ctrl.palletForm.$invalid"
+        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.pallet)"
+                   ng-disabled="ctrl.palletForm.$invalid"
                    ng-show="!ctrl.isLoading">
             Save
         </md-button>
