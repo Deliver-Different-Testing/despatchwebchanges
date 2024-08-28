@@ -1,7 +1,7 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         loadingService, $mdDialog, $parse, $q, $scope, $state,
                         $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment,
-                        Upload, bytesFilter) {
+                        Upload, bytesFilter, $watch) {
     const ctrl = this;
 
     $scope.isInternal = (ClientInternal === "True");
@@ -50,6 +50,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.allCouriers = {display: false, includeUA: false};
     $scope.mapZoom = {display: true};
     $scope.supportSettings = {autoRefresh: true};
+
+    $scope.$watch('currentJob', function (newVal, oldVal) {
+        if (newVal !== oldVal) {
+            window.debouncedUpdateMapForJob(newVal);
+        }
+    }, true);
+
 
     $scope.options = {
         "detail": {
@@ -3311,7 +3318,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter",
     'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "$mdDialog",
     "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService',
-    "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", HomeController]);
+    "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "$watch", HomeController]);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
