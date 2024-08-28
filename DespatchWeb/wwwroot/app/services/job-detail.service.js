@@ -1243,7 +1243,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: 'app/components/dialogs/select-dialog/selectDialog.html',
+            templateUrl: 'app/components/dialogs/select-dialog/select-dialog.html',
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
