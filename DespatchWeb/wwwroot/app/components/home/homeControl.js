@@ -1,7 +1,7 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         loadingService, $mdDialog, $parse, $q, $scope, $state,
                         $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment,
-                        Upload, bytesFilter, $watch) {
+                        Upload, bytesFilter) {
     const ctrl = this;
 
     $scope.isInternal = (ClientInternal === "True");
@@ -51,11 +51,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.mapZoom = {display: true};
     $scope.supportSettings = {autoRefresh: true};
 
-    $scope.$watch('currentJob', function (newVal, oldVal) {
-        if (newVal !== oldVal) {
-            window.debouncedUpdateMapForJob(newVal);
+    $timeout(() => {
+        if (window.map) {
+            ctrl.initializeMapFunctions();
+        } else {
+            console.error('Map is not initialized');
         }
-    }, true);
+    });
 
 
     $scope.options = {
@@ -2281,6 +2283,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     ctrl.getAvailableCourierLocation = () => {
+        if (!window.map) {
+            console.error('Map is not initialized');
+            return;
+        }
+
         if (!$scope.allCouriers.display) {
             map.clearLabels();
             map.clearFlags();
@@ -3318,7 +3325,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter",
     'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "$mdDialog",
     "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService',
-    "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "$watch", HomeController]);
+    "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", HomeController]);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;

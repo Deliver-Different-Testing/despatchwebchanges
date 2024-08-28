@@ -1040,7 +1040,7 @@ public class JobController : Controller
     [HttpGet]
     public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
     {
-        return Json(true);
+        return Json(false);
     }
 
     [HttpGet]
