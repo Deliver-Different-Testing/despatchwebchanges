@@ -65,20 +65,17 @@ md-autocomplete.ng-leave {
   border-radius: 4px;
 }
 
-.fixed-size-autocomplete {
-    width: 250px !important;
-    /* Adjust this value as needed */
+.autocomplete-style {
+  width: 250px !important;
 }
 
-.fixed-size-autocomplete md-autocomplete-wrap {
-    height: 40px !important;
-    /* Adjust this value as needed */
+.autocomplete-style md-autocomplete-wrap {
+  height: 40px !important;
 }
 
-.fixed-size-autocomplete input {
-    height: 100% !important;
-    line-height: 40px !important;
-    /* Should match the height */
+.autocomplete-style input {
+  height: 100% !important;
+  line-height: 40px !important;
 }
 .switch-container {
   display: flex;
