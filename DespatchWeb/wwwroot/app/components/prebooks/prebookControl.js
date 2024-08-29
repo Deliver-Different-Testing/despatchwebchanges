@@ -198,13 +198,13 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/common/tpls/jobDetail.tpl",
+            "tpl": "app/components/prebooks/tpls/preBookDetail.tpl",
             "showSearch": 0,
             "showDetailButtons": 1
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/prebooks/tpls/map.tpl?v=1.1",
+            "tpl": "app/components/prebooks/tpls/map.tpl",
             "showSearch": 0
         }
 
@@ -248,7 +248,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     ];
 
 
-    var layoutToUse = angular.copy($scope.layouts[0].layout);
+    const layoutToUse = angular.copy($scope.layouts[0].layout);
     if (!$scope.isAdmin) {
         //layoutToUse.columns[0].boxes.splice(0, 1);
         //layoutToUse.columns.splice(2, 1);
@@ -273,16 +273,16 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         scrollSpeed: 20,
         handle: '.box-handle',
         activate: (e, ui) => {
-            var box = angular.element("#" + ui.item.context.id);
-            var parent = box.parent();
+            const box = angular.element("#" + ui.item.context.id);
+            const parent = box.parent();
             parent.find(".box").each(function () {
                 angular.element(this).attr("data-height", angular.element(this).height() + "px");
             });
         },
         update: (e, ui) => {
             $timeout(() => {
-                var box = angular.element("#" + ui.item.context.id);
-                var parent = box.parent();
+                const box = angular.element("#" + ui.item.context.id);
+                const parent = box.parent();
                 parent.find(".box").each(function () {
                     angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
                 });
@@ -408,15 +408,15 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     $scope.selectJobData = (lat, lng) => {
 
-        var toCompare = [];
+        const toCompare = [];
 
         angular.forEach($scope.runBuilder, (job, key) => {
             toCompare.push([key, job.toLat, job.toLng]);
         });
 
-        var closestIndex = closestLocation(lat, lng, toCompare);
+        const closestIndex = closestLocation(lat, lng, toCompare);
 
-        var closestJob = $scope.runBuilder[closestIndex[0]];
+        const closestJob = $scope.runBuilder[closestIndex[0]];
 
         return closestJob;
 
@@ -468,7 +468,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         if (!sizeId) {
             return "";
         }
-        var sn = $scope.options.detail.size.find(obj => {
+        const sn = $scope.options.detail.size.find(obj => {
 
             return obj.id === sizeId;
 
@@ -479,9 +479,8 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     //Select Job
     $scope.selectJobDetail = id => {
         console.log("select Job  " + id);
-        //angular.element("#jobList").find(".active").removeClass("active");
+
         clearTimeout($scope.myTimer);
-        //$scope.currentEvent = event;
 
         angular.element("#box-jobDetail").find(".loading").show();
 
@@ -491,16 +490,16 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + data.jobNo;
             console.log($scope.currentJob.days);
-            var freq = $scope.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(8, 9);
+            const freq = $scope.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(8, 9);
             console.log(freq);
             jdSvc.combos.frequency = [jdSvc.pickFrequency[freq]];
             console.log(jdSvc.combos.frequency);
-            var hol = $scope.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(9, 10);
+            const hol = $scope.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(9, 10);
             console.log(hol);
             jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
             console.log(jdSvc.combos.holidays);
-            var selectedDays = [];
-            var days = $scope.currentJob.days.slice(0, 7);
+            const selectedDays = [];
+            const days = $scope.currentJob.days.slice(0, 7);
             for (let i = 0; i < days.length; i++) {
                 if (days[i] === '1') {
                     selectedDays.push(jdSvc.pickDays[i]);
@@ -508,7 +507,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
             }
             console.log(selectedDays);
             jdSvc.combos.days = selectedDays;
-            var jobs = [];
+            const jobs = [];
             jobs.push($scope.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
@@ -537,7 +536,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     jdSvc.setSelectJobDetail($scope.selectJobDetail);
 
-    $scope.voidPrebookJob = jobId => {
+    ctrl.voidPrebookJob = jobId => {
         const confirm = $mdDialog.confirm()
             .title('Void Prebook')
             .textContent("This will void TODAY'S copy of this prebook but not cancel it for good. Please confirm that you wish to do this?")
@@ -552,7 +551,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         });
     }
 
-    $scope.sendPrebookJob = jobId => {
+    ctrl.sendPrebookJob = jobId => {
         const confirm = $mdDialog.confirm()
             .title('Accelerate Prebook')
             .textContent("This will send this prebook to the live dispatch screen now. Please confirm that you wish to do this?")
@@ -581,7 +580,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     $scope.onMapReady = () => {
         //$scope.heremaps = heremaps;
 
-        var options = {
+        const options = {
             minimumInputLength: 1,
             ajax: {
                 url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
@@ -611,11 +610,11 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
                 app_code: "yjfwTdkin_R2rGXYTrwWVg",
                 locationId: e.params.data.id
             }).done(data => {
-                var locn = data.Response.View[0].Result[0].Location;
+                const locn = data.Response.View[0].Result[0].Location;
                 console.log("Suburb = " + locn.Address.District);
                 console.log("PostCode = " + locn.Address.PostalCode);
                 angular.element("#suburb").val(locn.Address.District);
-                var mappedSub = jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
+                const mappedSub = jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
                 if (mappedSub !== undefined) {
                     console.log(mappedSub);
                     angular.element('#our_suburb').val(mappedSub.id).trigger('change');
@@ -627,14 +626,14 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
                 jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
                 jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
                 jdSvc.gpsForm.data.address = locn.Address.Label;
-                var ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
+                const ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
                 $scope.map.setCenter(ll);
                 $scope.marker.setPosition(ll);
 
             });
         });
 
-        var suburbOptions = {
+        const suburbOptions = {
             minimumInputLength: 1,
             data: jdSvc.pickSuburbs
         };
@@ -653,8 +652,8 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         $timeout(() => {
             $scope.selectedEvents = [];
             angular.element("#jobList .active").each(function () {
-                var eventIndex = angular.element(this).data("index");
-                var event = $scope.jobList[eventIndex];
+                const eventIndex = angular.element(this).data("index");
+                const event = $scope.jobList[eventIndex];
                 $scope.selectedEvents.push(event);
             });
             //$scope.$apply();
@@ -686,7 +685,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
                         onSubmit: () => {
                             angular.element("#box-jobList").find(".loading").show();
                             angular.element("#box-map").find(".loading").show();
-                            var userName = angular.element("#gather-editName").val();
+                            const userName = angular.element("#gather-editName").val();
                             uPBData.closeEvent($itemScope.event.bulkEventID, userName).then(() => {
                                 $scope.refreshData(1, true);
                             });
@@ -720,15 +719,15 @@ function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
     lat2 = Deg2Rad(lat2);
     lon1 = Deg2Rad(lon1);
     lon2 = Deg2Rad(lon2);
-    var R = 6371; // km
-    var x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
-    var y = (lat2 - lat1);
+    const R = 6371; // km
+    const x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
+    const y = (lat2 - lat1);
     return Math.sqrt(x * x + y * y) * R;
 }
 
 function closestLocation(latitude, longitude, locations) {
-    var mindif = 99999;
-    var closest;
+    let mindif = 99999;
+    let closest;
 
     for (let index = 0; index < locations.length; ++index) {
         const dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);

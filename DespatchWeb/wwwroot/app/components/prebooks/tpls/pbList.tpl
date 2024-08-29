@@ -39,12 +39,12 @@
     <table class="table table-striped table-responsive table-rows" id="jobList" data-group="jobList">
         <thead class="thead-dark no select">
 
-        </tr>
         </thead>
         <tbody>
         <tr class="droppable-row draggable-row clickable-row noselect"
             data-courier="{{job.courier}}" data-jobNo="{{job.jobNo}}"
-            data-jobid="{{job.id}}" ng-mouseup="selectJobDetail(job.id);" ng-repeat="job in jobList | filter: box.searchBox">
+            data-jobid="{{job.id}}" ng-mouseup="selectJobDetail(job.id);"
+            ng-repeat="job in jobList | filter: box.searchBox">
             <td>{{job.booked | date: "hh:mm"}}</td>
             <td> {{job.speed}}</td>
             <td>{{job.jobNo}}</td>
@@ -56,12 +56,12 @@
                 <div title="{{job.toAddress}}">{{job.toAddress}}</div>
             </td>
             <td>{{job.courier}}</td>
-            <td ng-click="sendPrebookJob(job.id);"><i class="material-symbols-outlined small-icon">send</i>
+            <td ng-click="ctrl.sendPrebookJob(job.id);"><i class="material-symbols-outlined job-table-icon">send</i>
                 <md-tooltip md-direction="bottom">Send</md-tooltip>
 
             </td>
-            <td ng-click="voidPrebookJob(job.id);"><i
-                    class="material-symbols-outlined small-icon">block</i>
+            <td ng-click="ctrl.voidPrebookJob(job.id);"><i
+                    class="material-symbols-outlined job-table-icon">block</i>
                 <md-tooltip md-direction="bottom">Void</md-tooltip>
             </td>
 
@@ -99,23 +99,6 @@
         <tfoot>
         <tr>
             <td align="center" colspan="6">
-                <!--<span class="form-group pull-left page-size form-inline">
-                    <select id="ddlPageSize" class="form-control control-color"
-                            ng-model="pageSizeSelected"
-                            ng-change="changePageSize(pageSizeSelected)">
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                    </select>
-                </span>  -->
-
-                <!-- <div class="pull-right">
-                    <uib-pagination total-items="totalCount" ng-change="pageChanged(pageIndex)" items-per-page="pageSizeSelected"
-                    direction-links="true" ng-model="pageIndex" max-size="maxSize" class="pagination" boundary-links="true" rotate="false"
-                    num-pages="numPages"></uib-pagination>
-                    <a class="btn btn-primary">Page: {{pageIndex}} / {{numPages}}</a>
-                </div> -->
             </td>
         </tr>
         </tfoot>
@@ -126,19 +109,14 @@
 
 <div class="loading">
     <div class="text">
-        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+        <md-progress-circular md-mode="indeterminate"></md-progress-circular>
         <span class="sr-only">Loading...</span>
     </div>
 </div>
 
-
 <script>
-
-    $(".box-content").on("scroll", function () {
-
-        var newTop2 = $(this).scrollTop();
-        $(this).find(".box-calculator").css({"top": newTop2});
-
+    angular.element(".box-content").on("scroll", function () {
+        const newTop2 = angular.element(this).scrollTop();
+        angular.element(this).find(".box-calculator").css({"top": newTop2});
     });
-
 </script>
