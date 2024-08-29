@@ -1057,7 +1057,6 @@ public class JobController : Controller
             if (request?.File == null || request.File.Length == 0)
                 return BadRequest("No file uploaded");
 
-
             // Validate file type
             var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "application/pdf" };
             if (!allowedTypes.Contains(request.File.ContentType.ToLower()))

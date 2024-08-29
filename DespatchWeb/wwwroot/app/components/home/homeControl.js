@@ -51,15 +51,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.mapZoom = {display: true};
     $scope.supportSettings = {autoRefresh: true};
 
-    $timeout(() => {
-        if (window.map) {
-            ctrl.initializeMapFunctions();
-        } else {
-            console.log('Map is not initialized');
-        }
-    });
-
-
     $scope.options = {
         "detail": {
             "size": [
