@@ -116,7 +116,7 @@
                    ng-model="job.ld" ng-mouseup="$event.preventDefault();"
                    placeholder="LD" type="number"/>
         </td>
-        <td class="selectjob" ng-click="ctrl.selectForDispatch(job); $event.stopPropagation();"
+        <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();"
             style="display:none"
             title="placeholder selector"></td>
         <td ng-click="job.courier == null || ctrl.restoreJobs();" title="Restore">

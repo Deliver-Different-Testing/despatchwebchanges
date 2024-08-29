@@ -639,7 +639,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         ctrl.setFilters({'clearList': area});
     };
 
-    ctrl.selectForDispatch = job => {
+    $scope.selectForDispatch = job => {
         console.log("In SelectForDispatch");
         $scope.jobForDispatch = job;
     };
