@@ -35,7 +35,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         return greetingService.greetUser(FirstName);
     }
 
-    $scope.updateGPS = function (currentJob, field, fromRightClick) {
+    $scope.updateGPS = (currentJob, field, fromRightClick) => {
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
@@ -64,7 +64,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    ctrl.createNewJob = function (event) {
+    ctrl.createNewJob = event => {
         // Dialog
         $mdDialog.show({
             controller: CreateJobDialogController,
@@ -137,7 +137,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    ctrl.interCourierCharge = function (event) {
+    ctrl.interCourierCharge = event => {
         $mdDialog.show({
             controller: InterCourierChargeDialog,
             controllerAs: 'ctrl',
@@ -172,20 +172,20 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     $scope.gather = {
-        submit: function () {
+        submit: () => {
             angular.element(".gatherForm").hide();
-            $scope.gather.form.onSubmit().then(function (response) {
+            $scope.gather.form.onSubmit().then(response => {
                 if (ctrl.currentJob) {
                     ctrl.currentJob.bulkJob ? $scope.selectBulkJobDetail(ctrl.currentJob.id) : ctrl.currentJob.preBook ? $scope.selectPreBookDetail(ctrl.currentJob.id) : $scope.selectJobDetail(ctrl.currentJob.id);
                 }
             });
         },
-        cancel: function () {
+        cancel: () => {
             angular.element(".gatherForm").hide();
         },
-        showForm: function () {
-            angular.element(".gatherForm").show(0, function () {
-                $timeout(function () {
+        showForm: () => {
+            angular.element(".gatherForm").show(0, () => {
+                $timeout(() => {
                     angular.element(".gatherForm .focusMe").focus();
                 }, 100);
             });
@@ -333,7 +333,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "bulkJobList": {
             "title": "Bulk Job Data",
-            "tpl": "app/components/CS/tpls/bulkJobList.tpl?v=1.14",
+            "tpl": "app/components/CS/tpls/bulkJobList.tpl",
             "showSearch": 1,
             "model": "bulkJobList",
             "headings": [
@@ -426,13 +426,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/common/tpls/jobDetail.tpl?v=3.0",
+            "tpl": "app/components/common/tpls/jobDetail.tpl",
             "showSearch": 0,
             "showDetailButtons": 1
         },
         "scanList": {
             "title": "Scan Detail",
-            "tpl": "app/components/CS/tpls/scanList.tpl?v=1.0",
+            "tpl": "app/components/CS/tpls/scanList.tpl",
             "showSearch": 0,
             "model": "scanList",
             "headings": [
@@ -461,12 +461,12 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     ///////////////////////////////
     // LAYOUT
     ///////////////////////////////
-    var layoutsObject = null;
+    let layoutsObject = null;
     if (Modernizr.localstorage) {
         layoutsObject = JSON.parse(localStorage.getItem("layoutsCS-" + ContactID));
     }
 
-    var defaultLayout = [
+    const defaultLayout = [
         {
             name: "Default",
             layout: {
@@ -561,7 +561,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     ctrl.layout = layoutToUse;
     ctrl.currentLayoutName = ctrl.layouts[0].name;
 
-    ctrl.deleteLayout = function (index) {
+    ctrl.deleteLayout = index => {
         const deleteConfirm = $mdDialog.confirm()
             .title('Delete Layout?')
             .textContent('Are you sure you would like to delete this layout?')
@@ -577,13 +577,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }, () => console.log("Delete layout canceled!"));
     }
 
-    ctrl.setLastActiveLayoutName = function (layoutName) {
+    ctrl.setLastActiveLayoutName = layoutName => {
         if (Modernizr.localstorage) {
             localStorage.setItem("lastActiveLayoutCS-" + ContactID, layoutName);
         }
     };
 
-    ctrl.loadLayout = function (i) {
+    ctrl.loadLayout = i => {
         ctrl.currentLayoutName = ctrl.layouts[i].name;
         ctrl.layout = angular.copy(ctrl.layouts[i].layout);
 
@@ -593,7 +593,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $timeout(ctrl.initFilters, 1000);
     };
 
-    ctrl.saveLayout = function () {
+    ctrl.saveLayout = () => {
         angular.forEach(ctrl.layout.columns,
             (column, colKey) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
@@ -641,17 +641,17 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         scrollSensitivity: 100,
         scrollSpeed: 20,
         handle: '.box-handle',
-        activate: function (e, ui) {
-            var box = angular.element("#" + ui.item.context.id);
-            var parent = box.parent();
+        activate: (e, ui) => {
+            const box = angular.element("#" + ui.item.context.id);
+            const parent = box.parent();
             parent.find(".box").each(function () {
                 angular.element(this).attr("data-height", angular.element(this).height() + "px");
             });
         },
-        update: function (e, ui) {
-            $timeout(function () {
-                var box = angular.element("#" + ui.item.context.id);
-                var parent = box.parent();
+        update: (e, ui) => {
+            $timeout(() => {
+                const box = angular.element("#" + ui.item.context.id);
+                const parent = box.parent();
                 parent.find(".box").each(function () {
                     angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
                 });
@@ -667,7 +667,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
      * @param {string} boxName
      * @param {number} index
      */
-    ctrl.openSearch = function (boxName, index) {
+    ctrl.openSearch = (boxName, index) => {
         const boxID = boxName + '-' + index;
         if (ctrl.showInput[boxID]) {
             ctrl.showInput[boxID] = false;
@@ -679,14 +679,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
 
-    $scope.goToRunViewer = function () {
+    $scope.goToRunViewer = () => {
         console.log("goToRunViewer.");
         $state.go('home');
     };
 
     //Column Sorting
     $scope.sort = [];
-    $scope.orderList = function (list, prop) {
+    $scope.orderList = (list, prop) => {
 
 
         if ($scope.sort[list] !== prop) {
@@ -709,7 +709,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         combo: 'esc',
         description: 'Close gather screen',
         allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: function () {
+        callback: () => {
             angular.element(".gatherForm").hide();
             angular.element(".eventForm").hide();
         }
@@ -719,7 +719,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         combo: 'ctrl+a',
         description: 'Select All',
         allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: function () {
+        callback: () => {
             angular.element(".activeTable").find(".clickable-row").addClass("active");
             $scope.showRun();
         }
@@ -729,7 +729,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         combo: 'enter',
         description: 'Submit gather form',
         allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: function (event, hk) {
+        callback: (event, hk) => {
             if (angular.element(".gatherForm").is(":visible") === true) {
                 $timeout(() => $scope.gather.submit(), 0);
             }
@@ -761,8 +761,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     }
 
 
-    $scope.filterRegion = function (region) {
-        var sr = $scope.pickRegions.find(obj => {
+    $scope.filterRegion = region => {
+        const sr = $scope.pickRegions.find(obj => {
 
             return obj.id === region.id;
 
@@ -774,17 +774,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $scope.refreshPreBookData(true);
     };
 
-    ctrl.unlockJob = function () {
-        return jdSvc
-            .unlockJob(ctrl.currentJob);
-    };
+    ctrl.unlockJob = () => jdSvc
+        .unlockJob(ctrl.currentJob);
 
-    ctrl.lockJob = function () {
-        return jdSvc
-            .lockJob(ctrl.currentJob);
-    };
+    ctrl.lockJob = () => jdSvc
+        .lockJob(ctrl.currentJob);
 
-    ctrl.unSplitJob = function () {
+    ctrl.unSplitJob = () => {
         const confirm = $mdDialog.confirm()
             .title('Un-Split Job?')
             .textContent('Are you sure you wish to un-split this job?')
@@ -807,7 +803,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     };
 
-    ctrl.restoreJob = function (job) {
+    ctrl.restoreJob = job => {
         angular.element("#box-jobDetail").find(".loading").show();
         let callData = {
             "call": "restoreJobs",
@@ -832,18 +828,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }
 
         if (callData.splitJobs.length > 0) {
-            uCSData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs).then(function () {
-                return $scope.selectJobDetail(job.id);
-            });
+            uCSData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs).then(() => $scope.selectJobDetail(job.id));
         }
         if (callData.jobs.length > 0) {
-            uCSData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs).then(function () {
-                return $scope.selectJobDetail(job.id);
-            });
+            uCSData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs).then(() => $scope.selectJobDetail(job.id));
         }
     };
 
-    ctrl.swapPOD = function (event) {
+    ctrl.swapPOD = event => {
         const jobNumberPrompt = $mdDialog.prompt()
             .title('Enter the other job number')
             .textContent('Please enter the Job Number to swap the POD.')
@@ -904,7 +896,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    ctrl.sendPOD = function (event) {
+    ctrl.sendPOD = event => {
         if (!ctrl.currentJob.podPhoto) {
             $mdDialog.show(
                 $mdDialog.alert()
@@ -942,7 +934,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    $scope.refreshAllData = function (wait) {
+    $scope.refreshAllData = wait => {
         // Empty search criteria
         console.log(ctrl.pickDateService);
 
@@ -969,14 +961,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             $scope.refreshData(wait),
             $scope.refreshBulkData(wait),
             $scope.refreshPreBookData(wait)
-        ]).then(function () {
+        ]).then(() => {
             loadingService.closeLoader();
-        }).catch(function () {
+        }).catch(() => {
             loadingService.closeLoader();
         });
     }
 
-    $scope.refreshData = function (wait) {
+    $scope.refreshData = wait => {
         const $jobList = angular.element("#jobList");
         let goTop = $jobList.offset().top;
         const $parentDiv = $jobList.parents(".box-content");
@@ -998,11 +990,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             moment(ctrl.pickDateService.to_date),
             $scope.pageIndex,
             $scope.pageSizeSelected).then(
-            function (data) {
+            data => {
                 //var filteredData = $filter('filter')(data, $scope.searchBox);
                 $scope.jobList = data.item2;
                 $scope.totalCount = data.item1;
-                $timeout(function () {
+                $timeout(() => {
                     sizeHeadings(angular.element("#jobList").parents(".column"));
 
                 }, 1000);
@@ -1012,7 +1004,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     };
 
-    $scope.refreshBulkData = function (wait) {
+    $scope.refreshBulkData = wait => {
         let goTop = angular.element("#bulkJobList").offset().top;
         const $parentDiv = angular.element("#bulkJobList").parents(".box-content");
 
@@ -1033,17 +1025,17 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             moment(ctrl.pickDateService.to_date),
             $scope.bulkPageIndex,
             $scope.bulkPageSizeSelected).then(
-            function (data) {
+            data => {
                 //var filteredData = $filter('filter')(data, $scope.searchBox);
                 $scope.bulkJobList = data.item2;
                 $scope.bulkTotalCount = data.item1;
-                $timeout(function () {
+                $timeout(() => {
                     sizeHeadings(angular.element("#bulkJobList").parents(".column"));
                 }, 1000);
             });
     };
 
-    $scope.refreshPreBookData = function (wait) {
+    $scope.refreshPreBookData = wait => {
         const pbList = angular.element("#pbList");
         let goTop = pbList.offset().top;
         const $parentDiv = pbList.parents(".box-content");
@@ -1065,11 +1057,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             moment(ctrl.pickDateService.to_date),
             $scope.pbPageIndex,
             $scope.pbPageSizeSelected).then(
-            function (data) {
+            data => {
                 //var filteredData = $filter('filter')(data, $scope.searchBox);
                 $scope.pbList = data.item2;
                 $scope.pbTotalCount = data.item1;
-                $timeout(function () {
+                $timeout(() => {
                     sizeHeadings(angular.element("#pbList").parents(".column"));
                 }, 1000);
 
@@ -1077,24 +1069,24 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     };
 
-    $scope.selectJobData = function (lat, lng) {
+    $scope.selectJobData = (lat, lng) => {
 
-        var toCompare = [];
+        const toCompare = [];
 
-        angular.forEach($scope.runBuilder, function (job, key) {
+        angular.forEach($scope.runBuilder, (job, key) => {
             toCompare.push([key, job.toLat, job.toLng]);
         });
 
-        var closestIndex = closestLocation(lat, lng, toCompare);
+        const closestIndex = closestLocation(lat, lng, toCompare);
 
-        var closestJob = $scope.runBuilder[closestIndex[0]];
+        const closestJob = $scope.runBuilder[closestIndex[0]];
 
         return closestJob;
 
     };
 
 
-    $scope.showItems = function (job) {
+    $scope.showItems = job => {
         if (job.clientCode !== "Other") {
 
             if ($scope.cancelledSelected) {
@@ -1123,11 +1115,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     /////////////////////////////////
 
-    $scope.showJobs = function (group) {
+    $scope.showJobs = group => {
 
         angular.element("#box-jobsList").find(".loading").show();
         $scope.jobList = group.jobs;
-        $timeout(function () {
+        $timeout(() => {
             sizeHeadings(angular.element("#jobList").parents(".column"));
         }, 1000);
         angular.element("#box-jobsList .loading").fadeOut();
@@ -1135,11 +1127,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     };
 
-    $scope.sizeName = function (sizeId) {
+    $scope.sizeName = sizeId => {
         if (!sizeId) {
             return "";
         }
-        var sn = $scope.options.detail.size.find(obj => {
+        const sn = $scope.options.detail.size.find(obj => {
 
             return obj.id === sizeId;
 
@@ -1147,9 +1139,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         return sn === undefined ? "" : sn.label;
     };
 
-    $scope.loadRelatedJobDetail = function (id, jn) {
+    $scope.loadRelatedJobDetail = (id, jn) => {
         angular.element("#box-jobDetail").find(".loading").show();
-        uCSData.getJobDetail(id).then(function (data) {
+        uCSData.getJobDetail(id).then(data => {
             ctrl.currentJob = data;
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + jn;
@@ -1159,34 +1151,34 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     /**
      * @param {number} jobId
      */
-    $scope.selectJobDetail = function (jobId) {
+    $scope.selectJobDetail = jobId => {
         $scope.scanList = [];
         console.log("select Job  " + jobId);
         clearTimeout($scope.myTimer);
 
         angular.element("#box-jobDetail").find(".loading").show();
 
-        uCSData.getJobDetail(jobId).then(function (data) {
+        uCSData.getJobDetail(jobId).then(data => {
             ctrl.currentJob = data;
             jdSvc.setJob(ctrl.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + data.jobNo;
-            var jobs = [];
+            const jobs = [];
             jobs.push(ctrl.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
             if (ctrl.currentJob.rootParentID) {
-                uCSData.getRelatedJobs(ctrl.currentJob.rootParentID, ctrl.currentJob.clientID).then(function (data) {
+                uCSData.getRelatedJobs(ctrl.currentJob.rootParentID, ctrl.currentJob.clientID).then(data => {
                     //data = data.filter(item => item.id !== self.currentJob.id);
                     ctrl.currentJob.relatedJobs = data;
                 });
             }
             angular.element("#box-scanList").find(".loading").show();
-            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(data => {
                 $scope.scanList = data;
 
-                $timeout(function () {
+                $timeout(() => {
                     sizeHeadings(angular.element("#scanList").parents(".column"));
                     angular.element("#box-scanList").find(".loading").fadeOut();
                 }, 200);
@@ -1194,29 +1186,28 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
             if (ctrl.currentJob.courier && ctrl.currentJob.completedTime) {
                 angular.element("#box-map").find(".loading").show();
-                uCSData.getCourierRoute(ctrl.currentJob.courier, moment(ctrl.currentJob.completedTime).subtract(5, 'm'), moment(ctrl.currentJob.completedTime).add(5, 'm')).then(function (data) {
-                    var flightPathCoordinates = [];
+                uCSData.getCourierRoute(ctrl.currentJob.courier, moment(ctrl.currentJob.completedTime).subtract(5, 'm'), moment(ctrl.currentJob.completedTime).add(5, 'm')).then(data => {
+                    const flightPathCoordinates = [];
 
                     angular.element("#box-map").find(".loading").fadeOut();
                     if (data.length === 0) {
                         return;
                     }
-                    for (i = 0; i < data.length; i++) {
-                        var coordinatePair = new google.maps.LatLng(data[i].latitude, data[i].longitude);
+                    for (let i = 0; i < data.length; i++) {
+                        const coordinatePair = new google.maps.LatLng(data[i].latitude, data[i].longitude);
                         flightPathCoordinates.push(coordinatePair);
                     }
-                    var flightPathPoly = new google.maps.Polyline({
-                        //map: map,
+                    const flightPathPoly = new google.maps.Polyline({
                         path: flightPathCoordinates,
                         strokeColor: "#FF0000",
                         strokeOpacity: 1.0,
                         strokeWeight: 2
                     });
 
-                    var flightPath = flightPathPoly.getPath();
+                    const flightPath = flightPathPoly.getPath();
 
-                    var pathValues = [];
-                    for (var i = 0; i < flightPath.getLength(); i++) {
+                    const pathValues = [];
+                    for (let i = 0; i < flightPath.getLength(); i++) {
                         pathValues.push(flightPath.getAt(i).toUrlValue());
                     }
 
@@ -1224,15 +1215,15 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                         interpolate: true,
                         key: googleMapsApiKey,
                         path: pathValues.join('|')
-                    }, function (data) {
-                        var snappedCoordinates = [];
-                        for (var i = 0; i < data.snappedPoints.length; i++) {
-                            var latlng = new google.maps.LatLng(
+                    }, data => {
+                        const snappedCoordinates = [];
+                        for (let i = 0; i < data.snappedPoints.length; i++) {
+                            const latlng = new google.maps.LatLng(
                                 data.snappedPoints[i].location.latitude,
                                 data.snappedPoints[i].location.longitude);
                             snappedCoordinates.push(latlng);
                         }
-                        var snappedFlightPath = new google.maps.Polyline({
+                        const snappedFlightPath = new google.maps.Polyline({
                             map: map,
                             path: snappedCoordinates,
                             strokeColor: "#FF0000",
@@ -1253,7 +1244,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     };
 
-    $scope.selectPreBookDetail = function (id) {
+    $scope.selectPreBookDetail = id => {
         $scope.scanList = [];
         console.log("select pre book Job  " + id);
         //angular.element("#jobList").find(".active").removeClass("active");
@@ -1262,22 +1253,22 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         angular.element("#box-jobDetail").find(".loading").show();
 
-        uCSData.getPreBookDetail(id).then(function (data) {
+        uCSData.getPreBookDetail(id).then(data => {
             ctrl.currentJob = data;
             jdSvc.setJob(ctrl.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + data.jobNo;
             console.log(ctrl.currentJob.days);
-            var freq = ctrl.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : ctrl.currentJob.days.slice(8, 9);
+            const freq = ctrl.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : ctrl.currentJob.days.slice(8, 9);
             console.log(freq);
             jdSvc.combos.frequency = [jdSvc.pickFrequency[freq]];
             console.log(jdSvc.combos.frequency);
-            var hol = ctrl.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : ctrl.currentJob.days.slice(9, 10);
+            const hol = ctrl.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : ctrl.currentJob.days.slice(9, 10);
             console.log(hol);
             jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
             console.log(jdSvc.combos.holidays);
-            var selectedDays = [];
-            var days = ctrl.currentJob.days.slice(0, 7);
+            const selectedDays = [];
+            const days = ctrl.currentJob.days.slice(0, 7);
             for (let i = 0; i < days.length; i++) {
                 if (days[i] === '1') {
                     selectedDays.push(jdSvc.pickDays[i]);
@@ -1285,15 +1276,15 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             }
             console.log(selectedDays);
             jdSvc.combos.days = selectedDays;
-            var jobs = [];
+            const jobs = [];
             jobs.push(ctrl.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(data => {
                 $scope.scanList = data;
 
-                $timeout(function () {
+                $timeout(() => {
                     sizeHeadings(angular.element("#scanList").parents(".column"));
                     angular.element("#box-scanList").find(".loading").fadeOut();
                 }, 200);
@@ -1304,7 +1295,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     //Select Bulk Job
-    $scope.selectBulkJobDetail = function (id) {
+    $scope.selectBulkJobDetail = id => {
         $scope.scanList = [];
         console.log("select Bulk Job  " + id);
         //angular.element("#jobList").find(".active").removeClass("active");
@@ -1313,20 +1304,20 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         angular.element("#box-jobDetail").find(".loading").show();
 
-        uCSData.getBulkJobDetail(id).then(function (data) {
+        uCSData.getBulkJobDetail(id).then(data => {
             ctrl.currentJob = data;
             jdSvc.setJob(ctrl.currentJob);
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Bulk Job " + data.jobNo;
-            var jobs = [];
+            const jobs = [];
             jobs.push(ctrl.currentJob);
             displayRoutePointsOnly(jobs, true);
             setMapBounds();
             map.setZoom(14);
-            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(function (data) {
+            uCSData.getScanDetail(moment(ctrl.currentJob.bookedDate), ctrl.currentJob.jobNo).then(data => {
                 $scope.scanList = data;
 
-                $timeout(function () {
+                $timeout(() => {
                     sizeHeadings(angular.element("#scanList").parents(".column"));
                     angular.element("#box-scanList").find(".loading").fadeOut();
                 }, 200);
@@ -1340,7 +1331,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     jdSvc.setSelectBulkJobDetail($scope.selectBulkJobDetail);
 
     //This method is calling from pagination number
-    $scope.pageChanged = function (i) {
+    $scope.pageChanged = i => {
 
         $scope.pageIndex = i;
         $scope.refreshData();
@@ -1348,28 +1339,28 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     //This method is calling from dropDown
-    $scope.changeBulkPageSize = function (i) {
+    $scope.changeBulkPageSize = i => {
         $scope.bulkPageIndex = i;
         $scope.bulkPageSizeSelected = i;
         $scope.refreshBulkData();
     };
 
     //This method is calling from pagination number
-    $scope.pbPageChanged = function (i) {
+    $scope.pbPageChanged = i => {
 
         $scope.pbPageIndex = i;
         $scope.refreshPreBookData();
 
     };
 
-    $scope.changePBPageSize = function (i) {
+    $scope.changePBPageSize = i => {
         $scope.pbPageIndex = i;
         $scope.pbPageSizeSelected = i;
         $scope.refreshPreBookData();
     };
 
     //This method is calling from pagination number
-    $scope.bulkPageChanged = function (i) {
+    $scope.bulkPageChanged = i => {
 
         $scope.bulkPageIndex = i;
         $scope.refreshBulkData();
@@ -1377,7 +1368,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
     //This method is calling from dropDown
-    $scope.changePageSize = function (i) {
+    $scope.changePageSize = i => {
         $scope.pageIndex = i;
         $scope.pageSizeSelected = i;
         $scope.refreshData();
@@ -1389,22 +1380,18 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     ctrl.clientSearchText = '';
     ctrl.courierSearchText = '';
 
-    ctrl.clientQuerySearch = function (searchText) {
-        return uCSData.getActiveClients(searchText);
-    };
+    ctrl.clientQuerySearch = searchText => uCSData.getActiveClients(searchText);
 
-    ctrl.selectedClientChange = function (item) {
+    ctrl.selectedClientChange = item => {
         if (!item) {
             ctrl.pickDateService.client = null;
         }
         ctrl.pickDateService.client = item.id;
     };
 
-    ctrl.courierQuerySearch = function (searchText) {
-        return uCSData.getActiveCouriersSearch(searchText);
-    };
+    ctrl.courierQuerySearch = searchText => uCSData.getActiveCouriersSearch(searchText);
 
-    ctrl.selectedCourierChange = function (item) {
+    ctrl.selectedCourierChange = item => {
         if (!item) {
             ctrl.pickDateService.courier = null;
         }
@@ -1415,34 +1402,34 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         $scope.pickCouriers = data;
     });
 
-    uCSData.getAllCouriers().then(function (data) {
+    uCSData.getAllCouriers().then(data => {
         $scope.pickAllCouriers = data;
     });
 
-    NgMap.getMap().then(function (map) {
+    NgMap.getMap().then(map => {
         $scope.map = map;
         $scope.marker = map.markers[0];
         $scope.onMapReady();
     });
 
-    $scope.highlightEvent = function () {
+    $scope.highlightEvent = () => {
         angular.element("#jobList .active").each(function () {
             angular.element(this).removeClass("active");
         });
         //loop actives
 
-        $timeout(function () {
+        $timeout(() => {
             $scope.selectedEvents = [];
             angular.element("#jobList .active").each(function () {
-                var eventIndex = angular.element(this).data("index");
-                var event = $scope.jobList[eventIndex];
+                const eventIndex = angular.element(this).data("index");
+                const event = $scope.jobList[eventIndex];
                 $scope.selectedEvents.push(event);
             });
             //$scope.$apply();
         }, 10);
 
 
-        $timeout(function () {
+        $timeout(() => {
             sizeHeadings(angular.element("#jobList").parents(".column"));
         }, 1000);
 
@@ -1452,7 +1439,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         [
             {
                 text: "Close Event",
-                click: function ($itemScope, $event, modelValue, text, $li) {
+                click: ($itemScope, $event, modelValue, text, $li) => {
 
                     $scope.gather.form = {
                         id: "closeEvent",
@@ -1464,11 +1451,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                                 "value": ""
                             }
                         ],
-                        onSubmit: function () {
+                        onSubmit: () => {
                             angular.element("#box-jobList").find(".loading").show();
                             angular.element("#box-map").find(".loading").show();
-                            var userName = angular.element("#gather-editName").val();
-                            uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(function () {
+                            const userName = angular.element("#gather-editName").val();
+                            uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(() => {
                                 $scope.refreshData(1, true);
                             });
 
@@ -1483,7 +1470,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             }
         ];
 
-    $scope.reply = function (currentEvent) {
+    $scope.reply = currentEvent => {
         function resetCursor(txtElement) {
             if (txtElement.setSelectionRange) {
                 txtElement.focus();
@@ -1496,7 +1483,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         };
 
         function afterShowAnimation(scope, element, options) {
-            var e = document.getElementById("event-notes");
+            const e = document.getElementById("event-notes");
             resetCursor(e);
         };
 
@@ -1514,7 +1501,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     };
 
-    $scope.createJobEvent = function (job, $event) {
+    $scope.createJobEvent = (job, $event) => {
         ctrl.currentJob = job;
         $mdDialog.show({
             locals: {dataToPass: undefined},
@@ -1530,7 +1517,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
     };
 
-    $scope.eventDialogController = function ($scope, $mdDialog, dataToPass) {
+    $scope.eventDialogController = ($scope, $mdDialog, dataToPass) => {
         console.log(ctrl.currentJob);
         console.log(dataToPass);
         $scope.book = {};
@@ -1547,22 +1534,22 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             $scope.book.closeEventId = undefined;
         }
 
-        $scope.hide = function () {
+        $scope.hide = () => {
             $mdDialog.hide();
         };
 
-        $scope.cancel = function () {
+        $scope.cancel = () => {
             $mdDialog.cancel();
         };
 
-        $scope.answer = function (answer) {
+        $scope.answer = answer => {
             $mdDialog.hide(answer);
         };
 
-        $scope.createEvent = function () {
-            var error = $scope.bookForm.$error;
+        $scope.createEvent = () => {
+            const error = $scope.bookForm.$error;
 
-            angular.forEach(error.required, function (field) {
+            angular.forEach(error.required, field => {
                 if (field.$invalid) {
                     field.$touched = true;
                 }
@@ -1595,7 +1582,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             };
 
             uCSData.createEvent(event, $scope.isAdmin ? $scope.book.notify : true)
-                .then(function (returnData) {
+                .then(returnData => {
                     if ((returnData === undefined ||
                         returnData !== "OK")) {
                         $mdDialog.show(
@@ -1612,7 +1599,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                         angular.element(".wait").hide();
                         $scope.cancel();
                         if ($scope.book.reply) {
-                            uCSData.closeEvent($scope.book.closeEventId, event.Name).then(function () {
+                            uCSData.closeEvent($scope.book.closeEventId, event.Name).then(() => {
                                 $scope.refreshData(true, true);
                             });
                         }
@@ -1634,7 +1621,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     };
 
 
-    $scope.addEventNote = function (eventId, type, options) {
+    $scope.addEventNote = (eventId, type, options) => {
 
         $scope.gather.form = {
             id: "addNote",
@@ -1649,13 +1636,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                     "options": options
                 }
             ],
-            onSubmit: function () {
+            onSubmit: () => {
 
-                uCSData.addEventNote($scope.gather.form.fields[0].eventID, $scope.gather.form.fields[0].value).then(function (data) {
+                uCSData.addEventNote($scope.gather.form.fields[0].eventID, $scope.gather.form.fields[0].value).then(data => {
 
                     if (data.response === "Success") {
                         $scope.currentEvent = data.bulkEvent;
-                        var ci = $scope.jobList.findIndex(obj => {
+                        const ci = $scope.jobList.findIndex(obj => {
 
                             return obj.bulkEventID === data.bulkEvent.bulkEventID;
 
@@ -1685,7 +1672,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
 
     // Load custom layout
-    ctrl.init = function () {
+    ctrl.init = () => {
         if (Modernizr.localstorage) {
             const storedLayouts = localStorage.getItem("layoutsCS-" + ContactID);
             const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutCS-" + ContactID);
@@ -1757,9 +1744,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     ctrl.onSearchRangeChange(ctrl.dateSearchRange);
 }
 
-angular.module('uDispatch').controller('CSControl', ['$scope', 'JobDetailService', 'uCSData', "$state",
+CSController.$inject = ['$scope', 'JobDetailService', 'uCSData', "$state",
     "$stateParams", "$filter", '$parse', "hotkeys", "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog',
-    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', 'moment', 'DispatchData', CSController]);
+    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', 'moment', 'DispatchData'];
+
+angular.module('uDispatch').controller('CSControl', CSController);
 
 // Convert Degress to Radians
 function Deg2Rad(deg) {
@@ -1771,21 +1760,21 @@ function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
     lat2 = Deg2Rad(lat2);
     lon1 = Deg2Rad(lon1);
     lon2 = Deg2Rad(lon2);
-    var R = 6371; // km
-    var x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
-    var y = (lat2 - lat1);
+    const R = 6371; // km
+    const x = (lon2 - lon1) * Math.cos((lat1 + lat2) / 2);
+    const y = (lat2 - lat1);
     return Math.sqrt(x * x + y * y) * R;
 }
 
 function closestLocation(latitude, longitude, locations) {
-    var mindif = 99999;
-    var closest;
+    let minDifference = 99999;
+    let closest;
 
-    for (index = 0; index < locations.length; ++index) {
-        var dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
-        if (dif < mindif) {
+    for (let index = 0; index < locations.length; ++index) {
+        const dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
+        if (dif < minDifference) {
             closest = index;
-            mindif = dif;
+            minDifference = dif;
         }
     }
 

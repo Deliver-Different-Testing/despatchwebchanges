@@ -446,7 +446,7 @@ class JobDetailService {
      * @param {Job} job
      */
     editCompletedTime(event, job) {
-        this.showEditTimeDialog(event, job, "CompletedTime", "Completed Time", job.completedTime);
+        this.showEditTimeDialog(event, job, "Completed Time", "Completed Time", job.completedTime);
     }
 
     /**
@@ -544,6 +544,14 @@ class JobDetailService {
      */
     editJobWeight(event, job) {
         this.showEditPrompt(event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
+    }
+
+    /**
+     * @param {Event} event
+     * @param {Job} job
+     */
+    editAmount(event, job) {
+        this.showEditPrompt(event, job, 'Amount', 'Amount...', 'job weight', job.charge, 'Amount');
     }
 
     /**
@@ -1146,7 +1154,7 @@ class JobDetailService {
         }
 
         return this._dispatchData
-            .updatePODDetail(job.jobNo, 6, job.podName, job.completedTime).then(() => {
+            .updatePODDetail(job.jobNo, 6, job.podName, job.completedTime).then((response) => {
                 this.selectJobDetail(job.id);
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));

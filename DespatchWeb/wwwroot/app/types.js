@@ -80,6 +80,16 @@
  * @property {boolean} direct
  * @property {boolean} return
  * @property {Date} completedTime
+ * @property {boolean} invoiced
+ * @property {number} bulkJobID
+ * @property {boolean} ratedManually
+ * @property {string} clientNotes
+ * @property {string} fromPostCode
+ * @property {string} fromContactNumber
+ * @property {string} toPostCode
+ * @property {string} toCity
+ * @property {string} podName
+ * @property {boolean} airportOnly
  * @property {*} courierData
  */
 
@@ -137,6 +147,7 @@
  * @property {number} jobNumber Number associated with job
  * @property {string} clientCode Code associated with client
  * @property {Date} eventDate Timestamp when the event is created
+ * @property {Date} closedDate
  * @property {string} eventTime Time of the event
  * @property {string} eventType Types of event
  * @property {string} notes Additional notes for the event

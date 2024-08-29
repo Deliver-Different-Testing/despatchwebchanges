@@ -456,7 +456,7 @@
                             </div>
                         </div>
                         <div class="field"
-                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editDetailField(ctrl.jdSvc.currentJob, 'Amount','Amount',ctrl.jdSvc.currentJob.charge,ctrl.jdSvc.currentJob.id)">
+                             ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editAmount($event, ctrl.jdSvc.currentJob)">
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''"
                                    ng-if="!ctrl.jdSvc.currentJob.ratedManually">Charge</label>
                             <label ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''"
