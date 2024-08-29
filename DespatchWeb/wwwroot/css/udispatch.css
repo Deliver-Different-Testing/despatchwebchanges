@@ -44,20 +44,35 @@ md-autocomplete.ng-leave {
 }
 .row-overflow {
   overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
   /* For Chrome and Safari */
   /* For Firefox */
-  scrollbar-color: #DDD #f7f7f7;
+  scrollbar-color: rgba(253, 221, 0, 0.7) transparent;
   scrollbar-width: thin;
 }
-.row-overflow ::-webkit-scrollbar {
-  width: 12px;
+.row-overflow::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
-.row-overflow ::-webkit-scrollbar-track {
-  background: #f7f7f7;
+.row-overflow::-webkit-scrollbar-track {
+  background: transparent;
 }
-.row-overflow ::-webkit-scrollbar-thumb {
-  background: #DDD;
-  border-radius: 2px;
+.row-overflow::-webkit-scrollbar-thumb {
+  background-color: rgba(253, 221, 0, 0.7);
+  border-radius: 4px;
+}
+.switch-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px;
+}
+.md-switch {
+  margin: 0 8px;
 }
 .btn-primary {
   background-color: #fddd00;
@@ -1247,13 +1262,13 @@ span.courierRed {
 #SupportChannels .dropdown-menu {
   z-index: 99999;
 }
-md-toast.md-success-toast-theme .md-toast-content {
+.md-toast .md-toast-content.md-success-toast-theme {
   background-color: #4CAF50;
 }
-md-toast.md-error-toast-theme .md-toast-content {
+.md-toast .md-toast-content.md-error-toast-theme {
   background-color: #F44336;
 }
-md-toast.md-warning-toast-theme .md-toast-content {
+.md-toast .md-toast-content.md-warning-toast-theme {
   background-color: #FF9800;
 }
 .small-icon {
@@ -1271,27 +1286,23 @@ md-toast.md-warning-toast-theme .md-toast-content {
   flex-wrap: wrap;
   gap: 10px;
 }
-
-.drop-box {
+.DropBox {
   background: #f0f0f0;
   border: 2px dashed #999;
   border-radius: 5px;
+  margin-bottom: 20px;
   padding: 25px;
   text-align: center;
-  margin-bottom: 20px;
 }
-
-.drop-box.dragover {
-  border-color: #3f51b5;
+.DropBox .DragOver {
   background: #e8eaf6;
+  border-color: #fddd00;
 }
-
-.drop-box md-icon {
-  color: #999;
+.DropBox md-icon {
+  color: #fddd00;
   margin-bottom: 10px;
 }
-
-.drop-box p {
+.DropBox p {
   margin: 5px 0;
 }
 /*# sourceMappingURL=udispatch.css.map */

@@ -60,24 +60,42 @@ md-autocomplete.ng-leave {
 
 .row-overflow {
   overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
 
   /* For Chrome and Safari */
-  ::-webkit-scrollbar {
-    width: 12px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
   }
 
-  ::-webkit-scrollbar-track {
-    background: #f7f7f7;
+  &::-webkit-scrollbar-track {
+    background: transparent;
   }
 
-  ::-webkit-scrollbar-thumb {
-    background: @s-grey;
-    border-radius: 2px;
+  &::-webkit-scrollbar-thumb {
+    background-color: fade(@yellow, 70%);
+    border-radius: 4px;
   }
 
   /* For Firefox */
-  scrollbar-color: @s-grey #f7f7f7;
+  scrollbar-color: fade(@yellow, 70%) transparent;
   scrollbar-width: thin;
+}
+
+.switch-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px;
+}
+
+.md-switch {
+  margin: 0 8px;
 }
 
 .material-button-mixin(@bgColor) {

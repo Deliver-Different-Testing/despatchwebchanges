@@ -143,35 +143,19 @@
                         <md-toolbar class="md-accent">
                             <div class="md-toolbar-tools">
 
-                        <span class="md-headline-title" flex md-truncate>
-  {{boxes[box.name].title}}
-  <span ng-show="box.name == 'jobDetail'">
-    {{currentSelection}}
-    <md-progress-circular
-            md-diameter="18"
-            md-mode="indeterminate"
-            ng-show="ctrl.isCheckingAttachments"
-            style="margin-left: 4px; vertical-align: middle;">
-    </md-progress-circular>
-    <md-icon aria-label="File attached"
-             class="md-secondary md-hue-3"
-             md-font-set="material-symbols-outlined"
-             ng-show="!ctrl.isCheckingAttachments && ctrl.hasAttachedFile"
-             style="font-size: 18px; margin-left: 4px; vertical-align: middle;">
-      attach_file
-    </md-icon>
-  </span>
-  <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
-  <span ng-show="box.name == 'supports'"> ({{supportChannel}})</span>
-  <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
-  <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
-  <span ng-repeat="jo in currentJob.relatedJobs"
-        ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1">&nbsp;<span
-          ng-click="loadRelatedJobDetail(jo.id, jo.label)"
-          ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
-          style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span>
-  </span>
-</span>
+                                <span class="md-headline-title" flex md-truncate>{{boxes[box.name].title}}
+                                          <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
+                            <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
+                            <span ng-show="box.name == 'supports'"> ({{supportChannel}})</span>
+                            <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
+                            <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
+                            <span ng-repeat="jo in currentJob.relatedJobs"
+                                  ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1">&nbsp;<span
+                                    ng-click="loadRelatedJobDetail(jo.id, jo.label)"
+                                    ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
+                                    style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span>
+                                    </span>
+                                </span>
 
                                 <md-button class="md-icon-button md-primary" ng-click="ctrl.getData()"
                                            ng-show="boxes[box.name].showRefresh">
@@ -284,14 +268,6 @@
                                                 <md-icon md-font-set="material-symbols-outlined">swap_calls
                                                 </md-icon>
                                             </md-button>
-                                            <md-button class="md-fab md-raised md-mini"
-                                                       ng-click="ctrl.openFileAttachmentDialog($event, currentJob)"
-                                                       ng-show="currentJob && ctrl.hasAttachedFile">
-                                                <md-tooltip md-direction="bottom">Download/Upload Attachment Files
-                                                </md-tooltip>
-                                                <md-icon md-font-set="material-symbols-outlined">cloud_upload
-                                                </md-icon>
-                                            </md-button>
                                         </md-fab-actions>
                                     </md-fab-speed-dial>
                                 </div>
@@ -347,22 +323,24 @@
                                 </div>
 
                                 <div class="row-overflow" layout="row" ng-show="box.name === 'map'">
-                                    <md-switch class="md-primary" ng-model="areaListCity"
-                                               ng-show="box.name === 'clearLists'">
-                                        City
-                                    </md-switch>
-                                    <md-switch class="md-primary" ng-change="ctrl.getAvailableCourierLocation()"
-                                               ng-model="allCouriers.display" ng-show="box.name === 'map'">
-                                        All
-                                    </md-switch>
-                                    <md-switch class="md-primary" ng-change="ctrl.storeMapZoomDisplay()"
-                                               ng-model="mapZoom.display" ng-show="box.name === 'map'">
-                                        Auto Zoom
-                                    </md-switch>
-                                    <md-switch class="md-primary" ng-change="ctrl.getAvailableCourierLocation()"
-                                               ng-model="allCouriers.includeUA" ng-show="box.name === 'map'">
-                                        Include UA
-                                    </md-switch>
+                                    <div class="switch-container">
+                                        <md-switch class="md-primary" ng-model="areaListCity"
+                                                   ng-show="box.name === 'clearLists'">
+                                            City
+                                        </md-switch>
+                                        <md-switch class="md-primary" ng-change="ctrl.getAvailableCourierLocation()"
+                                                   ng-model="allCouriers.display" ng-show="box.name === 'map'">
+                                            All
+                                        </md-switch>
+                                        <md-switch class="md-primary" ng-change="ctrl.storeMapZoomDisplay()"
+                                                   ng-model="mapZoom.display" ng-show="box.name === 'map'">
+                                            Auto Zoom
+                                        </md-switch>
+                                        <md-switch class="md-primary" ng-change="ctrl.getAvailableCourierLocation()"
+                                                   ng-model="allCouriers.includeUA" ng-show="box.name === 'map'">
+                                            Include UA
+                                        </md-switch>
+                                    </div>
                                 </div>
 
                                 <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
