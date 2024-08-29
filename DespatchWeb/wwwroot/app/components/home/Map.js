@@ -1,140 +1,164 @@
-﻿var map;
-var oms;
-var renderingPoints = false;
-var infoWindow = new google.maps.InfoWindow();
+﻿let map;
+let oms;
+let renderingPoints = false;
+const infoWindow = new google.maps.InfoWindow();
 
-(function () {
-    google.maps.Marker.prototype.jobNumber = "";
-    google.maps.Marker.prototype.courierId = 0;
-    google.maps.Marker.prototype.code = "";
-    google.maps.Map.prototype.labels = [];
-    google.maps.Map.prototype.flags = [];
-    google.maps.Map.prototype.flightPaths = [];
-    google.maps.Map.prototype.addLabel = function (label) {
-        this.labels[this.labels.length] = label;
-    };
-    google.maps.Map.prototype.getLabels = function () {
-        return this.labels;
-    };
-    google.maps.Map.prototype.clearLabels = function () {
+(() => {
+    const extendMapPrototype = () => {
+        google.maps.Marker.prototype.jobNumber = "";
+        google.maps.Marker.prototype.courierId = 0;
+        google.maps.Marker.prototype.code = "";
+        google.maps.Map.prototype.labels = [];
+        google.maps.Map.prototype.flags = [];
+        google.maps.Map.prototype.flightPaths = [];
+        google.maps.Map.prototype.markers = [];
 
-        for (var i = 0; i < this.labels.length; i++) {
-            this.labels[i].setMap(null);
-        }
+        google.maps.Map.prototype.addLabel = function (label) {
+            this.labels.push(label);
+        };
 
-        this.labels.length = 0;
-    };
-    google.maps.Map.prototype.markers = [];
-    google.maps.Map.prototype.addMarker = function (marker) {
-        map.markers[map.markers.length] = marker;
-    };
-    google.maps.Map.prototype.getMarkers = function () {
-        return map.markers;
-    };
-    google.maps.Map.prototype.clearMarkers = function () {
-        if (infoWindow) {
-            infoWindow.close();
-        }
+        google.maps.Map.prototype.getLabels = function () {
+            return this.labels;
+        };
 
-        for (var i = 0; i < map.markers.length; i++) {
-            google.maps.event.clearInstanceListeners(map.markers[i]);
-            map.markers[i].setMap(null);
-        }
+        google.maps.Map.prototype.clearLabels = function () {
+            this.labels.forEach(label => label.setMap(null));
+            this.labels = [];
+        };
 
-        map.markers.length = 0;
+        google.maps.Map.prototype.addMarker = function (marker) {
+            this.markers.push(marker);
+        };
+
+        google.maps.Map.prototype.getMarkers = function () {
+            return this.markers;
+        };
+
+        google.maps.Map.prototype.clearMarkers = function () {
+            if (infoWindow) {
+                infoWindow.close();
+            }
+
+            if (this.markers && Array.isArray(this.markers)) {
+                this.markers.forEach(marker => {
+                    if (marker && typeof marker.setMap === 'function') {
+                        if (marker.getMap()) {
+                            google.maps.event.clearInstanceListeners(marker);
+                        }
+                        marker.setMap(null);
+                    }
+                });
+                this.markers = [];
+            }
+        };
+
+        google.maps.Map.prototype.addFlag = function (flag) {
+            this.flags.push(flag);
+        };
+
+        google.maps.Map.prototype.getFlags = function () {
+            return this.flags;
+        };
+
+        google.maps.Map.prototype.clearFlags = function () {
+            if (infoWindow) {
+                infoWindow.close();
+            }
+            this.flags.forEach(flag => {
+                google.maps.event.clearInstanceListeners(flag);
+                flag.setMap(null);
+            });
+            this.flags = [];
+        };
+
+        google.maps.Map.prototype.addFlightPath = function (flightPath) {
+            this.flightPaths.push(flightPath);
+        };
+
+        google.maps.Map.prototype.getFlightPaths = function () {
+            return this.flightPaths;
+        };
+
+        google.maps.Map.prototype.clearFlightPaths = function () {
+            this.flightPaths.forEach(path => path.setMap(null));
+            this.flightPaths = [];
+        };
     };
 
-    google.maps.Map.prototype.addFlag = function (flag) {
-        map.flags[map.flags.length] = flag;
-    };
-    google.maps.Map.prototype.getFlags = function () {
-        return map.flags;
-    };
-    google.maps.Map.prototype.clearFlags = function () {
-        if (infoWindow) {
-            infoWindow.close();
-        }
-
-        for (var i = 0; i < map.flags.length; i++) {
-            google.maps.event.clearInstanceListeners(map.flags[i]);
-            map.flags[i].setMap(null);
-        }
-
-        map.flags.length = 0;
-    };
-
-    google.maps.Map.prototype.addFlightPath = function (flightPath) {
-        map.flightPaths[map.flightPaths.length] = flightPath;
-    };
-    google.maps.Map.prototype.getFlightPaths = function () {
-        return map.flightPaths;
-    };
-    google.maps.Map.prototype.clearFlightPaths = function () {
-
-        for (var i = 0; i < map.flightPaths.length; i++) {
-            map.flightPaths[i].setMap(null);
-        }
-
-        map.flightPaths.length = 0;
-    };
+    extendMapPrototype();
 })();
 
 function initialize() {
     console.log("Initialize Loaded");
-    var auckland = new google.maps.LatLng(-36.8804466, 174.6117981);
-    var myOptions = {
-        zoom: 10, mapTypeId: google.maps.MapTypeId.ROADMAP, center: auckland
+    const auckland = new google.maps.LatLng(-36.8804466, 174.6117981);
+    const myOptions = {
+        zoom: 10,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        center: auckland
     };
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-    oms = new OverlappingMarkerSpiderfier(map, {
-        markersWontMove: false,   // we promise not to move any markers, allowing optimizations
-        markersWontHide: true,   // we promise not to change visibility of any markers, allowing optimizations
-        basicFormatEvents: true  // allow the library to skip calculating advanced formatting information
-    });
 
-    window.oms = oms; // Make oms globally accessible
+    if (typeof OverlappingMarkerSpiderfier === 'function') {
+        oms = new OverlappingMarkerSpiderfier(map, {
+            markersWontMove: false,
+            markersWontHide: true,
+            basicFormatEvents: true
+        });
+        window.oms = oms; // Make oms globally accessible
+    } else {
+        console.log('OverlappingMarkerSpiderfier is not defined');
+    }
 
-    google.maps.event.addListener(map, "rightclick", function (e) {
-        console.log(e);
-    });
+    map.addListener("rightclick", e => console.log(e));
 
-    var trafficLayer = new google.maps.TrafficLayer();
+    const trafficLayer = new google.maps.TrafficLayer();
     trafficLayer.setMap(map);
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
 
-var currentDrag = null;
+let currentDrag = null;
+let isCtrl = false;
 
-var isCtrl = false;
-window.onkeydown = function (e) {
-    isCtrl = e.keyIdentifier === 'Control' || e.ctrlKey === true;
+window.onkeydown = e => {
+    isCtrl = e.key === 'Control' || e.ctrlKey;
 };
-window.onkeyup = function (e) {
+
+window.onkeyup = () => {
     isCtrl = false;
 };
 
 function addClickHandler(m, iw) {
+    if (!m || typeof m.addListener !== 'function') {
+        console.log('Invalid marker in addClickHandler');
+        return;
+    }
+
     if (iw !== null) {
-        google.maps.event.addListener(m, 'spider_click', function (e) {  // 'spider_click', not plain 'click'
+        m.addListener('spider_click', function (e) {
             iw.open(map, m);
             console.log(m.jobNumber || '');
-            var sel = angular.element(".columns").scope().jobList.filter(x => x.jobNo === m.jobNumber);
-            if (sel.length > 0) {
-                angular.element("#jobList tr").removeClass("active");
-                angular.element("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
-                angular.element(".columns").scope().selectForDispatch(sel[0]);
-                angular.element(".columns").scope().selectJob(sel[0]);
-
+            let scope = angular.element(".columns").scope();
+            if (scope && typeof scope.jobList !== 'undefined') {
+                const sel = scope.jobList.filter(x => x.jobNo === m.jobNumber);
+                if (sel.length > 0) {
+                    angular.element("#jobList tr").removeClass("active");
+                    angular.element("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
+                    scope.$apply(function () {
+                        scope.selectForDispatch(sel[0]);
+                        scope.selectJob(sel[0]);
+                    });
+                }
             }
         });
 
-        oms.addMarker(m);
+        if (oms && typeof oms.addMarker === 'function') {
+            oms.addMarker(m);
+        }
     } else {
-        google.maps.event.addListener(m, 'click', function () {
+        m.addListener('click', function () {
             console.log(m.jobNumber || '');
         });
-
     }
 }
 
@@ -147,8 +171,8 @@ var carMarker = null;
 
 function setMapBounds() {
     boundsSet = true;
-    var bounds = new google.maps.LatLngBounds();
-    for (var i = 0; i < oms.getMarkers().length; i++) {
+    let bounds = new google.maps.LatLngBounds();
+    for (let i = 0; i < oms.getMarkers().length; i++) {
         bounds.extend(oms.getMarkers()[i].getPosition());
     }
     if (carPos !== null) {
@@ -165,8 +189,7 @@ function highlightPin(job) {
         return obj.position.lat().toString().substr(0, 9) === job.toLat.toString().substr(0, 9) && obj.position.lng().toString().substr(0, 9) === job.toLng.toString().substr(0, 9);
     });
     if (marker === undefined) return;
-    var pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_black.png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
-    marker.icon = pinImage;
+    marker.icon = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_black.png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
     marker.setAnimation(google.maps.Animation.BOUNCE);
     window.setTimeout(function () {
         if (marker.getAnimation() !== null) {
@@ -366,19 +389,20 @@ function highlightJobPoints(courierJobs) {
 
 function displayRoutePointsOnly(courierJobs, clear) {
     if (clear === true) {
-        if (map.markers.length) {
+        if (map && typeof map.clearMarkers === 'function') {
             map.clearMarkers();
-
         }
-        oms.removeAllMarkers();
-        if (carMarker !== null) {
+        if (oms && typeof oms.removeAllMarkers === 'function') {
+            oms.removeAllMarkers();
+        }
+        if (carMarker && typeof carMarker.setMap === 'function') {
             carMarker.setMap(null);
         }
     }
 
 
-    for (var i = 0; i < courierJobs.length; i++) {
-        var pinColor = "purple";
+    for (let i = 0; i < courierJobs.length; i++) {
+        let pinColor = "purple";
 
         if (courierJobs[i].status === "C") {
             pinColor = "grey";
@@ -750,7 +774,14 @@ function debounce(func, wait) {
 
 // Add this function to your map.js file
 function updateMapForJob(job) {
-    if (!job) return;
+    if (!job || !map) return;
+
+    if (typeof map.clearMarkers === 'function') {
+        map.clearMarkers();
+    }
+    if (oms && typeof oms.removeAllMarkers === 'function') {
+        oms.removeAllMarkers();
+    }
 
     // Clear existing markers
     map.clearMarkers();

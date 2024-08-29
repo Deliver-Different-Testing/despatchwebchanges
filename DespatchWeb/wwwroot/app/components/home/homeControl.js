@@ -55,7 +55,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         if (window.map) {
             ctrl.initializeMapFunctions();
         } else {
-            console.error('Map is not initialized');
+            console.log('Map is not initialized');
         }
     });
 
@@ -2283,8 +2283,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     ctrl.getAvailableCourierLocation = () => {
-        if (!window.map) {
-            console.error('Map is not initialized');
+        if (!map) {
+            console.log('Map is not initialized');
             return;
         }
 
@@ -3021,7 +3021,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 ctrl.hasAttachedFile = response;
             })
             .catch(error => {
-                console.error('Error checking for attachments:', error);
+                console.log('Error checking for attachments:', error);
                 ctrl.hasAttachedFile = false;
             })
             .finally(() => {
