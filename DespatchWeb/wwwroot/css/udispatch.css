@@ -64,6 +64,22 @@ md-autocomplete.ng-leave {
   background-color: rgba(253, 221, 0, 0.7);
   border-radius: 4px;
 }
+
+.fixed-size-autocomplete {
+    width: 250px !important;
+    /* Adjust this value as needed */
+}
+
+.fixed-size-autocomplete md-autocomplete-wrap {
+    height: 40px !important;
+    /* Adjust this value as needed */
+}
+
+.fixed-size-autocomplete input {
+    height: 100% !important;
+    line-height: 40px !important;
+    /* Should match the height */
+}
 .switch-container {
   display: flex;
   flex-wrap: nowrap;

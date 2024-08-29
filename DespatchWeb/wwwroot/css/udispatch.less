@@ -86,6 +86,21 @@ md-autocomplete.ng-leave {
   scrollbar-width: thin;
 }
 
+@inputHeight: 40px;
+
+.autocomplete-style {
+  width: 250px !important;
+
+  & md-autocomplete-wrap {
+    height: @inputHeight !important;
+  }
+
+  & input {
+    height: 100% !important;
+    line-height: @inputHeight !important;
+  }
+}
+
 .switch-container {
   display: flex;
   flex-wrap: nowrap;

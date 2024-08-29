@@ -1524,33 +1524,37 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     // Select the courier
-    $scope.selectCourier = courier => {
-        angular.element("#box-jobDetail .loading").css('display', 'block');
-        angular.element('#box-map .loading').css('display', '');
+    $scope.selectCourier = (courier) => {
+        const loadingElement = angular.element("#box-jobDetail .loading");
+        const mapLoadingElement = angular.element('#box-map .loading');
 
-        if (courier.courier === undefined) {
-            courier.courier = courier.code + ' ' + courier.firstName;
+        loadingElement.css('display', 'block');
+        mapLoadingElement.css('display', '');
+
+        if (!courier.courier) {
+            courier.courier = `${courier.code} ${courier.firstName}`;
         }
 
         console.log(courier);
 
-        $scope.currentWorkSelection = " for Courier " + courier.label;
-        ctrl.getCurrentJobs(courier.courierID);
-
+        $scope.currentWorkSelection = " for Courier " + courier.courier;
         $scope.currentCourier = courier;
 
+        ctrl.getCurrentJobs(courier.courierID);
+
         $timeout(() => {
-            $document.ready(() => {
-                angular.element("#box-jobDetail .loading").css('display', 'none');
-                angular.element("#box-map .loading").css('display', 'none');
-            });
+            loadingElement.css('display', 'none');
+            mapLoadingElement.css('display', 'none');
         }, 100);
 
-        DispatchData.truckCourierStatus(courier.courierID).then(result => {
-            $scope.truckCourierStatus = result.data;
-        });
-
-    };
+        DispatchData.truckCourierStatus(courier.courierID)
+            .then(result => {
+                $scope.truckCourierStatus = result.data;
+            })
+            .catch(error => {
+                console.error('Error fetching truck courier status:', error);
+            });
+    }
 
     $scope.refreshTruckCourierStatus = () => {
         DispatchData.truckCourierStatus($scope.currentCourier.courierID).then(result => {
@@ -1649,11 +1653,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             ctrl.getAvailableCourierLocation();
         });
 
-        $scope.currentWorkSelection = " for Courier " + courier.label;
+        $scope.currentWorkSelection = " for Courier " + courier.courier;
 
         $scope.currentCourier = courier;
 
-        ctrl.currentSelection = " for Courier " + courier.label;
+        ctrl.currentSelection = " for Courier " + courier.courier;
 
         $timeout(() => {
             $document.ready(() => {
