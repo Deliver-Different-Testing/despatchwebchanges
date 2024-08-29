@@ -50,8 +50,8 @@
  * @property {string} fromSuburbName
  * @property {number} postCode
  * @property {string} extras
- * @property {boolean} bulkJob - If job is a bulk job
- * @property {boolean} preBook - If job is a prebook job
+ * @property {boolean} bulkJob
+ * @property {boolean} preBook
  * @property {number} truckWeightLimit
  * @property {boolean} invoiced
  * @property {boolean} allowSplit
@@ -62,7 +62,7 @@
  * @property {Date} deliveryTime
  * @property {boolean} alertLateDelivery
  * @property {boolean} allowDispatch
- * @property {string} courier - Name of the courier
+ * @property {string} courier
  * @property {number} rootParentID
  * @property {boolean} allowSplit
  * @property {boolean} dgDocumentation
@@ -90,6 +90,16 @@
  * @property {string} toCity
  * @property {string} podName
  * @property {boolean} airportOnly
+ * @property {number} jobRelationshipTypeID
+ * @property {string} internalNotes
+ * @property {string} statusName
+ * @property {string} phone
+ * @property {string} loggedInContactName
+ * @property {string} conNote
+ * @property {boolean} hasNationwide
+ * @property {Date} followupTime
+ * @property {string} scheduleName
+ * @property {string} runName
  * @property {*} courierData
  */
 

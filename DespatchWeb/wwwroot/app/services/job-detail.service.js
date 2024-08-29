@@ -446,7 +446,7 @@ class JobDetailService {
      * @param {Job} job
      */
     editCompletedTime(event, job) {
-        this.showEditTimeDialog(event, job, "Completed Time", "Completed Time", job.completedTime);
+        this.showEditTimeDialog(event, job, "Completed Time", "CompletedTime", job.completedTime);
     }
 
     /**
