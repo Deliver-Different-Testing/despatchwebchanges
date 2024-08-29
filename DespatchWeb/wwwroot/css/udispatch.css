@@ -4,6 +4,34 @@ body {
 md-dialog {
   min-width: 400px;
 }
+
+/* Global scrollbar styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(253, 221, 0, 0.7) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(253, 221, 0, 0.7);
+  border-radius: 4px;
+}
+
+.horizontal-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
 .md-headline-title {
   font-size: 20px;
   font-weight: 500;
@@ -64,15 +92,12 @@ md-autocomplete.ng-leave {
   background-color: rgba(253, 221, 0, 0.7);
   border-radius: 4px;
 }
-
 .autocomplete-style {
   width: 250px !important;
 }
-
 .autocomplete-style md-autocomplete-wrap {
   height: 40px !important;
 }
-
 .autocomplete-style input {
   height: 100% !important;
   line-height: 40px !important;
