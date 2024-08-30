@@ -3,13 +3,13 @@
  */
 class CreateJobDialogController {
     /**
-     * @param $scope - The active AngularJS scope.
-     * @param $mdDialog - The AngularJS Material service for showing dialogs.
-     * @param DispatchData - The service used for data dispatching.
-     * @param toastrService - The service used for toast notifications.
-     * @param $http - Angular's built-in $http service.
+     * @param $scope
+     * @param $mdDialog
+     * @param DispatchData
+     * @param toastrService
+     * @param $http
      * @param dispatchJobService
-     * @param {number} staffId - The ID of the staff member initiating the action.
+     * @param {number} staffId
      * @param {string} despatcherName
      */
     constructor($scope, $mdDialog, DispatchData, toastrService, $http, dispatchJobService, staffId, despatcherName) {
@@ -89,7 +89,6 @@ class CreateJobDialogController {
     /**
      * Autocomplete the client search based on the searchTerm
      * @param {string} searchTerm - The term for which to search associative clients.
-     * @returns {Promise<Array>} - A promise that fulfills with a list of client objects that match the searchTerm.
      */
     async clientSearchAutocomplete(searchTerm) {
         const url = "/home/ActiveClients";
@@ -116,7 +115,6 @@ class CreateJobDialogController {
     /**
      * Autocomplete the given address searchText
      * @param {string} searchText - Search text of the address to autocomplete.
-     * @returns {Promise<Array.<Suggestion>>} - A promise that fulfils with a list of potential matches for the search text.
      */
     async addressSearchAutocomplete(searchText) {
         try {
@@ -130,7 +128,6 @@ class CreateJobDialogController {
     /**
      * Transforms API suggestion data format into application-specific format.
      * @param {Object} data - Suggestion data from the DispatchData service.
-     * @returns {Array.<Suggestion>} - Suggestions in application-specific format.
      */
     transformSuggestions(data) {
         return data.suggestions.map(obj => ({
@@ -257,7 +254,6 @@ class CreateJobDialogController {
     /**
      * Creates a job, sending details to the server and returns the server's response.
      * @param {Job} job - A job object to create.
-     * @returns {Promise<Object>} - A Promise that fulfills with the server's response to job creation.
      */
     async _createJob(job) {
         const url = "job/QuickCreateJob/";

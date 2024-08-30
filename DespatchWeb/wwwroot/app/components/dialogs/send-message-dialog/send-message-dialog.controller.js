@@ -3,7 +3,7 @@ class SendMessageDialogController {
      * @param $mdDialog
      * @param DispatchData
      * @param toastrService
-     * @param selectedCourierId
+     * @param {number} selectedCourierId
      * @param {number} contactId
      * @param {string} dispatcherName
      */

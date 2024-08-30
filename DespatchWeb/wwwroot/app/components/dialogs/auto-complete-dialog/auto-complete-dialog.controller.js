@@ -64,11 +64,26 @@ class AutoCompleteDialogController {
                     await this._dispatchData.updateJobDetail(callData.jobID, callData.field, callData.value, this._job.charge, FirstName, ContactID);
             }
         } catch (error) {
-            this._toastrService.showErrorToast();
+            this._toastrService.showErrorToast(error.message);
         } finally {
             this.isLoading = false;
-            this._$mdDialog.hide();
+
+            // Update field
+            let fieldName = this.fieldName.toLowerCase();
+            let matchingField = Object.keys(this._job).find(key => key.toLowerCase() === fieldName);
+
+            if (matchingField) {
+                this._job[matchingField] = selectedOption.id;
+            } else {
+                console.warn(`Field ${this.fieldName} not found in job object.`);
+            }
+
+            if (fieldName === "clientid") {
+                this._job.clientName = selectedOption.text;
+            }
+
             this._toastrService.showSuccessToast(this.title + " successfully updated to " + selectedOption.text);
+            this._$mdDialog.hide();
         }
     }
 
