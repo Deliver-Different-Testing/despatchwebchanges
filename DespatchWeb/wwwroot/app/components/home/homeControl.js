@@ -741,7 +741,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             },
         }).then(_ => {
             console.log('Dialog closed!')
-            $scope.selectJobDetail(job);
         });
     }
 
@@ -764,9 +763,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 contactId: ContactID
             }
         }).then(() => {
-            ctrl.getData().then(() => {
                 console.log('Pallet Dialog closed!');
-            });
         });
     };
 
@@ -2827,74 +2824,88 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /////////////////////////
 
     /**
-     * @param {Event}  event
-     * @param {Job}  currentJob
+     * @param {Event} $event
+     * @param {Job} currentJob
      */
-    $scope.setSplitJobMeetingPoint = (event, currentJob) => {
-        const getDeliveryLocation = currentJob => currentJob.deliveryLongitude
-            ? {lat: currentJob.deliveryLatitude, long: currentJob.deliveryLongitude}
-            : {lat: "", long: ""};
+    $scope.setSplitJobMeetingPoint = ($event, currentJob) => {
+        const getDeliveryLocation = (job) => ({
+            lat: job.deliveryLatitude || "",
+            long: job.deliveryLongitude || ""
+        });
 
         const location = getDeliveryLocation(currentJob);
-        const {lat, long} = location;
-
-        const suburbText = currentJob.toSuburbName;
         console.log("Retrieved job coordinates!");
 
         DispatchData.getSuburbList()
-            .then(selectedSuburbs => {
-                $mdDialog.show({
-                    controller: EditAddressDialogController,
-                    controllerAs: 'ctrl',
-                    parent: angular.element($document.body),
-                    targetEvent: event,
-                    templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
-                    clickOutsideToClose: false,
-                    fullscreen: true,
-                    locals: {
-                        addressDetails: {
-                            address: currentJob.toAddress,
-                            lat,
-                            long,
-                            suburb: suburbText,
-                            postCode: currentJob.postCode,
-                        },
-                        suburbOptions: selectedSuburbs,
-                        title: "Split Job Address and GPS",
-                        submitLabel: "Split Job",
-                    },
-                }).then(addressDetails => {
-                    try {
-                        loadingService.showLoader();
-                        const job = currentJob;
+            .then(selectedSuburbs => showEditAddressDialog($event, currentJob, selectedSuburbs, location))
+            .then(handleDialogResult)
+            .catch(error => toastrService.showErrorToast(error.message))
+            .finally(() => console.log("Split jobs process completed."));
+    };
 
-                        job.toAddress = addressDetails.address;
-                        job.toSuburbID = parseInt(addressDetails.our_suburb);
+    function showEditAddressDialog($event, currentJob, selectedSuburbs, location) {
+        return $mdDialog.show({
+            controller: EditAddressDialogController,
+            controllerAs: 'ctrl',
+            templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
+            parent: angular.element($document.body),
+            targetEvent: $event,
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                addressDetails: {
+                    address: currentJob.toAddress,
+                    lat: location.lat,
+                    long: location.long,
+                    suburb: currentJob.toSuburbName,
+                    postCode: currentJob.postCode,
+                },
+                suburbOptions: selectedSuburbs,
+                title: "Split Job Address and GPS",
+                submitLabel: "Split Job",
+            },
+        });
+    }
 
-                        const callData = {
-                            "call": "updateSplitJobData",
-                            "lat": addressDetails.lat,
-                            "long": addressDetails.long,
-                            "toSuburbId": job.toSuburbID,
-                            "toAddress": job.toAddress,
-                            "jobID": job.id,
-                        };
+    function handleDialogResult(addressDetails) {
+        if (!addressDetails) {
+            console.log("Split jobs canceled!");
+            return;
+        }
 
-                        return DispatchData.updateSplitJobAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long)
-                            .then(_ => DispatchData.reRateSplitJob(callData.jobID)
-                                .then(_ => DispatchData.finishSplitJobProcess(callData.jobID, FirstName)
-                                    .then(_ => {
-                                        ctrl.getData().then(_ => {
-                                            loadingService.closeLoader();
-                                            console.log("Job splitting complete!");
-                                            console.log('Dialog closed!');
-                                        });
-                                    })));
-                    } catch (error) {
-                        toastrService.showErrorToast(error.message)
-                    }
-                }).then(() => console.log("Split jobs canceled!"));
+        const updatedJob = {
+            ...currentJob,
+            toAddress: addressDetails.address,
+            toSuburbID: parseInt(addressDetails.our_suburb),
+        };
+
+        const callData = {
+            jobID: updatedJob.id,
+            lat: addressDetails.lat,
+            long: addressDetails.long,
+            toSuburbId: updatedJob.toSuburbID,
+            toAddress: updatedJob.toAddress,
+        };
+
+        return updateJobData(callData)
+            .then(() => DispatchData.reRateSplitJob(callData.jobID))
+            .then(() => DispatchData.finishSplitJobProcess(callData.jobID, FirstName))
+            .then(() => ctrl.getData())
+            .then(() => {
+                console.log("Job splitting complete!");
+                console.log('Dialog closed!');
+                return $scope.getJobList();
             });
+    }
+
+    function updateJobData(callData) {
+        return DispatchData.updateSplitJobAddress(
+            callData.jobID,
+            callData.toSuburbId,
+            callData.toAddress,
+            callData.lat,
+            callData.long
+        );
     };
 
 
@@ -2923,14 +2934,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
-     * @param {Event}  event
+     * @param {Event}  $event
      */
-    ctrl.truckLoadingStatus = (event) => {
+    ctrl.truckLoadingStatus = ($event) => {
         $mdDialog.show({
             controller: TruckCourierStatusDialogController,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
-            targetEvent: event,
+            targetEvent: $event,
             templateUrl: "app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
@@ -2975,14 +2986,14 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param {Event}  event
+     * @param {$event}  $event
      */
-    ctrl.interCourierCharge = event => {
+    ctrl.interCourierCharge = $event => {
         $mdDialog.show({
             controller: InterCourierChargeDialog,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
-            targetEvent: event,
+            targetEvent: $event,
             templateUrl: "app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
@@ -2995,16 +3006,16 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param {Event}  event
+     * @param {$event}  $event
      * @param {Job}  job
      */
-    ctrl.createEvent = (event, job) => {
+    ctrl.createEvent = ($event, job) => {
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
             templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
             parent: angular.element($document.body),
-            targetEvent: event,
+            targetEvent: $event,
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -3013,9 +3024,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 contactId: ContactID
             }
         }).then(() => {
-            ctrl.getData().then(() => {
                 console.log('Pallet Dialog closed!');
-            });
         });
     };
 
@@ -3023,20 +3032,26 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {number} jobId
      */
     ctrl.checkForAttachments = (jobId) => {
+        const deferred = $q.defer();
+
         ctrl.isCheckingAttachments = true;
         ctrl.hasAttachedFile = false;
 
         DispatchData.isFilesAttachedToJob(jobId)
             .then(response => {
                 ctrl.hasAttachedFile = response;
+                deferred.resolve(response);
             })
             .catch(error => {
                 console.log('Error checking for attachments:', error);
                 ctrl.hasAttachedFile = false;
+                deferred.reject(error);
             })
             .finally(() => {
                 ctrl.isCheckingAttachments = false;
             });
+
+        return deferred.promise;
     };
 
     /**
@@ -3066,8 +3081,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param  {Job}  job
      */
     ctrl.showAdditionalServicesMenu = (event, job) => {
-        loadingService.showLoader();
-
         DispatchData.hasClientItemsAvailable(job.clientId, job.speedId).then(isClientItemsAvailable => {
             loadingService.closeLoader();
 
@@ -3096,16 +3109,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 }
             });
         }).then(() => {
-            ctrl.getData().then(() => {
-                $scope.selectJobDetail(job);
-                loadingService.closeLoader();
-            });
-        }).then(() => {
             console.log('Additional Services Dialog closed!');
         }).catch(error => {
             // handle or throw the error
             console.log(error);
-            loadingService.closeLoader();
         });
     }
 
