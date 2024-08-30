@@ -245,20 +245,21 @@ public class JobController : Controller
         return Json(result);
     }
 
-    public IActionResult PodSearch(int? courierId, int? clientId, string wild, string job, DateTime fromDate,
+    public async Task<IActionResult> PodSearch(int? courierId, int? clientId, string wild, string job,
+        DateTime fromDate,
         DateTime toDate,
         int pageIndex, int pageSize)
     {
-        var result = _jobRepo.PodSearch(courierId, wild ?? "", job ?? "", fromDate.ResetTimeToStartOfDay(),
+        var result = await _jobRepo.PodSearch(courierId, wild ?? "", job ?? "", fromDate.ResetTimeToStartOfDay(),
             toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
         return Json(result);
     }
 
-    public IActionResult ValidateSwapPod(string job)
+    public async Task<IActionResult> ValidateSwapPod(string job)
     {
         var fromDate = DateTime.Today;
-        var result = _jobRepo.PodSearch(null, "", job, fromDate.ResetTimeToStartOfDay(),
+        var result = await _jobRepo.PodSearch(null, "", job, fromDate.ResetTimeToStartOfDay(),
             fromDate.ResetTimeToEndOfDay(), null, 1, 5);
 
         return result.Item1 == 0 ? Json(false) : Json(result.Item2.First().ID);

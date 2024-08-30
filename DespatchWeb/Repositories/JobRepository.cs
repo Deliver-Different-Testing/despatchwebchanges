@@ -566,13 +566,15 @@ public class JobRepository : IJobRepository
         return Tuple.Create(total, jobList);
     }
 
-    public Tuple<int, List<JobViewModel>> PodSearch(int? courierId, string wild, string job, DateTime fromDate,
+    public async Task<Tuple<int, List<JobViewModel>>> PodSearch(int? courierId, string wild, string job,
+        DateTime fromDate,
         DateTime toDate, int? clientId, int pageIndex, int pageSize)
     {
         var clientSet = clientId.HasValue;
         var courierSet = courierId.HasValue;
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
+
         var jobsQuery = from x in _context.TblJobs
             join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
             from co in courierJoin.DefaultIfEmpty()
@@ -616,50 +618,21 @@ public class JobRepository : IJobRepository
                 PickUpLongitude = x.PickUpLongitude,
                 DeliveryLatitude = x.DeliveryLatitude,
                 DeliveryLongitude = x.DeliveryLongitude,
-                BookedDate = x.Date
+                BookedDate = x.Date,
+                Booked = DateTime.Parse(x.Date.Value.ToString("yyyy-MM-dd") + " " +
+                                        x.Time.Value.ToString("HH:mm:ss"))
             };
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-        var total = jobsQuery.Count();
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        stopwatch.Reset();
-        stopwatch.Start();
-        var jobs = jobsQuery
-            .OrderBy(a => a.BookedDate).ThenBy(v => v.Time).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        stopwatch.Reset();
-        stopwatch.Start();
-        var jobList = jobs.Select(v => new JobViewModel
-        {
-            ID = v.ID,
-            Time = v.Time,
-            ClientId = v.ClientId,
-            Client = v.Client,
-            From = v.From,
-            FromSuburbId = v.FromSuburbId,
-            To = v.To,
-            ToSuburbID = v.ToSuburbID,
-            JobNo = v.JobNo,
-            FromAddress = v.FromAddress,
-            ToAddress = v.ToAddress,
-            Courier = v.Courier,
-            StatusID = v.StatusID,
-            Status = v.Status,
-            Speed = v.Speed,
-            SpeedId = v.SpeedId,
-            PreBook = false,
-            PickUpLatitude = v.PickUpLatitude,
-            PickUpLongitude = v.PickUpLongitude,
-            DeliveryLatitude = v.DeliveryLatitude,
-            DeliveryLongitude = v.DeliveryLongitude,
-            Booked = DateTime.Parse(v.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
-                                    v.Time.Value.ToString("HH:mm:ss"))
-        }).ToList();
-        stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        return Tuple.Create(total, jobList);
+
+        var orderedQuery = jobsQuery.OrderBy(a => a.BookedDate).ThenBy(v => v.Time);
+
+        var total = orderedQuery.Count();
+
+        var jobs = await orderedQuery
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .ToListWithNoLockAsync();
+
+        return Tuple.Create(total, jobs);
     }
 
     public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,

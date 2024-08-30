@@ -100,6 +100,11 @@
  * @property {Date} followupTime
  * @property {string} scheduleName
  * @property {string} runName
+ * @property {number} runOrder
+ * @property {string} clientName
+ * @property {Date} createdDate
+ * @property {string} trackingMobile
+ * @property {string} trackingEmail
  * @property {*} courierData
  */
 

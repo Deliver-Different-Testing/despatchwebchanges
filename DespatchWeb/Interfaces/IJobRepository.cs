@@ -17,7 +17,7 @@ public interface IJobRepository
         DateTime fromDate,
         DateTime toDate, int? clientId, int pageIndex, int pageSize);
 
-    Tuple<int, List<JobViewModel>> PodSearch(int? courierId, string wild, string job, DateTime fromDate,
+    Task<Tuple<int, List<JobViewModel>>> PodSearch(int? courierId, string wild, string job, DateTime fromDate,
         DateTime toDate, int? clientId, int pageIndex, int pageSize);
 
     Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,

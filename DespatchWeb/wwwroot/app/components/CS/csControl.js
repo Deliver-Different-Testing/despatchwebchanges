@@ -31,6 +31,28 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     ctrl.jdSvc = jdSvc;
     ctrl.dispatchJobService = dispatchJobService;
 
+    $scope.jobQuery = {
+        order: 'booked',
+        limit: 50,
+        page: 1
+    };
+
+    $scope.bulkJobQuery = {
+        order: 'booked',
+        limit: 50,
+        page: 1
+    };
+
+    $scope.preBookQuery = {
+        order: 'booked',
+        limit: 50,
+        page: 1
+    };
+
+    $scope.jobPromise = null;
+    $scope.bulkJobPromise = null;
+    $scope.preBookPromise = null;
+
     ctrl.greetUser = () => {
         return greetingService.greetUser(FirstName);
     }
@@ -934,10 +956,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    $scope.refreshAllData = wait => {
-        // Empty search criteria
-        console.log(ctrl.pickDateService);
-
+    $scope.refreshAllData = () => {
         if ((ctrl.pickDateService.client || "") === "" &&
             (ctrl.pickDateService.courier || "") === "" &&
             (ctrl.pickDateService.job || "") === "" &&
@@ -949,124 +968,69 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                     .title('Missing Criteria')
                     .textContent('Please provide more detailed search criteria.')
                     .ok('Understood')
-            ).then(() => {
-                console.log("Search operation cancelled due to insufficient criteria.")
-            });
+            );
             return;
         }
 
-        loadingService.showLoader();
+        return $q.all([
+            $scope.refreshData(),
+            $scope.refreshBulkData(),
+            $scope.refreshPreBookData()
+        ]);
+    };
 
-        Promise.all([
-            $scope.refreshData(wait),
-            $scope.refreshBulkData(wait),
-            $scope.refreshPreBookData(wait)
-        ]).then(() => {
-            loadingService.closeLoader();
-        }).catch(() => {
-            loadingService.closeLoader();
+    $scope.refreshData = () => {
+        $scope.jobPromise = uCSData.getPodJobs(
+            ctrl.pickDateService.courier,
+            ctrl.pickDateService.client,
+            (ctrl.pickDateService.wild || ""),
+            (ctrl.pickDateService.job || ""),
+            moment(ctrl.pickDateService.from_date),
+            moment(ctrl.pickDateService.to_date),
+            $scope.jobQuery.page,
+            $scope.jobQuery.limit
+        ).then(data => {
+            $scope.jobList = data.item2;
+            $scope.totalCount = data.item1;
         });
-    }
 
-    $scope.refreshData = wait => {
-        const $jobList = angular.element("#jobList");
-        let goTop = $jobList.offset().top;
-        const $parentDiv = $jobList.parents(".box-content");
-
-        try {
-            goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
-            $parentDiv.scrollTop(goTop);
-        } catch (e) {
-            //ignore
-        }
-
-        console.log("about to call data - page " + $scope.pageIndex);
-
-        uCSData.getPodJobs(ctrl.pickDateService.courier,
-            ctrl.pickDateService.client,
-            (ctrl.pickDateService.wild || ""),
-            (ctrl.pickDateService.job || ""),
-            moment(ctrl.pickDateService.from_date),
-            moment(ctrl.pickDateService.to_date),
-            $scope.pageIndex,
-            $scope.pageSizeSelected).then(
-            data => {
-                //var filteredData = $filter('filter')(data, $scope.searchBox);
-                $scope.jobList = data.item2;
-                $scope.totalCount = data.item1;
-                $timeout(() => {
-                    sizeHeadings(angular.element("#jobList").parents(".column"));
-
-                }, 1000);
-
-            });
-
-
+        return $scope.jobPromise;
     };
 
-    $scope.refreshBulkData = wait => {
-        let goTop = angular.element("#bulkJobList").offset().top;
-        const $parentDiv = angular.element("#bulkJobList").parents(".box-content");
-
-        try {
-            goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
-            $parentDiv.scrollTop(goTop);
-        } catch (e) {
-            //ignore
-        }
-
-        console.log("about to call bulk data - page " + $scope.bulkPageIndex);
-
-        uCSData.searchBulkJobs(ctrl.pickDateService.courier,
+    $scope.refreshBulkData = () => {
+        $scope.bulkJobPromise = uCSData.searchBulkJobs(
+            ctrl.pickDateService.courier,
             ctrl.pickDateService.client,
             (ctrl.pickDateService.job || ""),
             (ctrl.pickDateService.wild || ""),
             moment(ctrl.pickDateService.from_date),
             moment(ctrl.pickDateService.to_date),
-            $scope.bulkPageIndex,
-            $scope.bulkPageSizeSelected).then(
-            data => {
-                //var filteredData = $filter('filter')(data, $scope.searchBox);
-                $scope.bulkJobList = data.item2;
-                $scope.bulkTotalCount = data.item1;
-                $timeout(() => {
-                    sizeHeadings(angular.element("#bulkJobList").parents(".column"));
-                }, 1000);
-            });
+            $scope.bulkJobQuery.page,
+            $scope.bulkJobQuery.limit
+        ).then(data => {
+            $scope.bulkJobList = data.item2;
+            $scope.bulkTotalCount = data.item1;
+        });
+
+        return $scope.bulkJobPromise;
     };
 
-    $scope.refreshPreBookData = wait => {
-        const pbList = angular.element("#pbList");
-        let goTop = pbList.offset().top;
-        const $parentDiv = pbList.parents(".box-content");
-
-        try {
-            goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
-            $parentDiv.scrollTop(goTop);
-        } catch (e) {
-            //ignore
-        }
-
-        console.log("about to call prebook data - page " + $scope.pbPageIndex);
-
-        uCSData.searchPreBookJobs(ctrl.pickDateService.courier,
+    $scope.refreshPreBookData = () => {
+        $scope.preBookPromise = uCSData.searchPreBookJobs(
+            ctrl.pickDateService.courier,
             ctrl.pickDateService.client,
             (ctrl.pickDateService.wild || ""),
             (ctrl.pickDateService.job || ""),
             moment(ctrl.pickDateService.from_date),
             moment(ctrl.pickDateService.to_date),
-            $scope.pbPageIndex,
-            $scope.pbPageSizeSelected).then(
-            data => {
-                //var filteredData = $filter('filter')(data, $scope.searchBox);
-                $scope.pbList = data.item2;
-                $scope.pbTotalCount = data.item1;
-                $timeout(() => {
-                    sizeHeadings(angular.element("#pbList").parents(".column"));
-                }, 1000);
+            $scope.preBookQuery.page,
+            $scope.preBookQuery.limit
+        ).then(data => {
+            $scope.pbList = data.item2;
+            $scope.pbTotalCount = data.item1;
+        });
 
-            });
-
+        return $scope.preBookPromise;
     };
 
     $scope.selectJobData = (lat, lng) => {
@@ -1079,37 +1043,20 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
         const closestIndex = closestLocation(lat, lng, toCompare);
 
-        const closestJob = $scope.runBuilder[closestIndex[0]];
-
-        return closestJob;
-
+        return $scope.runBuilder[closestIndex[0]];
     };
 
 
     $scope.showItems = job => {
         if (job.clientCode !== "Other") {
-
             if ($scope.cancelledSelected) {
                 return true;
-
             } else {
-
-                if (job.Status === "Cancelled") {
-
-                    return false;
-
-                } else {
-
-                    return true;
-                }
-
+                return job.Status !== "Cancelled";
             }
-
         } else {
             return false;
         }
-
-
     };
 
 
@@ -1290,17 +1237,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 }, 200);
             });
         });
-
-
     };
 
     //Select Bulk Job
     $scope.selectBulkJobDetail = id => {
         $scope.scanList = [];
         console.log("select Bulk Job  " + id);
-        //angular.element("#jobList").find(".active").removeClass("active");
         clearTimeout($scope.myTimer);
-        //$scope.currentEvent = event;
 
         angular.element("#box-jobDetail").find(".loading").show();
 
@@ -1323,19 +1266,27 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 }, 200);
             });
         });
-
-
     };
 
     jdSvc.setSelectJobDetail($scope.selectJobDetail);
     jdSvc.setSelectBulkJobDetail($scope.selectBulkJobDetail);
 
-    //This method is calling from pagination number
-    $scope.pageChanged = i => {
-
-        $scope.pageIndex = i;
+    $scope.jobPageChanged = (page, limit) => {
+        $scope.jobQuery.page = page;
+        $scope.jobQuery.limit = limit;
         $scope.refreshData();
+    };
 
+    $scope.bulkJobPageChanged = (page, limit) => {
+        $scope.bulkJobQuery.page = page;
+        $scope.bulkJobQuery.limit = limit;
+        $scope.refreshBulkData();
+    };
+
+    $scope.preBookPageChanged = (page, limit) => {
+        $scope.preBookQuery.page = page;
+        $scope.preBookQuery.limit = limit;
+        $scope.refreshPreBookData();
     };
 
     //This method is calling from dropDown
@@ -1413,26 +1364,9 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     });
 
     $scope.highlightEvent = () => {
-        angular.element("#jobList .active").each(function () {
-            angular.element(this).removeClass("active");
-        });
-        //loop actives
-
         $timeout(() => {
-            $scope.selectedEvents = [];
-            angular.element("#jobList .active").each(function () {
-                const eventIndex = angular.element(this).data("index");
-                const event = $scope.jobList[eventIndex];
-                $scope.selectedEvents.push(event);
-            });
-            //$scope.$apply();
+            $scope.selectedEvents = $scope.selected || [];
         }, 10);
-
-
-        $timeout(() => {
-            sizeHeadings(angular.element("#jobList").parents(".column"));
-        }, 1000);
-
     };
 
     $scope.jobListMenu =
@@ -1458,14 +1392,11 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                             uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(() => {
                                 $scope.refreshData(1, true);
                             });
-
-
                         },
                         submitValue: "Close Event"
                     };
 
                     $scope.gather.showForm();
-
                 }
             }
         ];
@@ -1494,10 +1425,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             preserveScope: true,
             templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
             parent: angular.element($document.body),
-            //targetEvent: $event,
             clickOutsideToClose: true,
             onComplete: afterShowAnimation
-
         });
     };
 
@@ -1510,11 +1439,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             preserveScope: true,
             templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
             parent: angular.element($document.body),
-            //targetEvent: $event,
             clickOutsideToClose: true
-
         });
-
     };
 
     $scope.eventDialogController = ($scope, $mdDialog, dataToPass) => {
@@ -1559,11 +1485,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 return;
             }
 
-
             angular.element(".wait").show();
             processEventBooking();
-
-
         }
 
         function processEventBooking() {
@@ -1637,20 +1560,14 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 }
             ],
             onSubmit: () => {
-
                 uCSData.addEventNote($scope.gather.form.fields[0].eventID, $scope.gather.form.fields[0].value).then(data => {
-
                     if (data.response === "Success") {
                         $scope.currentEvent = data.bulkEvent;
                         const ci = $scope.jobList.findIndex(obj => {
-
                             return obj.bulkEventID === data.bulkEvent.bulkEventID;
-
                         });
-                        $scope.jobList[ci] = data.bulkEvent;
-                        //  $scope.$apply();
-                        //alert(field + "Note added successfully!");
 
+                        $scope.jobList[ci] = data.bulkEvent;
                     } else {
 
                         $mdDialog.show(
@@ -1666,8 +1583,8 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             },
             submitValue: "Add Note"
         };
-        $scope.gather.showForm();
 
+        $scope.gather.showForm();
     };
 
 
@@ -1750,7 +1667,7 @@ CSController.$inject = ['$scope', 'JobDetailService', 'uCSData', "$state",
 
 angular.module('uDispatch').controller('CSControl', CSController);
 
-// Convert Degress to Radians
+// Convert Degrees to Radians
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
