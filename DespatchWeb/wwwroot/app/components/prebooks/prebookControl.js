@@ -19,6 +19,8 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
+    $scope.promise = null; // This will hold our loading promise
+
 
     ctrl.openSearch = (boxName, index) => {
         if (!ctrl.showInput) {
@@ -322,23 +324,18 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         }
     };
 
-
-    $scope.refreshData = wait => {
-        angular.element("#box-jobList").find(".loading").show();
-
-        uPBData.getPreBookJobs().then(
+    $scope.refreshData = () => {
+        $scope.promise = uPBData.getPreBookJobs().then(
             data => {
                 $scope.jobList = data;
-                angular.element("#box-jobList").find(".loading").hide();
-                $timeout(() => {
-                    sizeHeadings(angular.element("#jobList").parents(".column"));
-
-                }, 1000);
-
+                return $scope.jobList;
             });
-
     };
 
+    $scope.onOrderChange = function (order) {
+        $scope.query.order = order;
+        return $scope.refreshData();
+    };
 
     $scope.selectJobData = (lat, lng) => {
 
@@ -474,10 +471,12 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
             .ok('Yes')
             .cancel('No');
 
-        $mdDialog.show(confirm).then(() => uPBData.voidPrebookJob(jobId, FirstName, ContactID).then(response => {
-            $scope.currentJob = null;
-            $scope.refreshData();
-        }), () => {
+        $mdDialog.show(confirm).then(() => {
+            $scope.promise = uPBData.voidPrebookJob(jobId, FirstName, ContactID).then(response => {
+                $scope.currentJob = null;
+                return $scope.refreshData();
+            });
+        }, () => {
             // User clicked 'No'
         });
     }
@@ -489,14 +488,15 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
             .ok('Yes')
             .cancel('No');
 
-        $mdDialog.show(confirm).then(() => uPBData.sendPrebookJob(jobId).then(response => {
-            $scope.currentJob = null;
-            $scope.refreshData();
-        }), () => {
+        $mdDialog.show(confirm).then(() => {
+            $scope.promise = uPBData.sendPrebookJob(jobId).then(response => {
+                $scope.currentJob = null;
+                return $scope.refreshData();
+            });
+        }, () => {
             // User clicked 'No'
         });
     }
-
 
     NgMap.getMap().then(map => {
         $scope.map = map;
