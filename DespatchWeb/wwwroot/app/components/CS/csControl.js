@@ -303,13 +303,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.boxes = {
         "pickDate": {
             "title": "Filters",
-            "tpl": "app/components/CS/tpls/pickDate.tpl",
+            "tpl": "app/components/CS/tpls/pickDate.tpl?v3.11",
             "showSearch": 0
         },
 
         "jobList": {
             "title": "Live Job Data",
-            "tpl": "app/components/CS/tpls/jobList.tpl?v=1.12",
+            "tpl": "app/components/CS/tpls/jobList.tpl?v3.11",
             "showSearch": 1,
             "model": "jobList",
             "headings": [
@@ -355,7 +355,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "bulkJobList": {
             "title": "Bulk Job Data",
-            "tpl": "app/components/CS/tpls/bulkJobList.tpl",
+            "tpl": "app/components/CS/tpls/bulkJobList.tpl?v3.11",
             "showSearch": 1,
             "model": "bulkJobList",
             "headings": [
@@ -401,7 +401,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "pbList": {
             "title": "PreBook Data",
-            "tpl": "app/components/CS/tpls/pbList.tpl?v=1.4",
+            "tpl": "app/components/CS/tpls/pbList.tpl?v3.11",
             "showSearch": 1,
             "showRefresh": 1,
             "model": "pbList",
@@ -448,13 +448,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/common/tpls/jobDetail.tpl",
+            "tpl": "app/components/common/tpls/jobDetail.tpl?v3.11",
             "showSearch": 0,
             "showDetailButtons": 1
         },
         "scanList": {
             "title": "Scan Detail",
-            "tpl": "app/components/CS/tpls/scanList.tpl",
+            "tpl": "app/components/CS/tpls/scanList.tpl?v3.11",
             "showSearch": 0,
             "model": "scanList",
             "headings": [
@@ -474,7 +474,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/CS/tpls/map.tpl?v=1.3",
+            "tpl": "app/components/CS/tpls/map.tpl?v3.11",
             "showSearch": 0
         }
 
