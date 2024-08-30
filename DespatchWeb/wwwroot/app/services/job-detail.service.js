@@ -470,6 +470,17 @@ class JobDetailService {
             .cancel('Cancel');
 
         this._$mdDialog.show(prompt).then(result => {
+
+            // Update field
+            let fieldName = field.toLowerCase();
+            let matchingField = Object.keys(this.currentJob).find(key => key.toLowerCase() === fieldName);
+
+            if (matchingField) {
+                this.currentJob[matchingField] = result;
+            } else {
+                console.warn(`Field ${field} not found in job object.`);
+            }
+
             const callData = {
                 "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
             };
@@ -518,7 +529,7 @@ class JobDetailService {
      * @param {Job} job
      */
     editToJobContact(event, job) {
-        this.showEditPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'ToContactName');
+        this.showEditPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'DeliverToContact');
     }
 
     /**
