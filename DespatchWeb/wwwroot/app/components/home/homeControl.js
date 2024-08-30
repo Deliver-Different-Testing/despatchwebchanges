@@ -911,11 +911,11 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             job.alertLatePickup, job.deliveryTime, job.alertLateDelivery, job.jobNo,
             job.clientId, job.contactName, ContactID, job.time, job.id, job.jobType, job.speed, job.notify || job.speed, FirstName, calc)
             .then(response => {
-            ctrl.getData().then(() => {
-                toastrService.showSuccessToast("Late call applied successfully");
+                ctrl.getData().then(() => {
+                    toastrService.showSuccessToast("Late call applied successfully");
+                });
+                return response;
             });
-            return response;
-        });
     };
 
     $scope.jobClass = job => {
@@ -933,13 +933,29 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param {number} courierNumber
+     * Dispatches jobs to a specified courier.
+     * @param {number} courierNumber - The number of the courier to dispatch jobs to.
      */
-    ctrl.dispatchJobs = (courierNumber) => {
-        const jobsToDispatch = ctrl.getJobsToDispatch();
-        dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch).then(() => ctrl.getData()).catch(error => {
-            console.log(error);
-        });
+    ctrl.dispatchJobs = async (courierNumber) => {
+        if (typeof courierNumber !== 'number' || isNaN(courierNumber)) {
+            console.error('Invalid courier number:', courierNumber);
+            return Promise.reject(new Error('Invalid courier number'));
+        }
+
+        try {
+            const jobsToDispatch = ctrl.getJobsToDispatch();
+
+            if (!Array.isArray(jobsToDispatch) || jobsToDispatch.length === 0) {
+                console.warn('No jobs to dispatch');
+                return;
+            }
+
+            await dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch);
+            await $scope.getJobList();
+        } catch (error) {
+            console.error('Error dispatching jobs:', error);
+            throw error; // Re-throw the error for the caller to handle if needed
+        }
     };
 
     ////////////////////////////////////////
@@ -2482,7 +2498,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.jobsCurrentList = false;
             $scope.currentCourier = null;
         }
-
 
         $scope.getClearListEnvelope = id => {
             DispatchData.getClearListEnvelope(id).then(data => {

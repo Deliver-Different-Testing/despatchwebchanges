@@ -105,6 +105,7 @@
  * @property {Date} createdDate
  * @property {string} trackingMobile
  * @property {string} trackingEmail
+ * @property {string} speed
  * @property {*} courierData
  */
 
