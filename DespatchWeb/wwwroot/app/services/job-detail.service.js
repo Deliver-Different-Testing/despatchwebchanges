@@ -1,7 +1,7 @@
 class JobDetailService {
-    static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", "moment"];
+    static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", "moment", "$q"];
 
-    constructor(DispatchData, $mdDialog, toastrService, loadingService, rateJobService, $document, $timeout, moment) {
+    constructor(DispatchData, $mdDialog, toastrService, loadingService, rateJobService, $document, $timeout, moment, $q) {
         this._dispatchData = DispatchData;
         this._$mdDialog = $mdDialog;
         this._toastrService = toastrService;
@@ -10,6 +10,7 @@ class JobDetailService {
         this._$document = $document;
         this._$timeout = $timeout;
         this._moment = moment;
+        this._$q = $q;
 
         this.options = {
             "detail": {
@@ -924,29 +925,51 @@ class JobDetailService {
     }
 
     /**
-     * @param {Job} job
+     * Unlocks a job
+     * @param {Job} job - The job to be unlocked
      */
     unlockJob(job) {
-        return this._dispatchData
-            .updateJobDetail(job.id, "Locked", false, job.charge, FirstName, ContactID, job.preBook)
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "Locked",
+            false,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
             .then(response => {
-
+                this.currentJob.locked = false;
                 return response;
-            }).catch((_) => {
-                this._toastrService.showErrorToast();
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to unlock job. Please try again.");
+                return this._$q.reject(error);
             });
     }
 
     /**
-     * @param {Job} job
+     * Locks a job
+     * @param {Job} job - The job to be locked
      */
     lockJob(job) {
-        return this._dispatchData
-            .updateJobDetail(job.id, "Locked", true, job.charge, FirstName, ContactID, job.preBook)
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "Locked",
+            true,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
             .then(response => {
-
+                this.currentJob.locked = true;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast(error.message);
+                return this._$q.reject(error);
+            });
     }
 
     /**
@@ -964,16 +987,29 @@ class JobDetailService {
     }
 
     /**
-     * @param {Job} job
+     * Toggles the VanOK status of a job
+     * @param {Job} job - The job to update
      */
     vanOkClick(job) {
         const vanOkValue = !job.vanOK;
 
-        return this._dispatchData
-            .updateJobDetail(job.id, "VanOK", vanOkValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "VanOK",
+            vanOkValue,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
+            .then(response => {
+                this.currentJob.vanOK = vanOkValue;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update VanOK status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
@@ -997,109 +1033,218 @@ class JobDetailService {
     }
 
     /**
-     * @param {Job} job
+     * Extracts the numeric rate from a string
+     * @param {string} rate - The rate string to parse
+     * @returns {number} The numeric rate
+     */
+    extractNumericRate(rate) {
+        return Number(rate.replace(/[^0-9.-]+/g, ""));
+    }
+
+    /**
+     * Toggles the Pedal status of a job
+     * @param {Job} job - The job to update
      */
     pedalClick(job) {
         const pedalValue = !job.pedal;
 
-        return this.rateJob(job).then(rate => {
-            console.log(rate);
-            return this._dispatchData
-                .updateJobDetail(job.id, "Pedal", pedalValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(function (response) {
-
-                    return response;
-                }).catch((error) => this._toastrService.showErrorToast(error.message));
-        }).catch((error) => this._toastrService.showErrorToast(error.message));
+        return this.rateJob(job)
+            .then(rate => {
+                const numericRate = this.extractNumericRate(rate);
+                return this._dispatchData.updateJobDetail(
+                    job.id,
+                    "Pedal",
+                    pedalValue,
+                    numericRate,
+                    FirstName,
+                    ContactID,
+                    job.preBook
+                );
+            })
+            .then(response => {
+                this.currentJob.pedal = pedalValue;
+                return response;
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update Pedal status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
-     * @param {Job} job
+     * Toggles the Truck status of a job
+     * @param {Job} job - The job to update
      */
     truckClick(job) {
         const truckValue = !job.truck;
 
         return this.rateJob(job)
             .then(rate => {
-                console.log(rate);
-                return this._dispatchData.updateJobDetail(job.id, "Truck", truckValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook);
+                const numericRate = this.extractNumericRate(rate);
+                return this._dispatchData.updateJobDetail(
+                    job.id,
+                    "Truck",
+                    truckValue,
+                    numericRate,
+                    FirstName,
+                    ContactID,
+                    job.preBook
+                );
             })
             .then(response => {
-
+                this.currentJob.truck = truckValue;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update Truck status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
-     * @param {Job} job
+     * Toggles the Direct status of a job
+     * @param {Job} job - The job to update
      */
     directClick(job) {
         const directValue = !job.direct;
 
         if (!directValue) {
-            return this._dispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted);
+            return this._dispatchData.processUncheckDirect(job.id, FirstName, ContactID, job.speedAccepted)
+                .then(response => {
+                    this.currentJob.direct = false;
+                    return response;
+                })
+                .catch(error => {
+                    this._toastrService.showErrorToast("Failed to uncheck Direct status. Please try again.");
+                    return this._$q.reject(error);
+                });
         } else {
-            return this.rateJob(job).then(rate => {
-                console.log(rate);
-                return this._dispatchData
-                    .updateJobDetail(job.id, "Direct", directValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => {
-
-                        return response;
-                    }).catch((error) => this._toastrService.showErrorToast(error.message));
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            return this.rateJob(job)
+                .then(rate => {
+                    const numericRate = this.extractNumericRate(rate);
+                    return this._dispatchData.updateJobDetail(
+                        job.id,
+                        "Direct",
+                        true,
+                        numericRate,
+                        FirstName,
+                        ContactID,
+                        job.preBook
+                    );
+                })
+                .then(response => {
+                    this.currentJob.direct = true;
+                    return response;
+                })
+                .catch(error => {
+                    this._toastrService.showErrorToast("Failed to update Direct status. Please try again.");
+                    return this._$q.reject(error);
+                });
         }
     }
 
     /**
-     * @param {Job} job
+     * Toggles the Attention status of a job
+     * @param {Job} job - The job to update
      */
     attentionClick(job) {
         const attentionValue = !job.attention;
 
-        return this._dispatchData
-            .updateJobDetail(job.id, "Attention", attentionValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "Attention",
+            attentionValue,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
+            .then(response => {
+                this.currentJob.attention = attentionValue;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update Attention status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
-     * @param {Job} job
+     * Toggles the Reprice status of a job
+     * @param {Job} job - The job to update
      */
     repriceClick(job) {
         const repriceValue = !job.reprice;
 
-        return this._dispatchData
-            .updateJobDetail(job.id, "Reprice", repriceValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "Reprice",
+            repriceValue,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
+            .then(response => {
+                this.currentJob.reprice = repriceValue;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update Reprice status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
-     * @param {Job} job
+     * Toggles the Return status of a pre-booked job
+     * @param {Job} job - The job to update
      */
     preBookReturnClick(job) {
         const returnValue = !job.return;
 
-        return this._dispatchData
-            .updateJobDetail(job.id, "Return", returnValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "Return",
+            returnValue,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
+            .then(response => {
+                this.currentJob.return = returnValue;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update Return status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
-     * @param {Job} job
+     * Toggles the OneOff status of a job
+     * @param {Job} job - The job to update
      */
     oneOffClick(job) {
         const oneOffValue = !job.oneOff;
 
-        return this._dispatchData
-            .updateJobDetail(job.id, "OneOff", oneOffValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "OneOff",
+            oneOffValue,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
+            .then(response => {
+                this.currentJob.oneOff = oneOffValue;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
-
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update OneOff status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
@@ -1116,84 +1261,125 @@ class JobDetailService {
     }
 
     /**
-     * @param {Job} job
+     * Toggles the Void status of a job
+     * @param {Job} job - The job to update
      */
     voidClick(job) {
         const voidValue = !job.void;
+        const updateMethod = job.bulkJob ? this._dispatchData.updateBulkJobDetail : this._dispatchData.updateJobDetail;
+        const params = job.bulkJob ?
+            [job.id, "Void", voidValue, job.charge, FirstName, ContactID] :
+            [job.id, "Void", voidValue, job.charge, FirstName, ContactID, job.preBook];
 
-        return job.bulkJob ? this._dispatchData
-            .updateBulkJobDetail(job.id, "Void", voidValue, job.charge, FirstName, ContactID).then(response => {
-                this.selectBulkJobDetail(job.id);
+        return updateMethod.apply(this._dispatchData, params)
+            .then(response => {
+                this.currentJob.void = voidValue;
                 return response;
-            }).catch(() => this._toastrService.showErrorToast()) : this._dispatchData
-            .updateJobDetail(job.id, "Void", voidValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-
-                return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update Void status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
-     * @param {Event} event
-     * @param {Job} job
+     * Marks a job as done
+     * @param {Event} event - The triggering event
+     * @param {Job} job - The job to update
      */
     doneClick(event, job) {
         job.done = !job.done;
 
-        if (!job.completedTime) {
-            const confirm = this._$mdDialog.confirm()
-                .title('You must set completed time (POD Time) first')
-                .targetEvent(event)
-                .ok('OK');
-
-            this._$mdDialog.show(confirm).then(() => {
-                job.done = false;
-                return false;
-            });
+        if (!job.completedTime || !job.podName) {
+            return this.showMissingInfoDialog(event, job)
+                .then(() => {
+                    this.currentJob.done = false;
+                    return this._$q.reject('Missing required information');
+                });
         }
 
-        if (!job.podName) {
-            const confirm = this._$mdDialog.confirm()
-                .title('You must set POD Name first')
-                .targetEvent(event)
-                .ok('OK');
-
-            this._$mdDialog.show(confirm).then(() => {
-                job.done = false;
-                return false;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
-        }
-
-        return this._dispatchData
-            .updatePODDetail(job.jobNo, 6, job.podName, job.completedTime).then((response) => {
-
+        return this._dispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime)
+            .then(response => {
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to mark job as done. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
-     * @param {Job} job
+     * Shows a dialog for missing information
+     * @param {Event} event - The triggering event
+     * @param {Job} job - The job being updated
+     * @returns {Promise} A promise that resolves when the dialog is closed
+     */
+    showMissingInfoDialog(event, job) {
+        let message = '';
+        if (!job.completedTime) {
+            message = 'You must set completed time (POD Time) first';
+        } else if (!job.podName) {
+            message = 'You must set POD Name first';
+        }
+
+        const confirm = this._$mdDialog.confirm()
+            .title(message)
+            .targetEvent(event)
+            .ok('OK');
+
+        return this._$mdDialog.show(confirm);
+    }
+
+    /**
+     * Toggles the Delivered status of a job
+     * @param {Job} job - The job to update
      */
     deliveredClick(job) {
         const doneValue = !job.done;
 
-        return this._dispatchData
-            .updateJobDetail(job.id, "Delivered", doneValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "Delivered",
+            doneValue,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
+            .then(response => {
+                this.currentJob.done = doneValue;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update Delivered status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
-     * @param {Job} job
+     * Toggles the AirportOnly status of a job
+     * @param {Job} job - The job to update
      */
     airportOnlyClick(job) {
         const airportOnlyValue = !job.airportOnly;
 
-        return this._dispatchData
-            .updateJobDetail(job.id, "AirportOnly", airportOnlyValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-
+        return this._dispatchData.updateJobDetail(
+            job.id,
+            "AirportOnly",
+            airportOnlyValue,
+            job.charge,
+            FirstName,
+            ContactID,
+            job.preBook
+        )
+            .then(response => {
+                this.currentJob.airportOnly = airportOnlyValue;
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            })
+            .catch(error => {
+                this._toastrService.showErrorToast("Failed to update Airport Only status. Please try again.");
+                return this._$q.reject(error);
+            });
     }
 
     /**
@@ -1388,7 +1574,6 @@ class JobDetailService {
                 id, fieldName, title, job, options, existingItem, showRerateOption
             },
         }).then(_ => {
-
             console.log('Dialog closed!')
         });
     }
@@ -1420,110 +1605,44 @@ class JobDetailService {
         this.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
     }
 
-    /**
-     * @param {Event} event
-     * @param {Job} job
-     */
     newPallet(event, job) {
         return this._$mdDialog.show({
-            controller: AddPalletDialogController,
+            controller: PalletDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html",
+            templateUrl: "app/components/dialogs/pallet-dialog/pallet-dialog.html",
             parent: angular.element(this._$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                job: job, dispatcherName: FirstName, contactId: ContactID
+                job: job,
+                dispatcherName: FirstName,
+                contactId: ContactID,
+                existingPallet: null
             }
         }).then(() => {
-
             console.log('Pallet Dialog closed!');
         });
     }
 
-    /**
-     * @param {{}} pallet
-     */
-    editPallet(pallet) {
-        const self = this;
-        self.currentPallet = pallet;
-
-        self.gather.form = {
-            id: "editPallet", title: "Edit Pallet", tpl: "multi", fields: [{
-                "name": "amount", "label": "# of pallets", "colSize": "6", "value": pallet.quantity
-            }, {
-                "name": "weight", "label": "Weight (KG)", "colSize": "6", "value": pallet.weight
-            }, {
-                "name": "length", "label": "Length (m)", "colSize": "6", "value": pallet.length
-            }, {
-                "name": "depth", "label": "Depth (m)", "colSize": "6", "value": pallet.depth
-            }, {
-                "name": "height", "label": "Height (m)", "colSize": "6", "value": pallet.height
-            }, {
-                "name": "pu", "label": "PU", "colSize": "6", "type": "checkbox", "value": pallet.pu
-            }, {
-                "name": "do", "label": "DO", "colSize": "6", "type": "checkbox", "value": pallet.do
-            }, {
-                "name": "dgclass", "label": "DG Class", "colSize": "6", "value": pallet.dgClass
-            }, {
-                "name": "notes", "label": "Notes", "colSize": "12", "type": "textarea", "value": pallet.notes
-            }], onSubmit: function () {
-
-                const newP = {};
-
-                self.gather.form.fields.forEach(function (field) {
-                    if (field.name === "amount") {
-                        newP["Quantity"] = field.value;
-                    }
-                    if (field.name === "weight") {
-                        newP["Weight"] = field.value;
-                    }
-                    if (field.name === "length") {
-                        newP["Length"] = field.value;
-                    }
-                    if (field.name === "depth") {
-                        newP["Depth"] = field.value;
-                    }
-                    if (field.name === "height") {
-                        newP["Height"] = field.value;
-                    }
-                    if (field.name === "pu") {
-                        newP["PU"] = field.value;
-                    }
-                    if (field.name === "do") {
-                        newP["DO"] = field.value;
-                    }
-                    if (field.name === "dgclass") {
-                        newP["DGClass"] = field.value;
-                    }
-                    if (field.name === "notes") {
-                        newP["Notes"] = field.value;
-                    }
-                });
-
-                newP["id"] = self.currentPallet.id;
-                newP["itemId"] = self.currentPallet.itemID;
-
-                return self._dispatchData.editPallet(newP, self.currentJob.preBook, FirstName).then(function () {
-                    return self._rateJobService.rateJob(self.currentJob).then(function (rate) {
-                        console.log(rate);
-                        if (rate !== self.currentJob.charge) {
-                            return self._dispatchData
-                                .updateJobDetail(this.currentJob.id, "rate", Number(rate.replace(/[^0-9.-]+/g, "")), Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, self.currentJob.preBook).then(function (response) {
-                                    self.selectJobDetail(self.currentJob.id);
-                                    return response;
-                                });
-                        }
-
-                    });
-                });
-            }, submitValue: "Edit Pallet"
-        };
-
-        this._$timeout(function () {
-            this.gather.showForm();
-        }, 200);
+    editPallet(event, job, pallet) {
+        return this._$mdDialog.show({
+            controller: PalletDialogController,
+            controllerAs: "ctrl",
+            templateUrl: "app/components/dialogs/pallet-dialog/pallet-dialog.html",
+            parent: angular.element(this._$document.body),
+            targetEvent: event,
+            clickOutsideToClose: true,
+            fullscreen: true,
+            locals: {
+                job: job,
+                dispatcherName: FirstName,
+                contactId: ContactID,
+                existingPallet: pallet
+            }
+        }).then(() => {
+            console.log('Pallet Dialog closed!');
+        });
     }
 }
 

@@ -106,6 +106,7 @@
  * @property {string} trackingMobile
  * @property {string} trackingEmail
  * @property {string} speed
+ * @property {boolean} oneOff
  * @property {*} courierData
  */
 
