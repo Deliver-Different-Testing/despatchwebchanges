@@ -19,10 +19,10 @@
                 ng-repeat="job in jobList | orderBy: jobQuery.order">
                 <td md-cell>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
                 <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
-                <td md-cell ng-click="speedColumnClick($event); $event.stopPropagation();">{{job.speed}}</td>
+                <td md-cell>{{job.speed}}</td>
                 <td md-cell>{{job.jobNo}}</td>
-                <td md-cell ng-click="clientColumnClick($event); $event.stopPropagation();">{{job.client}}</td>
-                <td md-cell ng-click="fromColumnClick($event); $event.stopPropagation();">
+                <td md-cell>{{job.client}}</td>
+                <td md-cell>
                     {{job.from}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
@@ -31,8 +31,7 @@
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
                 <td md-cell>
-                    <div ng-click="setCurrentWorkMenu($event); $event.stopPropagation();"
-                         style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">
+                    <div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">
                         {{job.toAddress}}
                     </div>
                 </td>
