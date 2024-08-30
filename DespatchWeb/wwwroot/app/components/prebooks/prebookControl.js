@@ -19,16 +19,41 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
+
+    ctrl.openSearch = (boxName, index) => {
+        if (!ctrl.showInput) {
+            ctrl.showInput = {};
+        }
+        ctrl.showInput[boxName + '-' + index] = !ctrl.showInput[boxName + '-' + index];
+        ctrl.jobRecordSearchText = '';
+        ctrl.selectedJobRecord = null;
+    };
+
     ctrl.jobRecordSearchText = "";
 
     /**
      * @param {string} searchText
      */
-    ctrl.jobRecordSearch = searchText => {
+    this.jobRecordSearch = function (searchText) {
+        console.log(searchText);
+        if (!searchText) {
+            return [];
+        }
+
+        searchText = searchText.toLowerCase();
+
         return $scope.jobList
-            .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
-            .map(job => ({id: job.id, text: job.jobNo}));
-    }
+            .filter(function (job) {
+                return job.jobNo.toLowerCase().indexOf(searchText) !== -1;
+            })
+            .map(function (job) {
+                return {
+                    text: job.jobNo,
+                    id: job.id
+                };
+            });
+    };
+
 
     /**
      * @param {number} selectedJobId
@@ -44,10 +69,6 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
                 $scope.selectJobDetail($scope.currentJob.id);
             });
-
-            //$timeout(function () {  }, 1000);
-
-
         },
         cancel: () => {
             angular.element(".gatherForm").hide();
@@ -248,20 +269,13 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     ];
 
 
-    const layoutToUse = angular.copy($scope.layouts[0].layout);
-    if (!$scope.isAdmin) {
-        //layoutToUse.columns[0].boxes.splice(0, 1);
-        //layoutToUse.columns.splice(2, 1);
-    }
-
-    $scope.layout = layoutToUse;
+    $scope.layout = angular.copy($scope.layouts[0].layout);
 
     $scope.loadLayout = i => {
         $scope.layout = angular.copy($scope.layouts[i].layout, () => {
             $timeout(sizeHeadings(), 1000);
 
         });
-        //$scope.$apply();
     };
 
     $scope.sortableOptions = {
@@ -291,28 +305,6 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         }
     };
 
-    $scope.openSearch = boxID => {
-
-        if (angular.element("#box-" + boxID).find(".box-search").hasClass("open")) {
-
-            angular.element("#box-" + boxID).find(".box-search input").fadeOut(() => {
-
-                angular.element("#box-" + boxID).find(".box-search").removeClass("open");
-                angular.element("#box-" + boxID).find(".box-search").animate({"width": "31px"}, 500);
-
-            });
-
-        } else {
-
-            angular.element("#box-" + boxID).find(".box-search").animate({"width": "200px"}, 500, () => {
-                angular.element("#box-" + boxID).find(".box-search").addClass("open");
-                angular.element("#box-" + boxID).find(".box-search input").fadeIn();
-            });
-
-        }
-
-    };
-
     $scope.goToRunViewer = () => {
         console.log("goToRunViewer.");
         $state.go('home');
@@ -321,8 +313,6 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     //Column Sorting
     $scope.sort = [];
     $scope.orderList = (list, prop) => {
-
-
         if ($scope.sort[list] !== prop) {
             $scope.sort[list] = prop;
             $scope[list] = $filter('orderBy')($scope[list], prop);
@@ -330,68 +320,12 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
             $scope.sort[list] = "d-" + prop;
             $scope[list] = $filter('orderBy')($scope[list], "-" + prop);
         }
-
-
     };
-
-    ///////////////////////////
-    // HOTKEYS
-    //////////////////////////
-
-
-    hotkeys.add({
-        combo: 'esc',
-        description: 'Close gather screen',
-        allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: () => {
-            angular.element(".gatherForm").hide();
-            angular.element(".eventForm").hide();
-        }
-    });
-
-    //hotkeys.add({
-    //    combo: 'ctrl+a',
-    //    description: 'Select All',
-    //    allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-    //    callback: function () {
-    //        angular.element(".activeTable").find(".clickable-row").addClass("active");
-    //        $scope.showRun();
-    //    }
-    //});
-
-    hotkeys.add({
-        combo: 'enter',
-        description: 'Submit gather form',
-        allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: () => {
-            if (angular.element(".gatherForm").is(":visible") === true) {
-                $timeout($scope.gather.submit(), 0);
-            }
-            if (event.srcElement.id === "Wild") {
-                $scope.refreshData(true);
-            }
-
-        }
-    });
-
-    //$scope.freu
 
 
     $scope.refreshData = wait => {
-
-        //var goTop = angular.element("#jobList").offset().top;
-        //var $parentDiv = angular.element("#jobList").parents(".box-content");
-
-        //try {
-        //    goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 31;
-        //    $parentDiv.scrollTop(goTop);
-        //} catch (e) {
-        //    //ignore
-        //}
         angular.element("#box-jobList").find(".loading").show();
 
-        //console.log("about to call data - page " + $scope.pageIndex);
-        //$scope.getData();
         uPBData.getPreBookJobs().then(
             data => {
                 $scope.jobList = data;
@@ -416,10 +350,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
         const closestIndex = closestLocation(lat, lng, toCompare);
 
-        const closestJob = $scope.runBuilder[closestIndex[0]];
-
-        return closestJob;
-
+        return $scope.runBuilder[closestIndex[0]];
     };
 
 
