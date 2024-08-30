@@ -799,6 +799,9 @@ class DispatchData {
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
             value = this._moment(value).format("YYYY-MM-DD");
         }
+        if (field === "DeliverToContact") {
+            field = "ToContactName";
+        }
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
         return await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
