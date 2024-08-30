@@ -27,6 +27,16 @@ class EditTimeDialogController {
                 .updateBulkJobDetail(this._job.id, this._fieldName, time, this._job.charge, FirstName, ContactID) : await this._dispatchData
                 .updateJobDetail(this._job.id, this._fieldName, time, this._job.charge, FirstName, ContactID, this._job.preBook);
 
+            // Update field
+            let fieldName = this._fieldName.toLowerCase();
+            let matchingField = Object.keys(this._job).find(key => key.toLowerCase() === fieldName);
+
+            if (matchingField) {
+                this._job[matchingField] = time;
+            } else {
+                console.warn(`Field ${this._fieldName} not found in job object.`);
+            }
+
             this._$mdDialog.hide();
         } catch (error) {
             this._toastrService.showErrorToast(error.message);

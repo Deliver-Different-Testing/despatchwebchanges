@@ -428,7 +428,6 @@ class JobDetailService {
                 job, time, title, fieldName, id
             },
         }).then(_ => {
-
             console.log('Dialog closed!');
         });
     }
@@ -485,7 +484,6 @@ class JobDetailService {
                 "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
             };
             this.updateField(false, job, callData).then(() => {
-
             })
         }, () => {
             console.log(`Edit ${title} Cancelled!`)
@@ -860,25 +858,26 @@ class JobDetailService {
                     if (job.bulkJob) {
                         this._dispatchData.updateBulkDeliveryAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.toAddress, addressDetails.lat, addressDetails.long, FirstName)
                             .then(() => {
-                                this.selectJobDetail(currentJob.id);
                                 this._toastrService.showSuccessToast("Address successfully updated");
                                 this._loadingService.closeLoader();
                             });
                     }
 
                     job.toSuburbID = parseInt(addressDetails.our_suburb);
+                    this.currentJob = job;
                 } else {
                     job.fromAddress = (addressDetails.extras || '').length > 1 ? addressDetails.extras + ',' + addressDetails.address : addressDetails.address;
                     if (job.bulkJob) {
                         this._dispatchData.updateBulkPickupAddress(job.id, addressDetails.suburb, addressDetails.postCode, job.fromAddress, addressDetails.lat, addressDetails.long, FirstName)
                             .then(() => {
-                                this.selectJobDetail(currentJob.id);
+
                                 this._toastrService.showSuccessToast("Address successfully updated");
                                 this._loadingService.closeLoader();
                             });
                     }
 
                     job.fromSuburbID = parseInt(addressDetails.our_suburb);
+                    this.currentJob = job;
                 }
 
                 const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
@@ -903,14 +902,14 @@ class JobDetailService {
                         if (field === "toAddress") {
                             this._dispatchData.updateDeliveryAddress(callData.jobID, callData.toSuburbId, callData.toAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
                                 .then(() => {
-                                    this.selectJobDetail(currentJob.id);
+                                    this.currentJob = job;
                                     this._toastrService.showSuccessToast("Address successfully updated")
                                     this._loadingService.closeLoader();
                                 });
                         } else {
                             this._dispatchData.updatePickupAddress(callData.jobID, callData.fromSuburbId, callData.fromAddress, callData.lat, callData.long, callData.CBD, Number(callData.rate.replace(/[^0-9.-]+/g, "")), FirstName, job.preBook)
                                 .then(() => {
-                                    this.selectJobDetail(currentJob.id);
+                                    this.currentJob = job;
                                     this._toastrService.showSuccessToast("Address successfully updated")
                                     this._loadingService.closeLoader();
                                 });
