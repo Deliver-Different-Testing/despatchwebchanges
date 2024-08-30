@@ -42,8 +42,10 @@ class AddNotesDialogController {
                 };
                 await this.updateJobDetail(this._job.bulkJob, callData.jobID, callData.field, callData.value, this._job.charge, FirstName, ContactID, this._job.preBook);
             }
+
+            this._job.internalNotes = note + '\n' + this._job.internalNotes;
             this._toastrService.showSuccessToast("Added Note To Job");
-            this._$mdDialog.hide();
+            this._$mdDialog.hide(this._job);
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         } finally {

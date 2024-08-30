@@ -358,8 +358,8 @@ class JobDetailService {
             locals: {
                 id: id, fieldName: fieldName, title: title, job: job,
             }
-        }).then(_ => {
-            this.selectJobDetail(job.id);
+        }).then(updatedJob => {
+            self.currentJob = updatedJob
             // User closed notes dialog
         });
     }
@@ -386,7 +386,7 @@ class JobDetailService {
                 job, title, fieldName, date, id
             },
         }).then(_ => {
-            this.selectJobDetail(job.id);
+
             console.log('Dialog closed!');
         });
     }
@@ -428,7 +428,7 @@ class JobDetailService {
                 job, time, title, fieldName, id
             },
         }).then(_ => {
-            this.selectJobDetail(job.id);
+
             console.log('Dialog closed!');
         });
     }
@@ -474,7 +474,7 @@ class JobDetailService {
                 "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
             };
             this.updateField(false, job, callData).then(() => {
-                this.selectJobDetail(job.id);
+
             })
         }, () => {
             console.log(`Edit ${title} Cancelled!`)
@@ -920,7 +920,7 @@ class JobDetailService {
         return this._dispatchData
             .updateJobDetail(job.id, "Locked", false, job.charge, FirstName, ContactID, job.preBook)
             .then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((_) => {
                 this._toastrService.showErrorToast();
@@ -934,7 +934,7 @@ class JobDetailService {
         return this._dispatchData
             .updateJobDetail(job.id, "Locked", true, job.charge, FirstName, ContactID, job.preBook)
             .then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -961,7 +961,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updateJobDetail(job.id, "VanOK", vanOkValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -979,7 +979,7 @@ class JobDetailService {
                 return this._dispatchData
                     .updateJobDetail(job.id, "Van", vanValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook)
                     .then(response => {
-                        this.selectJobDetail(job.id);
+
                         return response;
                     }).catch((error) => this._toastrService.showErrorToast(error.message));
             }).catch((error) => this._toastrService.showErrorToast(error.message));
@@ -996,7 +996,7 @@ class JobDetailService {
             console.log(rate);
             return this._dispatchData
                 .updateJobDetail(job.id, "Pedal", pedalValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(function (response) {
-                    this.selectJobDetail(job.id);
+
                     return response;
                 }).catch((error) => this._toastrService.showErrorToast(error.message));
         }).catch((error) => this._toastrService.showErrorToast(error.message));
@@ -1014,7 +1014,7 @@ class JobDetailService {
                 return this._dispatchData.updateJobDetail(job.id, "Truck", truckValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook);
             })
             .then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1032,7 +1032,7 @@ class JobDetailService {
                 console.log(rate);
                 return this._dispatchData
                     .updateJobDetail(job.id, "Direct", directValue, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => {
-                        this.selectJobDetail(job.id);
+
                         return response;
                     }).catch((error) => this._toastrService.showErrorToast(error.message));
             }).catch((error) => this._toastrService.showErrorToast(error.message));
@@ -1047,7 +1047,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updateJobDetail(job.id, "Attention", attentionValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1060,7 +1060,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updateJobDetail(job.id, "Reprice", repriceValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1073,7 +1073,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updateJobDetail(job.id, "Return", returnValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1086,7 +1086,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updateJobDetail(job.id, "OneOff", oneOffValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
 
@@ -1100,7 +1100,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updateJobDetail(job.id, "Active", activeValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1117,7 +1117,7 @@ class JobDetailService {
                 return response;
             }).catch(() => this._toastrService.showErrorToast()) : this._dispatchData
             .updateJobDetail(job.id, "Void", voidValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1155,7 +1155,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updatePODDetail(job.jobNo, 6, job.podName, job.completedTime).then((response) => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1168,7 +1168,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updateJobDetail(job.id, "Delivered", doneValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1181,7 +1181,7 @@ class JobDetailService {
 
         return this._dispatchData
             .updateJobDetail(job.id, "AirportOnly", airportOnlyValue, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                this.selectJobDetail(job.id);
+
                 return response;
             }).catch((error) => this._toastrService.showErrorToast(error.message));
     }
@@ -1258,7 +1258,7 @@ class JobDetailService {
                 id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel
             },
         }).then(_ => {
-            this.selectJobDetail(job.id);
+
             console.log('Dialog closed!');
         });
     }
@@ -1378,7 +1378,7 @@ class JobDetailService {
                 id, fieldName, title, job, options, existingItem, showRerateOption
             },
         }).then(_ => {
-            this.selectJobDetail(job.id);
+
             console.log('Dialog closed!')
         });
     }
@@ -1427,7 +1427,7 @@ class JobDetailService {
                 job: job, dispatcherName: FirstName, contactId: ContactID
             }
         }).then(() => {
-            this.selectJobDetail(job.id);
+
             console.log('Pallet Dialog closed!');
         });
     }

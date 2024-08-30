@@ -158,79 +158,79 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.boxes = {
         "jobsList": {
             "title": "Jobs List",
-            "tpl": "app/components/home/tpls/jobList.tpl",
+            "tpl": "app/components/home/tpls/jobList.tpl?v3.1",
             "showSearch": 1,
             "showRefresh": 1
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/common/tpls/jobDetail.tpl",
+            "tpl": "app/components/common/tpls/jobDetail.tpl?v3.1",
             "showSearch": 0,
             "showRefresh": 0,
             "showDetailButtons": 1
         },
         "potentialCouriers": {
             "title": "Potential Couriers",
-            "tpl": "app/components/home/tpls/potentialCouriers.tpl",
+            "tpl": "app/components/home/tpls/potentialCouriers.tpl?v3.1",
             "showSearch": 1
         },
         "currentWork": {
             "title": "Current Work",
-            "tpl": "app/components/home/tpls/currentWork.tpl",
+            "tpl": "app/components/home/tpls/currentWork.tpl?v3.1",
             "showSearch": 1,
             "showRefresh": 0
         },
         "couriersMoveThrough": {
             "title": "Couriers Movement Through List",
-            "tpl": "app/components/home/tpls/couriersMovementThroughList.tpl",
+            "tpl": "app/components/home/tpls/couriersMovementThroughList.tpl?v3.1",
             "showSearch": 1,
             "showRefresh": 0
         },
         "courierMovePickedUp": {
             "title": "Couriers Movement Picked Up Run",
-            "tpl": "app/components/home/tpls/couriersMovementPickedUp.tpl",
+            "tpl": "app/components/home/tpls/couriersMovementPickedUp.tpl?v3.1",
             "showSearch": 1,
             "showRefresh": 0
         },
         "courierMoveClear": {
             "title": "Couriers Movement Clear List",
-            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl",
+            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?v3.1",
             "showSearch": 1,
             "showRefresh": 0
         },
         "areaList": {
             "title": "Area List",
-            "tpl": "app/components/home/tpls/areaList.tpl",
+            "tpl": "app/components/home/tpls/areaList.tpl?v3.1",
             "showSearch": 0,
             "showRefresh": 0
         },
         "jobUpdates": {
             "title": "Job Updates",
-            "tpl": "app/components/home/tpls/jobUpdates.tpl",
+            "tpl": "app/components/home/tpls/jobUpdates.tpl?v3.1",
             "showSearch": 0,
             "showRefresh": 0
         },
         "supports": {
             "title": "Supports",
-            "tpl": "app/components/home/tpls/supports.tpl",
+            "tpl": "app/components/home/tpls/supports.tpl?v3.1",
             "showSearch": 0,
             "showRefresh": 0
         },
         "lateCalls": {
             "title": "Late Calls",
-            "tpl": "app/components/home/tpls/lateCalls.tpl",
+            "tpl": "app/components/home/tpls/lateCalls.tpl?v3.1",
             "showSearch": 0,
             "showRefresh": 0
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/home/tpls/map.tpl",
+            "tpl": "app/components/home/tpls/map.tpl?v3.1",
             "showSearch": 0,
             "showRefresh": 1
         },
         "clearLists": {
             "title": "Clear Lists",
-            "tpl": "app/components/home/tpls/clearLists.tpl",
+            "tpl": "app/components/home/tpls/clearLists.tpl?v3.1",
             "showSearch": 0,
             "showRefresh": 0
         }
