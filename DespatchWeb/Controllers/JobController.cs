@@ -43,7 +43,7 @@ public class JobController : Controller
             var clientContacts = await _clientRepo.ClientContacts(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
-                var empty = new List<Models.JobViewModel>();
+                var empty = new List<JobViewModel>();
                 return Json(empty);
             }
         }
@@ -62,7 +62,7 @@ public class JobController : Controller
             var clientContacts = await _clientRepo.ClientContacts(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
-                var empty = new List<Models.JobViewModel>();
+                var empty = new List<JobViewModel>();
                 return Json(empty);
             }
         }
@@ -81,7 +81,7 @@ public class JobController : Controller
             var clientContacts = await _clientRepo.ClientContacts(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
-                var empty = new List<Models.JobViewModel>();
+                var empty = new List<JobViewModel>();
                 return Json(empty);
             }
         }
@@ -100,7 +100,7 @@ public class JobController : Controller
             var clientContacts = await _clientRepo.ClientContacts(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
-                var empty = new List<Models.JobViewModel>();
+                var empty = new List<JobViewModel>();
                 return Json(empty);
             }
         }
@@ -119,7 +119,7 @@ public class JobController : Controller
             var clientContacts = await _clientRepo.ClientContacts(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
-                var empty = new List<Models.JobViewModel>();
+                var empty = new List<JobViewModel>();
                 return Json(empty);
             }
         }
@@ -590,7 +590,7 @@ public class JobController : Controller
 
         var restResponse = await client.PostAsync(request);
 
-        if (restResponse.StatusCode != System.Net.HttpStatusCode.OK)
+        if (restResponse.StatusCode != HttpStatusCode.OK)
         {
             var e = new ApplicationException(
                 $"Exsalerate Activity Failed {restResponse.Content} {Environment.NewLine} CurrentBody= {body}");

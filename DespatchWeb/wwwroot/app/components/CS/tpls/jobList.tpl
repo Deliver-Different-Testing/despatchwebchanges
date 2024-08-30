@@ -26,7 +26,7 @@
                     {{job.from}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td md-cell ng-click="toColumnClick($event); $event.stopPropagation();">
+                <td md-cell>
                     {{job.to}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>

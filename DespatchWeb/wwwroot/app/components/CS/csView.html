@@ -79,10 +79,10 @@
                                 </span>
 
 
-                                <md-button class="md-icon-button md-primary" ng-click="ctrl.getData()"
-                                           ng-show="boxes[box.name].showRefresh">
-                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                                </md-button>
+                                <!--    <md-button class="md-icon-button md-primary" ng-click="ctrl.getData()"
+                                               ng-show="boxes[box.name].showRefresh">
+                                        <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                    </md-button>-->
 
 
                                 <div ng-show="box.name == 'eventList'">
@@ -197,7 +197,7 @@
                                     </md-fab-speed-dial>
                                 </div>
 
-                                <div id="box-{{box.name}}-{{$index}}" layout="row" ng-show="boxes[box.name].showSearch">
+                                <!--<div id="box-{{box.name}}-{{$index}}" layout="row" ng-show="boxes[box.name].showSearch">
                                     <md-button class="md-icon-button"
                                                ng-click="ctrl.openSearch(box.name, $index)">
                                         <md-icon md-font-set="material-symbols-outlined"
@@ -228,7 +228,7 @@
                                             POD page.
                                         </md-not-found>
                                     </md-autocomplete>
-                                </div>
+                                </div>-->
 
                             </div>
                         </md-toolbar>
@@ -270,7 +270,7 @@
     <script>
         document.onkeydown = overrideKeyboardEvent;
         document.onkeyup = overrideKeyboardEvent;
-        var keyIsDown = {};
+        const keyIsDown = {};
 
 
         angular.element(document).on('focus', '.searchBox input', function () {
@@ -327,7 +327,7 @@
         angular.element(document).ready(function () {
             const favicon = document.getElementById("favicon");
             favicon.setAttribute("href", "/POD_favicon.ico");
-            var isDown = false;   // Tracks status of mouse button
+            let isDown = false;   // Tracks status of mouse button
 
             angular.element(document).mousedown(function () {
                 isDown = true;      // When mouse goes down, set isDown to true
@@ -336,7 +336,7 @@
                     isDown = false;    // When mouse goes up, set isDown to false
                 });
 
-            var isOnRow = false;
+            let isOnRow = false;
 
 
             angular.element(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
@@ -368,14 +368,16 @@
         });
 
 
-        var mouseDown = 0;
+        let mouseDown = 0;
 
         angular.element(document).on('mousedown', '.clickable-row', function (event) {
 
+            let group;
+            let jobNo;
             if (angular.element(".activeTable .clickable-row.active").length > 1) {
-                var jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
+                jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
             } else {
-                var jobNo = angular.element(this).attr("data-jobno");
+                jobNo = angular.element(this).attr("data-jobno");
             }
 
 
@@ -392,7 +394,7 @@
                     } else {
                         if (!angular.element(this).hasClass("active")) {
 
-                            var group = angular.element(this).parents(".table-rows").attr("data-group");
+                            group = angular.element(this).parents(".table-rows").attr("data-group");
                             angular.element('*[data-group="' + group + '"]').each(function () {
                                 angular.element(this).find('.active').removeClass('active');
                             });
@@ -410,7 +412,7 @@
 
                         if (!angular.element(this).hasClass("active")) {
 
-                            var group = angular.element(this).parents(".table-rows").attr("data-group");
+                            group = angular.element(this).parents(".table-rows").attr("data-group");
                             angular.element('*[data-group="' + group + '"]').each(function () {
                                 angular.element(this).find('.active').removeClass('active');
                             });
@@ -448,7 +450,7 @@
 
                 if (angular.element(this).hasClass("active")) {
                 } else {
-                    var group = angular.element(this).parents(".table-rows").attr("data-group");
+                    const group = angular.element(this).parents(".table-rows").attr("data-group");
 
                     angular.element('*[data-group="' + group + '"]').each(function () {
                         angular.element(this).find('.active').removeClass('active');
@@ -472,7 +474,7 @@
         });
 
         angular.element(document).on("keydown", function (e) {
-            var code = (e.keyCode ? e.keyCode : e.which);
+            const code = (e.keyCode ? e.keyCode : e.which);
             if (code === 40) {
                 angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
             } else if (code === 38) {
@@ -489,18 +491,18 @@
         function sizeHeadings(ele) {
 
             angular.element("body").find(".box").each(function () {
-                var box = angular.element(this);
+                const box = angular.element(this);
                 box.find(".table-headings thead tr th").each(function (index) {
-                    var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                    const newWidth = box.find(".table tbody tr td:visible").eq(index).width();
                     angular.element(this).width(newWidth);
                 });
                 box.find(".table-headings table").width(box.find(".table").width());
             });
 
             angular.element("body").find(".box").each(function () {
-                var box = angular.element(this);
+                const box = angular.element(this);
                 box.find(".table-b-headings thead tr th").each(function (index) {
-                    var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                    const newWidth = box.find(".table tbody tr td:visible").eq(index).width();
                     angular.element(this).width(newWidth);
                 });
                 box.find(".table-b-headings table").width(box.find(".table").width());
