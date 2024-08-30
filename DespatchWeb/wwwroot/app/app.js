@@ -95,20 +95,23 @@ angular
 
         $stateProvider
             .state('home', {
-                url: '/', templateUrl: 'app/components/home/homeView.html', controller: 'HomeControl'
+                url: '/', templateUrl: 'app/components/home/homeView.html?v=3.11', controller: 'HomeControl'
             })
             .state('nw', {
                 url: '/Nationwide',
-                templateUrl: 'app/components/Nationwide/nationwideView.html',
+                templateUrl: 'app/components/Nationwide/nationwideView.html?v=3.11',
                 controller: 'NationwideControl',
                 reloadOnSearch: false
             })
             .state('cs', {
-                url: '/CS', templateUrl: 'app/components/CS/csView.html', controller: 'CSControl', reloadOnSearch: false
+                url: '/CS',
+                templateUrl: 'app/components/CS/csView.html?v=3.11',
+                controller: 'CSControl',
+                reloadOnSearch: false
             })
             .state('prebooks', {
                 url: '/prebooks',
-                templateUrl: 'app/components/prebooks/prebookView.html',
+                templateUrl: 'app/components/prebooks/prebookView.html?v=3.11',
                 controller: 'PBControl',
                 reloadOnSearch: false
             });
