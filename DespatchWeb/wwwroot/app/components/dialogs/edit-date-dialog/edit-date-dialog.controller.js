@@ -37,6 +37,18 @@ class EditDateDialogController {
         } finally {
             this.isLoading = false;
         }
+
+        // Update field
+        let fieldName = this.fieldName.toLowerCase();
+        let matchingField = Object.keys(this._job).find(key => key.toLowerCase() === fieldName);
+
+        if (matchingField) {
+            this._job[matchingField] = newDate;
+        } else {
+            console.warn(`Field ${this.fieldName} not found in job object.`);
+        }
+
+        this._showMessageAndCloseDialog();
     }
 
     /**
@@ -71,13 +83,11 @@ class EditDateDialogController {
                     ContactID,
                     this._job.preBook);
         }
-
-        this._showMessageAndCloseDialog();
     }
 
     _showMessageAndCloseDialog() {
         this._toastrService.showSuccessToast("Updated " + this.title);
-        this._$mdDialog.hide();
+        this._$mdDialog.hide(this._job);
     }
 
     /**
