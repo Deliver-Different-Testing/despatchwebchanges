@@ -174,7 +174,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     $scope.boxes = {
         "jobList": {
             "title": "Job Data",
-            "tpl": "app/components/prebooks/tpls/pbList.tpl?v=1.3",
+            "tpl": "app/components/prebooks/tpls/pbList.tpl?v3.11",
             "showSearch": 1,
             "showRefresh": 1,
             "model": "jobList",
@@ -221,13 +221,13 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/prebooks/tpls/preBookDetail.tpl",
+            "tpl": "app/components/prebooks/tpls/preBookDetail.tpl?v3.11",
             "showSearch": 0,
             "showDetailButtons": 1
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/prebooks/tpls/map.tpl",
+            "tpl": "app/components/prebooks/tpls/map.tpl?v3.11",
             "showSearch": 0
         }
 
