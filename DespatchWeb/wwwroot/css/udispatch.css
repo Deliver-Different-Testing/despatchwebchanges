@@ -1258,13 +1258,6 @@ span.courier {
   margin: 0 0 0 0;
   padding: 1px 2px;
 }
-.label {
-  width: 36px;
-  float: left;
-  text-align: right;
-  font-size: 9px;
-  line-height: 25px;
-}
 .marker {
   position: relative;
   top: -30px;
@@ -1338,26 +1331,21 @@ span.courierRed {
 .DropBox p {
   margin: 5px 0;
 }
-
 md-table-container table.md-table tbody.md-body > tr.md-row:not([disabled]):hover {
     background-color: rgba(0, 0, 0, 0.05) !important;
 }
-
 md-table-container table.md-table tbody.md-body > tr.md-row:not([disabled]).md-selected:hover {
     background-color: rgba(0, 0, 0, 0.12) !important;
 }
-
 md-table-pagination {
     color: rgba(0, 0, 0, 0.87) !important;
 }
-
 md-table-pagination .label,
 md-table-pagination md-select .md-select-value,
 md-table-pagination md-select .md-select-value.md-select-placeholder,
 md-table-pagination .md-button {
     color: rgba(0, 0, 0, 0.87) !important;
 }
-
 md-table-pagination .md-button[disabled] {
     color: rgba(0, 0, 0, 0.38) !important;
 }
