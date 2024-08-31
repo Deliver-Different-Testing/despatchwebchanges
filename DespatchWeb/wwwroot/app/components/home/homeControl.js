@@ -2953,37 +2953,49 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    /**
-     * @param {Event}  event
-     */
-    ctrl.createNewJob = event => {
-        try {
-            $mdDialog.show({
+    ctrl.createNewJob = $event => {
+        function showCreateJobDialog() {
+            return $mdDialog.show({
                 controller: CreateJobDialogController,
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
-                targetEvent: event,
+                targetEvent: $event,
                 templateUrl: "app/components/dialogs/create-job-dialog/create-job-dialog.html",
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
                     staffId: ContactID,
                     despatcherName: FirstName
-                },
-            }).then(newJobId => {
-                DispatchData.getJobDetail(newJobId).then(job => {
-                    ctrl.getData().then(() => {
-                        $scope.selectJobDetail(job);
-
-                        toastrService.showSuccessToast("New Job Created Successfully")
-                        loadingService.closeLoader();
-                    });
-                })
-            }).then(() => "Create Job Canceled!");
-        } catch (error) {
-            toastrService.showErrorToast(error.message);
+                }
+            });
         }
-    }
+
+        function processNewJob(newJobId) {
+            return DispatchData.getJobDetail(newJobId)
+                .then(job => ctrl.getData()
+                    .then(() => {
+                        $scope.selectJob(job);
+                        toastrService.showSuccessToast("New Job Created Successfully");
+                    }))
+                .finally(() => {
+                    loadingService.closeLoader();
+                });
+        }
+
+        function handleError(error) {
+            console.error('Error in createNewJob:', error);
+            toastrService.showErrorToast(error.message || "An error occurred while creating the job");
+            loadingService.closeLoader();
+        }
+
+        showCreateJobDialog()
+            .then(newJobId => {
+                if (newJobId) {
+                    return processNewJob(newJobId);
+                }
+            })
+            .catch(handleError);
+    };
 
     /**
      * @param {$event}  $event
