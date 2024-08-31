@@ -1609,7 +1609,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: PalletDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/pallet-dialog/pallet-dialog.html",
+            templateUrl: "app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html",
             parent: angular.element(this._$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
@@ -1629,7 +1629,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: PalletDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/pallet-dialog/pallet-dialog.html",
+            templateUrl: "app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html",
             parent: angular.element(this._$document.body),
             targetEvent: event,
             clickOutsideToClose: true,
