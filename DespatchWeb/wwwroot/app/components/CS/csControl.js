@@ -111,11 +111,10 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     }
 
     /**
-     * @param  {Event}  event
+     * @param  {$event}  $event
      * @param  {Job}  job
      */
-    ctrl.showAdditionalServicesMenu = (event, job) => {
-        loadingService.showLoader();
+    ctrl.showAdditionalServicesMenu = ($event, job) => {
 
         DispatchData.hasClientItemsAvailable(job.clientId, job.speedId).then(isClientItemsAvailable => {
             loadingService.closeLoader();
@@ -125,7 +124,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                     $mdDialog.alert()
                         .clickOutsideToClose(true)
                         .title('No Additional Services')
-                        .targetEvent(event)
+                        .targetEvent($event)
                         .textContent('No additional services has been set up for this client. Please add a service through Admin Manager and try again.')
                         .ok('OK')
                 );
@@ -137,25 +136,16 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
                 controllerAs: "ctrl",
                 templateUrl: "app/components/dialogs/additional-services-dialog/additional-services-dialog.html",
                 parent: angular.element($document.body),
-                targetEvent: event,
+                targetEvent: $event,
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
                     job
                 }
             });
-        }).then(() => {
-            // Refresh data
-            $scope.refreshData(true);
-
-            // Then load the new job
-            $scope.selectJobDetail(job.id);
-            console.log('Dialog closed!')
-        }).then(() => {
             console.log('Additional Services Dialog closed!');
         }).catch(error => {
-            // handle or throw the error
-            loadingService.closeLoader();
+            console.error(error.message);
         });
     }
 
