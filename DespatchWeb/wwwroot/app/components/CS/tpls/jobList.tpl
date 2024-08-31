@@ -17,20 +17,20 @@
             <tbody md-body>
             <tr md-row md-select="job" md-select-id="id" ng-click="selectJobDetail(job.id)"
                 ng-repeat="job in jobList | orderBy: jobQuery.order">
-                <td md-cell>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
+                <td md-cell md-truncate>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
                 <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
-                <td md-cell>{{job.speed}}</td>
-                <td md-cell>{{job.jobNo}}</td>
-                <td md-cell>{{job.client}}</td>
-                <td md-cell>
+                <td md-cell md-truncate>{{job.speed}}</td>
+                <td md-cell md-truncate>{{job.jobNo}}</td>
+                <td md-cell md-truncate>{{job.client}}</td>
+                <td md-cell md-truncate>
                     {{job.from}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
                 </td>
-                <td md-cell>
+                <td md-cell md-truncate>
                     {{job.to}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
-                <td md-cell>
+                <td md-cell md-truncate>
                     <div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">
                         {{job.toAddress}}
                     </div>

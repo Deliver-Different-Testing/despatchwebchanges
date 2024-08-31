@@ -17,29 +17,29 @@
             <tbody md-body>
             <tr md-row md-select="job" md-select-id="id" ng-mouseup="selectPreBookDetail(job.id)"
                 ng-repeat="job in pbList | orderBy: preBookQuery.order">
-                <td md-cell>{{job.booked | date: "HH:mm"}}</td>
-                <td md-cell>{{job.speed}}</td>
-                <td md-cell>{{job.jobNo}}</td>
-                <td md-cell>{{job.client}}</td>
-                <td md-cell>
+                <td md-cell md-truncate>{{job.booked | date: "HH:mm"}}</td>
+                <td md-cell md-truncate>{{job.speed}}</td>
+                <td md-cell md-truncate>{{job.jobNo}}</td>
+                <td md-cell md-truncate>{{job.client}}</td>
+                <td md-cell md-truncate>
                     <div title="{{job.fromAddress}}">
                         {{job.fromAddress}}
                     </div>
                 </td>
-                <td md-cell>
+                <td md-cell md-truncate>
                     <div>
                         {{job.toAddress}}
                     </div>
                 </td>
-                <td md-cell>{{job.courier}}</td>
-                <td md-cell>
+                <td md-cell md-truncate>{{job.courier}}</td>
+                <td md-cell md-truncate>
                     <md-button class="md-icon-button" ng-click="sendPrebookJob(job.id)"
                                title="Send">
                         <md-tooltip md-direction="bottom">Send</md-tooltip>
                         <md-icon md-font-set="material-symbols-outlined">send</md-icon>
                     </md-button>
                 </td>
-                <td md-cell>
+                <td md-cell md-truncate>
                     <md-button class="md-icon-button" ng-click="voidPrebookJob(job.id)"
                                title="Void">
                         <md-tooltip md-direction="bottom">Delete</md-tooltip>
