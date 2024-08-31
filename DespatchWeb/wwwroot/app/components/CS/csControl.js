@@ -1,4 +1,4 @@
-function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, hotkeys,
+function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse,
                       $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document,
                       $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData) {
     const ctrl = this;
@@ -303,13 +303,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.boxes = {
         "pickDate": {
             "title": "Filters",
-            "tpl": "app/components/CS/tpls/pickDate.tpl?v3.11",
+            "tpl": "app/components/CS/tpls/pickDate.tpl?v3.13",
             "showSearch": 0
         },
 
         "jobList": {
             "title": "Live Job Data",
-            "tpl": "app/components/CS/tpls/jobList.tpl?v3.11",
+            "tpl": "app/components/CS/tpls/jobList.tpl?v3.13",
             "showSearch": 1,
             "model": "jobList",
             "headings": [
@@ -355,7 +355,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "bulkJobList": {
             "title": "Bulk Job Data",
-            "tpl": "app/components/CS/tpls/bulkJobList.tpl?v3.11",
+            "tpl": "app/components/CS/tpls/bulkJobList.tpl?v3.13",
             "showSearch": 1,
             "model": "bulkJobList",
             "headings": [
@@ -401,7 +401,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "pbList": {
             "title": "PreBook Data",
-            "tpl": "app/components/CS/tpls/pbList.tpl?v3.11",
+            "tpl": "app/components/CS/tpls/pbList.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 1,
             "model": "pbList",
@@ -448,13 +448,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/common/tpls/jobDetail.tpl?v3.11",
+            "tpl": "app/components/common/tpls/jobDetail.tpl?v3.13",
             "showSearch": 0,
             "showDetailButtons": 1
         },
         "scanList": {
             "title": "Scan Detail",
-            "tpl": "app/components/CS/tpls/scanList.tpl?v3.11",
+            "tpl": "app/components/CS/tpls/scanList.tpl?v3.13",
             "showSearch": 0,
             "model": "scanList",
             "headings": [
@@ -474,7 +474,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/CS/tpls/map.tpl?v3.11",
+            "tpl": "app/components/CS/tpls/map.tpl?v3.13",
             "showSearch": 0
         }
 
@@ -724,49 +724,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
             $scope.sort[list] = "d-" + prop;
             $scope[list] = $filter('orderBy')($scope[list], "-" + prop);
         }
-
-
     };
-
-    ///////////////////////////
-    // HOTKEYS
-    //////////////////////////
-
-
-    hotkeys.add({
-        combo: 'esc',
-        description: 'Close gather screen',
-        allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: () => {
-            angular.element(".gatherForm").hide();
-            angular.element(".eventForm").hide();
-        }
-    });
-
-    hotkeys.add({
-        combo: 'ctrl+a',
-        description: 'Select All',
-        allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: () => {
-            angular.element(".activeTable").find(".clickable-row").addClass("active");
-            $scope.showRun();
-        }
-    });
-
-    hotkeys.add({
-        combo: 'enter',
-        description: 'Submit gather form',
-        allowIn: ['INPUT', 'SELECT', 'TEXTAREA'],
-        callback: (event, hk) => {
-            if (angular.element(".gatherForm").is(":visible") === true) {
-                $timeout(() => $scope.gather.submit(), 0);
-            }
-            if (event.srcElement.id === "Wild" || event.srcElement.id === "Job") {
-                $scope.refreshAllData(true);
-            }
-
-        }
-    });
 
     ctrl.jobRecordSearchText = "";
 
@@ -1668,7 +1626,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 }
 
 CSController.$inject = ['$scope', 'JobDetailService', 'uCSData', "$state",
-    "$stateParams", "$filter", '$parse', "hotkeys", "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog',
+    "$stateParams", "$filter", '$parse', "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog',
     'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', 'moment', 'DispatchData'];
 
 angular.module('uDispatch').controller('CSControl', CSController);
@@ -1678,7 +1636,7 @@ function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
 
-function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
+function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     lat1 = Deg2Rad(lat1);
     lat2 = Deg2Rad(lat2);
     lon1 = Deg2Rad(lon1);
@@ -1694,7 +1652,7 @@ function closestLocation(latitude, longitude, locations) {
     let closest;
 
     for (let index = 0; index < locations.length; ++index) {
-        const dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
+        const dif = PythagorasEquirectAngular(latitude, longitude, locations[index][1], locations[index][2]);
         if (dif < minDifference) {
             closest = index;
             minDifference = dif;

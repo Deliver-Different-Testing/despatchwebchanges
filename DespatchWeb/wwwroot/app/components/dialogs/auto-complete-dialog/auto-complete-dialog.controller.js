@@ -1,4 +1,18 @@
 class AutoCompleteDialogController {
+    /**
+     * Create a SelectDialogController
+     * @param $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param DispatchData - The service used for data dispatching.
+     * @param toastrService - The service to display toast messages
+     * @param rateJobService
+     * @param {number} id - The ID related to the selection.
+     * @param {string} fieldName - The name of the field for which the selection is being made.
+     * @param {string} title - The title of the dialog.
+     * @param {Job} job - The job for which the selection is being made.
+     * @param {SelectOption[]} options - The array of selectable options.
+     * @param existingItem
+     * @param {boolean} showRerateOption
+     */
     constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;

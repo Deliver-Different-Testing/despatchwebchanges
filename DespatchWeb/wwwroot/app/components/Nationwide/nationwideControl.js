@@ -287,97 +287,97 @@ function NationwideController($scope, jdSvc, NWData, $state,
     $scope.boxes = {
         "jobsList": {
             "title": "New Jobs",
-            "tpl": "app/components/Nationwide/tpls/jobList.tpl?v3.1",
+            "tpl": "app/components/Nationwide/tpls/jobList.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 1
         },
         "jobsListPOD": {
             "title": "Awaiting POD",
-            "tpl": "app/components/Nationwide/tpls/jobListPOD.tpl?v3.1",
+            "tpl": "app/components/Nationwide/tpls/jobListPOD.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 1
         },
         "jobsListDelivery": {
             "title": "Book Delivery",
-            "tpl": "app/components/Nationwide/tpls/jobListDelivery.tpl?v3.1",
+            "tpl": "app/components/Nationwide/tpls/jobListDelivery.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 1
         },
         "jobsListReprice": {
             "title": "Reprice",
-            "tpl": "app/components/Nationwide/tpls/jobListReprice.tpl?v3.1",
+            "tpl": "app/components/Nationwide/tpls/jobListReprice.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 1
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/common/tpls/jobDetail.tpl?v3.1",
+            "tpl": "app/components/common/tpls/jobDetail.tpl?v3.13",
             "showSearch": 0,
             "showRefresh": 0,
             "showDetailButtons": 1
         },
         "potentialCouriers": {
             "title": "Potential Couriers",
-            "tpl": "app/components/home/tpls/potentialCouriers.tpl?v3.1",
+            "tpl": "app/components/home/tpls/potentialCouriers.tpl?v3.13",
             "showSearch": 1
         },
         "currentWork": {
             "title": "Current Work",
-            "tpl": "app/components/home/tpls/currentWork.tpl?v3.1",
+            "tpl": "app/components/home/tpls/currentWork.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 0
         },
         "couriersMoveThrough": {
             "title": "Couriers Movement Through List",
-            "tpl": "app/components/home/tpls/couriersMovementThroughList.tpl?v3.1",
+            "tpl": "app/components/home/tpls/couriersMovementThroughList.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 0
         },
         "courierMovePickedUp": {
             "title": "Couriers Movement Picked Up Run",
-            "tpl": "app/components/home/tpls/couriersMovementPickedUp.tpl?v3.1",
+            "tpl": "app/components/home/tpls/couriersMovementPickedUp.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 0
         },
         "courierMoveClear": {
             "title": "Couriers Movement Clear List",
-            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?v3.1",
+            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?v3.13",
             "showSearch": 1,
             "showRefresh": 0
         },
         "areaList": {
             "title": "Area List",
-            "tpl": "app/components/home/tpls/areaList.tpl?v3.1",
+            "tpl": "app/components/home/tpls/areaList.tpl?v3.13",
             "showSearch": 0,
             "showRefresh": 0
         },
         "jobUpdates": {
             "title": "Job Updates",
-            "tpl": "app/components/home/tpls/jobUpdates.tpl?v3.1",
+            "tpl": "app/components/home/tpls/jobUpdates.tpl?v3.13",
             "showSearch": 0,
             "showRefresh": 0
         },
         "supports": {
             "title": "Supports",
-            "tpl": "app/components/home/tpls/supports.tpl?v3.1",
+            "tpl": "app/components/home/tpls/supports.tpl?v3.13",
             "showSearch": 0,
             "showRefresh": 0
         },
         "lateCalls": {
             "title": "Late Calls",
-            "tpl": "app/components/home/tpls/lateCalls.tpl?v3.1",
+            "tpl": "app/components/home/tpls/lateCalls.tpl?v3.13",
             "showSearch": 0,
             "showRefresh": 0
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/Nationwide/tpls/map.tpl?v3.1",
+            "tpl": "app/components/Nationwide/tpls/map.tpl?v3.13",
             "showSearch": 0,
             "showRefresh": 1
         },
         "clearLists": {
             "title": "Clear Lists",
-            "tpl": "app/components/home/tpls/clearLists.tpl?v3.1",
+            "tpl": "app/components/home/tpls/clearLists.tpl?v3.13",
             "showSearch": 0,
             "showRefresh": 0
         }

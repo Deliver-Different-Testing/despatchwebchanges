@@ -1,4 +1,12 @@
 class TruckCourierStatusDialogController {
+    /**
+     * Create a SelectDialogController
+     * @param $scope
+     * @param $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param DispatchData - The service used for data dispatching.
+     * @param toastrService - The service to display toast messages
+     * @param {TruckCourierStatus} data
+     */
     constructor($scope, $mdDialog, DispatchData, toastrService, data) {
         this._$scope = $scope;
         this._$mdDialog = $mdDialog;

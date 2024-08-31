@@ -594,8 +594,139 @@
             </div>
         </div>
     </div>
-</md-content>
 
+    <div class="row row-no-padding row-out"
+         ng-if="!ctrl.jdSvc.currentJob.bulkJob && ctrl.jdSvc.currentJob.podPhotos.length > 0">
+        <md-button class="md-fab md-mini md-raised"
+                   ng-click="sendPOD()"
+                   style="position: absolute; right: 0; top: 0;">
+            <md-icon md-font-set="material-symbols-outlined">package</md-icon>
+            <md-tooltip md-direction="bottom">Send POD</md-tooltip>
+        </md-button>
+        <label>POD Info</label>
+        <div class="row row-no-padding row-out">
+            <!--<img ng-src="{{'data:image/png;base64,'+ctrl.jdSvc.currentJob.podPhoto}}" />-->
+            <div class="carousel slide" data-interval="false" id="intel-carousel-pod">
+                <!-- Indicators -->
+                <ol class="carousel-indicators">
+                    <li data-slide-to="{{$index}}"
+                        data-target="#intel-carousel-pod"
+                        ng-class="{'active' :$index === 0}" ng-repeat="img in ctrl.jdSvc.currentJob.podPhotos track by $index"></li>
+                </ol>
+
+                <!-- Wrapper for slides -->
+                <div class="carousel-inner" role="listbox">
+                    <div class="item" data-jobindex="{{$index}}" ng-class="{'active' :$index === 0}"
+                         ng-repeat="img in ctrl.jdSvc.currentJob.podPhotos">
+
+                        <div style="text-align:center">
+                            <img ng-src="{{'data:image/png;base64,'+img}}" style="max-height: 600px;"/>
+                        </div>
+
+
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <a class="left carousel-control"
+                   data-slide="prev" ng-href="{{name=='POD' ? '/CS/#intel-carousel-pod':'#intel-carousel-pod'}}"
+                   role="button">
+                    <span aria-hidden="true" class="glyphicon glyphicon-chevron-left"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="right carousel-control"
+                   data-slide="next" ng-href="{{name=='POD' ? '/CS/#intel-carousel-pod':'#intel-carousel-pod'}}"
+                   role="button">
+                    <span aria-hidden="true" class="glyphicon glyphicon-chevron-right"></span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div ng-if="!ctrl.jdSvc.currentJob.bulkJob">
+        <div class="palletInfo" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
+
+            <div style="display: flex; justify-content: space-between;">
+                <label>Pallet Info</label>
+                <md-button
+                        class="md-fab md-mini md-raised"
+                        ng-click="ctrl.jdSvc.newPallet($event, ctrl.jdSvc.currentJob)"
+                        ng-disabled="ctrl.jdSvc.currentJob.locked">
+                    <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
+                    <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>
+                </md-button>
+            </div>
+
+            <div class="value" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
+                <table class="table table-striped table-responsive">
+                    <thead>
+                    <tr class="pallet-table-head no select">
+                        <td>#</td>
+                        <td>W</td>
+                        <td>L</td>
+                        <td>D</td>
+                        <td>H</td>
+                        <td>PU</td>
+                        <td>DO</td>
+                        <td>DG Class</td>
+                        <td>Notes</td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr context-menu="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.palletMenu"
+                        ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editPallet(pallet)"
+                        ng-repeat="pallet in ctrl.jdSvc.currentJob.palletInfo">
+                        <td>{{pallet.quantity}}</td>
+                        <td>{{pallet.weight}}</td>
+                        <td>{{pallet.length}}</td>
+                        <td>{{pallet.depth}}</td>
+                        <td>{{pallet.height}}</td>
+                        <td>{{pallet.pu}}</td>
+                        <td>{{pallet.do}}</td>
+                        <td>{{pallet.DGClass}}</td>
+                        <td>{{pallet.notes}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+
+    <div ng-if="!ctrl.jdSvc.currentJob.bulkJob && ctrl.jdSvc.currentJob.contactList">
+        <div class="palletInfo" ng-class="ctrl.jdSvc.currentJob.locked ? 'disabled' : ''">
+
+            <label>Client Contact Info</label>
+
+            <table class="table table-striped table-responsive">
+                <thead>
+                <tr class="pallet-table-head no select">
+                    <td>Name</td>
+                    <td>Title</td>
+                    <td>Direct Dial</td>
+                    <td>Mobile</td>
+                    <td>Email</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="contact in ctrl.jdSvc.currentJob.contactList">
+                    <td>{{contact.fullName}}</td>
+                    <td>{{contact.jobTitle}}</td>
+                    <td><a class="pointer:cursor" ng-href="tel:{{contact.directDial}}">{{contact.directDial}}</a>
+                    </td>
+                    <td><a class="pointer:cursor" ng-href="tel:{{contact.mobile}}">{{contact.mobile}}</a></td>
+                    <td>{{contact.email}}</td>
+
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    </div>
+</md-content>
 
 <div class="container-fluid" id="jobDetail" ng-if="ctrl.jdSvc.currentJob && ctrl.jdSvc.currentJob.preBook"
      style="padding:0">
