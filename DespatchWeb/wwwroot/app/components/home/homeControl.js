@@ -2970,6 +2970,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             });
         }
 
+        /**
+         * @param {number} newJobId
+         */
         function processNewJob(newJobId) {
             return DispatchData.getJobDetail(newJobId)
                 .then(job => ctrl.getData()
