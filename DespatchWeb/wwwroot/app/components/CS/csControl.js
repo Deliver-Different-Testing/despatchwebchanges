@@ -156,12 +156,15 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    ctrl.interCourierCharge = event => {
+    /**
+     * @param  {$event}  $event
+     */
+    ctrl.interCourierCharge = $event => {
         $mdDialog.show({
             controller: InterCourierChargeDialog,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
-            targetEvent: event,
+            targetEvent: $event,
             templateUrl: "app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
@@ -596,15 +599,21 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         }, () => console.log("Delete layout canceled!"));
     }
 
+    /**
+     * @param {string} layoutName
+     */
     ctrl.setLastActiveLayoutName = layoutName => {
         if (Modernizr.localstorage) {
             localStorage.setItem("lastActiveLayoutCS-" + ContactID, layoutName);
         }
     };
 
-    ctrl.loadLayout = i => {
-        ctrl.currentLayoutName = ctrl.layouts[i].name;
-        ctrl.layout = angular.copy(ctrl.layouts[i].layout);
+    /**
+     * @param {number} index
+     */
+    ctrl.loadLayout = index => {
+        ctrl.currentLayoutName = ctrl.layouts[index].name;
+        ctrl.layout = angular.copy(ctrl.layouts[index].layout);
 
         // save layout as last active
         ctrl.setLastActiveLayoutName(ctrl.currentLayoutName);
