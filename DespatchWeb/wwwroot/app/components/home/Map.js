@@ -293,12 +293,12 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
             className = "courier courierRed courierMarker";
         }
         var ll = new google.maps.LatLng(c.latitude, c.longitude);
-        if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (truckChannel === false || c.vehicvarype === "T")) {
-            if ((truckChannel === false && truckMode === "Off" && c.vehicvarype === "T") || (truckChannel === false && truckMode === "Only" && c.vehicvarype !== "T")) {
+        if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (truckChannel === false || c.vehicleType === "T")) {
+            if ((truckChannel === false && truckMode === "Off" && c.vehicleType === "T") || (truckChannel === false && truckMode === "Only" && c.vehicleType !== "T")) {
                 return true;
 
             } else {
-                drawItem(col, ll, pad(c.code + '-' + c.vehicvarype + c.totalJobs, 5, '_', 2), c.courierID, c.code, className);
+                drawItem(col, ll, pad(c.code + '-' + c.vehicleType + c.totalJobs, 5, '_', 2), c.courierID, c.code, className);
             }
         }
     });
