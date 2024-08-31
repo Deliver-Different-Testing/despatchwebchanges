@@ -61,13 +61,17 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
-    ctrl.selectAndDispatchJob = (event, job) => {
+    /**
+     * @param  {$event}  $event
+     * @param  {Job}  job
+     */
+    ctrl.selectAndDispatchJob = ($event, job) => {
         const dispatchDialog = $mdDialog.prompt()
             .title("Dispatch To Courier")
             .textContent('Enter the courier number to dispatch job to')
             .placeholder("Courier Number")
             .ariaLabel("courier to dispatch too")
-            .targetEvent(event)
+            .targetEvent($event)
             .required(true)
             .ok("Dispatch")
             .cancel('Cancel');
@@ -86,13 +90,16 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         });
     }
 
-    ctrl.createNewJob = event => {
+    /**
+     * @param  {$event}  $event
+     */
+    ctrl.createNewJob = $event => {
         // Dialog
         $mdDialog.show({
             controller: CreateJobDialogController,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
-            targetEvent: event,
+            targetEvent: $event,
             templateUrl: "app/components/dialogs/create-job-dialog/create-job-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
