@@ -90,6 +90,55 @@ angular
     .config(['$qProvider', $qProvider => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
+    .config(($mdDateLocaleProvider) => {
+        // Format date to dd/mm/yyyy
+        $mdDateLocaleProvider.formatDate = (date) => {
+            if (!date) return '';
+            const day = (date.getDate() < 10 ? '0' : '') + date.getDate();
+            const month = ((date.getMonth() + 1) < 10 ? '0' : '') + (date.getMonth() + 1);
+            return `${day}/${month}/${date.getFullYear()}`;
+        };
+
+        // Parse date from dd/mm/yyyy
+        $mdDateLocaleProvider.parseDate = (dateString) => {
+            if (!dateString) return null;
+            const parts = dateString.split('/');
+            if (parts.length !== 3) return null;
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed
+            const year = parseInt(parts[2], 10);
+            return new Date(year, month, day);
+        };
+
+        // First day of the week is Monday
+        $mdDateLocaleProvider.firstDayOfWeek = 1;
+
+        // Define month names
+        $mdDateLocaleProvider.months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // Define day names (start with Monday)
+        $mdDateLocaleProvider.days = [
+            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+        ];
+
+        // Define short day names
+        $mdDateLocaleProvider.shortDays = [
+            'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+        ];
+
+        // Month header format
+        $mdDateLocaleProvider.monthHeaderFormatter = (date) =>
+            `${$mdDateLocaleProvider.months[date.getMonth()]} ${date.getFullYear()}`;
+
+        // Week number formatter
+        $mdDateLocaleProvider.weekNumberFormatter = (weekNumber) => `Week ${weekNumber}`;
+
+        $mdDateLocaleProvider.msgCalendar = 'Calendar';
+        $mdDateLocaleProvider.msgOpenCalendar = 'Open calendar';
+    })
     .config(['$urlRouterProvider', '$stateProvider', ($urlRouterProvider, $stateProvider) => {
         $urlRouterProvider.otherwise('/');
 
