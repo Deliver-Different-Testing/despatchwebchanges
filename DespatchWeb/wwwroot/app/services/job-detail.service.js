@@ -381,22 +381,24 @@ class JobDetailService {
                 id: id, fieldName: fieldName, title: title, job: job,
             }
         }).then(updatedJob => {
-            self.currentJob = updatedJob
+            this.currentJob = updatedJob
             // User closed notes dialog
         });
     }
 
 
     /**
-     * @param {Event} event
-     * @param {Job} job
-     * @param {string} title
-     * @param {string} fieldName
-     * @param {string} date
-     * @param {string} id
+     * Shows a dialog for editing a date
+     * @param {Event} event - The triggering event
+     * @param {Job} job - The job being edited
+     * @param {string} title - The title of the dialog
+     * @param {string} fieldName - The name of the field being edited
+     * @param {string} date - The current date value
+     * @param {string} [id="editForm"] - The ID for the form
+     * @returns {Promise} A promise that resolves when the dialog is closed
      */
     showEditDateDialog(event, job, title, fieldName, date, id = "editForm") {
-        this._$mdDialog.show({
+        return this._$mdDialog.show({
             controller: EditDateTimeDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
@@ -413,17 +415,24 @@ class JobDetailService {
                 showDate: true,
                 showTime: false
             },
-        }).then(_ => {
-            console.log('Dialog closed!');
-        });
+        })
+            .then(() => {
+                console.log('Dialog closed successfully');
+            })
+            .catch(error => {
+                console.error('Error in date dialog:', error);
+                this._toastrService.showErrorToast("An error occurred while editing the date. Please try again.");
+            });
     }
 
     /**
-     * @param {Event} event
-     * @param {Job} job
+     * Opens a dialog to edit the job date
+     * @param {Event} event - The triggering event
+     * @param {Job} job - The job to edit
+     * @returns {Promise} A promise that resolves when the edit is complete
      */
     editJobDate(event, job) {
-        this.showEditDateDialog(event, job, "Date", "Date", job.date);
+        return this.showEditDateDialog(event, job, "Date", "Date", job.date);
     }
 
     /**
@@ -435,7 +444,7 @@ class JobDetailService {
      * @param {string} id
      */
     showEditTimeDialog(event, job, title, fieldName, time, id = "editForm") {
-        this._$mdDialog.show({
+        return this._$mdDialog.show({
             controller: EditDateTimeDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
@@ -462,7 +471,7 @@ class JobDetailService {
      * @param {Job} job
      */
     editLogTime(event, job) {
-        this.showEditTimeDialog(event, job, "Time", "Time", job.time);
+        return this.showEditTimeDialog(event, job, "Time", "Time", job.time);
     }
 
     /**
@@ -470,7 +479,7 @@ class JobDetailService {
      * @param {Job} job
      */
     editCompletedTime(event, job) {
-        this.showEditTimeDialog(event, job, "Completed Time", "CompletedTime", job.completedTime);
+        return this.showEditTimeDialog(event, job, "Completed Time", "CompletedTime", job.completedTime);
     }
 
     /**
@@ -482,7 +491,7 @@ class JobDetailService {
      * @param {string} id
      */
     showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
-        this._$mdDialog.show({
+        return this._$mdDialog.show({
             controller: EditDateTimeDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
@@ -509,7 +518,7 @@ class JobDetailService {
      * @param {Job} job
      */
     editFollowUpTime($event, job) {
-        this.showEditDateTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
+        return this.showEditDateTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
     }
 
 
@@ -641,6 +650,11 @@ class JobDetailService {
         }
     }
 
+
+    /**
+     * @param {$event} $event
+     * @param {Job} job
+     */
     editOurRef(event, job) {
         this.showEditPrompt(event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
     }
@@ -1552,7 +1566,17 @@ class JobDetailService {
         this.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
     }
 
-    newPallet(event, job) {
+    /**
+     * Shows a dialog for creating or editing a pallet
+     * @param {Event} event - The triggering event
+     * @param {Job} job - The job associated with the pallet
+     * @param {Object} [existingPallet] - The pallet to edit (if editing an existing pallet)
+     * @returns {Promise} A promise that resolves when the dialog is closed
+     */
+    showPalletDialog(event, job, existingPallet = undefined) {
+        const isEditing = !!existingPallet;
+        const dialogTitle = isEditing ? 'Edit Pallet' : 'New Pallet';
+
         return this._$mdDialog.show({
             controller: PalletDialogController,
             controllerAs: "ctrl",
@@ -1562,34 +1586,43 @@ class JobDetailService {
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
-                job: job,
+                job,
                 dispatcherName: FirstName,
                 contactId: ContactID,
-                existingPallet: undefined
+                existingPallet,
+                dialogTitle
             }
-        }).then(() => {
-            console.log('Pallet Dialog closed!');
-        });
+        })
+            .then((result) => {
+                console.log(`Pallet Dialog closed: ${isEditing ? 'Edited' : 'Created'} pallet`);
+                return result; // Return the result for further processing if needed
+            })
+            .catch((error) => {
+                console.error('Error in pallet dialog:', error);
+                this._toastrService.showErrorToast(`Failed to ${isEditing ? 'edit' : 'create'} pallet. Please try again.`);
+                throw error; // Re-throw the error for the caller to handle if needed
+            });
     }
 
+    /**
+     * Opens a dialog to create a new pallet
+     * @param {Event} event - The triggering event
+     * @param {Job} job - The job to associate with the new pallet
+     * @returns {Promise} A promise that resolves when the creation is complete
+     */
+    newPallet(event, job) {
+        return this.showPalletDialog(event, job);
+    }
+
+    /**
+     * Opens a dialog to edit an existing pallet
+     * @param {Event} event - The triggering event
+     * @param {Job} job - The job associated with the pallet
+     * @param {Object} pallet - The pallet to edit
+     * @returns {Promise} A promise that resolves when the edit is complete
+     */
     editPallet(event, job, pallet) {
-        return this._$mdDialog.show({
-            controller: PalletDialogController,
-            controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html",
-            parent: angular.element(this._$document.body),
-            targetEvent: event,
-            clickOutsideToClose: true,
-            fullscreen: true,
-            locals: {
-                job: job,
-                dispatcherName: FirstName,
-                contactId: ContactID,
-                existingPallet: pallet
-            }
-        }).then(() => {
-            console.log('Pallet Dialog closed!');
-        });
+        return this.showPalletDialog(event, job, pallet);
     }
 }
 
