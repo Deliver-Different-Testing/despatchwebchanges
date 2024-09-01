@@ -956,9 +956,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ////////////////////////////////////////
     // RESTORE JOB
     ///////////////////////////////////////
-    ctrl.restoreJobs = () => {
+    ctrl.restoreJobs = function () {
+        const $q = this.$q;
 
-        let callData = {
+        const callData = {
             "call": "restoreJobs",
             "jobs": [],
             "splitJobs": [],
@@ -968,11 +969,12 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         let foundCourier = null;
 
-        let activeElements = angular.element('#jobList .active');
-        for (let i = 0; i < activeElements.length; i++) {
-            const currentElement = angular.element(activeElements[i]);
+        const activeElements = angular.element('#jobList .active');
+        angular.forEach(activeElements, element => {
+            const currentElement = angular.element(element);
             const jobId = currentElement.data("jobid");
-            let job = $scope.jobList.find(jo => jo.id === jobId);
+            const job = $scope.jobList.find(jo => jo.id === jobId);
+
             if (job) {
                 const jobNo = job.jobNo;
                 DispatchData.addRestoreEvent(jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
@@ -986,22 +988,25 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     callData.jobs.push(jobId);
                 }
             }
-        }
+        });
+
+        const promises = [];
 
         if (callData.splitJobs.length > 0) {
-            DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs);
+            promises.push(DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs));
         }
         if (callData.jobs.length > 0) {
-            DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+            promises.push(DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs));
         }
 
+        return $q.all(promises)
+            .then(() => ctrl.getData())
+            .then(() => {
+                angular.element('#box-map .loading').css('display', '');
 
-        ctrl.getData().then(() => {
-            angular.element('#box-map .loading').css('display', '');
-
-            $scope.courier = {gpsCourier: foundCourier.id};
-            $scope.searchCourier();
-        });
+                $scope.courier = {gpsCourier: foundCourier.id};
+                return $scope.searchCourier();
+            });
     };
 
     ////////////////////////////////////////
