@@ -929,30 +929,28 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return $scope.jobList.filter(jo => activeJobs.some(aJob => jo.id === $(aJob).data("jobid")));
     }
 
-    /**
-     * Dispatches jobs to a specified courier.
-     * @param {number} courierNumber - The number of the courier to dispatch jobs to.
-     */
-    ctrl.dispatchJobs = async (courierNumber) => {
-        if (typeof courierNumber !== 'number' || isNaN(courierNumber)) {
-            console.error('Invalid courier number:', courierNumber);
-            return Promise.reject(new Error('Invalid courier number'));
+    ctrl.dispatchJobs = courierNumber => {
+        const deferred = $q.defer();
+
+        const jobsToDispatch = ctrl.getJobsToDispatch();
+
+        if (!Array.isArray(jobsToDispatch) || jobsToDispatch.length === 0) {
+            console.warn('No jobs to dispatch');
+            deferred.resolve();
+            return deferred.promise;
         }
 
-        try {
-            const jobsToDispatch = ctrl.getJobsToDispatch();
+        dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch)
+            .then(() => $scope.getJobList())
+            .then(() => {
+                deferred.resolve();
+            })
+            .catch(error => {
+                console.error('Error dispatching jobs:', error);
+                deferred.reject(error);
+            });
 
-            if (!Array.isArray(jobsToDispatch) || jobsToDispatch.length === 0) {
-                console.warn('No jobs to dispatch');
-                return;
-            }
-
-            await dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch);
-            await $scope.getJobList();
-        } catch (error) {
-            console.error('Error dispatching jobs:', error);
-            throw error; // Re-throw the error for the caller to handle if needed
-        }
+        return deferred.promise;
     };
 
     ////////////////////////////////////////
@@ -1056,7 +1054,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         };
 
         angular.element("#jobList .active").each(function () {
-            var j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
+            const j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
             foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
             callData.jobs.push(angular.element(this).attr("data-jobid"));
         });
@@ -1958,8 +1956,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    ctrl.toColumnClick = (evt, job) => {
-        switch (evt.which) {
+    ctrl.toColumnClick = ($event, job) => {
+        switch ($event.which) {
             case 1:
                 // this is left click
                 break;
@@ -2054,8 +2052,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    ctrl.speedColumnClick = (evt, job) => {
-        switch (evt.which) {
+    ctrl.speedColumnClick = ($event, job) => {
+        switch ($event.which) {
             case 1:
                 // this is left click
                 break;
@@ -2065,7 +2063,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             case 3:
                 // this is right click
                 $timeout(() => {
-                    jdSvc.speedClick(job);
+                    jdSvc.speedClick($event, job);
                     $scope.$apply();
                 }, 400);
 
@@ -2078,8 +2076,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return false;
     };
 
-    ctrl.clientColumnClick = (evt, job) => {
-        switch (evt.which) {
+    ctrl.clientColumnClick = ($event, job) => {
+        switch ($event.which) {
             case 1:
                 // this is left click
                 break;
@@ -2089,7 +2087,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             case 3:
                 // this is right click
                 $timeout(() => {
-                    jdSvc.clientClick(job);
+                    jdSvc.clientClick($event, job);
                     $scope.$apply();
                 }, 400);
 
@@ -2183,7 +2181,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             {
                 text: "Dispatch Selected",
                 click($itemScope, $event) {
-                    ctrl.dispatchJobs($event);
+                    ctrl.dispatchJobs($itemScope.courier.courier);
                 }
             },
             {
@@ -2238,7 +2236,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                     text: "Dispatch",
                     click() {
                         ctrl.dispatchJobs(null);
-
                     }
                 }
             ];

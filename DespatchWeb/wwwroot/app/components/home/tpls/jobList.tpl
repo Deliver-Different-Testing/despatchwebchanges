@@ -99,7 +99,7 @@
             </div>
         </td>
         <td><input class="dispatchField" id="input_{{job.id}}"
-                   ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(job.courier, job)"
+                   ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(job.courier)"
                    ng-model="job.courier"
                    ng-readonly="job.courierData.courierID !== null"
                    ng-style="getJobStyle(job.courierData.courierID !== null)"
