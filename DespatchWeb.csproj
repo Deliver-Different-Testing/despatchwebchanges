@@ -28,21 +28,21 @@
   <ItemGroup>
     <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="3.2.1" />
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.2" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.400.3" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.400.3" />
-    <PackageReference Include="AWSSDK.SSO" Version="3.7.400.3" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.402.4" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.400.13" />
+    <PackageReference Include="AWSSDK.SSO" Version="3.7.400.13" />
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
     <PackageReference Include="EntityFrameworkCore.UseRowNumberForPaging" Version="0.5.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.7" />
-    <PackageReference Include="Mindscape.Raygun4Net.AspNetCore" Version="11.0.3" />
-    <PackageReference Include="RestSharp" Version="111.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.8" />
+    <PackageReference Include="Mindscape.Raygun4Net.AspNetCore" Version="11.1.0" />
+    <PackageReference Include="RestSharp" Version="112.0.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.4.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.7" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.4.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.8" />
   </ItemGroup>
 </Project>

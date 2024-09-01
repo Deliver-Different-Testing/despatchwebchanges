@@ -1,42 +1,76 @@
-﻿using DespatchWeb.Models;
+﻿using ClientManager.Core.Domain;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace DespatchWeb.Controllers
 {
-    public class HomeController(ClientRepository clientRepository) : Controller
+    public class HomeController(ClientRepository clientRepository, IConnectionStringManager connectionStringManager) : Controller
     {
 
         public async Task<IActionResult> Index([FromQuery] string login)
         {
 
-            var cid = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "ContactID")?.Value;
-
-            if (!string.IsNullOrEmpty(cid))
+            try
             {
+                var staffId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "StaffID")?.Value;
+                var contactId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "ContactID")?.Value;
+                var connectionString = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
+                var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
 
+                if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(tenantId))
+                {
+                    Log.Error("Connection string or tenant ID is missing.");
+                    return BadRequest(new { error ="Connection string or tenant ID is missing." });
+                }
+                
+                Log.Debug($"Found Identity for StaffID:{staffId}");
+                var credentials = Environment.GetEnvironmentVariable("SQLCredentials") ?? "";
+                if (string.IsNullOrEmpty(credentials))
+                {
+                    throw new InvalidOperationException(
+                        "Could not find a environment variable string named 'SQLCredentials'.");
+                }
+                await connectionStringManager.SetConnectionStringAsync($"{tenantId}-ClientManager-Connection", connectionString+credentials);
 
-                var clientDetail = await clientRepository.ValidateClientAsync(Convert.ToInt32(cid));
+                var maskedConnectionString = MaskSensitiveInfo(connectionString+credentials);
+                Log.Debug($"Connection String Set: {maskedConnectionString}");               
+                
+                var clientDetail = await clientRepository.ValidateClientAsync(Convert.ToInt32(contactId));
                 ViewBag.FirstName = clientDetail.FirstName;
                 ViewBag.FullName = clientDetail.FullName;
                 ViewBag.Email = clientDetail.Email;
                 ViewBag.ClientInternal = clientDetail.Internal;
-                ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(cid);
-
-                
+                ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
 
                 return View();
             }
-            else
+            catch (Exception ex)
             {
+                Log.Error(ex.Message, ex);
                 return Redirect(Environment.GetEnvironmentVariable("PublicPath"));
-
             }
+        }
+        
+        private string MaskSensitiveInfo(string connectionString)
+        {
+            // Mask password
+            var maskedString = Regex.Replace(connectionString, 
+                @"(Password|Pwd)=[^;]*", "$1=********", 
+                RegexOptions.IgnoreCase);
 
+            // Mask user id if present
+            maskedString = Regex.Replace(maskedString, 
+                @"(User ID|Uid)=[^;]*", "$1=********", 
+                RegexOptions.IgnoreCase);
+
+            return maskedString;
         }
 
         public async Task<IActionResult> ActiveClients(string searchTerm)

@@ -17,6 +17,7 @@ using Amazon.Runtime;
 using Serilog;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
+using ClientManager.Core.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,8 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnCh
 Log.Logger =  new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).WriteTo.Console().CreateLogger();
 
 builder.Services.AddDataProtection().PersistKeysToAWSSystemsManager("/Hub/DataProtection").SetApplicationName("DeliverDifferent");
+
+builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
 
 builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
 {
@@ -47,23 +50,12 @@ builder.Services.AddScoped<CourierRepository, CourierRepository>();
 builder.Services.AddScoped<ClientRepository, ClientRepository>();
 
 
-var connectionString = Environment.GetEnvironmentVariable("SQLConnection") ?? "";
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new InvalidOperationException(
-        "Could not find a connection string named 'SQLConnection'.");
-}
-builder.Services.AddHealthChecks().AddSqlServer(connectionString);
-//var connectionTimeout = builder.Configuration.GetValue<int>("ConnectionTimeout");
-builder.Services.AddDbContext<DespatchContext>(x =>
-{
-    //x.UseSqlServer(connectionString, oa => oa.UseRowNumberForPaging().UseCompatibilityLevel(120));
-    //x.UseSqlServer(connectionString, oa=>oa.UseCompatibilityLevel(120));
-    x.UseSqlServer(connectionString);
-#if DEBUG
-x.UseLoggerFactory(LoggerFactory.Create(c => c.AddDebug()));
-#endif
-});
+// Register DespatchContext with a dummy connection string
+builder.Services.AddDbContextFactory<DespatchContext>(options =>
+    options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;"), ServiceLifetime.Transient);
+
+builder.Services.AddScoped<IDbContextFactory<DespatchContext>, DynamicDespatchDbContextFactory>();
+
 
 var domain = Environment.GetEnvironmentVariable("Domain") ?? "";
 if (string.IsNullOrEmpty(domain))
