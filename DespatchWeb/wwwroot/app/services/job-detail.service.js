@@ -376,28 +376,25 @@ class JobDetailService {
      */
     showEditDateDialog(event, job, title, fieldName, date, id = "editForm") {
         this._$mdDialog.show({
-            controller: EditDateDialogController,
+            controller: EditDateTimeDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/edit-date-dialog/edit-date-dialog.html",
+            templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                job, title, fieldName, date, id
+                job,
+                title,
+                fieldName,
+                dateTime: date,
+                id,
+                showDate: true,
+                showTime: false
             },
         }).then(_ => {
-
             console.log('Dialog closed!');
         });
-    }
-
-    /**
-     * @param {Event} event
-     * @param {Job} job
-     */
-    editFollowUpTime(event, job) {
-        this.showEditDateDialog(event, job, "FollowUp Time", "FollowupTime", job.followupTime);
     }
 
     /**
@@ -418,15 +415,21 @@ class JobDetailService {
      */
     showEditTimeDialog(event, job, title, fieldName, time, id = "editForm") {
         this._$mdDialog.show({
-            controller: EditTimeDialogController,
+            controller: EditDateTimeDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/edit-time-dialog/edit-time-dialog.html",
+            templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
-                job, time, title, fieldName, id
+                job,
+                title,
+                fieldName,
+                dateTime: time,
+                id,
+                showDate: false,
+                showTime: true
             },
         }).then(_ => {
             console.log('Dialog closed!');
@@ -450,21 +453,61 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
+     * @param {Job} job
+     * @param {string} title
+     * @param {string} fieldName
+     * @param {Date} datetime
+     * @param {string} id
+     */
+    showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
+        this._$mdDialog.show({
+            controller: EditDateTimeDialogController,
+            controllerAs: 'ctrl',
+            parent: angular.element(this._$document.body),
+            targetEvent: $event,
+            templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                job,
+                title,
+                fieldName,
+                dateTime: datetime,
+                id,
+                showDate: true,
+                showTime: true
+            },
+        }).then(_ => {
+            console.log('Dialog closed!');
+        });
+    }
+
+    /**
+     * @param {$event} $event
+     * @param {Job} job
+     */
+    editFollowUpTime($event, job) {
+        this.showEditDateTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
+    }
+
+
+    /**
+     * @param {$event} $event
      * @param {Job} job
      * @param {string} title
      * @param {string} placeholder
      * @param {string} ariaLabel
-     * @param {string} initialValue
+     * @param {string|number} initialValue
      * @param {string} field
      */
-    showEditPrompt(event, job, title, placeholder, ariaLabel, initialValue, field) {
+    showEditPrompt($event, job, title, placeholder, ariaLabel, initialValue, field) {
         const prompt = this._$mdDialog.prompt()
             .title(title)
             .placeholder(placeholder)
             .ariaLabel(ariaLabel)
             .initialValue(initialValue)
-            .targetEvent(event)
+            .targetEvent($event)
             .required(true)
             .ok('Save')
             .cancel('Cancel');
@@ -492,27 +535,27 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editClientCode(event, job) {
-        this.showEditPrompt(event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
+    editClientCode($event, job) {
+        this.showEditPrompt($event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editItems(event, job) {
-        this.showEditPrompt(event, job, 'Edit Items', 'Items...', 'items', job.items, 'Items');
+    editItems($event, job) {
+        this.showEditPrompt($event, job, 'Edit Items', 'Items...', 'items', job.items, 'Items');
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editJobToPhone(event, job) {
-        this.showEditPrompt(event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
+    editJobToPhone($event, job) {
+        this.showEditPrompt($event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
     }
 
     /**
@@ -524,56 +567,56 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editToJobContact(event, job) {
-        this.showEditPrompt(event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'DeliverToContact');
+    editToJobContact($event, job) {
+        this.showEditPrompt($event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'DeliverToContact');
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
 
-    editPodName(event, job) {
-        this.showEditPrompt(event, job, 'Edit POD Name', 'POD Name...', 'pod name', job.podName, 'PODName');
+    editPodName($event, job) {
+        this.showEditPrompt($event, job, 'Edit POD Name', 'POD Name...', 'pod name', job.podName, 'PODName');
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editFromJobContact(event, job) {
-        this.showEditPrompt(event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
+    editFromJobContact($event, job) {
+        this.showEditPrompt($event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editJobWeight(event, job) {
-        this.showEditPrompt(event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
+    editJobWeight($event, job) {
+        this.showEditPrompt($event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editAmount(event, job) {
-        this.showEditPrompt(event, job, 'Amount', 'Amount...', 'job weight', job.charge, 'Amount');
+    editAmount($event, job) {
+        this.showEditPrompt($event, job, 'Amount', 'Amount...', 'job weight', job.charge, 'Amount');
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      * @param {boolean} isRefA
      */
-    editRef(event, job, isRefA) {
+    editRef($event, job, isRefA) {
         if (isRefA) {
-            this.showEditPrompt(event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
+            this.showEditPrompt($event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
         } else {
-            this.showEditPrompt(event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
+            this.showEditPrompt($event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
         }
     }
 
@@ -582,19 +625,19 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editTrackingMobile(event, job) {
-        this.showEditPrompt(event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
+    editTrackingMobile($event, job) {
+        this.showEditPrompt($event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editTrackingEmail(event, job) {
-        this.showEditPrompt(event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
+    editTrackingEmail($event, job) {
+        this.showEditPrompt($event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
     }
 
     updateField(reRate, job, callData) {

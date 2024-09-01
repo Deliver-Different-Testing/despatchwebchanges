@@ -43,6 +43,9 @@
     <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\js\bootstrap.min.js"/>
     <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\js\npm.js"/>
     <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\LICENSE"/>
+      <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-date-dialog\edit-date-dialog.controller.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-date-dialog\edit-date-dialog.controller.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\edit-date-dialog\edit-date-dialog.html"/>
   </ItemGroup>
 
   <ItemGroup>
