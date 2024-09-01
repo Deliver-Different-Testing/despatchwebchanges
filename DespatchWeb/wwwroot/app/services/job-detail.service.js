@@ -1618,7 +1618,7 @@ class JobDetailService {
                 job: job,
                 dispatcherName: FirstName,
                 contactId: ContactID,
-                existingPallet: null
+                existingPallet: undefined
             }
         }).then(() => {
             console.log('Pallet Dialog closed!');

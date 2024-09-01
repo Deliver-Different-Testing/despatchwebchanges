@@ -7,7 +7,7 @@ class PalletDialogController {
                 job,
                 dispatcherName,
                 contactId,
-                existingPallet = null) {
+                existingPallet) {
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
         this._toastrService = toastrService;

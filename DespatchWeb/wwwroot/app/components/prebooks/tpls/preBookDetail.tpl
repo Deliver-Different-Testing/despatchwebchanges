@@ -361,7 +361,8 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr context-menu="ctrl.jdSvc.palletMenu" ng-click="ctrl.jdSvc.editPallet(pallet)"
+                        <tr context-menu="ctrl.jdSvc.palletMenu"
+                            ng-click="ctrl.jdSvc.editPallet($event, ctrl.jdSvc.currentJob, pallet)"
                             ng-repeat="pallet in currentJob.palletInfo">
                             <td>{{pallet.quantity}}</td>
                             <td>{{pallet.weight}}</td>

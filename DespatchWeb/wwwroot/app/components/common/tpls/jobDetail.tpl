@@ -675,7 +675,7 @@
                     </thead>
                     <tbody>
                     <tr context-menu="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.palletMenu"
-                        ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editPallet(pallet)"
+                        ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editPallet($event, ctrl.jdSvc.currentJob, pallet)"
                         ng-repeat="pallet in ctrl.jdSvc.currentJob.palletInfo">
                         <td>{{pallet.quantity}}</td>
                         <td>{{pallet.weight}}</td>
@@ -1079,7 +1079,8 @@
                 </div>
 
                 <label>Pallet Info</label>
-                <md-button class="md-fab md-mini md-raised" ng-click="ctrl.jdSvc.newPallet()">
+                <md-button class="md-fab md-mini md-raised"
+                           ng-click="ctrl.jdSvc.newPallet($event, ctrl.jdSvc.currentJob)">
                     <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
                     <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>
                 </md-button>
