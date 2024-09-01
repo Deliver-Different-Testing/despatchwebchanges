@@ -1327,14 +1327,12 @@ class JobDetailService {
 
     /**
      * Marks a job as done
-     * @param {Event} event - The triggering event
+     * @param {$event} $event - The triggering event
      * @param {Job} job - The job to update
      */
-    doneClick(event, job) {
-        job.done = !job.done;
-
+    doneClick($event, job) {
         if (!job.completedTime || !job.podName) {
-            return this.showMissingInfoDialog(event, job)
+            return this.showMissingInfoDialog($event, job)
                 .then(() => {
                     this.currentJob.done = false;
                     return this._$q.reject('Missing required information');
@@ -1343,6 +1341,7 @@ class JobDetailService {
 
         return this._dispatchData.updatePODDetail(job.jobNo, 6, job.podName, job.completedTime)
             .then(response => {
+                this.currentJob.done = !job.done;
                 return response;
             })
             .catch(error => {
@@ -1353,11 +1352,11 @@ class JobDetailService {
 
     /**
      * Shows a dialog for missing information
-     * @param {Event} event - The triggering event
+     * @param {$event} $event - The triggering event
      * @param {Job} job - The job being updated
      * @returns {Promise} A promise that resolves when the dialog is closed
      */
-    showMissingInfoDialog(event, job) {
+    showMissingInfoDialog($event, job) {
         let message = '';
         if (!job.completedTime) {
             message = 'You must set completed time (POD Time) first';
@@ -1367,7 +1366,7 @@ class JobDetailService {
 
         const confirm = this._$mdDialog.confirm()
             .title(message)
-            .targetEvent(event)
+            .targetEvent($event)
             .ok('OK');
 
         return this._$mdDialog.show(confirm);
