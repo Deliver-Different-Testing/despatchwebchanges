@@ -108,6 +108,7 @@
  * @property {string} speed
  * @property {boolean} oneOff
  * @property {string} acceptedName
+ * @property {Date} time
  * @property {*} courierData
  */
 
