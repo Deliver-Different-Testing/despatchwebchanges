@@ -1331,7 +1331,7 @@ class JobDetailService {
      * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     deliveredClick(job) {
-        return this.toggleJobProperty(job, 'done', 'Delivered');
+        return this.toggleJobProperty(job, 'done');
     }
 
     /**
@@ -1340,7 +1340,7 @@ class JobDetailService {
      * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     airportOnlyClick(job) {
-        return this.toggleJobProperty(job, 'airportOnly', 'AirportOnly');
+        return this.toggleJobProperty(job, 'airportOnly');
     }
 
     /**
