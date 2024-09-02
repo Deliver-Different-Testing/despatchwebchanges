@@ -7,8 +7,8 @@
                 <th md-column md-order-by="speed"><span>Speed</span></th>
                 <th md-column md-order-by="jobNo"><span>Job</span></th>
                 <th md-column md-order-by="client"><span>Client</span></th>
-                <th md-column md-order-by="fromAddress"><span>From</span></th>
-                <th md-column md-order-by="toAddress"><span>To</span></th>
+                <th md-column md-order-by="fromAddress" style="min-width: 250px;"><span>From</span></th>
+                <th md-column md-order-by="toAddress" style="min-width: 250px;"><span>To</span></th>
                 <th md-column md-order-by="courier"><span>Code</span></th>
                 <th md-column><span>S</span></th>
                 <th md-column><span>V</span></th>
@@ -21,12 +21,12 @@
                 <td md-cell md-truncate>{{job.speed}}</td>
                 <td md-cell md-truncate>{{job.jobNo}}</td>
                 <td md-cell md-truncate>{{job.client}}</td>
-                <td md-cell md-truncate>
+                <td md-cell style="min-width: 250px;">
                     <div title="{{job.fromAddress}}">
                         {{job.fromAddress}}
                     </div>
                 </td>
-                <td md-cell md-truncate>
+                <td md-cell style="min-width: 250px;">
                     <div>
                         {{job.toAddress}}
                     </div>

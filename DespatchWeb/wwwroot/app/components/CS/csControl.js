@@ -573,14 +573,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         name: "All"
     };
 
-    const layoutToUse = angular.copy(ctrl.layouts[0].layout);
-
-    if (!$scope.isAdmin) {
-        //layoutToUse.columns[0].boxes.splice(0, 1);
-        //layoutToUse.columns.splice(2, 1);
-    }
-
-    ctrl.layout = layoutToUse;
+    ctrl.layout = angular.copy(ctrl.layouts[0].layout);
     ctrl.currentLayoutName = ctrl.layouts[0].name;
 
     ctrl.deleteLayout = index => {

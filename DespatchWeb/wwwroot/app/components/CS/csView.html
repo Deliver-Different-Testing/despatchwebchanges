@@ -78,13 +78,6 @@
                                     </span>
                                 </span>
 
-
-                                <!--    <md-button class="md-icon-button md-primary" ng-click="ctrl.getData()"
-                                               ng-show="boxes[box.name].showRefresh">
-                                        <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                                    </md-button>-->
-
-
                                 <div ng-show="box.name == 'eventList'">
                                     <md-checkbox ng-change="refreshData(true)" ng-model="followupClient.includeClosed">
                                         Include Closed?
@@ -105,7 +98,6 @@
                                         </md-radio-button>
                                     </md-radio-group>
                                 </div>
-
 
                                 <div ng-show="box.name == 'jobDetail'">
                                     <md-fab-speed-dial class="md-scale" md-direction="left"
@@ -196,40 +188,6 @@
                                         </md-fab-actions>
                                     </md-fab-speed-dial>
                                 </div>
-
-                                <!--<div id="box-{{box.name}}-{{$index}}" layout="row" ng-show="boxes[box.name].showSearch">
-                                    <md-button class="md-icon-button"
-                                               ng-click="ctrl.openSearch(box.name, $index)">
-                                        <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-show="!ctrl.showInput[box.name + '-' + $index]">search
-                                        </md-icon>
-                                        <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-show="ctrl.showInput[box.name + '-' + $index]">close
-                                        </md-icon>
-                                    </md-button>
-
-                                    <md-autocomplete
-                                            md-autoselect
-                                            md-escape-options="clear"
-                                            md-item-text="item.text"
-                                            md-items="item in ctrl.jobRecordSearch(ctrl.jobRecordSearchText)"
-                                            md-min-length="1"
-                                            md-search-text="ctrl.jobRecordSearchText"
-                                            md-selected-item="ctrl.selectedJobRecord"
-                                            md-selected-item-change="ctrl.JobRecordSelected(item.id)"
-                                            ng-show="ctrl.showInput[box.name + '-' + $index]"
-                                            placeholder="Search Jobs...">
-                                        <md-item-template>
-                                            <span md-highlight-flags="^i"
-                                                  md-highlight-text="ctrl.jobRecordSearchText">{{item.text}}</span>
-                                        </md-item-template>
-                                        <md-not-found>
-                                            No jobs matching "{{ctrl.jobRecordSearchText}}" were found. Please check the
-                                            POD page.
-                                        </md-not-found>
-                                    </md-autocomplete>
-                                </div>-->
-
                             </div>
                         </md-toolbar>
 

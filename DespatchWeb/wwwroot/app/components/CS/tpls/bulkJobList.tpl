@@ -10,7 +10,7 @@
                 <th md-column md-order-by="client"><span>Client</span></th>
                 <th md-column md-order-by="from"><span>From</span></th>
                 <th md-column md-order-by="to"><span>To</span></th>
-                <th md-column md-order-by="toAddress"><span>Street</span></th>
+                <th md-column md-order-by="toAddress" style="min-width: 250px;"><span>Street</span></th>
             </tr>
             </thead>
             <tbody md-body>
@@ -29,7 +29,7 @@
                     {{job.to}}
                     <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
                 </td>
-                <td md-cell md-truncate>
+                <td md-cell style="min-width: 250px;">
                     <div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">
                         {{job.toAddress}}
                     </div>

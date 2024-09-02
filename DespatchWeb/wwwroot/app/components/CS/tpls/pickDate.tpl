@@ -49,10 +49,10 @@
                     md-selected-item-change="ctrl.selectedClientChange(item)"
                     placeholder="Start typing to enter new client...">
                 <md-item-template>
-                    <span md-highlight-flags="^i" md-highlight-text="clientSearchText">{{item.text}}</span>
+                    <span md-highlight-flags="^i" md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
                 </md-item-template>
                 <md-not-found>
-                    No clients matching "{{clientSearchText}}" were found.
+                    No clients matching "{{ctrl.clientSearchText}}" were found.
                 </md-not-found>
             </md-autocomplete>
         </div>
@@ -70,10 +70,10 @@
                     input-aria-labelledby="courierLabel"
                     md-clear-button="true">
                 <md-item-template>
-                    <span md-highlight-flags="^i" md-highlight-text="courierSearchText">{{item.text}}</span>
+                    <span md-highlight-flags="^i" md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
                 </md-item-template>
                 <md-not-found>
-                    No couriers matching "{{courierSearchText}}" were found.
+                    No couriers matching "{{ctrl.courierSearchText}}" were found.
                 </md-not-found>
             </md-autocomplete>
         </div>
