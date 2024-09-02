@@ -1,11 +1,10 @@
 class JobDetailService {
-    static $inject = ["DispatchData", "$mdDialog", "toastrService", "loadingService", "rateJobService", "$document", "$timeout", "moment"];
+    static $inject = ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "$timeout", "moment"];
 
-    constructor(DispatchData, $mdDialog, toastrService, loadingService, rateJobService, $document, $timeout, moment) {
+    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment) {
         this._dispatchData = DispatchData;
         this._$mdDialog = $mdDialog;
         this._toastrService = toastrService;
-        this._loadingService = loadingService;
         this._rateJobService = rateJobService;
         this._$document = $document;
         this._$timeout = $timeout;
@@ -288,7 +287,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} $event
+     * @param {$event} $event
      * @param {Job} job
      */
     displayPriceBreakdown($event, job) {
@@ -362,19 +361,19 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
      * @param {string} id
      */
-    showNotesDialog(event, job, title, fieldName, id = "editField") {
+    showNotesDialog($event, job, title, fieldName, id = "editField") {
         return this._$mdDialog.show({
             controller: AddNotesDialogController,
             controllerAs: "ctrl",
             templateUrl: "app/components/dialogs/add-notes-dialog/add-notes-dialog.html",
             parent: angular.element(this._$document.body),
-            targetEvent: event,
+            targetEvent: $event,
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -389,7 +388,7 @@ class JobDetailService {
 
     /**
      * Shows a dialog for editing a date
-     * @param {Event} event - The triggering event
+     * @param {$event} $event - The triggering event
      * @param {Job} job - The job being edited
      * @param {string} title - The title of the dialog
      * @param {string} fieldName - The name of the field being edited
@@ -397,12 +396,12 @@ class JobDetailService {
      * @param {string} [id="editForm"] - The ID for the form
      * @returns {Promise} A promise that resolves when the dialog is closed
      */
-    showEditDateDialog(event, job, title, fieldName, date, id = "editForm") {
+    showEditDateDialog($event, job, title, fieldName, date, id = "editForm") {
         return this._$mdDialog.show({
             controller: EditDateTimeDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
-            targetEvent: event,
+            targetEvent: $event,
             templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
@@ -427,28 +426,28 @@ class JobDetailService {
 
     /**
      * Opens a dialog to edit the job date
-     * @param {Event} event - The triggering event
+     * @param {$event} $event - The triggering event
      * @param {Job} job - The job to edit
      * @returns {Promise} A promise that resolves when the edit is complete
      */
-    editJobDate(event, job) {
-        return this.showEditDateDialog(event, job, "Date", "Date", job.date);
+    editJobDate($event, job) {
+        return this.showEditDateDialog($event, job, "Date", "Date", job.date);
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
      * @param {Date} time
      * @param {string} id
      */
-    showEditTimeDialog(event, job, title, fieldName, time, id = "editForm") {
+    showEditTimeDialog($event, job, title, fieldName, time, id = "editForm") {
         return this._$mdDialog.show({
             controller: EditDateTimeDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
-            targetEvent: event,
+            targetEvent: $event,
             templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
             clickOutsideToClose: false,
             fullscreen: true,
@@ -467,19 +466,19 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editLogTime(event, job) {
-        return this.showEditTimeDialog(event, job, "Time", "Time", job.time);
+    editLogTime($event, job) {
+        return this.showEditTimeDialog($event, job, "Time", "Time", job.time);
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    editCompletedTime(event, job) {
-        return this.showEditTimeDialog(event, job, "Completed Time", "CompletedTime", job.completedTime);
+    editCompletedTime($event, job) {
+        return this.showEditTimeDialog($event, job, "Completed Time", "CompletedTime", job.completedTime);
     }
 
     /**
@@ -907,7 +906,7 @@ class JobDetailService {
         const suburbText = isDeliveryAddress ? currentJob.toSuburbName : currentJob.fromSuburbName;
 
         return this.showAddressDialog(event, currentJob, field, location, suburbText)
-            .then(addressDetails => this.processAddressUpdate(currentJob, field, addressDetails))
+            .then(addressDetails => this._processAddressUpdate(currentJob, field, addressDetails))
             .catch(error => {
                 console.error('Error updating GPS:', error);
                 this._toastrService.showErrorToast("Failed to update address. Please try again.");
@@ -952,11 +951,11 @@ class JobDetailService {
         });
     }
 
-    processAddressUpdate(job, field, addressDetails) {
+    _processAddressUpdate(job, field, addressDetails) {
         const isDeliveryAddress = field === "toAddress";
-        const updatedJob = this.updateJobAddress(job, addressDetails, isDeliveryAddress);
+        const updatedJob = this._updateJobAddress(job, addressDetails, isDeliveryAddress);
 
-        return this.updateBulkJobIfNeeded(updatedJob, addressDetails, isDeliveryAddress)
+        return this._updateBulkJobIfNeeded(updatedJob, addressDetails, isDeliveryAddress)
             .then(() => this.updateJobRate(updatedJob, addressDetails, isDeliveryAddress))
             .then(() => {
                 this.currentJob = updatedJob;
@@ -968,17 +967,24 @@ class JobDetailService {
             });
     }
 
-    updateJobAddress(job, addressDetails, isDeliveryAddress) {
+    /**
+     * @param {Job} job
+     * @param {AddressDetails} addressDetails
+     * @param {boolean} isDeliveryAddress
+     */
+    _updateJobAddress(job, addressDetails, isDeliveryAddress) {
         const addressField = isDeliveryAddress ? 'toAddress' : 'fromAddress';
         const suburbField = isDeliveryAddress ? 'toSuburbID' : 'fromSuburbID';
+        const suburbLabel = isDeliveryAddress ? 'toSuburbName' : 'fromSuburbName';
 
         job[addressField] = addressDetails.extras ? `${addressDetails.extras},${addressDetails.address}` : addressDetails.address;
-        job[suburbField] = parseInt(addressDetails.our_suburb);
+        job[suburbField] = addressDetails.our_suburb;
+        job[suburbLabel] = addressDetails.suburb;
 
         return job;
     }
 
-    updateBulkJobIfNeeded(job, addressDetails, isDeliveryAddress) {
+    _updateBulkJobIfNeeded(job, addressDetails, isDeliveryAddress) {
         if (!job.bulkJob) return Promise.resolve();
 
         const updateMethod = isDeliveryAddress ?
@@ -1026,25 +1032,41 @@ class JobDetailService {
         };
     }
 
+    /**
+     * @param {Job} job
+     * @param {{jobID, CBD, toSuburbId: (number|number|*), rate, fromAddress: (string|*), fromSuburbId: (number|*), toAddress: (string|*), lat, long: (string|number|*)}} callData
+     * @param {boolean} isDeliveryAddress
+     */
     callUpdateAddress(job, callData, isDeliveryAddress) {
-        const updateMethod = isDeliveryAddress ?
-            this._dispatchData.updateDeliveryAddress :
-            this._dispatchData.updatePickupAddress;
-
         const suburbId = isDeliveryAddress ? callData.toSuburbId : callData.fromSuburbId;
         const address = isDeliveryAddress ? callData.toAddress : callData.fromAddress;
+        const rate = Number(callData.rate.replace(/[^0-9.-]+/g, ""));
 
-        return updateMethod(
-            callData.jobID,
-            suburbId,
-            address,
-            callData.lat,
-            callData.long,
-            callData.CBD,
-            Number(callData.rate.replace(/[^0-9.-]+/g, "")),
-            FirstName,
-            job.preBook
-        );
+        if (isDeliveryAddress) {
+            return this._dispatchData.updateDeliveryAddress(
+                callData.jobID,
+                suburbId,
+                address,
+                callData.lat,
+                callData.long,
+                callData.CBD,
+                rate,
+                FirstName,
+                job.preBook
+            );
+        } else {
+            return this._dispatchData.updatePickupAddress(
+                callData.jobID,
+                suburbId,
+                address,
+                callData.lat,
+                callData.long,
+                callData.CBD,
+                rate,
+                FirstName,
+                job.preBook
+            );
+        }
     }
 
     /**

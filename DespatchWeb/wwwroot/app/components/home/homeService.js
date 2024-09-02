@@ -2,8 +2,8 @@ class DispatchData {
     static $inject = ["$http", "moment"];
 
     constructor($http, moment) {
-        this._$http = $http;
-        this._moment = moment;
+        this.$http = $http;
+        this.moment = moment;
     }
 
     /**
@@ -14,7 +14,7 @@ class DispatchData {
      */
     async addNote(jobId, note, despatcherName, preBook) {
         const method = preBook ? "job/AddJobBookingNote" : "job/AddNote";
-        return await this._$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
+        return await this.$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
     }
 
     /**
@@ -24,7 +24,7 @@ class DispatchData {
      * @param {boolean} preBook
      */
     async addBulkJobNote(bulkJobId, note, despatcherName, preBook) {
-        return await this._$http.post("job/AddBulkJobNote?BulkJobId=" + bulkJobId + "&note=" + note + "&despatcher=" + despatcherName);
+        return await this.$http.post("job/AddBulkJobNote?BulkJobId=" + bulkJobId + "&note=" + note + "&despatcher=" + despatcherName);
     }
 
     /**
@@ -33,7 +33,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async addPallet(pallet, preBook, despatcherName) {
-        let response = await this._$http({
+        let response = await this.$http({
             url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
@@ -45,7 +45,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async editPallet(pallet, preBook, despatcherName) {
-        let response = await this._$http({
+        let response = await this.$http({
             url: "job/EditPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
@@ -57,7 +57,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async deletePallet(pallet, preBook, despatcherName) {
-        let response = await this._$http({
+        let response = await this.$http({
             url: "job/DeletePallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
         return response.data;
@@ -74,7 +74,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        let response = await this._$http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        let response = await this.$http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
         return response.data;
     }
 
@@ -91,7 +91,7 @@ class DispatchData {
      * @param {string} despatcherName - The name of the despatcher.
      */
     async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        let response = await this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        let response = await this.$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
         return response.data;
     }
 
@@ -107,7 +107,7 @@ class DispatchData {
      * @param {string} notes
      */
     async addOtherEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
-        let response = await this._$http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes);
+        let response = await this.$http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes);
         return response.data;
     }
 
@@ -117,7 +117,7 @@ class DispatchData {
      * @param {number[]} jobIds
      */
     async allocateJobs(courierId, dispatcherId, jobIds) {
-        return await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return await this.$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
@@ -126,7 +126,7 @@ class DispatchData {
      * @param {number[]} jobIds
      */
     async reAllocateJobs(courierId, dispatcherId, jobIds) {
-        return await this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return await this.$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
@@ -134,21 +134,21 @@ class DispatchData {
      * @param {number} courierId
      */
     async setFirstJob(jobId, courierId) {
-        return await this._$http.post("job/SetFirstJob?jobId=" + jobId + "&courierId=" + courierId);
+        return await this.$http.post("job/SetFirstJob?jobId=" + jobId + "&courierId=" + courierId);
     }
 
     /**
      * @param {number} courierId
      */
     async truckCourierStatus(courierId) {
-        return await this._$http.post("courier/TruckCourierStatus?courierId=" + courierId);
+        return await this.$http.post("courier/TruckCourierStatus?courierId=" + courierId);
     }
 
     /**
      * @param {string} jobNumber
      */
     async validateSwapPOD(jobNumber) {
-        let response = await this._$http.post('Job/ValidateSwapPOD?job=' + jobNumber);
+        let response = await this.$http.post('Job/ValidateSwapPOD?job=' + jobNumber);
         return response.data;
     }
 
@@ -157,7 +157,7 @@ class DispatchData {
      * @param {string} jobNumber2
      */
     async swapPOD(jobNumber1, jobNumber2) {
-        let response = await this._$http.post('Job/SwapPOD?job1=' + jobNumber1 + '&job2=' + jobNumber2);
+        let response = await this.$http.post('Job/SwapPOD?job1=' + jobNumber1 + '&job2=' + jobNumber2);
         return response.data;
     }
 
@@ -165,7 +165,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async voidJob(jobId) {
-        return await this._$http.post("job/Void?jobId=" + jobId);
+        return await this.$http.post("job/Void?jobId=" + jobId);
     }
 
     /**
@@ -175,7 +175,7 @@ class DispatchData {
      * @param {string} currentSpeed
      */
     async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
-        let response = await this._$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
+        let response = await this.$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
         return response.data;
     }
 
@@ -185,7 +185,7 @@ class DispatchData {
      * @param {number[]} jobIds
      */
     async restoreJobs(courierId, dispatcherId, jobIds) {
-        let response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        let response = await this.$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
         return response.data;
     }
 
@@ -195,7 +195,7 @@ class DispatchData {
      * @param {number[]} jobIds
      */
     async restoreSplitJobs(courierId, dispId, jobIds) {
-        let response = await this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
+        let response = await this.$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
         return response.data;
     }
 
@@ -203,7 +203,7 @@ class DispatchData {
      * @param {number[]} jobIds
      */
     async resendJobs(jobIds) {
-        let response = await this._$http.post("job/ResendSelected?jobIds=" + jobIds);
+        let response = await this.$http.post("job/ResendSelected?jobIds=" + jobIds);
         return response.data;
     }
 
@@ -211,7 +211,7 @@ class DispatchData {
      * @param {number} courierId
      */
     async resendAllJobs(courierId) {
-        let response = await this._$http.post("job/ResendAll?courierId=" + courierId);
+        let response = await this.$http.post("job/ResendAll?courierId=" + courierId);
         return response.data;
     }
 
@@ -219,7 +219,7 @@ class DispatchData {
      * @param {number[]} jobIds
      */
     async reAssignJobs(jobIds) {
-        let response = await this._$http.post("job/ReAssignSelected?jobIds=" + jobIds);
+        let response = await this.$http.post("job/ReAssignSelected?jobIds=" + jobIds);
         return response.data;
     }
 
@@ -228,7 +228,7 @@ class DispatchData {
      * @param {string} email
      */
     async sendPOD(jobId, email) {
-        let response = await this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
+        let response = await this.$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
         return response.data;
     }
 
@@ -237,12 +237,12 @@ class DispatchData {
      * @param {number} speedId
      */
     async hasClientItemsAvailable(clientId, speedId) {
-        let response = await this._$http.get('job/HasClientItemsAvailable?clientId=' + clientId + '&speedId=' + speedId);
+        let response = await this.$http.get('job/HasClientItemsAvailable?clientId=' + clientId + '&speedId=' + speedId);
         return response.data;
     }
 
     async getJobs() {
-        let response = await this._$http.get("app/components/home/api/jobsList.php");
+        let response = await this.$http.get("app/components/home/api/jobsList.php");
         return response.data;
     }
 
@@ -250,7 +250,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async getJobDetail(jobId) {
-        let response = await this._$http.get('/Job/Detail?jobId=' + jobId);
+        let response = await this.$http.get('/Job/Detail?jobId=' + jobId);
         return response.data;
     }
 
@@ -259,12 +259,12 @@ class DispatchData {
      * @param {number} clientId
      */
     async getRelatedJobs(parentId, clientId) {
-        let response = await this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
+        let response = await this.$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
         return response.data;
     }
 
     async getJobsGrouped() {
-        let response = await this._$http.get("app/components/home/api/jobsGroupedList.json");
+        let response = await this.$http.get("app/components/home/api/jobsGroupedList.json");
         return response.data;
 
     }
@@ -274,29 +274,29 @@ class DispatchData {
      * @param {boolean} done
      */
     async getJobsCurrent(courierId, done) {
-        let response = await this._$http.get("job/current?courierId=" + courierId + "&done=" + done);
+        let response = await this.$http.get("job/current?courierId=" + courierId + "&done=" + done);
         return response.data;
     }
 
     async getCouriersPicked() {
-        let response = await this._$http.get("app/components/home/api/couriersPicked.json");
+        let response = await this.$http.get("app/components/home/api/couriersPicked.json");
         return response.data;
 
     }
 
     async getCouriersThrough() {
-        let response = await this._$http.get("app/components/home/api/couriersThrough.json");
+        let response = await this.$http.get("app/components/home/api/couriersThrough.json");
         return response.data;
     }
 
     async getCouriersClear() {
-        let response = await this._$http.get("app/components/home/api/couriersClear.json");
+        let response = await this.$http.get("app/components/home/api/couriersClear.json");
         return response.data;
 
     }
 
     async getAreaList() {
-        let response = await this._$http.get("app/components/home/api/areaList.json");
+        let response = await this.$http.get("app/components/home/api/areaList.json");
         return response.data;
     }
 
@@ -304,7 +304,7 @@ class DispatchData {
      * @param {string} channel
      */
     async getSupports(channel) {
-        let response = await this._$http.get("job/supports?channel=" + channel);
+        let response = await this.$http.get("job/supports?channel=" + channel);
         return response.data;
 
     }
@@ -316,7 +316,7 @@ class DispatchData {
      * @param {number} staffId - The unique identifier of the staff member marking the request as closed.
      */
     async closeSupport(supportId, staffId) {
-        return await this._$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
+        return await this.$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
     }
 
     /**
@@ -326,7 +326,7 @@ class DispatchData {
      * @param {string} dispatcherName - The unique identifier of the dispatcher locking the request.
      */
     async lockSupport(supportId, dispatcherName) {
-        return await this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
+        return await this.$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
     }
 
     /**
@@ -336,16 +336,16 @@ class DispatchData {
      * @param {string} dispatcherName - The unique identifier of the dispatcher unlocking the request.
      */
     async unLockSupport(supportId, dispatcherName) {
-        return await this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
+        return await this.$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcherName);
     }
 
     async getLateCalls() {
-        let response = await this._$http.get("app/components/home/api/lateCalls.json");
+        let response = await this.$http.get("app/components/home/api/lateCalls.json");
         return response.data;
     }
 
     async getClearLists() {
-        let response = await this._$http.get("courier");
+        let response = await this.$http.get("courier");
         return response.data;
 
     }
@@ -354,22 +354,22 @@ class DispatchData {
      * @param {number} clearListId
      */
     async getClearListEnvelope(clearListId) {
-        let response = await this._$http.get("courier/ClearListEnvelope?clearListId=" + clearListId);
+        let response = await this.$http.get("courier/ClearListEnvelope?clearListId=" + clearListId);
         return response.data;
     }
 
     async getActiveCouriers() {
-        let response = await this._$http.get("courier/active");
+        let response = await this.$http.get("courier/active");
         return response.data;
     }
 
     async getAllCouriers() {
-        let response = await this._$http.get("courier/AllActive");
+        let response = await this.$http.get("courier/AllActive");
         return response.data;
     }
 
     async getActiveClients() {
-        let response = await this._$http.get("home/ActiveClients");
+        let response = await this.$http.get("home/ActiveClients");
         return response.data;
     }
 
@@ -377,7 +377,7 @@ class DispatchData {
      * @param {number} contactId
      */
     async getClientContacts(contactId) {
-        let response = await this._$http.get("home/ClientContacts?contactId=" + contactId);
+        let response = await this.$http.get("home/ClientContacts?contactId=" + contactId);
         return response.data;
     }
 
@@ -385,7 +385,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async getPotentialCouriers(jobId) {
-        let response = await this._$http.get("courier/PotentialCouriers?jobId=" + jobId);
+        let response = await this.$http.get("courier/PotentialCouriers?jobId=" + jobId);
         return response.data;
     }
 
@@ -393,7 +393,7 @@ class DispatchData {
      * @param {string} code
      */
     async getCourierPosition(code) {
-        let response = await this._$http.get("courier/location?code=" + code);
+        let response = await this.$http.get("courier/location?code=" + code);
         return response.data;
 
     }
@@ -407,17 +407,17 @@ class DispatchData {
      * @param {number} maxLat - The maximum latitude of the boundary.
      */
     async getAvailableCourierLocation(minLng, minLat, maxLng, maxLat) {
-        let response = await this._$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat);
+        let response = await this.$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat);
         return response.data;
     }
 
     async getSuburbList() {
-        let response = await this._$http.get("job/SuburbList");
+        let response = await this.$http.get("job/SuburbList");
         return response.data;
     }
 
     async getSpeedList() {
-        let response = await this._$http.get("job/SpeedList");
+        let response = await this.$http.get("job/SpeedList");
         return response.data;
     }
 
@@ -427,7 +427,7 @@ class DispatchData {
      * @param {number} clientId - The unique identifier of the client.
      */
     async getContactList(clientId) {
-        let response = await this._$http.get("job/ContactList?clientId=" + clientId);
+        let response = await this.$http.get("job/ContactList?clientId=" + clientId);
         return response.data;
     }
 
@@ -437,22 +437,22 @@ class DispatchData {
      * @param {number} clientId - The unique identifier of the client.
      */
     async getContactDetailList(clientId) {
-        let response = await this._$http.get("job/ContactDetailList?clientId=" + clientId);
+        let response = await this.$http.get("job/ContactDetailList?clientId=" + clientId);
         return response.data;
     }
 
     async getLeaveList() {
-        let response = await this._$http.get("job/LeaveList");
+        let response = await this.$http.get("job/LeaveList");
         return response.data;
     }
 
     async getUndeliverableList() {
-        let response = await this._$http.get("job/UndeliverableList");
+        let response = await this.$http.get("job/UndeliverableList");
         return response.data;
     }
 
     async getInternalStatusList() {
-        let response = await this._$http.get("job/InternalStatusList");
+        let response = await this.$http.get("job/InternalStatusList");
         return response.data;
     }
 
@@ -461,7 +461,7 @@ class DispatchData {
      * @param {number} truckWeightLimit
      */
     async getTruckItemsSummary(jobId, truckWeightLimit) {
-        let response = await this._$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
+        let response = await this.$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
         return response.data;
     }
     /**
@@ -510,7 +510,7 @@ class DispatchData {
         };
 
         try {
-            const response = await this._$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
+            const response = await this.$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
             return response.data;
         } catch (error) {
             console.error('Error in lateCall:', error);
@@ -537,7 +537,7 @@ class DispatchData {
      * @param {number} truckHours
      */
     async rateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
-        let response = await this._$http.get("job/RateTruckJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours);
+        let response = await this.$http.get("job/RateTruckJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours);
         return response.data;
     }
 
@@ -561,7 +561,7 @@ class DispatchData {
      * @param {number} gstRate
      */
     async truckJobAmountBreakdown(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours, gstRate) {
-        let response = await this._$http.get("job/TruckJobAmountBreakdown?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours + "&gstRate=" + gstRate);
+        let response = await this.$http.get("job/TruckJobAmountBreakdown?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours + "&gstRate=" + gstRate);
         return response.data;
     }
 
@@ -585,7 +585,7 @@ class DispatchData {
      * @param {Date} booked
      */
     async rateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
-        let response = await this._$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
+        let response = await this.$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
         return response.data;
     }
 
@@ -611,7 +611,7 @@ class DispatchData {
      * @param {number} amount
      */
     async jobAmountBreakdown(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked, gstRate, amount) {
-        let response = await this._$http.get("job/JobAmountBreakdown?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked + "&gstRate=" + gstRate + "&amount=" + amount);
+        let response = await this.$http.get("job/JobAmountBreakdown?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked + "&gstRate=" + gstRate + "&amount=" + amount);
         return response.data;
     }
 
@@ -620,7 +620,7 @@ class DispatchData {
      * @param {number} amount
      */
     async ppdExclusiveAmount(clientId, amount) {
-        let response = await this._$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
+        let response = await this.$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
         return response.data;
     }
 
@@ -631,7 +631,7 @@ class DispatchData {
      */
     async getServices(clientId, speedId, jobId) {
         const url = "job/GetAllClientItems";
-        let response = await this._$http.get(url + '?clientId=' + clientId + '&speedId=' + speedId + '&jobId=' + jobId);
+        let response = await this.$http.get(url + '?clientId=' + clientId + '&speedId=' + speedId + '&jobId=' + jobId);
 
         return response.data;
     }
@@ -644,7 +644,7 @@ class DispatchData {
     async addServicesToJob(jobId, serviceIds, totalCost) {
         const url = "job/AddClientItemsToJob"
 
-        return await this._$http({
+        return await this.$http({
             method: 'POST', url: url + '?jobId=' + jobId, data: {serviceIds, totalCost}
         });
     }
@@ -654,7 +654,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async splitJob(jobId, despatcherName) {
-        return await this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
+        return await this.$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
     /**
@@ -662,7 +662,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async finishSplitJobProcess(jobId, despatcherName) {
-        return await this._$http.post("job/finishSplitJobProcess?jobId=" + jobId + "&despatcherName=" + despatcherName);
+        return await this.$http.post("job/finishSplitJobProcess?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
     /**
@@ -672,7 +672,7 @@ class DispatchData {
      * @param {Date} podTime
      */
     async updatePODDetail(jobNumber, jobStatus, podName, podTime) {
-        return await this._$http.post("job/UpdatePODDetails?jobNumber=" + jobNumber + "&jobStatus=" + jobStatus + "&podName=" + podName + "&podTime=" + podTime);
+        return await this.$http.post("job/UpdatePODDetails?jobNumber=" + jobNumber + "&jobStatus=" + jobStatus + "&podName=" + podName + "&podTime=" + podTime);
     }
 
     /**
@@ -682,7 +682,7 @@ class DispatchData {
      * @param {string} message
      */
     async sendSMS(courierId, staffId, despatcherName, message) {
-        let response = await this._$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message);
+        let response = await this.$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message);
         return response.data;
     }
 
@@ -690,7 +690,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async reRateSplitJob(jobId) {
-        return await this._$http.post("job/ReRateSplitJob?jobId=" + jobId);
+        return await this.$http.post("job/ReRateSplitJob?jobId=" + jobId);
     }
 
     /**
@@ -704,9 +704,9 @@ class DispatchData {
      * @param {string} despatcherName
      * @param {boolean} prebook
      */
-    async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
+    updateDeliveryAddress = async (jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) => {
         const method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
-        return await this._$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
+        return await this.$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -719,7 +719,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateBulkDeliveryAddress(bulkJobId, toSuburb, toPostCode, address, lat, lng, despatcherName) {
-        return await this._$http.post("job/UpdateBulkDeliveryAddress?bulkJobId=" + bulkJobId + "&toSuburb=" + toSuburb + "&toPostCode=" + toPostCode + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + '&despatcherName=' + despatcherName);
+        return await this.$http.post("job/UpdateBulkDeliveryAddress?bulkJobId=" + bulkJobId + "&toSuburb=" + toSuburb + "&toPostCode=" + toPostCode + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -735,7 +735,7 @@ class DispatchData {
      */
     async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
-        return await this._$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
+        return await this.$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -748,7 +748,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateBulkPickupAddress(bulkJobId, fromSuburb, fromPostCode, address, lat, lng, despatcherName) {
-        return await this._$http.post("job/UpdateBulkPickupAddress?bulkJobId=" + bulkJobId + "&fromSuburb=" + fromSuburb + "&fromPostCode=" + fromPostCode + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + '&despatcherName=' + despatcherName);
+        return await this.$http.post("job/UpdateBulkPickupAddress?bulkJobId=" + bulkJobId + "&fromSuburb=" + fromSuburb + "&fromPostCode=" + fromPostCode + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -757,7 +757,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateJobType(jobId, jobType, despatcherName) {
-        return await this._$http.post("job/UpdateJobType?jobId=" + jobId + "&jobType=" + jobType + '&despatcherName=' + despatcherName);
+        return await this.$http.post("job/UpdateJobType?jobId=" + jobId + "&jobType=" + jobType + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -768,7 +768,7 @@ class DispatchData {
      * @param {number} lng
      */
     async updateSplitJobAddress(jobId, toSuburbId, address, lat, lng) {
-        return await this._$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng);
+        return await this.$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng);
     }
 
     /**
@@ -776,8 +776,8 @@ class DispatchData {
      * @param {Date} bookDate
      */
     async releaseBulkJob(jobNumber, bookDate) {
-        const dt = this._moment(bookDate).format("YYYY-MM-DD");
-        return await this._$http.post("job/ReleaseBulkJob?jobNumber=" + jobNumber + "&bookDate=" + dt);
+        const dt = this.moment(bookDate).format("YYYY-MM-DD");
+        return await this.$http.post("job/ReleaseBulkJob?jobNumber=" + jobNumber + "&bookDate=" + dt);
     }
 
     /**
@@ -791,19 +791,19 @@ class DispatchData {
      */
     async updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
         if (field === "Time" || field === "CompletedTime") {
-            value = this._moment().format("YYYY-MM-DD") + " " + this._moment(value).format("HH:mm:ss");
+            value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
         if (field === "FollowupTime") {
-            value = this._moment(value).format("YYYY-MM-DD") + " " + this._moment(value).format("HH:mm:ss");
+            value = this.moment(value).format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-            value = this._moment(value).format("YYYY-MM-DD");
+            value = this.moment(value).format("YYYY-MM-DD");
         }
         if (field === "DeliverToContact") {
             field = "ToContactName";
         }
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
-        return await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        return await this.$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
 
     /**
@@ -816,16 +816,16 @@ class DispatchData {
      */
     async updateBulkJobDetail(bulkJobId, field, value, rate, despatcherName, staffId) {
         if (field === "Time" || field === "CompletedTime") {
-            value = this._moment().format("YYYY-MM-DD") + " " + this._moment(value).format("HH:mm:ss");
+            value = this.moment().format("YYYY-MM-DD") + " " + this.moment(value).format("HH:mm:ss");
         }
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-            value = this._moment(value).format("YYYY-MM-DD");
+            value = this.moment(value).format("YYYY-MM-DD");
         }
-        return await this._$http.post("job/UpdateBulkJob?bulkJobId=" + bulkJobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        return await this.$http.post("job/UpdateBulkJob?bulkJobId=" + bulkJobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
 
     async doAPI(data) {
-        let response = await this._$http.post("app/components/home/api/api.php", data);
+        let response = await this.$http.post("app/components/home/api/api.php", data);
         return response.data;
     }
 
@@ -835,7 +835,7 @@ class DispatchData {
      * @param {boolean} internal
      */
     async getJobsFilter(data, selectedClients, internal) {
-        let response = await this._$http.get("job?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
+        let response = await this.$http.get("job?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
         return response.data;
     }
 
@@ -845,7 +845,7 @@ class DispatchData {
      * @param {string} text - The search text for which auto-complete results are to be fetched.
      */
     async autocompleteAddressSearch(text) {
-        let response = await this._$http({
+        let response = await this.$http({
             url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json', method: 'GET', params: {
                 query: text, app_id: "bBPfh2x8Cauun3ygLMAx", app_code: "yjfwTdkin_R2rGXYTrwWVg", country: "NZL"
             }
@@ -857,7 +857,7 @@ class DispatchData {
      * @param {{text: string, id: number}} item
      */
     async getGeoCodeInformation(item) {
-        let response = await this._$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
+        let response = await this.$http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
             params: {
                 app_id: "bBPfh2x8Cauun3ygLMAx", app_code: "yjfwTdkin_R2rGXYTrwWVg", locationId: item.id
             }
@@ -872,7 +872,7 @@ class DispatchData {
      * @param {number} long - Longitude of the location.
      */
     async retrieveAddresses(lat, long) {
-        let response = await this._$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
+        let response = await this.$http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
             params: {
                 app_id: "bBPfh2x8Cauun3ygLMAx",
                 app_code: "yjfwTdkin_R2rGXYTrwWVg",
@@ -890,7 +890,7 @@ class DispatchData {
      * @param {string} url - The URL to perform the search in.
      */
     async autocompleteSearch(searchTerm, url) {
-        let response = await this._$http.get(url, {
+        let response = await this.$http.get(url, {
             params: {
                 searchTerm: searchTerm
             }
@@ -904,7 +904,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async isFilesAttachedToJob(jobId) {
-        let response = await this._$http.get(`job/IsFilesAttachedToJob/${jobId}`);
+        let response = await this.$http.get(`job/IsFilesAttachedToJob/${jobId}`);
         return await response.data;
     }
 }

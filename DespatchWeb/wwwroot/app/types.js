@@ -140,6 +140,7 @@
  * @property {number} lat - The latitude of the address.
  * @property {number} long - The longitude of the address.
  * @property {string} address - The address.
+ * @property {string} extras - The extras.
  * @property {string} suburb - The suburb of the address.
  * @property {string} postCode - The postal code of the address.
  * @property {number} our_suburb - The id of the suburb in urgents db
