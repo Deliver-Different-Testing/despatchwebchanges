@@ -1134,13 +1134,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
-     * @param       {Event}  event
+     * @param       {$event}  $event
      */
-    ctrl.redispatchAll = event => {
+    ctrl.redispatchAll = $event => {
         const confirm = $mdDialog.confirm()
             .title('Restore All Jobs')
             .textContent('Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier)
-            .targetEvent(event)
+            .targetEvent($event)
             .ok('Yes')
             .cancel('No');
 
@@ -1433,7 +1433,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // POTENTIAL COURIERS
     ////////////////////////////
 
-    $scope.getPotentialCouriers = jobId => {
+    ctrl.getPotentialCouriers = jobId => {
 
         angular.element('#box-potentialCouriers .loading').css('display', 'block');
         DispatchData.getPotentialCouriers(jobId).then((data) => {
@@ -1884,7 +1884,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
             if (job.courier === null) {
                 $scope.jobGroups = false;
-                $scope.getPotentialCouriers(job.id);
+                ctrl.getPotentialCouriers(job.id);
                 $scope.potentialCouriersSelection = " for Job " + job.jobNo;
                 $scope.currentCourier = null;
                 ctrl.currentSelection = " for Job " + job.jobNo;

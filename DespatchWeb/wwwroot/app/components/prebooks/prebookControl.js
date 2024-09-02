@@ -19,8 +19,42 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         jdSvc.updateGPS(currentJob, field, fromRightClick);
     };
 
+    ctrl.jobQuery = {
+        order: 'booked',
+        limit: 50,
+        page: 1
+    };
+
+    ctrl.jobList = []; // Your original data
+    ctrl.filteredData = []; // Holds filtered and sorted data
+    ctrl.pagedData = []; // Holds the current page of data
+    ctrl.searchText = '';
     $scope.promise = null; // This will hold our loading promise
 
+    ctrl.updateTable = () => {
+        // Apply search filter
+        let orderedData = $filter('filter')(ctrl.jobList, ctrl.searchText);
+
+        // Apply sorting
+        orderedData = $filter('orderBy')(orderedData, ctrl.jobQuery.order);
+
+        ctrl.filteredData = orderedData;
+
+        // Apply pagination
+        const start = (ctrl.jobQuery.page - 1) * ctrl.jobQuery.limit;
+        ctrl.pagedData = orderedData.slice(start, start + ctrl.jobQuery.limit);
+    };
+
+    ctrl.onPaginate = (page, limit) => {
+        ctrl.jobQuery.page = page;
+        ctrl.jobQuery.limit = limit;
+        ctrl.updateTable();
+    };
+
+    $scope.$watchGroup(['ctrl.searchText', 'ctrl.jobQuery.order'], () => {
+        ctrl.jobQuery.page = 1; // Reset to first page
+        ctrl.updateTable();
+    });
 
     ctrl.openSearch = (boxName, index) => {
         if (!ctrl.showInput) {
@@ -36,7 +70,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     /**
      * @param {string} searchText
      */
-    this.jobRecordSearch = function (searchText) {
+    ctrl.jobRecordSearch = searchText => {
         console.log(searchText);
         if (!searchText) {
             return [];
@@ -44,16 +78,12 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
         searchText = searchText.toLowerCase();
 
-        return $scope.jobList
-            .filter(function (job) {
-                return job.jobNo.toLowerCase().indexOf(searchText) !== -1;
-            })
-            .map(function (job) {
-                return {
-                    text: job.jobNo,
-                    id: job.id
-                };
-            });
+        return ctrl.jobList
+            .filter(job => job.jobNo.toLowerCase().indexOf(searchText) !== -1)
+            .map(job => ({
+                text: job.jobNo,
+                id: job.id
+            }));
     };
 
 
@@ -327,13 +357,15 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     $scope.refreshData = () => {
         $scope.promise = uPBData.getPreBookJobs().then(
             data => {
-                $scope.jobList = data;
-                return $scope.jobList;
+                ctrl.jobList = data;
+                ctrl.updateTable();
+                return ctrl.jobList;
             });
     };
 
-    $scope.onOrderChange = function (order) {
+    $scope.onOrderChange = order => {
         $scope.query.order = order;
+        ctrl.updateTable();
         return $scope.refreshData();
     };
 
@@ -383,7 +415,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     $scope.showJobs = group => {
 
         angular.element("#box-jobsList").find(".loading").show();
-        $scope.jobList = group.jobs;
+        ctrl.jobList = group.jobs;
         $timeout(() => {
             sizeHeadings(angular.element("#jobList").parents(".column"));
         }, 1000);
@@ -445,20 +477,15 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     };
 
-
-    //This method is calling from pagination number
-    $scope.pageChanged = i => {
-
-        $scope.pageIndex = i;
-        $scope.refreshData();
-
+    ctrl.pageChanged = i => {
+        ctrl.jobQuery.page = i;
+        ctrl.updateTable();
     };
 
-    //This method is calling from dropDown
-    $scope.changePageSize = i => {
-        $scope.pageIndex = 1;
-        $scope.pageSizeSelected = i;
-        $scope.refreshData();
+    ctrl.changePageSize = i => {
+        ctrl.jobQuery.page = 1;
+        ctrl.jobQuery.limit = i;
+        ctrl.updateTable();
     };
 
 
@@ -584,7 +611,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
             $scope.selectedEvents = [];
             angular.element("#jobList .active").each(function () {
                 const eventIndex = angular.element(this).data("index");
-                const event = $scope.jobList[eventIndex];
+                const event = ctrl.jobList[eventIndex];
                 $scope.selectedEvents.push(event);
             });
             //$scope.$apply();
@@ -597,7 +624,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 
     };
 
-    $scope.jobListMenu =
+    ctrl.jobListMenu =
         [
             {
                 text: "Close Event",

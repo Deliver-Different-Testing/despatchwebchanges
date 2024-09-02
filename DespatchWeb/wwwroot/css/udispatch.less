@@ -1392,3 +1392,75 @@ md-table-pagination {
     color: @disabledColor !important;
   }
 }
+
+.search-input {
+  @input-height: 36px;
+  @input-bg-color: rgba(255, 255, 255, 0.2);
+  @input-bg-color-hover: rgba(255, 255, 255, 0.25);
+  @input-bg-color-focus: rgba(255, 255, 255, 0.3);
+  @input-text-color: rgba(255, 255, 255, 0.95);
+  @input-placeholder-color: rgba(255, 255, 255, 0.7);
+  @icon-color: rgba(255, 255, 255, 0.9);
+  @transition-duration: 0.2s;
+
+  &-container {
+    margin: 0;
+    padding: 0;
+    height: @input-height;
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .md-errors-spacer {
+      display: none;
+    }
+
+    input {
+      border: none;
+      background-color: @input-bg-color;
+      color: @input-text-color;
+      border-radius: 4px;
+      padding: 0 16px 0 40px;
+      height: @input-height;
+      line-height: @input-height;
+      transition: all @transition-duration cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%;
+      font-size: 16px;
+      font-weight: 500;
+
+      &:hover {
+        background-color: @input-bg-color-hover;
+      }
+
+      &:focus {
+        background-color: @input-bg-color-focus;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+      }
+
+      &::placeholder {
+        color: @input-placeholder-color;
+        transition: color @transition-duration ease;
+      }
+
+      &:focus::placeholder {
+        color: fade(@input-placeholder-color, 50%);
+      }
+    }
+
+    md-icon {
+      color: @icon-color;
+      position: absolute;
+      left: 45px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+      pointer-events: none;
+    }
+
+    &:hover {
+      input {
+        background-color: @input-bg-color-hover;
+      }
+    }
+  }
+}

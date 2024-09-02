@@ -1,7 +1,7 @@
 <div class="droppable-box" style="min-height:500px">
     <md-table-container>
         <table md-progress="promise" md-row-select md-table ng-model="selected">
-            <thead md-head md-order="sort.jobList">
+            <thead md-head md-order="ctrl.jobQuery.order">
             <tr md-row>
                 <th md-column md-order-by="booked">Booked</th>
                 <th md-column md-order-by="speed">Speed</th>
@@ -18,7 +18,7 @@
             <tr data-courier="{{job.courier}}" data-jobNo="{{job.jobNo}}" data-jobid="{{job.id}}"
                 md-row md-select="job"
                 md-select-id="id" ng-click="selectJobDetail(job.id);"
-                ng-repeat="job in jobList | orderBy: jobQuery.order">
+                ng-repeat="job in ctrl.pagedData">
                 <td md-cell md-truncate>{{job.booked | date: "hh:mm"}}</td>
                 <td md-cell md-truncate>{{job.speed}}</td>
                 <td md-cell md-truncate>{{job.jobNo}}</td>
