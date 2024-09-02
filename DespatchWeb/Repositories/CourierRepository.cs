@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
@@ -14,10 +15,12 @@ namespace DespatchWeb.Repositories
     public class CourierRepository : ICourierRepository
     {
         private readonly DespatchContext _context;
+        private readonly IMapper _mapper;
 
-        public CourierRepository(DespatchContext context)
+        public CourierRepository(DespatchContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId)
@@ -76,13 +79,10 @@ namespace DespatchWeb.Repositories
             return result;
         }
 
-        public List<PotentialCouriersViewModel> GetPotentialCouriers(int jobId)
+        public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
         {
-            var result = new List<PotentialCouriersViewModel>();
-            _context.LoadStoredProc("DESWEB_qryPotentialCouriers")
-                .WithSqlParam("@JobID", jobId)
-                .ExecuteStoredProc(handle => { result = handle.ReadToList<PotentialCouriersViewModel>().ToList(); });
-            return result;
+            var results = await _context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
+            return _mapper.Map<List<PotentialCouriersViewModel>>(results);
         }
 
         /// <summary>

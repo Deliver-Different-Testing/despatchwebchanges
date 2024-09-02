@@ -95,6 +95,7 @@ namespace DespatchWeb.EntityClasses
         public decimal? CourierPercentageOverride { get; set; }
         public string ClientItemIds { get; set; }
         public int? BulkParentId { get; set; }
+        public bool? DocRequired { get; set; }
 
         public virtual TucJobType SpeedNavigation { get; set; }
     }

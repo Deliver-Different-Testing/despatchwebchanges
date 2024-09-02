@@ -167,6 +167,10 @@
          "ObjectType": 1
       },
       {
+        "Name": "[dbo].[DESWEB_qryPotentialCouriers]",
+        "ObjectType": 1
+      },
+     {
          "Name": "[dbo].[DESWEB_stpCreateInterCourierJobs]",
          "ObjectType": 1
       },

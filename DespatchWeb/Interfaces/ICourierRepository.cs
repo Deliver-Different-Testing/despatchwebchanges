@@ -15,7 +15,7 @@ public interface ICourierRepository
         bool close = false);
 
     List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat);
-    List<PotentialCouriersViewModel> GetPotentialCouriers(int jobId);
+    Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
 
     /// <summary>
     /// filters by active, sms setting and logged in

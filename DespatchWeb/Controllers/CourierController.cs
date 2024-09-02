@@ -41,10 +41,18 @@ public class CourierController : Controller
     }
 
     [HttpGet]
-    public IActionResult PotentialCouriers(int jobId)
+    public async Task<IActionResult> PotentialCouriers(int jobId)
     {
-        var result = _courierRepo.GetPotentialCouriers(jobId);
-        return Json(result);
+        try
+        {
+            var result = await _courierRepo.GetPotentialCouriersAsync(jobId);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<IActionResult> AllActiveSearch(string searchTerm)
