@@ -1464,3 +1464,128 @@ md-table-pagination {
     }
   }
 }
+
+// Updated Flexible AngularJS Material Table Styles
+md-table-container {
+  overflow-x: auto;
+
+  .md-table {
+    width: 100%;
+    table-layout: fixed;
+
+    thead, tbody {
+      tr {
+        display: flex;
+        width: 100%;
+      }
+    }
+
+    th.md-column, td.md-cell {
+      display: flex;
+      flex: 1 1 0;
+      min-width: 80px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 8px !important;
+      align-items: center;
+    }
+
+    thead {
+      tr {
+        th {
+          font-size: 13px;
+          font-weight: 500;
+          color: rgba(0, 0, 0, 0.66);
+        }
+      }
+    }
+
+    // Adjust body styles
+    tbody {
+      tr {
+        height: 36px; // Reduced from default 48px
+
+        td {
+          font-size: 13px;
+          color: rgba(0, 0, 0, 0.87);
+        }
+      }
+    }
+
+    // Improve readability for dense data
+    .md-row:nth-child(even) {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    // Adjust specific column types
+    .md-column, .md-cell {
+      &.md-date-cell {
+        flex: 0 0 80px;
+      }
+
+      // Fixed width for date
+      &.md-speed-cell {
+        flex: 0 0 60px;
+      }
+
+      // Fixed width for speed
+      &.md-job-cell {
+        flex: 2;
+      }
+
+      // Job column gets more space
+      &.md-client-cell {
+        flex: 2;
+      }
+
+      // Client column gets more space
+      &.md-address-cell {
+        flex: 3;
+      }
+
+      // Address columns get even more space
+      &.md-code-cell {
+        flex: 1;
+      }
+
+      &.md-status-cell {
+        flex: 1;
+      }
+    }
+
+    // Reduce font size for smaller screens
+    @media screen and (max-width: 1200px) {
+      font-size: 12px;
+    }
+
+    // Further reduce padding and font size for very small screens
+    @media screen and (max-width: 600px) {
+      th.md-column, td.md-cell {
+        padding: 0 4px !important;
+        font-size: 11px;
+      }
+    }
+  }
+}
+
+// Adjust pagination styles
+md-table-pagination {
+  .md-text {
+    font-size: 12px;
+  }
+
+  .md-select-value {
+    font-size: 12px;
+  }
+
+  @media screen and (max-width: 600px) {
+    md-select {
+      margin: 0;
+    }
+
+    .md-text, .md-select-value {
+      font-size: 10px;
+    }
+  }
+}

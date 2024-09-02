@@ -139,29 +139,36 @@ angular
         $mdDateLocaleProvider.msgCalendar = 'Calendar';
         $mdDateLocaleProvider.msgOpenCalendar = 'Open calendar';
     })
-    .config(['$urlRouterProvider', '$stateProvider', ($urlRouterProvider, $stateProvider) => {
-        $urlRouterProvider.otherwise('/');
+    .constant('APP_VERSION', '3.14')
+    .factory('versionUrl', ['APP_VERSION', APP_VERSION => url => url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + APP_VERSION])
+    .config(['$urlRouterProvider', '$stateProvider', 'versionUrlProvider',
+        ($urlRouterProvider, $stateProvider, versionUrlProvider) => {
 
-        $stateProvider
-            .state('home', {
-                url: '/', templateUrl: 'app/components/home/homeView.html?v=3.11', controller: 'HomeControl'
-            })
-            .state('nw', {
-                url: '/Nationwide',
-                templateUrl: 'app/components/Nationwide/nationwideView.html?v=3.11',
-                controller: 'NationwideControl',
-                reloadOnSearch: false
-            })
-            .state('cs', {
-                url: '/CS',
-                templateUrl: 'app/components/CS/csView.html?v=3.11',
-                controller: 'CSControl',
-                reloadOnSearch: false
-            })
-            .state('prebooks', {
-                url: '/prebooks',
-                templateUrl: 'app/components/prebooks/prebookView.html?v=3.11',
-                controller: 'PBControl',
-                reloadOnSearch: false
-            });
-    }]);
+            const versionUrl = versionUrlProvider.$get();
+            $urlRouterProvider.otherwise('/');
+
+            $stateProvider
+                .state('home', {
+                    url: '/',
+                    templateUrl: versionUrl('app/components/home/homeView.html'),
+                    controller: 'HomeControl'
+                })
+                .state('nw', {
+                    url: '/Nationwide',
+                    templateUrl: versionUrl('app/components/Nationwide/nationwideView.html'),
+                    controller: 'NationwideControl',
+                    reloadOnSearch: false
+                })
+                .state('cs', {
+                    url: '/CS',
+                    templateUrl: versionUrl('app/components/CS/csView.html'),
+                    controller: 'CSControl',
+                    reloadOnSearch: false
+                })
+                .state('prebooks', {
+                    url: '/prebooks',
+                    templateUrl: versionUrl('app/components/prebooks/prebookView.html'),
+                    controller: 'PBControl',
+                    reloadOnSearch: false
+                });
+        }]);

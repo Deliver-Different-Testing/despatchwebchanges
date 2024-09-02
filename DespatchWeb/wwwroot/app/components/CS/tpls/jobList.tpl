@@ -1,51 +1,49 @@
 <!-- Job List Table -->
-<md-content>
-    <md-table-container>
-        <table md-progress="jobPromise" md-row-select md-table ng-model="selectedJobs">
-            <thead md-head md-order="jobQuery.order">
-            <tr md-row>
-                <th md-column md-order-by="booked"><span>Booked</span></th>
-                <th md-column md-order-by="status"><span>Status</span></th>
-                <th md-column md-order-by="speed"><span>Speed</span></th>
-                <th md-column md-order-by="jobNo"><span>Job</span></th>
-                <th md-column md-order-by="client"><span>Client</span></th>
-                <th md-column md-order-by="from"><span>From</span></th>
-                <th md-column md-order-by="to"><span>To</span></th>
-                <th md-column md-order-by="toAddress"><span>Street</span></th>
-            </tr>
-            </thead>
-            <tbody md-body>
-            <tr md-row md-select="job" md-select-id="id" ng-click="selectJobDetail(job.id)"
-                ng-repeat="job in jobList | orderBy: jobQuery.order">
-                <td md-cell md-truncate>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
-                <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
-                <td md-cell md-truncate>{{job.speed}}</td>
-                <td md-cell md-truncate>{{job.jobNo}}</td>
-                <td md-cell md-truncate>{{job.client}}</td>
-                <td md-cell md-truncate>
-                    {{job.from}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
-                </td>
-                <td md-cell md-truncate>
-                    {{job.to}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
-                </td>
-                <td md-cell md-truncate>
-                    <div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">
-                        {{job.toAddress}}
-                    </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </md-table-container>
+<md-table-container>
+    <table md-progress="jobPromise" md-row-select md-table ng-model="selectedJobs">
+        <thead md-head md-order="jobQuery.order">
+        <tr md-row>
+            <th md-column md-order-by="booked"><span>Booked</span></th>
+            <th md-column md-order-by="status"><span>Status</span></th>
+            <th md-column md-order-by="speed"><span>Speed</span></th>
+            <th md-column md-order-by="jobNo"><span>Job</span></th>
+            <th md-column md-order-by="client"><span>Client</span></th>
+            <th md-column md-order-by="from"><span>From</span></th>
+            <th md-column md-order-by="to"><span>To</span></th>
+            <th md-column md-order-by="toAddress"><span>Street</span></th>
+        </tr>
+        </thead>
+        <tbody md-body>
+        <tr md-row md-select="job" md-select-id="id" ng-click="selectJobDetail(job.id)"
+            ng-repeat="job in jobList | orderBy: jobQuery.order">
+            <td md-cell md-truncate>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
+            <td class="status" md-cell ng-class="job.status">{{job.status}}</td>
+            <td md-cell md-truncate>{{job.speed}}</td>
+            <td md-cell md-truncate>{{job.jobNo}}</td>
+            <td md-cell md-truncate>{{job.client}}</td>
+            <td md-cell md-truncate>
+                {{job.from}}
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+            </td>
+            <td md-cell md-truncate>
+                {{job.to}}
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+            </td>
+            <td md-cell md-truncate>
+                <div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">
+                    {{job.toAddress}}
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</md-table-container>
 
-    <md-table-pagination
-            md-limit="jobQuery.limit"
-            md-limit-options="[5, 10, 25, 50]"
-            md-on-paginate="jobPageChanged"
-            md-page="jobQuery.page"
-            md-page-select
-            md-total="{{totalCount}}">
-    </md-table-pagination>
-</md-content>
+<md-table-pagination
+        md-limit="jobQuery.limit"
+        md-limit-options="[5, 10, 25, 50]"
+        md-on-paginate="jobPageChanged"
+        md-page="jobQuery.page"
+        md-page-select
+        md-total="{{totalCount}}">
+</md-table-pagination>

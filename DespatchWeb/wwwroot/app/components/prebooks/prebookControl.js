@@ -1,4 +1,4 @@
-function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout) {
+function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout, versionUrl) {
     const ctrl = this;
     $scope.isAdmin = (ClientInternal === "True");
     $scope.mapSetting = {
@@ -204,7 +204,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
     $scope.boxes = {
         "jobList": {
             "title": "Job Data",
-            "tpl": "app/components/prebooks/tpls/pbList.tpl?v3.13",
+            "tpl": versionUrl("app/components/prebooks/tpls/pbList.tpl"),
             "showSearch": 1,
             "showRefresh": 1,
             "model": "jobList",
@@ -251,13 +251,13 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/prebooks/tpls/preBookDetail.tpl?v3.13",
+            "tpl": versionUrl("app/components/prebooks/tpls/preBookDetail.tpl"),
             "showSearch": 0,
             "showDetailButtons": 1
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/prebooks/tpls/map.tpl?v3.13",
+            "tpl": versionUrl("app/components/prebooks/tpls/map.tpl"),
             "showSearch": 0
         }
 
@@ -661,7 +661,7 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
 }
 
 PrebookController.$inject = ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys",
-    "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout'];
+    "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout', 'versionUrl'];
 
 
 angular.module('uDispatch').controller('PBControl', PrebookController);
