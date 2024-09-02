@@ -1,6 +1,6 @@
 function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse,
                       $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document,
-                      $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData) {
+                      $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl) {
     const ctrl = this;
 
     $scope.isAdmin = (ClientInternal === "True");
@@ -303,13 +303,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
     $scope.boxes = {
         "pickDate": {
             "title": "Filters",
-            "tpl": "app/components/CS/tpls/pickDate.tpl?v3.13",
+            "tpl": versionUrl("app/components/CS/tpls/pickDate.tpl"),
             "showSearch": 0
         },
 
         "jobList": {
             "title": "Live Job Data",
-            "tpl": "app/components/CS/tpls/jobList.tpl?v3.13",
+            "tpl": versionUrl("app/components/CS/tpls/jobList.tpl"),
             "showSearch": 1,
             "model": "jobList",
             "headings": [
@@ -355,7 +355,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "bulkJobList": {
             "title": "Bulk Job Data",
-            "tpl": "app/components/CS/tpls/bulkJobList.tpl?v3.13",
+            "tpl": versionUrl("app/components/CS/tpls/bulkJobList.tpl"),
             "showSearch": 1,
             "model": "bulkJobList",
             "headings": [
@@ -401,7 +401,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "pbList": {
             "title": "PreBook Data",
-            "tpl": "app/components/CS/tpls/pbList.tpl?v3.13",
+            "tpl": versionUrl("app/components/CS/tpls/pbList.tpl"),
             "showSearch": 1,
             "showRefresh": 1,
             "model": "pbList",
@@ -448,13 +448,13 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/common/tpls/jobDetail.tpl?v3.13",
+            "tpl": versionUrl("app/components/common/tpls/jobDetail.tpl"),
             "showSearch": 0,
             "showDetailButtons": 1
         },
         "scanList": {
             "title": "Scan Detail",
-            "tpl": "app/components/CS/tpls/scanList.tpl?v3.13",
+            "tpl": versionUrl("app/components/CS/tpls/scanList.tpl"),
             "showSearch": 0,
             "model": "scanList",
             "headings": [
@@ -474,7 +474,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/CS/tpls/map.tpl?v3.13",
+            "tpl": versionUrl("app/components/CS/tpls/map.tpl"),
             "showSearch": 0
         }
 
@@ -1627,7 +1627,7 @@ function CSController($scope, jdSvc, uCSData, $state, $stateParams, $filter, $pa
 
 CSController.$inject = ['$scope', 'JobDetailService', 'uCSData', "$state",
     "$stateParams", "$filter", '$parse', "$location", "$q", 'NgMap', 'GeoCoder', '$mdDialog',
-    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', 'moment', 'DispatchData'];
+    'greetingService', '$document', '$timeout', 'loadingService', 'dispatchJobService', 'toastrService', 'moment', 'DispatchData', 'versionUrl'];
 
 angular.module('uDispatch').controller('CSControl', CSController);
 
@@ -1661,15 +1661,4 @@ function closestLocation(latitude, longitude, locations) {
 
     // return the nearest location
     return (locations[closest]);
-}
-
-function inStruct(val, structure) {
-
-    for (a in structure) {
-
-        if (structure[a] === val && structure.hasOwnProperty(a)) {
-            return true;
-        }
-    }
-    return false;
 }
