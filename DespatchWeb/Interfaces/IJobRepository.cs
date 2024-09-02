@@ -24,7 +24,7 @@ public interface IJobRepository
         DateTime fromDate, DateTime toDate, int? clientId, int pageIndex, int pageSize);
 
     Task<List<JobViewModel>> PreBookJobList();
-    List<JobViewModel> CurrentJobList(int courierId, bool done);
+    Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
     Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
         bool isInternal, string clientIds);

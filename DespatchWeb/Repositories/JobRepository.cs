@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
@@ -16,10 +17,12 @@ namespace DespatchWeb.Repositories;
 public class JobRepository : IJobRepository
 {
     private readonly DespatchContext _context;
+    private readonly IMapper _mapper;
 
-    public JobRepository(DespatchContext context)
+    public JobRepository(DespatchContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
 
     public async Task<JobViewModel> PreBookDetail(int prebookId)
@@ -370,7 +373,7 @@ public class JobRepository : IJobRepository
                 id = j.JobId,
                 label = j.Number
             }
-        ).ToListAsync();
+        ).ToListWithNoLockAsync();
         return jobQuery;
     }
 
@@ -717,7 +720,7 @@ public class JobRepository : IJobRepository
         var jobs = await _context.UvwBookingTodays
             .FromSqlRaw(
                 "SELECT * FROM uvwBookingToday WHERE ucbkDone=0  ORDER BY CONVERT(nvarchar(10), ucbkTime, 108), ucbkJobNumber")
-            .ToListAsync();
+            .ToListWithNoLockAsync();
         var jobList = (from j in jobs
             select new JobViewModel
             {
@@ -735,158 +738,59 @@ public class JobRepository : IJobRepository
         return jobList;
     }
 
-    public List<JobViewModel> CurrentJobList(int courierId, bool done)
+    public async Task<List<JobViewModel>> CurrentJobList(int courierId, bool done)
     {
-        var jobs = _context.DeswebQryDespatches.FromSqlRaw($"exec [DESWeb_qryCourierJobs] {courierId}, {done}")
-            .ToList();
-        var list =
-            (from j in jobs
-                select new JobViewModel
-                {
-                    ID = j.UcjbId,
-                    RootParentID = j.RootParentId,
-                    Time = j.UcjbTime,
-                    Direct = j.Direct,
-                    Van = j.UcjbVan,
-                    VanOK = j.VanOk,
-                    Truck = j.Truck,
-                    SaturdayDelivery = j.SaturdayDelivery,
-                    Return = j.UcjbReturn,
-                    PickupFrom = j.UcjbPickUpFrom,
-                    JobNo = j.UcjbNumber,
-                    Speed = j.SpeedShortName,
-                    SpeedName = j.SpeedName,
-                    SpeedId = j.UcjbSpeed,
-                    Notify = j.NotifiedSpeed,
-                    NotifiedName = j.NotifiedName,
-                    AcceptedJobTypeID = j.AcceptedJobTypeId,
-                    AcceptedName = j.OriginalName,
-                    NotifiedJobTypeID = j.NotifiedJobTypeId,
-                    Vehicle = new Vehicle
-                    {
-                        id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                        label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
-                    },
-                    PalletInfo = (
-                        from pa in _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
-                        select new PalletInfo
-                        {
-                            ID = pa.JobId,
-                            Quantity = pa.Items,
-                            ItemID = pa.ItemId,
-                            Weight = pa.Weight,
-                            Length = pa.Length,
-                            Depth = pa.Depth,
-                            Height = pa.Height,
-                            PU = pa.Pu,
-                            DO = pa.Do,
-                            DGClass = pa.Dgclass,
-                            Notes = pa.Notes
-                        }).ToList(),
-                    //RelatedJobs = (
-                    //    from rel in _context.TblJobs.Where(r => r.ParentId == j.RootParentId && r.JobId != j.RootParentId)
-                    //    select new Size()
-                    //    {
-                    //        id = rel.JobId,
-                    //        label = rel.Number
-                    //    }
-                    //).ToList(),
-                    Client = j.UcclCode,
-                    ClientId = j.UcjbClientId,
-                    ClientName = j.ClientName,
-                    JobType = (int)(j.UcjbType ?? 0),
-                    From = j.SuburbFrom,
-                    FromSuburbId = j.FromSuburbId,
-                    FromSuburbName = j.FromSuburbName,
-                    FromPostCode = j.FromPostCode,
-                    FromAddress = j.UcjbFromAddr,
-                    FromContactName = j.PickupFromContact,
-                    FromContactNumber = j.PickupFromPhone,
-                    To = j.SuburbTo,
-                    ToSuburbID = j.ToSuburbId,
-                    ToSuburbName = j.ToSuburbName,
-                    ToPostCode = j.ToPostCode,
-                    ToAddress = j.UcjbToAddr,
-                    ToCity = j.ToCity,
-                    Courier = j.CourierCode,
-                    Remain = j.RemainTime,
-                    StatusID = j.UcjbStatus,
-                    Status = j.UcjsCode,
-                    LP = j.UcjbLatePick,
-                    LD = j.UcjbLateDel,
-                    ContactName = j.UcjbContact,
-                    Phone = j.DeliverToPhone,
-                    SpeedAccepted = j.OriginalSpeed,
-                    Size = new Vehicle
-                    {
-                        id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                        label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
-                    },
-                    Weight = j.UcjbWeight,
-                    Items = j.UcjbQty,
-                    RefA = j.UcjbClientRefa,
-                    RefB = j.UcjbClientRefb,
-                    OurRef = j.UcjbOurRef,
-                    SigNotRequired = j.SigNotRequired,
-                    Charge = $"{j.UcjbAmount:C}",
-                    Date = j.UcjbDate.ToString("dd/MM/yyyy"),
-                    Booked = DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " +
-                                            j.UcjbTime.Value.ToString("HH:mm:ss")),
-                    DispatchTime = j.UcjbDispTime,
-                    PUTime = j.Putime,
-                    ClientNotes = j.ClientNotes,
-                    InternalNotes = j.JobNotes,
-                    ChildNotes = j.ChildNotes,
-                    PickUpLatitude = j.PickUpLatitude,
-                    PickUpLongitude = j.PickUpLongitude,
-                    DeliveryLatitude = j.DeliveryLatitude,
-                    DeliveryLongitude = j.DeliveryLongitude,
-                    CourierLatitude = j.CourierLatitude,
-                    CourierLongitude = j.CourierLongitude,
-                    RunOrder = j.PickRunOrder,
-                    CourierData = new CourierData
-                    {
-                        Courier = j.CourierCode + " " + j.CourierName,
-                        CourierID = j.UcjbCourierId
-                    },
-                    AllowDispatch = j.AllowDespatch,
-                    AllowSplit = j.AllowSplit,
-                    DGClass = j.Dgclass,
-                    DGDocumentation = j.Dgdocument,
-                    DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
-                    TruckWeightLimit = j.TruckWeightLimit,
-                    TruckStartTime = j.TruckStartTime,
-                    TruckHours = j.TruckHours,
-                    PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
-                    PickupTime = j.PickupTime,
-                    DeliveryTime = j.DeliveryTime,
-                    AlertLatePickup = j.AlertLatePickUp,
-                    AlertLateDelivery = j.AlertLateDelivery,
-                    Minutes = j.Minutes,
-                    DeliverToContact = j.DeliverToContact,
-                    PODPhoto = j.DeliveryPhoto,
-                    PODName = j.UcjbPodname,
-                    CompletedTime = j.UcjbComplTime,
-                    TrackingMethod = j.TrackingMethod,
-                    TrackingMobile = j.TrackingMobile,
-                    TrackingEmail = j.TrackingEmail,
-                    UDStatus = j.Udstatus,
-                    RatedManually = j.RatedManually,
-                    Attention = j.UcjbAttention,
-                    Pedal = j.UcjbCbd,
-                    Locked = j.Locked ?? false,
-                    Invoiced = false,
-                    InternalStatusID = j.InternalStatus,
-                    Reprice = j.Reprice,
-                    FollowupTime = j.FollowupTime,
-                    GstRate = j.Gstrate,
-                    ScheduleName = j.ScheduleName,
-                    LoggedInContactName = j.LoggedInContactName,
-                    StatusName = j.StatusName
-                }).ToList();
-        return list;
-    }
+        // 2. Execute the compiled query
+        var jobs = await GetJobsQuery(_context, courierId, done).ToListAsync();
 
+        // 3. Use AutoMapper for mapping
+        var jobViewModels = _mapper.Map<List<JobViewModel>>(jobs);
+
+        // 4. Load related data separately to avoid N+1 query problem
+        var jobIds = jobViewModels.Select(j => j.ID).ToList();
+        var palletInfoItems = await _context.TucJobItems
+            .Where(p => jobIds.Contains(p.JobId))
+            .Select(p => new
+            {
+                p.JobId,
+                PalletInfo = new PalletInfo
+                {
+                    ID = p.JobId,
+                    Quantity = p.Items,
+                    ItemID = p.ItemId,
+                    Weight = p.Weight,
+                    Length = p.Length,
+                    Depth = p.Depth,
+                    Height = p.Height,
+                    PU = p.Pu,
+                    DO = p.Do,
+                    DGClass = p.Dgclass,
+                    Notes = p.Notes
+                }
+            })
+            .ToListAsync();
+
+        // 5. Group PalletInfo by JobId
+        var palletInfoDict = palletInfoItems
+            .GroupBy(p => p.JobId)
+            .ToDictionary(g => g.Key, g => g.Select(p => p.PalletInfo).ToList());
+
+        // 6. Assign PalletInfo to each JobViewModel
+        foreach (var job in jobViewModels)
+        {
+            job.PalletInfo = palletInfoDict.TryGetValue(job.ID, out var palletInfo)
+                ? palletInfo
+                : new List<PalletInfo>();
+        }
+
+        return jobViewModels;
+
+        // 1. Use a compiled query for better performance
+        static IQueryable<DeswebQryDespatch> GetJobsQuery(DespatchContext context, int cId, bool isDone)
+        {
+            return context.DeswebQryDespatches.FromSqlRaw($"exec [DESWeb_qryCourierJobs] {cId}, {isDone}");
+        }
+    }
 
     public async Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
         bool isInternal, string clientIds)
@@ -1953,7 +1857,7 @@ public class JobRepository : IJobRepository
                 ID = s.ContactId, FullName = $"{s.Firstname} {s.Surname}", Mobile = s.Mobile, DirectDial = s.DirectDial,
                 Email = s.Email, JobTitle = s.JobTitle
             }).Distinct();
-        return data.ToListAsync();
+        return data.ToListWithNoLockAsync();
     }
 
 
@@ -2561,7 +2465,7 @@ public class JobRepository : IJobRepository
             });
 
         var count = await clientItemsQuery.CountAsync();
-        var clientItems = await clientItemsQuery.ToListAsync();
+        var clientItems = await clientItemsQuery.ToListWithNoLockAsync();
 
         var pagedClientItems = new PagedList<ClientItemsViewModel>
         {

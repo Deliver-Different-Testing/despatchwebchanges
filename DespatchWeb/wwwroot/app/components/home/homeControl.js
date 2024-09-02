@@ -1175,13 +1175,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
-     * @param  {Event}  event
+     * @param  {$event}  $event
      */
-    $scope.resendAll = event => {
+    $scope.resendAll = $event => {
         let confirm = $mdDialog.confirm()
             .title('Resend All Jobs')
             .textContent('Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier)
-            .targetEvent(event)
+            .targetEvent($event)
             .ok('Yes')
             .cancel('No');
 

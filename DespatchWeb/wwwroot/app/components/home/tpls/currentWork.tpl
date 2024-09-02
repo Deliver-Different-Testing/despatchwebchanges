@@ -91,7 +91,8 @@
             <td context-menu="setCurrentWorkMenu"><span
                     ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
             <td class="status" ng-class="job.status">{{job.status}}</td>
-            <td><input class="lateCallField" ng-focus="selectAllContent($event)" ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, $this)"
+            <td><input class="lateCallField" ng-focus="selectAllContent($event)"
+                       ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, this)"
                        ng-model="job.lp" ng-mouseup="$event.preventDefault();"
                        placeholder="LP" type="text"/></td>
             <td><input class="lateCallField" ng-focus="selectAllContent($event)" ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"
@@ -168,5 +169,4 @@
         const newTop = angular.element(this).scrollTop();
         angular.element(this).find(".table-headings").css({"top": newTop});
     });
-
 </script>

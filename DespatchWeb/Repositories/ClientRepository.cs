@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -55,7 +56,7 @@ namespace DespatchWeb.Repositories
                     ID = c.ClientId,
                     Text = c.Client.UcclName
                 };
-            return await clientContacts.ToListAsync();
+            return await clientContacts.ToListWithNoLockAsync();
         }
 
         public async Task<DispatcherViewModel> ValidateDispatcherLogin(string name)

@@ -162,10 +162,18 @@ public class JobController : Controller
         return Ok("OK");
     }
 
-    public IActionResult Current(int courierId, bool done)
+    public async Task<IActionResult> Current(int courierId, bool done)
     {
-        var result = _jobRepo.CurrentJobList(courierId, done);
-        return Json(result);
+        try
+        {
+            var result = await _jobRepo.CurrentJobList(courierId, done);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<IActionResult> Supports(string channel)

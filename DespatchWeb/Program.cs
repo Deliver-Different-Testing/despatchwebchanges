@@ -1,4 +1,5 @@
-﻿using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.Automapper;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using EntityFrameworkCore.UseRowNumberForPaging;
@@ -41,6 +42,11 @@ builder.Services.Configure<KestrelServerOptions>(options => { options.Limits.Max
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
+
+
+// Automapper
+builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile));
+
 
 var connectionString = builder.Configuration.GetConnectionString("Connection");
 //var connectionTimeout = builder.Configuration.GetValue<int>("ConnectionTimeout");

@@ -54,6 +54,7 @@
   </ItemGroup>
 
   <ItemGroup>
+      <PackageReference Include="AutoMapper" Version="13.0.1"/>
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
     <PackageReference Include="EntityFrameworkCore.UseRowNumberForPaging" Version="0.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="6.0.11" />
