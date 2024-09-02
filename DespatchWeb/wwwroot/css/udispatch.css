@@ -1399,118 +1399,118 @@ md-table-pagination .md-button[disabled] {
 .search-input-container:hover input {
   background-color: rgba(255, 255, 255, 0.25);
 }
-
 md-table-container {
-    overflow-x: auto;
+  overflow-x: auto;
 }
-
 md-table-container .md-table {
-    width: 100%;
-    table-layout: fixed;
+  width: 100%;
+  table-layout: fixed;
 }
-
 md-table-container .md-table thead tr,
 md-table-container .md-table tbody tr {
-    display: flex;
-    width: 100%;
+  display: flex;
+  width: 100%;
 }
-
 md-table-container .md-table th.md-column,
 md-table-container .md-table td.md-cell {
-    display: flex;
-    flex: 1 1 0;
-    min-width: 80px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 0 8px !important;
-    align-items: center;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 80px;
+  padding: 0 8px !important;
+  align-items: center;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  overflow-x: auto;
+  white-space: nowrap;
 }
-
+md-table-container .md-table th.md-column::-webkit-scrollbar,
+md-table-container .md-table td.md-cell::-webkit-scrollbar {
+  height: 4px;
+  background-color: transparent;
+}
+md-table-container .md-table th.md-column::-webkit-scrollbar-thumb,
+md-table-container .md-table td.md-cell::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.26);
+  border-radius: 2px;
+}
+md-table-container .md-table th.md-column:hover::-webkit-scrollbar-thumb,
+md-table-container .md-table td.md-cell:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+md-table-container .md-table th.md-column:last-child,
+md-table-container .md-table td.md-cell:last-child {
+  border-right: none;
+}
 md-table-container .md-table thead tr th {
-    font-size: 13px;
-    font-weight: 500;
-    color: rgba(0, 0, 0, 0.66);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.66);
 }
-
 md-table-container .md-table tbody tr {
-    height: 36px;
+  height: 36px;
 }
-
 md-table-container .md-table tbody tr td {
-    font-size: 13px;
-    color: rgba(0, 0, 0, 0.87);
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.87);
 }
-
 md-table-container .md-table .md-row:nth-child(even) {
-    background-color: rgba(0, 0, 0, 0.02);
+  background-color: rgba(0, 0, 0, 0.02);
 }
-
+md-table-container .md-table .md-row {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
 md-table-container .md-table .md-column.md-date-cell,
 md-table-container .md-table .md-cell.md-date-cell {
-    flex: 0 0 80px;
+  flex: 0 0 80px;
 }
-
 md-table-container .md-table .md-column.md-speed-cell,
 md-table-container .md-table .md-cell.md-speed-cell {
-    flex: 0 0 60px;
+  flex: 0 0 60px;
 }
-
 md-table-container .md-table .md-column.md-job-cell,
 md-table-container .md-table .md-cell.md-job-cell {
-    flex: 2;
+  flex: 2;
 }
-
 md-table-container .md-table .md-column.md-client-cell,
 md-table-container .md-table .md-cell.md-client-cell {
-    flex: 2;
+  flex: 2;
 }
-
 md-table-container .md-table .md-column.md-address-cell,
 md-table-container .md-table .md-cell.md-address-cell {
-    flex: 3;
+  flex: 3;
 }
-
 md-table-container .md-table .md-column.md-code-cell,
 md-table-container .md-table .md-cell.md-code-cell {
-    flex: 1;
+  flex: 1;
 }
-
 md-table-container .md-table .md-column.md-status-cell,
 md-table-container .md-table .md-cell.md-status-cell {
-    flex: 1;
+  flex: 1;
 }
-
 @media screen and (max-width: 1200px) {
-    md-table-container .md-table {
-        font-size: 12px;
-    }
+  md-table-container .md-table {
+    font-size: 12px;
+  }
 }
-
 @media screen and (max-width: 600px) {
-    md-table-container .md-table th.md-column,
-    md-table-container .md-table td.md-cell {
-        padding: 0 4px !important;
-        font-size: 11px;
-    }
+  md-table-container .md-table th.md-column,
+  md-table-container .md-table td.md-cell {
+    padding: 0 4px !important;
+    font-size: 11px;
+  }
 }
-
 md-table-pagination .md-text {
-    font-size: 12px;
+  font-size: 12px;
 }
-
 md-table-pagination .md-select-value {
-    font-size: 12px;
+  font-size: 12px;
 }
-
 @media screen and (max-width: 600px) {
-    md-table-pagination md-select {
-        margin: 0;
-    }
-
-    md-table-pagination .md-text,
-    md-table-pagination .md-select-value {
-        font-size: 10px;
-    }
+  md-table-pagination md-select {
+    margin: 0;
+  }
+  md-table-pagination .md-text,
+  md-table-pagination .md-select-value {
+    font-size: 10px;
+  }
 }
 /*# sourceMappingURL=udispatch.css.map */

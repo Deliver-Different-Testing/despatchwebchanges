@@ -8,9 +8,9 @@
             <th md-column md-order-by="speed"><span>Speed</span></th>
             <th md-column md-order-by="jobNo"><span>Job</span></th>
             <th md-column md-order-by="client"><span>Client</span></th>
-            <th md-column md-order-by="from"><span>From</span></th>
-            <th md-column md-order-by="to"><span>To</span></th>
-            <th md-column md-order-by="toAddress"><span>Street</span></th>
+            <th md-column md-order-by="from" style="min-width: 200px;"><span>From</span></th>
+            <th md-column md-order-by="to" style="min-width: 200px;"><span>To</span></th>
+            <th md-column md-order-by="toAddress" style="min-width: 250px;"><span>Street</span></th>
         </tr>
         </thead>
         <tbody md-body>
@@ -21,16 +21,23 @@
             <td md-cell md-truncate>{{job.speed}}</td>
             <td md-cell md-truncate>{{job.jobNo}}</td>
             <td md-cell md-truncate>{{job.client}}</td>
-            <td md-cell md-truncate>
-                {{job.from}}
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+            <td md-cell style="min-width: 200px;">
+                <div style="width: 100%; white-space: nowrap; overflow-x: hidden; text-overflow: ellipsis;"
+                     title="{{job.from}}">
+                    {{job.from}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+                </div>
             </td>
-            <td md-cell md-truncate>
-                {{job.to}}
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+            <td md-cell style="min-width: 200px;">
+                <div style="width: 100%; white-space: nowrap; overflow-x: hidden; text-overflow: ellipsis;"
+                     title="{{job.to}}">
+                    {{job.to}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+                </div>
             </td>
-            <td md-cell md-truncate>
-                <div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">
+            <td md-cell style="min-width: 250px;">
+                <div style="width: 100%; white-space: nowrap; overflow-x: hidden; text-overflow: ellipsis;"
+                     title="{{job.toAddress}}">
                     {{job.toAddress}}
                 </div>
             </td>
