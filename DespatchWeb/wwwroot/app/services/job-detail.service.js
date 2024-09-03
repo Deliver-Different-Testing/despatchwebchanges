@@ -1,7 +1,7 @@
 class JobDetailService {
-    static $inject = ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "$timeout", "moment"];
+    static $inject = ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "$timeout", "moment", "versionUrl"];
 
-    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment) {
+    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl) {
         this._dispatchData = DispatchData;
         this._$mdDialog = $mdDialog;
         this._toastrService = toastrService;
@@ -9,6 +9,7 @@ class JobDetailService {
         this._$document = $document;
         this._$timeout = $timeout;
         this._moment = moment;
+        this.versionUrl = versionUrl;
 
         this.options = {
             "detail": {
@@ -135,7 +136,7 @@ class JobDetailService {
                         }
                         newDays = newDays + self.combos.frequency[0].id + self.combos.holidays[0].id;
                         console.log(newDays);
-                        return self.DispatchData
+                        return DispatchData
                             .updateJobDetail(self.currentJob.id, "Days", newDays, self.currentJob.charge, FirstName, ContactID, self.currentJob.preBook).then(response => {
                                 self.selectJobDetail(self.currentJob.id);
                                 return response;
@@ -241,7 +242,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} $event
+     * @param {$event} $event
      * @param {Job} job
      */
     getClientContactDetail($event, job) {
@@ -371,7 +372,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: AddNotesDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/add-notes-dialog/add-notes-dialog.html",
+            templateUrl: this.versionUrl("app/components/dialogs/add-notes-dialog/add-notes-dialog.html"),
             parent: angular.element(this._$document.body),
             targetEvent: $event,
             clickOutsideToClose: true,
@@ -402,7 +403,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
-            templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
+            templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -448,7 +449,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
-            templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
+            templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -495,7 +496,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
-            templateUrl: "app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html",
+            templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -588,7 +589,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} event
      * @param {Job} job
      */
     editJobFromPhone(event, job) {
@@ -676,7 +677,7 @@ class JobDetailService {
 
     updateField(reRate, job, callData) {
         if (reRate && !job.bulkJob) {
-            return this.rateJob(job).then(rate => this._dispatchData
+            return this._rateJobService.rateJob(job).then(rate => this._dispatchData
                 .updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => response));
         } else {
             return job.bulkJob ? this._dispatchData
@@ -794,7 +795,7 @@ class JobDetailService {
                 };
 
                 if (callData.field === "Notes") {
-                    return job.bulkJob ? self.DispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) : self.DispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
+                    return job.bulkJob ? self._dispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) : self._dispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
                 }
 
                 if (fieldName === "Items" || fieldName === "Weight" || fieldName === "Date") {
@@ -823,7 +824,7 @@ class JobDetailService {
                 if (fieldName === "JobTypeID") {
                     callData.value = self.gather.form.fields[0].value;
                     job.jobType = self.gather.form.fields[0].value;
-                    return self.DispatchData
+                    return self._dispatchData
                         .updateJobType(callData.jobID, callData.value, FirstName).then(() => {
 
                         });
@@ -863,11 +864,11 @@ class JobDetailService {
                     job.dgClass = callData.value.id;
                     let dgdocs = self.gather.form.fields[1].value;
 
-                    return self.DispatchData
+                    return self._dispatchData
                         .updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID, job.preBook).then(response => {
                             if (job.dgDocumentation !== dgdocs) {
                                 job.dgDocumentation = dgdocs;
-                                return self.DispatchData
+                                return self._dispatchData
                                     .updateJobDetail(callData.jobID, "DGDocumentation", job.dgDocumentation, job.charge, FirstName, ContactID, job.preBook).then(response => response);
                             } else {
                                 return response;
@@ -875,11 +876,11 @@ class JobDetailService {
                         });
                 }
                 if (reRate && !job.bulkJob) {
-                    return self.rateJobService.rateJob(job).then(rate => self.DispatchData
+                    return self._rateJobService.rateJob(job).then(rate => self._dispatchData
                         .updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => response));
                 } else {
-                    return job.bulkJob ? self.DispatchData
-                        .updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID).then(response => response) : self.DispatchData
+                    return job.bulkJob ? self._dispatchData
+                        .updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID).then(response => response) : self._dispatchData
                         .updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID, job.preBook).then(response => response);
                 }
 
@@ -895,7 +896,7 @@ class JobDetailService {
 
     /**
      * Updates the GPS coordinates and address for a job
-     * @param {Event} event - The triggering event
+     * @param {$event} event - The triggering event
      * @param {Job} currentJob - The job to update
      * @param {string} field - The field to update ('toAddress' or 'fromAddress')
      * @returns {Promise} A promise that resolves when the update is complete
@@ -933,7 +934,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
+            templateUrl: this.versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -1007,7 +1008,7 @@ class JobDetailService {
 
         return this._rateJobService.rateJob(job)
             .then(rate => {
-                const callData = this.prepareCallData(job, addressDetails, rate, pedal, isDeliveryAddress);
+                const callData = this.prepareCallData(job, addressDetails, rate, pedal);
                 return this.callUpdateAddress(job, callData, isDeliveryAddress);
             });
     }
@@ -1018,7 +1019,7 @@ class JobDetailService {
             (job.fromSuburbID === 480 && job.toSuburbID === 480);
     }
 
-    prepareCallData(job, addressDetails, rate, pedal, isDeliveryAddress) {
+    prepareCallData(job, addressDetails, rate, pedal) {
         return {
             jobID: job.id,
             fromSuburbId: job.fromSuburbID,
@@ -1166,7 +1167,7 @@ class JobDetailService {
     vanClick(job) {
         const vanValue = !job.van;
 
-        return this.rateJob(job)
+        return this._rateJobService.rateJob(job)
             .then(rate => {
                 console.log(rate);
 
@@ -1214,7 +1215,7 @@ class JobDetailService {
 
         const updatePromise = useCharge
             ? updateJob(job.charge)
-            : this.rateJob(job).then(rate => updateJob(this.extractNumericRate(rate)));
+            : this._rateJobService.rateJob(job).then(rate => updateJob(this.extractNumericRate(rate)));
 
         return updatePromise
             .then(response => {
@@ -1411,37 +1412,37 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    trackingMethodClick(event, job) {
+    trackingMethodClick($event, job) {
         const trackingArray = this.options.detail.tracking.map(item => {
             return {
                 id: item.id, text: item.label
             };
         });
 
-        this.showSelectDialog(event, job, trackingArray, "TrackingMethod", "Tracking Method", this.getTrackingMethod(job.trackingMethod));
+        this.showSelectDialog($event, job, trackingArray, "TrackingMethod", "Tracking Method", this.getTrackingMethod(job.trackingMethod));
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    leaveClick(event, job) {
-        this.showSelectDialog(event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
+    leaveClick($event, job) {
+        this.showSelectDialog($event, job, this.pickLeaveList, "DeliverToLeaveID", "Leave Parcel", job.sigNotRequired || "Signature Required");
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    undeliverableClick(event, job) {
-        this.showSelectDialog(event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", job.udStatus);
+    undeliverableClick($event, job) {
+        this.showSelectDialog($event, job, this.pickUndeliverableList, "UndeliverableLocationID", "Undeliverable Location", job.udStatus);
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} event
      * @param {Job} job
      */
     sizeClick(event, job) {
@@ -1455,7 +1456,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} event
      * @param {Job} job
      * @param {[]} data
      * @param {string} fieldName
@@ -1475,7 +1476,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: 'app/components/dialogs/select-dialog/select-dialog.html',
+            templateUrl: this.versionUrl('app/components/dialogs/select-dialog/select-dialog.html'),
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1488,10 +1489,10 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    dgClassClick(event, job) {
+    dgClassClick($event, job) {
         let dgClassOptions = [];
         for (let i = 1; i <= 9; i++) {
             dgClassOptions.push({id: i, text: i.toString()});
@@ -1499,19 +1500,19 @@ class JobDetailService {
 
         const initialValue = !job.dgClass ? null : job.dgClass;
 
-        this.showSelectDialog(event, job, dgClassOptions, "DGClass", "DG Class", initialValue, "editField", true, "Has Documentation?");
+        this.showSelectDialog($event, job, dgClassOptions, "DGClass", "DG Class", initialValue, "editField", true, "Has Documentation?");
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    notifyClick(event, job) {
-        this.showSelectDialog(event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", job.notifiedName);
+    notifyClick($event, job) {
+        this.showSelectDialog($event, job, this.pickSpeeds, "NotifiedJobTypeID", "Notified", job.notifiedName);
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} event
      * @param {Job} job
      */
     acceptedClick(event, job) {
@@ -1519,19 +1520,19 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    speedClick(event, job) {
-        this.showSelectDialog(event, job, this.pickSpeeds, "SpeedID", "Speed", job.speedName);
+    speedClick($event, job) {
+        this.showSelectDialog($event, job, this.pickSpeeds, "SpeedID", "Speed", job.speedName);
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    contactClick(event, job) {
-        this.showSelectDialog(event, job, this.pickContacts, "ContactID", "Contact", job.contactName);
+    contactClick($event, job) {
+        this.showSelectDialog($event, job, this.pickContacts, "ContactID", "Contact", job.contactName);
     }
 
     /**
@@ -1551,10 +1552,10 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    jobTypeClick(event, job) {
+    jobTypeClick($event, job) {
         const data = [{
             id: 1, text: 'Pickup'
         }, {
@@ -1563,19 +1564,19 @@ class JobDetailService {
             id: 3, text: '3rd-Party'
         }];
 
-        this.showSelectDialog(event, job, data, "JobTypeID", "Job Type", this.getJobTypeDescription(job.jobType));
+        this.showSelectDialog($event, job, data, "JobTypeID", "Job Type", this.getJobTypeDescription(job.jobType));
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    internalStatusClick(event, job) {
-        this.showSelectDialog(event, job, this.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
+    internalStatusClick($event, job) {
+        this.showSelectDialog($event, job, this.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      * @param {string} url
      * @param {string} placeholder
@@ -1585,7 +1586,7 @@ class JobDetailService {
      * @param {null} existingItem
      * @param {boolean} showRerateOption
      */
-    showAutocompleteDialog(event, job, url, placeholder, fieldName, title, id = "editField", existingItem, showRerateOption) {
+    showAutocompleteDialog($event, job, url, placeholder, fieldName, title, id = "editField", existingItem, showRerateOption) {
         const options = {
             placeholder, minimumInputLength: 3, searchUrl: url
         };
@@ -1594,8 +1595,8 @@ class JobDetailService {
             controller: AutoCompleteDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
-            targetEvent: event,
-            templateUrl: 'app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html',
+            targetEvent: $event,
+            templateUrl: this.versionUrl('app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html'),
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1607,10 +1608,10 @@ class JobDetailService {
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    clientClick(event, job) {
+    clientClick($event, job) {
         const url = "/home/ActiveClients";
         const placeholder = "Start typing to enter new client...";
 
@@ -1619,37 +1620,37 @@ class JobDetailService {
         }
 
 
-        this.showAutocompleteDialog(event, job, url, placeholder, "clientId", "Client", job.id, existingItem, true)
+        this.showAutocompleteDialog($event, job, url, placeholder, "clientId", "Client", job.id, existingItem, true)
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    courierClick(event, job) {
+    courierClick($event, job) {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
 
-        this.showAutocompleteDialog(event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
+        this.showAutocompleteDialog($event, job, url, placeholder, "CourierID", "Courier", job.id, null, false)
     }
 
     /**
      * Shows a dialog for creating or editing a pallet
-     * @param {Event} event - The triggering event
+     * @param {$event} $event - The triggering event
      * @param {Job} job - The job associated with the pallet
      * @param {Object} [existingPallet] - The pallet to edit (if editing an existing pallet)
      * @returns {Promise} A promise that resolves when the dialog is closed
      */
-    showPalletDialog(event, job, existingPallet = undefined) {
+    showPalletDialog($event, job, existingPallet = undefined) {
         const isEditing = !!existingPallet;
         const dialogTitle = isEditing ? 'Edit Pallet' : 'New Pallet';
 
         return this._$mdDialog.show({
             controller: PalletDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html",
+            templateUrl: this.versionUrl("app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html"),
             parent: angular.element(this._$document.body),
-            targetEvent: event,
+            targetEvent: $event,
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1673,7 +1674,7 @@ class JobDetailService {
 
     /**
      * Opens a dialog to create a new pallet
-     * @param {Event} event - The triggering event
+     * @param {$event} event - The triggering event
      * @param {Job} job - The job to associate with the new pallet
      * @returns {Promise} A promise that resolves when the creation is complete
      */
@@ -1683,7 +1684,7 @@ class JobDetailService {
 
     /**
      * Opens a dialog to edit an existing pallet
-     * @param {Event} event - The triggering event
+     * @param {$event} event - The triggering event
      * @param {Job} job - The job associated with the pallet
      * @param {Object} pallet - The pallet to edit
      * @returns {Promise} A promise that resolves when the edit is complete
