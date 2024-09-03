@@ -612,21 +612,21 @@ public class JobController : Controller
     }
 
 
-    public IActionResult SuburbList()
+    public async Task<IActionResult> SuburbList()
     {
-        var data = _jobRepo.Suburbs();
+        var data = await _jobRepo.SuburbsAsync();
         return Json(data);
     }
 
-    public IActionResult SpeedList()
+    public async Task<IActionResult> SpeedList()
     {
-        var data = _jobRepo.Speeds();
+        var data = await _jobRepo.SpeedsAsync();
         return Json(data);
     }
 
-    public IActionResult ContactList(int clientId)
+    public async Task<IActionResult> ContactList(int clientId)
     {
-        var data = _jobRepo.Contacts(clientId);
+        var data = await _jobRepo.ContactsAsync(clientId);
         return Json(data);
     }
 

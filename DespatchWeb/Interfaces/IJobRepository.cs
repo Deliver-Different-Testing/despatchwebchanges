@@ -85,9 +85,9 @@ public interface IJobRepository
 
     Task ReRateSplitJob(int jobId);
     Task FinishSplitJobProcess(int jobId, string despatcher);
-    List<SuburbLookup> Suburbs();
-    List<Lookup> Speeds();
-    List<Lookup> Contacts(int clientId);
+    Task<List<SuburbLookup>> SuburbsAsync();
+    Task<List<Lookup>> SpeedsAsync();
+    Task<List<Lookup>> ContactsAsync(int clientId);
     Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId);
     List<Lookup> LeaveParcelLocations();
     List<UndeliverableLocation> UndeliverableLocations();

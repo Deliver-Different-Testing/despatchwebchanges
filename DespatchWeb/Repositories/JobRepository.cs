@@ -1823,28 +1823,44 @@ public class JobRepository : IJobRepository
         );
     }
 
-    public List<SuburbLookup> Suburbs()
+    public async Task<List<SuburbLookup>> SuburbsAsync()
     {
-        var data = (from s in _context.TucSuburbs
-            select s).Select(x => new SuburbLookup { ID = x.UcsuId, Text = x.UcsuName, Alias = x.GoogleSuburbAlias });
-        return data.ToList();
+        return await _context.TucSuburbs
+            .Select(x => new SuburbLookup
+            {
+                ID = x.UcsuId,
+                Text = x.UcsuName,
+                Alias = x.GoogleSuburbAlias
+            })
+            .ToListAsync();
     }
 
-    public List<Lookup> Speeds()
+    public async Task<List<Lookup>> SpeedsAsync()
     {
-        var data = (from s in _context.DesQryAllJobTypes
-            select s).Select(x => new Lookup { ID = x.JobTypeId, Text = x.Name });
-        return data.ToList();
+        return await _context.DesQryAllJobTypes
+            .Select(x => new Lookup
+            {
+                ID = x.JobTypeId,
+                Text = x.Name
+            })
+            .ToListAsync();
     }
 
-    public List<Lookup> Contacts(int clientId)
+    public async Task<List<Lookup>> ContactsAsync(int clientId)
     {
-        var data = (from s in _context.UtlQryContactLookups
-            join cc in _context.TblClientContacts on s.ContactId equals cc.ContactId into cjoin
-            from co in cjoin
-            where co.ClientId == clientId && s.Active == true
-            select new Lookup { ID = s.ContactId, Text = s.Name }).Distinct();
-        return data.ToList();
+        return await _context.UtlQryContactLookups
+            .Join(_context.TblClientContacts,
+                s => s.ContactId,
+                cc => cc.ContactId,
+                (s, cc) => new { s, cc })
+            .Where(x => x.cc.ClientId == clientId && x.s.Active)
+            .Select(x => new Lookup
+            {
+                ID = x.s.ContactId,
+                Text = x.s.Name
+            })
+            .Distinct()
+            .ToListAsync();
     }
 
     public Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId)
