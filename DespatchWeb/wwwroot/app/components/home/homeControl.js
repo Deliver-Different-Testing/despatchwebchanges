@@ -615,7 +615,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     /**
      * @param {number} id
-     * @param {Event} event
+     * @param {$event} event
      * @param {string} area
      */
     $scope.selectClearList = (id, event, area) => {
@@ -720,7 +720,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} event
      * @param {Job} job
      */
     ctrl.messageClick = (event, job) => {
@@ -745,16 +745,16 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 
     /**
-     * @param {Event} event
+     * @param {$event} $event
      * @param {Job} job
      */
-    ctrl.otherEventForm = (event, job) => {
+    ctrl.otherEventForm = ($event, job) => {
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
             templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
             parent: angular.element($document.body),
-            targetEvent: event,
+            targetEvent: $event,
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1314,6 +1314,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         }, 1000);
     };
 
+    /**
+     * @param {Job} job
+     */
     ctrl.setFirstJob = job => {
         let confirm = $mdDialog.confirm()
             .title('Set First Job?')
@@ -1333,30 +1336,43 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     //////////////////////////////
     //  SPLIT JOB //
     /////////////////////////////
+    /**
+     * @param {$event} $event
+     * @param {Job} job
+     */
     ctrl.splitJob = ($event, job) => {
         if (!job.allowSplit) {
             return showAlert($event, 'Unable to split job', `Can not split ${job.JobNo}.`);
         }
 
         return showConfirm($event, 'Split Job?', 'Are you sure you wish to split this job?')
-            .then(() => {
-                loadingService.showLoader();
-                return DispatchData.splitJob(job.id, FirstName);
-            })
-            .then(() => {
-                loadingService.closeLoader();
-                return ctrl.setSplitJobMeetingPoint($event, job);
+            .then(result => {
+                if (result) {
+                    loadingService.showLoader();
+                    return DispatchData.splitJob(job.id, FirstName)
+                        .then(() => {
+                            loadingService.closeLoader();
+                            return ctrl.setSplitJobMeetingPoint($event, job);
+                        });
+                }
+                // If the user clicked 'No', we don't do anything
+                return Promise.resolve();
             })
             .catch(error => {
                 loadingService.closeLoader();
                 if (error instanceof Error) {
                     toastrService.showErrorToast(error.message);
                 }
-                console.log("Splitting job canceled or failed:", error);
+                console.log("Splitting job failed:", error);
             });
     };
 
-    function showAlert(event, title, content) {
+    /**
+     * @param {$event} $event
+     * @param {string} title
+     * @param {string} content
+     */
+    function showAlert($event, title, content) {
         return $mdDialog.show(
             $mdDialog.alert()
                 .parent(angular.element($document.body))
@@ -1365,16 +1381,21 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 .textContent(content)
                 .ariaLabel('Alert')
                 .ok("OK")
-                .targetEvent(event)
+                .targetEvent($event)
         );
     }
 
-    function showConfirm(event, title, content) {
+    /**
+     * @param {$event} $event
+     * @param {string} title
+     * @param {string} content
+     */
+    function showConfirm($event, title, content) {
         const confirm = $mdDialog.confirm()
             .title(title)
             .textContent(content)
             .ariaLabel('Confirm')
-            .targetEvent(event)
+            .targetEvent($event)
             .ok('Yes')
             .cancel('No');
 
@@ -1443,7 +1464,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // POTENTIAL COURIERS
     ////////////////////////////
 
-    ctrl.getPotentialCouriers = jobId => {
+    /**
+     * @param {number} jobId
+     */
+    ctrl.getPotentialCouriers = (jobId) => {
 
         angular.element('#box-potentialCouriers .loading').css('display', 'block');
         DispatchData.getPotentialCouriers(jobId).then((data) => {
@@ -1717,7 +1741,10 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // CURRENT JOBS
     ////////////////////////////
 
-    ctrl.getCurrentJobs = courierId => {
+    /**
+     * @param {number} courierId
+     */
+    ctrl.getCurrentJobs = (courierId) => {
         angular.element('#box-currentWork').find(".loading").css('display', 'block');
         const foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
         const code = foundCourier !== undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
@@ -2797,11 +2824,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         ///////////////////////////
         // JOB DETAIL
         //////////////////////////
-        $scope.formatDate = () => {
-            //console.log(dateString);
-            //return new Date("1988/08/21" + dateString);
-        };
-
         return $scope.getJobList();
     };
 
@@ -2832,7 +2854,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /////////////////////////
 
     /**
-     * @param {Event} $event
+     * @param {$event} $event
      * @param {Job} currentJob
      */
     ctrl.setSplitJobMeetingPoint = ($event, currentJob) => {
@@ -3078,7 +3100,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
-     * @param {Event}  event
+     * @param {$event}  event
      * @param {Job} job
      */
     ctrl.openFileAttachmentDialog = (event, job) => {
