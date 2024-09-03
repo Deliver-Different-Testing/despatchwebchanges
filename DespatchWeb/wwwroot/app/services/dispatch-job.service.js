@@ -23,12 +23,20 @@ class DispatchJobService {
         });
     }
 
+    /**
+     * @param {number} courierNumber
+     * @param {number} jobId
+     */
     async dispatchJobByJobId(courierNumber, jobId) {
         const job = await this.dispatchData.getJobDetail(jobId);
         const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierNumber);
         await this.dispatchJob(selectedCourier.id, job);
     }
 
+    /**
+     * @param {number} courierNumber
+     * @param {Job[]} jobs
+     */
     async dispatchJobs(courierNumber, jobs) {
         const foundCourier = await this.findCourier(courierNumber);
         if (foundCourier) {
@@ -36,6 +44,10 @@ class DispatchJobService {
         }
     }
 
+    /**
+     * @param {number} courierNumber
+     * @param {Job} job
+     */
     async dispatchJob(courierNumber, job) {
         const foundCourier = await this.findCourier(courierNumber);
         if (foundCourier) {
@@ -43,6 +55,9 @@ class DispatchJobService {
         }
     }
 
+    /**
+     * @param {number} courierNumber
+     */
     async findCourier(courierNumber) {
         await this.fetchCouriersData();
 
@@ -66,6 +81,11 @@ class DispatchJobService {
         );
     }
 
+    /**
+     * @param {number} courierNumber
+     * @param {*} foundCourier
+     * @param {Job[]} jobs
+     */
     async dispatchJobsContinue(courierNumber, foundCourier, jobs) {
         const jobIds = [];
 
@@ -88,6 +108,10 @@ class DispatchJobService {
         }
     }
 
+    /**
+     * @param {Job} job
+     * @param {Courier} courier
+     */
     validateJob(job, courier) {
         if (job.courierData && job.courierData.courierID !== null) {
             this.showAlertMessage(`Restore ${job.jobNo} prior to dispatching to another courier`);
