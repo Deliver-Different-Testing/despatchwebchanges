@@ -1,3 +1,7 @@
+/**
+ * A service for displaying different types of toast popups to the user
+ * @class
+ */
 class ToastrService {
     /**
      * Class to handle toast notifications

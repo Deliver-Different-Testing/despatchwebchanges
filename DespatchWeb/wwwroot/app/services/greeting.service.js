@@ -1,3 +1,7 @@
+/**
+ * A service for writing a greeting message to the user
+ * @class
+ */
 class GreetingService {
     /**
      * Method to greet user based on current time

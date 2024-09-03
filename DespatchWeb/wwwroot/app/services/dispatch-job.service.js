@@ -1,3 +1,7 @@
+/**
+ * A service for dispatching jobs
+ * @class
+ */
 class DispatchJobService {
     static $inject = ['$mdDialog', '$document', 'DispatchData', 'moment'];
 
