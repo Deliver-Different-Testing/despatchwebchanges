@@ -41,7 +41,9 @@ public class JobController : Controller
         if (!isInternal && !string.IsNullOrEmpty(clientIds))
         {
             var clientContacts = await _clientRepo.ClientContacts(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
+            if (clientContacts != null && !clientContacts
+                    .Select(c => c.ID).Any(x => clientIds.Split(',')
+                        .Any(y => y == x.ToString())))
             {
                 var empty = new List<JobViewModel>();
                 return Json(empty);
