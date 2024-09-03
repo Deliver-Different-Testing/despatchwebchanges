@@ -688,7 +688,8 @@ public class JobController : Controller
         bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
         string ourRef, string refA, string refB, int quantity, DateTime booked, decimal gstRate, decimal amount)
     {
-        var currentRateAmount = await _jobRepo.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight,
+        var currentRateAmount = await _jobRepo.RateJobAsync(clientId, fromId, toId, speed, pedal, van, returnJob,
+            weight,
             size,
             includeFuelSurcharge, direct, acceptedJobTypeId,
             ourRef, refA, refB, quantity, booked);
@@ -722,7 +723,7 @@ public class JobController : Controller
         bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
         string ourRef, string refA, string refB, int quantity, DateTime booked)
     {
-        var rate = await _jobRepo.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
+        var rate = await _jobRepo.RateJobAsync(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
             includeFuelSurcharge, direct, acceptedJobTypeId,
             ourRef, refA, refB, quantity, booked);
         return Json($"{rate:C}");

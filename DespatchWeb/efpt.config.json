@@ -27,10 +27,10 @@
          "ObjectType": 0
       },
       {
-        "Name": "[dbo].[tblClientAvailableSpeed]",
-        "ObjectType": 0
+         "Name": "[dbo].[tblClientAvailableSpeed]",
+         "ObjectType": 0
       },
-     {
+      {
          "Name": "[dbo].[tblClientAvailableSpeedItems]",
          "ObjectType": 0
       },
@@ -159,6 +159,10 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[DES_qdfEvent_Insert]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_qryTruckCourierStatus]",
          "ObjectType": 1
       },
@@ -167,15 +171,31 @@
          "ObjectType": 1
       },
       {
-        "Name": "[dbo].[DESWEB_qryPotentialCouriers]",
-        "ObjectType": 1
+         "Name": "[dbo].[DESWEB_qryCourierActive]",
+         "ObjectType": 1
       },
-     {
+      {
+         "Name": "[dbo].[DESWeb_qryCourierCombo]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_qryPotentialCouriers]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DESWEB_stpCreateInterCourierJobs]",
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DESWEB_stpMapEnvelope]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DESWEB_stpQuickCreateJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[sp_RateJob2]",
          "ObjectType": 1
       },
       {

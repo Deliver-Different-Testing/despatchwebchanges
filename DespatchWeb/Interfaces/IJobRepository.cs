@@ -102,7 +102,7 @@ public interface IJobRepository
         int speed, int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
         int overWeightItems, int dGClass, DateTime truckStartTime, double truckHours);
 
-    Task<decimal> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
+    Task<decimal> RateJobAsync(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
         bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
         string ourRef, string refA, string refB, int quantity, DateTime booked);
 

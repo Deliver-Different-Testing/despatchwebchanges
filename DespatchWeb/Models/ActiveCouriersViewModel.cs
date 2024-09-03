@@ -5,19 +5,17 @@ namespace DespatchWeb.Models
 {
     public class ActiveCouriersViewModel
     {
-
         private string _label;
         private string _text;
         public int CourierID { get; set; }
 
-        [JsonPropertyName("id")]
-        public string Code{ get; set; }
+        [JsonPropertyName("id")] public string Code { get; set; }
 
         public string Name { get; set; }
 
         public byte DangerousGoods { get; set; }
 
-        public DateTime DGLicenseExpiry { get; set; }
+        public DateTime? DGLicenseExpiry { get; set; }
 
         public string Label
         {
@@ -29,7 +27,6 @@ namespace DespatchWeb.Models
         {
             get => $"{Code} {Name}";
             set => _text = value;
-
         }
     }
 }

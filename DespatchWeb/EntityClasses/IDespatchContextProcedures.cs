@@ -13,9 +13,14 @@ namespace DespatchWeb.EntityClasses
 {
     public partial interface IDespatchContextProcedures
     {
+        Task<int> DES_qdfEvent_InsertAsync(string JobNo, int? ClientID, string Contact, DateTime? Date, DateTime? Time, double? Type, double? LateTime, DateTime? ETATime, double? StaffIDIn, double? StaffIDOut, DateTime? ResponseTime, string Notes, bool? PageCourier, bool? Closed, int? Originator, string Description, int? CourierID, int? JobID, string Despatcher, int? JobType, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_qryTruckCourierStatusResult>> DES_qryTruckCourierStatusAsync(string CourierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<DESWEB_qryCourierActiveResult>> DESWEB_qryCourierActiveAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<DESWeb_qryCourierComboResult>> DESWeb_qryCourierComboAsync(string SearchTerm, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DESWEB_qryPotentialCouriersResult>> DESWEB_qryPotentialCouriersAsync(int? JobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpCreateInterCourierJobsAsync(int? fromCourierId, int? toCourierId, decimal? Amount, string Reference, int? StaffId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<DESWEB_stpMapEnvelopeResult>> DESWEB_stpMapEnvelopeAsync(decimal? MinimumLongitude, decimal? MinimumLatitude, decimal? MaximumLongitude, decimal? MaximumLatitude, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, decimal? FromLat, decimal? FromLong, string ToAddress, decimal? ToLat, decimal? ToLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, string PodName, bool? Truck, bool? VanOk, bool? Reprice, decimal? Amount, int? SpeedId, int? ToSuburbId, int? FromSuburbId, int? StaffId, string RefA, string RefB, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> sp_RateJob2Async(int? intClientID, int? intFromID, int? intToID, int? intSpeed, bool? bolPedal, bool? bolVan, bool? bolReturn, int? intWeight, int? Size, bool? IncludeFuelSurcharge, string OurRef, string ClientRefA, string ClientRefB, int? Quantity, DateTime? Booked, OutputParameter<decimal?> curAmount, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }
 }

@@ -1981,37 +1981,32 @@ public class JobRepository : IJobRepository
         return (string)outputDescriptionParam.Value;
     }
 
-    public async Task<decimal> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
+    public async Task<decimal> RateJobAsync(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
         bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
         string ourRef, string refA, string refB, int quantity, DateTime booked)
     {
-        DbParameter outputRateParam = null;
+        var curAmount = new OutputParameter<decimal?>();
 
-        await _context.LoadStoredProc("sp_RateJob2")
-            .WithSqlParam("@intClientID", clientId)
-            .WithSqlParam("@intFromID", fromId)
-            .WithSqlParam("@intToID", toId)
-            .WithSqlParam("@intSpeed", speed)
-            .WithSqlParam("@bolPedal", pedal)
-            .WithSqlParam("@bolVan", van)
-            .WithSqlParam("@bolReturn", returnJob)
-            .WithSqlParam("@intWeight", weight)
-            .WithSqlParam("@curAmount", (dbParam) =>
-            {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Currency;
-                outputRateParam = dbParam;
-            })
-            .WithSqlParam("@Size", size)
-            .WithSqlParam("@IncludeFuelSurcharge", includeFuelSurcharge)
-            .WithSqlParam("@OurRef", ourRef)
-            .WithSqlParam("@ClientRefA", refA)
-            .WithSqlParam("@ClientRefB", refB)
-            .WithSqlParam("@Quantity", quantity)
-            .WithSqlParam("@Booked", booked)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.sp_RateJob2Async(
+            intClientID: clientId,
+            intFromID: fromId,
+            intToID: toId,
+            intSpeed: speed,
+            bolPedal: pedal,
+            bolVan: van,
+            bolReturn: returnJob,
+            intWeight: weight,
+            Size: size,
+            IncludeFuelSurcharge: includeFuelSurcharge,
+            OurRef: ourRef,
+            ClientRefA: refA,
+            ClientRefB: refB,
+            Quantity: quantity,
+            Booked: booked,
+            curAmount: curAmount
+        );
 
-        return (decimal)outputRateParam.Value;
+        return curAmount.Value ?? 0;
     }
 
     public async Task<string> RateJobDescription(int clientId, int fromId, int toId, int speed, bool pedal, bool van,

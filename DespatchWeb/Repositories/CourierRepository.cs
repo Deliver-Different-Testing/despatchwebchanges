@@ -41,29 +41,28 @@ namespace DespatchWeb.Repositories
             var date = DateTime.Now;
             var time = DateTime.Now;
 
-
-            await _context.LoadStoredProc("DES_qdfEvent_Insert")
-                .WithSqlParam("@JobNo", jobNo)
-                .WithSqlParam("@ClientID", clientId)
-                .WithSqlParam("@Contact", contact)
-                .WithSqlParam("@Date", date.Date)
-                .WithSqlParam("@Time", time)
-                .WithSqlParam("@Type", eventType)
-                .WithSqlParam("@LateTime", lateTime)
-                .WithSqlParam("@ETATime", etaTime)
-                .WithSqlParam("@StaffIDIn", staffId)
-                .WithSqlParam("@StaffIDOut", staffOut)
-                .WithSqlParam("@ResponseTime", responseTime)
-                .WithSqlParam("@Notes", notes)
-                .WithSqlParam("@PageCourier", pageCourier)
-                .WithSqlParam("@Closed", close)
-                .WithSqlParam("@Originator", staffId)
-                .WithSqlParam("@Description", description)
-                .WithSqlParam("@CourierID", courierId)
-                .WithSqlParam("@JobID", jobId)
-                .WithSqlParam("@Despatcher", despatcherName)
-                .WithSqlParam("@JobType", jobType)
-                .ExecuteStoredNonQueryAsync();
+            await _context.Procedures.DES_qdfEvent_InsertAsync(
+                JobNo: jobNo,
+                ClientID: clientId,
+                Contact: contact,
+                Date: date.Date,
+                Time: time,
+                Type: eventType,
+                LateTime: lateTime,
+                ETATime: etaTime,
+                StaffIDIn: staffId,
+                StaffIDOut: staffOut,
+                ResponseTime: responseTime,
+                Notes: notes,
+                PageCourier: pageCourier,
+                Closed: close,
+                Originator: staffId,
+                Description: description,
+                CourierID: courierId,
+                JobID: jobId,
+                Despatcher: despatcherName,
+                JobType: jobType
+            );
         }
 
         public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng,
@@ -91,13 +90,17 @@ namespace DespatchWeb.Repositories
         /// <returns></returns>
         public async Task<List<ActiveCouriersViewModel>> ActiveCouriers()
         {
-            var activeCouriers = new List<ActiveCouriersViewModel>();
-            await _context.LoadStoredProc("DES_qryCourierCombo_Active")
-                .ExecuteStoredProcAsync(handle =>
-                {
-                    activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
-                });
-            return activeCouriers;
+            var results = await _context.Procedures.DESWEB_qryCourierActiveAsync();
+
+            return results.Select(r => new ActiveCouriersViewModel
+            {
+                CourierID = r.CourierID,
+                Code = r.Code,
+                Name = r.Name,
+                DangerousGoods = r.DangerousGoods,
+                DGLicenseExpiry = r.DGLicenseExpiry
+                // Label and Text properties are auto-implemented
+            }).ToList();
         }
 
         /// <summary>
@@ -106,14 +109,13 @@ namespace DespatchWeb.Repositories
         /// <returns></returns>
         public async Task<List<AllCourierActiveViewModel>> AllActiveCouriers(string searchTerm)
         {
-            var activeCouriers = new List<AllCourierActiveViewModel>();
-            await _context.LoadStoredProc("DESWEB_qryCourierCombo")
-                .WithSqlParam("@SearchTerm", searchTerm)
-                .ExecuteStoredProcAsync(handle =>
-                {
-                    activeCouriers = handle.ReadToList<AllCourierActiveViewModel>().ToList();
-                });
-            return activeCouriers;
+            var results = await _context.Procedures.DESWeb_qryCourierComboAsync(SearchTerm: searchTerm);
+
+            return results.Select(r => new AllCourierActiveViewModel
+            {
+                ID = r.ID,
+                Text = r.Text
+            }).ToList();
         }
 
         public async Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end)
