@@ -897,22 +897,10 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> InterCourierCharge([FromBody] InterCourierChargeViewModel viewModel)
     {
-        try
-        {
-            if (viewModel == null) throw new ArgumentNullException(nameof(viewModel), "ViewModel is null");
+        if (viewModel == null) throw new ArgumentNullException(nameof(viewModel), "ViewModel is null");
 
-            await _jobRepo.AddInterCourierCharge(viewModel);
-            return Json("OK");
-        }
-        catch (Exception e)
-        {
-            var errorResponse = new
-            {
-                message = e is ArgumentNullException ? e.Message : "An error has occurred."
-            };
-
-            return StatusCode(StatusCodes.Status500InternalServerError, errorResponse);
-        }
+        await _jobRepo.AddInterCourierCharge(viewModel);
+        return Json("OK");
     }
 
 

@@ -2386,28 +2386,20 @@ public class JobRepository : IJobRepository
 
     public async Task<bool> HasClientItemsAvailable(int clientId, int speedId)
     {
-        try
-        {
-            var count = await _context.TblClientAvailableSpeeds
-                .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
-                .Join(_context.TblClientAvailableSpeedItems,
-                    cas => cas.Id,
-                    casi => casi.ClientAvailableSpeedId,
-                    (cas, casi) => new { cas, casi })
-                .Where(x => x.casi.Active)
-                .Join(_context.TucClientItems,
-                    x => x.casi.ClientItemId,
-                    ci => ci.ItemId,
-                    (x, ci) => ci)
-                .CountAsync();
+        var count = await _context.TblClientAvailableSpeeds
+            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .Join(_context.TblClientAvailableSpeedItems,
+                cas => cas.Id,
+                casi => casi.ClientAvailableSpeedId,
+                (cas, casi) => new { cas, casi })
+            .Where(x => x.casi.Active)
+            .Join(_context.TucClientItems,
+                x => x.casi.ClientItemId,
+                ci => ci.ItemId,
+                (x, ci) => ci)
+            .CountAsync();
 
-            return count > 0;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-            throw;
-        }
+        return count > 0;
     }
 
     public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId)
