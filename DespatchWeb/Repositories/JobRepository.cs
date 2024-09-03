@@ -1423,7 +1423,7 @@ public class JobRepository : IJobRepository
     public async Task<List<SupportViewModel>> SupportEvents(string channel)
     {
         var whereToUse = "";
-        var orderToUse = "CASE WHEN ucevType = 1 THEN 1 WHEN ucevType = 2 THEN 2 ELSE 0 END, ucevTime";
+        const string orderToUse = "CASE WHEN ucevType = 1 THEN 1 WHEN ucevType = 2 THEN 2 ELSE 0 END, ucevTime";
 
         var channelItems = channel.Split(',');
 
@@ -1438,7 +1438,7 @@ public class JobRepository : IJobRepository
                 switch (ch)
                 {
                     case "Main":
-                        var main =
+                        const string main =
                             "(RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 1 OR RegionToID = 4 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) or ((RegionFromID = 2 OR RegionFromID = 3) AND (RegionToID = 2 OR RegionToID = 3) And ucjbVan=1) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND (RegionFromID = 4 OR RegionFromID = 10 OR (RegionFromID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) AND   (RegionToID < 5 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND  NOT (RegionFromID = 10 AND (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) ";
                         if (string.IsNullOrEmpty(whereToUse))
                         {
@@ -1451,7 +1451,7 @@ public class JobRepository : IJobRepository
 
                         break;
                     case "City":
-                        var city =
+                        const string city =
                             "((RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 2 OR RegionToID = 3 Or RegionToID = 10)) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND RegionFromID = 3  AND RegionToID = 3  AND ucjbSize in(0,1) AND (Truck = 0 OR Truck is NULL))";
                         if (string.IsNullOrEmpty(whereToUse))
                         {
@@ -1464,7 +1464,7 @@ public class JobRepository : IJobRepository
 
                         break;
                     case "Trucks":
-                        var trucks = "(ucjbSpeed IN (45,109) OR Truck = 1) AND IsParentJob = 0";
+                        const string trucks = "(ucjbSpeed IN (45,109) OR Truck = 1) AND IsParentJob = 0";
                         if (string.IsNullOrEmpty(whereToUse))
                         {
                             whereToUse = trucks;

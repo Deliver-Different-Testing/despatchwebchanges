@@ -1,141 +1,124 @@
 class DispatchJobService {
-    static $inject = ["$mdDialog", "$document", "DispatchData", "moment"];
+    static $inject = ['$mdDialog', '$document', 'DispatchData', 'moment'];
 
     constructor($mdDialog, $document, DispatchData, moment) {
-        this._$mdDialog = $mdDialog;
-        this._$document = $document;
-        this._dispatchData = DispatchData;
-        this._moment = moment;
+        this.$mdDialog = $mdDialog;
+        this.$document = $document;
+        this.dispatchData = DispatchData;
+        this.moment = moment;
 
-        /**
-         * @type {Courier[]}
-         */
-        this._pickCouriers = [];
+        this.pickCouriers = [];
+        this.pickAllCouriers = [];
 
-        /**
-         * @type {Courier[]}
-         */
-        this._pickAllCouriers = [];
-
-        this._fetchCouriersData();
+        this.fetchCouriersData();
     }
 
-    _fetchCouriersData() {
-        this._fetchActiveCouriersData();
-        this._fetchAllCouriersData();
+    fetchCouriersData() {
+        Promise.all([
+            this.dispatchData.getActiveCouriers(),
+            this.dispatchData.getAllCouriers()
+        ]).then(([activeCouriers, allCouriers]) => {
+            this.pickCouriers = activeCouriers;
+            this.pickAllCouriers = allCouriers;
+        });
     }
 
-    _fetchActiveCouriersData() {
-        this._dispatchData.getActiveCouriers().then(data => this._pickCouriers = data);
-    }
-
-    _fetchAllCouriersData() {
-        this._dispatchData.getAllCouriers().then(data => this._pickAllCouriers = data);
-    }
-
-    /**
-     * @param {number} courierNumber
-     * @param {number} jobId
-     */
     async dispatchJobByJobId(courierNumber, jobId) {
-        const job = this._dispatchData.getJobDetail(jobId);
-        const selectedCourier = this._pickAllCouriers.find(c => c.courierID === courierNumber);
-
+        const job = await this.dispatchData.getJobDetail(jobId);
+        const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierNumber);
         await this.dispatchJob(selectedCourier.id, job);
     }
 
-    /**
-     * @param {number} courierNumber
-     * @param {Job[]} jobs
-     */
     async dispatchJobs(courierNumber, jobs) {
-        let foundCourier = await this._findCourier(courierNumber);
-        await this._dispatchJobsContinue(courierNumber, foundCourier, jobs);
+        const foundCourier = await this.findCourier(courierNumber);
+        if (foundCourier) {
+            await this.dispatchJobsContinue(courierNumber, foundCourier, jobs);
+        }
     }
 
-    /**
-     * @param {number} courierNumber
-     * @param {Job} job
-     */
     async dispatchJob(courierNumber, job) {
-        const foundCourier = await this._findCourier(courierNumber);
-        const jobsArray = [job];
-        await this._dispatchJobsContinue(courierNumber, foundCourier, jobsArray);
+        const foundCourier = await this.findCourier(courierNumber);
+        if (foundCourier) {
+            await this.dispatchJobsContinue(courierNumber, foundCourier, [job]);
+        }
     }
 
-    /**
-     * @param {number} courierNumber
-     */
-    async _findCourier(courierNumber) {
-        // Refresh list
-        this._fetchActiveCouriersData();
+    async findCourier(courierNumber) {
+        await this.fetchCouriersData();
 
-        let foundCourier = this._pickCouriers.find(c => c.id === courierNumber);
-        if (foundCourier === undefined) {
-            const confirm = this._generateOfflineCourierDialog();
-
-            try {
-                await this._$mdDialog.show(confirm);
-                foundCourier = this._pickAllCouriers.find(c => c.id === courierNumber);
-            } catch (error) {
-                console.log("User chose not to dispatch job as courier is offline");
+        let foundCourier = this.pickCouriers.find(c => c.id === courierNumber);
+        if (!foundCourier) {
+            const confirmed = await this.showOfflineCourierDialog();
+            if (confirmed) {
+                foundCourier = this.pickAllCouriers.find(c => c.id === courierNumber);
             }
         }
         return foundCourier;
     }
 
-    _generateOfflineCourierDialog() {
-        return this._$mdDialog.confirm()
-            .title('Courier Offline')
-            .textContent('Dispatch anyway?')
-            .ok('Yes')
-            .cancel('No');
+    showOfflineCourierDialog() {
+        return this.$mdDialog.show(
+            this.$mdDialog.confirm()
+                .title('Courier Offline')
+                .textContent('Dispatch anyway?')
+                .ok('Yes')
+                .cancel('No')
+        );
     }
 
-    /**
-     * @param {number} courierNumber
-     * @param {Courier} foundCourier
-     * @param {Job[]} jobs
-     */
-    async _dispatchJobsContinue(courierNumber, foundCourier, jobs) {
-        let jobIds = [];
+    async dispatchJobsContinue(courierNumber, foundCourier, jobs) {
+        const jobIds = [];
 
-        for (let i = 0; i < jobs.length; i++) {
-            const job = jobs[i];
-            const jobNumber = job.jobNo;
+        for (const job of jobs) {
+            if (!this.validateJob(job, foundCourier)) continue;
 
-            if (job.courierData && job.courierData.courierID !== null) {
-                this._showAlertMessage('Restore ' + jobNumber + ' prior to dispatching to another courier');
-                continue;
-            }
-            if (job.dgClass !== null && job.dgClass > 0 && !foundCourier.dangerousGoods) {
-                this._showAlertMessage("DG job " + jobNumber + " can not be dispatched to courier " + courierNumber + " - doesn't have DGLicense.");
-                continue;
-            }
-            if (job.dgClass !== null && job.dgClass > 0 && (job.DGLicenseExpiry === null || this._moment(foundCourier.dgLicenseExpiry) < this._moment().add(1, 'days'))) {
-                this._showAlertMessage("Courier " + courierNumber + " doesn't have a DGLicense or license has expired.");
-                continue;
+            if (job.dgClass !== null && job.dgClass > 0) {
+                await this.dispatchData.addFollowupEvent(
+                    job.jobNo, job.clientID, job.contactName,
+                    job.ContactID, foundCourier.courierID, job.id,
+                    job.jobType, job.FirstName
+                );
             }
 
             jobIds.push(job.id);
-            await this._dispatchData.allocateJobs(foundCourier.courierID, ContactID, jobIds);
+        }
+
+        if (jobIds.length > 0) {
+            await this.dispatchData.allocateJobs(foundCourier.courierID, jobs[0].ContactID, jobIds);
         }
     }
 
+    validateJob(job, courier) {
+        if (job.courierData && job.courierData.courierID !== null) {
+            this.showAlertMessage(`Restore ${job.jobNo} prior to dispatching to another courier`);
+            return false;
+        }
 
-    /**
-     * @param {string} textContent
-     */
-    _showAlertMessage(textContent) {
-        const alert = this._$mdDialog.alert()
-            .parent(angular.element(this._$document.body))
+        if (job.dgClass !== null && job.dgClass > 0) {
+            if (!courier.dangerousGoods) {
+                this.showAlertMessage(`DG job ${job.jobNo} can not be dispatched to courier ${courier.id} - doesn't have DGLicense.`);
+                return false;
+            }
+
+            if (job.DGLicenseExpiry === null || this.moment(courier.dgLicenseExpiry) < this.moment().add(1, 'days')) {
+                this.showAlertMessage(`Courier ${courier.id} doesn't have a DGLicense or license has expired.`);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    showAlertMessage(textContent) {
+        const alert = this.$mdDialog.alert()
+            .parent(angular.element(this.$document.body))
             .clickOutsideToClose(true)
             .title('Message')
             .textContent(textContent)
             .ariaLabel('Alert')
             .ok('OK');
 
-        this._$mdDialog.show(alert);
+        this.$mdDialog.show(alert);
     }
 }
 

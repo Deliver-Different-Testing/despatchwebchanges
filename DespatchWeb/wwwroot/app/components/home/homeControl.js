@@ -1,7 +1,7 @@
 function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                         loadingService, $mdDialog, $parse, $q, $scope, $state,
                         $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment,
-                        Upload, bytesFilter) {
+                        Upload, bytesFilter, versionUrl) {
     const ctrl = this;
 
     $scope.isInternal = (ClientInternal === "True");
@@ -158,79 +158,79 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     $scope.boxes = {
         "jobsList": {
             "title": "Jobs List",
-            "tpl": "app/components/home/tpls/jobList.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/jobList.tpl"),
             "showSearch": 1,
             "showRefresh": 1
         },
         "jobDetail": {
             "title": "Detail",
-            "tpl": "app/components/common/tpls/jobDetail.tpl?v3.13",
+            "tpl": versionUrl("app/components/common/tpls/jobDetail.tpl"),
             "showSearch": 0,
             "showRefresh": 0,
             "showDetailButtons": 1
         },
         "potentialCouriers": {
             "title": "Potential Couriers",
-            "tpl": "app/components/home/tpls/potentialCouriers.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/potentialCouriers.tpl"),
             "showSearch": 1
         },
         "currentWork": {
             "title": "Current Work",
-            "tpl": "app/components/home/tpls/currentWork.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/currentWork.tpl"),
             "showSearch": 1,
             "showRefresh": 0
         },
         "couriersMoveThrough": {
             "title": "Couriers Movement Through List",
-            "tpl": "app/components/home/tpls/couriersMovementThroughList.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/couriersMovementThroughList.tpl"),
             "showSearch": 1,
             "showRefresh": 0
         },
         "courierMovePickedUp": {
             "title": "Couriers Movement Picked Up Run",
-            "tpl": "app/components/home/tpls/couriersMovementPickedUp.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/couriersMovementPickedUp.tpl"),
             "showSearch": 1,
             "showRefresh": 0
         },
         "courierMoveClear": {
             "title": "Couriers Movement Clear List",
-            "tpl": "app/components/home/tpls/couriersMovementClearList.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/couriersMovementClearList.tpl"),
             "showSearch": 1,
             "showRefresh": 0
         },
         "areaList": {
             "title": "Area List",
-            "tpl": "app/components/home/tpls/areaList.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/areaList.tpl"),
             "showSearch": 0,
             "showRefresh": 0
         },
         "jobUpdates": {
             "title": "Job Updates",
-            "tpl": "app/components/home/tpls/jobUpdates.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/jobUpdates.tpl"),
             "showSearch": 0,
             "showRefresh": 0
         },
         "supports": {
             "title": "Supports",
-            "tpl": "app/components/home/tpls/supports.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/supports.tpl"),
             "showSearch": 0,
             "showRefresh": 0
         },
         "lateCalls": {
             "title": "Late Calls",
-            "tpl": "app/components/home/tpls/lateCalls.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/lateCalls.tpl"),
             "showSearch": 0,
             "showRefresh": 0
         },
         "map": {
             "title": "Google Map",
-            "tpl": "app/components/home/tpls/map.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/map.tpl"),
             "showSearch": 0,
             "showRefresh": 1
         },
         "clearLists": {
             "title": "Clear Lists",
-            "tpl": "app/components/home/tpls/clearLists.tpl?v3.13",
+            "tpl": versionUrl("app/components/home/tpls/clearLists.tpl"),
             "showSearch": 0,
             "showRefresh": 0
         }
@@ -731,7 +731,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: 'app/components/dialogs/send-message-dialog/send-message-dialog.html',
+            templateUrl: versionUrl('app/components/dialogs/send-message-dialog/send-message-dialog.html'),
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -752,7 +752,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
+            templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
             parent: angular.element($document.body),
             targetEvent: event,
             clickOutsideToClose: true,
@@ -1077,13 +1077,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
-     * @param  {$event}  event
+     * @param  {$event}  $event
      */
-    ctrl.restoreAll = event => {
+    ctrl.restoreAll = $event => {
         let confirm = $mdDialog.confirm()
             .title('Restore All Jobs')
             .textContent('Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier)
-            .targetEvent(event)
+            .targetEvent($event)
             .ok('Yes')
             .cancel('No');
 
@@ -1333,43 +1333,53 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     //////////////////////////////
     //  SPLIT JOB //
     /////////////////////////////
-    ctrl.splitJob = (event, job) => {
+    ctrl.splitJob = ($event, job) => {
         if (!job.allowSplit) {
-            $mdDialog.show(
-                $mdDialog.alert()
-                    .parent(angular.element($document.body))
-                    .clickOutsideToClose(true)
-                    .title('Unable to split job')
-                    .textContent("Can not split " + job.JobNo + ".")
-                    .ariaLabel('Alert')
-                    .ok("OK")
-                    .targetEvent(event)
-            );
-
-            return;
+            return showAlert($event, 'Unable to split job', `Can not split ${job.JobNo}.`);
         }
 
+        return showConfirm($event, 'Split Job?', 'Are you sure you wish to split this job?')
+            .then(() => {
+                loadingService.showLoader();
+                return DispatchData.splitJob(job.id, FirstName);
+            })
+            .then(() => {
+                loadingService.closeLoader();
+                return ctrl.setSplitJobMeetingPoint($event, job);
+            })
+            .catch(error => {
+                loadingService.closeLoader();
+                if (error instanceof Error) {
+                    toastrService.showErrorToast(error.message);
+                }
+                console.log("Splitting job canceled or failed:", error);
+            });
+    };
+
+    function showAlert(event, title, content) {
+        return $mdDialog.show(
+            $mdDialog.alert()
+                .parent(angular.element($document.body))
+                .clickOutsideToClose(true)
+                .title(title)
+                .textContent(content)
+                .ariaLabel('Alert')
+                .ok("OK")
+                .targetEvent(event)
+        );
+    }
+
+    function showConfirm(event, title, content) {
         const confirm = $mdDialog.confirm()
-            .title('Split Job?')
-            .textContent('Are you sure you wish to split this job?')
-            .ariaLabel('Split Job')
+            .title(title)
+            .textContent(content)
+            .ariaLabel('Confirm')
             .targetEvent(event)
             .ok('Yes')
             .cancel('No');
 
-        $mdDialog.show(confirm).then(() => {
-            loadingService.showLoader();
-            DispatchData.splitJob(job.id, FirstName).then(() => {
-                loadingService.closeLoader();
-                $scope.setSplitJobMeetingPoint(event, job);
-            }).catch(error => {
-                toastrService.showErrorToast(error.message);
-                loadingService.closeLoader();
-            });
-        }, () => {
-            console.log("Splitting job canceled!")
-        });
-    };
+        return $mdDialog.show(confirm);
+    }
 
     //////////////////////////////
     //  PALLET CONTROLS //
@@ -2829,7 +2839,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {Event} $event
      * @param {Job} currentJob
      */
-    $scope.setSplitJobMeetingPoint = ($event, currentJob) => {
+    ctrl.setSplitJobMeetingPoint = ($event, currentJob) => {
         const getDeliveryLocation = (job) => ({
             lat: job.deliveryLatitude || "",
             long: job.deliveryLongitude || ""
@@ -2849,7 +2859,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         return $mdDialog.show({
             controller: EditAddressDialogController,
             controllerAs: 'ctrl',
-            templateUrl: "app/components/dialogs/edit-address-dialog/edit-address-dialog.html",
+            templateUrl: versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
             parent: angular.element($document.body),
             targetEvent: $event,
             clickOutsideToClose: false,
@@ -2936,7 +2946,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     };
 
     /**
-     * @param {Event}  $event
+     * @param {$event}  $event
      */
     ctrl.truckLoadingStatus = ($event) => {
         $mdDialog.show({
@@ -2944,7 +2954,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: $event,
-            templateUrl: "app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html",
+            templateUrl: versionUrl("app/components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -2962,7 +2972,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: $event,
-                templateUrl: "app/components/dialogs/create-job-dialog/create-job-dialog.html",
+                templateUrl: versionUrl("app/components/dialogs/create-job-dialog/create-job-dialog.html"),
                 clickOutsideToClose: false,
                 fullscreen: true,
                 locals: {
@@ -3011,7 +3021,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: $event,
-            templateUrl: "app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html",
+            templateUrl: versionUrl("app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -3030,7 +3040,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
-            templateUrl: "app/components/dialogs/add-event-dialog/add-event-dialog.html",
+            templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
             parent: angular.element($document.body),
             targetEvent: $event,
             clickOutsideToClose: true,
@@ -3081,7 +3091,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
             targetEvent: event,
-            templateUrl: "app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html",
+            templateUrl: versionUrl("app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -3116,7 +3126,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             return $mdDialog.show({
                 controller: AdditionalServicesDialogController,
                 controllerAs: "ctrl",
-                templateUrl: "app/components/dialogs/additional-services-dialog/additional-services-dialog.html",
+                templateUrl: versionUrl("app/components/dialogs/additional-services-dialog/additional-services-dialog.html"),
                 parent: angular.element($document.body),
                 targetEvent: event,
                 clickOutsideToClose: false,
@@ -3359,7 +3369,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 angular.module("uDispatch").controller("HomeControl", ['$document', "$filter",
     'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "$mdDialog",
     "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService',
-    "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", HomeController]);
+    "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload",
+    "bytesFilter", "versionUrl", HomeController]);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
