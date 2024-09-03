@@ -978,7 +978,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             if (job) {
                 const jobNo = job.jobNo;
                 DispatchData.addRestoreEvent(jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
-                if (callData.courierIDfromColumnClick === null) {
+                if (callData.courierID === null) {
                     callData.courierID = job.courierData.courierID;
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === job.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierID);
                 }
