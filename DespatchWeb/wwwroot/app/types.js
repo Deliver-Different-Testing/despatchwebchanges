@@ -34,6 +34,7 @@
  * @property {number} charge - The charge for the job.
  * @property {string} refA - Reference A for the job
  * @property {string} refB - Reference B for the job
+ * @property {string} ourRef - Reference B for the job
  * @property {string} childNotes - The jobs for the child job
  * @property {number} pickupFrom - The suburbId the job was picked up from
  * @property {boolean} saturdayDelivery - If job has Saturday Delivery
@@ -68,7 +69,7 @@
  * @property {boolean} dgDocumentation
  * @property {string} contactName
  * @property {number} dgClass
- * @property {number} fromSuburbID
+ * @property {number} fromSuburbId
  * @property {number} toSuburbID
  * @property {number} speedID
  * @property {number} weight
@@ -109,6 +110,8 @@
  * @property {boolean} oneOff
  * @property {string} acceptedName
  * @property {Date} time
+ * @property {number} truckHours
+ * @property {Date} booked - The date the job was booked
  * @property {*} courierData
  */
 

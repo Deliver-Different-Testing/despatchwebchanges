@@ -978,7 +978,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             if (job) {
                 const jobNo = job.jobNo;
                 DispatchData.addRestoreEvent(jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
-                if (callData.courierID === null) {
+                if (callData.courierIDfromColumnClick === null) {
                     callData.courierID = job.courierData.courierID;
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === job.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierID);
                 }
@@ -1045,35 +1045,45 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             $scope.courier = {gpsCourier: foundCourier.id};
             $scope.searchCourier();
         });
-
-
     };
 
-    $scope.resendJobs = () => {
-        let callData = {
-            "call": "redespatchJobs",
-            "jobs": [],
-            "splitJobs": [],
-            "jobNos": [],
-            "courierID": null
-        };
+    $scope.resendJobs = function () {
+        const activeJobElements = angular.element("#jobList .active");
+        const jobIds = activeJobElements.map(function (index, element) {
+            return angular.element(element).attr("data-jobid");
+        }).get();
 
-        angular.element("#jobList .active").each(function () {
-            const j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
-            foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
-            callData.jobs.push(angular.element(this).attr("data-jobid"));
-        });
-
-
-        if (callData.jobs.length > 0) {
-            DispatchData.resendJobs(callData.jobs);
+        if (jobIds.length === 0) {
+            return;
         }
 
-        ctrl.getData().then(() => {
-            angular.element('#box-map .loading').css('display', '');
-            $scope.courier = {gpsCourier: foundCourier.id};
-            $scope.searchCourier();
-        });
+        DispatchData.resendJobs(jobIds)
+            .then(function () {
+                return ctrl.getData();
+            })
+            .then(function () {
+                const lastJobElement = activeJobElements.last();
+                const lastJobId = lastJobElement.attr("data-jobid");
+                const lastJob = $scope.jobList.find(function (job) {
+                    return job.id === lastJobId;
+                });
+
+                const foundCourier = $scope.pickCouriers.find(function (c) {
+                    return c.courierID === lastJob.courierData.courierID;
+                }) || $scope.pickAllCouriers.find(function (c) {
+                    return c.courierID === lastJob.courierData.courierID;
+                });
+
+                if (foundCourier) {
+                    $scope.courier = {gpsCourier: foundCourier.id};
+                    $scope.searchCourier();
+                }
+
+                angular.element('#box-map .loading').css('display', '');
+            })
+            .catch(function (error) {
+                console.error('Error updating data:', error);
+            });
     };
 
     /**
@@ -1957,11 +1967,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 break;
             case 3:
                 // this is right click
-                loadingService.showLoader();
                 $timeout(() => {
                     jdSvc.updateGPS(job, 'fromAddress', true);
                 }, 100);
-                loadingService.closeLoader();
                 break;
             default:
                 console.log("you have a strange mouse!");
@@ -2949,7 +2957,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {$event}  $event
      */
     ctrl.truckLoadingStatus = ($event) => {
-        $mdDialog.show({
+        return $mdDialog.show({
             controller: TruckCourierStatusDialogController,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
@@ -3016,7 +3024,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {$event}  $event
      */
     ctrl.interCourierCharge = $event => {
-        $mdDialog.show({
+        return $mdDialog.show({
             controller: InterCourierChargeDialog,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),
@@ -3037,7 +3045,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {Job}  job
      */
     ctrl.createEvent = ($event, job) => {
-        $mdDialog.show({
+        return $mdDialog.show({
             controller: AddEventDialogController,
             controllerAs: "ctrl",
             templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
@@ -3086,7 +3094,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      * @param {Job} job
      */
     ctrl.openFileAttachmentDialog = (event, job) => {
-        $mdDialog.show({
+        return $mdDialog.show({
             controller: JobFileUploadController,
             controllerAs: 'ctrl',
             parent: angular.element($document.body),

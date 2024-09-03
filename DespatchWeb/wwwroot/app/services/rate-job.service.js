@@ -15,32 +15,32 @@ class RateJobService {
      * @param {Job} job - A job to rate
      */
     async rateJob(job) {
-        const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 ||
-            job.fromSuburbID === 112 && job.toSuburbID === 112 ||
-            job.fromSuburbID === 480 && job.toSuburbID === 480;
+        const pedal = job.fromSuburbId === 1 && job.toSuburbID === 1 ||
+            job.fromSuburbId === 112 && job.toSuburbID === 112 ||
+            job.fromSuburbId === 480 && job.toSuburbID === 480;
 
         if (job.size.id === 4 &&
-            (job.speedID === 41 ||
-                job.speedID === 42 ||
-                job.speedID === 43 ||
-                job.speedID === 44 ||
-                job.speedID === 46 ||
-                job.speedID === 51 ||
-                job.speedID === 52 ||
-                job.speedID === 124 ||
-                job.speedID === 125 ||
-                job.speedID === 150 ||
-                job.speedID === 151 ||
-                job.speedID === 152
+            (job.speedId === 41 ||
+                job.speedId === 42 ||
+                job.speedId === 43 ||
+                job.speedId === 44 ||
+                job.speedId === 46 ||
+                job.speedId === 51 ||
+                job.speedId === 52 ||
+                job.speedId === 124 ||
+                job.speedId === 125 ||
+                job.speedId === 150 ||
+                job.speedId === 151 ||
+                job.speedId === 152
             )) {
             //Truck Job
             const itemSummary = await this._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit);
-            return this._dispatchData.rateTruckJob(job.clientID,
-                job.fromSuburbID,
+            return this._dispatchData.rateTruckJob(job.clientId,
+                job.fromSuburbId,
                 job.toSuburbID,
                 itemSummary.weight,
                 job.size.id,
-                job.speedID,
+                job.speedId,
                 itemSummary.quantity,
                 job.booked,
                 itemSummary.pickUp,
@@ -52,10 +52,10 @@ class RateJobService {
                 job.truckStartTime || this._moment().format("YYYY-MM-DDThh:mm:ss"),
                 job.truckHours || 2);
         } else {
-            return this._dispatchData.rateJob(job.clientID,
-                job.fromSuburbID,
+            return this._dispatchData.rateJob(job.clientId,
+                job.fromSuburbId,
                 job.toSuburbID,
-                job.speedID,
+                job.speedId,
                 pedal,
                 job.van,
                 job.return,
