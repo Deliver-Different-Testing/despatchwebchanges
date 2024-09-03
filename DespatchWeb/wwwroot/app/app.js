@@ -139,7 +139,7 @@ angular
         $mdDateLocaleProvider.msgCalendar = 'Calendar';
         $mdDateLocaleProvider.msgOpenCalendar = 'Open calendar';
     })
-    .constant('APP_VERSION', '3.151')
+    .constant('APP_VERSION', '3.152')
     .factory('versionUrl', ['APP_VERSION', APP_VERSION => url => url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + APP_VERSION])
     .config(['$urlRouterProvider', '$stateProvider', 'versionUrlProvider',
         ($urlRouterProvider, $stateProvider, versionUrlProvider) => {
