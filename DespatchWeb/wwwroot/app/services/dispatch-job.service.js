@@ -94,9 +94,9 @@ class DispatchJobService {
 
             if (job.dgClass !== null && job.dgClass > 0) {
                 await this.dispatchData.addFollowupEvent(
-                    job.jobNo, job.clientID, job.contactName,
-                    job.ContactID, foundCourier.courierID, job.id,
-                    job.jobType, job.FirstName
+                    job.jobNo, job.clientId, job.contactName,
+                    ContactID, foundCourier.courierID, job.id,
+                    job.jobType, FirstName
                 );
             }
 
@@ -137,9 +137,9 @@ class DispatchJobService {
         const alert = this.$mdDialog.alert()
             .parent(angular.element(this.$document.body))
             .clickOutsideToClose(true)
-            .title('Message')
+            .title('Unable to Despatch')
             .textContent(textContent)
-            .ariaLabel('Alert')
+            .ariaLabel('unable to despatch')
             .ok('OK');
 
         this.$mdDialog.show(alert);

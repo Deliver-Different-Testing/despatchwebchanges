@@ -35,7 +35,7 @@ namespace DespatchWeb.Repositories
         {
             int? staffOut = null;
             DateTime? responseTime = null;
-            var pageCourier = false;
+            const bool pageCourier = false;
 
             string description = null;
             var date = DateTime.Now;
