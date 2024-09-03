@@ -1989,11 +1989,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 break;
             case 3:
                 // this is right click
-                loadingService.showLoader();
                 $timeout(() => {
                     jdSvc.updateGPS(job, 'toAddress', true);
                 }, 100);
-                loadingService.closeLoader();
                 break;
             default:
                 console.log("you have a strange mouse!");
@@ -3117,7 +3115,6 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
      */
     ctrl.showAdditionalServicesMenu = (event, job) => {
         DispatchData.hasClientItemsAvailable(job.clientId, job.speedId).then(isClientItemsAvailable => {
-            loadingService.closeLoader();
 
             if (!isClientItemsAvailable) {
                 return $mdDialog.show(
