@@ -1456,7 +1456,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} event
+     * @param {$event} $event
      * @param {Job} job
      * @param {[]} data
      * @param {string} fieldName
@@ -1466,7 +1466,7 @@ class JobDetailService {
      * @param {boolean} showCheckbox
      * @param {string} checkboxLabel
      */
-    showSelectDialog(event, job, data, fieldName, title, initialValue = null, id = "editField", showCheckbox = false, checkboxLabel = "") {
+    showSelectDialog($event, job, data, fieldName, title, initialValue = null, id = "editField", showCheckbox = false, checkboxLabel = "") {
         const options = {
             minimumInputLength: 1, items: data, placeholder: title
         };
@@ -1475,7 +1475,7 @@ class JobDetailService {
             controller: SelectDialogController,
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
-            targetEvent: event,
+            targetEvent: $event,
             templateUrl: this.versionUrl('app/components/dialogs/select-dialog/select-dialog.html'),
             clickOutsideToClose: true,
             fullscreen: true,

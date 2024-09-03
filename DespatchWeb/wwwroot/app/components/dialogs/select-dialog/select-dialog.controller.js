@@ -66,7 +66,26 @@ class SelectDialogController {
 
             if (this._fieldName === "DGClass") {
                 await this._updateDgClass(selectedOption);
+                this._job.dgClass = selectedOption.id;
             } else {
+                if (this._fieldName === "Size") {
+                    this._job.size.label = selectedOption.text;
+                    this._job.van = true;
+                }
+
+                if (this._fieldName === "SpeedID") {
+                    this._job.speedName = selectedOption.text;
+                }
+
+                if (this._fieldName === "AcceptedJobTypeID") {
+                    this._job.acceptedName = selectedOption.text;
+                }
+
+                if (this._fieldName === "NotifiedJobTypeID") {
+                    this._job.notifiedName = selectedOption.text;
+                }
+
+
                 this._job.bulkJob ? await this._dispatchData.updateBulkJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID) : await this._dispatchData.updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID);
             }
 
