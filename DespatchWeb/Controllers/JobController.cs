@@ -636,27 +636,27 @@ public class JobController : Controller
         return Json(data);
     }
 
-    public IActionResult LeaveList()
+    public async Task<IActionResult> LeaveList()
     {
-        var data = _jobRepo.LeaveParcelLocations();
+        var data = await _jobRepo.LeaveParcelLocationsAsync();
         return Json(data);
     }
 
-    public IActionResult UndeliverableList()
+    public async Task<IActionResult> UndeliverableList()
     {
-        var data = _jobRepo.UndeliverableLocations();
+        var data = await _jobRepo.UndeliverableLocationsAsync();
         return Json(data);
     }
 
-    public IActionResult InternalStatusList()
+    public async Task<IActionResult> InternalStatusList()
     {
-        var data = _jobRepo.InternalStatusList();
+        var data = await _jobRepo.InternalStatusListAsync();
         return Json(data);
     }
 
-    public IActionResult EventTypeList()
+    public async Task<IActionResult> EventTypeList()
     {
-        var data = _jobRepo.EventTypeList();
+        var data = await _jobRepo.EventTypeListAsync();
         return Json(data);
     }
 

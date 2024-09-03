@@ -1878,39 +1878,56 @@ public class JobRepository : IJobRepository
     }
 
 
-    public List<Lookup> LeaveParcelLocations()
+    public async Task<List<Lookup>> LeaveParcelLocationsAsync()
     {
-        var data = (from l in _context.TblJobLeaveNotHomes
-            orderby l.Sequence
-            select l).Select(x => new Lookup { ID = x.LeaveNotHomeId, Text = x.Name });
-        return data.ToList();
+        return await _context.TblJobLeaveNotHomes
+            .OrderBy(l => l.Sequence)
+            .Select(x => new Lookup
+            {
+                ID = x.LeaveNotHomeId,
+                Text = x.Name
+            })
+            .ToListAsync();
     }
 
-    public List<UndeliverableLocation> UndeliverableLocations()
+    public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync()
     {
-        var data = (from u in _context.TblUndeliverableLocations
-            orderby u.Name
-            select u).Select(x => new UndeliverableLocation
-            { ID = x.UndeliverableLocationId, Text = x.Name, JobStatusId = x.JobTypeId });
-        return data.ToList();
+        return await _context.TblUndeliverableLocations
+            .OrderBy(u => u.Name)
+            .Select(x => new UndeliverableLocation
+            {
+                ID = x.UndeliverableLocationId,
+                Text = x.Name,
+                JobStatusId = x.JobTypeId
+            })
+            .ToListAsync();
     }
 
-    public List<InternalStatus> InternalStatusList()
+    public async Task<List<InternalStatus>> InternalStatusListAsync()
     {
-        var data = (from u in _context.TucJobInternalStatuses
-            orderby u.Tcis
-            select u).Select(x => new InternalStatus
-            { ID = x.Tcis, Text = x.TcisName, DefaultSchedule = x.DefaultSchedule, DefaultMins = x.DefaultMinutes });
-        return data.ToList();
+        return await _context.TucJobInternalStatuses
+            .OrderBy(u => u.Tcis)
+            .Select(x => new InternalStatus
+            {
+                ID = x.Tcis,
+                Text = x.TcisName,
+                DefaultSchedule = x.DefaultSchedule,
+                DefaultMins = x.DefaultMinutes
+            })
+            .ToListAsync();
     }
 
-    public List<Lookup> EventTypeList()
+    public async Task<List<Lookup>> EventTypeListAsync()
     {
-        var data = (from u in _context.TucEventTypes
-            where u.UcetGroup == "CS" || u.UcetGroup == "GE"
-            orderby u.UcetName
-            select u).Select(x => new Lookup { ID = x.UcetId, Text = x.UcetName });
-        return data.ToList();
+        return await _context.TucEventTypes
+            .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
+            .OrderBy(u => u.UcetName)
+            .Select(x => new Lookup
+            {
+                ID = x.UcetId,
+                Text = x.UcetName
+            })
+            .ToListAsync();
     }
 
 

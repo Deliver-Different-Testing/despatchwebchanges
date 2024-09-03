@@ -89,10 +89,10 @@ public interface IJobRepository
     Task<List<Lookup>> SpeedsAsync();
     Task<List<Lookup>> ContactsAsync(int clientId);
     Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId);
-    List<Lookup> LeaveParcelLocations();
-    List<UndeliverableLocation> UndeliverableLocations();
-    List<InternalStatus> InternalStatusList();
-    List<Lookup> EventTypeList();
+    Task<List<Lookup>> LeaveParcelLocationsAsync();
+    Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
+    Task<List<InternalStatus>> InternalStatusListAsync();
+    Task<List<Lookup>> EventTypeListAsync();
 
     Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed,
         int qty, DateTime bookedDate, int pickUp, int dropOff, bool privateRes, int oversizeItems,
