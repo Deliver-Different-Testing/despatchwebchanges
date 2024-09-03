@@ -167,7 +167,19 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DES_stpJob_ColsolidateMarsInformation]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_stpJob_DirectToASAP]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_DisplayInDespatch]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_SplitJob]",
          "ObjectType": 1
       },
       {
@@ -192,6 +204,10 @@
       },
       {
          "Name": "[dbo].[DESWEB_stpQuickCreateJob]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpUpdateSplitJobMeetingAddress]",
          "ObjectType": 1
       },
       {

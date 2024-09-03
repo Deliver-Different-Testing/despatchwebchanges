@@ -1766,11 +1766,11 @@ public class JobRepository : IJobRepository
 
     public async Task SplitJob(int jobId, string user)
     {
-        await _context.LoadStoredProc("DES_stpJob_SplitJob")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@PreBookJob", false)
-            .WithSqlParam("@UserName", user)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DES_stpJob_SplitJobAsync(
+            JobID: jobId,
+            PreBookJob: false,
+            UserName: user
+        );
     }
 
     public async Task<string> UnSplitJob(int jobId)
@@ -1792,13 +1792,13 @@ public class JobRepository : IJobRepository
     public async Task UpdateSplitJobAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
         decimal deliveryLng)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateSplitJobMeetingAddress")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@Suburb", toSuburbId)
-            .WithSqlParam("@Address", address)
-            .WithSqlParam("@DeliveryLatitude", deliveryLat)
-            .WithSqlParam("@DeliveryLongitude", deliveryLng)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateSplitJobMeetingAddressAsync(
+            JobID: jobId,
+            Suburb: toSuburbId,
+            Address: address,
+            DeliveryLatitude: deliveryLat,
+            DeliveryLongitude: deliveryLng
+        );
     }
 
     public async Task ReRateSplitJob(int jobId)
@@ -1811,15 +1811,16 @@ public class JobRepository : IJobRepository
 
     public async Task FinishSplitJobProcess(int jobId, string despatcher)
     {
-        await _context.LoadStoredProc("DES_stpJob_ColsolidateMarsInformation")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@Consolidate", false)
-            .WithSqlParam("@UserName", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DES_stpJob_ColsolidateMarsInformationAsync(
+            JobID: jobId,
+            Consolidate: false,
+            UserName: despatcher,
+            DespatchChangesID: null
+        );
 
-        await _context.LoadStoredProc("DES_stpJob_DisplayInDespatch")
-            .WithSqlParam("@JobID", jobId)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DES_stpJob_DisplayInDespatchAsync(
+            JobID: jobId
+        );
     }
 
     public List<SuburbLookup> Suburbs()

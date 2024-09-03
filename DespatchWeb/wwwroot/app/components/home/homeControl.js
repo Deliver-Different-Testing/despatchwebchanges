@@ -1047,32 +1047,22 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     };
 
-    $scope.resendJobs = function () {
+    $scope.resendJobs = () => {
         const activeJobElements = angular.element("#jobList .active");
-        const jobIds = activeJobElements.map(function (index, element) {
-            return angular.element(element).attr("data-jobid");
-        }).get();
+        const jobIds = activeJobElements.map((index, element) => angular.element(element).attr("data-jobid")).get();
 
         if (jobIds.length === 0) {
             return;
         }
 
         DispatchData.resendJobs(jobIds)
-            .then(function () {
-                return ctrl.getData();
-            })
-            .then(function () {
+            .then(() => ctrl.getData())
+            .then(() => {
                 const lastJobElement = activeJobElements.last();
                 const lastJobId = lastJobElement.attr("data-jobid");
-                const lastJob = $scope.jobList.find(function (job) {
-                    return job.id === lastJobId;
-                });
+                const lastJob = $scope.jobList.find(job => job.id === lastJobId);
 
-                const foundCourier = $scope.pickCouriers.find(function (c) {
-                    return c.courierID === lastJob.courierData.courierID;
-                }) || $scope.pickAllCouriers.find(function (c) {
-                    return c.courierID === lastJob.courierData.courierID;
-                });
+                const foundCourier = $scope.pickCouriers.find(c => c.courierID === lastJob.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === lastJob.courierData.courierID);
 
                 if (foundCourier) {
                     $scope.courier = {gpsCourier: foundCourier.id};
@@ -1081,7 +1071,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
                 angular.element('#box-map .loading').css('display', '');
             })
-            .catch(function (error) {
+            .catch(error => {
                 console.error('Error updating data:', error);
             });
     };
@@ -2856,7 +2846,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
         DispatchData.getSuburbList()
             .then(selectedSuburbs => showEditAddressDialog($event, currentJob, selectedSuburbs, location))
-            .then(handleDialogResult)
+            .then(dialogResult => handleDialogResult(dialogResult, currentJob))
             .catch(error => toastrService.showErrorToast(error.message))
             .finally(() => console.log("Split jobs process completed."));
     };
@@ -2885,17 +2875,16 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         });
     }
 
-    function handleDialogResult(addressDetails) {
+    function handleDialogResult(addressDetails, currentJob) {
         if (!addressDetails) {
             console.log("Split jobs canceled!");
             return;
         }
 
-        const updatedJob = {
-            ...currentJob,
+        const updatedJob = angular.extend({}, currentJob, {
             toAddress: addressDetails.address,
-            toSuburbID: parseInt(addressDetails.our_suburb),
-        };
+            toSuburbID: addressDetails.our_suburb,
+        });
 
         const callData = {
             jobID: updatedJob.id,
@@ -2910,6 +2899,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             .then(() => DispatchData.finishSplitJobProcess(callData.jobID, FirstName))
             .then(() => ctrl.getData())
             .then(() => {
+                toastrService.showSuccessToast("Job Successfully Split");
                 console.log("Job splitting complete!");
                 console.log('Dialog closed!');
                 return $scope.getJobList();
