@@ -1408,7 +1408,7 @@ class JobDetailService {
      * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     airportOnlyClick(job) {
-        return this.toggleJobProperty(job, 'airportOnly');
+        this.toggleJobProperty(job, 'airportOnly');
     }
 
     /**

@@ -70,7 +70,7 @@
                         </div>
                         <div class="field" data-field="toCity">
                             <label class="disabled">To City:</label>
-                            <div class="disabled" class="value">{{ctrl.jdSvc.currentJob.toCity}}</div>
+                            <div class="disabled value">{{ctrl.jdSvc.currentJob.toCity}}</div>
                         </div>
                         <div class="field contact"
                              ng-click="!ctrl.jdSvc.currentJob.locked && ctrl.jdSvc.editToJobContact($event, ctrl.jdSvc.currentJob)">
