@@ -231,13 +231,13 @@
 /**
  * Represents the status of a truck courier, including their capacity and current load.
  * @typedef {Object} TruckCourierStatus
- * @property {number} ucjbCourierID - The unique identifier for the courier.
+ * @property {number} ucjbCourierID - The unique identifier for the courier in the UCJB system.
  * @property {string} courierCode - The code assigned to the courier.
  * @property {string} firstName - The first name of the courier.
- * @property {number|null} maxPallets - The maximum number of pallets the truck can carry. May be null if not applicable.
- * @property {number|null} maxPayLoad - The maximum payload weight the truck can carry in kilograms or pounds. May be null if not applicable.
- * @property {number} currentPallets - The current number of pallets on the truck.
- * @property {number} currentWeight - The current weight of the load on the truck in kilograms or pounds.
- * @property {number|null} availablePallets - The number of additional pallets that can be loaded. May be null if not applicable.
- * @property {number|null} availableWeight - The additional weight that can be loaded in kilograms or pounds. May be null if not applicable.
+ * @property {number} maxPallets - The maximum number of pallets the courier can carry.
+ * @property {number} maxPayLoad - The maximum payload weight (in kg) the courier can carry.
+ * @property {number} currentPallets - The number of pallets currently being carried by the courier.
+ * @property {number} currentWeight - The current weight (in kg) being carried by the courier.
+ * @property {number} availablePallets - The number of additional pallets the courier can carry.
+ * @property {number} availableWeight - The additional weight (in kg) the courier can carry.
  */
