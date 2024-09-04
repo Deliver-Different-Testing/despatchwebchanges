@@ -1,4 +1,5 @@
 <div class="overlay-map-fix"></div>
-<div id="map_canvas" style="width:100%;height:100%;"></div>
-
-<script src="app/components/home/map.js?v=1.24"></script>
+<ng-map center="[-36.8484, 174.7633]" id="map" map-type-id="ROADMAP" on-bounds_changed="ctrl.boundsChanged()" style="width:100%;height:100%;"
+        zoom="11">
+    <traffic-layer></traffic-layer>
+</ng-map>

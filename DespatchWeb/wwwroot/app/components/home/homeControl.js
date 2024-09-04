@@ -1,7 +1,7 @@
-function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
+function HomeController($document, $filter, greetingService, jdSvc,
                         loadingService, $mdDialog, $parse, $q, $scope, $state,
                         $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment,
-                        Upload, bytesFilter, versionUrl) {
+                        Upload, bytesFilter, versionUrl, NgMap, MapService) {
     const ctrl = this;
 
     $scope.isInternal = (ClientInternal === "True");
@@ -14,9 +14,247 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     ctrl.isCheckingAttachments = false
     ctrl.hasAttachedFile = false;
 
+    ctrl.markers = [];
+    ctrl.autoZoomEnabled = JSON.parse(localStorage.getItem("mapZoom-" + ContactID))?.display ?? true;
+
     ctrl.greetUser = () => {
         return greetingService.greetUser(FirstName);
     }
+
+    // Google Map
+    ctrl.initializeMap = () => {
+        MapService.initializeMap().then(map => {
+            ctrl.map = map;
+            ctrl.getAvailableCourierLocation();
+        });
+    };
+    ctrl.initializeMap();
+
+    ctrl.updateMapMarkers = jobs => {
+        MapService.updateMarkers(jobs).then(() => {
+            console.log('Markers updated successfully');
+        }).catch(error => {
+            console.error('Error updating markers:', error);
+        });
+    };
+
+    ctrl.getAvailableCourierLocation = () => {
+        const bounds = MapService.getBounds();
+        if (bounds) {
+            const southWest = bounds.getSouthWest();
+            const northEast = bounds.getNorthEast();
+
+            DispatchData.getAvailableCourierLocation(southWest.lng(), southWest.lat(), northEast.lng(), northEast.lat())
+                .then(returnData => {
+                    const courierId = $scope.currentCourier && $scope.currentCourier.courier ?
+                        $scope.currentCourier.courier.split(" ")[0].trim() : 0;
+                    ctrl.displayAvailableCouriers(returnData, courierId, $scope.pickService.channel,
+                        $scope.truckMode === "On", $scope.truckMode, $scope.allCouriers.includeUA);
+                });
+        } else {
+            console.log('Map bounds not available');
+        }
+    };
+
+    ctrl.displayPickupPoints = (jobs, clear, currentJob) => {
+        if (clear) {
+            ctrl.clearMarkers();
+        }
+
+        jobs.forEach(job => {
+            if (job.statusID < 5) {
+                const marker = MapService.addMarker(job.pickUpLatitude, job.pickUpLongitude, {
+                    map: ctrl.map,
+                    icon: MapService.getPinImage(MapService.getPinColor(job.status, currentJob, job), job.runOrder),
+                    jobNumber: job.jobNo
+                });
+
+                const infoWindow = MapService.createInfoWindow(
+                    '<div id="content"><div id="bodyContent"><p><b>' + job.jobNo + '</b></p><p><b>Pickup</b></p></div></div>'
+                );
+
+                marker.addListener('click', () => {
+                    infoWindow.open(ctrl.map, marker);
+                });
+
+                ctrl.markers.push(marker);
+            }
+        });
+
+        if (currentJob) {
+            MapService.setCenter(currentJob.pickUpLatitude, currentJob.pickUpLongitude);
+            MapService.setZoom(15);
+        }
+    };
+
+    ctrl.displayRoutePoints = (courierJobs, clear, zoom) => {
+        if (clear) {
+            ctrl.clearMarkers();
+        }
+
+        const bounds = new google.maps.LatLngBounds();
+
+        courierJobs.forEach(job => {
+            const pickupMarker = ctrl.createMarker(job, true);
+            const deliveryMarker = ctrl.createMarker(job, false);
+
+            if (pickupMarker) bounds.extend(pickupMarker.getPosition());
+            if (deliveryMarker) bounds.extend(deliveryMarker.getPosition());
+        });
+
+        if (courierJobs.length > 0) {
+            if (zoom) {
+                MapService.fitBounds(bounds);
+            } else {
+                MapService.panToBounds(bounds);
+            }
+
+            $timeout(() => {
+                ctrl.markers.forEach(marker => {
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+                });
+                $timeout(() => {
+                    ctrl.markers.forEach(marker => {
+                        marker.setAnimation(null);
+                    });
+                }, 2000);
+            }, 200);
+        }
+
+        if (courierJobs.length > 0 && courierJobs[0].courierLatitude && courierJobs[0].courierLongitude) {
+            const courierMarker = MapService.addMarker(
+                courierJobs[0].courierLatitude,
+                courierJobs[0].courierLongitude,
+                {
+                    map: ctrl.map,
+                    icon: "/images/car3.png"
+                }
+            );
+            ctrl.markers.push(courierMarker);
+
+            if (zoom) {
+                MapService.setCenter(courierJobs[0].courierLatitude, courierJobs[0].courierLongitude);
+                MapService.setZoom(13);
+            }
+        }
+    };
+
+    ctrl.createMarker = (job, isPickup) => {
+        const position = isPickup
+            ? new google.maps.LatLng(job.pickUpLatitude, job.pickUpLongitude)
+            : new google.maps.LatLng(job.deliveryLatitude, job.deliveryLongitude);
+
+        const pinColor = MapService.getPinColor(job.status);
+        const pinImage = MapService.getPinImage(pinColor, job.runOrder);
+
+        const marker = MapService.addMarker(position.lat(), position.lng(), {
+            map: ctrl.map,
+            icon: pinImage,
+            jobNumber: job.jobNo
+        });
+
+        const contentString =
+            '<div id="content">' +
+            '<div id="bodyContent">' +
+            '<p><b>' + job.jobNo + '</b></p>' +
+            '<p><b>' + (isPickup ? "Pickup" : "Delivery") + '</b></p>' +
+            '</div>' +
+            '</div>';
+
+        const infoWindow = MapService.createInfoWindow(contentString);
+
+        marker.addListener('click', () => {
+            ctrl.infoWindows.forEach(iw => {
+                iw.close();
+            });
+            infoWindow.open(ctrl.map, marker);
+        });
+
+        ctrl.markers.push(marker);
+        ctrl.infoWindows.push(infoWindow);
+
+        return marker;
+    };
+
+    ctrl.displayAvailableCouriers = (couriers, currentCourierId, channels, isTruckMode, truckMode, includeUA) => {
+        // Clear existing courier markers
+        if (ctrl.courierMarkers) {
+            ctrl.courierMarkers.forEach(marker => {
+                marker.setMap(null);
+            });
+        }
+        ctrl.courierMarkers = [];
+
+        couriers.forEach(courier => {
+            if (ctrl.shouldDisplayCourier(courier, currentCourierId, channels, isTruckMode, truckMode, includeUA)) {
+                const marker = MapService.addMarker(courier.latitude, courier.longitude, {
+                    map: ctrl.map,
+                    icon: ctrl.getCourierIcon(courier),
+                    title: courier.code
+                });
+
+                const infoWindow = MapService.createInfoWindow(ctrl.getCourierInfoContent(courier));
+
+                marker.addListener('click', () => {
+                    if (ctrl.openInfoWindow) {
+                        ctrl.openInfoWindow.close();
+                    }
+                    infoWindow.open(ctrl.map, marker);
+                    ctrl.openInfoWindow = infoWindow;
+                });
+
+                ctrl.courierMarkers.push(marker);
+            }
+        });
+    };
+
+    ctrl.shouldDisplayCourier = (courier, currentCourierId, channels, isTruckMode, truckMode, includeUA) => {
+        // Don't display the current courier
+        if (courier.code === currentCourierId) {
+            return false;
+        }
+
+        // Check if the courier's channel is included in the selected channels
+        if (channels.length > 0 && !channels.includes(courier.channelID)) {
+            return false;
+        }
+
+        // Handle truck mode
+        if (isTruckMode) {
+            if (truckMode === "Only" && courier.vehicleType !== "T") {
+                return false;
+            }
+            if (truckMode === "Off" && courier.vehicleType === "T") {
+                return false;
+            }
+        }
+
+        // Check for UA (Unavailable) couriers
+        if (!includeUA && courier.fleetCode === "UA") {
+            return false;
+        }
+
+        // If the courier has passed all checks, display them
+        return true;
+    };
+
+    ctrl.getCourierIcon = courier => {
+        const color = courier.totalJobs === 0 ? "yellow" : (courier.overDueJobs > 0 ? "red" : "green");
+        return {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: color,
+            fillOpacity: 0.8,
+            scale: 8,
+            strokeColor: "white",
+            strokeWeight: 2
+        };
+    };
+
+    ctrl.getCourierInfoContent = courier => '<div>' +
+        '<h3>' + courier.code + '</h3>' +
+        '<p>Total Jobs: ' + courier.totalJobs + '</p>' +
+        '<p>Overdue Jobs: ' + courier.overDueJobs + '</p>' +
+        '</div>';
 
     jdSvc.setSelectJobDetail(() => {
         const currentJob = $scope.currentJob;
@@ -352,9 +590,9 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
     ctrl.storeMapZoomDisplay = () => {
         if (Modernizr.localstorage) {
-            localStorage.setItem("mapZoom-" + ContactID, JSON.stringify($scope.mapZoom));
+            localStorage.setItem("mapZoom-" + ContactID, JSON.stringify({display: ctrl.autoZoomEnabled}));
         }
-    }
+    };
 
     ctrl.layout = angular.copy(ctrl.layouts[0].layout);
 
@@ -763,7 +1001,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 contactId: ContactID
             }
         }).then(() => {
-                console.log('Pallet Dialog closed!');
+            console.log('Pallet Dialog closed!');
         });
     };
 
@@ -803,7 +1041,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
 
             $mdDialog.show(confirm).then(() => {
                 const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                displayPickupPoints(unDispatchedData, true, null);
+                ctrl.displayPickupPoints(unDispatchedData, true, null);
                 ctrl.getAvailableCourierLocation();
             });
             return;
@@ -870,7 +1108,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             });
         }, () => {
             let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-            displayPickupPoints(unDispatchedData, true, null);
+            ctrl.displayPickupPoints(unDispatchedData, true, null);
             ctrl.getAvailableCourierLocation();
         });
     };
@@ -1675,7 +1913,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             let jid = angular.element("#jobList .active").last().data("jobid");
             let currentJob = $scope.jobList.find(jo => jo.id === jid);
             let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-            displayPickupPoints(unDispatchedData, true, currentJob);
+            ctrl.displayPickupPoints(unDispatchedData, true, currentJob);
         }
 
         angular.element('#box-currentWork').find(".loading").css('display', 'block');
@@ -1744,20 +1982,20 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     /**
      * @param {number} courierId
      */
-    ctrl.getCurrentJobs = (courierId) => {
+    ctrl.getCurrentJobs = courierId => {
         angular.element('#box-currentWork').find(".loading").css('display', 'block');
         const foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
-        const code = foundCourier !== undefined ? $scope.pickCouriers.find(x => x.courierID === courierId).id : "";
+        const code = foundCourier !== undefined ? foundCourier.id : "";
 
         DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done").then(data => {
             angular.element('#box-currentWork').find(".loading").css('display', 'none');
 
             $scope.jobsCurrentList = data;
             if (data.length > 0) {
-                displayRoutePoints(data, true, $scope.mapZoom.display);
+                ctrl.displayRoutePoints(data, true, $scope.mapZoom.display);
             } else {
                 DispatchData.getCourierPosition(code).then(posData => {
-                    displayCourierPositionOnly(posData.latitude, posData.longitude);
+                    ctrl.displayCourierPositionOnly(posData.latitude, posData.longitude);
                 });
             }
             $scope.activateDrop();
@@ -1883,25 +2121,8 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     // Select Job
     $scope.selectJob = (job) => {
         $timeout(() => {
-            let jobRow = null;
-            ctrl.selectedJobs = [];
-            ctrl.currentSupport = null;
-
-            angular.element(".activeTable .active").each((_, el) => {
-                const jobRowElement = angular.element(el).find(".selectjob");
-                jobRowElement.click();
-
-                ctrl.selectedJobs.push($scope.jobForDispatch.ID);
-
-                if (jobRowElement && jobRowElement.length > 0) {
-                    jobRow = jobRowElement[0];
-                }
-            });
-
             console.log("selectJob");
             $scope.currentJob = job;
-            $scope.$apply();
-
             console.log(job);
 
             jdSvc.setJob($scope.currentJob);
@@ -1919,35 +2140,40 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 });
             }
 
-            if (job.courier === null) {
-                $scope.jobGroups = false;
-                ctrl.getPotentialCouriers(job.id);
-                $scope.potentialCouriersSelection = " for Job " + job.jobNo;
-                $scope.currentCourier = null;
-                ctrl.currentSelection = " for Job " + job.jobNo;
+            // Center and zoom the map on the selected job
+            MapService.initializeMap().then(map => {
+                const jobPosition = new google.maps.LatLng(job.pickUpLatitude, job.pickUpLongitude);
 
-                const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                displayPickupPoints(unDispatchedData, true, job);
-            } else {
-                $scope.potentialCouriers = false;
-            }
-
-            if (job.courier !== null) {
-                $scope.selectCourier(job.courierData);
-            } else {
-                const jobs = [job];
-
-                displayRoutePoints(jobs, false, $scope.mapZoom.display);
-            }
-
-            if (jobRow) {
-                // Check if the selected descendant is not undefined
-                const dispatchField = angular.element(jobRow).find(".dispatchField");
-                if (dispatchField && dispatchField.length > 0) {
-                    dispatchField[0].focus();
+                if (ctrl.autoZoomEnabled) {
+                    MapService.setCenter(job.pickUpLatitude, job.pickUpLongitude);
+                    MapService.setZoom(15);
+                } else {
+                    MapService.panTo(jobPosition);
                 }
-            }
-        }, 0);
+
+                const marker = MapService.addMarker(job.pickUpLatitude, job.pickUpLongitude, {
+                    icon: MapService.getPinImage(MapService.getPinColor(job.status), job.runOrder),
+                    label: {
+                        text: job.runOrder.toString(),
+                        color: 'white'
+                    },
+                    jobNumber: job.jobNo
+                });
+
+                const infoWindow = MapService.createInfoWindow(
+                    '<div>' +
+                    '<strong>Job: ' + job.jobNo + '</strong><br>' +
+                    'Status: ' + job.status +
+                    '</div>'
+                );
+
+                marker.addListener('click', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                infoWindow.open(map, marker);
+            });
+        });
     };
 
     $scope.setCurrentWorkMenu = () => {
@@ -2323,61 +2549,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
             localStorage.setItem("support-channel-" + ContactID, JSON.stringify($scope.supportChannel));
         }
         $scope.getSupports();
-    };
-
-    ctrl.getAvailableCourierLocation = () => {
-        if (!map) {
-            console.log('Map is not initialized');
-            return;
-        }
-
-        if (!$scope.allCouriers.display) {
-            map.clearLabels();
-            map.clearFlags();
-            return;
-        }
-
-        const areas = $scope.jobFilters.area.split(",");
-        const channels = [];
-        let trucks = false;
-
-        for (let i = 0; i < areas.length; i++) {
-
-            switch (areas[i]) {
-                case "main1":
-                case "main2":
-                    if (!channels.includes(1)) {
-                        channels.push(1);
-                    }
-                    break;
-                case "city":
-                    if (!channels.includes(2)) {
-                        channels.push(2);
-                    }
-                    break;
-                case "truck":
-                    trucks = true;
-                    break;
-                default:
-                    console.log("Default case reached");
-            }
-        }
-
-        if (map && map.getBounds()) {
-            const bounds = map.getBounds();
-            const southWestLng = bounds.getSouthWest().lng();
-            const southWestLat = bounds.getSouthWest().lat();
-            const northEastLng = bounds.getNorthEast().lng();
-            const northEastLat = bounds.getNorthEast().lat();
-
-            DispatchData.getAvailableCourierLocation(southWestLng, southWestLat, northEastLng, northEastLat)
-                .then(returnData => {
-                    const courierId = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
-                    displayAvailableCouriers(returnData, courierId, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
-                });
-        } else {
-            console.log('Map or map bounds not fully loaded or initialized');
-        }
+        ctrl.displayAvailableCouriers
     };
 
     $scope.courierMenu = [
@@ -2406,13 +2578,15 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
         const selectedClients = $scope.pickService.clients.map(a => a.id);
         return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
             $scope.jobList = data;
+            ctrl.updateMapMarkers(data);
+
             angular.element("#box-jobsList .loading").fadeOut();
             $timeout(() => {
 
                 sizeHeadings();
                 if (data.length > 0) {
                     const unDispatchedData = data.filter(x => x.courierData.courierID === null);
-                    displayPickupPoints(unDispatchedData, true, null);
+                    ctrl.displayPickupPoints(unDispatchedData, true, null);
                 }
                 ctrl.getAvailableCourierLocation();
             }, 200);
@@ -3069,7 +3243,7 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
                 contactId: ContactID
             }
         }).then(() => {
-                console.log('Pallet Dialog closed!');
+            console.log('Pallet Dialog closed!');
         });
     };
 
@@ -3383,11 +3557,13 @@ function HomeController($document, $filter, greetingService, hotkeys, jdSvc,
     }
 }
 
-angular.module("uDispatch").controller("HomeControl", ['$document', "$filter",
-    'greetingService', 'hotkeys', "JobDetailService", 'loadingService', "$mdDialog",
+HomeController.$inject = ['$document', "$filter",
+    'greetingService', "JobDetailService", 'loadingService', "$mdDialog",
     "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService',
     "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload",
-    "bytesFilter", "versionUrl", HomeController]);
+    "bytesFilter", "versionUrl", "NgMap", "MapService"];
+
+angular.module("uDispatch").controller("HomeControl", HomeController);
 
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;

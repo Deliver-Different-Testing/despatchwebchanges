@@ -1,0 +1,135 @@
+class MapService {
+    static $inject = ['NgMap', '$q'];
+
+    constructor(NgMap, $q) {
+        this.NgMap = NgMap;
+        this.$q = $q;
+        this.map = null;
+        this.markers = [];
+        this.mapInitialized = this.initializeMap();
+    }
+
+    initializeMap() {
+        return this.NgMap.getMap().then(mapInstance => {
+            this.map = mapInstance;
+            return this.map;
+        });
+    }
+
+    ensureMapInitialized() {
+        return this.mapInitialized;
+    }
+
+    setCenter(lat, lng) {
+        return this.ensureMapInitialized().then(() => {
+            this.map.setCenter(new google.maps.LatLng(lat, lng));
+        });
+    }
+
+    setZoom(zoom) {
+        return this.ensureMapInitialized().then(() => {
+            this.map.setZoom(zoom);
+        });
+    }
+
+    panTo(jobPosition) {
+        return this.ensureMapInitialized().then(() => {
+            this.map.panTo(jobPosition);
+        });
+    }
+
+    addMarker(lat, lng, options) {
+        return this.ensureMapInitialized().then(() => {
+            const marker = new google.maps.Marker(Object.assign({
+                position: new google.maps.LatLng(lat, lng),
+                map: this.map
+            }, options));
+            this.markers.push(marker);
+            return marker;
+        });
+    }
+
+    removeMarker(marker) {
+        const index = this.markers.indexOf(marker);
+        if (index > -1) {
+            marker.setMap(null);
+            this.markers.splice(index, 1);
+        }
+    }
+
+    clearMarkers() {
+        this.markers.forEach(marker => marker.setMap(null));
+        this.markers = [];
+    }
+
+    getBounds() {
+        return this.ensureMapInitialized().then(() => this.map.getBounds());
+    }
+
+    fitBounds(bounds) {
+        return this.ensureMapInitialized().then(() => {
+            this.map.fitBounds(bounds);
+        });
+    }
+
+    panToBounds(bounds) {
+        return this.ensureMapInitialized().then(() => {
+            this.map.panToBounds(bounds);
+        });
+    }
+
+    createInfoWindow(content) {
+        return new google.maps.InfoWindow({content: content});
+    }
+
+    getPinColor(status, currentJob, job) {
+        if (currentJob && job && job.jobNo === currentJob.jobNo) return "black";
+        switch (status) {
+            case "C":
+                return "grey";
+            case "N":
+                return "grey";
+            case "D":
+                return "green";
+            case "P":
+                return "red";
+            case "A":
+                return "blue";
+            case "V":
+                return "yellow";
+            default:
+                return "purple";
+        }
+    }
+
+    getPinImage(pinColor, runOrder) {
+        const pinSVGFilled = "M 12,2 C 8.1340068,2 5,5.1340068 5,9 c 0,5.25 7,13 7,13 0,0 7,-7.75 7,-13 0,-3.8659932 -3.134007,-7 -7,-7 z";
+        return {
+            path: pinSVGFilled,
+            anchor: new google.maps.Point(12, 17),
+            fillOpacity: 1,
+            fillColor: pinColor,
+            strokeWeight: 2,
+            strokeColor: "white",
+            scale: 1.5,
+            labelOrigin: new google.maps.Point(12, 9)
+        };
+    }
+
+    updateMarkers(jobs) {
+        return this.ensureMapInitialized().then(() => {
+            this.clearMarkers();
+            jobs.forEach(job => {
+                if (job.statusID < 5) {
+                    this.addMarker(job.pickUpLatitude, job.pickUpLongitude, {
+                        icon: this.getPinImage(this.getPinColor(job.status), job.runOrder),
+                        jobNumber: job.jobNo
+                    });
+                }
+            });
+        });
+    }
+}
+
+// Register the service with Angular
+angular.module('uDispatch').service('MapService', MapService);
