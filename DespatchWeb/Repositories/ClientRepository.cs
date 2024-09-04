@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -23,42 +22,49 @@ public class ClientRepository : IClientRepository
 
     public async Task<ClientViewModel> ValidateClientAsync(int contactId)
     {
-        var contact = await _context.TucClientContacts.FirstOrDefaultAsync(c => c.UcctId == contactId);
-        if (contact == null)
-        {
-            return null;
-        }
+        var result = await _context.TucClientContacts
+            .Join(_context.TblClients,
+                contact => contact.UcctClientId,
+                client => client.ClientId,
+                (contact, client) => new { Contact = contact, Client = client })
+            .Where(joined => joined.Contact.UcctId == contactId)
+            .Select(joined => new ClientViewModel
+            {
+                Active = joined.Client.Active,
+                FirstName = joined.Contact.UcctFirstname,
+                FullName = joined.Contact.UcctFirstname + " " + joined.Contact.UcctSurname,
+                Email = joined.Contact.UcctEmail,
+                Internal = joined.Client.Internal,
+                StaffID = joined.Contact.StaffId
+            })
+            .FirstOrDefaultAsync();
 
-        var client = await _context.TblClients.FirstOrDefaultAsync(x => x.ClientId == contact.UcctClientId);
-        if (client == null)
-        {
-            return null;
-        }
-
-        return new ClientViewModel
-        {
-            Active = client.Active,
-            FirstName = contact.UcctFirstname,
-            FullName = contact.UcctFirstname + " " + contact.UcctSurname,
-            Email = contact.UcctEmail,
-            Internal = client.Internal,
-            StaffID = contact.StaffId
-        };
+        return result;
     }
 
-    public async Task<List<ClientContactViewModel>> ClientContacts(int contactId)
+    public async Task<List<ClientContactViewModel>> ClientContactsAsync(int contactId)
     {
-        var clientContacts = from c in _context.TblClientContacts
-            join cip in _context.TblClientContactInternetPermissions on c.ClientContactId equals cip.ClientContactId
-            join ip in _context.TblInternetPermissions on cip.InternetPermissionId equals ip.InternetPermissionId
-            where c.ContactId == contactId && ip.SystemName == "DespatchWeb"
-            orderby c.IsDefaultAccount
-            select new ClientContactViewModel
+        var clientContacts = await _context.TblClientContacts
+            .Where(c => c.ContactId == contactId)
+            .Join(_context.TblClientContactInternetPermissions,
+                c => c.ClientContactId,
+                cip => cip.ClientContactId,
+                (c, cip) => new { c, cip })
+            .Join(_context.TblInternetPermissions,
+                joined => joined.cip.InternetPermissionId,
+                ip => ip.InternetPermissionId,
+                (joined, ip) => new { joined.c, ip })
+            .Where(joined => joined.ip.SystemName == "DespatchWeb")
+            .OrderByDescending(joined => joined.c.IsDefaultAccount)
+            .Select(joined => new ClientContactViewModel
             {
-                ID = c.ClientId,
-                Text = c.Client.UcclName
-            };
-        return await clientContacts.ToListWithNoLockAsync();
+                ID = joined.c.ClientId,
+                Text = joined.c.Client.UcclName
+            })
+            .Distinct()
+            .ToListAsync();
+
+        return clientContacts;
     }
 
     public async Task<DispatcherViewModel> ValidateDispatcherLoginAsync(string name)

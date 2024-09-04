@@ -91,7 +91,7 @@ public class HomeController : Controller
 
     public async Task<IActionResult> ClientContacts(int contactId)
     {
-        var result = await _clientRepository.ClientContacts(contactId);
+        var result = await _clientRepository.ClientContactsAsync(contactId);
         return Json(result);
     }
 

@@ -40,7 +40,7 @@ public class JobController : Controller
         //Security check to confirm these clients belong to this contact and have permissions set
         if (!isInternal && !string.IsNullOrEmpty(clientIds))
         {
-            var clientContacts = await _clientRepo.ClientContacts(cid);
+            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
             if (clientContacts != null && !clientContacts
                     .Select(c => c.ID).Any(x => clientIds.Split(',')
                         .Any(y => y == x.ToString())))
@@ -61,7 +61,7 @@ public class JobController : Controller
         //Security check to confirm these clients belong to this contact and have permissions set
         if (!isInternal && !string.IsNullOrEmpty(clientIds))
         {
-            var clientContacts = await _clientRepo.ClientContacts(cid);
+            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
                 var empty = new List<JobViewModel>();
@@ -80,7 +80,7 @@ public class JobController : Controller
         //Security check to confirm these clients belong to this contact and have permissions set
         if (!isInternal && !string.IsNullOrEmpty(clientIds))
         {
-            var clientContacts = await _clientRepo.ClientContacts(cid);
+            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
                 var empty = new List<JobViewModel>();
@@ -99,7 +99,7 @@ public class JobController : Controller
         //Security check to confirm these clients belong to this contact and have permissions set
         if (!isInternal && !string.IsNullOrEmpty(clientIds))
         {
-            var clientContacts = await _clientRepo.ClientContacts(cid);
+            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
                 var empty = new List<JobViewModel>();
@@ -118,7 +118,7 @@ public class JobController : Controller
         //Security check to confirm these clients belong to this contact and have permissions set
         if (!isInternal && !string.IsNullOrEmpty(clientIds))
         {
-            var clientContacts = await _clientRepo.ClientContacts(cid);
+            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
             if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
             {
                 var empty = new List<JobViewModel>();
