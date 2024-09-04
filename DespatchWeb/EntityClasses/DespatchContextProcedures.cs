@@ -35,6 +35,7 @@ namespace DespatchWeb.EntityClasses
 
         protected void OnModelCreatingGeneratedProcedures(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<DES_qryCourierCombo_ActiveResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_qryTruckCourierStatusResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_stpJob_ColsolidateMarsInformationResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_stpJob_SplitJobResult>().HasNoKey().ToView(null);
@@ -195,6 +196,26 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_qdfEvent_Insert] @JobNo = @JobNo, @ClientID = @ClientID, @Contact = @Contact, @Date = @Date, @Time = @Time, @Type = @Type, @LateTime = @LateTime, @ETATime = @ETATime, @StaffIDIn = @StaffIDIn, @StaffIDOut = @StaffIDOut, @ResponseTime = @ResponseTime, @Notes = @Notes, @PageCourier = @PageCourier, @Closed = @Closed, @Originator = @Originator, @Description = @Description, @CourierID = @CourierID, @JobID = @JobID, @Despatcher = @Despatcher, @JobType = @JobType", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<DES_qryCourierCombo_ActiveResult>> DES_qryCourierCombo_ActiveAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DES_qryCourierCombo_ActiveResult>("EXEC @returnValue = [dbo].[DES_qryCourierCombo_Active]", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

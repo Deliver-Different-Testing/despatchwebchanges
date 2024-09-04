@@ -163,6 +163,10 @@
          "ObjectType": 1
       },
       {
+        "Name": "[dbo].[DES_qryCourierCombo_Active]",
+        "ObjectType": 1
+      },
+     {
          "Name": "[dbo].[DES_qryTruckCourierStatus]",
          "ObjectType": 1
       },

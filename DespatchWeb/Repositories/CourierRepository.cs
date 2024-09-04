@@ -88,26 +88,17 @@ namespace DespatchWeb.Repositories
         /// filters by active, sms setting and logged in
         /// </summary>
         /// <returns></returns>
-        public async Task<List<ActiveCouriersViewModel>> ActiveCouriers()
+        public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
         {
-            var results = await _context.Procedures.DESWEB_qryCourierActiveAsync();
-
-            return results.Select(r => new ActiveCouriersViewModel
-            {
-                CourierID = r.CourierID,
-                Code = r.Code,
-                Name = r.Name,
-                DangerousGoods = r.DangerousGoods,
-                DGLicenseExpiry = r.DGLicenseExpiry
-                // Label and Text properties are auto-implemented
-            }).ToList();
+            var results = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+            return _mapper.Map<List<ActiveCouriersViewModel>>(results);
         }
 
         /// <summary>
         /// All active couriers regardless of logged in or not via search
         /// </summary>
         /// <returns></returns>
-        public async Task<List<AllCourierActiveViewModel>> AllActiveCouriers(string searchTerm)
+        public async Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm)
         {
             var results = await _context.Procedures.DESWeb_qryCourierComboAsync(SearchTerm: searchTerm);
 
@@ -135,15 +126,9 @@ namespace DespatchWeb.Repositories
         /// <returns></returns>
         public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
         {
-            var activeCouriers = new List<ActiveCouriersViewModel>();
-            await _context.LoadStoredProc("DESWEB_qryCourierActive")
-                .ExecuteStoredProcAsync(handle =>
-                {
-                    activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
-                });
-            return activeCouriers;
+            var results = await _context.Procedures.DESWEB_qryCourierActiveAsync();
+            return _mapper.Map<List<ActiveCouriersViewModel>>(results);
         }
-
 
         public CourierLocation Location(string code)
         {

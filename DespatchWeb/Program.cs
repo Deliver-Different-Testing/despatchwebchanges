@@ -46,7 +46,7 @@ builder.Services.AddScoped<IClientRepository, ClientRepository>();
 
 // Automapper
 builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile), typeof(PotentialCouriersViewModelMapperProfile),
-    typeof(GenericMapperProfiles));
+    typeof(GenericMapperProfiles), typeof(ActiveCouriersMapperProfile));
 
 
 var connectionString = builder.Configuration.GetConnectionString("Connection");

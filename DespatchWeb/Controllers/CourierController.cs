@@ -28,7 +28,7 @@ public class CourierController : Controller
 
     public async Task<IActionResult> Active()
     {
-        var result = await _courierRepo.ActiveCouriers();
+        var result = await _courierRepo.ActiveCouriersAsync();
         return Json(result);
     }
 
@@ -57,7 +57,7 @@ public class CourierController : Controller
 
     public async Task<IActionResult> AllActiveSearch(string searchTerm)
     {
-        var result = await _courierRepo.AllActiveCouriers(searchTerm);
+        var result = await _courierRepo.AllActiveCouriersAsync(searchTerm);
         return Json(result);
     }
 

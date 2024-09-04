@@ -21,13 +21,13 @@ public interface ICourierRepository
     /// filters by active, sms setting and logged in
     /// </summary>
     /// <returns></returns>
-    Task<List<ActiveCouriersViewModel>> ActiveCouriers();
+    Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync();
 
     /// <summary>
     /// All active couriers regardless of logged in or not via search
     /// </summary>
     /// <returns></returns>
-    Task<List<AllCourierActiveViewModel>> AllActiveCouriers(string searchTerm);
+    Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm);
 
     Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end);
 
