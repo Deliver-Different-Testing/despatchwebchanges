@@ -113,7 +113,7 @@
                                         </md-fab-trigger>
 
                                         <md-fab-actions>
-                                            <md-button class="md-fab md-raised md-mini"
+                                            <md-button class="md-fab md-raised md-mini" ng-if="ctrl.currentJob"
                                                        ng-click="ctrl.showAdditionalServicesMenu($event, ctrl.currentJob)">
                                                 <md-tooltip md-direction="bottom">Additional Services</md-tooltip>
                                                 <md-icon md-font-set="material-symbols-outlined">add_shopping_cart
