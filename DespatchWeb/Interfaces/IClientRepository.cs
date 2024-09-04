@@ -8,6 +8,6 @@ public interface IClientRepository
 {
     Task<ClientViewModel> ValidateClientAsync(int contactId);
     Task<List<ClientContactViewModel>> ClientContacts(int contactId);
-    Task<DispatcherViewModel> ValidateDispatcherLogin(string name);
-    Task<List<ClientActiveViewModel>> ActiveClients(string searchTerm);
+    Task<DispatcherViewModel> ValidateDispatcherLoginAsync(string name);
+    Task<List<ClientActiveViewModel>> ActiveClientsAsync(string searchTerm);
 }

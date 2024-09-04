@@ -29,7 +29,7 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index([FromQuery] string login)
     {
-        var disp = await _clientRepository.ValidateDispatcherLogin(
+        var disp = await _clientRepository.ValidateDispatcherLoginAsync(
             User.Identity.Name.Substring(User.Identity.Name.IndexOf('\\') + 1));
         if (disp != null)
         {
@@ -85,7 +85,7 @@ public class HomeController : Controller
 
     public async Task<IActionResult> ActiveClients(string searchTerm)
     {
-        var result = await _clientRepository.ActiveClients(searchTerm);
+        var result = await _clientRepository.ActiveClientsAsync(searchTerm);
         return Json(result);
     }
 

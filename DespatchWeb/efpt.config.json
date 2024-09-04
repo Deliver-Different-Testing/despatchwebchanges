@@ -183,6 +183,10 @@
          "ObjectType": 1
       },
       {
+        "Name": "[dbo].[DESWEB_qryClientsActive]",
+        "ObjectType": 1
+      },
+     {
          "Name": "[dbo].[DESWEB_qryCourierActive]",
          "ObjectType": 1
       },
@@ -209,6 +213,10 @@
       {
          "Name": "[dbo].[DESWEB_stpUpdateSplitJobMeetingAddress]",
          "ObjectType": 1
+      },
+     {
+       "Name": "[dbo].[INT_stpIsValidLogin_Despatch]",
+       "ObjectType": 1
       },
       {
          "Name": "[dbo].[sp_RateJob2]",

@@ -38,10 +38,12 @@ namespace DespatchWeb.EntityClasses
             modelBuilder.Entity<DES_qryTruckCourierStatusResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_stpJob_ColsolidateMarsInformationResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_stpJob_SplitJobResult>().HasNoKey().ToView(null);
+            modelBuilder.Entity<DESWEB_qryClientsActiveResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWEB_qryCourierActiveResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWeb_qryCourierComboResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWEB_qryPotentialCouriersResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWEB_stpMapEnvelopeResult>().HasNoKey().ToView(null);
+            modelBuilder.Entity<INT_stpIsValidLogin_DespatchResult>().HasNoKey().ToView(null);
         }
     }
 
@@ -330,6 +332,33 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.SqlQueryAsync<DES_stpJob_SplitJobResult>("EXEC @returnValue = [dbo].[DES_stpJob_SplitJob] @JobID = @JobID, @PreBookJob = @PreBookJob, @UserName = @UserName", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<DESWEB_qryClientsActiveResult>> DESWEB_qryClientsActiveAsync(string SearchTerm, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "SearchTerm",
+                    Size = 200,
+                    Value = SearchTerm ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DESWEB_qryClientsActiveResult>("EXEC @returnValue = [dbo].[DESWEB_qryClientsActive] @SearchTerm = @SearchTerm", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -749,6 +778,33 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpUpdateSplitJobMeetingAddress] @JobID = @JobID, @Suburb = @Suburb, @Address = @Address, @DeliveryLatitude = @DeliveryLatitude, @DeliveryLongitude = @DeliveryLongitude", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<INT_stpIsValidLogin_DespatchResult>> INT_stpIsValidLogin_DespatchAsync(string WindowsLogonUserName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "WindowsLogonUserName",
+                    Size = 100,
+                    Value = WindowsLogonUserName ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<INT_stpIsValidLogin_DespatchResult>("EXEC @returnValue = [dbo].[INT_stpIsValidLogin_Despatch] @WindowsLogonUserName = @WindowsLogonUserName", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
