@@ -28,5 +28,6 @@ namespace DespatchWeb.EntityClasses
         Task<int> DESWEB_stpUpdateSplitJobMeetingAddressAsync(int? JobID, int? Suburb, string Address, decimal? DeliveryLatitude, decimal? DeliveryLongitude, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<INT_stpIsValidLogin_DespatchResult>> INT_stpIsValidLogin_DespatchAsync(string WindowsLogonUserName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> sp_RateJob2Async(int? intClientID, int? intFromID, int? intToID, int? intSpeed, bool? bolPedal, bool? bolVan, bool? bolReturn, int? intWeight, int? Size, bool? IncludeFuelSurcharge, string OurRef, string ClientRefA, string ClientRefB, int? Quantity, DateTime? Booked, OutputParameter<decimal?> curAmount, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? ClientID, decimal? Amount, OutputParameter<decimal?> PPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }
 }

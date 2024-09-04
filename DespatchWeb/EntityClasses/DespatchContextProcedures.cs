@@ -934,5 +934,50 @@ namespace DespatchWeb.EntityClasses
 
             return _;
         }
+
+        public virtual async Task<int> UTL_stpPPD_ExclusiveAmountAsync(int? ClientID, decimal? Amount, OutputParameter<decimal?> PPD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterPPD = new SqlParameter
+            {
+                ParameterName = "PPD",
+                Precision = 19,
+                Scale = 4,
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = PPD?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.Money,
+            };
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "ClientID",
+                    Value = ClientID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Amount",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = Amount ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                parameterPPD,
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[UTL_stpPPD_ExclusiveAmount] @ClientID = @ClientID, @Amount = @Amount, @PPD = @PPD OUTPUT", sqlParameters, cancellationToken);
+
+            PPD.SetValue(parameterPPD.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
     }
 }

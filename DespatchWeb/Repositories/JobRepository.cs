@@ -1661,12 +1661,12 @@ public class JobRepository : IJobRepository
 
     public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount)
     {
-        return await CalculateAmount(clientId, amount);
+        return await CalculateAmountAsync(clientId, amount);
     }
 
     public async Task<decimal> PpdInclusiveAmount(int clientId, decimal amount)
     {
-        return await CalculateAmount(clientId, amount);
+        return await CalculateAmountAsync(clientId, amount);
     }
 
 
@@ -2511,20 +2511,15 @@ public class JobRepository : IJobRepository
         await _context.SaveChangesAsync();
     }
 
-    private async Task<decimal> CalculateAmount(int clientId, decimal amount)
+    private async Task<decimal> CalculateAmountAsync(int clientId, decimal amount)
     {
-        DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("UTL_stpPPD_ExclusiveAmount")
-            .WithSqlParam("@ClientID", clientId)
-            .WithSqlParam("@Amount", amount)
-            .WithSqlParam("@PPD", (DbParameter dbParam) =>
-            {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Currency;
-                outputMaxParam = dbParam;
-            })
-            .ExecuteStoredNonQueryAsync();
+        var outputParam = new OutputParameter<decimal?>();
+        await _context.Procedures.UTL_stpPPD_ExclusiveAmountAsync(
+            ClientID: clientId,
+            Amount: amount,
+            PPD: outputParam
+        );
 
-        return (decimal)outputMaxParam.Value;
+        return outputParam.Value ?? 0m;
     }
 }
