@@ -1,5 +1,5 @@
 <div id="clearLists">
-<div ng-show="!areaListCity" class="container-fluid ">
+    <div class="container-fluid " ng-if="!areaListCity">
     <div class="row">
         <div class="col-xs-3">
             <div class="clearLists-list" height="{{clearLists.central.percentHeight}}%" >
@@ -293,7 +293,7 @@
     </div>
 </div>
 
-<div ng-show="areaListCity" class="container-fluid ">
+    <div class="container-fluid " ng-if="areaListCity">
     <div class="row">
         <div class="col-xs-3">
             <div class="clearLists-list" height="{{clearLists.city.percentHeight}}%" >

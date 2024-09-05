@@ -3,11 +3,21 @@
     <table>
         <thead class="thead-dark no select">
         <tr>
-        <th scope="col" ng-click="orderList('couriersThrough', 'courier')">Courier <i class="fa fa-caret-down" ng-show="sort.couriersThrough == 'courier'"></i><i class="fa fa-caret-up" ng-show="sort.couriersThrough == 'd-courier'"></i></th>
-        <th scope="col" ng-click="orderList('couriersThrough', 'location')">Location <i class="fa fa-caret-down" ng-show="sort.couriersThrough == 'location'"></i><i class="fa fa-caret-up" ng-show="sort.couriersThrough == 'd-location'"></i></th>
-        <th scope="col" ng-click="orderList('couriersThrough', 'heading')">Heading To <i class="fa fa-caret-down" ng-show="sort.couriersThrough == 'heading'"></i><i class="fa fa-caret-up" ng-show="sort.couriersThrough == 'd-heading'"></i></th>
-        <th scope="col" ng-click="orderList('couriersThrough', 'lrm')">LRM <i class="fa fa-caret-down" ng-show="sort.couriersThrough == 'lrm'"></i><i class="fa fa-caret-up" ng-show="sort.couriersThrough == 'd-lrm'"></i></th>
-        <th scope="col" ng-click="orderList('couriersThrough', 'eta2lrm')">ETA<i class="fa fa-caret-down" ng-show="sort.couriersThrough == 'eta2lrm'"></i><i class="fa fa-caret-up" ng-show="sort.couriersThrough == 'd-eta2lrm'"></i></th>
+            <th ng-click="orderList('couriersThrough', 'courier')" scope="col">Courier <i class="fa fa-caret-down"
+                                                                                          ng-if="sort.couriersThrough == 'courier'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersThrough == 'd-courier'"></i></th>
+            <th ng-click="orderList('couriersThrough', 'location')" scope="col">Location <i class="fa fa-caret-down"
+                                                                                            ng-if="sort.couriersThrough == 'location'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersThrough == 'd-location'"></i></th>
+            <th ng-click="orderList('couriersThrough', 'heading')" scope="col">Heading To <i class="fa fa-caret-down"
+                                                                                             ng-if="sort.couriersThrough == 'heading'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersThrough == 'd-heading'"></i></th>
+            <th ng-click="orderList('couriersThrough', 'lrm')" scope="col">LRM <i class="fa fa-caret-down"
+                                                                                  ng-if="sort.couriersThrough == 'lrm'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersThrough == 'd-lrm'"></i></th>
+            <th ng-click="orderList('couriersThrough', 'eta2lrm')" scope="col">ETA<i class="fa fa-caret-down"
+                                                                                     ng-if="sort.couriersThrough == 'eta2lrm'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersThrough == 'd-eta2lrm'"></i></th>
         </tr>
         </thead>
     </table>

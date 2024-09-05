@@ -2,8 +2,12 @@
     <table>
         <thead class="thead-dark no select">
         <tr>
-        <th scope="col" ng-click="orderList('couriersClear', 'courier')">Courier <i class="fa fa-caret-down" ng-show="sort.couriersClear == 'courier'"></i><i class="fa fa-caret-up" ng-show="sort.couriersClear == 'd-courier'"></i></th>
-        <th scope="col" ng-click="orderList('couriersClear', 'location')">Location <i class="fa fa-caret-down" ng-show="sort.couriersClear == 'location'"></i><i class="fa fa-caret-up" ng-show="sort.couriersClear == 'd-location'"></i></th>
+            <th ng-click="orderList('couriersClear', 'courier')" scope="col">Courier <i class="fa fa-caret-down"
+                                                                                        ng-if="sort.couriersClear == 'courier'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersClear == 'd-courier'"></i></th>
+            <th ng-click="orderList('couriersClear', 'location')" scope="col">Location <i class="fa fa-caret-down"
+                                                                                          ng-if="sort.couriersClear == 'location'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersClear == 'd-location'"></i></th>
         </tr>
         </thead>
     </table>

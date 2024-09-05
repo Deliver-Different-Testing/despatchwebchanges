@@ -1,14 +1,30 @@
  <div class="table-headings">
     <table>
         <thead class="thead-dark no select">
-            <th scope="col" ng-click="orderList('supports', 'time')">Time <i class="fa fa-caret-down" ng-show="sort.supports == 'time'"></i><i class="fa fa-caret-up" ng-show="sort.supports == 'd-time'"></i></th>
-            <th scope="col" ng-click="orderList('supports', 'courier')"># <i class="fa fa-caret-down" ng-show="sort.supports == 'courier'"></i><i class="fa fa-caret-up" ng-show="sort.supports == 'd-courier'"></i></th>
-            <th scope="col" ng-click="orderList('supports', 'staff')">Staff <i class="fa fa-caret-down" ng-show="sort.supports == 'staff'"></i><i class="fa fa-caret-up" ng-show="sort.supports == 'd-staff'"></i></th>
-            <th scope="col" ng-click="orderList('supports', 'jobNum')">Job # <i class="fa fa-caret-down" ng-show="sort.supports == 'jobNum'"></i><i class="fa fa-caret-up" ng-show="sort.supports == 'd-jobNum'"></i></th>
-            <th scope="col" ng-click="orderList('supports', 'event')">Event<i class="fa fa-caret-down" ng-show="sort.supports == 'event'"></i><i class="fa fa-caret-up" ng-show="sort.supports == 'd-event'"></i></th>
-            <th scope="col" ng-click="orderList('supports', 'notes')">Notes<i class="fa fa-caret-down" ng-show="sort.supports == 'notes'"></i><i class="fa fa-caret-up" ng-show="sort.supports == 'd-notes'"></i></th>
-            <th scope="col" ng-click="orderList('supports', 'remain')">Remain<i class="fa fa-caret-down" ng-show="sort.supports == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.supports == 'd-remain'"></i></th>
-            <th scope="col" ng-click="orderList('supports', 'lockedBy')">Locked by<i class="fa fa-caret-down" ng-show="sort.supports == 'lockedBy'"></i><i class="fa fa-caret-up" ng-show="sort.supports == 'd-lockedBy'"></i></th>
+        <th ng-click="orderList('supports', 'time')" scope="col">Time <i class="fa fa-caret-down"
+                                                                         ng-if="sort.supports == 'time'"></i><i
+                class="fa fa-caret-up" ng-if="sort.supports == 'd-time'"></i></th>
+        <th ng-click="orderList('supports', 'courier')" scope="col"># <i class="fa fa-caret-down"
+                                                                         ng-if="sort.supports == 'courier'"></i><i
+                class="fa fa-caret-up" ng-if="sort.supports == 'd-courier'"></i></th>
+        <th ng-click="orderList('supports', 'staff')" scope="col">Staff <i class="fa fa-caret-down"
+                                                                           ng-if="sort.supports == 'staff'"></i><i
+                class="fa fa-caret-up" ng-if="sort.supports == 'd-staff'"></i></th>
+        <th ng-click="orderList('supports', 'jobNum')" scope="col">Job # <i class="fa fa-caret-down"
+                                                                            ng-if="sort.supports == 'jobNum'"></i><i
+                class="fa fa-caret-up" ng-if="sort.supports == 'd-jobNum'"></i></th>
+        <th ng-click="orderList('supports', 'event')" scope="col">Event<i class="fa fa-caret-down"
+                                                                          ng-if="sort.supports == 'event'"></i><i
+                class="fa fa-caret-up" ng-if="sort.supports == 'd-event'"></i></th>
+        <th ng-click="orderList('supports', 'notes')" scope="col">Notes<i class="fa fa-caret-down"
+                                                                          ng-if="sort.supports == 'notes'"></i><i
+                class="fa fa-caret-up" ng-if="sort.supports == 'd-notes'"></i></th>
+        <th ng-click="orderList('supports', 'remain')" scope="col">Remain<i class="fa fa-caret-down"
+                                                                            ng-if="sort.supports == 'remain'"></i><i
+                class="fa fa-caret-up" ng-if="sort.supports == 'd-remain'"></i></th>
+        <th ng-click="orderList('supports', 'lockedBy')" scope="col">Locked by<i class="fa fa-caret-down"
+                                                                                 ng-if="sort.supports == 'lockedBy'"></i><i
+                class="fa fa-caret-up" ng-if="sort.supports == 'd-lockedBy'"></i></th>
         </thead>
     </table>
 </div>

@@ -2,11 +2,22 @@
     <table>
         <thead class="thead-dark no select">
         <tr>
-        <th scope="col" ng-click="orderList('couriersPicked', 'courier')" style="min-width:50px;">Courier <i class="fa fa-caret-down" ng-show="sort.couriersPicked == 'courier'"></i><i class="fa fa-caret-up" ng-show="sort.couriersPicked == 'd-courier'"></i></th>
-        <th scope="col" ng-click="orderList('couriersPicked', 'location')">Location <i class="fa fa-caret-down" ng-show="sort.couriersPicked == 'location'"></i><i class="fa fa-caret-up" ng-show="sort.couriersPicked == 'd-location'"></i></th>
-        <th scope="col" ng-click="orderList('couriersPicked', 'heading')">Heading To <i class="fa fa-caret-down" ng-show="sort.couriersPicked == 'heading'"></i><i class="fa fa-caret-up" ng-show="sort.couriersPicked == 'd-heading'"></i></th>
-        <th scope="col" ng-click="orderList('couriersPicked', 'lrm')">LRM <i class="fa fa-caret-down" ng-show="sort.couriersPicked == 'lrm'"></i><i class="fa fa-caret-up" ng-show="sort.couriersPicked == 'd-lrm'"></i></th>
-        <th scope="col" ng-click="orderList('couriersPicked', 'eta2lrm')">ETA<i class="fa fa-caret-down" ng-show="sort.couriersPicked == 'eta2lrm'"></i><i class="fa fa-caret-up" ng-show="sort.couriersPicked == 'd-eta2lrm'"></i></th>
+            <th ng-click="orderList('couriersPicked', 'courier')" scope="col" style="min-width:50px;">Courier <i
+                    class="fa fa-caret-down" ng-if="sort.couriersPicked == 'courier'"></i><i class="fa fa-caret-up"
+                                                                                             ng-if="sort.couriersPicked == 'd-courier'"></i>
+            </th>
+            <th ng-click="orderList('couriersPicked', 'location')" scope="col">Location <i class="fa fa-caret-down"
+                                                                                           ng-if="sort.couriersPicked == 'location'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersPicked == 'd-location'"></i></th>
+            <th ng-click="orderList('couriersPicked', 'heading')" scope="col">Heading To <i class="fa fa-caret-down"
+                                                                                            ng-if="sort.couriersPicked == 'heading'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersPicked == 'd-heading'"></i></th>
+            <th ng-click="orderList('couriersPicked', 'lrm')" scope="col">LRM <i class="fa fa-caret-down"
+                                                                                 ng-if="sort.couriersPicked == 'lrm'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersPicked == 'd-lrm'"></i></th>
+            <th ng-click="orderList('couriersPicked', 'eta2lrm')" scope="col">ETA<i class="fa fa-caret-down"
+                                                                                    ng-if="sort.couriersPicked == 'eta2lrm'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersPicked == 'd-eta2lrm'"></i></th>
         </tr>
         </thead>
     </table>
