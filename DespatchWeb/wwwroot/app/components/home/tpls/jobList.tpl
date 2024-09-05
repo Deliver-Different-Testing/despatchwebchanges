@@ -71,11 +71,11 @@
     <tr class="clickable-row draggable-row noselect" data-allowDispatch="{{job.allowDispatch}}"
         data-courier="{{job.courier}}" data-index="{{$index}}" data-jobid="{{job.id}}"
         data-jobno="{{job.jobNo}}" ng-class="jobClass(job)"
-        ng-mousedown="ctrl.handleRowClick($event, job)"
+        ng-mousedown="handleRowClick($event, job)"
         ng-repeat="job in jobList | filter: box.searchBox">
         <td>{{job.time | date: "HH:mm"}}</td>
-        <td action="ctrl.speedColumnClick($event, job)" right-click>{{job.speed}}</td>
-        <td action="ctrl.notifyColumnClick($event, job)" ng-if="job.courierData.courierID === null" right-click>
+        <td action="speedColumnClick($event, job)" right-click>{{job.speed}}</td>
+        <td action="notifyColumnClick($event, job)" ng-if="job.courierData.courierID === null" right-click>
             {{job.notify}}
         </td>
         <td ng-if="job.courierData.courierID !== null">{{job.notify}}</td>
@@ -85,13 +85,13 @@
             </div>
         </td>
         <td context-menu="setEventsMenu($event)">{{job.jobNo}}</td>
-        <td action="ctrl.clientColumnClick($event, job)" right-click>{{job.client}}</td>
-        <td action="ctrl.fromColumnClick(event, job)" right-click
+        <td action="clientColumnClick($event, job)" right-click>{{job.client}}</td>
+        <td action="fromColumnClick(event, job)" right-click
             style="width:50px; white-space:nowrap; overflow-x:hidden;">
             {{job.from}} <i class="material-symbols-outlined job-table-icon"
                             ng-if="!job.pickUpLongitude">exclamation</i></td>
         <td colspan="2" title="{{job.toAddress}}">
-            <div action="ctrl.toColumnClick($event, job)" right-click
+            <div action="toColumnClick($event, job)" right-click
                  style="width:450px; white-space:nowrap; overflow-x:hidden;"
                  title="{{job.toAddress}}"><i class="material-symbols-outlined colum-table-icon"
                                               ng-if="!job.deliveryLongitude">exclamation</i>{{job.to}}
@@ -99,7 +99,7 @@
             </div>
         </td>
         <td><input class="dispatchField" id="input_{{job.id}}"
-                   ng-keydown="$event.keyCode === 13 && ctrl.dispatchJobs(job.courier)"
+                   ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)"
                    ng-model="job.courier"
                    ng-readonly="job.courierData.courierID !== null"
                    ng-style="getJobStyle(job.courierData.courierID !== null)"
@@ -109,19 +109,19 @@
         <td class="status" ng-class="job.status">{{job.status}}</td>
         <td><input type="number" /*right-click action="latePickColumnClick(event)"*/ class="lateCallField no-spinners"
             ng-focus="selectAllContent($event)" ng-mouseup="$event.preventDefault();" ng-model="job.lp"
-            ng-keydown="$event.keyCode === 13 && ctrl.latePickup(job.lp, job, this)" placeholder="LP" />
+            ng-keydown="$event.keyCode === 13 && latePickup(job.lp, job, this)" placeholder="LP" />
         </td>
-        <td><input class="lateCallField no-spinners" ng-focus="ctrl.selectAllContent($event)"
-                   ng-keydown="$event.keyCode === 13 && ctrl.lateDelivery(job.ld, job, this)"
+        <td><input class="lateCallField no-spinners" ng-focus="selectAllContent($event)"
+                   ng-keydown="$event.keyCode === 13 && lateDelivery(job.ld, job, this)"
                    ng-model="job.ld" ng-mouseup="$event.preventDefault();"
                    placeholder="LD" type="number"/>
         </td>
         <td class="selectjob" ng-click="selectForDispatch(job); $event.stopPropagation();"
             style="display:none"
             title="placeholder selector"></td>
-        <td ng-click="job.courier == null || ctrl.restoreJobs();" title="Restore">
+        <td ng-click="job.courier == null || restoreJobs();" title="Restore">
             <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">undo</i></td>
-        <td ng-click="job.courier == null || ctrl.reAllocateJobs();" title="ReDispatch">
+        <td ng-click="job.courier == null || reAllocateJobs();" title="ReDispatch">
             <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">repeat</i></td>
 
     </tr>

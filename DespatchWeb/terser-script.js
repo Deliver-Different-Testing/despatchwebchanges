@@ -20,7 +20,7 @@ files.forEach(async (file) => {
         const result = await minify(code, {
             sourceMap: {
                 filename: path.basename(file),
-                url: path.basename(file) + '.map'
+                url: path.b(file) + '.map'
             }
         });
 

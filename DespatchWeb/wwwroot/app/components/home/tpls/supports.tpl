@@ -33,7 +33,7 @@
     <tbody>
     <tr class="clickable-row" context-menu="supportMenu"
         data-id="{{support.eventId}}" ng-class="getSupportColorClass(support)"
-        ng-click="ctrl.selectSupportJobDetail(support)" ng-repeat="support in supports | filter: box.searchBox">
+        ng-click="selectSupportJobDetail(support)" ng-repeat="support in supports | filter: box.searchBox">
         <td>{{support.timeStamp | date : "HH:mm"}}</td>
         <td width="30">{{support.courier}}</td>
         <td width="60">{{support.staff}}</td>
@@ -41,7 +41,7 @@
         <td>{{support.description}}</td>
         <td>{{support.notes}}</td>
         <td>{{support.remainTime}}</td>
-        <td ng-click="ctrl.lockSupport(support)" style="cursor:pointer;" width="60">{{support.lockedBy}}</td>
+        <td ng-click="lockSupport(support)" style="cursor:pointer;" width="60">{{support.lockedBy}}</td>
     </tr>
     <tr>
         <td><div style="width:30px;"></div></td>
