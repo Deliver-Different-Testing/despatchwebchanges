@@ -1467,10 +1467,14 @@ md-table-pagination {
 
 md-table-container {
   overflow-x: auto;
+  background-color: #f5f5f5;
+  padding: 20px;
 
   .md-table {
     width: 100%;
     table-layout: fixed;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
     thead, tbody {
       tr {
@@ -1480,31 +1484,15 @@ md-table-container {
     }
 
     th.md-column, td.md-cell {
+      font-size: 11px;
       display: flex;
       flex: 1 1 0;
       min-width: 80px;
-      padding: 0 8px !important;
+      padding: 12px 8px !important;
       align-items: center;
-      border-right: 1px solid rgba(0, 0, 0, 0.12);
-      overflow-x: auto;
+      border-right: 1px solid #ddd;
+      overflow-x: hidden;
       white-space: nowrap;
-    }
-
-    // Hide scrollbar when not needed
-    th.md-column::-webkit-scrollbar, td.md-cell::-webkit-scrollbar {
-      height: 4px;
-      background-color: transparent;
-    }
-
-    // Style the scrollbar thumb
-    th.md-column::-webkit-scrollbar-thumb, td.md-cell::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.26);
-      border-radius: 2px;
-    }
-
-    // Show scrollbar on hover
-    th.md-column:hover::-webkit-scrollbar-thumb, td.md-cell:hover::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.4);
     }
 
     th.md-column:last-child, td.md-cell:last-child {
@@ -1514,70 +1502,84 @@ md-table-container {
     thead {
       tr {
         th {
-          font-size: 13px;
-          font-weight: 500;
-          color: rgba(0, 0, 0, 0.66);
+          font-size: 14px;
+          font-weight: bold;
+          color: black;
+          background-color: #e0e0e0;
+          text-transform: none;
         }
       }
     }
 
     tbody {
       tr {
-        height: 36px;
+        height: auto;
 
         td {
-          font-size: 13px;
-          color: rgba(0, 0, 0, 0.87);
+          font-size: 14px;
+          color: black;
         }
       }
     }
 
     .md-row:nth-child(even) {
-      background-color: rgba(0, 0, 0, 0.02);
+      background-color: #f9f9f9;
     }
 
     .md-row {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+      border-bottom: 1px solid #ddd;
+
+      &:hover {
+        background-color: #f5f5f5;
+      }
     }
 
     .md-column, .md-cell {
-      &.md-date-cell {
-        flex: 0 0 80px;
+      &.md-booked-cell {
+        flex: 0 0 130px;
       }
 
-      &.md-speed-cell {
-        flex: 0 0 60px;
+      &.md-status-speed-cell {
+        flex: 0 0 100px;
       }
 
       &.md-job-cell {
-        flex: 2;
+        flex: 1;
       }
 
       &.md-client-cell {
+        flex: 0 0 80px;
+      }
+
+      &.md-from-cell, &.md-to-cell {
+        flex: 1;
+      }
+
+      &.md-street-cell {
         flex: 2;
       }
-
-      &.md-address-cell {
-        flex: 3;
-      }
-
-      &.md-code-cell {
-        flex: 1;
-      }
-
-      &.md-status-cell {
-        flex: 1;
-      }
     }
+  }
 
-    @media screen and (max-width: 1200px) {
-      font-size: 12px;
+  // Remove custom scrollbar styles as they're not visible in the screenshot
+  th.md-column::-webkit-scrollbar, td.md-cell::-webkit-scrollbar,
+  th.md-column::-webkit-scrollbar-thumb, td.md-cell::-webkit-scrollbar-thumb,
+  th.md-column:hover::-webkit-scrollbar-thumb, td.md-cell:hover::-webkit-scrollbar-thumb {
+    display: none;
+  }
+
+  // Responsive styles
+  @media screen and (max-width: 1200px) {
+    .md-table {
+      font-size: 13px;
     }
+  }
 
-    @media screen and (max-width: 600px) {
+  @media screen and (max-width: 600px) {
+    .md-table {
       th.md-column, td.md-cell {
-        padding: 0 4px !important;
-        font-size: 11px;
+        padding: 8px 4px !important;
+        font-size: 12px;
       }
     }
   }
