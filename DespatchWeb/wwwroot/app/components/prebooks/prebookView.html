@@ -1,4 +1,4 @@
-<div ng-cloak ng-controller="PBControl as ctrl">
+<div>
     <div class="top-bar">
         <img class="logo" src="/images/menu-urgent.png"/>
 
@@ -27,17 +27,17 @@
                             <div class="md-toolbar-tools">
 
                             <span class="md-headline-title" flex>{{boxes[box.name].title}} <span
-                                    ng-show="box.name == 'scanList'">{{currentSelection}}</span>
+                                    ng-if="box.name == 'scanList'">{{currentSelection}}</span>
                             </span>
 
                                 <md-button class="md-icon-button md-primary" ng-click="refreshData()"
-                                           ng-show="boxes[box.name].showRefresh">
+                                           ng-if="boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
                                 </md-button>
 
-                                <div ng-show="box.name == 'eventList'">
+                                <div ng-if="box.name == 'eventList'">
                                     <input ng-model="searchBox" placeholder="Search Events..." type="text"/>
-                                    <div class="results" ng-show="searchBox">
+                                    <div class="results" ng-if="searchBox">
                                         <ul>
                                             <li class="result"
                                                 ng-mousedown="selectEvent(event)"
@@ -50,12 +50,12 @@
                                     </div>
                                 </div>
 
-                                <div ng-show="box.name == 'eventList'">
+                                <div ng-if="box.name == 'eventList'">
                                     <md-checkbox aria-label="Include Closed" ng-change="refreshData(true)"
                                                  ng-model="pickDateService.includeClosed">
                                         Include Closed?
                                     </md-checkbox>
-                                    <div layout="row" ng-show="isAdmin">
+                                    <div layout="row" ng-if="isAdmin">
                                         <md-radio-group ng-change="refreshData(true)" ng-model="followupClient.name">
                                             <md-radio-button value="All">
                                                 All
@@ -79,43 +79,43 @@
                                 </div>
 
 
-                                <div ng-show="box.name == 'jobDetail'">
+                                <div ng-if="box.name == 'jobDetail'">
                                     <md-button aria-label="reply" class="md-icon-button"
                                                ng-click="reply(currentEvent)"
-                                               ng-show="currentEvent && !currentEvent.closedDate">
+                                               ng-if="currentEvent && !currentEvent.closedDate">
                                         <md-tooltip md-direction="bottom">Reply</md-tooltip>
                                         <md-icon md-font-icon="reply" md-font-set="material-symbols-outlined"></md-icon>
                                     </md-button>
 
                                     <md-button aria-label="copy link" class="md-icon-button"
                                                ng-click="generateDirectLink(currentEvent)"
-                                               ng-show="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))">
+                                               ng-if="currentEvent && ((isAdmin && !currentEvent.internal) || (!isAdmin && !currentEvent.internal))">
                                         <md-tooltip md-direction="bottom">Copy Link</md-tooltip>
                                         <md-icon md-font-icon="link" md-font-set="material-symbols-outlined"></md-icon>
                                     </md-button>
 
                                     <md-button aria-label="email photo proof of delivery" class="md-icon-button"
-                                               ng-click="sendPOD()" ng-show="currentJob">
+                                               ng-click="sendPOD()" ng-if="currentJob">
                                         <md-tooltip md-direction="bottom">Email Photo POD</md-tooltip>
                                         <md-icon md-font-icon="send" md-font-set="material-symbols-outlined"></md-icon>
                                     </md-button>
                                 </div>
 
                                 <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
-                                     ng-show="boxes[box.name].showSearch">
-                                    <md-button class="md-icon-button" ng-click="ctrl.openSearch(box.name, $index)">
+                                     ng-if="boxes[box.name].showSearch">
+                                    <md-button class="md-icon-button" ng-click="openSearch(box.name, $index)">
                                         <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-show="!ctrl.showInput[box.name + '-' + $index]">search
+                                                 ng-if="!showInput[box.name + '-' + $index]">search
                                         </md-icon>
                                         <md-icon md-font-set="material-symbols-outlined"
-                                                 ng-show="ctrl.showInput[box.name + '-' + $index]">close
+                                                 ng-if="showInput[box.name + '-' + $index]">close
                                         </md-icon>
                                     </md-button>
 
                                     <md-input-container class="md-block search-input-container" md-no-float
-                                                        ng-show="ctrl.showInput[box.name + '-' + $index]">
+                                                        ng-if="showInput[box.name + '-' + $index]">
                                         <md-icon md-font-set="material-symbols-outlined ">search</md-icon>
-                                        <input class="search-input" ng-change="ctrl.updateTable()" ng-model="ctrl.searchText"
+                                        <input class="search-input" ng-change="updateTable()" ng-model="searchText"
                                                placeholder="Search jobs..." type="text">
                                     </md-input-container>
                                 </div>

@@ -38,4 +38,4 @@ class PrebookService {
 
 }
 
-angular.module('uDispatch').service('uPBData', PrebookService);
+angular.module('uDispatch').service('uPBData', ['$http', $http => new PrebookService($http)]);
