@@ -150,4 +150,10 @@ class DispatchJobService {
     }
 }
 
-angular.module('uDispatch').service('dispatchJobService', DispatchJobService);
+angular.module('uDispatch').service('dispatchJobService', [
+    '$mdDialog',
+    '$document',
+    'DispatchData',
+    'moment',
+    ($mdDialog, $document, DispatchData, moment) => new DispatchJobService($mdDialog, $document, DispatchData, moment)
+]);
