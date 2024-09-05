@@ -606,4 +606,4 @@ class NationwideService {
     }
 }
 
-angular.module("uDispatch").service("NWData", NationwideService);
+angular.module('uDispatch').service('NWData', ['$http', 'moment', ($http, moment) => new NationwideService($http, moment)]);

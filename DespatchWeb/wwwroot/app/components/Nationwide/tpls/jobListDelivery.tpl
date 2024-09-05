@@ -4,16 +4,46 @@
         <table>
             <thead class="thead-dark no select">
             <tr>
-                <th scope="col" ng-click="orderList('jobList','time')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'time'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i>Time </th>
-				<th scope="col" ng-click="orderList('jobList','speed')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-time'"></i>Speed </th>
-                <th scope="col" ng-click="orderList('jobList', 'jobno')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'jobno'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-speed'"></i>Job No </th>
-                <th scope="col" ng-click="orderList('jobList','client')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-notify'"></i>Client </th>
-                <th scope="col" ng-click="orderList('jobList','from')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-from'"></i>From </th>
-				<th scope="col" ng-click="orderList('jobList','to')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i>To </th>
-                <th scope="col" ng-click="orderList('jobList','courier')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'courier'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-courier'"></i>Courier </th>
-                <th scope="col" ng-click="orderList('jobList','pod')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'pod'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-pod'"></i>POD </th>
-                <th scope="col" ng-click="orderList('jobList','remain')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'remain'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-remain'"></i>Remain</th>
-                <th scope="col" ng-click="orderList('jobList','status')"><i class="fa fa-caret-down" ng-show="sort.jobList == 'status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-status'"></i>S </th
+                <th ng-click="orderList('jobList','time')" scope="col"><i class="fa fa-caret-down"
+                                                                          ng-if="sort.jobList == 'time'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-status'"></i>Time
+                </th>
+                <th ng-click="orderList('jobList','speed')" scope="col"><i class="fa fa-caret-down"
+                                                                           ng-if="sort.jobList == 'speed'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-time'"></i>Speed
+                </th>
+                <th ng-click="orderList('jobList', 'jobno')" scope="col"><i class="fa fa-caret-down"
+                                                                            ng-if="sort.jobList == 'jobno'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-speed'"></i>Job No
+                </th>
+                <th ng-click="orderList('jobList','client')" scope="col"><i class="fa fa-caret-down"
+                                                                            ng-if="sort.jobList == 'client'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-notify'"></i>Client
+                </th>
+                <th ng-click="orderList('jobList','from')" scope="col"><i class="fa fa-caret-down"
+                                                                          ng-if="sort.jobList == 'from'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-from'"></i>From
+                </th>
+                <th ng-click="orderList('jobList','to')" scope="col"><i class="fa fa-caret-down"
+                                                                        ng-if="sort.jobList == 'to'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-to'"></i>To
+                </th>
+                <th ng-click="orderList('jobList','courier')" scope="col"><i class="fa fa-caret-down"
+                                                                             ng-if="sort.jobList == 'courier'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-courier'"></i>Courier
+                </th>
+                <th ng-click="orderList('jobList','pod')" scope="col"><i class="fa fa-caret-down"
+                                                                         ng-if="sort.jobList == 'pod'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-pod'"></i>POD
+                </th>
+                <th ng-click="orderList('jobList','remain')" scope="col"><i class="fa fa-caret-down"
+                                                                            ng-if="sort.jobList == 'remain'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-remain'"></i>Remain
+                </th>
+                <th ng-click="orderList('jobList','status')" scope="col"><i class="fa fa-caret-down"
+                                                                            ng-if="sort.jobList == 'status'"></i><i
+                        class="fa fa-caret-up" ng-if="sort.jobList == 'd-status'"></i>S
+                </th>
                 <th></th>
                 <th style="width:20px;">E</th>
                 <th style="width:20px;">R</th>

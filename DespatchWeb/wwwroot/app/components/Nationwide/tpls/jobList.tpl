@@ -3,53 +3,53 @@
         <thead class="thead-dark no select">
         <tr>
             <th ng-click="orderList('jobList','time')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                      ng-show="sort.jobList == 'time'">arrow_drop_down</i><i
+                                                                      ng-if="sort.jobList == 'time'">arrow_drop_down</i><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'd-status'">arrow_drop_up</i>Time
+                    ng-if="sort.jobList == 'd-status'">arrow_drop_up</i>Time
             </th>
             <th ng-click="orderList('jobList','speed')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                       ng-show="sort.jobList == 'speed'">arrow_drop_down</i><i
+                                                                       ng-if="sort.jobList == 'speed'">arrow_drop_down</i><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'd-time'">arrow_drop_up</i>Speed
+                    ng-if="sort.jobList == 'd-time'">arrow_drop_up</i>Speed
             </th>
             <th ng-click="orderList('jobList', 'jobno')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                        ng-show="sort.jobList == 'jobno'">arrow_drop_down</i><i
+                                                                        ng-if="sort.jobList == 'jobno'">arrow_drop_down</i><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'd-speed'">arrow_drop_up</i>Job No
+                    ng-if="sort.jobList == 'd-speed'">arrow_drop_up</i>Job No
             </th>
             <th ng-click="orderList('jobList','client')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                        ng-show="sort.jobList == 'client'">arrow_drop_down</i><i
+                                                                        ng-if="sort.jobList == 'client'">arrow_drop_down</i><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'd-notify'">arrow_drop_up</i>Client
+                    ng-if="sort.jobList == 'd-notify'">arrow_drop_up</i>Client
             </th>
             <th ng-click="orderList('jobList','from')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                      ng-show="sort.jobList == 'from'">arrow_drop_down</i><i
+                                                                      ng-if="sort.jobList == 'from'">arrow_drop_down</i><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'd-from'">arrow_drop_up</i>From
+                    ng-if="sort.jobList == 'd-from'">arrow_drop_up</i>From
             </th>
             <th ng-click="orderList('jobList','to')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                    ng-show="sort.jobList == 'to'">arrow_drop_down</i><i
-                    class="material-symbols-outlined job-table-icon" ng-show="sort.jobList == 'd-to'">arrow_drop_up</i>To
+                                                                    ng-if="sort.jobList == 'to'">arrow_drop_down</i><i
+                    class="material-symbols-outlined job-table-icon" ng-if="sort.jobList == 'd-to'">arrow_drop_up</i>To
             </th>
             <th ng-click="orderList('jobList','courier')" scope="col"><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'courier'">arrow_drop_down</i><i
+                    ng-if="sort.jobList == 'courier'">arrow_drop_down</i><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'd-courier'">arrow_drop_up</i>Courier
+                    ng-if="sort.jobList == 'd-courier'">arrow_drop_up</i>Courier
             </th>
             <th ng-click="orderList('jobList','pod')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                     ng-show="sort.jobList == 'pod'">arrow_drop_down</i><i
-                    class="material-symbols-outlined job-table-icon" ng-show="sort.jobList == 'd-pod'">arrow_drop_up</i>POD
+                                                                     ng-if="sort.jobList == 'pod'">arrow_drop_down</i><i
+                    class="material-symbols-outlined job-table-icon" ng-if="sort.jobList == 'd-pod'">arrow_drop_up</i>POD
             </th>
             <th ng-click="orderList('jobList','remain')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                        ng-show="sort.jobList == 'remain'">arrow_drop_down</i><i
+                                                                        ng-if="sort.jobList == 'remain'">arrow_drop_down</i><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'd-remain'">arrow_drop_up</i>Remain
+                    ng-if="sort.jobList == 'd-remain'">arrow_drop_up</i>Remain
             </th>
             <th ng-click="orderList('jobList','status')" scope="col"><i class="material-symbols-outlined job-table-icon"
-                                                                        ng-show="sort.jobList == 'status'">arrow_drop_down</i><i
+                                                                        ng-if="sort.jobList == 'status'">arrow_drop_down</i><i
                     class="material-symbols-outlined job-table-icon"
-                    ng-show="sort.jobList == 'd-status'">arrow_drop_up</i>S
+                    ng-if="sort.jobList == 'd-status'">arrow_drop_up</i>S
             </th>
             <th></th>
             <th style="width:20px;">E</th>
