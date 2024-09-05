@@ -180,31 +180,30 @@ class JobDetailService {
         let self = this;
         this.palletMenu = [// NEW IMPLEMENTATION
             {
-                text: "Delete", click: function ($itemScope, $event, modelValue, text, $li) {
-                    return self._dispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(response => {
+                text: "Delete",
+                click: ($itemScope, $event, modelValue, text, $li) => self._dispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(response => {
 
-                        console.log(response);
+                    console.log(response);
 
-                        if (response === "OK") {
-                            const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
-                            $itemScope.currentJob.palletInfo.splice(index, 1);
+                    if (response === "OK") {
+                        const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
+                        $itemScope.currentJob.palletInfo.splice(index, 1);
 
-                            return self._rateJobService.rateJob(this.currentJob).then(rate => {
-                                console.log(rate);
-                                if (rate !== self.currentJob.charge) {
-                                    return self._dispatchData
-                                        .updateJobDetail(self.currentJob.id, "rate", Number(rate.replace(/[^0-9.-]+/g, "")), Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, self.currentJob.preBook).then(response => {
-                                            self.selectJobDetail(self.currentJob.id);
-                                            return response;
-                                        });
-                                }
+                        return self._rateJobService.rateJob(this.currentJob).then(rate => {
+                            console.log(rate);
+                            if (rate !== self.currentJob.charge) {
+                                return self._dispatchData
+                                    .updateJobDetail(self.currentJob.id, "rate", Number(rate.replace(/[^0-9.-]+/g, "")), Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, self.currentJob.preBook).then(response => {
+                                        self.selectJobDetail(self.currentJob.id);
+                                        return response;
+                                    });
+                            }
 
-                            });
-                        } else {
-                            console.log("Critical Error Add Pallet");
-                        }
-                    });
-                }
+                        });
+                    } else {
+                        console.log("Critical Error Add Pallet");
+                    }
+                })
             }];
 
 
@@ -421,7 +420,6 @@ class JobDetailService {
             })
             .catch(error => {
                 console.error('Error in date dialog:', error);
-                this._toastrService.showErrorToast("An error occurred while editing the date. Please try again.");
             });
     }
 
@@ -910,7 +908,6 @@ class JobDetailService {
             .then(addressDetails => this._processAddressUpdate(currentJob, field, addressDetails))
             .catch(error => {
                 console.error('Error updating GPS:', error);
-                this._toastrService.showErrorToast("Failed to update address. Please try again.");
             });
     }
 
@@ -964,7 +961,6 @@ class JobDetailService {
             })
             .catch(error => {
                 console.error('Error processing address update:', error);
-                this._toastrService.showErrorToast("Failed to update address. Please try again.");
             });
     }
 
@@ -1090,7 +1086,6 @@ class JobDetailService {
                 return response;
             })
             .catch(error => {
-                this._toastrService.showErrorToast("Failed to unlock job. Please try again.");
                 throw error; // Re-throw the error to propagate it
             });
     }
@@ -1115,7 +1110,6 @@ class JobDetailService {
                 return response;
             })
             .catch(error => {
-                this._toastrService.showErrorToast(error.message || "Failed to lock job. Please try again.");
                 throw error; // Re-throw the error to propagate it
             });
     }
@@ -1131,7 +1125,7 @@ class JobDetailService {
             .then(response => {
                 this.selectBulkJobDetail(job.id);
                 return response;
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+            }).catch((error) => console.log(error));
     }
 
     /**
@@ -1156,7 +1150,6 @@ class JobDetailService {
                 return response;
             })
             .catch(error => {
-                this._toastrService.showErrorToast("Failed to update VanOK status. Please try again.");
                 throw error; // Re-throw the error to propagate it
             });
     }
@@ -1176,8 +1169,8 @@ class JobDetailService {
                     .then(response => {
 
                         return response;
-                    }).catch((error) => this._toastrService.showErrorToast(error.message));
-            }).catch((error) => this._toastrService.showErrorToast(error.message));
+                    }).catch((error) => console.log(error.message));
+            }).catch((error) => console.log(error.message));
 
     }
 
@@ -1223,7 +1216,7 @@ class JobDetailService {
                 return response;
             })
             .catch(error => {
-                this._toastrService.showErrorToast(`Failed to update ${capitalizedProperty} status. Please try again.`);
+                console.log(`Failed to update ${capitalizedProperty} status. Please try again.`);
                 throw error;
             });
     }
@@ -1260,7 +1253,7 @@ class JobDetailService {
                     return response;
                 })
                 .catch(error => {
-                    this._toastrService.showErrorToast("Failed to uncheck Direct status. Please try again.");
+                    console.log("Failed to uncheck Direct status. Please try again.");
                     throw error;
                 });
         } else {
@@ -1317,7 +1310,7 @@ class JobDetailService {
                 return response;
             })
             .catch(error => {
-                this._toastrService.showErrorToast(error.message || "Failed to update Active status. Please try again.");
+                console.log(error.message || "Failed to update Active status. Please try again.");
                 throw error;
             });
     }
@@ -1340,7 +1333,7 @@ class JobDetailService {
                 return response;
             })
             .catch(error => {
-                this._toastrService.showErrorToast("Failed to update Void status. Please try again.");
+                console.log("Failed to update Void status. Please try again.");
                 throw error;
             });
     }
@@ -1366,7 +1359,7 @@ class JobDetailService {
                 return response;
             })
             .catch(error => {
-                this._toastrService.showErrorToast("Failed to mark job as done. Please try again.");
+                console.log("Failed to mark job as done. Please try again.");
                 throw error;
             });
     }
@@ -1667,7 +1660,7 @@ class JobDetailService {
             })
             .catch((error) => {
                 console.error('Error in pallet dialog:', error);
-                this._toastrService.showErrorToast(`Failed to ${isEditing ? 'edit' : 'create'} pallet. Please try again.`);
+                console.log(`Failed to ${isEditing ? 'edit' : 'create'} pallet. Please try again.`);
                 throw error; // Re-throw the error for the caller to handle if needed
             });
     }
@@ -1694,4 +1687,14 @@ class JobDetailService {
     }
 }
 
-angular.module('uDispatch').service('JobDetailService', JobDetailService);
+angular.module('uDispatch').service('JobDetailService', [
+    "DispatchData",
+    "$mdDialog",
+    "toastrService",
+    "rateJobService",
+    "$document",
+    "$timeout",
+    "moment",
+    "versionUrl",
+    (DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl)
+]);

@@ -73,4 +73,9 @@ class RateJobService {
     }
 }
 
-angular.module("uDispatch").service("rateJobService", RateJobService);
+
+angular.module("uDispatch").service("rateJobService", [
+    "DispatchData",
+    "moment",
+    (DispatchData, moment) => new RateJobService(DispatchData, moment)
+]);

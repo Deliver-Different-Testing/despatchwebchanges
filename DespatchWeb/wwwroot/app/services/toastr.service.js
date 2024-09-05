@@ -59,4 +59,7 @@ class ToastrService {
     }
 }
 
-angular.module("uDispatch").service("toastrService", ToastrService);
+angular.module("uDispatch").service("toastrService", [
+    '$mdToast',
+    $mdToast => new ToastrService($mdToast)
+]);

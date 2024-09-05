@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const {minify} = require('terser');
+const uglifyJs = require('uglify-js');
 const glob = require('glob');
 
 const inputDir = path.join(__dirname, 'wwwroot', 'dist');
@@ -8,7 +8,7 @@ const inputDir = path.join(__dirname, 'wwwroot', 'dist');
 // Get all JS files recursively
 const files = glob.sync('**/*.js', {cwd: inputDir});
 
-files.forEach(async (file) => {
+files.forEach((file) => {
     // Skip already minified files
     if (file.endsWith('.min.js')) return;
 
@@ -17,10 +17,10 @@ files.forEach(async (file) => {
 
     const code = fs.readFileSync(inputPath, 'utf8');
     try {
-        const result = await minify(code, {
+        const result = uglifyJs.minify(code, {
             sourceMap: {
                 filename: path.basename(file),
-                url: path.b(file) + '.map'
+                url: path.basename(file) + '.map'
             }
         });
 

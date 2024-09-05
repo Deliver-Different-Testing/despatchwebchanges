@@ -145,4 +145,8 @@ class MapService {
 }
 
 // Register the service with Angular
-angular.module('uDispatch').service('MapService', MapService);
+angular.module('uDispatch').service('MapService', [
+    'NgMap',
+    '$q',
+    (NgMap, $q) => new MapService(NgMap, $q)
+]);

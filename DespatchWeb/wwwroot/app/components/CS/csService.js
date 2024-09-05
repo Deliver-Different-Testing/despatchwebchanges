@@ -263,4 +263,7 @@ class CsService {
     }
 }
 
-angular.module('uDispatch').service('uCSData', CsService);
+angular.module('uDispatch').service('uCSData', [
+    '$http',
+    $http => new CsService($http)
+]);

@@ -28,4 +28,8 @@ class LoadingService {
     }
 }
 
-angular.module("uDispatch").service("loadingService", LoadingService);
+angular.module("uDispatch").service("loadingService", [
+    '$mdDialog',
+    '$document',
+    ($mdDialog, $document) => new LoadingService($mdDialog, $document)
+]);

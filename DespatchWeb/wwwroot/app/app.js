@@ -7,7 +7,7 @@ angular
         'heremaps', 'ngAnimate', 'ngMessages', 'ngSanitize', 'ngMaterial',
         'angularPromiseButtons', 'ng-mfb', 'md.time.picker', 'angularMoment',
         'md.data.table', 'ngFileUpload'])
-    .config($mdThemingProvider => {
+    .config(['$mdThemingProvider', $mdThemingProvider => {
         $mdThemingProvider.definePalette('urgentPrimary', {
             '50': 'fffbe0',
             '100': 'fef5b3',
@@ -58,8 +58,8 @@ angular
         $mdThemingProvider.theme('success-toast')
         $mdThemingProvider.theme('warning-toast')
         $mdThemingProvider.theme('error-toast')
-    })
-    .directive('rightClick', ($document) => {
+    }])
+    .directive('rightClick', ['$document', $document => {
         $document.oncontextmenu = event => {
             if (event.target.hasAttribute('right-click')) {
                 event.stopPropagation();
@@ -73,7 +73,7 @@ angular
                 }));
             });
         }
-    })
+    }])
     .config(['HereMapsConfigProvider', HereMapsConfigProvider => {
         HereMapsConfigProvider.setOptions({
             'app_id': 'bBPfh2x8Cauun3ygLMAx',
@@ -90,7 +90,7 @@ angular
     .config(['$qProvider', $qProvider => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
-    .config(($mdDateLocaleProvider) => {
+    .config(['$mdDateLocaleProvider', $mdDateLocaleProvider => {
         // Format date to dd/mm/yyyy
         $mdDateLocaleProvider.formatDate = (date) => {
             if (!date) return '';
@@ -138,13 +138,13 @@ angular
 
         $mdDateLocaleProvider.msgCalendar = 'Calendar';
         $mdDateLocaleProvider.msgOpenCalendar = 'Open calendar';
-    })
-    .constant('APP_VERSION', '3.1520')
+    }])
+    .constant('APP_VERSION', '3.1521')
     .factory('versionUrl', ['APP_VERSION', APP_VERSION => url => url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + APP_VERSION])
     .config(['$urlRouterProvider', '$stateProvider', 'versionUrlProvider',
         ($urlRouterProvider, $stateProvider, versionUrlProvider) => {
-
             const versionUrl = versionUrlProvider.$get();
+
             $urlRouterProvider.otherwise('/');
 
             $stateProvider

@@ -18,7 +18,7 @@
     "@babel/preset-env": "^7.25.4",
     "core-js": "^3.38.1",
     "glob": "^11.0.0",
-    "terser": "^5.31.6"
+    "uglify-js": "^3.19.3"
   },
   "scripts": {
     "build": "npm run babel && npm run minify",

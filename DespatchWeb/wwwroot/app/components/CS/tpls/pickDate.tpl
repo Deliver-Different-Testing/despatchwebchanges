@@ -1,7 +1,7 @@
 <div class="dateService">
     <div class="container-fluid space">
         <label id="dateRange" class="label-padding">Quick Search: </label>
-        <md-radio-group ng-change="ctrl.onSearchRangeChange(ctrl.dateSearchRange)" ng-model="ctrl.dateSearchRange"
+        <md-radio-group ng-change="onSearchRangeChange(dateSearchRange)" ng-model="dateSearchRange"
                         aria-labelledby="dateRange" layout="row" layout-align="center center">
             <md-radio-button value="1">Fortnight</md-radio-button>
             <md-radio-button value="2">Today</md-radio-button>
@@ -10,14 +10,14 @@
         </md-radio-group>
         <md-divider></md-divider>
 
-        <div class="space" layout="column" layout-align="center end" ng-if="ctrl.dateSearchRange == 4">
+        <div class="space" layout="column" layout-align="center end" ng-if="dateSearchRange == 4">
             <div>
                 <label id="from-datepicker-header">From: </label>
                 <md-datepicker
                         input-aria-describedby="from-datepicker-description"
                         input-aria-labelledby="from-datepicker-header "
                         md-placeholder="Enter date"
-                        ng-model="ctrl.pickDateService.from_date"></md-datepicker>
+                        ng-model="pickDateService.from_date"></md-datepicker>
                 <p id="from-datepicker-description" style="display: none">
                     Start date search
                 </p>
@@ -29,7 +29,7 @@
                         input-aria-describedby="to-datepicker-description"
                         input-aria-labelledby="to-datepicker-header "
                         md-placeholder="Enter date"
-                        ng-model="ctrl.pickDateService.to_date"></md-datepicker>
+                        ng-model="pickDateService.to_date"></md-datepicker>
                 <p id="to-datepicker-description" style="display: none">
                     End date search
                 </p>
@@ -42,17 +42,17 @@
                     input-aria-labelledby="clientLabel"
                     md-clear-button="true"
                     md-item-text="item.text"
-                    md-items="item in ctrl.clientQuerySearch(ctrl.clientSearchText)"
+                    md-items="item in clientQuerySearch(clientSearchText)"
                     md-min-length="2"
-                    md-search-text="ctrl.clientSearchText"
-                    md-selected-item="ctrl.clientSelectedItem"
-                    md-selected-item-change="ctrl.selectedClientChange(item)"
+                    md-search-text="clientSearchText"
+                    md-selected-item="clientSelectedItem"
+                    md-selected-item-change="selectedClientChange(item)"
                     placeholder="Start typing to enter new client...">
                 <md-item-template>
-                    <span md-highlight-flags="^i" md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
+                    <span md-highlight-flags="^i" md-highlight-text="clientSearchText">{{item.text}}</span>
                 </md-item-template>
                 <md-not-found>
-                    No clients matching "{{ctrl.clientSearchText}}" were found.
+                    No clients matching "{{clientSearchText}}" were found.
                 </md-not-found>
             </md-autocomplete>
         </div>
@@ -60,32 +60,32 @@
         <div class="space">
             <label id="courierLabel">Courier:</label>
             <md-autocomplete
-                    md-items="item in ctrl.courierQuerySearch(ctrl.courierSearchText)"
-                    md-search-text="ctrl.courierSearchText"
-                    md-selected-item="ctrl.courierSelectedItem"
-                    md-selected-item-change="ctrl.selectedCourierChange(item)"
+                    md-items="item in courierQuerySearch(courierSearchText)"
+                    md-search-text="courierSearchText"
+                    md-selected-item="courierSelectedItem"
+                    md-selected-item-change="selectedCourierChange(item)"
                     md-item-text="item.text"
                     md-min-length="1"
                     placeholder="Start typing to enter new courier..."
                     input-aria-labelledby="courierLabel"
                     md-clear-button="true">
                 <md-item-template>
-                    <span md-highlight-flags="^i" md-highlight-text="ctrl.courierSearchText">{{item.text}}</span>
+                    <span md-highlight-flags="^i" md-highlight-text="courierSearchText">{{item.text}}</span>
                 </md-item-template>
                 <md-not-found>
-                    No couriers matching "{{ctrl.courierSearchText}}" were found.
+                    No couriers matching "{{courierSearchText}}" were found.
                 </md-not-found>
             </md-autocomplete>
         </div>
 
         <div class="space">
             <b>Job Number:</b>
-            <input class="form-control focusMe" id="Job" name="Job" ng-model="ctrl.pickDateService.job" type="text"/>
+            <input class="form-control focusMe" id="Job" name="Job" ng-model="pickDateService.job" type="text"/>
         </div>
 
         <div class="space">
             <b>Everything Else (JobNo, Address, Name, Refs):</b>
-            <input class="form-control focusMe" id="Wild" name="Wild" ng-model="ctrl.pickDateService.wild" type="text"/>
+            <input class="form-control focusMe" id="Wild" name="Wild" ng-model="pickDateService.wild" type="text"/>
         </div>
 
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">

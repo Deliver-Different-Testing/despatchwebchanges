@@ -920,4 +920,4 @@ class DispatchData {
     }
 }
 
-angular.module('uDispatch').service('DispatchData', DispatchData);
+angular.module('uDispatch').service('DispatchData', ['$http', 'moment', ($http, moment) => new DispatchData($http, moment)]);
