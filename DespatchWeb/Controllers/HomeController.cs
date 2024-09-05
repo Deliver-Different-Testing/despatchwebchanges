@@ -72,16 +72,6 @@ public class HomeController : Controller
         return View();
     }
 
-    [HttpGet]
-    public IActionResult GetGoogleApiKey()
-    {
-        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-        var apiKey = env == "Development"
-            ? _configuration["GoogleApiKeys:Development"]
-            : _configuration["GoogleApiKeys:Production"];
-        return Ok(apiKey);
-    }
-
     public async Task<IActionResult> ActiveClients(string searchTerm)
     {
         var result = await _clientRepository.ActiveClientsAsync(searchTerm);

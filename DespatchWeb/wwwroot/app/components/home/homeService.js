@@ -907,17 +907,6 @@ class DispatchData {
         let response = await this.$http.get(`job/IsFilesAttachedToJob/${jobId}`);
         return await response.data;
     }
-
-    async getGoogleMapsApiKey() {
-        let googleMapsUrl = "https://maps.googleapis.com/maps/api/js?key=";
-        try {
-            let response = await this.$http.get('/home/GetGoogleApiKey');
-            googleMapsUrl += response.data;
-            return googleMapsUrl;
-        } catch (error) {
-            console.error("Error retrieving Google API key: ", error);
-        }
-    }
 }
 
 angular.module('uDispatch').service('DispatchData', ['$http', 'moment', ($http, moment) => new DispatchData($http, moment)]);
