@@ -69,8 +69,17 @@ public class HomeController : Controller
         ViewBag.ClientInternal = clientDetail.Internal;
         ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
 
-
         return View();
+    }
+
+    [HttpGet]
+    public IActionResult GetGoogleApiKey()
+    {
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        var apiKey = env == "Development"
+            ? _configuration["GoogleApiKeys:Development"]
+            : _configuration["GoogleApiKeys:Production"];
+        return Ok(apiKey);
     }
 
     public async Task<IActionResult> ActiveClients(string searchTerm)

@@ -4,6 +4,8 @@ function HomeController($document, $filter, greetingService, jdSvc,
                         Upload, bytesFilter, versionUrl, NgMap, MapService) {
     $scope.isInternal = (ClientInternal === "True");
     $scope.name = "Home";
+    $scope.googleMapsUrl = "https://maps.googleapis.com/maps/api/js?key=AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg";
+
     $scope.jdSvc = jdSvc;
 
     $scope.courierSearchText = "";
@@ -15,28 +17,98 @@ function HomeController($document, $filter, greetingService, jdSvc,
     $scope.markers = [];
     $scope.autoZoomEnabled = JSON.parse(localStorage.getItem("mapZoom-" + ContactID))?.display ?? true;
 
+    // I've added these here to aid with performance. AngualarJS material seems to have introduced some overhead
+
+    // Array to store all timeout promises
+    const timeouts = [];
+
+    // Wrapper for $timeout that stores the promise
+    const safeTimeout = (fn, delay) => {
+        const timeoutPromise = $timeout(fn, delay);
+        timeouts.push(timeoutPromise);
+        return timeoutPromise;
+    };
+
+    // Array to store all event listener removal functions
+    const cleanupFunctions = [];
+
+    // Wrapper for $document.on that stores the removal function
+    const safeOn = (eventName, selector, handler) => {
+        $document.on(eventName, selector, handler);
+        cleanupFunctions.push(() => $document.off(eventName, selector, handler));
+    };
+
+    // Clean up function
+    const cleanup = () => {
+        // Cancel all timeouts
+        timeouts.forEach($timeout.cancel);
+
+        // Remove all event listeners
+        cleanupFunctions.forEach(fn => fn());
+
+        // Stop recurring timer
+        $document.stopTime("SP");
+
+        // Clear Google Maps objects
+        if ($scope.markers) {
+            $scope.markers.forEach(marker => marker.setMap(null));
+            $scope.markers = [];
+        }
+        if ($scope.infoWindows) {
+            $scope.infoWindows.forEach(infoWindow => infoWindow.close());
+            $scope.infoWindows = [];
+        }
+
+        // Clear large data structures
+        $scope.jobList = null;
+        $scope.supports = null;
+        $scope.pickCouriers = null;
+
+        // Nullify scope variables to help garbage collection
+        $scope.currentJob = null;
+        $scope.currentCourier = null;
+    };
+
+    // Register the cleanup function to run when the scope is destroyed
+    $scope.$on('$destroy', cleanup);
+
+
     $scope.greetUser = () => {
         return greetingService.greetUser(FirstName);
     }
 
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
     // Google Map
     $scope.initializeMap = () => {
-        MapService.initializeMap().then(map => {
-            $scope.map = map;
-            $scope.getAvailableCourierLocation();
-        });
+        if (!$scope.map) {
+            MapService.initializeMap().then(map => {
+                $scope.map = map;
+                $scope.getAvailableCourierLocation();
+            });
+        }
     };
-    $scope.initializeMap();
 
-    $scope.updateMapMarkers = jobs => {
+    $scope.updateMapMarkers = debounce(jobs => {
         MapService.updateMarkers(jobs).then(() => {
             console.log('Markers updated successfully');
         }).catch(error => {
             console.error('Error updating markers:', error);
         });
-    };
+    }, 500);
 
-    $scope.getAvailableCourierLocation = () => {
+    $scope.getAvailableCourierLocation = debounce(() => {
         const bounds = MapService.getBounds();
         if (bounds) {
             const southWest = bounds.getSouthWest();
@@ -52,7 +124,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
         } else {
             console.log('Map bounds not available');
         }
-    };
+    }, 500);
 
     $scope.displayPickupPoints = (jobs, clear, currentJob) => {
         if (clear) {
@@ -85,6 +157,11 @@ function HomeController($document, $filter, greetingService, jdSvc,
         }
     };
 
+    /**
+     * @param {T} courierJobs
+     * @param {boolean} clear
+     * @param {*} zoom
+     */
     $scope.displayRoutePoints = (courierJobs, clear, zoom) => {
         if (clear) {
             $scope.clearMarkers();
@@ -107,11 +184,11 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 MapService.panToBounds(bounds);
             }
 
-            $timeout(() => {
+            safeTimeout(() => {
                 $scope.markers.forEach(marker => {
                     marker.setAnimation(google.maps.Animation.BOUNCE);
                 });
-                $timeout(() => {
+                safeTimeout(() => {
                     $scope.markers.forEach(marker => {
                         marker.setAnimation(null);
                     });
@@ -265,7 +342,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
 
             const refreshedJob = $scope.jobList.find(jo => jo.id === currentJob.id);
             $scope.selectJob(refreshedJob);
-            $timeout(() => {
+            safeTimeout(() => {
                 angular.element("#jobList tr[data-jobid='" + currentJob.id + "']").addClass('active');
 
                 const element = angular.element("#jobList tr[data-jobid='" + currentJob.id + "']");
@@ -634,7 +711,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
         // save layout as last active
         $scope.setLastActiveLayoutName($scope.currentLayoutName);
 
-        $timeout($scope.getData, 1000);
+        safeTimeout($scope.getData, 1000);
     };
 
     $scope.saveLayout = () => {
@@ -694,7 +771,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
         if (!$event.target.classList.contains('lateCallField') &&
             !$event.target.classList.contains('dispatchField')) {
             // Use $timeout to ensure this runs after the current digest cycle
-            $timeout(() => {
+            safeTimeout(() => {
                 $scope.selectJob(job);
                 angular.element("#input_" + job.id).select();
             });
@@ -760,7 +837,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
             });
         },
         update(e, ui) {
-            $timeout(() => {
+            safeTimeout(() => {
                 const box = angular.element("#" + ui.item.context.id);
                 const parent = box.parent();
                 const boxes = parent.children().filter((_, child) => angular.element(child).hasClass('box'));
@@ -1360,7 +1437,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
 
-            $timeout(() => {
+            safeTimeout(() => {
                 $scope.getCurrentJobs(foundCourier.courierID);
                 $scope.getData();
             }, 1000);
@@ -1544,7 +1621,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
             DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
         }
 
-        $timeout(() => {
+        safeTimeout(() => {
             $scope.getCurrentJobs(foundCourier.courierID);
             $scope.getData();
         }, 1000);
@@ -1660,7 +1737,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
 
     //ACTIVATE DROP
     $scope.activateDrop = () => {
-        $timeout(() => {
+        safeTimeout(() => {
                 $document.ready(() => {
                     angular.element(".droppable-row").droppable({
                         classes: {
@@ -1710,11 +1787,11 @@ function HomeController($document, $filter, greetingService, jdSvc,
 
             $scope.potentialCouriers = data;
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
 
@@ -1828,7 +1905,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
 
         $scope.getCurrentJobs(courier.courierID);
 
-        $timeout(() => {
+        safeTimeout(() => {
             loadingElement.css('display', 'none');
             mapLoadingElement.css('display', 'none');
         }, 100);
@@ -1869,11 +1946,11 @@ function HomeController($document, $filter, greetingService, jdSvc,
             }
             $scope.activateDrop();
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
         });
@@ -1881,7 +1958,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
         $scope.currentWorkSelection = " for Courier " + courier.label;
         $scope.currentSelection = " for Courier " + courier.label;
 
-        $timeout(() => {
+        safeTimeout(() => {
             $document.ready(() => {
                 angular.element("#box-jobDetail .loading").css('display', 'none');
                 angular.element("#box-map .loading").css('display', 'none');
@@ -1930,10 +2007,10 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 });
             }
             $scope.activateDrop();
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
             $scope.getAvailableCourierLocation();
@@ -1945,7 +2022,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
 
         $scope.currentSelection = " for Courier " + courier.courier;
 
-        $timeout(() => {
+        safeTimeout(() => {
             $document.ready(() => {
                 angular.element('#box-jobDetail').find(".loading").css('display', 'none');
                 angular.element('#box-map').find(".loading").css('display', 'none');
@@ -1963,10 +2040,10 @@ function HomeController($document, $filter, greetingService, jdSvc,
             angular.element('#box-jobGroups').find(".loading").css('display', 'none');
             $scope.jobGroups = data;
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
 
@@ -1998,10 +2075,10 @@ function HomeController($document, $filter, greetingService, jdSvc,
             }
             $scope.activateDrop();
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
         });
@@ -2029,7 +2106,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
     };
 
     $scope.setFilters = data => {
-        $timeout(() => {
+        safeTimeout(() => {
             if (data.status) {
                 $scope.jobFilters.status = data.status;
             }
@@ -2118,7 +2195,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
 
     // Select Job
     $scope.selectJob = (job) => {
-        $timeout(() => {
+        safeTimeout(() => {
             console.log("selectJob");
             $scope.currentJob = job;
             console.log(job);
@@ -2208,7 +2285,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 break;
             case 3:
                 // this is right click
-                $timeout(() => {
+                safeTimeout(() => {
                     jdSvc.updateGPS(job, 'fromAddress', true);
                 }, 100);
                 break;
@@ -2230,7 +2307,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 break;
             case 3:
                 // this is right click
-                $timeout(() => {
+                safeTimeout(() => {
                     jdSvc.updateGPS(job, 'toAddress', true);
                 }, 100);
                 break;
@@ -2252,7 +2329,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 break;
             case 3:
                 // this is right click
-                $timeout(() => {
+                safeTimeout(() => {
                     const dueTime = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
                     let items = [];
                     for (let i = 1; i < 37; i++) {
@@ -2293,7 +2370,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                     $scope.$apply();
                     angular.element(".lateForm").show(0);
 
-                    $timeout(() => {
+                    safeTimeout(() => {
                         const dueOptions = {
                             minimumInputLength: 0,
                             data: items,
@@ -2324,7 +2401,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 break;
             case 3:
                 // this is right click
-                $timeout(() => {
+                safeTimeout(() => {
                     jdSvc.speedClick($event, job);
                     $scope.$apply();
                 }, 400);
@@ -2348,7 +2425,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 break;
             case 3:
                 // this is right click
-                $timeout(() => {
+                safeTimeout(() => {
                     jdSvc.clientClick($event, job);
                     $scope.$apply();
                 }, 400);
@@ -2372,7 +2449,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 break;
             case 3:
                 // this is right click
-                $timeout(() => {
+                safeTimeout(() => {
                     jdSvc.notifyClick(job);
                     $scope.$apply();
                 }, 400);
@@ -2579,7 +2656,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
             $scope.updateMapMarkers(data);
 
             angular.element("#box-jobsList .loading").fadeOut();
-            $timeout(() => {
+            safeTimeout(() => {
 
                 sizeHeadings();
                 if (data.length > 0) {
@@ -2661,7 +2738,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
             ];
 
 
-            $timeout(() => {
+            safeTimeout(() => {
                     $document.ready(() => {
                         if ($scope.currentSupport) {
                             angular.element("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
@@ -2671,10 +2748,10 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 100);
 
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
         });
@@ -2716,7 +2793,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
         $scope.getClearListsData = () => {
             DispatchData.getClearLists().then(data => {
                 $scope.clearLists = data;
-                $timeout(() => {
+                safeTimeout(() => {
                     angular.element("#clearLists .loading").fadeOut();
                 }, 0);
                 console.log($scope.clearLists);
@@ -2751,14 +2828,14 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 }
             ];
             $scope.activateDrop();
-            $timeout(() => {
+            safeTimeout(() => {
                 angular.element("#box-couriersMoveThrough").find(".loading").fadeOut();
             }, 100);
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
         });
@@ -2824,16 +2901,16 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 }
             ];
 
-            $timeout(() => {
+            safeTimeout(() => {
                 $document.ready(() => {
                     angular.element("#box-courierMovePickedUp").find(".loading").fadeOut();
                 });
             }, 100);
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
         });
@@ -2900,17 +2977,17 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 }
             ];
 
-            $timeout(() => {
+            safeTimeout(() => {
                 $document.ready(() => {
                     angular.element("#box-courierMoveClear").find(".loading").fadeOut();
                 });
             }, 100);
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
         });
@@ -2924,17 +3001,17 @@ function HomeController($document, $filter, greetingService, jdSvc,
         DispatchData.getAreaList().then(data => {
             $scope.areaList = data;
 
-            $timeout(() => {
+            safeTimeout(() => {
                     $document.ready(() => {
                         angular.element("#box-areaList").find(".loading").fadeOut();
                     });
                 },
                 100);
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
         });
@@ -2978,17 +3055,17 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 }
             ];
 
-            $timeout(() => {
+            safeTimeout(() => {
                     $document.ready(() => {
                         angular.element("#box-lateCalls").find(".loading").fadeOut();
                     });
                 },
                 100);
 
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 1000);
-            $timeout(() => {
+            safeTimeout(() => {
                 sizeHeadings();
             }, 2000);
         });
@@ -3005,13 +3082,16 @@ function HomeController($document, $filter, greetingService, jdSvc,
 
     $scope.getData();
 
-    $document.everyTime("30s", "SP", () => {
-        $scope.getSupports();
-    });
-    $scope.getSupports();
+    const runSupportsUpdate = () => {
+        $scope.getSupports().then(() => {
+            safeTimeout(runSupportsUpdate, 60000);
+        });
+    };
+    runSupportsUpdate();
+
 
     // on first focus (bubbles up to document), open the menu
-    $document.on('focus', '.select2-selection.select2-selection--single', function () {
+    safeOn('focus', '.select2-selection.select2-selection--single', function () {
         angular.element(this).closest(".select2-container").siblings('select:enabled').select2('open');
     });
 
@@ -3344,9 +3424,10 @@ function HomeController($document, $filter, greetingService, jdSvc,
                 if (lastActiveLayoutName) {
                     const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
 
-                    // if the last active layout is found among stored layouts
                     if (lastActiveLayoutIndex !== -1) {
-                        $scope.loadLayout(lastActiveLayoutIndex);
+                        safeTimeout(() => {
+                            $scope.loadLayout(lastActiveLayoutIndex);
+                        }, 0);
                     }
                 }
             }
@@ -3405,13 +3486,13 @@ function HomeController($document, $filter, greetingService, jdSvc,
         $document.onkeydown = overrideKeyboardEvent;
         $document.onkeyup = overrideKeyboardEvent;
 
-        $document.on('keydown', '.dispatchField, .lateCallField', function (event) {
+        safeOn('keydown', '.dispatchField, .lateCallField', function (event) {
             if (event.keyCode === 13) {
                 angular.element(this).parents(".clickable-row").addClass("doing");
             }
         });
 
-        $document.on('click', '.top-bar .btn-group .btn', function (event) {
+        safeOn('click', '.top-bar .btn-group .btn', function (event) {
             if (!event.ctrlKey && !event.metaKey) {
                 angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
             }
@@ -3419,7 +3500,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
             angular.element(this).addClass('topBarActive');
         });
 
-        $document.on('click', '.clearLists-list-title', function (event) {
+        safeOn('click', '.clearLists-list-title', function (event) {
             if (!event.ctrlKey && !event.metaKey) {
                 angular.element("#clearLists").find('.listActive').removeClass('listActive');
             }
@@ -3428,17 +3509,17 @@ function HomeController($document, $filter, greetingService, jdSvc,
         });
 
 
-        $document.on('ready', () => {
+        safeOn('ready', () => {
             let isDown = false;   // Tracks status of mouse button
 
-            $document.on('mousedown', () => {
+            safeOn('mousedown', () => {
                 isDown = true;      // When mouse goes down, set isDown to true
             })
                 .on('mouseup', () => {
                     isDown = false;    // When mouse goes up, set isDown to false
                 });
 
-            $document.on("mouseenter", ".activeTable .clickable-row", function (event) {
+            safeOn("mouseenter", ".activeTable .clickable-row", function (event) {
                 if (event.ctrlKey) {
                     if (isDown) {        // Only change css if mouse is down
                         angular.element(this).addClass("active");
@@ -3449,7 +3530,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
         });
 
         let mouseDown = 0;
-        $document.on('mousedown', '.clickable-row', function (event) {
+        safeOn('mousedown', '.clickable-row', function (event) {
             let group;
             let jobNo;
             const activeTableClickActive = angular.element(".activeTable .clickable-row.active");
@@ -3497,7 +3578,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
                             angular.element(this).addClass('active');
                         }
 
-                        $timeout(() => {
+                        safeTimeout(() => {
                             if (mouseDown === 1) {
                                 const $draggingItems = angular.element("#draggingItems")
                                 $draggingItems.show();
@@ -3513,7 +3594,7 @@ function HomeController($document, $filter, greetingService, jdSvc,
             }
         });
 
-        $document.on('mouseup', '.clickable-row', function (event) {
+        safeOn('mouseup', '.clickable-row', function (event) {
             if (event.which === 3) {
                 angular.element(".rightActiveTable").removeClass("rightActiveTable");
                 angular.element(this).parents(".table").addClass("rightActiveTable");
@@ -3532,12 +3613,12 @@ function HomeController($document, $filter, greetingService, jdSvc,
         });
 
 
-        $document.on("mouseup", () => {
+        safeOn("mouseup", () => {
             angular.element("#draggingItems").hide();
             mouseDown = 0;
         });
 
-        $document.on("keydown", e => {
+        safeOn("keydown", e => {
             const code = (e.keyCode ? e.keyCode : e.which);
             if (code === 40) {
                 angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();

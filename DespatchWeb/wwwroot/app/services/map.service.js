@@ -21,6 +21,10 @@ class MapService {
         return this.mapInitialized;
     }
 
+    /**
+     * @param {number} lat
+     * @param {number} lng
+     */
     setCenter(lat, lng) {
         return this.ensureMapInitialized().then(() => {
             this.map.setCenter(new google.maps.LatLng(lat, lng));
@@ -39,6 +43,11 @@ class MapService {
         });
     }
 
+    /**
+     * @param {number} lat
+     * @param {number} lng
+     * @param {*} options
+     */
     addMarker(lat, lng, options) {
         return this.ensureMapInitialized().then(() => {
             const marker = new google.maps.Marker(Object.assign({
@@ -79,6 +88,9 @@ class MapService {
         });
     }
 
+    /**
+     * @param {string} content
+     */
     createInfoWindow(content) {
         return new google.maps.InfoWindow({content: content});
     }

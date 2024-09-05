@@ -63,7 +63,7 @@
                         </div>
                         <div class="field" data-field="toSuburb">
                             <label class="disabled">To Suburb:</label>
-                            <div class="disabled" class="value">{{jdSvc.currentJob.toSuburbName}}
+                            <div class="disabled value">{{jdSvc.currentJob.toSuburbName}}
                                 {{ jdSvc.currentJob.toPostCode
                                 }}
                             </div>
