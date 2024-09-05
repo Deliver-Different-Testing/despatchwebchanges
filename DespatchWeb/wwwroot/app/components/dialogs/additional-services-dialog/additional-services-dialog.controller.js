@@ -13,7 +13,7 @@ class AdditionalServicesDialogController {
         this.$mdDialog = $mdDialog;
         this.dispatchData = DispatchData;
         this.toastrService = toastrService;
-        this.job = job;
+        this.job = job;   
 
         this.initializeState();
         this.bindMethods();

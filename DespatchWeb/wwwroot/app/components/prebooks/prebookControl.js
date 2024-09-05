@@ -45,6 +45,10 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         ctrl.pagedData = orderedData.slice(start, start + ctrl.jobQuery.limit);
     };
 
+    /**
+     * @param {number} page
+     * @param {number} limit
+     */
     ctrl.onPaginate = (page, limit) => {
         ctrl.jobQuery.page = page;
         ctrl.jobQuery.limit = limit;
@@ -56,6 +60,10 @@ function PrebookController($scope, jdSvc, uPBData, $state, $stateParams, $filter
         ctrl.updateTable();
     });
 
+    /**
+     * @param {string} boxName
+     * @param {number} index
+     */
     ctrl.openSearch = (boxName, index) => {
         if (!ctrl.showInput) {
             ctrl.showInput = {};

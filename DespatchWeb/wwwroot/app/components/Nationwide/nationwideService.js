@@ -12,9 +12,10 @@ class NationwideService {
      * @param {string} despatcherName
      * @param {boolean} preBook
      */
-    addNote(jobId, note, despatcherName, preBook) {
+    async addNote(jobId, note, despatcherName, preBook) {
         const method = preBook ? "job/AddJobBookingNote" : "job/AddNote";
-        return this._$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName).then(response => response);
+        let response = await this._$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
+        return await response;
     }
 
     /**
@@ -22,10 +23,11 @@ class NationwideService {
      * @param {boolean} preBook
      * @param {string} despatcherName
      */
-    addPallet(pallet, preBook, despatcherName) {
-        return this._$http({
+    async addPallet(pallet, preBook, despatcherName) {
+        let response = await this._$http({
             url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
-        }).then(response => response.data);
+        });
+        return await response.data;
     }
 
     /**
@@ -33,10 +35,11 @@ class NationwideService {
      * @param {boolean} preBook
      * @param {string} despatcherName
      */
-    editPallet(pallet, preBook, despatcherName) {
-        return this._$http({
+    async editPallet(pallet, preBook, despatcherName) {
+        let response = await this._$http({
             url: "job/EditPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
-        }).then(response => response.data);
+        });
+        return await response.data;
     }
 
     /**
@@ -44,10 +47,11 @@ class NationwideService {
      * @param {boolean} preBook
      * @param {string} despatcherName
      */
-    deletePallet(pallet, preBook, despatcherName) {
-        return this._$http({
+    async deletePallet(pallet, preBook, despatcherName) {
+        let response = await this._$http({
             url: "job/DeletePallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
-        }).then(response => response.data);
+        });
+        return await response.data;
     }
 
     /**
@@ -60,8 +64,9 @@ class NationwideService {
      * @param {number} jobType
      * @param {string} despatcherName
      */
-    addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        return this._$http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(response => response.data);
+    async addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+        let response = await this._$http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        return await response.data;
     }
 
     /**
@@ -74,8 +79,9 @@ class NationwideService {
      * @param {number} jobType
      * @param {string} despatcherName
      */
-    addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        return this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(response => response.data);
+    async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+        let response = await this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        return await response.data;
     }
 
     /**
@@ -89,8 +95,9 @@ class NationwideService {
      * @param {string} despatcherName
      * @param {string} notes
      */
-    addOtherEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
-        return this._$http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes).then(response => response.data);
+    async addOtherEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
+        let response = await this._$http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes);
+        return await response.data;
     }
 
     /**
@@ -105,8 +112,9 @@ class NationwideService {
      * @param {string} notes
      * @param {number} eventType
      */
-    addEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes, eventType) {
-        return this._$http.post("job/addEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes + "&eventType=" + eventType).then(response => response.data);
+    async addEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes, eventType) {
+        let response = await this._$http.post("job/addEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes + "&eventType=" + eventType);
+        return await response.data;
     }
 
     /**
@@ -116,8 +124,9 @@ class NationwideService {
      * @param {string} jobNumber
      * @param {string} despatcherName
      */
-    exsalerateActivity(eventName, notes, clientId, jobNumber, despatcherName) {
-        return this._$http.post("job/ExsalerateActivity?eventName=" + eventName + "&notes=" + notes + "&clientId=" + clientId + "&jobNumber=" + jobNumber + "&despatcherName=" + despatcherName).then(response => response.data);
+    async exsalerateActivity(eventName, notes, clientId, jobNumber, despatcherName) {
+        let response = await this._$http.post("job/ExsalerateActivity?eventName=" + eventName + "&notes=" + notes + "&clientId=" + clientId + "&jobNumber=" + jobNumber + "&despatcherName=" + despatcherName);
+        return await response.data;
     }
 
     /**
@@ -125,8 +134,9 @@ class NationwideService {
      * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    allocateJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds).then(response => response);
+    async allocateJobs(courierId, dispatcherId, jobIds) {
+        let response = await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return await response;
     }
 
     /**
@@ -134,22 +144,25 @@ class NationwideService {
      * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    reAllocateJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds).then(response => response);
+    async reAllocateJobs(courierId, dispatcherId, jobIds) {
+        let response = await this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return await response;
     }
 
     /**
      * @param {number} courierId
      */
-    truckCourierStatus(courierId) {
-        return this._$http.post("courier/TruckCourierStatus?courierId=" + courierId).then(response => response);
+    async truckCourierStatus(courierId) {
+        let response = await this._$http.post("courier/TruckCourierStatus?courierId=" + courierId);
+        return await response;
     }
 
     /**
      * @param {number} jobId
      */
-    voidJob(jobId) {
-        return this._$http.post("job/Void?jobId=" + jobId).then(response => response);
+    async voidJob(jobId) {
+        let response = await this._$http.post("job/Void?jobId=" + jobId);
+        return await response;
     }
 
     /**
@@ -158,8 +171,9 @@ class NationwideService {
      * @param {number} staffId
      * @param {number} currentSpeed
      */
-    processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
-        return this._$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed).then(response => response.data);
+    async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
+        let response = await this._$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
+        return await response.data;
     }
 
     /**
@@ -167,8 +181,9 @@ class NationwideService {
      * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    restoreJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds).then(response => response.data);
+    async restoreJobs(courierId, dispatcherId, jobIds) {
+        let response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return await response.data;
     }
 
     /**
@@ -176,30 +191,34 @@ class NationwideService {
      * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    restoreSplitJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds).then(response => response.data);
+    async restoreSplitJobs(courierId, dispatcherId, jobIds) {
+        let response = await this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return await response.data;
     }
 
     /**
      * @param {number[]} jobIds
      */
-    resendJobs(jobIds) {
-        return this._$http.post("job/ResendSelected?jobIds=" + jobIds).then(response => response.data);
+    async resendJobs(jobIds) {
+        let response = await this._$http.post("job/ResendSelected?jobIds=" + jobIds);
+        return await response.data;
     }
 
     /**
      * @param {number} courierId
      */
-    resendAllJobs(courierId) {
-        return this._$http.post("job/ResendAll?courierId=" + courierId).then(response => response.data);
+    async resendAllJobs(courierId) {
+        let response = await this._$http.post("job/ResendAll?courierId=" + courierId);
+        return await response.data;
     }
 
     /**
      * @param {number} jobId
      * @param {string} email
      */
-    sendPOD(jobId, email) {
-        return this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email).then(response => response.data);
+    async sendPOD(jobId, email) {
+        let response = await this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
+        return await response.data;
     }
 
     /**
@@ -208,23 +227,26 @@ class NationwideService {
      * @param {string} despatcherName
      * @param {string} message
      */
-    sendSMS(courierId, staffId, despatcherName, message) {
-        return this._$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message).then(response => response.data);
+    async sendSMS(courierId, staffId, despatcherName, message) {
+        let response = await this._$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message);
+        return await response.data;
     }
 
     /**
      * @param {number} jobId
      */
-    getJobDetail(jobId) {
-        return this._$http.get('/Job/Detail?jobId=' + jobId).then(response => response.data);
+    async getJobDetail(jobId) {
+        let response = await this._$http.get('/Job/Detail?jobId=' + jobId);
+        return await response.data;
     }
 
     /**
      * @param {number} parentId
      * @param {number} clientId
      */
-    getRelatedJobs(parentId, clientId) {
-        return this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId).then(response => response.data);
+    async getRelatedJobs(parentId, clientId) {
+        let response = await this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
+        return await response.data;
     }
 
     getJobsGrouped() {
@@ -235,100 +257,117 @@ class NationwideService {
      * @param {string} courierId
      * @param {boolean} done
      */
-    getJobsCurrent(courierId, done) {
-        return this._$http.get("job/current?courierId=" + courierId + "&done=" + done).then(response => response.data);
+    async getJobsCurrent(courierId, done) {
+        let response = await this._$http.get("job/current?courierId=" + courierId + "&done=" + done);
+        return await response.data;
     }
 
-    getCouriersPicked() {
-        return this._$http.get("app/components/home/api/couriersPicked.json").then(response => response.data);
+    async getCouriersPicked() {
+        let response = await this._$http.get("app/components/home/api/couriersPicked.json");
+        return await response.data;
     }
 
-    getCouriersThrough() {
-        return this._$http.get("app/components/home/api/couriersThrough.json").then(response => response.data);
+    async getCouriersThrough() {
+        let response = await this._$http.get("app/components/home/api/couriersThrough.json");
+        return await response.data;
     }
 
-    getCouriersClear() {
-        return this._$http.get("app/components/home/api/couriersClear.json").then(response => response.data);
+    async getCouriersClear() {
+        let response = await this._$http.get("app/components/home/api/couriersClear.json");
+        return await response.data;
     }
 
-    getAreaList() {
-        return this._$http.get("app/components/home/api/areaList.json").then(response => response.data);
+    async getAreaList() {
+        let response = await this._$http.get("app/components/home/api/areaList.json");
+        return await response.data;
 
     }
 
     /**
      * @param {string} channel
      */
-    getSupports(channel) {
-        return this._$http.get("job/supports?channel=" + channel).then(response => response.data);
+    async getSupports(channel) {
+        let response = await this._$http.get("job/supports?channel=" + channel);
+        return await response.data;
     }
 
     /**
      * @param {number} supportId
      * @param {number} staffId
      */
-    closeSupport(supportId, staffId) {
-        return this._$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId).then(response => response);
+    async closeSupport(supportId, staffId) {
+        let response = await this._$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
+        return await response;
     }
 
     /**
      * @param {number} supportId
      * @param {string} dispatcher
      */
-    lockSupport(supportId, dispatcher) {
-        return this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcher).then(response => response);
+    async lockSupport(supportId, dispatcher) {
+        let response = await this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
+        return await response;
     }
 
     /**
      * @param {number} supportId
      * @param {string} dispatcher
      */
-    unLockSupport(supportId, dispatcher) {
-        return this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcher).then(response => response);
+    async unLockSupport(supportId, dispatcher) {
+        let response = await this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
+        return await response;
     }
 
-    getLateCalls() {
-        return this._$http.get("app/components/home/api/lateCalls.json").then(response => response.data);
+    async getLateCalls() {
+        let response = await this._$http.get("app/components/home/api/lateCalls.json");
+        return await response.data;
     }
 
-    getClearLists() {
-        return this._$http.get("courier").then(response => response.data);
+    async getClearLists() {
+        let response = await this._$http.get("courier");
+        return await response.data;
     }
 
     /**
      * @param {number} clearListId
      */
-    getClearListEnvelope(clearListId) {
-        return this._$http.get("courier/ClearListEnvelope?clearListId=" + clearListId).then(response => response.data);
+    async getClearListEnvelope(clearListId) {
+        let response = await this._$http.get("courier/ClearListEnvelope?clearListId=" + clearListId);
+        return await response.data;
     }
 
-    getActiveCouriers() {
-        return this._$http.get("courier/active").then(response => response.data);
+    async getActiveCouriers() {
+        let response = await this._$http.get("courier/active");
+        return await response.data;
     }
 
-    getActiveClients() {
-        return this._$http.get("home/ActiveClients").then(response => response.data);
+    async getActiveClients() {
+        let response = await this._$http.get("home/ActiveClients");
+        return await response.data;
     }
 
     /**
      * @param {number} contactId
      */
-    getClientContacts(contactId) {
-        return this._$http.get("home/ClientContacts?contactId=" + contactId).then(response => response.data);
+    async getClientContacts(contactId) {
+        let response = await this._$http.get("home/ClientContacts?contactId=" + contactId);
+        return await response.data;
     }
 
     /**
      * @param {number} jobId
      */
-    getPotentialCouriers(jobId) {
-        return this._$http.get("courier/PotentialCouriers?jobId=" + jobId).then(response => response.data);
+    async getPotentialCouriers(jobId) {
+        let response = await this._$http.get("courier/PotentialCouriers?jobId=" + jobId);
+        return await response.data;
     }
 
     /**
      * @param {string} code
      */
-    getCourierPosition(code) {
-        return this._$http.get("courier/location?code=" + code).then(response => response.data);
+    async getCourierPosition(code) {
+        let response = await this._$http.get("courier/location?code=" + code);
+        return await response.data;
     }
 
     /**
@@ -337,32 +376,38 @@ class NationwideService {
      * @param {number} maxLng
      * @param {number} maxLat
      */
-    getAvailableCourierLocation(minLng, minLat, maxLng, maxLat) {
-        return this._$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat).then(response => response.data);
+    async getAvailableCourierLocation(minLng, minLat, maxLng, maxLat) {
+        let response = await this._$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat);
+        return await response.data;
     }
 
-    getSuburbList() {
-        return this._$http.get("job/SuburbList").then(response => response.data);
+    async getSuburbList() {
+        let response = await this._$http.get("job/SuburbList");
+        return await response.data;
     }
 
-    getSpeedList() {
-        return this._$http.get("job/SpeedList").then(response => response.data);
+    async getSpeedList() {
+        let response = await this._$http.get("job/SpeedList");
+        return await response.data;
     }
 
-    getLeaveList() {
-        return this._$http.get("job/LeaveList").then(response => response.data);
+    async getLeaveList() {
+        let response = await this._$http.get("job/LeaveList");
+        return await response.data;
     }
 
-    getUndeliverableList() {
-        return this._$http.get("job/UndeliverableList").then(response => response.data);
+    async getUndeliverableList() {
+        let response = await this._$http.get("job/UndeliverableList");
+        return await response.data;
     }
 
     /**
      * @param {number} jobId
      * @param {number} truckWeightLimit
      */
-    getTruckItemsSummary(jobId, truckWeightLimit) {
-        return this._$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit).then(response => response.data);
+    async getTruckItemsSummary(jobId, truckWeightLimit) {
+        let response = await this._$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
+        return await response.data;
     }
 
     /**
@@ -385,8 +430,9 @@ class NationwideService {
      * @param {string} despatcherName
      * @param {string} calc
      */
-    lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId, jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calc) {
-        return this._$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup + "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed + "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc).then(response => response.data);
+    async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId, jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calc) {
+        let response = await this._$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup + "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed + "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc);
+        return await response.data;
     }
 
     /**
@@ -407,8 +453,9 @@ class NationwideService {
      * @param {*} truckStartTime
      * @param {*} truckHours
      */
-    rateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
-        return this._$http.get("job/RateTruckJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours).then(response => response.data);
+    async rateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
+        let response = await this._$http.get("job/RateTruckJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours);
+        return await response.data;
     }
 
     /**
@@ -430,31 +477,35 @@ class NationwideService {
      * @param {Array|string} quantity
      * @param {Date} booked
      */
-    rateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
-        return this._$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked).then(response => response.data);
+    async rateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
+        let response = await this._$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
+        return await response.data;
     }
 
     /**
      * @param {number} clientId
      * @param {number} amount
      */
-    ppdExclusiveAmount(clientId, amount) {
-        return this._$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount).then(response => response.data);
+    async ppdExclusiveAmount(clientId, amount) {
+        let response = await this._$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
+        return await response.data;
     }
 
     /**
      * @param {number} jobId
      * @param {string} despatcherName
      */
-    splitJob(jobId, despatcherName) {
-        return this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName).then(response => response);
+    async splitJob(jobId, despatcherName) {
+        let response = await this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
+        return await response;
     }
 
     /**
      * @param {number} jobId
      */
-    reRateSplitJob(jobId) {
-        return this._$http.post("job/ReRateSplitJob?jobId=" + jobId).then(response => response);
+    async reRateSplitJob(jobId) {
+        let response = await this._$http.post("job/ReRateSplitJob?jobId=" + jobId);
+        return await response;
     }
 
     /**
@@ -468,9 +519,10 @@ class NationwideService {
      * @param {string} despatcherName
      * @param {boolean} prebook
      */
-    updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
+    async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
-        return this._$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(response => response);
+        let response = await this._$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
+        return await response;
     }
 
     /**
@@ -484,9 +536,10 @@ class NationwideService {
      * @param {string} despatcherName
      * @param {boolean} prebook
      */
-    updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
+    async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
-        return this._$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(response => response);
+        let response = await this._$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
+        return await response;
     }
 
     /**
@@ -496,8 +549,9 @@ class NationwideService {
      * @param {number} lat
      * @param {number} lng
      */
-    updateSplitJobAddress(jobId, toSuburbId, address, lat, lng) {
-        return this._$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng).then(response => response);
+    async updateSplitJobAddress(jobId, toSuburbId, address, lat, lng) {
+        let response = await this._$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng);
+        return await response;
     }
 
     /**
@@ -509,7 +563,7 @@ class NationwideService {
      * @param {number} staffId
      * @param {boolean} preBook
      */
-    updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
+    async updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
         if (field === "Time" || field === "CompletedTime") {
             value = this._moment().format("YYYY-MM-DD") + " " + this._moment(value).format("HH:mm:ss");
         }
@@ -517,32 +571,39 @@ class NationwideService {
             value = this._moment(value).format("YYYY-MM-DD");
         }
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
-        return this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(response => response);
+        let response = await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        return await response;
     }
 
-    doAPI(data) {
-        return this._$http.post("app/components/home/api/api.php", data).then(response => response.data);
+    async doAPI(data) {
+        let response = await this._$http.post("app/components/home/api/api.php", data);
+        return await response.data;
     }
 
-    getNationwideJobsNew(data, selectedClients, internal) {
-        return this._$http.get("job/nationwideJobListNew?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients).then(response => response.data);
+    async getNationwideJobsNew(data, selectedClients, internal) {
+        let response = await this._$http.get("job/nationwideJobListNew?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
+        return await response.data;
     }
 
-    getNationwideJobsPOD(data, selectedClients, internal) {
-        return this._$http.get("job/nationwideJobListPOD?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients).then(response => response.data);
+    async getNationwideJobsPOD(data, selectedClients, internal) {
+        let response = await this._$http.get("job/nationwideJobListPOD?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
+        return await response.data;
     }
 
-    getNationwideJobsBookDelivery(data, selectedClients, internal) {
-        return this._$http.get("job/nationwideJobListBookDelivery?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients).then(response => response.data);
+    async getNationwideJobsBookDelivery(data, selectedClients, internal) {
+        let response = await this._$http.get("job/nationwideJobListBookDelivery?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
+        return await response.data;
     }
 
-    getNationwideJobsReprice(data, selectedClients, internal) {
-        return this._$http.get("job/nationwideJobListReprice?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients).then(response => response.data);
+    async getNationwideJobsReprice(data, selectedClients, internal) {
+        let response = await this._$http.get("job/nationwideJobListReprice?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
+        return await response.data;
     }
 
-    getEventTypes() {
-        return this._$http.get("job/EventTypeList").then(response => response.data);
+    async getEventTypes() {
+        let response = await this._$http.get("job/EventTypeList");
+        return await response.data;
     }
 }
 
-angular.module("uDispatch").factory("NWData", NationwideService);
+angular.module("uDispatch").service("NWData", NationwideService);

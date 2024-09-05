@@ -1,4 +1,5 @@
-﻿using DespatchWeb.Automapper;
+﻿using System.IO;
+using DespatchWeb.Automapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Mindscape.Raygun4Net.AspNetCore;
 
@@ -68,6 +70,14 @@ app.UseStaticFiles(new StaticFileOptions
 {
     ContentTypeProvider = provider
 });
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist")),
+    RequestPath = "/dist"
+});
+
 app.UseRaygun();
 app.UseAuthentication();
 app.UseHttpsRedirection();

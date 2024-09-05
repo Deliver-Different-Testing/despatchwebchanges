@@ -1,3 +1,4 @@
+
 class MapService {
     static $inject = ['NgMap', '$q'];
 

@@ -13,6 +13,7 @@ class AddEventDialogController {
         this.eventForm = $scope.eventForm;
 
         let time = new Date();
+
         time.setSeconds(0);
         time.setMilliseconds(0);
 

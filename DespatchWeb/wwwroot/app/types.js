@@ -111,6 +111,7 @@
  * @property {string} acceptedName
  * @property {Date} time
  * @property {number} truckHours
+ * @property {number} jobType
  * @property {Date} booked - The date the job was booked
  * @property {*} courierData
  */

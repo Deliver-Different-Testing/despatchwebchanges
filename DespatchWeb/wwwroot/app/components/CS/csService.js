@@ -10,8 +10,9 @@ class CsService {
      * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    allocateJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds).then(response => response);
+    async allocateJobs(courierId, dispatcherId, jobIds) {
+        let response = await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return await response;
     }
 
     /**
@@ -24,8 +25,9 @@ class CsService {
      * @param {number} jobType
      * @param {string} despatcherName
      */
-    addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        return this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(response => response.data);
+    async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+        let response = await this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        return await response.data;
     }
 
     /**
@@ -38,8 +40,9 @@ class CsService {
      * @param {number} pageIndex
      * @param {number} pageSize
      */
-    getPodJobs(courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize) {
-        return this._$http.get('/Job/PODSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(response => response.data);
+    async getPodJobs(courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize) {
+        let response = await this._$http.get('/Job/PODSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize);
+        return await response.data;
     }
 
     /**
@@ -50,8 +53,9 @@ class CsService {
      * @param {number} pageIndex
      * @param {number} pageSize
      */
-    searchBulkJobs(courierId, clientId, job, wild, fromDate, toDate, pageIndex, pageSize) {
-        return this._$http.get('/Job/BulkSearch?courierId=' + courierId + '&clientId=' + clientId + '&job=' + job + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(response => response.data);
+    async searchBulkJobs(courierId, clientId, job, wild, fromDate, toDate, pageIndex, pageSize) {
+        let response = await this._$http.get('/Job/BulkSearch?courierId=' + courierId + '&clientId=' + clientId + '&job=' + job + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize);
+        return await response.data;
     }
 
     /**
@@ -59,11 +63,14 @@ class CsService {
      * @param {number} clientId
      * @param {string} wild
      * @param {string} job
+     * @param {Date} fromDate
+     * @param {Date} toDate
      * @param {number} pageIndex
      * @param {number} pageSize
      */
-    searchPreBookJobs(courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize) {
-        return this._$http.get('/Job/PreBookSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize).then(response => response.data);
+    async searchPreBookJobs(courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize) {
+        let response = await this._$http.get('/Job/PreBookSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize);
+        return await response.data;
     }
 
     /**
@@ -71,46 +78,53 @@ class CsService {
      * @param {Date} start
      * @param {Date} end
      */
-    getCourierRoute(code, start, end) {
-        return this._$http.get('/courier/route?code=' + code + '&start=' + start.format("YYYY-MM-DDTHH:mm:ss") + '&end=' + end.format("YYYY-MM-DDTHH:mm:ss")).then(response => response.data);
+    async getCourierRoute(code, start, end) {
+        let response = await this._$http.get('/courier/route?code=' + code + '&start=' + start.format("YYYY-MM-DDTHH:mm:ss") + '&end=' + end.format("YYYY-MM-DDTHH:mm:ss"));
+        return await response.data;
     }
 
     /**
      * @param {number} jobId
      */
-    getJobDetail(jobId) {
-        return this._$http.get('/Job/Detail?jobId=' + jobId).then(response => response.data);
+    async getJobDetail(jobId) {
+        let response = await this._$http.get('/Job/Detail?jobId=' + jobId);
+        return await response.data;
     }
 
     /**
      * @param {number} parentId
      * @param {number} clientId
      */
-    getRelatedJobs(parentId, clientId) {
-        return this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId).then(response => response.data);
+    async getRelatedJobs(parentId, clientId) {
+        let response = await this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
+        return await response.data;
     }
 
     /**
      * @param {Date} runDate
      * @param {string} scan
      */
-    getScanDetail(runDate, scan) {
-        return this._$http.get('/Job/ScanJobDetail?runDate=' + runDate.toISOString() + '&scan=' + scan).then(response => response.data);
+    async getScanDetail(runDate, scan) {
+        let response = await this._$http.get('/Job/ScanJobDetail?runDate=' + runDate.toISOString() + '&scan=' + scan);
+        return await response.data;
     }
 
     /**
      * @param {number} preBookJobId
      */
-    getPreBookDetail(preBookJobId) {
-        return this._$http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId).then(response => response.data);
+    async getPreBookDetail(preBookJobId) {
+        let response = await this._$http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
+        return await response.data;
     }
 
-    getBulkJobDetail(bulkJobId) {
-        return this._$http.get('/Job/BulkDetail?bulkJobId=' + bulkJobId).then(response => response.data);
+    async getBulkJobDetail(bulkJobId) {
+        let response = await this._$http.get('/Job/BulkDetail?bulkJobId=' + bulkJobId);
+        return await response.data;
     }
 
-    getActiveCouriers() {
-        return this._$http.get("courier/active").then(response => response.data);
+    async getActiveCouriers() {
+        let response = await this._$http.get("courier/active");
+        return await response.data;
     }
 
     getAllCouriers() {
@@ -121,15 +135,17 @@ class CsService {
      * @param {number} eventId
      * @param {string} note
      */
-    addEventNote(eventId, note) {
-        return this._$http.post('CS/AddEventNote?eventId=' + eventId + '&note=' + note + '&userName=' + ClientName).then(response => response.data);
+    async addEventNote(eventId, note) {
+        let response = await this._$http.post('CS/AddEventNote?eventId=' + eventId + '&note=' + note + '&userName=' + ClientName);
+        return await response.data;
     }
 
     /**
      * @param {string} jobNumber
      */
-    validateSwapPOD(jobNumber) {
-        return this._$http.post('Job/ValidateSwapPOD?job=' + jobNumber).then(response => response.data);
+    async validateSwapPOD(jobNumber) {
+        let response = await this._$http.post('Job/ValidateSwapPOD?job=' + jobNumber);
+        return await response.data;
     }
 
     /**
@@ -137,8 +153,9 @@ class CsService {
      * @param {number} dispId
      * @param {number[]} jobIds
      */
-    restoreJobs(courierId, dispId, jobIds) {
-        return this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(response => response.data);
+    async restoreJobs(courierId, dispId, jobIds) {
+        let response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
+        return await response.data;
     }
 
     /**
@@ -146,92 +163,104 @@ class CsService {
      * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    restoreSplitJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds).then(response => response.data);
+    async restoreSplitJobs(courierId, dispatcherId, jobIds) {
+        let response = await this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return await response.data;
     }
 
     /**
      * @param {string} jobNumber1
      * @param {string} jobNumber2
      */
-    swapPOD(jobNumber1, jobNumber2) {
-        return this._$http.post('Job/SwapPOD?job1=' + jobNumber1 + '&job2=' + jobNumber2).then(response => response.data);
+    async swapPOD(jobNumber1, jobNumber2) {
+        let response = await this._$http.post('Job/SwapPOD?job1=' + jobNumber1 + '&job2=' + jobNumber2);
+        return await response.data;
     }
 
     /**
      * @param {number} eventId
      * @param {string} userName
      */
-    closeEvent(eventId, userName) {
-        return this._$http.post('CS/CloseEvent?eventId=' + eventId + '&userName=' + `${ClientName}-${userName}`).then(response => response.data);
+    async closeEvent(eventId, userName) {
+        let response = await this._$http.post('CS/CloseEvent?eventId=' + eventId + '&userName=' + `${ClientName}-${userName}`);
+        return await response.data;
     }
 
     /**
      * @param {number[]} jobIds
      */
-    reSendJobs(jobIds) {
-        return this._$http.post("job/ReSendSelected?jobIds=" + jobIds).then(response => response.data);
+    async reSendJobs(jobIds) {
+        let response = await this._$http.post("job/ReSendSelected?jobIds=" + jobIds);
+        return await response.data;
     }
 
     /**
      * @param {number[]} jobIds
      */
-    reAssignJobs(jobIds) {
-        return this._$http.post("job/ReAssignSelected?jobIds=" + jobIds).then(response => response.data);
+    async reAssignJobs(jobIds) {
+        let response = await this._$http.post("job/ReAssignSelected?jobIds=" + jobIds);
+        return await response.data;
     }
 
     /**
      * @param {number} jobId
      * @param {string} email
      */
-    sendPOD(jobId, email) {
-        return this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email).then(response => response.data);
+    async sendPOD(jobId, email) {
+        let response = await this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
+        return await response.data;
     }
 
     /**
      * @param {number} jobId
      */
-    unSplitJob(jobId) {
-        return this._$http.post('job/UnSplitJob?jobId=' + jobId).then(response => response.data);
+    async unSplitJob(jobId) {
+        let response = await this._$http.post('job/UnSplitJob?jobId=' + jobId);
+        return await response.data;
     }
 
     /**
      * @param {number} eventId
      * @param {number} clientId
      */
-    generateDirectLink(eventId, clientId) {
-        return this._$http.get('/CS/GenerateDirectLink?eventId=' + eventId + '&clientId=' + clientId).then(response => response.data);
+    async generateDirectLink(eventId, clientId) {
+        let response = await this._$http.get('/CS/GenerateDirectLink?eventId=' + eventId + '&clientId=' + clientId);
+        return await response.data;
     }
 
-    createEvent(data, notify) {
-        return this._$http({
-            url: 'book/CreateEvent?clientInternal=' + ClientInternal + '&notify=' + notify + '&clientName=' + ClientName,
-            method: "POST",
-            data: data
-        }).then(response => response.data).catch(response => {
-            console.error('Book/CreateEvent error', response.status, response.data);
-        });
-    }
-
-    /**
-     * @param {string} searchTerm
-     */
-    getActiveClients(searchTerm) {
-        return this._$http.get('/home/ActiveClients?searchTerm=' + searchTerm)
-            .then(response => response.data);
+    async createEvent(data, notify) {
+        try {
+            let response1 = await this._$http({
+                url: 'book/CreateEvent?clientInternal=' + ClientInternal + '&notify=' + notify + '&clientName=' + ClientName,
+                method: "POST",
+                data: data
+            });
+            return await response1.data;
+        } catch (response2) {
+            console.error('Book/CreateEvent error', response2.status, response2.data);
+        }
     }
 
     /**
      * @param {string} searchTerm
      */
-    getActiveCouriersSearch(searchTerm) {
-        return this._$http.get('/courier/AllActiveSearch?searchTerm=' + searchTerm)
-            .then(response => response.data);
+    async getActiveClients(searchTerm) {
+        let response = await this._$http.get('/home/ActiveClients?searchTerm=' + searchTerm);
+        return await response.data;
     }
 
-    doAPI(path, data) {
-        return this._$http.post(path, data).then(response => response.data);
+    /**
+     * @param {string} searchTerm
+     */
+    async getActiveCouriersSearch(searchTerm) {
+        let response = await this._$http.get('/courier/AllActiveSearch?searchTerm=' + searchTerm);
+        return await response.data;
+    }
+
+    async doAPI(path, data) {
+        let response = await this._$http.post(path, data);
+        return await response.data;
     }
 }
 
-angular.module('uDispatch').factory('uCSData', CsService);
+angular.module('uDispatch').service('uCSData', CsService);

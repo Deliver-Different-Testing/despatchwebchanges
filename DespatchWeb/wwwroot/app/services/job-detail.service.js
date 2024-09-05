@@ -1694,6 +1694,4 @@ class JobDetailService {
     }
 }
 
-angular
-    .module("uDispatch")
-    .factory("JobDetailService", JobDetailService);
+angular.module('uDispatch').service('JobDetailService', JobDetailService);
