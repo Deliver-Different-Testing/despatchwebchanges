@@ -2,6 +2,8 @@
  * @class
  */
 class AddNotesDialogController {
+    static $inject = ['$mdDialog', 'toastrService', 'DispatchData', 'id', 'fieldName', 'title', 'job'];
+
     /**
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
      * @param toastrService - The service to display toasters
@@ -94,3 +96,5 @@ class AddNotesDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('AddNotesDialogController', AddNotesDialogController);

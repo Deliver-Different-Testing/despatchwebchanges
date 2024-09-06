@@ -1,4 +1,6 @@
 class AddEventDialogController {
+    static $inject = ['$scope', '$mdDialog', 'NWData', 'toastrService', 'job', 'dispatcherName', 'contactId'];
+
     constructor($scope, $mdDialog, NWData, toastrService, job, dispatcherName, contactId) {
         this._$mdDialog = $mdDialog;
         this._NWData = NWData;
@@ -88,3 +90,5 @@ class AddEventDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('AddEventDialogController', AddEventDialogController);

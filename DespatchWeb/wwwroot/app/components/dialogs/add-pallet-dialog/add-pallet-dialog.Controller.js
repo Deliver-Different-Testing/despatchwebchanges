@@ -1,4 +1,6 @@
 class PalletDialogController {
+    static $inject = ['$scope', '$mdDialog', 'DispatchData', 'toastrService', 'rateJobService', 'job', 'dispatcherName', 'contactId', 'existingPallet'];
+
     constructor($scope,
                 $mdDialog,
                 DispatchData,
@@ -111,3 +113,5 @@ class PalletDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('PalletDialogController', PalletDialogController);

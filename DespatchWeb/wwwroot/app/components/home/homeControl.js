@@ -1000,7 +1000,7 @@ angular.module("uDispatch").controller("HomeControl", [
          */
         $scope.otherEventForm = ($event, job) => {
             $mdDialog.show({
-                controller: AddEventDialogController,
+                controller: 'AddEventDialogController',
                 controllerAs: "ctrl",
                 templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
                 parent: angular.element($document.body),
@@ -1008,13 +1008,15 @@ angular.module("uDispatch").controller("HomeControl", [
                 clickOutsideToClose: true,
                 fullscreen: true,
                 locals: {
-                    job: job, dispatcherName: FirstName, contactId: ContactID
-                }
+                    job: job,
+                    dispatcherName: FirstName,
+                    contactId: ContactID
+                },
+                bindToController: true
             }).then(() => {
                 console.log('Pallet Dialog closed!');
             });
         };
-
 
         $scope.getSupportColorClass = support => {
             switch (support.eventType) {
@@ -3243,7 +3245,7 @@ angular.module("uDispatch").controller("HomeControl", [
 
 // Show additional services dialog
                 return $mdDialog.show({
-                    controller: AdditionalServicesDialogController,
+                    controller: 'AdditionalServicesDialogController',
                     controllerAs: "ctrl",
                     templateUrl: versionUrl("app/components/dialogs/additional-services-dialog/additional-services-dialog.html"),
                     parent: angular.element($document.body),
@@ -3252,7 +3254,8 @@ angular.module("uDispatch").controller("HomeControl", [
                     fullscreen: true,
                     locals: {
                         job
-                    }
+                    },
+                    bindToController: true
                 });
             }).then(() => {
                 console.log('Additional Services Dialog closed!');

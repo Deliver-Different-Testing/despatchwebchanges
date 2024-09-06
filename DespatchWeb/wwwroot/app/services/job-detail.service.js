@@ -369,7 +369,7 @@ class JobDetailService {
      */
     showNotesDialog($event, job, title, fieldName, id = "editField") {
         return this._$mdDialog.show({
-            controller: AddNotesDialogController,
+            controller: 'AddNotesDialogController',
             controllerAs: "ctrl",
             templateUrl: this.versionUrl("app/components/dialogs/add-notes-dialog/add-notes-dialog.html"),
             parent: angular.element(this._$document.body),
@@ -378,7 +378,8 @@ class JobDetailService {
             fullscreen: true,
             locals: {
                 id: id, fieldName: fieldName, title: title, job: job,
-            }
+            },
+            bindToController: true
         }).then(updatedJob => {
             this.currentJob = updatedJob
             // User closed notes dialog
@@ -1639,7 +1640,7 @@ class JobDetailService {
         const dialogTitle = isEditing ? 'Edit Pallet' : 'New Pallet';
 
         return this._$mdDialog.show({
-            controller: PalletDialogController,
+            controller: 'PalletDialogController',
             controllerAs: "ctrl",
             templateUrl: this.versionUrl("app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html"),
             parent: angular.element(this._$document.body),
@@ -1652,7 +1653,8 @@ class JobDetailService {
                 contactId: ContactID,
                 existingPallet,
                 dialogTitle
-            }
+            },
+            bindToController: true
         })
             .then((result) => {
                 console.log(`Pallet Dialog closed: ${isEditing ? 'Edited' : 'Created'} pallet`);

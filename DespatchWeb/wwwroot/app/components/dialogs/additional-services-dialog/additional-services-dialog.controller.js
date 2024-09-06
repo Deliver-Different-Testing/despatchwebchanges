@@ -3,6 +3,8 @@
  * @class
  */
 class AdditionalServicesDialogController {
+    static $inject = ['$mdDialog', 'DispatchData', 'toastrService', 'job'];
+
     /**
      * @param {Object} $mdDialog - AngularJS material dialog service
      * @param {Object} DispatchData - Service for dispatch operations
@@ -13,7 +15,7 @@ class AdditionalServicesDialogController {
         this.$mdDialog = $mdDialog;
         this.dispatchData = DispatchData;
         this.toastrService = toastrService;
-        this.job = job;   
+        this.job = job;
 
         this.initializeState();
         this.bindMethods();
@@ -118,3 +120,5 @@ class AdditionalServicesDialogController {
         this.$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('AdditionalServicesDialogController', AdditionalServicesDialogController);

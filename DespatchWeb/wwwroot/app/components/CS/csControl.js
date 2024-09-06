@@ -149,7 +149,7 @@ angular.module('uDispatch').controller('CSControl', [
 
                 // Show additional services dialog
                 return $mdDialog.show({
-                    controller: AdditionalServicesDialogController,
+                    controller: 'AdditionalServicesDialogController',
                     controllerAs: "ctrl",
                     templateUrl: "app/components/dialogs/additional-services-dialog/additional-services-dialog.html",
                     parent: angular.element($document.body),
@@ -158,7 +158,8 @@ angular.module('uDispatch').controller('CSControl', [
                     fullscreen: true,
                     locals: {
                         job
-                    }
+                    },
+                    bindToController: true
                 });
             }).catch(error => {
                 console.error(error.message);
