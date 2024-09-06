@@ -2866,7 +2866,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         $scope.truckLoadingStatus = event => {
             $mdDialog.show({
-                controller: TruckCourierStatusDialogController,
+                controller: 'TruckCourierStatusDialogController',
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: event,
@@ -2876,6 +2876,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 locals: {
                     data: $scope.truckCourierStatus[0],
                 },
+                bindToController: true
             }).then(() => {
                 // Dialog Closed
             });

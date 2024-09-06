@@ -3,6 +3,20 @@
  * @class
  */
 class SelectDialogController {
+    static $inject = [
+        '$mdDialog',
+        'DispatchData',
+        'toastrService',
+        'id',
+        'fieldName',
+        'title',
+        'job',
+        'options',
+        'initialValue',
+        'showCheckbox',
+        'checkboxLabel'
+    ];
+
     /**
      * Create a SelectDialogController
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
@@ -119,3 +133,5 @@ class SelectDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('SelectDialogController', SelectDialogController);

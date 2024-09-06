@@ -1,6 +1,16 @@
+/**
+ * A service for managing truck courier service
+ * @class
+ */
 class TruckCourierStatusDialogController {
+    static $inject = [
+        '$mdDialog',
+        'DispatchData',
+        'toastrService',
+        'data'
+    ];
+
     /**
-     * Create a SelectDialogController
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
      * @param DispatchData - The service used for data dispatching.
      * @param toastrService - The service to display toast messages
@@ -30,3 +40,5 @@ class TruckCourierStatusDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('TruckCourierStatusDialogController', TruckCourierStatusDialogController);

@@ -979,7 +979,7 @@ angular.module("uDispatch").controller("HomeControl", [
             const selectedCourierId = $scope.selectedCourier ? $scope.selectedCourier.id : job.courierData.courierID;
 
             $mdDialog.show({
-                controller: SendMessageDialogController,
+                controller: 'SendMessageDialogController',
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: event,
@@ -989,6 +989,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 locals: {
                     selectedCourierId, contactId: ContactID, dispatcherName: FirstName,
                 },
+                bindToController: true
             }).then(_ => {
                 console.log('Dialog closed!')
             });
@@ -3078,7 +3079,7 @@ angular.module("uDispatch").controller("HomeControl", [
          */
         $scope.truckLoadingStatus = ($event) => {
             return $mdDialog.show({
-                controller: TruckCourierStatusDialogController,
+                controller: 'TruckCourierStatusDialogController',
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: $event,
@@ -3088,6 +3089,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 locals: {
                     data: $scope.truckCourierStatus[0],
                 },
+                bindToController: true
             }).then(() => {
 // Dialog Closed
             });

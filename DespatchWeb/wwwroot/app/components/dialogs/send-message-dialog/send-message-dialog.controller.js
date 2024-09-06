@@ -1,4 +1,13 @@
 class SendMessageDialogController {
+    static $inject = [
+        '$mdDialog',
+        'DispatchData',
+        'toastrService',
+        'selectedCourierId',
+        'contactId',
+        'dispatcherName'
+    ];
+
     /**
      * @param $mdDialog
      * @param DispatchData
@@ -41,3 +50,5 @@ class SendMessageDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('SendMessageDialogController', SendMessageDialogController);

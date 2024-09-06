@@ -1469,7 +1469,7 @@ class JobDetailService {
         };
 
         this._$mdDialog.show({
-            controller: SelectDialogController,
+            controller: 'SelectDialogController',
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
@@ -1479,6 +1479,7 @@ class JobDetailService {
             locals: {
                 id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel
             },
+            bindToController: true
         }).then(_ => {
 
             console.log('Dialog closed!');
