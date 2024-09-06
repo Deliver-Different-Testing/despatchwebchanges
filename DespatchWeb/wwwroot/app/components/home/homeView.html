@@ -422,3 +422,222 @@
 
     <div id='draggingItems'></div>
 </div>
+
+<script>
+    document.onkeydown = overrideKeyboardEvent;
+    document.onkeyup = overrideKeyboardEvent;
+    var keyIsDown = {};
+
+    function overrideKeyboardEvent(e) {
+        switch (e.type) {
+            case "keydown":
+                if (!keyIsDown[e.keyCode]) {
+                    keyIsDown[e.keyCode] = true;
+                    // do key down stuff here
+                    if (e.keyCode === 82 && e.ctrlKey) {
+                        //location.reload();
+                    }
+                }
+                break;
+            case "keyup":
+                delete (keyIsDown[e.keyCode]);
+                // do key up stuff here
+                break;
+        }
+        disabledEventPropagation(e);
+        if (e.keyCode === 68 && e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+    }
+
+    function disabledEventPropagation(e) {
+        if (e.keyCode === 68 && e.ctrlKey) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            } else if (window.event) {
+                window.event.cancelBubble = true;
+            }
+        }
+    }
+
+
+    angular.element(document).on('keydown', '.dispatchField, .lateCallField', function (event) {
+        if (event.keyCode === 13) {
+            angular.element(this).parents(".clickable-row").addClass("doing");
+        }
+    });
+
+    angular.element(document).on('click', '.top-bar .btn-group .btn', function (event) {
+        if (!event.ctrlKey && !event.metaKey) {
+            angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
+        }
+
+        angular.element(this).addClass('topBarActive');
+    });
+
+    angular.element(document).on('click', '.clearLists-list-title', function (event) {
+        if (!event.ctrlKey && !event.metaKey) {
+            angular.element("#clearLists").find('.listActive').removeClass('listActive');
+        }
+
+        angular.element(this).addClass('listActive');
+    });
+
+
+    angular.element(document).ready(function () {
+
+        var isDown = false;   // Tracks status of mouse button
+
+        angular.element(document).mousedown(function () {
+            isDown = true;      // When mouse goes down, set isDown to true
+        })
+            .mouseup(function () {
+                isDown = false;    // When mouse goes up, set isDown to false
+            });
+
+        angular.element(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
+
+            if (event.ctrlKey) {
+                if (isDown) {        // Only change css if mouse is down
+                    angular.element(this).addClass("active");
+                    angular.element(this).siblings(".test").click();
+                }
+            }
+        });
+
+
+    });
+
+
+    var mouseDown = 0;
+
+    angular.element(document).on('mousedown', '.clickable-row', function (event) {
+
+        if (angular.element(".activeTable .clickable-row.active").length > 1) {
+            var jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
+        } else {
+            var jobNo = angular.element(this).attr("data-jobno");
+        }
+
+
+        if (mouseDown === 0) {
+            mouseDown = 1;
+
+            if (event.which === 1) {
+                if (event.ctrlKey) {
+                    if (angular.element(this).hasClass("active")) {
+                        angular.element(this).removeClass('active');
+                    } else {
+                        angular.element(this).addClass('active');
+                    }
+                } else {
+                    if (!angular.element(this).hasClass("active")) {
+
+                        var group = angular.element(this).parents(".table-rows").attr("data-group");
+                        angular.element('*[data-group="' + group + '"]').each(function () {
+                            angular.element(this).find('.active').removeClass('active');
+                        });
+
+                        angular.element(this).addClass('active');
+                    }
+                }
+
+                angular.element(".activeTable").removeClass("activeTable");
+                angular.element(this).parents(".table").addClass("activeTable");
+            }
+
+            if (!event.ctrlKey) {
+                if (angular.element(this).hasClass("draggable-row")) {
+
+                    if (!angular.element(this).hasClass("active")) {
+
+                        var group = angular.element(this).parents(".table-rows").attr("data-group");
+                        angular.element('*[data-group="' + group + '"]').each(function () {
+                            angular.element(this).find('.active').removeClass('active');
+                        });
+                        angular.element(this).addClass('active');
+
+                    }
+                    setTimeout(function () {
+                        if (mouseDown === 1) {
+                            angular.element("#draggingItems").show();
+                            angular.element("#draggingItems").html(jobNo);
+
+                            angular.element("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
+                            angular.element("#draggingItems").draggable();
+                            angular.element("#draggingItems").trigger(event);
+                        }
+                    }, 200);
+                }
+            }
+
+        }
+
+    });
+
+    angular.element(document).on('mouseup', '.clickable-row', function (event) {
+        if (event.which === 3) {
+
+            angular.element(".rightActiveTable").removeClass("rightActiveTable");
+            angular.element(this).parents(".table").addClass("rightActiveTable");
+        }
+        if (!event.ctrlKey) {
+
+            if (angular.element(this).hasClass("active")) {
+            } else {
+                var group = angular.element(this).parents(".table-rows").attr("data-group");
+
+                angular.element('*[data-group="' + group + '"]').each(function () {
+                    angular.element(this).find('.active').removeClass('active');
+                });
+                angular.element(this).addClass('active');
+            }
+
+        }
+
+    });
+
+
+    angular.element(document).on("mouseup", function (ev) {
+        angular.element("#draggingItems").hide();
+        mouseDown = 0;
+    });
+
+    angular.element(document).on("keydown", function (e) {
+        var code = (e.keyCode ? e.keyCode : e.which);
+        if (code === 40) {
+            angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+        } else if (code === 38) {
+            angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+        }
+    });
+
+
+    //var delay = 250; // delay between calls
+    //var throttled = false; // are we currently throttled?
+
+    //setTimeout(function(){ sizeHeadings(angular.element("#jobList").parents(".column")); }, 100);
+
+    function sizeHeadings(ele) {
+
+        angular.element("body").find(".box").each(function () {
+            var box = angular.element(this);
+            box.find(".table-headings thead tr th").each(function (index) {
+                var newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
+                angular.element(this).outerWidth(newWidth);
+            });
+            box.find(".table-headings table").width(box.find(".table").width());
+        });
+
+        var height = angular.element("#box-clearLists").find(".box-content").height() - 30;
+
+        angular.element(".clearLists-list").each(function () {
+            var newHeight = angular.element(this).data("height") * height / 100;
+            angular.element(this).height(newHeight);
+        });
+
+    }
+
+
+</script>
