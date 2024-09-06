@@ -2996,7 +2996,7 @@ angular.module("uDispatch").controller("HomeControl", [
 
         function showEditAddressDialog($event, currentJob, selectedSuburbs, location) {
             return $mdDialog.show({
-                controller: EditAddressDialogController,
+                controller: 'EditAddressDialogController',
                 controllerAs: 'ctrl',
                 templateUrl: versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
                 parent: angular.element($document.body),
@@ -3012,6 +3012,7 @@ angular.module("uDispatch").controller("HomeControl", [
                         postCode: currentJob.postCode,
                     }, suburbOptions: selectedSuburbs, title: "Split Job Address and GPS", submitLabel: "Split Job",
                 },
+                bindToController: true
             });
         }
 
@@ -3095,7 +3096,7 @@ angular.module("uDispatch").controller("HomeControl", [
         $scope.createNewJob = $event => {
             function showCreateJobDialog() {
                 return $mdDialog.show({
-                    controller: CreateJobDialogController,
+                    controller: 'CreateJobDialogController',
                     controllerAs: 'ctrl',
                     parent: angular.element($document.body),
                     targetEvent: $event,
@@ -3104,7 +3105,8 @@ angular.module("uDispatch").controller("HomeControl", [
                     fullscreen: true,
                     locals: {
                         staffId: ContactID, despatcherName: FirstName
-                    }
+                    },
+                    bindToController: true
                 });
             }
 
@@ -3143,7 +3145,7 @@ angular.module("uDispatch").controller("HomeControl", [
          */
         $scope.interCourierCharge = $event => {
             return $mdDialog.show({
-                controller: InterCourierChargeDialog,
+                controller: 'EditDateTimeDialogController',
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: $event,
@@ -3153,6 +3155,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 locals: {
                     staffId: ContactID,
                 },
+                bindToController: true
             }).then(() => {
                 console.log("Inter-courier Charge Added!")
             }).then(() => "Inter-courier Charge Canceled!");

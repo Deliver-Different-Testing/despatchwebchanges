@@ -399,7 +399,7 @@ class JobDetailService {
      */
     showEditDateDialog($event, job, title, fieldName, date, id = "editForm") {
         return this._$mdDialog.show({
-            controller: EditDateTimeDialogController,
+            controller: 'EditDateTimeDialogController',
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
@@ -415,6 +415,7 @@ class JobDetailService {
                 showDate: true,
                 showTime: false
             },
+            bindToController: true
         })
             .then(() => {
                 console.log('Dialog closed successfully');
@@ -491,7 +492,7 @@ class JobDetailService {
      */
     showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
         return this._$mdDialog.show({
-            controller: EditDateTimeDialogController,
+            controller: 'EditDateTimeDialogController',
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
@@ -507,6 +508,7 @@ class JobDetailService {
                 showDate: true,
                 showTime: true
             },
+            bindToController: true
         }).then(_ => {
             console.log('Dialog closed!');
         });
@@ -928,7 +930,7 @@ class JobDetailService {
 
     showAddressDialog(event, currentJob, field, location, suburbText) {
         return this._$mdDialog.show({
-            controller: EditAddressDialogController,
+            controller: 'EditAddressDialogController',
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
@@ -947,6 +949,7 @@ class JobDetailService {
                 title: "Update Address and GPS",
                 submitLabel: "Update",
             },
+            bindToController: true
         });
     }
 
@@ -1586,7 +1589,7 @@ class JobDetailService {
         };
 
         this._$mdDialog.show({
-            controller: AutoCompleteDialogController,
+            controller: 'AutoCompleteDialogController',
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
@@ -1596,6 +1599,7 @@ class JobDetailService {
             locals: {
                 id, fieldName, title, job, options, existingItem, showRerateOption
             },
+            bindToController: true
         }).then(_ => {
             console.log('Dialog closed!')
         });

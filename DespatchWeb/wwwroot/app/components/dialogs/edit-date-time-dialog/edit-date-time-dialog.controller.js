@@ -1,4 +1,18 @@
 class EditDateTimeDialogController {
+    static $inject = [
+        '$mdDialog',
+        'toastrService',
+        'DispatchData',
+        'moment',
+        'job',
+        'title',
+        'fieldName',
+        'dateTime',
+        'id',
+        'showDate',
+        'showTime'
+    ];
+
     /**
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
      * @param toastrService - The service to display toast messages
@@ -146,3 +160,5 @@ class EditDateTimeDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('EditDateTimeDialogController', EditDateTimeDialogController);

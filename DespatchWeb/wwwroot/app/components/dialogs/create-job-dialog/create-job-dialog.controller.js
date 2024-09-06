@@ -1,4 +1,15 @@
 class CreateJobDialogController {
+    static $inject = [
+        '$scope',
+        '$mdDialog',
+        'DispatchData',
+        'toastrService',
+        '$http',
+        'dispatchJobService',
+        'staffId',
+        'despatcherName'
+    ];
+
     constructor($scope, $mdDialog, DispatchData, toastrService, $http, dispatchJobService, staffId, despatcherName) {
         this.$mdDialog = $mdDialog;
         this.dispatchData = DispatchData;
@@ -169,12 +180,18 @@ class CreateJobDialogController {
         return false;
     }
 
+    /**
+     * @param {Job} job
+     */
     applyFormValuesToJob(job) {
-        job.clientID = this.selectedClient.id;
+        job.clientId = this.selectedClient.id;
         job.date = this.jobDate.toISOString();
         job.speedId = this.selectedSpeed.id;
     }
 
+    /**
+     * @param {Job} job
+     */
     createJob(job) {
         const url = "job/QuickCreateJob/";
         const callData = {
@@ -185,6 +202,10 @@ class CreateJobDialogController {
         return this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
     }
 
+    /**
+     * @param {number} courierId
+     * @param {number} jobId
+     */
     dispatchJobIfCourierSelected(courierId, jobId) {
         return this.dispatchJobService.dispatchJobByJobId(courierId, jobId);
     }
@@ -193,3 +214,5 @@ class CreateJobDialogController {
         this.$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('CreateJobDialogController', CreateJobDialogController);

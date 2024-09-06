@@ -1,4 +1,19 @@
 class AutoCompleteDialogController {
+    static $inject = [
+        '$mdDialog',
+        'DispatchData',
+        'toastrService',
+        'rateJobService',
+        'id',
+        'fieldName',
+        'title',
+        'job',
+        'options',
+        'existingItem',
+        'showRerateOption'
+    ];
+
+
     /**
      * Create a SelectDialogController
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
@@ -105,3 +120,5 @@ class AutoCompleteDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('AutoCompleteDialogController', AutoCompleteDialogController);

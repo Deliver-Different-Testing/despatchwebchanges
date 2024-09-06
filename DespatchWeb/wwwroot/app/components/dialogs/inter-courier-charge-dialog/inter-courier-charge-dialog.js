@@ -1,4 +1,12 @@
 class InterCourierChargeDialog {
+    static $inject = [
+        '$scope',
+        '$mdDialog',
+        '$http',
+        'DispatchData',
+        'toastrService',
+        'staffId'
+    ];
     constructor($scope, $mdDialog, $http, DispatchData, toastrService, staffId) {
         this._$mdDialog = $mdDialog;
         this._$http = $http;
@@ -83,3 +91,5 @@ class InterCourierChargeDialog {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('InterCourierChargeDialog', InterCourierChargeDialog);

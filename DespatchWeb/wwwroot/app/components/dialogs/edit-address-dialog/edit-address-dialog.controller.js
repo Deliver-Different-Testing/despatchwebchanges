@@ -3,6 +3,19 @@
  * @class
  */
 class EditAddressDialogController {
+    static $inject = [
+        '$scope',
+        '$timeout',
+        '$mdDialog',
+        'DispatchData',
+        'toastrService',
+        'NgMap',
+        'addressDetails',
+        'suburbOptions',
+        'title',
+        'submitLabel'
+    ];
+
     /**
      * @param $scope - The active AngularJS scope.
      * @param $timeout - The AngularJS wrapper for window.setTimeout.
@@ -228,3 +241,5 @@ class EditAddressDialogController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('EditAddressDialogController', EditAddressDialogController);

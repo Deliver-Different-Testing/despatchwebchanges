@@ -109,7 +109,7 @@ angular.module('uDispatch').controller('CSControl', [
         $scope.createNewJob = $event => {
             // Dialog
             $mdDialog.show({
-                controller: CreateJobDialogController,
+                controller: 'CreateJobDialogController',
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: $event,
@@ -119,6 +119,7 @@ angular.module('uDispatch').controller('CSControl', [
                 locals: {
                     staffId: ContactID, despatcherName: FirstName
                 },
+                bindToController: true
             }).then(newJobId => {
                 // Refresh data
                 $scope.refreshData(true);
@@ -171,7 +172,7 @@ angular.module('uDispatch').controller('CSControl', [
          */
         $scope.interCourierCharge = $event => {
             $mdDialog.show({
-                controller: InterCourierChargeDialog,
+                controller: 'InterCourierChargeDialog',
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: $event,
@@ -181,6 +182,7 @@ angular.module('uDispatch').controller('CSControl', [
                 locals: {
                     staffId: ContactID,
                 },
+                bindToController: true
             }).then(() => {
                 console.log("Inter-courier Charge Added!")
             }).then(() => "Inter-courier Charge Canceled!");
