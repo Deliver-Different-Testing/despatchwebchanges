@@ -136,22 +136,64 @@ angular.module("uDispatch").controller("HomeControl", [
             });
         }, 500);
 
-        $scope.getAvailableCourierLocation = debounce(() => {
-            const bounds = MapService.getBounds();
-            if (bounds) {
-                const southWest = bounds.getSouthWest();
-                const northEast = bounds.getNorthEast();
-
-                DispatchData.getAvailableCourierLocation(southWest.lng(), southWest.lat(), northEast.lng(), northEast.lat())
-                    .then(returnData => {
-                        const courierId = $scope.currentCourier && $scope.currentCourier.courier ?
-                            $scope.currentCourier.courier.split(" ")[0].trim() : 0;
-                        $scope.displayAvailableCouriers(returnData, courierId, $scope.pickService.channel,
-                            $scope.truckMode === "On", $scope.truckMode, $scope.allCouriers.includeUA);
-                    });
-            } else {
-                console.log('Map bounds not available');
+        $scope.clearMarkers = () => {
+            // Clear job markers
+            if ($scope.markers && $scope.markers.length > 0) {
+                $scope.markers.forEach(marker => {
+                    MapService.removeMarker(marker);
+                });
+                $scope.markers = [];
             }
+
+            // Clear courier markers
+            if ($scope.courierMarkers && $scope.courierMarkers.length > 0) {
+                $scope.courierMarkers.forEach(marker => {
+                    MapService.removeMarker(marker);
+                });
+                $scope.courierMarkers = [];
+            }
+
+            // Close any open info windows
+            if ($scope.infoWindows && $scope.infoWindows.length > 0) {
+                $scope.infoWindows.forEach(infoWindow => {
+                    MapService.closeInfoWindow(infoWindow);
+                });
+                $scope.infoWindows = [];
+            }
+
+            // Reset the open info window
+            $scope.openInfoWindow = null;
+        };
+
+        $scope.getAvailableCourierLocation = debounce(() => {
+            MapService.getBounds().then(bounds => {
+                if (bounds) {
+                    const southWest = bounds.getSouthWest();
+                    const northEast = bounds.getNorthEast();
+                    return DispatchData.getAvailableCourierLocation(
+                        southWest.lng(), southWest.lat(),
+                        northEast.lng(), northEast.lat()
+                    );
+                } else {
+                    console.log('Map bounds not available');
+                    return Promise.reject('Map bounds not available');
+                }
+            })
+                .then(returnData => {
+                    const courierId = $scope.currentCourier && $scope.currentCourier.courier ?
+                        $scope.currentCourier.courier.split(" ")[0].trim() : 0;
+                    return $scope.displayAvailableCouriers(
+                        returnData,
+                        courierId,
+                        $scope.pickService.channel,
+                        $scope.truckMode === "On",
+                        $scope.truckMode,
+                        $scope.allCouriers.includeUA
+                    );
+                })
+                .catch(error => {
+                    console.error('Error in getAvailableCourierLocation:', error);
+                });
         }, 500);
 
         $scope.displayPickupPoints = (jobs, clear, currentJob) => {
@@ -186,7 +228,7 @@ angular.module("uDispatch").controller("HomeControl", [
         };
 
         /**
-         * @param {T} courierJobs
+         * @param {Job[]} courierJobs
          * @param {boolean} clear
          * @param {*} zoom
          */
@@ -242,6 +284,10 @@ angular.module("uDispatch").controller("HomeControl", [
             }
         };
 
+        /**
+         * @param {Job} job
+         * @param {boolean} isPickup
+         */
         $scope.createMarker = (job, isPickup) => {
             const position = isPickup
                 ? new google.maps.LatLng(job.pickUpLatitude, job.pickUpLongitude)
@@ -1054,7 +1100,7 @@ angular.module("uDispatch").controller("HomeControl", [
 
                 $mdDialog.show(confirm).then(() => {
                     const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                    displayPickupPoints(unDispatchedData, true, null);
+                    $scope.displayPickupPoints(unDispatchedData, true, null);
                     $scope.getAvailableCourierLocation();
                 });
                 return;
@@ -1121,7 +1167,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 });
             }, () => {
                 let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                displayPickupPoints(unDispatchedData, true, null);
+                $scope.displayPickupPoints(unDispatchedData, true, null);
                 $scope.getAvailableCourierLocation();
             });
         };
@@ -1895,7 +1941,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 let jid = angular.element("#jobList .active").last().data("jobid");
                 let currentJob = $scope.jobList.find(jo => jo.id === jid);
                 let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                displayPickupPoints(unDispatchedData, true, currentJob);
+                $scope.displayPickupPoints(unDispatchedData, true, currentJob);
             }
 
             angular.element('#box-currentWork').find(".loading").css('display', 'block');
@@ -2100,6 +2146,7 @@ angular.module("uDispatch").controller("HomeControl", [
             });
         };
 
+
 // Select Job
         $scope.selectJob = (job) => {
             safeTimeout(() => {
@@ -2109,7 +2156,7 @@ angular.module("uDispatch").controller("HomeControl", [
 
                 jdSvc.setJob($scope.currentJob);
 
-// Check for attachments
+                // Check for attachments
                 $scope.checkForAttachments(job.id);
 
                 DispatchData.getActiveCouriers().then((data) => {
@@ -2122,37 +2169,43 @@ angular.module("uDispatch").controller("HomeControl", [
                     });
                 }
 
-                if (job.courier === null) {
-                    $scope.jobGroups = false;
-                    $scope.getPotentialCouriers(job.id);
-                    $scope.potentialCouriersSelection = " for Job " + job.jobNo;
-                    $scope.currentCourier = null;
-                    $scope.currentSelection = " for Job " + job.jobNo;
+                // Center and zoom the map on the selected job
+                MapService.ensureMapInitialized().then(() => {
+                    const jobPosition = new google.maps.LatLng(job.pickUpLatitude, job.pickUpLongitude);
 
-                    const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                    displayPickupPoints(unDispatchedData, true, job);
-                } else {
-                    $scope.potentialCouriers = false;
-                }
-
-                if (job.courier !== null) {
-                    $scope.selectCourier(job.courierData);
-                } else {
-                    const jobs = [job];
-
-                    displayRoutePoints(jobs, false, $scope.mapZoom.display);
-                }
-
-                if (jobRow) {
-                    // Check if the selected descendant is not undefined
-                    const dispatchField = angular.element(jobRow).find(".dispatchField");
-                    if (dispatchField && dispatchField.length > 0) {
-                        dispatchField[0].focus();
+                    if ($scope.autoZoomEnabled) {
+                        MapService.setCenter(job.pickUpLatitude, job.pickUpLongitude);
+                        MapService.setZoom(15);
+                    } else {
+                        MapService.panTo(jobPosition);
                     }
-                }
-            }, 0);
-        };
 
+                    return MapService.addMarker(job.pickUpLatitude, job.pickUpLongitude, {
+                        icon: MapService.getPinImage(MapService.getPinColor(job.status), job.runOrder),
+                        label: {
+                            text: job.runOrder.toString(),
+                            color: 'white'
+                        },
+                        jobNumber: job.jobNo
+                    });
+                }).then(marker => {
+                    const infoWindow = MapService.createInfoWindow(
+                        '<div>' +
+                        '<strong>Job: ' + job.jobNo + '</strong><br>' +
+                        'Status: ' + job.status +
+                        '</div>'
+                    );
+
+                    marker.addListener('click', () => {
+                        infoWindow.open(MapService.map, marker);
+                    });
+
+                    infoWindow.open(MapService.map, marker);
+                }).catch(error => {
+                    console.error('Error in selectJob:', error);
+                });
+            });
+        };
         $scope.setCurrentWorkMenu = () => {
             return [{
                 text: "Restore", click() {
@@ -2486,62 +2539,6 @@ angular.module("uDispatch").controller("HomeControl", [
             $scope.getSupports();
         };
 
-        $scope.getAvailableCourierLocation = () => {
-            if (!mapReady) {
-                console.log('Map not ready yet');
-                return;
-            }
-
-            if (!$scope.allCouriers.display) {
-                map.clearLabels();
-                map.clearFlags();
-                return;
-            }
-
-            const areas = $scope.jobFilters.area.split(",");
-            const channels = [];
-            let trucks = false;
-            for (let i = 0; i < areas.length; i++) {
-                switch (areas[i]) {
-                    case "main1":
-                    case "main2":
-                        if (!channels.includes(1)) {
-                            channels.push(1);
-                        }
-                        break;
-                    case "city":
-                        if (!channels.includes(2)) {
-                            channels.push(2);
-                        }
-                        break;
-                    case "truck":
-                        trucks = true;
-                        break;
-                    default:
-                        console.log("Default case reached");
-                }
-            }
-
-            try {
-                const bounds = map.getBounds();
-                const southWestLng = bounds.getSouthWest().lng();
-                const southWestLat = bounds.getSouthWest().lat();
-                const northEastLng = bounds.getNorthEast().lng();
-                const northEastLat = bounds.getNorthEast().lat();
-
-                DispatchData.getAvailableCourierLocation(southWestLng, southWestLat, northEastLng, northEastLat)
-                    .then(returnData => {
-                        const courierId = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
-                        displayAvailableCouriers(returnData, courierId, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
-                    })
-                    .catch(error => {
-                        console.error('Error getting available courier location:', error);
-                    });
-            } catch (error) {
-                console.error('Error accessing map bounds:', error);
-            }
-        };
-
         $scope.courierMenu = [// NEW IMPLEMENTATION
             {
                 text: "Dispatch Selected", click($itemScope) {
@@ -2562,6 +2559,7 @@ angular.module("uDispatch").controller("HomeControl", [
             const selectedClients = $scope.pickService.clients.map(a => a.id);
             return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
                 $scope.jobList = data;
+                $scope.updateMapMarkers(data);
 
                 angular.element("#box-jobsList .loading").fadeOut();
                 safeTimeout(() => {
@@ -2569,8 +2567,7 @@ angular.module("uDispatch").controller("HomeControl", [
                     sizeHeadings();
                     if (data.length > 0) {
                         const unDispatchedData = data.filter(x => x.courierData.courierID === null);
-                        displayPickupPoints(unDispatchedData, true, null);
-
+                        $scope.displayPickupPoints(unDispatchedData, true, null);
                     }
                     $scope.getAvailableCourierLocation();
                 }, 200);
