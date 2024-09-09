@@ -100,6 +100,7 @@
         </td>
         <td><input class="dispatchField" id="input_{{job.id}}"
                    ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)"
+                   ng-click="selectJob(job)"
                    ng-model="job.courier"
                    ng-readonly="job.courierData.courierID !== null"
                    ng-style="getJobStyle(job.courierData.courierID !== null)"

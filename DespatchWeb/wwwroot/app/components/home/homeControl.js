@@ -504,9 +504,7 @@ angular.module("uDispatch").controller("HomeControl", [
         };
 
         $scope.handleRowClick = ($event, job) => {
-// Check if the click target is not one of the special input fields
             if (!$event.target.classList.contains('lateCallField') && !$event.target.classList.contains('dispatchField')) {
-// Use $timeout to ensure this runs after the current digest cycle
                 safeTimeout(() => {
                     $scope.selectJob(job);
                     angular.element("#input_" + job.id).select();
@@ -1970,20 +1968,18 @@ angular.module("uDispatch").controller("HomeControl", [
 
         $scope.setCurrentWorkMenu = () => {
             return [{
-                text: "Restore", click() {
-                    $scope.restoreJobsFromCurrentWindow();
+                text: "Restore", click: async () => {
+                    await $scope.restoreJobsFromCurrentWindow();
                 }
             }, {
-                text: "Redispatch", click() {
-                    $scope.reAllocateJobsFromCurrentWindow();
+                text: "Redispatch", click: async () => {
+                    await $scope.reAllocateJobsFromCurrentWindow();
                 }
             }, {
-                text: "Resend", click() {
-                    $scope.resendJobsFromCurrentWindow();
+                text: "Resend", click: async () => {
+                    await $scope.resendJobsFromCurrentWindow();
                 }
-            }
-
-            ];
+            }];
         };
 
         $scope.fromColumnClick = (evt, job) => {
@@ -2148,8 +2144,8 @@ angular.module("uDispatch").controller("HomeControl", [
             return false;
         };
 
-        $scope.notifyColumnClick = (evt, job) => {
-            switch (evt.which) {
+        $scope.notifyColumnClick = ($event, job) => {
+            switch ($event.which) {
                 case 1:
 // this is left click
                     break;
@@ -2159,7 +2155,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 case 3:
 // this is right click
                     safeTimeout(() => {
-                        jdSvc.notifyClick(job);
+                        jdSvc.notifyClick($event, job);
                         $scope.$apply();
                     }, 400);
 
