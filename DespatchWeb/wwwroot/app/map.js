@@ -223,6 +223,10 @@ function displayAllRoutePoints() {
     }
 }
 
+/**
+ * @param {number} lat
+ * @param {number} lng
+ */
 function displayCourierPositionOnly(lat, lng) {
     map.clearMarkers();
     const position = new google.maps.LatLng(lat, lng);
@@ -241,6 +245,14 @@ function displayCourierPositionOnly(lat, lng) {
     map.setZoom(13);
 }
 
+/**
+ * @param {Courier[]} availableCouriers
+ * @param {string} courierCode
+ * @param {*} channels
+ * @param {string} truckChannel
+ * @param {string} truckMode
+ * @param {boolean} includeUA
+ */
 function displayAvailableCouriers(availableCouriers, courierCode, channels, truckChannel, truckMode, includeUA) {
     map.clearLabels();
     map.clearFlags();
@@ -259,6 +271,11 @@ function displayAvailableCouriers(availableCouriers, courierCode, channels, truc
     });
 }
 
+/**
+ * @param {Job[]} jobs
+ * @param {boolean} clear
+ * @param {Job} currentJob
+ */
 function displayPickupPoints(jobs, clear, currentJob) {
     if (!map) {
         console.error('Map is not initialized');
@@ -287,6 +304,11 @@ function displayPickupPoints(jobs, clear, currentJob) {
     });
 }
 
+/**
+ * @param {Job[]} courierJobs
+ * @param {boolean} clear
+ * @param {boolean} zoom
+ */
 function displayRoutePoints(courierJobs, clear, zoom) {
     if (clear) {
         map.clearMarkers();
@@ -383,6 +405,9 @@ function computeTotalDistance(result) {
     scope.updateRunDetails(totalTime, Math.round(totalDist), myRoute.legs.length, newOrder);
 }
 
+/**
+ * @param {Job} job
+ */
 function validateGoogleJobRoute(job) {
     const origin = new google.maps.LatLng(job.fromLat, job.fromLng);
     const dest = new google.maps.LatLng(job.toLat, job.toLng);
@@ -430,6 +455,10 @@ function validateGoogleRoute(run) {
 
 // Helper functions
 
+/**
+ * @param {string|number} status
+ * @param {boolean} isCurrentJob
+ */
 function getPinColor(status, isCurrentJob = false) {
     if (isCurrentJob) return "black";
     const statusColors = {
@@ -443,6 +472,10 @@ function getPinColor(status, isCurrentJob = false) {
     return statusColors[status] || "purple";
 }
 
+/**
+ * @param {string} color
+ * @param {string} runOrder
+ */
 function createPinImage(color, runOrder = "") {
     return new google.maps.MarkerImage(
         `https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_${color}${runOrder}.png`,
@@ -461,6 +494,10 @@ function createMarker(lat, lng, icon, jobNumber) {
     });
 }
 
+/**
+ * @param {string} jobNo
+ * @param {string} type
+ */
 function createInfoWindow(jobNo, type) {
     const content = `<div id="content"><div id="bodyContent"><p><b>${jobNo}</b></p><p><b>${type}</b></p></div></div>`;
     return new google.maps.InfoWindow({
@@ -469,6 +506,9 @@ function createInfoWindow(jobNo, type) {
     });
 }
 
+/**
+ * @param {Courier} courier
+ */
 function getCourierStyle(courier) {
     if (courier.totalJobs === 0) {
         return {color: "#FFFDD0", className: "courier courierCream courierMarker"};
@@ -495,10 +535,19 @@ function isCourierEligible(courier, courierCode, channels, truckChannel, truckMo
     return !(!truckChannel && truckMode === "Only" && courier.vehicleType !== "T");
 }
 
+/**
+ * @param {Courier} courier
+ */
 function formatCourierCode(courier) {
     return pad(`${courier.code}-${courier.vehicleType}${courier.totalJobs}`, 5, '_', 2);
 }
 
+/**
+ * @param {string} str
+ * @param {number} len
+ * @param {string} pad
+ * @param {number} dir
+ */
 function pad(str, len, pad, dir) {
     len = len || 0;
     pad = pad || ' ';
@@ -511,6 +560,14 @@ function pad(str, len, pad, dir) {
     return str;
 }
 
+/**
+ * @param {string} color
+ * @param {google.maps.LatLng} position
+ * @param {string} code
+ * @param {number} id
+ * @param {string} originalCode
+ * @param {string} className
+ */
 function drawItem(color, position, code, id, originalCode, className) {
     const label = new Label({
         map: map,
@@ -545,6 +602,9 @@ function drawItem(color, position, code, id, originalCode, className) {
     });
 }
 
+/**
+ * @param {Job} job
+ */
 function highlightPin(job) {
     const pinLatitude = job.toLat.toString().substring(0, 9);
     const pinLongitude = job.toLng.toString().substring(0, 9);
@@ -568,6 +628,9 @@ function highlightPin(job) {
     setTimeout(() => marker.setAnimation(null), 2000);
 }
 
+/**
+ * @param {Job} courierJobs
+ */
 function highlightJobPoints(courierJobs) {
     courierJobs.forEach(job => {
         console.log(`finding ${job.jobNo}`);
@@ -600,7 +663,7 @@ window.onkeyup = () => {
 };
 
 // Use it like this:
-initializeMap().then(initializedMap => {
+initializeMap().then(() => {
     // map is now initialized and ready to use
     console.log('Map initialized successfully');
 }).catch(error => {
