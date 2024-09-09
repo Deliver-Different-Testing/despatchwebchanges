@@ -1,6 +1,6 @@
 {
   "name": "despatchweb",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "main": "index.js",
   "dependencies": {
     "angular": "^1.8.3",
@@ -22,7 +22,8 @@
     "uglify-js": "^3.19.3"
   },
   "scripts": {
-    "build": "npm run babel && npm run minify",
+    "build": "npm run update-version && npm run babel && npm run minify",
+    "update-version": "node update-version.js",
     "babel": "babel wwwroot/app/ --out-dir wwwroot/dist --source-maps",
     "minify": "node minification-script.js"
   },

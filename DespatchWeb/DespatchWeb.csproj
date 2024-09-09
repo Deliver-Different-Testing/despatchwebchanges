@@ -52,6 +52,7 @@
 
   <ItemGroup>
     <None Include="efpt.config.json.user" />
+      <None Include="wwwroot\app\version.js"/>
   </ItemGroup>
 
   <ItemGroup>
