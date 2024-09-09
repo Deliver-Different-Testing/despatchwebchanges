@@ -139,7 +139,7 @@ angular
         $mdDateLocaleProvider.msgCalendar = 'Calendar';
         $mdDateLocaleProvider.msgOpenCalendar = 'Open calendar';
     }])
-    .constant('APP_VERSION', '3.1527')
+    .constant('APP_VERSION', '3.1529')
     .factory('versionUrl', ['APP_VERSION', APP_VERSION => url => url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + APP_VERSION])
     .config(['$urlRouterProvider', '$stateProvider', 'versionUrlProvider',
         ($urlRouterProvider, $stateProvider, versionUrlProvider) => {
@@ -171,4 +171,15 @@ angular
                     controller: 'PBControl',
                     reloadOnSearch: false
                 });
-        }]);
+        }])
+    .run(['$rootScope', $rootScope => {
+        $rootScope.$on('$viewContentLoaded', () => {
+            console.log("View content loaded, checking map container");
+            if (angular.element('#map_canvas').length) {
+                console.log("Map container found in DOM after view load");
+                // You might need to broadcast an event or call a method on your controller here
+            } else {
+                console.error("Map container still not found after view load");
+            }
+        });
+    }]);

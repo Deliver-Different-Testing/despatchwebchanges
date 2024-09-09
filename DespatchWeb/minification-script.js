@@ -21,6 +21,13 @@ files.forEach((file) => {
             sourceMap: {
                 filename: path.basename(file),
                 url: path.basename(file) + '.map'
+            },
+            compress: {
+                drop_console: true,
+                pure_funcs: ['console.log']
+            },
+            output: {
+                comments: false
             }
         });
 

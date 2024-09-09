@@ -5,6 +5,7 @@
   "dependencies": {
     "angular": "^1.8.3",
     "entities": "^4.5.0",
+    "moment": "^2.30.1",
     "parse5": "^7.1.2",
     "rxjs": "^7.8.1",
     "tslib": "^2.7.0",

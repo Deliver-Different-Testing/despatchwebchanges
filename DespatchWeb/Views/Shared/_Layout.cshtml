@@ -10,6 +10,27 @@
     <title>Urgent Dispatch</title>
     <link id="favicon" rel="shortcut icon" type="image/x-icon" href="dispmain.ico">
 
+    @* Google Maps *@
+    <environment exclude="Development">
+        <script
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4&libraries=places&callback=initMap"
+            async defer></script>
+        <script>googleMapsApiKey = "AIzaSyB5uAU-zob6rO5n7g1QUqlBl9oVjLQakG4"</script>
+    </environment>
+    <environment include="Development">
+        <script
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg&libraries=places&callback=initMap"
+            async defer></script>
+        <script>googleMapsApiKey = "AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg"</script>
+    </environment>
+
+    <script>
+        function initMap() {
+            console.log("Maps Loaded");
+        }
+    </script>
+
+
     @* Material *@
     <link href="/lib/ng-material-floating-button/mfb/dist/mfb.min.css" rel="stylesheet"/>
     <link rel="stylesheet" href="lib/material-time-picker/md-time-picker.css">
@@ -149,9 +170,11 @@
     var scripts = new[]
     {
         "dist/app.js",
+        "dist/mapLabels.js",
         "dist/filters.js",
         "dist/components/home/homeService.js",
         "dist/components/home/homeControl.js",
+        "dist/components/home/map.js",
         "dist/components/Nationwide/nationwideService.js",
         "dist/components/Nationwide/nationwideControl.js",
         "dist/components/CS/csService.js",
@@ -177,7 +200,6 @@
         "dist/services/greeting.service.js",
         "dist/services/rate-job.service.js",
         "dist/services/dispatch-job.service.js",
-        "dist/services/map.service.js",
     };
 
     foreach (var script in scripts)
