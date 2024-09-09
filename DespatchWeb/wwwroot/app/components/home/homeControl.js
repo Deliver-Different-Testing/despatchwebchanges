@@ -81,7 +81,7 @@ angular.module("uDispatch").controller("HomeControl", [
             const mapDiv = document.getElementById("map_canvas");
             if (mapDiv) {
                 console.log("Map container found. Dimensions:", mapDiv.offsetWidth, "x", mapDiv.offsetHeight);
-                console.log("Container visibility:", window.getComputedStyle(mapDiv).display);
+                console.log("Container visibility:", $window.getComputedStyle(mapDiv).display);
                 console.log("Container position:", mapDiv.getBoundingClientRect());
             } else {
                 console.error("Map container #map_canvas not found in the DOM");
@@ -90,7 +90,7 @@ angular.module("uDispatch").controller("HomeControl", [
 
         $scope.initMap = () => {
             console.log("Angular initMap called");
-            if (window.google && window.google.maps) {
+            if ($window.google && $window.google.maps) {
                 initializeMap().then(initializedMap => {
                     console.log('Map initialized successfully from Angular');
                     $scope.mapInitialized = true;
@@ -118,7 +118,6 @@ angular.module("uDispatch").controller("HomeControl", [
                 }, 1000); // Wait 1 second before retrying
             }
         };
-
 
         $scope.getAvailableCourierLocation = async () => {
             if (!$scope.allCouriers.display) {
