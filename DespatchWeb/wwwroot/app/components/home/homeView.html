@@ -9,7 +9,7 @@
             </button>
             <button class="btn nda btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'nda'})"
                     type="button">
-                NDA1`
+                NDA
             </button>
             <button class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})"
                     type="button">Active
@@ -333,10 +333,8 @@
                                                    ng-if="box.name === 'map'" ng-model="allCouriers.display">
                                             All
                                         </md-switch>
-                                        <md-switch class="md-primary"
-                                                   ng-change="storeMapZoomDisplay()"
-                                                   ng-model="autoZoomEnabled"
-                                                   ng-if="box.name === 'map'">
+                                        <md-switch class="md-primary" ng-change="storeMapZoomDisplay()"
+                                                   ng-model="mapZoom.display" ng-show="box.name === 'map'">
                                             Auto Zoom
                                         </md-switch>
                                         <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"

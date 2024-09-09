@@ -235,6 +235,7 @@ function displayCourierPositionOnly(lat, lng) {
     if (carMarker) {
         carMarker.setMap(null);
     }
+
     carMarker = new google.maps.Marker({
         position: position,
         map: map,
@@ -293,11 +294,10 @@ function displayPickupPoints(jobs, clear, currentJob) {
     }
 
     jobs.forEach(job => {
-        const pinColor = getPinColor(job.status, job === currentJob);
-        const pinImage = createPinImage(pinColor, job.runOrder);
+        const markerOptions = getMarkerOptions(job.status, job === currentJob, job.runOrder || '');
 
         if (job.statusID < 5) {
-            const pickupMarker = createMarker(job.pickUpLatitude, job.pickUpLongitude, pinImage, job.jobNo);
+            const pickupMarker = createMarker(job.pickUpLatitude, job.pickUpLongitude, markerOptions, job.jobNo);
             const infoWindow = createInfoWindow(job.jobNo, "Pickup");
             addClickHandler(pickupMarker, infoWindow);
         }
@@ -321,18 +321,17 @@ function displayRoutePoints(courierJobs, clear, zoom) {
     const zoomMarkers = [];
 
     courierJobs.forEach(job => {
-        const pinColor = getPinColor(job.status);
-        const pinImage = createPinImage(pinColor, job.runOrder);
-        const deliveryPinImage = createPinImage("red", job.runOrder);
+        const pickupMarkerOptions = getMarkerOptions(job.status, false, job.runOrder || '');
+        const deliveryMarkerOptions = getMarkerOptions("P", false, job.runOrder || ''); // Always red for delivery
 
         if (job.statusID < 5) {
-            const pickupMarker = createMarker(job.pickUpLatitude, job.pickUpLongitude, pinImage, job.jobNo);
+            const pickupMarker = createMarker(job.pickUpLatitude, job.pickUpLongitude, pickupMarkerOptions, job.jobNo);
             const infoWindow = createInfoWindow(job.jobNo, "Pickup");
             addClickHandler(pickupMarker, infoWindow);
             zoomMarkers.push(pickupMarker);
         }
 
-        const deliveryMarker = createMarker(job.deliveryLatitude, job.deliveryLongitude, deliveryPinImage, job.jobNo);
+        const deliveryMarker = createMarker(job.deliveryLatitude, job.deliveryLongitude, deliveryMarkerOptions, job.jobNo);
         const deliveryInfoWindow = createInfoWindow(job.jobNo, "Delivery");
         addClickHandler(deliveryMarker, deliveryInfoWindow);
         zoomMarkers.push(deliveryMarker);
@@ -359,6 +358,7 @@ function displayRoutePoints(courierJobs, clear, zoom) {
         if (carMarker) {
             carMarker.setMap(null);
         }
+
         carMarker = new google.maps.Marker({
             position: courierPosition,
             map: map,
@@ -472,28 +472,80 @@ function getPinColor(status, isCurrentJob = false) {
     return statusColors[status] || "purple";
 }
 
+// Helper function to get marker options based on status
 /**
- * @param {string} color
+ * @param {string} status
+ * @param {boolean} isCurrentJob
  * @param {string} runOrder
  */
-function createPinImage(color, runOrder = "") {
-    return new google.maps.MarkerImage(
-        `https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_${color}${runOrder}.png`,
-        new google.maps.Size(131, 154),
-        new google.maps.Point(0, 0),
-        new google.maps.Point(10, 34)
-    );
+function getMarkerOptions(status, isCurrentJob = false, runOrder = "") {
+    let color, labelColor;
+    if (isCurrentJob) {
+        color = "#000000"; // Black
+        labelColor = "#FFFFFF"; // White
+    } else {
+        switch (status) {
+            case "C":
+            case "N":
+                color = "#9E9E9E"; // Grey
+                labelColor = "#000000";
+                break;
+            case "D":
+                color = "#4CAF50"; // Green
+                labelColor = "#FFFFFF";
+                break;
+            case "P":
+                color = "#F44336"; // Red
+                labelColor = "#FFFFFF";
+                break;
+            case "A":
+                color = "#2196F3"; // Blue
+                labelColor = "#FFFFFF";
+                break;
+            case "V":
+                color = "#FFEB3B"; // Yellow
+                labelColor = "#000000";
+                break;
+            default:
+                color = "#9C27B0"; // Purple
+                labelColor = "#FFFFFF";
+        }
+    }
+
+    return {
+        icon: {
+            path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+            fillColor: color,
+            fillOpacity: 1,
+            strokeColor: '#000',
+            strokeWeight: 1,
+            scale: 1,
+            anchor: new google.maps.Point(0, 0),
+        },
+        label: {
+            text: runOrder.toString(),
+            color: labelColor,
+            fontSize: "12px",
+            fontWeight: "bold"
+        }
+    };
 }
 
-function createMarker(lat, lng, icon, jobNumber) {
+/**
+ * @param {number} lat
+ * @param {number} lng
+ * @param options
+ * @param {string} jobNumber
+ */
+function createMarker(lat, lng, options, jobNumber) {
     return new google.maps.Marker({
         position: new google.maps.LatLng(lat, lng),
         map: map,
-        icon: icon,
+        icon: options.icon,
+        label: options.label,
         jobNumber: jobNumber
     });
 }
-
 /**
  * @param {string} jobNo
  * @param {string} type
@@ -617,13 +669,9 @@ function highlightPin(job) {
 
     if (!marker) return;
 
-    const pinImage = new google.maps.MarkerImage(
-        "https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_black.png",
-        new google.maps.Size(131, 154),
-        new google.maps.Point(0, 0),
-        new google.maps.Point(10, 34)
-    );
-    marker.setIcon(pinImage);
+    const highlightOptions = getMarkerOptions(job.status, true, marker.getLabel().text || '');
+    marker.setIcon(highlightOptions.icon);
+    marker.setLabel(highlightOptions.label);
     marker.setAnimation(google.maps.Animation.BOUNCE);
     setTimeout(() => marker.setAnimation(null), 2000);
 }

@@ -28,10 +28,7 @@ angular.module("uDispatch").controller("HomeControl", [
         $scope.isInternal = (ClientInternal === "True");
         $scope.name = "Home";
         $scope.jdSvc = jdSvc;
-        $scope.googleMapsUrl = "https://maps.googleapis.com/maps/api/js?key=AIzaSyCVgP9vjgRYma7DM0B3tZxQlUS7uvXrgyg";
-
-        $scope.markers = [];
-        $scope.autoZoomEnabled = JSON.parse(localStorage.getItem("mapZoom-" + ContactID))?.display ?? true;
+        $scope.mapInitialized = false;
 
         $scope.courierSearchText = "";
         $scope.jobDetailFabIsOpen = false;
@@ -78,7 +75,7 @@ angular.module("uDispatch").controller("HomeControl", [
         }
 
         $scope.checkMapContainer = () => {
-            const mapDiv = document.getElementById("map_canvas");
+            const mapDiv = angular.element("map_canvas");
             if (mapDiv) {
                 console.log("Map container found. Dimensions:", mapDiv.offsetWidth, "x", mapDiv.offsetHeight);
                 console.log("Container visibility:", $window.getComputedStyle(mapDiv).display);
@@ -90,16 +87,32 @@ angular.module("uDispatch").controller("HomeControl", [
 
         $scope.initMap = () => {
             console.log("Angular initMap called");
-            if ($window.google && $window.google.maps) {
-                initializeMap().then(initializedMap => {
+            if (typeof initializeMap === 'function') {
+                initializeMap().then(() => {
                     console.log('Map initialized successfully from Angular');
                     $scope.mapInitialized = true;
                     $scope.$apply();
+                    $scope.displayAllJobs();
                 }).catch(error => {
                     console.error('Failed to initialize map from Angular:', error);
                 });
             } else {
-                console.log("Google Maps API not yet loaded, waiting...");
+                console.log("initializeMap function not available, waiting...");
+                // Set up a watcher to check when initializeMap becomes available
+                const unwatchInitializeMap = $scope.$watch(() => typeof initializeMap === 'function', isAvailable => {
+                    if (isAvailable) {
+                        unwatchInitializeMap(); // Remove the watcher
+                        $scope.initMap(); // Call initMap again
+                    }
+                });
+            }
+        };
+
+        $scope.displayAllJobs = () => {
+            if ($scope.mapInitialized && $scope.jobList && $scope.jobList.length > 0) {
+                const undispatchedData = $scope.jobList.filter(job => job.courierData.courierID === null);
+                displayPickupPoints(undispatchedData, true, null);
+                $scope.getAvailableCourierLocation();
             }
         };
 
@@ -2319,6 +2332,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 const data = await DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal);
 
                 $scope.jobList = data;
+                $scope.jobsToDisplay = data; // Store jobs for later display
                 angular.element('#box-jobsList .loading').fadeOut();
 
                 await new Promise(resolve => setTimeout(resolve, 200));
@@ -2326,12 +2340,9 @@ angular.module("uDispatch").controller("HomeControl", [
                 const jobListColumn = angular.element('#jobList').parents('.column');
                 sizeHeadings(jobListColumn);
 
-                if (data.length > 0) {
-                    const undispatchedData = data.filter(job => job.courierData.courierID === null)
-                    displayPickupPoints(undispatchedData, true, null);
+                if ($scope.mapInitialized) {
+                    $scope.displayAllJobs();
                 }
-
-                await $scope.getAvailableCourierLocation();
 
                 $scope.$apply(); // Trigger a digest cycle if needed
 
@@ -2450,7 +2461,7 @@ angular.module("uDispatch").controller("HomeControl", [
                     const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
                     map.fitBounds(new google.maps.LatLngBounds(swll, nell));
                     map.setZoom(13);
-                    $scope.getAvailableCourierLocation();
+                    $scope.getAvailableCourierLocation().then(() => console.log('Courier Locations Completed!'));
                 });
             };
 
@@ -2708,7 +2719,11 @@ angular.module("uDispatch").controller("HomeControl", [
 ///////////////////////////
 // JOB DETAIL
 //////////////////////////
-            return $scope.getJobList();
+            return $scope.getJobList().then(() => {
+                if (!$scope.mapInitialized) {
+                    $scope.initMapWithRetry();
+                }
+            });
         };
 
         if (!$scope.isInternal) {
