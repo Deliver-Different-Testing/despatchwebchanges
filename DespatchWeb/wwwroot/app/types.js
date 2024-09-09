@@ -112,6 +112,10 @@
  * @property {Date} time
  * @property {number} truckHours
  * @property {number} jobType
+ * @property {string} status
+ * @property {number} statusID
+ * @property {number} courierLatitude
+ * @property {number} courierLongitude
  * @property {Date} booked - The date the job was booked
  * @property {*} courierData
  */
@@ -168,7 +172,7 @@
  * @typedef {Object} Event
  *
  * @property {number} id Unique identifier of the job
- * @property {number} jobNumber Number associated with job
+ * @property {string} jobNumber Number associated with job
  * @property {string} clientCode Code associated with client
  * @property {Date} eventDate Timestamp when the event is created
  * @property {Date} closedDate
@@ -179,6 +183,7 @@
 
 /**
  * @typedef {Object} Pallet
+ *
  * @property {number} amount - The quantity of pallets.
  * @property {number} weight - The weight of the pallet.
  * @property {number} length - The length of the pallet.
@@ -216,6 +221,13 @@
  * @property {string} name - The name of the courier
  * @property {number} dangerousGoods - 1 or 0 to show if courier can carry dangerous goods
  * @property {Date} dgLicenseExpiry - Date the couriers dangerous goods license
+ * @property {number} totalJobs
+ * @property {string} vehicleType
+ * @property {string} code
+ * @property {number} overDueJobs
+ * @property {number} latitude
+ * @property {number} longitude
+ * @property {string} fleetCode
  * @property {string} label - The label for use in select/autocomplete
  * @property {string} text - The text for use in select/autocomplete. This looks to be a duplicate of label.
  */

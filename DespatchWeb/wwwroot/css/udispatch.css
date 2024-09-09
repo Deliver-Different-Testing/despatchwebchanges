@@ -1422,19 +1422,16 @@ md-table-container .md-table td.md-cell {
     overflow-x: auto;
   white-space: nowrap;
 }
-
 md-table-container .md-table th.md-column::-webkit-scrollbar,
 md-table-container .md-table td.md-cell::-webkit-scrollbar {
     height: 4px;
     background-color: transparent;
 }
-
 md-table-container .md-table th.md-column::-webkit-scrollbar-thumb,
 md-table-container .md-table td.md-cell::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.26);
     border-radius: 2px;
 }
-
 md-table-container .md-table th.md-column:hover::-webkit-scrollbar-thumb,
 md-table-container .md-table td.md-cell:hover::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.4);
@@ -1461,12 +1458,10 @@ md-table-container .md-table .md-row:nth-child(even) {
 md-table-container .md-table .md-row {
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
-
 md-table-container .md-table .md-column.md-date-cell,
 md-table-container .md-table .md-cell.md-date-cell {
     flex: 0 0 80px;
 }
-
 md-table-container .md-table .md-column.md-speed-cell,
 md-table-container .md-table .md-cell.md-speed-cell {
     flex: 0 0 60px;
@@ -1479,17 +1474,14 @@ md-table-container .md-table .md-column.md-client-cell,
 md-table-container .md-table .md-cell.md-client-cell {
   flex: 2;
 }
-
 md-table-container .md-table .md-column.md-address-cell,
 md-table-container .md-table .md-cell.md-address-cell {
     flex: 3;
 }
-
 md-table-container .md-table .md-column.md-code-cell,
 md-table-container .md-table .md-cell.md-code-cell {
     flex: 1;
 }
-
 md-table-container .md-table .md-column.md-status-cell,
 md-table-container .md-table .md-cell.md-status-cell {
     flex: 1;
@@ -1520,5 +1512,10 @@ md-table-pagination .md-select-value {
   md-table-pagination .md-select-value {
     font-size: 10px;
   }
+}
+
+.full-card-map {
+    height: 100%;
+    width: 100%;
 }
 /*# sourceMappingURL=udispatch.css.map */

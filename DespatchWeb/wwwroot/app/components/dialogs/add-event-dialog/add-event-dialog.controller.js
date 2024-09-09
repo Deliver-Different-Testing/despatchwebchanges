@@ -62,7 +62,7 @@ class AddEventDialogController {
 
             // Exsalerate Event
             if (eventId === "7" || eventId === "92") {
-                this._NWData.exsalerateActivity(eventName, event.notes, this._clientId, event.jobNumber, this._dispatcherName);
+                await this._NWData.exsalerateActivity(eventName, event.notes, this._job.clientId, event.jobNumber, this._dispatcherName);
             }
 
             //Process Event

@@ -52,10 +52,10 @@
                 </md-select>
 
                 <div ng-switch-when="fromdatepicker">
-                    <div ng-model="ctrl.pickDateService.from_date" pickadate></div>
+                    <div ng-model="pickDateService.from_date" pickadate></div>
                 </div>
                 <div ng-switch-when="todatepicker">
-                    <div ng-model="ctrl.pickDateService.to_date" pickadate></div>
+                    <div ng-model="pickDateService.to_date" pickadate></div>
                 </div>
             </div>
 
