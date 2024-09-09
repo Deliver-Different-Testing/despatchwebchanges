@@ -24,7 +24,7 @@
   "scripts": {
     "build": "npm run babel && npm run minify",
     "babel": "babel wwwroot/app/ --out-dir wwwroot/dist --source-maps",
-    "minify": "node terser-script.js"
+    "minify": "node minification-script.js"
   },
   "keywords": [],
   "author": "",

@@ -13,7 +13,8 @@ angular.module('uDispatch').controller('PBControl', [
     '$mdDialog',
     '$timeout',
     'versionUrl',
-    ($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout, versionUrl) => {
+    '$window',
+    ($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout, versionUrl, $window) => {
         $scope.isAdmin = (ClientInternal === "True");
         $scope.mapSetting = {
             "allCouriers": false,
@@ -28,6 +29,49 @@ angular.module('uDispatch').controller('PBControl', [
         $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero
         $scope.pageIndex = 1;   // Current page number. First page is 1.-->
         $scope.pageSizeSelected = 50; // Maximum number of items per page.
+
+        $scope.checkMapContainer = () => {
+            const mapDiv = document.getElementById("map_canvas");
+            if (mapDiv) {
+                console.log("Map container found. Dimensions:", mapDiv.offsetWidth, "x", mapDiv.offsetHeight);
+                console.log("Container visibility:", $window.getComputedStyle(mapDiv).display);
+                console.log("Container position:", mapDiv.getBoundingClientRect());
+            } else {
+                console.error("Map container #map_canvas not found in the DOM");
+            }
+        };
+
+        $scope.initMap = () => {
+            console.log("Angular initMap called");
+            if ($window.google && $window.google.maps) {
+                initializeMap().then(initializedMap => {
+                    console.log('Map initialized successfully from Angular');
+                    $scope.mapInitialized = true;
+                    $scope.$apply();
+                }).catch(error => {
+                    console.error('Failed to initialize map from Angular:', error);
+                });
+            } else {
+                console.log("Google Maps API not yet loaded, waiting...");
+            }
+        };
+
+        $scope.initMapWithRetry = (retries = 5) => {
+            console.log("Attempting to init map, retries left:", retries);
+            if (retries <= 0) {
+                console.error("Failed to initialize map after multiple attempts");
+                return;
+            }
+
+            $scope.initMap();
+
+            if (!$scope.mapInitialized) {
+                $timeout(() => {
+                    $scope.initMapWithRetry(retries - 1);
+                }, 1000); // Wait 1 second before retrying
+            }
+        };
+
 
         $scope.updateGPS = (currentJob, field, fromRightClick) => {
             jdSvc.updateGPS(currentJob, field, fromRightClick);
