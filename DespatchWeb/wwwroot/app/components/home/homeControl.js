@@ -2888,7 +2888,7 @@ angular.module("uDispatch").controller("HomeControl", [
          */
         $scope.interCourierCharge = $event => {
             return $mdDialog.show({
-                controller: 'EditDateTimeDialogController',
+                controller: 'InterCourierChargeDialog',
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: $event,

@@ -144,33 +144,10 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         $scope.gather = {
             submit: () => $scope.gather.form.onSubmit().then(response => {
-                //console.log("pointer 3");
 
                 angular.element('.gatherForm').css('display', 'none');
-                //var j = self.currentJob;
                 $scope.getData().then(() => {
-                    //if (j === null || j === undefined || j === false) {
-                    //    return;
-                    //}
-
-                    //var refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
-                    //$scope.selectJob(refreshedJob);
-                    //$timeout(function () {
-                    //    angular.element("#jobList tr[data-jobid='" + j.id + "']").addClass("active");
-
-                    //    var $parentDiv = angular.element("#jobList tr[data-jobid='" + j.id + "']").parents(".box-content");
-                    //    var goTop = angular.element("#jobList tr[data-jobid='" + j.id + "']").offset().top;
-
-
-                    //    try {
-                    //        goTop = goTop - $parentDiv.offset().top + $parentDiv.scrollTop() - 28;
-                    //        $parentDiv.scrollTop(goTop);
-
-                    //    } catch (e) {
-                    //        //ignore
-                    //    }
-                    //}, 1000);
-
+                    console.log('Get Data Complete');
                 });
 
             }),
