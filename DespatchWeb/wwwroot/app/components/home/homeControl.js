@@ -2836,6 +2836,9 @@ angular.module("uDispatch").controller("HomeControl", [
             });
         };
 
+        /**
+         * @param {$event} $event
+         */
         $scope.createNewJob = $event => {
             function showCreateJobDialog() {
                 return $mdDialog.show({
@@ -2910,7 +2913,7 @@ angular.module("uDispatch").controller("HomeControl", [
          */
         $scope.createEvent = ($event, job) => {
             return $mdDialog.show({
-                controller: AddEventDialogController,
+                controller: 'AddEventDialogController',
                 controllerAs: "ctrl",
                 templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
                 parent: angular.element($document.body),
@@ -2919,7 +2922,8 @@ angular.module("uDispatch").controller("HomeControl", [
                 fullscreen: true,
                 locals: {
                     job: job, dispatherName: FirstName, contactId: ContactID
-                }
+                },
+                bindToController: true
             }).then(() => {
                 console.log('Pallet Dialog closed!');
             });
@@ -2957,7 +2961,7 @@ angular.module("uDispatch").controller("HomeControl", [
          */
         $scope.openFileAttachmentDialog = (event, job) => {
             return $mdDialog.show({
-                controller: JobFileUploadController,
+                controller: 'JobFileUploadController',
                 controllerAs: 'ctrl',
                 parent: angular.element($document.body),
                 targetEvent: event,
@@ -2967,6 +2971,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 locals: {
                     jobId: job.id
                 },
+                bindToController: true
             }).then(() => {
 // Dialog Closed
                 console.log('Job File Upload Dialog Closed!')
