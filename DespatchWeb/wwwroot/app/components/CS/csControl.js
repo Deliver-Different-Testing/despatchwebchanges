@@ -765,8 +765,7 @@ angular.module('uDispatch').controller('CSControl', [
                 .cancel('Cancel');
 
             $mdDialog.show(confirm).then(email => {
-                // code to send POD when ok is clicked
-                uCSData.sendPOD($scope.currentJob.id, email).then(data => {
+                uCSData.sendPOD($scope.currentJob.id, email).then(() => {
                     $mdDialog.show($mdDialog.alert()
                         .clickOutsideToClose(true)
                         .title('Email Sent')
