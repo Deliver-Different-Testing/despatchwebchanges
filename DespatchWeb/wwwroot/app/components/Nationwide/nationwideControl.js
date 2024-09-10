@@ -287,7 +287,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 "showRefresh": 1
             },
             "jobsListDelivery": {
-                "title": "Book Delivery",
+                "title": "Action Required",
                 "tpl": versionUrl("app/components/Nationwide/tpls/jobListDelivery.tpl"),
                 "showSearch": 1,
                 "showRefresh": 1
