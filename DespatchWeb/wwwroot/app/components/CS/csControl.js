@@ -31,7 +31,7 @@ angular.module('uDispatch').controller('CSControl', [
         $scope.dateSearchRange = 1; // Set to fortnight
         $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
 
-        $scope.selectedJobs = [];
+        //$scope.selectedJobs = [];
 
         $scope.searchBox = "";
         $scope.selectedEvents = [];
