@@ -239,15 +239,19 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
         if (!includeUA && c.fleetCode === "UA") {
             return true;
         }
-        let col = "#4CAF50";  // Green for couriers with jobs
-        let className = "courier courierMarker";
+        let col = "#00FF00";  // Bright green for active couriers
+        let className = "courier courierActive courierMarker";
         if (c.totalJobs === 0) {
-            col = "#FFC107";  // Amber for couriers with no jobs
-            className = "courier courierCream courierMarker";
+            col = "#FFFF00";  // Yellow for couriers with no jobs
+            className = "courier courierIdle courierMarker";
         } else if (c.overDueJobs > 0) {
-            col = "#F44336";  // Red for couriers with overdue jobs
-            className = "courier courierRed courierMarker";
+            col = "#FF0000";  // Bright red for couriers with overdue jobs
+            className = "courier courierOverdue courierMarker";
+        } else if (c.status === "inactive" || c.status === "off-duty") {
+            col = "#000000";  // Black for inactive or off-duty couriers
+            className = "courier courierInactive courierMarker";
         }
+
         const ll = new google.maps.LatLng(c.latitude, c.longitude);
         if (ll.lat() !== null && ll.lng() !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (truckChannel === false || c.vehicleType === "T")) {
             if ((truckChannel === false && truckMode === "Off" && c.vehicleType === "T") || (truckChannel === false && truckMode === "Only" && c.vehicleType !== "T")) {
@@ -259,7 +263,6 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
         }
     });
 }
-
 function displayPickupPoints(jobs, clear, currentJob) {
     if (clear === true) {
         if (map.markers.length) {
@@ -308,8 +311,7 @@ function displayPickupPoints(jobs, clear, currentJob) {
                 icon: pinImage,
                 jobNumber: jobs[i].jobNo,
                 optimized: true
-
-            });
+            })
 
             const contentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + jobs[i].jobNo + '</b></p>' + "<p><b>Pickup</b></p>" + "</div>" + "</div>";
 
@@ -467,7 +469,6 @@ function displayRoutePoints(courierJobs, clear, zoom) {
                 content: contentString, pixelOffset: new google.maps.Size(-55, 0)
             });
 
-
             addClickHandler(pickupMarker, infoWindow);
             zoomMarkers.push(pickupMarker);
         }
@@ -500,8 +501,7 @@ function displayRoutePoints(courierJobs, clear, zoom) {
         map.panToBounds(bounds);
     }
 
-
-    for (var y = 0; y < zoomMarkers.length; y++) {
+    for (let y = 0; y < zoomMarkers.length; y++) {
         const thisMarker = zoomMarkers[y];
         thisMarker.setAnimation(google.maps.Animation.BOUNCE);
     }
@@ -545,8 +545,8 @@ function displayRoutePoints(courierJobs, clear, zoom) {
 function drawItem(col, ll, code, id, originalCode) {
     const flagIcon = {
         url: createFlagSVG(col, code),
-        scaledSize: new google.maps.Size(30, 25),  // Adjusted size to include pole
-        anchor: new google.maps.Point(0, 25),  // Anchor point at bottom of the pole
+        scaledSize: new google.maps.Size(40, 35),
+        anchor: new google.maps.Point(0, 35),
     };
 
     const marker = new google.maps.Marker({
@@ -596,10 +596,10 @@ function drawItem(col, ll, code, id, originalCode) {
 
 function createFlagSVG(color, text) {
     const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 50">
-      <rect x="0" y="0" width="2" height="50" fill="#333"/>
-      <path d="M2,5 L52,5 L47,20 L52,35 L2,35 Z" fill="${color}"/>
-      <text x="27" y="22" font-family="Arial, sans-serif" font-size="12" font-weight="bold" 
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80">
+      <rect x="0" y="0" width="3" height="80" fill="#333"/>
+      <path d="M3,5 L113,5 L108,25 L113,45 L3,45 Z" fill="${color}"/>
+      <text x="58" y="25" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
             fill="${getContrastColor(color)}" text-anchor="middle" dominant-baseline="middle">
         ${text}
       </text>
@@ -607,8 +607,11 @@ function createFlagSVG(color, text) {
     return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
-// Helper function to determine text color based on background color (same as before)
+// Helper function to determine text color based on background color (unchanged)
 function getContrastColor(hexcolor) {
+    // For yellow backgrounds, always use black text
+    if (hexcolor === "#FFFF00") return "black";
+
     const r = parseInt(hexcolor.slice(1, 3), 16);
     const g = parseInt(hexcolor.slice(3, 5), 16);
     const b = parseInt(hexcolor.slice(5, 7), 16);

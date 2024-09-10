@@ -119,10 +119,11 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.contactClick($event, jdSvc.currentJob)"
                              ng-show="!jdSvc.currentJob.bulkJob">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''" ng-disabled="true">Booked
-                                by Contact</label>&nbsp;<i
-                                class="fa fa-info-circle" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
+                                by Contact</label>&nbsp; <i class="material-symbols-outlined job-table-icon"
+                                                            ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
                                 title="Show Client Contact List"
-                                ng-click="!jdSvc.currentJob.locked && jdSvc.getClientContactDetail($event, jdSvc.currentJob)"></i>
+                                                            ng-click="!jdSvc.currentJob.locked && jdSvc.getClientContactDetail($event, jdSvc.currentJob)"
+                                                            ng-disabled="jdSvc.currentJob.locked">info</i>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
                                  ng-disabled="true">
                                 {{jdSvc.currentJob.contactName}}
@@ -467,8 +468,9 @@
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
                                    ng-if="jdSvc.currentJob.ratedManually">Charge
                                 (Manually Rated)</label>
-                            <i class="fa fa-info-circle" title="Click for Price Breakdown"
-                               ng-click="jdSvc.displayPriceBreakdown($event, jdSvc.currentJob)"></i>
+                            <i class="material-symbols-outlined job-table-icon" ng-click="jdSvc.displayPriceBreakdown($event, jdSvc.currentJob)"
+                               ng-disabled="jdSvc.currentJob.locked"
+                               title="Click for Price Breakdown">info</i>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{jdSvc.currentJob.charge}}
                             </div>
@@ -610,7 +612,6 @@
         </md-button>
         <label>POD Info</label>
         <div class="row row-no-padding row-out">
-            <!--<img ng-src="{{'data:image/png;base64,'+jdSvc.currentJob.podPhoto}}" />-->
             <div class="carousel slide" data-interval="false" id="intel-carousel-pod">
                 <!-- Indicators -->
                 <ol class="carousel-indicators">
@@ -628,8 +629,6 @@
                         <div style="text-align:center">
                             <img ng-src="{{'data:image/png;base64,'+img}}" style="max-height: 600px;"/>
                         </div>
-
-
                     </div>
                 </div>
 
