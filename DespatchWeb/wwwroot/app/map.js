@@ -637,10 +637,10 @@ function drawItem(col, ll, code, id, originalCode) {
  */
 function createFlagSVG(color, text) {
     const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 65">
-      <rect x="0" y="0" width="3" height="65" fill="#333"/>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100">
+      <rect x="0" y="0" width="3" height="100" fill="#333"/>
       <path d="M3,5 L113,5 L108,32.5 L113,60 L3,60 Z" fill="${color}"/>
-      <text x="58" y="32.5" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
+      <text x="58" y="32.5" font-family="Arial, sans-serif" font-size="30" font-weight="bold" 
             fill="${getContrastColor(color)}" text-anchor="middle" dominant-baseline="middle">
         ${text}
       </text>
@@ -662,22 +662,11 @@ function getContrastColor(hexColor) {
     return (yiq >= 128) ? 'black' : 'white';
 }
 
-function pad(str, len, pad, dir) {
-    if (typeof (len) === "undefined") {
-        var len = 0;
+function pad(stringToPad, length = 0, paddingChar = ' ', direction = 2) {
+    if (length + 1 >= stringToPad.length) {
+        stringToPad += Array(length + 1 - stringToPad.length).join(paddingChar);
     }
-    if (typeof (pad) === "undefined") {
-        var pad = ' ';
-    }
-    if (typeof (dir) === "undefined") {
-        var dir = 2;
-    }
-
-    if (len + 1 >= str.length) {
-        str = str + Array(len + 1 - str.length).join(pad);
-    }
-
-    return str;
+    return stringToPad;
 }
 
 
@@ -698,23 +687,38 @@ function refreshCourierLocation(returnData) {
 }
 
 function computeTotalDistance(result) {
+    const myRoute = result.routes[0];
+    const totalData = calculateTotalDistAndTime(myRoute);
+    updateRunDetailsWithAngular(totalData);
+}
+
+function calculateTotalDistAndTime(route) {
     let totalDist = 0;
-    var totalTime = 0;
-    const myroute = result.routes[0];
+    let totalTime = 0;
     const newOrder = [];
-    for (i = 0; i < myroute.legs.length; i++) {
-        totalDist += myroute.legs[i].distance.value;
-        totalTime += myroute.legs[i].duration.value;
+
+    for (let i = 0; i < route.legs.length; i++) {
+        totalDist += route.legs[i].distance.value;
+        totalTime += route.legs[i].duration.value;
         newOrder.push({
-            "lat": myroute.legs[i].end_location.lat(), "lng": myroute.legs[i].end_location.lng()
+            "lat": route.legs[i].end_location.lat(),
+            "lng": route.legs[i].end_location.lng()
         });
     }
 
     totalDist = totalDist / 1000;
+    totalTime = (totalTime / 60).toFixed(0);
 
-    angular.element(".columns").scope().updateRunDetails(totalTime, Math.round(totalDist), myroute.legs.length, newOrder);
+    return {totalDist, totalTime, legCount: route.legs.length, newOrder};
+}
 
-    var totalTime = (totalTime / 60).toFixed(0);
+function updateRunDetailsWithAngular(totalData) {
+    angular.element(".columns").scope().updateRunDetails(
+        totalData.totalTime,
+        Math.round(totalData.totalDist),
+        totalData.legCount,
+        totalData.newOrder
+    );
 }
 
 /**
