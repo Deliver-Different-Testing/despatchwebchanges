@@ -1420,6 +1420,7 @@ md-table-container .md-table td.md-cell {
   align-items: center;
   border-right: 1px solid rgba(0, 0, 0, 0.12);
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
 }
 md-table-container .md-table th.md-column::-webkit-scrollbar,
@@ -1440,10 +1441,13 @@ md-table-container .md-table th.md-column:last-child,
 md-table-container .md-table td.md-cell:last-child {
   border-right: none;
 }
+md-table-container .md-table thead tr {
+  background-color: #e6f2ff;
+}
 md-table-container .md-table thead tr th {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.66);
+  color: rgba(0, 0, 0, 0.87);
 }
 md-table-container .md-table tbody tr {
   height: 36px;
@@ -1453,18 +1457,21 @@ md-table-container .md-table tbody tr td {
   color: rgba(0, 0, 0, 0.87);
 }
 md-table-container .md-table .md-row:nth-child(even) {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: #f8f8f8;
+}
+md-table-container .md-table .md-row:nth-child(odd) {
+  background-color: #ffffff;
 }
 md-table-container .md-table .md-row {
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 md-table-container .md-table .md-column.md-date-cell,
 md-table-container .md-table .md-cell.md-date-cell {
-  flex: 0 0 80px;
+  flex: 0 0 120px;
 }
 md-table-container .md-table .md-column.md-speed-cell,
 md-table-container .md-table .md-cell.md-speed-cell {
-  flex: 0 0 60px;
+  flex: 0 0 90px;
 }
 md-table-container .md-table .md-column.md-job-cell,
 md-table-container .md-table .md-cell.md-job-cell {
@@ -1472,7 +1479,7 @@ md-table-container .md-table .md-cell.md-job-cell {
 }
 md-table-container .md-table .md-column.md-client-cell,
 md-table-container .md-table .md-cell.md-client-cell {
-  flex: 2;
+  flex: 1;
 }
 md-table-container .md-table .md-column.md-address-cell,
 md-table-container .md-table .md-cell.md-address-cell {
@@ -1485,6 +1492,27 @@ md-table-container .md-table .md-cell.md-code-cell {
 md-table-container .md-table .md-column.md-status-cell,
 md-table-container .md-table .md-cell.md-status-cell {
   flex: 1;
+}
+md-table-container .md-table .client-box {
+  display: inline-block;
+  padding: 2px 4px;
+  color: white;
+  font-weight: bold;
+  border-radius: 2px;
+}
+md-table-container .md-table .md-cell.highlight {
+  color: #ff0000;
+}
+md-table-container .md-table .md-button.md-icon-button {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  line-height: 24px;
+  padding: 0;
+  margin: 0 2px;
+}
+md-table-container .md-table .md-icon {
+  font-size: 18px;
 }
 @media screen and (max-width: 1200px) {
   md-table-container .md-table {

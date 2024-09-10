@@ -1464,7 +1464,6 @@ md-table-pagination {
     }
   }
 }
-
 md-table-container {
   overflow-x: auto;
 
@@ -1487,22 +1486,21 @@ md-table-container {
       align-items: center;
       border-right: 1px solid rgba(0, 0, 0, 0.12);
       overflow-x: auto;
+      overflow-y: hidden;
       white-space: nowrap;
     }
 
-    // Hide scrollbar when not needed
+    // Scrollbar styles (unchanged)
     th.md-column::-webkit-scrollbar, td.md-cell::-webkit-scrollbar {
       height: 4px;
       background-color: transparent;
     }
 
-    // Style the scrollbar thumb
     th.md-column::-webkit-scrollbar-thumb, td.md-cell::-webkit-scrollbar-thumb {
       background-color: rgba(0, 0, 0, 0.26);
       border-radius: 2px;
     }
 
-    // Show scrollbar on hover
     th.md-column:hover::-webkit-scrollbar-thumb, td.md-cell:hover::-webkit-scrollbar-thumb {
       background-color: rgba(0, 0, 0, 0.4);
     }
@@ -1513,10 +1511,11 @@ md-table-container {
 
     thead {
       tr {
+        background-color: #e6f2ff; // New header background color
         th {
           font-size: 13px;
           font-weight: 500;
-          color: rgba(0, 0, 0, 0.66);
+          color: rgba(0, 0, 0, 0.87); // Darker color for better contrast
         }
       }
     }
@@ -1533,7 +1532,11 @@ md-table-container {
     }
 
     .md-row:nth-child(even) {
-      background-color: rgba(0, 0, 0, 0.02);
+      background-color: #f8f8f8; // Lighter background for even rows
+    }
+
+    .md-row:nth-child(odd) {
+      background-color: #ffffff; // White background for odd rows
     }
 
     .md-row {
@@ -1542,11 +1545,11 @@ md-table-container {
 
     .md-column, .md-cell {
       &.md-date-cell {
-        flex: 0 0 80px;
+        flex: 0 0 120px;
       }
 
       &.md-speed-cell {
-        flex: 0 0 60px;
+        flex: 0 0 90px;
       }
 
       &.md-job-cell {
@@ -1554,7 +1557,7 @@ md-table-container {
       }
 
       &.md-client-cell {
-        flex: 2;
+        flex: 1;
       }
 
       &.md-address-cell {
@@ -1570,6 +1573,35 @@ md-table-container {
       }
     }
 
+    // New styles for client box
+    .client-box {
+      display: inline-block;
+      padding: 2px 4px;
+      color: white;
+      font-weight: bold;
+      border-radius: 2px;
+    }
+
+    // New styles for 'Remain' column
+    .md-cell.highlight {
+      color: #ff0000; // Red color for negative values
+    }
+
+    // New styles for action buttons
+    .md-button.md-icon-button {
+      width: 24px;
+      height: 24px;
+      min-height: 24px;
+      line-height: 24px;
+      padding: 0;
+      margin: 0 2px;
+    }
+
+    .md-icon {
+      font-size: 18px;
+    }
+
+    // Responsive styles (unchanged)
     @media screen and (max-width: 1200px) {
       font-size: 12px;
     }
