@@ -80,12 +80,22 @@
 
         <div class="space">
             <b>Job Number:</b>
-            <input class="form-control focusMe" id="Job" name="Job" ng-model="pickDateService.job" type="text"/>
+            <input class="form-control focusMe"
+                   id="Job"
+                   name="Job"
+                   ng-keyup="$event.keyCode === 13 && refreshAllData(true)"
+                   ng-model="pickDateService.job"
+                   type="text"/>
         </div>
 
         <div class="space">
             <b>Everything Else (JobNo, Address, Name, Refs):</b>
-            <input class="form-control focusMe" id="Wild" name="Wild" ng-model="pickDateService.wild" type="text"/>
+            <input class="form-control focusMe"
+                   id="Wild"
+                   name="Wild"
+                   ng-keyup="$event.keyCode === 13 && refreshAllData(true)"
+                   ng-model="pickDateService.wild"
+                   type="text"/>
         </div>
 
         <section layout="row" layout-sm="column" layout-align="center center" layout-wrap class="space">
