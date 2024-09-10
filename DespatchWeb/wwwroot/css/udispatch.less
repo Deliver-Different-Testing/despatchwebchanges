@@ -1609,3 +1609,33 @@ md-table-pagination {
   height: 100%;
   width: 100%;
 }
+
+.map-label {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.courierMarker {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.courierCream {
+  color: #000;
+}
+
+.courierRed {
+  color: #fff;
+}
+
+.gm-style img[src^="data:image/svg+xml"] {
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.1);
+    transform-origin: bottom left; // This ensures the flagpole stays in place when hovering
+  }
+}

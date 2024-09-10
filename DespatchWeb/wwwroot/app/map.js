@@ -91,11 +91,6 @@ function initialize() {
         console.log(e);
     });
 
-    google.maps.event.addListenerOnce(map, 'idle', () => {
-        loadInitialData();
-    });
-
-
     const trafficLayer = new google.maps.TrafficLayer();
     trafficLayer.setMap(map);
 }
@@ -244,15 +239,16 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
         if (!includeUA && c.fleetCode === "UA") {
             return true;
         }
-        let col = "#00FF00";
+        let col = "#4CAF50";  // Green for couriers with jobs
         let className = "courier courierMarker";
         if (c.totalJobs === 0) {
-            col = "#FFFDD0";
+            col = "#FFC107";  // Amber for couriers with no jobs
             className = "courier courierCream courierMarker";
         } else if (c.overDueJobs > 0) {
-            col = "#FF0000";
+            col = "#F44336";  // Red for couriers with overdue jobs
             className = "courier courierRed courierMarker";
         }
+
         const ll = new google.maps.LatLng(c.latitude, c.longitude);
         if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (truckChannel === false || c.vehicleType === "T")) {
             if ((truckChannel === false && truckMode === "Off" && c.vehicleType === "T") || (truckChannel === false && truckMode === "Only" && c.vehicleType !== "T")) {
@@ -263,8 +259,6 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
             }
         }
     });
-
-
 }
 
 function displayPickupPoints(jobs, clear, currentJob) {
@@ -385,7 +379,6 @@ function displayRoutePointsOnly(courierJobs, clear) {
             pinColor = "yellow";
         }
 
-
         const pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (courierJobs[i].runOrder || "").toString() + ".png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
 
         if (courierJobs[i].statusID < 5) {
@@ -396,17 +389,14 @@ function displayRoutePointsOnly(courierJobs, clear) {
                 jobNumber: courierJobs[i].jobNo
             });
 
-
             const contentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + courierJobs[i].jobNo + '</b></p>' + "<p><b>Pickup</b></p>" + "</div>" + "</div>";
 
             const infoWindow = new google.maps.InfoWindow({
                 content: contentString, pixelOffset: new google.maps.Size(-55, 0)
             });
 
-
             addClickHandler(pickupMarker, infoWindow);
         }
-
 
         const deliveryMarker = new google.maps.Marker({
             position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
@@ -415,13 +405,11 @@ function displayRoutePointsOnly(courierJobs, clear) {
             jobNumber: courierJobs[i].jobNo
         });
 
-
         const deliveryContentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + courierJobs[i].jobNo + '</b></p>' + "<p><b>Delivery</b></p>" + "</div>" + "</div>";
 
         const deliveryInfoWindow = new google.maps.InfoWindow({
             content: deliveryContentString, pixelOffset: new google.maps.Size(-55, 0)
         });
-
 
         addClickHandler(deliveryMarker, deliveryInfoWindow);
     }
@@ -431,8 +419,8 @@ function displayRoutePoints(courierJobs, clear, zoom) {
     if (clear === true) {
         if (map.markers.length) {
             map.clearMarkers();
-
         }
+
         oms.removeAllMarkers();
         if (carMarker !== null) {
             carMarker.setMap(null);
@@ -463,7 +451,6 @@ function displayRoutePoints(courierJobs, clear, zoom) {
             pinColor = "yellow";
         }
 
-
         const pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (courierJobs[i].runOrder || "").toString() + ".png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
         const deliveryPinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_red" + (courierJobs[i].runOrder || "").toString() + ".png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
 
@@ -474,7 +461,6 @@ function displayRoutePoints(courierJobs, clear, zoom) {
                 icon: pinImage,
                 jobNumber: courierJobs[i].jobNo
             });
-
 
             const contentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + courierJobs[i].jobNo + '</b></p>' + "<p><b>Pickup</b></p>" + "</div>" + "</div>";
 
@@ -487,7 +473,6 @@ function displayRoutePoints(courierJobs, clear, zoom) {
             zoomMarkers.push(pickupMarker);
         }
 
-
         const deliveryMarker = new google.maps.Marker({
             position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
             map: map,
@@ -495,18 +480,14 @@ function displayRoutePoints(courierJobs, clear, zoom) {
             jobNumber: courierJobs[i].jobNo
         });
 
-
         const deliveryContentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + courierJobs[i].jobNo + '</b></p>' + "<p><b>Delivery</b></p>" + "</div>" + "</div>";
 
         const deliveryInfoWindow = new google.maps.InfoWindow({
             content: deliveryContentString, pixelOffset: new google.maps.Size(-55, 0)
         });
 
-
         addClickHandler(deliveryMarker, deliveryInfoWindow);
-
         zoomMarkers.push(deliveryMarker);
-
     }
 
     const bounds = new google.maps.LatLngBounds();
@@ -524,7 +505,6 @@ function displayRoutePoints(courierJobs, clear, zoom) {
     for (var y = 0; y < zoomMarkers.length; y++) {
         const thisMarker = zoomMarkers[y];
         thisMarker.setAnimation(google.maps.Animation.BOUNCE);
-
     }
 
     window.setTimeout(() => {
@@ -534,7 +514,6 @@ function displayRoutePoints(courierJobs, clear, zoom) {
                 bounceMarker.setAnimation(null);
             }
         }
-
     }, 2000);
 
 
@@ -565,36 +544,50 @@ function displayRoutePoints(courierJobs, clear, zoom) {
 }
 
 function drawItem(col, ll, code, id, originalCode, className) {
-    const label = new Label({
-        map: map, color: col, isVisible: true, cssClass: className
-    });
-
+    const flagIcon = {
+        url: createFlagSVG(col, code),
+        scaledSize: new google.maps.Size(30, 25),  // Adjusted size to include pole
+        anchor: new google.maps.Point(0, 25),  // Anchor point at bottom of the pole
+    };
 
     const marker = new google.maps.Marker({
         position: ll,
-        draggable: false,
         map: map,
-        title: code,
-        visible: true,
-        display: code,
+        icon: flagIcon,
+        title: originalCode,
         courierId: id,
         code: originalCode
     });
 
-    const iconFile = '/images/flagpole.png';
-    marker.setIcon(iconFile);
-    label.bindTo('position', marker, 'position');
-    label.bindTo('text', marker, 'display');
-    label.bindTo('zIndex', marker);
-
     map.addFlag(marker);
-    map.addLabel(label);
 
     google.maps.event.addListener(marker, 'click', () => {
         const $columns = $(".columns");
         const courier = $columns.scope().pickCouriers.find(x => x.courierID === this.courierId);
         $columns.scope().selectMapCourier(courier);
     });
+}
+
+function createFlagSVG(color, text) {
+    const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 50">
+      <rect x="0" y="0" width="2" height="50" fill="#333"/>
+      <path d="M2,5 L52,5 L47,20 L52,35 L2,35 Z" fill="${color}"/>
+      <text x="27" y="22" font-family="Arial, sans-serif" font-size="12" font-weight="bold" 
+            fill="${getContrastColor(color)}" text-anchor="middle" dominant-baseline="middle">
+        ${text}
+      </text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+// Helper function to determine text color based on background color (same as before)
+function getContrastColor(hexcolor) {
+    const r = parseInt(hexcolor.slice(1, 3), 16);
+    const g = parseInt(hexcolor.slice(3, 5), 16);
+    const b = parseInt(hexcolor.slice(5, 7), 16);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? 'black' : 'white';
 }
 
 function pad(str, len, pad, dir) {

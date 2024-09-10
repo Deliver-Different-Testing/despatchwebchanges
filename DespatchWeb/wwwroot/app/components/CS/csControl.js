@@ -70,6 +70,11 @@ angular.module('uDispatch').controller('CSControl', [
             return greetingService.greetUser(FirstName);
         }
 
+        /**
+         * @param {Job} currentJob
+         * @param {string} field
+         * @param {boolean} fromRightClick
+         */
         $scope.updateGPS = (currentJob, field, fromRightClick) => {
             jdSvc.updateGPS(currentJob, field, fromRightClick);
         };
