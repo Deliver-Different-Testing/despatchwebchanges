@@ -1890,7 +1890,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 }
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
-                    displayRoutePoints(data, false, $scope.mapZoom.display);
+                    displayRoutePoints(data, false);
                 } else {
                     NWData.getCourierPosition(code).then(posData => {
                         displayCourierPositionOnly(posData.latitude, posData.longitude);
@@ -1962,7 +1962,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 */
                 $scope.jobsCurrentList = data;
                 if (data.length > 0) {
-                    displayRoutePoints(data, true, $scope.mapZoom.display);
+                    displayRoutePoints(data, true);
                 } else {
                     NWData.getCourierPosition(code).then(posData => {
                         displayCourierPositionOnly(posData.latitude, posData.longitude);
@@ -2103,7 +2103,7 @@ angular.module("uDispatch").controller("NationwideControl", [
             }
             if (clear === true && job.courier === null) {
                 processClearSettings(job);
-                displayRoutePoints([job], false, $scope.mapZoom.display);
+                displayRoutePoints([job], false);
             } else {
                 $scope.potentialCouriers = false;
                 $scope.selectCourier(job.courierData);

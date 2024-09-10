@@ -5,16 +5,21 @@
                 <div class="row row-no-padding addresses">
                     <div class="col-md-6">
                         <div class="field">
-                            <label>Client</label><i class="material-symbols-outlined small-icon"
-                                                    ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
-                                                    title="Change Client Code"
-                                                    ng-click="!jdSvc.currentJob.locked && jdSvc.editClientCode($event, jdSvc.currentJob)">edit</i>
-                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"><a
-                                    class="uline" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
-                                    ng-click="!jdSvc.currentJob.locked && jdSvc.clientClick($event, jdSvc.currentJob)"
-                                    src="#">{{jdSvc.currentJob.client}}
-                                {{jdSvc.currentJob.clientName}}</a></div>
+                            <label id="clientLabel">Client</label>
+                            <i aria-label="Change Client Code"
+                               class="material-symbols-outlined small-icon"
+                               ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
+                               ng-click="!jdSvc.currentJob.locked && jdSvc.editClientCode($event, jdSvc.currentJob)"
+                               title="Change Client Code">edit</i>
+                            <div aria-labelledby="clientLabel" class="value"
+                                 ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                                <a class="uline"
+                                   ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
+                                   ng-click="!jdSvc.currentJob.locked && jdSvc.clientClick($event, jdSvc.currentJob)"
+                                   src="#">{{jdSvc.currentJob.client}} {{jdSvc.currentJob.clientName}}</a>
+                            </div>
                         </div>
+
                         <div class="field" ng-class="jdSvc.currentJob.pickUpLongitude ? '' : 'red'"
                              context-menu="detailAddressMenu" data-field="fromAddress"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.updateGPS($event, jdSvc.currentJob, 'fromAddress')">
