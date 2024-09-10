@@ -720,13 +720,13 @@ angular.module('uDispatch').controller('CSControl', [
                                 .textContent('POD Swap Completed Successfully')
                                 .ok('OK'));
 
-                            uCSData.reSendJobs(secondJobId);
-                            uCSData.reAssignJobs(firstJobId).then(() => {
-                                uCSData.reSendJobs(firstJobId).then(() => {
-                                    $scope.refreshData(true);
+                            uCSData.reSendJobs(secondJobId).then(() => {
+                                uCSData.reAssignJobs(firstJobId).then(() => {
+                                    uCSData.reSendJobs(firstJobId).then(() => {
+                                        $scope.refreshData(true);
+                                    });
                                 });
                             });
-
                         });
                     }, () => {
                         console.log("POD Swap Canceled");
@@ -737,7 +737,10 @@ angular.module('uDispatch').controller('CSControl', [
             });
         }
 
-        $scope.sendPOD = event => {
+        /**
+         * @param {$event} $event
+         */
+        $scope.sendPOD = $event => {
             if (!$scope.currentJob.podPhoto) {
                 $mdDialog.show($mdDialog.alert()
                     .clickOutsideToClose(true)
@@ -752,7 +755,7 @@ angular.module('uDispatch').controller('CSControl', [
                 .textContent('Please enter an email address to send the POD.')
                 .placeholder('Email Address')
                 .ariaLabel('Email Address')
-                .targetEvent(event)
+                .targetEvent($event)
                 .required(true)
                 .ok('Send')
                 .cancel('Cancel');
@@ -812,8 +815,11 @@ angular.module('uDispatch').controller('CSControl', [
             return $scope.preBookPromise;
         };
 
+        /**
+         * @param {number} lat
+         * @param {number} lng
+         */
         $scope.selectJobData = (lat, lng) => {
-
             const toCompare = [];
 
             angular.forEach($scope.runBuilder, (job, key) => {
@@ -825,7 +831,9 @@ angular.module('uDispatch').controller('CSControl', [
             return $scope.runBuilder[closestIndex[0]];
         };
 
-
+        /**
+         * @param {Job} job
+         */
         $scope.showItems = job => {
             if (job.clientCode !== "Other") {
                 if ($scope.cancelledSelected) {
@@ -842,17 +850,17 @@ angular.module('uDispatch').controller('CSControl', [
         /////////////////////////////////
 
         $scope.showJobs = group => {
-
             angular.element("#box-jobsList").find(".loading").show();
             $scope.jobList = group.jobs;
             $timeout(() => {
                 sizeHeadings(angular.element("#jobList").parents(".column"));
             }, 1000);
             angular.element("#box-jobsList .loading").fadeOut();
-
-
         };
 
+        /**
+         * @param {number} sizeId
+         */
         $scope.sizeName = sizeId => {
             if (!sizeId) {
                 return "";
@@ -865,12 +873,16 @@ angular.module('uDispatch').controller('CSControl', [
             return sn === undefined ? "" : sn.label;
         };
 
-        $scope.loadRelatedJobDetail = (id, jn) => {
+        /**
+         * @param {number} jobId
+         * @param {string} jobNumber
+         */
+        $scope.loadRelatedJobDetail = (jobId, jobNumber) => {
             angular.element("#box-jobDetail").find(".loading").show();
-            uCSData.getJobDetail(id).then(data => {
+            uCSData.getJobDetail(jobId).then(data => {
                 $scope.currentJob = data;
                 angular.element("#box-jobDetail").find(".loading").hide();
-                $scope.currentSelection = " for Job " + jn;
+                $scope.currentSelection = " for Job " + jobNumber;
             });
         }
 
@@ -896,7 +908,6 @@ angular.module('uDispatch').controller('CSControl', [
                 map.setZoom(14);
                 if ($scope.currentJob.rootParentID) {
                     uCSData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
-                        //data = data.filter(item => item.id !== self.currentJob.id);
                         $scope.currentJob.relatedJobs = data;
                     });
                 }
@@ -956,19 +967,13 @@ angular.module('uDispatch').controller('CSControl', [
                         map.addFlightPath(flightPathPoly);
                     });
                 }
-
-
             });
-
-
         };
 
         $scope.selectPreBookDetail = id => {
             $scope.scanList = [];
             console.log("select pre book Job  " + id);
-            //angular.element("#jobList").find(".active").removeClass("active");
             clearTimeout($scope.myTimer);
-            //$scope.currentEvent = event;
 
             angular.element("#box-jobDetail").find(".loading").show();
 
@@ -1012,14 +1017,17 @@ angular.module('uDispatch').controller('CSControl', [
         };
 
         //Select Bulk Job
-        $scope.selectBulkJobDetail = id => {
+        /**
+         * @param {number} bulkJobId
+         */
+        $scope.selectBulkJobDetail = bulkJobId => {
             $scope.scanList = [];
-            console.log("select Bulk Job  " + id);
+            console.log("select Bulk Job  " + bulkJobId);
             clearTimeout($scope.myTimer);
 
             angular.element("#box-jobDetail").find(".loading").show();
 
-            uCSData.getBulkJobDetail(id).then(data => {
+            uCSData.getBulkJobDetail(bulkJobId).then(data => {
                 $scope.currentJob = data;
                 jdSvc.setJob($scope.currentJob);
                 angular.element("#box-jobDetail").find(".loading").hide();
@@ -1043,57 +1051,76 @@ angular.module('uDispatch').controller('CSControl', [
         jdSvc.setSelectJobDetail($scope.selectJobDetail);
         jdSvc.setSelectBulkJobDetail($scope.selectBulkJobDetail);
 
+        /**
+         * @param {number} page
+         * @param {number} limit
+         */
         $scope.jobPageChanged = (page, limit) => {
             $scope.jobQuery.page = page;
             $scope.jobQuery.limit = limit;
             $scope.refreshData();
         };
 
+        /**
+         * @param {number} page
+         * @param {number} limit
+         */
         $scope.bulkJobPageChanged = (page, limit) => {
             $scope.bulkJobQuery.page = page;
             $scope.bulkJobQuery.limit = limit;
             $scope.refreshBulkData();
         };
 
+        /**
+         * @param {number} page
+         * @param {number} limit
+         */
         $scope.preBookPageChanged = (page, limit) => {
             $scope.preBookQuery.page = page;
             $scope.preBookQuery.limit = limit;
             $scope.refreshPreBookData();
         };
 
-        //This method is calling from dropDown
-        $scope.changeBulkPageSize = i => {
-            $scope.bulkPageIndex = i;
-            $scope.bulkPageSizeSelected = i;
+        /**
+         * @param {number} index
+         */
+        $scope.changeBulkPageSize = index => {
+            $scope.bulkPageIndex = index;
+            $scope.bulkPageSizeSelected = index;
             $scope.refreshBulkData();
         };
 
-        //This method is calling from pagination number
-        $scope.pbPageChanged = i => {
-
-            $scope.pbPageIndex = i;
-            $scope.refreshPreBookData();
-
-        };
-
-        $scope.changePBPageSize = i => {
-            $scope.pbPageIndex = i;
-            $scope.pbPageSizeSelected = i;
+        /**
+         * @param {number} index
+         */
+        $scope.pbPageChanged = index => {
+            $scope.pbPageIndex = index;
             $scope.refreshPreBookData();
         };
 
-        //This method is calling from pagination number
-        $scope.bulkPageChanged = i => {
+        /**
+         * @param {number} index
+         */
+        $scope.changePBPageSize = index => {
+            $scope.pbPageIndex = index;
+            $scope.pbPageSizeSelected = index;
+            $scope.refreshPreBookData();
+        };
 
-            $scope.bulkPageIndex = i;
+        /**
+         * @param {number} index
+         */
+        $scope.bulkPageChanged = index => {
+            $scope.bulkPageIndex = index;
             $scope.refreshBulkData();
-
         };
 
-        //This method is calling from dropDown
-        $scope.changePageSize = i => {
-            $scope.pageIndex = i;
-            $scope.pageSizeSelected = i;
+        /**
+         * @param {number} index
+         */
+        $scope.changePageSize = index => {
+            $scope.pageIndex = index;
+            $scope.pageSizeSelected = index;
             $scope.refreshData();
         };
 
@@ -1103,7 +1130,10 @@ angular.module('uDispatch').controller('CSControl', [
         $scope.clientSearchText = '';
         $scope.courierSearchText = '';
 
-        $scope.clientQuerySearch = searchText => uCSData.getActiveClients(searchText);
+        /**
+         * @param {string} searchText
+         */
+        $scope.clientQuerySearch = (searchText) => uCSData.getActiveClients(searchText);
 
         $scope.selectedClientChange = item => {
             if (!item) {
@@ -1112,7 +1142,10 @@ angular.module('uDispatch').controller('CSControl', [
             $scope.pickDateService.client = item.id;
         };
 
-        $scope.courierQuerySearch = searchText => uCSData.getActiveCouriersSearch(searchText);
+        /**
+         * @param {string} searchText
+         */
+        $scope.courierQuerySearch = (searchText) => uCSData.getActiveCouriersSearch(searchText);
 
         $scope.selectedCourierChange = item => {
             if (!item) {
@@ -1190,7 +1223,10 @@ angular.module('uDispatch').controller('CSControl', [
             });
         };
 
-        $scope.createJobEvent = (job, $event) => {
+        /**
+         * @param {Job} job
+         */
+        $scope.createJobEvent = (job) => {
             $scope.currentJob = job;
             $mdDialog.show({
                 locals: {dataToPass: undefined},
@@ -1293,8 +1329,6 @@ angular.module('uDispatch').controller('CSControl', [
 
                         $scope.refreshData(true, true);
                     });
-
-
             }
         };
 
@@ -1425,6 +1459,11 @@ function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     return Math.sqrt(x * x + y * y) * R;
 }
 
+/**
+ * @param {number} latitude
+ * @param {number} longitude
+ * @param {*[]} locations
+ */
 function closestLocation(latitude, longitude, locations) {
     let minDifference = 99999;
     let closest;
