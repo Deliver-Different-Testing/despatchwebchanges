@@ -354,8 +354,6 @@ angular.module('uDispatch').controller('CSControl', [
                 }, {
                     "label": "Void", "name": "void"
                 }
-
-
                 ]
             }, "jobDetail": {
                 "title": "Detail",
@@ -652,6 +650,9 @@ angular.module('uDispatch').controller('CSControl', [
             });
         };
 
+        /**
+         * @param {Job} job
+         */
         $scope.restoreJob = job => {
             angular.element("#box-jobDetail").find(".loading").show();
             let callData = {
@@ -680,14 +681,17 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
-        $scope.swapPOD = event => {
+        /**
+         * @param {$event} $event
+         */
+        $scope.swapPOD = $event => {
             const jobNumberPrompt = $mdDialog.prompt()
                 .title('Enter the other job number')
                 .textContent('Please enter the Job Number to swap the POD.')
                 .placeholder('Job Number')
                 .ariaLabel('Job Number')
                 .initialValue('')
-                .targetEvent(event)
+                .targetEvent($event)
                 .required(true)
                 .ok('Submit')
                 .cancel('Cancel');
@@ -707,7 +711,7 @@ angular.module('uDispatch').controller('CSControl', [
                         .title('Swap Delivery Info?')
                         .textContent(`Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${jobNumber}?`)
                         .ariaLabel('Lucky day')
-                        .targetEvent(event)
+                        .targetEvent($event)
                         .ok('Yes')
                         .cancel('No');
 
@@ -970,14 +974,17 @@ angular.module('uDispatch').controller('CSControl', [
             });
         };
 
-        $scope.selectPreBookDetail = id => {
+        /**
+         * @param  {number} prebookJobId
+         */
+        $scope.selectPreBookDetail = prebookJobId => {
             $scope.scanList = [];
-            console.log("select pre book Job  " + id);
+            console.log("select pre book Job  " + prebookJobId);
             clearTimeout($scope.myTimer);
 
             angular.element("#box-jobDetail").find(".loading").show();
 
-            uCSData.getPreBookDetail(id).then(data => {
+            uCSData.getPreBookDetail(prebookJobId).then(data => {
                 $scope.currentJob = data;
                 jdSvc.setJob($scope.currentJob);
                 angular.element("#box-jobDetail").find(".loading").hide();
