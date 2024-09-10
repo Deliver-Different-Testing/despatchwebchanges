@@ -1,4 +1,5 @@
 // Define the Label class, derived from google.maps.OverlayView
+// This code was moved from _Layout.cshtml
 class Label extends google.maps.OverlayView {
     constructor(options = {}) {
         super();

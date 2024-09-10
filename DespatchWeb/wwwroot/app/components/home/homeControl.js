@@ -1506,7 +1506,6 @@ angular.module("uDispatch").controller("HomeControl", [
 
             loadingElement.css('display', 'block');
             mapLoadingElement.css('display', '');
-
             if (!courier.courier) {
                 courier.courier = `${courier.code} ${courier.firstName}`;
             }

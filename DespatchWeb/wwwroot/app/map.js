@@ -203,11 +203,11 @@ function displayAllRoutePoints() {
         if (run[i].jobStatus === "C") {
             const contentString = '<div id="content">' + '<div id="bodyContent">' + '<p><b>Received By: </b>' + run[i].rb + '</p>' + '<p><b>Received Time: </b>' + moment(run[i].rt).format('hh:mm a') + '</p>' + '</div>' + '</div>';
 
-            const infowindow = new google.maps.InfoWindow({
+            const infoWindow = new google.maps.InfoWindow({
                 content: contentString, pixelOffset: new google.maps.Size(-55, 0)
             });
 
-            addClickHandler(marker, infowindow);
+            addClickHandler(marker, infoWindow);
         } else {
             addClickHandler(marker);
         }
@@ -248,14 +248,13 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
             col = "#F44336";  // Red for couriers with overdue jobs
             className = "courier courierRed courierMarker";
         }
-
         const ll = new google.maps.LatLng(c.latitude, c.longitude);
-        if (ll.lat !== null && ll.lng !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (truckChannel === false || c.vehicleType === "T")) {
+        if (ll.lat() !== null && ll.lng() !== null && c.code !== courierCode && (channels.length === 0 || channels.includes(c.channelID)) && (truckChannel === false || c.vehicleType === "T")) {
             if ((truckChannel === false && truckMode === "Off" && c.vehicleType === "T") || (truckChannel === false && truckMode === "Only" && c.vehicleType !== "T")) {
                 return true;
-
             } else {
-                drawItem(col, ll, pad(c.code + '-' + c.vehicleType + c.totalJobs, 5, '_', 2), c.courierID, c.code, className);
+                console.log(`Drawing item for courier: ${c.code}, ID: ${c.courierID}`);
+                drawItem(col, ll, `${c.code}-${c.vehicleType}${c.totalJobs}`, c.courierID, c.code, className);
             }
         }
     });
@@ -543,7 +542,7 @@ function displayRoutePoints(courierJobs, clear, zoom) {
     }
 }
 
-function drawItem(col, ll, code, id, originalCode, className) {
+function drawItem(col, ll, code, id, originalCode) {
     const flagIcon = {
         url: createFlagSVG(col, code),
         scaledSize: new google.maps.Size(30, 25),  // Adjusted size to include pole
@@ -561,10 +560,37 @@ function drawItem(col, ll, code, id, originalCode, className) {
 
     map.addFlag(marker);
 
-    google.maps.event.addListener(marker, 'click', () => {
-        const $columns = $(".columns");
-        const courier = $columns.scope().pickCouriers.find(x => x.courierID === this.courierId);
-        $columns.scope().selectMapCourier(courier);
+    google.maps.event.addListener(marker, 'click', function () {
+        try {
+            const $columns = $(".columns");
+            const scope = $columns.scope();
+
+            if (!scope || typeof scope.pickCouriers === 'undefined') {
+                console.error('Unable to access scope or pickCouriers');
+                return;
+            }
+
+            const courier = scope.pickCouriers.find(x => x.courierID === this.courierId);
+
+            if (!courier) {
+                console.warn(`No courier found with ID ${this.courierId}`);
+                return;
+            }
+
+            if (typeof scope.selectMapCourier !== 'function') {
+                console.error('selectMapCourier is not a function');
+                return;
+            }
+
+            scope.selectMapCourier(courier);
+
+            // Force a digest cycle to ensure the UI updates
+            if (scope.$apply && !scope.$$phase) {
+                scope.$apply();
+            }
+        } catch (error) {
+            console.error('Error in flag click event:', error);
+        }
     });
 }
 

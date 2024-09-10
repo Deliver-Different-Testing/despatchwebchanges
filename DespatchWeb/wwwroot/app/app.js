@@ -139,46 +139,4 @@ angular
         $mdDateLocaleProvider.msgCalendar = 'Calendar';
         $mdDateLocaleProvider.msgOpenCalendar = 'Open calendar';
     }])
-    .factory('versionUrl', ['APP_VERSION', APP_VERSION => url => url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + APP_VERSION])
-    .config(['$urlRouterProvider', '$stateProvider', 'versionUrlProvider',
-        ($urlRouterProvider, $stateProvider, versionUrlProvider) => {
-            const versionUrl = versionUrlProvider.$get();
-
-            $urlRouterProvider.otherwise('/');
-
-            $stateProvider
-                .state('home', {
-                    url: '/',
-                    templateUrl: versionUrl('app/components/home/homeView.html'),
-                    controller: 'HomeControl'
-                })
-                .state('nw', {
-                    url: '/Nationwide',
-                    templateUrl: versionUrl('app/components/Nationwide/nationwideView.html'),
-                    controller: 'NationwideControl',
-                    reloadOnSearch: false
-                })
-                .state('cs', {
-                    url: '/CS',
-                    templateUrl: versionUrl('app/components/CS/csView.html'),
-                    controller: 'CSControl',
-                    reloadOnSearch: false
-                })
-                .state('prebooks', {
-                    url: '/prebooks',
-                    templateUrl: versionUrl('app/components/prebooks/prebookView.html'),
-                    controller: 'PBControl',
-                    reloadOnSearch: false
-                });
-        }])
-    .run(['$rootScope', $rootScope => {
-        $rootScope.$on('$viewContentLoaded', () => {
-            console.log("View content loaded, checking map container");
-            if (angular.element('#map_canvas').length) {
-                console.log("Map container found in DOM after view load");
-                // You might need to broadcast an event or call a method on your controller here
-            } else {
-                console.error("Map container still not found after view load");
-            }
-        });
-    }]);
+    .factory('versionUrl', ['APP_VERSION', APP_VERSION => url => url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + APP_VERSION]);
