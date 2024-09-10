@@ -110,11 +110,11 @@ function addClickHandler(m, iw) {
         google.maps.event.addListener(m, 'spider_click', e => {  // 'spider_click', not plain 'click'
             iw.open(map, m);
             console.log(m.jobNumber || '');
-            const $columns = $(".columns");
+            const $columns = angular.element(".columns");
             const sel = $columns.scope().jobList.filter(x => x.jobNo === m.jobNumber);
             if (sel.length > 0) {
-                $("#jobList tr").removeClass("active");
-                $("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
+                angular.element("#jobList tr").removeClass("active");
+                angular.element("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
                 $columns.scope().selectForDispatch(sel[0]);
                 $columns.scope().selectJob(sel[0], true);
             }
@@ -148,6 +148,9 @@ function setMapBounds() {
     map.fitBounds(bounds);
 }
 
+/**
+ * @param {Job} job
+ */
 function highlightPin(job) {
     console.log('finding ' + job.toLat.toString().substring(0, 9) + ',' + job.toLng.toString().substring(0, 9));
 
@@ -183,8 +186,8 @@ function displayAllRoutePoints() {
     if (map.markers.length) {
         map.clearMarkers();
     }
-    const run = $(".columns").scope().allRuns;
 
+    const run = angular.element(".columns").scope().allRuns;
 
     for (let i = 0; i < run.length; i++) {
         let pinColor = "red";
@@ -214,6 +217,10 @@ function displayAllRoutePoints() {
     }
 }
 
+/**
+ * @param {number} lat
+ * @param {number} lng
+ */
 function displayCourierPositionOnly(lat, lng) {
     if (map.markers.length) {
         map.clearMarkers();
@@ -232,6 +239,14 @@ function displayCourierPositionOnly(lat, lng) {
     map.setZoom(13);
 }
 
+/**
+ * @param {*} ac
+ * @param {string} courierCode
+ * @param {*[]} channels
+ * @param {boolean} truckChannel
+ * @param {string} truckMode
+ * @param {boolean} includeUA
+ */
 function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truckMode, includeUA) {
     map.clearLabels();
     map.clearFlags();
@@ -263,6 +278,12 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
         }
     });
 }
+
+/**
+ * @param {Job[]} jobs
+ * @param {boolean} clear
+ * @param {Job} currentJob
+ */
 function displayPickupPoints(jobs, clear, currentJob) {
     if (clear === true) {
         if (map.markers.length) {
@@ -319,12 +340,14 @@ function displayPickupPoints(jobs, clear, currentJob) {
                 content: contentString, pixelOffset: new google.maps.Size(-55, 0)
             });
 
-
             addClickHandler(pickupMarker, infoWindow);
         }
     }
 }
 
+/**
+ * @param {Job[]} courierJobs
+ */
 function highlightJobPoints(courierJobs) {
     for (let i = 0; i < courierJobs.length; i++) {
         const job = courierJobs[i];
@@ -342,9 +365,12 @@ function highlightJobPoints(courierJobs) {
             }
         }, 2000);
     }
-
 }
 
+/**
+ * @param {Job[]} courierJobs
+ * @param {boolean} clear
+ */
 function displayRoutePointsOnly(courierJobs, clear) {
     if (clear === true) {
         if (map.markers.length) {
@@ -356,7 +382,6 @@ function displayRoutePointsOnly(courierJobs, clear) {
             carMarker.setMap(null);
         }
     }
-
 
     for (let i = 0; i < courierJobs.length; i++) {
         let pinColor = "purple";
@@ -416,6 +441,11 @@ function displayRoutePointsOnly(courierJobs, clear) {
     }
 }
 
+/**
+ * @param {Job[]} courierJobs
+ * @param {boolean} clear
+ * @param {boolean} zoom
+ */
 function displayRoutePoints(courierJobs, clear, zoom) {
     if (clear === true) {
         if (map.markers.length) {
@@ -542,6 +572,13 @@ function displayRoutePoints(courierJobs, clear, zoom) {
     }
 }
 
+/**
+ * @param {string} col
+ * @param {google.maps.LatLng} ll
+ * @param {string} code
+ * @param id
+ * @param originalCode
+ */
 function drawItem(col, ll, code, id, originalCode) {
     const flagIcon = {
         url: createFlagSVG(col, code),
@@ -562,7 +599,7 @@ function drawItem(col, ll, code, id, originalCode) {
 
     google.maps.event.addListener(marker, 'click', function () {
         try {
-            const $columns = $(".columns");
+            const $columns = angular.element(".columns");
             const scope = $columns.scope();
 
             if (!scope || typeof scope.pickCouriers === 'undefined') {
@@ -594,12 +631,16 @@ function drawItem(col, ll, code, id, originalCode) {
     });
 }
 
+/**
+ * @param {string} color
+ * @param {string} text
+ */
 function createFlagSVG(color, text) {
     const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80">
-      <rect x="0" y="0" width="3" height="80" fill="#333"/>
-      <path d="M3,5 L113,5 L108,25 L113,45 L3,45 Z" fill="${color}"/>
-      <text x="58" y="25" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 65">
+      <rect x="0" y="0" width="3" height="65" fill="#333"/>
+      <path d="M3,5 L113,5 L108,32.5 L113,60 L3,60 Z" fill="${color}"/>
+      <text x="58" y="32.5" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
             fill="${getContrastColor(color)}" text-anchor="middle" dominant-baseline="middle">
         ${text}
       </text>
@@ -607,14 +648,16 @@ function createFlagSVG(color, text) {
     return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
-// Helper function to determine text color based on background color (unchanged)
-function getContrastColor(hexcolor) {
+/**
+ * @param {string} hexColor
+ */
+function getContrastColor(hexColor) {
     // For yellow backgrounds, always use black text
-    if (hexcolor === "#FFFF00") return "black";
+    if (hexColor === "#FFFF00") return "black";
 
-    const r = parseInt(hexcolor.slice(1, 3), 16);
-    const g = parseInt(hexcolor.slice(3, 5), 16);
-    const b = parseInt(hexcolor.slice(5, 7), 16);
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
     const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
     return (yiq >= 128) ? 'black' : 'white';
 }
@@ -669,11 +712,14 @@ function computeTotalDistance(result) {
 
     totalDist = totalDist / 1000;
 
-    $(".columns").scope().updateRunDetails(totalTime, Math.round(totalDist), myroute.legs.length, newOrder);
+    angular.element(".columns").scope().updateRunDetails(totalTime, Math.round(totalDist), myroute.legs.length, newOrder);
 
     var totalTime = (totalTime / 60).toFixed(0);
 }
 
+/**
+ * @param {Job} job
+ */
 function validateGoogleJobRoute(job) {
     const origin = new google.maps.LatLng(job.fromLat, job.fromLng);
     const dest = new google.maps.LatLng(job.toLat, job.toLng);
@@ -683,9 +729,9 @@ function validateGoogleJobRoute(job) {
 
     directionsService.route(request, (response, status) => {
         if (status === google.maps.DirectionsStatus.NOT_FOUND || status === google.maps.DirectionsStatus.ZERO_RESULTS) {
-            $("#box-map").find(".loading").fadeOut();
+            angular.element("#box-map").find(".loading").fadeOut();
             alert("Job " + job.jobNumber + " Could not Route!");
-            $(".columns").scope().selectJobFromMap(job.toLat, job.toLng);
+            angular.element(".columns").scope().selectJobFromMap(job.toLat, job.toLng);
 
         }
     });
@@ -713,7 +759,7 @@ function validateGoogleRoute(run) {
 
     directionsService.route(request, (response, status) => {
         if (status === google.maps.DirectionsStatus.OK) {
-            $("#box-map").find(".loading").fadeOut();
+            angular.element("#box-map").find(".loading").fadeOut();
             alert("Run OK!");
         }
         if (status === google.maps.DirectionsStatus.NOT_FOUND || status === google.maps.DirectionsStatus.ZERO_RESULTS) {

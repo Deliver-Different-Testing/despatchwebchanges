@@ -2814,14 +2814,12 @@ angular.module("uDispatch").controller("NationwideControl", [
                         angular.element('#our_suburb').val(null).trigger('change');
                     }
 
-
                     $scope.jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
                     $scope.jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
                     $scope.jdSvc.gpsForm.data.address = locn.Address.Label;
                     const ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
                     $scope.map.setCenter(ll);
                     $scope.marker.setPosition(ll);
-
                 });
             });
 
