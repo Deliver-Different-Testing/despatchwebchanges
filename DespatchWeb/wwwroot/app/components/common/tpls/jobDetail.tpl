@@ -97,7 +97,7 @@
                 <div class="notes-add"></div>
                 <div class="notes field">
                     <label>Notes</label>
-                    <md-button class="md-fab md-raised md-mini" style="float: right;"
+                    <md-button aria-label="add note" class="md-fab md-raised md-mini" style="float: right;"
                                ng-click="jdSvc.showNotesDialog($event, jdSvc.currentJob, 'Notes','Note')">
                         <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
                         <md-tooltip md-direction="bottom">Add New Note</md-tooltip>
@@ -602,7 +602,7 @@
 
     <div class="row row-no-padding row-out"
          ng-if="!jdSvc.currentJob.bulkJob && jdSvc.currentJob.podPhotos.length > 0">
-        <md-button class="md-fab md-mini md-raised"
+        <md-button aria-label="send pod" class="md-fab md-mini md-raised"
                    ng-click="sendPOD()"
                    style="position: absolute; right: 0; top: 0;">
             <md-icon md-font-set="material-symbols-outlined">package</md-icon>
@@ -655,7 +655,7 @@
 
             <div style="display: flex; justify-content: space-between;">
                 <label>Pallet Info</label>
-                <md-button
+                <md-button aria-label="new pallet"
                         class="md-fab md-mini md-raised"
                         ng-click="jdSvc.newPallet($event, jdSvc.currentJob)"
                         ng-disabled="jdSvc.currentJob.locked">
@@ -794,7 +794,7 @@
                 <div class="notes-add"></div>
                 <div class="notes field">
                     <label>Notes</label>
-                    <md-button class="md-fab md-raised md-mini"
+                    <md-button aria-label="add note" class="md-fab md-raised md-mini"
                                ng-click="jdSvc.showNotesDialog($event, jdSvc.currentJob, 'Notes','Note')"
                                style="float: right;">
                         <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
@@ -1073,7 +1073,7 @@
 
         <div>
             <div class="palletInfo">
-                <md-button class="md-fab md-mini md-raised"
+                <md-button aria-label="send pod" class="md-fab md-mini md-raised"
                            ng-click="sendPOD()"
                            style="position: absolute; right: 0; top: 0;">
                     <md-icon md-font-set="material-symbols-outlined">package</md-icon>
@@ -1089,7 +1089,7 @@
                 </div>
 
                 <label>Pallet Info</label>
-                <md-button class="md-fab md-mini md-raised"
+                <md-button aria-label="add pallet" class="md-fab md-mini md-raised"
                            ng-click="jdSvc.newPallet($event, jdSvc.currentJob)">
                     <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
                     <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>

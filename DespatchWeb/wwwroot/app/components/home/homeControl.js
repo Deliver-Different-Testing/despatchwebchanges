@@ -2277,16 +2277,15 @@ angular.module("uDispatch").controller("HomeControl", [
             }
             const selectedClients = $scope.pickService.clients.map(a => a.id);
             return DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
-                d
                 $scope.jobList = data;
                 angular.element("#box-jobsList .loading").fadeOut();
+
                 $timeout(() => {
                     sizeHeadings();
                     if (data.length > 0) {
                         const unDispatchedData = data.filter(x => x.courierData.courierID === null);
                         displayPickupPoints(unDispatchedData, true, null);
                     }
-
                     $scope.getAvailableCourierLocation();
                 }, 200);
 
@@ -2645,8 +2644,6 @@ angular.module("uDispatch").controller("HomeControl", [
                     {
                         text: "Complete",
                         click($itemScope) {
-                            //$scope.selected = $itemScope.item.name;
-
                             let callData = {
                                 "call": "dismissSupport",
                                 "support": $itemScope.support
@@ -2689,11 +2686,6 @@ angular.module("uDispatch").controller("HomeControl", [
             ///////////////////////////
             // JOB DETAIL
             //////////////////////////
-            $scope.formatDate = () => {
-                //console.log(dateString);
-                //return new Date("1988/08/21" + dateString);
-            };
-
             return $scope.getJobList();
         };
 
