@@ -382,7 +382,7 @@ class JobDetailService {
             bindToController: true
         }).then(updatedJob => {
             this.currentJob = updatedJob
-            // User closed notes dialog
+            this.selectJobDetail(job.id);
         });
     }
 
@@ -418,6 +418,7 @@ class JobDetailService {
             bindToController: true
         })
             .then(() => {
+                this.selectJobDetail(job.id);
                 console.log('Dialog closed successfully');
             })
             .catch(error => {
@@ -462,6 +463,7 @@ class JobDetailService {
                 showTime: true
             },
         }).then(_ => {
+            this.selectJobDetail(job.id);
             console.log('Dialog closed!');
         });
     }
@@ -510,6 +512,7 @@ class JobDetailService {
             },
             bindToController: true
         }).then(_ => {
+            this.selectJobDetail(job.id);
             console.log('Dialog closed!');
         });
     }
@@ -544,7 +547,6 @@ class JobDetailService {
             .cancel('Cancel');
 
         this._$mdDialog.show(prompt).then(result => {
-
             // Update field
             let fieldName = field.toLowerCase();
             let matchingField = Object.keys(this.currentJob).find(key => key.toLowerCase() === fieldName);
@@ -558,7 +560,10 @@ class JobDetailService {
             const callData = {
                 "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
             };
+
             this.updateField(false, job, callData).then(() => {
+                console.log('Complete');
+                this.selectJobDetail(job.id);
             })
         }, () => {
             console.log(`Edit ${title} Cancelled!`)
