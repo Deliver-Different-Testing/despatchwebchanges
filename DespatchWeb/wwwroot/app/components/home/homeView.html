@@ -346,7 +346,7 @@
 
                                 <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
                                      ng-if="boxes[box.name].showSearch">
-                                    <md-button class="md-icon-button"
+                                    <md-button aria-label="open search" class="md-icon-button"
                                                ng-click="openSearch(box.name, $index)">
                                         <md-icon md-font-set="material-symbols-outlined"
                                                  ng-if="!showInput[box.name + '-' + $index]">search
