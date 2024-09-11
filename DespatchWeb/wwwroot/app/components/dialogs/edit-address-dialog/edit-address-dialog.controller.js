@@ -10,6 +10,7 @@ class EditAddressDialogController {
         'DispatchData',
         'toastrService',
         'NgMap',
+        'APP_CONFIG',
         'addressDetails',
         'suburbOptions',
         'title',
@@ -23,12 +24,13 @@ class EditAddressDialogController {
      * @param DispatchData - The service used for data dispatching.
      * @param toastrService - The service used for toast notifications.
      * @param NgMap - Wrapper for Google Maps provided by 'ngMap' library.
+     * @param APP_CONFIG
      * @param {AddressDetails} addressDetails - Details related to the address in use.
      * @param {SuburbOption[]} suburbOptions - Options for suburbs.
      * @param {string} title - The title to display.
      * @param {string} submitLabel - The label to display on the submit button.
      */
-    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, addressDetails, suburbOptions, title, submitLabel) {
+    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, addressDetails, suburbOptions, title, submitLabel) {
         this._$scope = $scope;
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
@@ -39,9 +41,18 @@ class EditAddressDialogController {
         this.addressDetails = addressDetails;
         this.suburbOptions = suburbOptions;
         this.submitLabel = submitLabel
+        this.useUsFormat = APP_CONFIG.US_Customer;
         this.ourSuburbSearchText = "";
         this.addressSearchText = "";
         this.ourSuburbSelectedItem = this._findSuburbByDistrict(addressDetails.suburb);
+
+        // Initialize US-specific fields if using US format
+        if (this.useUsFormat) {
+            this.addressDetails.city = this.addressDetails.suburb;
+            this.addressDetails.state = "";
+            this.addressDetails.zipCode = this.addressDetails.postCode;
+            this.states = this._getUsStates();
+        }
 
         $timeout(() => {
             this.mapDisplay = true;
@@ -106,25 +117,30 @@ class EditAddressDialogController {
             const data = await this._dispatchData.getGeoCodeInformation(item);
             const returnedLocation = data.Response.View[0].Result[0].Location;
 
-            console.log("Suburb = " + returnedLocation.Address.District);
-            console.log("PostCode = " + returnedLocation.Address.PostalCode);
+            console.log("Suburb/City = " + returnedLocation.Address.District);
+            console.log("PostCode/ZIP = " + returnedLocation.Address.PostalCode);
 
-            const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
-
-            if (mappedSub !== undefined) {
-                console.log(mappedSub);
-                this.ourSuburbSelectedItem = mappedSub;
+            if (this.useUsFormat) {
+                this.addressDetails.city = returnedLocation.Address.City;
+                this.addressDetails.state = returnedLocation.Address.State;
+                this.addressDetails.zipCode = returnedLocation.Address.PostalCode;
             } else {
-                this.ourSuburbSelectedItem = null;
-                this._toastrService.showWarningToast("Matching suburb could not be found from this address." + "Please select manually.")
+                const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
+                if (mappedSub !== undefined) {
+                    console.log(mappedSub);
+                    this.ourSuburbSelectedItem = mappedSub;
+                } else {
+                    this.ourSuburbSelectedItem = null;
+                    this._toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
+                }
+                this.addressDetails.suburb = returnedLocation.Address.District;
+                this.addressDetails.postCode = returnedLocation.Address.PostalCode;
             }
 
             this.addressDetails.filledAddress = returnedLocation.Address.Label;
             this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
             this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
             this.addressDetails.address = returnedLocation.Address.Label;
-            this.addressDetails.suburb = returnedLocation.Address.District;
-            this.addressDetails.postCode = returnedLocation.Address.PostalCode;
 
             const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
             this.map.setCenter(latLng);
@@ -141,14 +157,23 @@ class EditAddressDialogController {
     async submit(addressDetails) {
         this.isLoading = true;
 
-        if (this.ourSuburbSelectedItem.id !== undefined) {
-            addressDetails.our_suburb = this.ourSuburbSelectedItem.id;
-        }
+        if (!this.useUsFormat) {
+            if (this.ourSuburbSelectedItem.id !== undefined) {
+                addressDetails.our_suburb = this.ourSuburbSelectedItem.id;
+            }
 
-        if (addressDetails.our_suburb === undefined) {
-            alert("You must pick one of our suburbs to map this address to");
-            this.isLoading = false;
-            return;
+            if (addressDetails.our_suburb === undefined) {
+                alert("You must pick one of our suburbs to map this address to");
+                this.isLoading = false;
+                return;
+            }
+        } else {
+            // Validation for US format
+            if (!addressDetails.city || !addressDetails.state || !addressDetails.zipCode) {
+                alert("Please fill in all required fields (City, State, and ZIP Code)");
+                this.isLoading = false;
+                return;
+            }
         }
 
         // Pass back to function that called dialog for processing
@@ -179,37 +204,36 @@ class EditAddressDialogController {
      * Updates addressDetails with new position data when the marker finishes being dragged.
      * @param {google.maps.MouseEvent} event - A Google Maps mouse event.
      */
-    markerDragend(event) {
+    async markerDragend(event) {
         // Get the marker's new position
         const location = event.latLng;
 
         try {
             // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
             // that return the latitude and longitude values of your location
-            this._dispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
-                const returnedLocation = data.Response.View[0].Result[0].Location;
+            const data = await this._dispatchData.retrieveAddresses(location.lat(), location.lng());
+            const returnedLocation = data.Response.View[0].Result[0].Location;
 
-                // Updating scope variables with new data
-                this.addressDetails.address = returnedLocation.Address.Label;
-                this.addressDetails.suburb = returnedLocation.Address.District;
-                this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+            // Updating scope variables with new data
+            this.addressDetails.address = returnedLocation.Address.Label;
+            this.addressDetails.suburb = returnedLocation.Address.District;
+            this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
+            this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
 
-                // Log output
-                console.log("Suburb = " + returnedLocation.Address.District);
-                console.log("PostCode = " + returnedLocation.Address.PostalCode);
+            // Log output
+            console.log("Suburb = " + returnedLocation.Address.District);
+            console.log("PostCode = " + returnedLocation.Address.PostalCode);
 
-                // Updating suburb selection
-                const mappedSub = this.suburbOptions.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
+            // Updating suburb selection
+            const mappedSub = this.suburbOptions.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
 
-                if (mappedSub !== undefined) {
-                    console.log(mappedSub);
-                    this.ourSuburbSelectedItem = mappedSub;
-                } else {
-                    this.ourSuburbSelectedItem = null;
-                }
+            if (mappedSub !== undefined) {
+                console.log(mappedSub);
+                this.ourSuburbSelectedItem = mappedSub;
+            } else {
+                this.ourSuburbSelectedItem = null;
+            }
 
-            });
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         }
@@ -232,6 +256,66 @@ class EditAddressDialogController {
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         }
+    }
+
+    /**
+     * Returns an array of US states and territories for dropdown menus.
+     * @returns {Array<{abbreviation: string, name: string}>} An array of state objects with abbreviation and name.
+     */
+    _getUsStates() {
+        return [
+            {abbreviation: 'AL', name: 'Alabama'},
+            {abbreviation: 'AK', name: 'Alaska'},
+            {abbreviation: 'AZ', name: 'Arizona'},
+            {abbreviation: 'AR', name: 'Arkansas'},
+            {abbreviation: 'CA', name: 'California'},
+            {abbreviation: 'CO', name: 'Colorado'},
+            {abbreviation: 'CT', name: 'Connecticut'},
+            {abbreviation: 'DE', name: 'Delaware'},
+            {abbreviation: 'DC', name: 'District of Columbia'},
+            {abbreviation: 'FL', name: 'Florida'},
+            {abbreviation: 'GA', name: 'Georgia'},
+            {abbreviation: 'HI', name: 'Hawaii'},
+            {abbreviation: 'ID', name: 'Idaho'},
+            {abbreviation: 'IL', name: 'Illinois'},
+            {abbreviation: 'IN', name: 'Indiana'},
+            {abbreviation: 'IA', name: 'Iowa'},
+            {abbreviation: 'KS', name: 'Kansas'},
+            {abbreviation: 'KY', name: 'Kentucky'},
+            {abbreviation: 'LA', name: 'Louisiana'},
+            {abbreviation: 'ME', name: 'Maine'},
+            {abbreviation: 'MD', name: 'Maryland'},
+            {abbreviation: 'MA', name: 'Massachusetts'},
+            {abbreviation: 'MI', name: 'Michigan'},
+            {abbreviation: 'MN', name: 'Minnesota'},
+            {abbreviation: 'MS', name: 'Mississippi'},
+            {abbreviation: 'MO', name: 'Missouri'},
+            {abbreviation: 'MT', name: 'Montana'},
+            {abbreviation: 'NE', name: 'Nebraska'},
+            {abbreviation: 'NV', name: 'Nevada'},
+            {abbreviation: 'NH', name: 'New Hampshire'},
+            {abbreviation: 'NJ', name: 'New Jersey'},
+            {abbreviation: 'NM', name: 'New Mexico'},
+            {abbreviation: 'NY', name: 'New York'},
+            {abbreviation: 'NC', name: 'North Carolina'},
+            {abbreviation: 'ND', name: 'North Dakota'},
+            {abbreviation: 'OH', name: 'Ohio'},
+            {abbreviation: 'OK', name: 'Oklahoma'},
+            {abbreviation: 'OR', name: 'Oregon'},
+            {abbreviation: 'PA', name: 'Pennsylvania'},
+            {abbreviation: 'RI', name: 'Rhode Island'},
+            {abbreviation: 'SC', name: 'South Carolina'},
+            {abbreviation: 'SD', name: 'South Dakota'},
+            {abbreviation: 'TN', name: 'Tennessee'},
+            {abbreviation: 'TX', name: 'Texas'},
+            {abbreviation: 'UT', name: 'Utah'},
+            {abbreviation: 'VT', name: 'Vermont'},
+            {abbreviation: 'VA', name: 'Virginia'},
+            {abbreviation: 'WA', name: 'Washington'},
+            {abbreviation: 'WV', name: 'West Virginia'},
+            {abbreviation: 'WI', name: 'Wisconsin'},
+            {abbreviation: 'WY', name: 'Wyoming'}
+        ];
     }
 
     /**

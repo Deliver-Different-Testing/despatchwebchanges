@@ -19,7 +19,7 @@
                 <div layout-gt-xs="row">
                     <md-input-container class="md-icon-float md-block" flex-gt-xs>
                         <md-icon md-font-set="material-symbols-outlined">home</md-icon>
-                        <label for="address">Address</label>
+                        <label for="address">{{ ctrl.useUsFormat ? 'Street Address' : 'Address' }}</label>
                         <input id="address" ng-model="ctrl.addressDetails.address">
                     </md-input-container>
 
@@ -31,23 +31,32 @@
                 </div>
 
                 <div layout-gt-sm="row">
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="lat">Latitude</label>
-                        <input id="lat" ng-model="ctrl.addressDetails.lat">
-                    </md-input-container>
-
-                    <md-input-container class="md-block" flex-gt-sm>
-                        <label for="long">Longtitude</label>
-                        <input id="long" ng-model="ctrl.addressDetails.long">
-                    </md-input-container>
-                </div>
-
-                <div layout-gt-sm="row">
-                    <md-input-container class="md-block" flex-gt-sm>
+                    <md-input-container class="md-block" flex-gt-sm ng-if="!ctrl.useUsFormat">
                         <label for="suburb">Suburb</label>
                         <input id="suburb" ng-model="ctrl.addressDetails.suburb">
                     </md-input-container>
 
+                    <md-input-container class="md-block" flex-gt-sm ng-if="ctrl.useUsFormat">
+                        <label for="city">City</label>
+                        <input id="city" ng-model="ctrl.addressDetails.city">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm ng-if="ctrl.useUsFormat">
+                        <label for="state">State</label>
+                        <md-select id="state" ng-model="ctrl.addressDetails.state">
+                            <md-option ng-repeat="state in ctrl.states" value="{{state.abbreviation}}">
+                                {{state.name}}
+                            </md-option>
+                        </md-select>
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm ng-if="ctrl.useUsFormat">
+                        <label for="zipCode">ZIP Code</label>
+                        <input id="zipCode" ng-model="ctrl.addressDetails.zipCode" pattern="[0-9]{5}">
+                    </md-input-container>
+                </div>
+
+                <div layout-gt-sm="row" ng-if="!ctrl.useUsFormat">
                     <md-autocomplete class="md-block" flex-gt-sm
                                      md-floating-label="Our Suburb"
                                      md-item-text="item.text"
@@ -62,6 +71,18 @@
                             No matches found for "{{ctrl.ourSuburbSearchText}}" in Suburb.
                         </md-not-found>
                     </md-autocomplete>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="lat">Latitude</label>
+                        <input id="lat" ng-model="ctrl.addressDetails.lat">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="long">{{ ctrl.useUsFormat ? 'Longitude' : 'Longtitude' }}</label>
+                        <input id="long" ng-model="ctrl.addressDetails.long">
+                    </md-input-container>
                 </div>
 
                 <md-input-container class="md-block">
