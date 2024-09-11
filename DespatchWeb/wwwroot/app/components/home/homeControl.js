@@ -394,12 +394,17 @@ angular.module("uDispatch").controller("HomeControl", [
         };
 
         $scope.onCourierSearchClick = ($event) => {
-// Check if the click target is the input field itself
             if ($event.target.tagName === 'INPUT') {
+                document.getElementsByName('courierSearch')[0].value = '';
                 $scope.courierSearchText = '';
+                $scope.$apply();
             }
         };
 
+        /**
+         * @param $event
+         * @param {Job} job
+         */
         $scope.handleRowClick = ($event, job) => {
             if (!$event.target.classList.contains('lateCallField') && !$event.target.classList.contains('dispatchField')) {
                 $timeout(() => {
