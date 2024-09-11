@@ -837,20 +837,25 @@ angular.module("uDispatch").controller("HomeControl", [
             $event.target.select();
         };
 
-        $scope.latePickup = (minsAway, j, obj) => {
-            console.log("current = " + j.lp);
-            console.log("param minsAway = " + minsAway);
-            console.log(obj);
-            $scope.lateCall(minsAway, 1, j, true);
-        }
+        $scope.lateOperation = async (minsAway, job, obj, isPickup) => {
+            const operationType = isPickup ? 'pickup' : 'delivery';
+            const currentValue = isPickup ? job.lp : job.ld;
+            const lateType = isPickup ? 1 : 2;
 
-        $scope.lateDelivery = (minsAway, j, obj) => {
-            console.log("current = " + j.ld);
-            console.log("param minsAway = " + minsAway);
+            console.log(`Current ${operationType} = ${currentValue}`);
+            console.log(`Param minsAway = ${minsAway}`);
             console.log(obj);
-            $scope.lateCall(minsAway, 2, j, true);
 
-        }
+            try {
+                await $scope.lateCall(minsAway, lateType, job, true);
+                console.log(`Late ${operationType} call completed successfully`);
+            } catch (error) {
+                console.error(`Error in late ${operationType} call:`, error);
+            }
+        };
+
+        $scope.latePickup = (minsAway, j, obj) => $scope.lateOperation(minsAway, j, obj, true);
+        $scope.lateDelivery = (minsAway, j, obj) => $scope.lateOperation(minsAway, j, obj, false);
 
 /////////////////////////////////////
 // LATE CALLS
