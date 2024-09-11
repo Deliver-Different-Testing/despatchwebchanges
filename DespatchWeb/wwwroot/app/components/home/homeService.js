@@ -191,11 +191,11 @@ class DispatchData {
 
     /**
      * @param {number} courierId
-     * @param {number} dispId
+     * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    async restoreSplitJobs(courierId, dispId, jobIds) {
-        let response = await this.$http.post('job/RestoreSplitJobs?courierId=' + courierId + '&dispId=' + dispId + '&jobIds=' + jobIds);
+    async restoreSplitJobs(courierId, dispatcherId, jobIds) {
+        let response = await this.$http.post('job/RestoreSplitJobs?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
         return response.data;
     }
 
