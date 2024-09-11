@@ -985,145 +985,154 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         }
     };
 
-    $scope.restoreAll = $event => $mdDialog.show(
-        $mdDialog.confirm()
-            .title('Restore All Jobs')
-            .textContent('Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier)
-            .targetEvent($event)
-            .ok('Yes')
-            .cancel('No')
-    ).then(() => {
-        const callData = {
-            "call": "restoreJobs",
-            "jobs": [],
-            "splitJobs": [],
-            "jobNos": [],
-            "courierID": null
-        };
-
+    $scope.restoreAll = $event => {
         let foundCourier = null;
-        const rows = angular.element("#currentWork tr.droppable-row");
-        const promises = [];
 
-        angular.forEach(rows, row => {
-            const $row = angular.element(row);
-            const j = $scope.jobsCurrentList.find(jo => jo.id === $row.data("jobid"));
+        return $mdDialog.show(
+            $mdDialog.confirm()
+                .title('Restore All Jobs')
+                .textContent('Are you sure you wish to restore all jobs for ' + $scope.currentCourier.courier)
+                .targetEvent($event)
+                .ok('Yes')
+                .cancel('No')
+        ).then(() => {
+            const callData = {
+                "call": "restoreJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": null
+            };
 
-            const jobNumber = j.jobNo;
-            promises.push(DispatchData.addRestoreEvent(jobNumber, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName));
+            const rows = angular.element("#currentWork tr.droppable-row");
+            const promises = [];
 
-            if (callData.courierID === null) {
-                callData.courierID = j.courierData.courierID;
-                foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) ||
-                    $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
-            }
-            if (j.displaySplitJobDetail) {
-                callData.splitJobs.push($row.data("jobid"));
-            } else {
-                callData.jobs.push($row.attr("data-jobid"));
-            }
+            angular.forEach(rows, row => {
+                const $row = angular.element(row);
+                const j = $scope.jobsCurrentList.find(jo => jo.id === $row.data("jobid"));
+
+                const jobNumber = j.jobNo;
+                promises.push(DispatchData.addRestoreEvent(jobNumber, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName));
+
+                if (callData.courierID === null) {
+                    callData.courierID = j.courierData.courierID;
+                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) ||
+                        $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
+                }
+                if (j.displaySplitJobDetail) {
+                    callData.splitJobs.push($row.data("jobid"));
+                } else {
+                    callData.jobs.push($row.attr("data-jobid"));
+                }
+            });
+
+            return $q.all(promises).then(() => {
+                let restorePromises = [];
+                if (callData.splitJobs.length > 0) {
+                    restorePromises.push(DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs));
+                }
+                if (callData.jobs.length > 0) {
+                    restorePromises.push(DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs));
+                }
+                return $q.all(restorePromises);
+            });
+        }).then(() => $timeout(() => {
+            $scope.getCurrentJobs(foundCourier.courierID);
+            return $scope.getData();
+        }, 1000)).catch(error => {
+            console.error('Error in restoreAll:', error);
         });
-
-        return $q.all(promises).then(() => {
-            let restorePromises = [];
-            if (callData.splitJobs.length > 0) {
-                restorePromises.push(DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.jobs));
-            }
-            if (callData.jobs.length > 0) {
-                restorePromises.push(DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs));
-            }
-            return $q.all(restorePromises);
-        });
-    }).then(() => $timeout(() => {
-        $scope.getCurrentJobs(foundCourier.courierID);
-        return $scope.getData();
-    }, 1000)).catch(error => {
-        console.error('Error in restoreAll:', error);
-    });
+    };
 
     /**
      * @param {$event}  $event
      */
-    $scope.redispatchAll = $event => $mdDialog.show(
-        $mdDialog.confirm()
-            .title('Restore All Jobs')
-            .textContent('Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier)
-            .targetEvent($event)
-            .ok('Yes')
-            .cancel('No')
-    ).then(() => {
-        const callData = {
-            "call": "redespatchJobs",
-            "jobs": [],
-            "splitJobs": [],
-            "jobNos": [],
-            "courierID": $scope.currentCourier.courierID
-        };
-
+    $scope.redispatchAll = $event => {
         let foundCourier = null;
-        const rows = angular.element("#currentWork tr.droppable-row");
 
-        angular.forEach(rows, row => {
-            const $row = angular.element(row);
-            callData.jobs.push($row.attr("data-jobid"));
-            foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) ||
-                $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
+        return $mdDialog.show(
+            $mdDialog.confirm()
+                .title('Restore All Jobs')
+                .textContent('Are you sure you wish to redispatch all jobs for ' + $scope.currentCourier.courier)
+                .targetEvent($event)
+                .ok('Yes')
+                .cancel('No')
+        ).then(() => {
+            const callData = {
+                "call": "redespatchJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": $scope.currentCourier.courierID
+            };
+
+            const rows = angular.element("#currentWork tr.droppable-row");
+
+            angular.forEach(rows, row => {
+                const $row = angular.element(row);
+                callData.jobs.push($row.attr("data-jobid"));
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) ||
+                    $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
+            });
+
+            if (callData.jobs.length > 0) {
+                return DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
+            }
+
+            $scope.courier = {gpsCourier: foundCourier.id};
+
+            return $q.resolve();
+        }).then(() => $scope.getData()).then(() => {
+            angular.element('#box-map .loading').css('display', '');
+            return $scope.searchCourier();
+        }).catch(error => {
+            console.error('Error in redispatchAll:', error);
         });
-
-        if (callData.jobs.length > 0) {
-            return DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
-        }
-
-        $scope.courier = {gpsCourier: foundCourier.id};
-
-        return $q.resolve();
-    }).then(() => $scope.getData()).then(() => {
-        angular.element('#box-map .loading').css('display', '');
-        return $scope.searchCourier();
-    }).catch(error => {
-        console.error('Error in redispatchAll:', error);
-    });
+    };
 
     /**
      * @param  {$event}  $event
      */
-    $scope.resendAll = $event => $mdDialog.show(
-        $mdDialog.confirm()
-            .title('Resend All Jobs')
-            .textContent('Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier)
-            .targetEvent($event)
-            .ok('Yes')
-            .cancel('No')
-    ).then(() => {
-        const callData = {
-            "call": "resendJobs",
-            "jobs": [],
-            "splitJobs": [],
-            "jobNos": [],
-            "courierID": $scope.currentCourier.courierID
-        };
-
+    $scope.resendAll = $event => {
         let foundCourier = null;
-        const rows = angular.element("#currentWork tr.droppable-row");
 
-        angular.forEach(rows, row => {
-            const $row = angular.element(row);
-            callData.jobs.push($row.attr("data-jobid"));
-            foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) ||
-                $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
+        return $mdDialog.show(
+            $mdDialog.confirm()
+                .title('Resend All Jobs')
+                .textContent('Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier)
+                .targetEvent($event)
+                .ok('Yes')
+                .cancel('No')
+        ).then(() => {
+            const callData = {
+                "call": "resendJobs",
+                "jobs": [],
+                "splitJobs": [],
+                "jobNos": [],
+                "courierID": $scope.currentCourier.courierID
+            };
+
+            const rows = angular.element("#currentWork tr.droppable-row");
+
+            angular.forEach(rows, row => {
+                const $row = angular.element(row);
+                callData.jobs.push($row.attr("data-jobid"));
+                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) ||
+                    $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
+            });
+
+            if (callData.jobs.length > 0) {
+                return DispatchData.resendAllJobs(callData.courierID);
+            }
+            return $q.resolve();
+        }).then(() => $scope.getData()).then(() => {
+            angular.element('#box-map .loading').css('display', '');
+            $scope.courier = {gpsCourier: foundCourier.id};
+            return $scope.searchCourier();
+        }).catch(error => {
+            console.error('Error in resendAll:', error);
         });
-
-        if (callData.jobs.length > 0) {
-            return DispatchData.resendAllJobs(callData.courierID);
-        }
-        return $q.resolve();
-    }).then(() => $scope.getData()).then(() => {
-        angular.element('#box-map .loading').css('display', '');
-        $scope.courier = {gpsCourier: foundCourier.id};
-        return $scope.searchCourier();
-    }).catch(error => {
-        console.error('Error in resendAll:', error);
-    });
+    };
 
     $scope.reAllocateJobsFromCurrentWindow = () => {
         const callData = {
