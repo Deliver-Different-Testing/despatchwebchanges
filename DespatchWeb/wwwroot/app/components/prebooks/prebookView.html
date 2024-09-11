@@ -30,6 +30,21 @@
                                     ng-if="box.name == 'scanList'">{{currentSelection}}</span>
                             </span>
 
+                                <!--    Send all -->
+                                <md-button class="md-icon-button" ng-click="sendAllSelectPrebookJobs(selectedPrebooks)"
+                                           ng-if="selectedPrebooks && selectedPrebooks.length > 0">
+                                    <md-tooltip md-direction="bottom">Send All Selected</md-tooltip>
+                                    <md-icon md-font-set="material-symbols-outlined">send</md-icon>
+                                </md-button>
+
+                                <!--    Void all -->
+                                <md-button class="md-icon-button" ng-click="voidAllSelectPrebookJobs(selectedPrebooks)"
+                                           ng-if="selectedPrebooks && selectedPrebooks.length > 0">
+                                    <md-tooltip md-direction="bottom">Void All Selected</md-tooltip>
+                                    <md-icon md-font-set="material-symbols-outlined">block</md-icon>
+                                </md-button>
+
+                                <!-- Refresh -->
                                 <md-button class="md-icon-button md-primary" ng-click="refreshData()"
                                            ng-if="boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
@@ -69,8 +84,6 @@
                                         </md-radio-group>
                                     </div>
 
-
-                                    <!--<span>{{currentDate | date : "dd/MM/yyyy"}}</span>-->
                                     <div aria-label="Basic example" class="btn-group" role="group">
                                         ri
                                         F

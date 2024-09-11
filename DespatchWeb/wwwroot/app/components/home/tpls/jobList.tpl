@@ -187,7 +187,7 @@
 
 <script>
     angular.element(".box-content").on("scroll", function () {
-        const newTop = angular.element(this).scrollTop();
+        var newTop = angular.element(this).scrollTop();
         angular.element(this).find(".table-headings").css({"top": newTop});
     });
 </script>

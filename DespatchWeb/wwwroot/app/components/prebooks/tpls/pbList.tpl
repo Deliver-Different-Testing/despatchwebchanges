@@ -1,17 +1,17 @@
 <div class="droppable-box" style="min-height:500px">
     <md-table-container>
-        <table md-progress="promise" md-row-select md-table ng-model="selected">
+        <table md-progress="promise" md-row-select md-table multiple ng-model="selectedPrebooks">
             <thead md-head md-order="jobQuery.order">
             <tr md-row>
-                <th md-column md-order-by="booked">Booked</th>
-                <th md-column md-order-by="speed">Speed</th>
-                <th md-column md-order-by="jobNo">Job</th>
-                <th md-column md-order-by="client">Client</th>
-                <th md-column md-order-by="from">From</th>
-                <th md-column md-order-by="to">To</th>
-                <th md-column md-order-by="code">Code</th>
-                <th md-column>S</th>
-                <th md-column>V</th>
+                <th class="md-date-cell" md-column md-order-by="booked">Booked</th>
+                <th class="md-client-cell" md-column md-order-by="speed">Speed</th>
+                <th class="md-job-cell" md-column md-order-by="jobNo">Job</th>
+                <th class="md-client-cell" md-column md-order-by="client">Client</th>
+                <th class="md-address-cell" md-column md-order-by="from">From</th>
+                <th class="md-address-cell" md-column md-order-by="to">To</th>
+                <th class="md-client-cell" md-column md-order-by="code">Code</th>
+                <th class="md-speed-cell" md-column>S</th>
+                <th class="md-speed-cell" md-column>V</th>
             </tr>
             </thead>
             <tbody md-body>
@@ -19,22 +19,22 @@
                 md-row md-select="job"
                 md-select-id="id" ng-click="selectJobDetail(job.id);"
                 ng-repeat="job in pagedData">
-                <td md-cell md-truncate>{{job.booked | date: "hh:mm"}}</td>
-                <td md-cell md-truncate>{{job.speed}}</td>
-                <td md-cell md-truncate>{{job.jobNo}}</td>
+                <td class="md-date-cell" md-cell>{{job.booked | date: "hh:mm"}}</td>
+                <td class="md-client-cell" md-cell>{{job.speed}}</td>
+                <td class="md-job-cell" md-cell>{{job.jobNo}}</td>
                 <td action="clientColumnClick(event)" md-cell right-click>{{job.client}}</td>
-                <td context-menu="setCurrentWorkMenu" md-cell>
+                <td class="md-address-cell" context-menu="setCurrentWorkMenu" md-cell>
                     <div title="{{job.fromAddress}}">{{job.fromAddress}}</div>
                 </td>
-                <td context-menu="setCurrentWorkMenu" md-cell>
+                <td class="md-address-cell" context-menu="setCurrentWorkMenu" md-cell>
                     <div title="{{job.toAddress}}">{{job.toAddress}}</div>
                 </td>
-                <td md-cell md-truncate>{{job.courier}}</td>
-                <td md-cell md-truncate ng-click="sendPrebookJob(job.id);">
+                <td class="md-client-cell" md-cell>{{job.courier}}</td>
+                <td class="md-speed-cell" md-cell ng-click="sendPrebookJob(job.id);">
                     <md-icon class="material-symbols-outlined">send</md-icon>
                     <md-tooltip md-direction="bottom">Send</md-tooltip>
                 </td>
-                <td md-cell md-truncate ng-click="voidPrebookJob(job.id);">
+                <td class="md-speed-cell" md-cell ng-click="voidPrebookJob(job.id);">
                     <md-icon class="material-symbols-outlined">block</md-icon>
                     <md-tooltip md-direction="bottom">Void</md-tooltip>
                 </td>
