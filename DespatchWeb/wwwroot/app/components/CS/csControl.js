@@ -1141,11 +1141,17 @@ angular.module('uDispatch').controller('CSControl', [
          */
         $scope.clientQuerySearch = (searchText) => uCSData.getActiveClients(searchText);
 
+        /**
+         * @param {Suggestion} item
+         */
         $scope.selectedClientChange = item => {
             if (!item) {
                 $scope.pickDateService.client = null;
+                return;
             }
+
             $scope.pickDateService.client = item.id;
+            $scope.refreshAllData(true);
         };
 
         /**
@@ -1153,11 +1159,17 @@ angular.module('uDispatch').controller('CSControl', [
          */
         $scope.courierQuerySearch = (searchText) => uCSData.getActiveCouriersSearch(searchText);
 
+        /**
+         * @param {Suggestion} item
+         */
         $scope.selectedCourierChange = item => {
             if (!item) {
                 $scope.pickDateService.courier = null;
+                return;
             }
+
             $scope.pickDateService.courier = item.id;
+            $scope.refreshAllData(true);
         };
 
         uCSData.getActiveCouriers().then(data => {

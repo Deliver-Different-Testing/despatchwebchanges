@@ -150,11 +150,11 @@ class CsService {
 
     /**
      * @param {number} courierId
-     * @param {number} dispId
+     * @param {number} dispatcherId
      * @param {number[]} jobIds
      */
-    async restoreJobs(courierId, dispId, jobIds) {
-        let response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds);
+    async restoreJobs(courierId, dispatcherId, jobIds) {
+        let response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
         return await response.data;
     }
 
