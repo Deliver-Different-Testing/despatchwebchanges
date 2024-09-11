@@ -397,7 +397,6 @@ angular.module("uDispatch").controller("HomeControl", [
             if ($event.target.tagName === 'INPUT') {
                 document.getElementsByName('courierSearch')[0].value = '';
                 $scope.courierSearchText = '';
-                $scope.$apply();
             }
         };
 
@@ -597,85 +596,87 @@ angular.module("uDispatch").controller("HomeControl", [
             $scope.jobForDispatch = job;
         };
 
-        $scope.swapPOD = event => {
-            const jobNumberPrompt = $mdDialog.prompt()
-                .title('Enter the other job number')
-                .textContent('Please enter the Job Number to swap the POD.')
-                .placeholder('Job Number')
-                .ariaLabel('Job Number')
-                .targetEvent(event)
-                .required(true)
-                .ok('Submit')
-                .cancel('Cancel');
+        $scope.swapPOD = async (event) => {
+            try {
+                const jobNumberPrompt = $mdDialog.prompt()
+                    .title('Enter the other job number')
+                    .textContent('Please enter the Job Number to swap the POD.')
+                    .placeholder('Job Number')
+                    .ariaLabel('Job Number')
+                    .targetEvent(event)
+                    .required(true)
+                    .ok('Submit')
+                    .cancel('Cancel');
 
-            $mdDialog.show(jobNumberPrompt).then(jobNumber => uCSData.validateSwapPOD(jobNumber).then(data => {
-                if (!data) {
-                    $mdDialog.show($mdDialog.alert()
-                        .clickOutsideToClose(true)
-                        .title('Invalid Job')
-                        .textContent('This job is invalid.')
-                        .ok('OK'));
-                } else {
-                    const secondJobId = data;
-                    const firstJobId = $scope.currentJob.id;
+                const jobNumber = await $mdDialog.show(jobNumberPrompt);
+                const secondJobId = await uCSData.validateSwapPOD(jobNumber);
 
-                    const confirmSwap = $mdDialog.confirm()
-                        .title('Swap Delivery Info?')
-                        .textContent(`Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${jobNumber}?`)
-                        .targetEvent(event)
-                        .ok('Yes')
-                        .cancel('No');
-
-                    $mdDialog.show(confirmSwap).then(() => {
-                        uCSData.swapPOD($scope.currentJob.jobNo, jobNumber).then(() => {
-
-                            $mdDialog.show($mdDialog.alert()
-                                .clickOutsideToClose(true)
-                                .title('Successful')
-                                .textContent('POD Swap Completed Successfully')
-                                .ok('OK'));
-
-                            uCSData.reSendJobs(secondJobId);
-                            uCSData.reAssignJobs(firstJobId).then(() => {
-                                uCSData.reSendJobs(firstJobId).then(() => {
-                                    $scope.refreshData(true);
-                                });
-                            });
-
-                        });
-                    }, () => {
-                        console.log("POD Swap Canceled");
-                    });
+                if (!secondJobId) {
+                    await $mdDialog.show(
+                        $mdDialog.alert()
+                            .clickOutsideToClose(true)
+                            .title('Invalid Job')
+                            .textContent('This job is invalid.')
+                            .ok('OK')
+                    );
+                    return;
                 }
-            }), () => {
-// action when cancel is clicked
-            });
-        }
+
+                const firstJobId = $scope.currentJob.id;
+
+                const confirmSwap = $mdDialog.confirm()
+                    .title('Swap Delivery Info?')
+                    .textContent(`Are you sure you wish to swap delivery info between ${$scope.currentJob.jobNo} and ${jobNumber}?`)
+                    .targetEvent(event)
+                    .ok('Yes')
+                    .cancel('No');
+
+                await $mdDialog.show(confirmSwap);
+
+                await uCSData.swapPOD($scope.currentJob.jobNo, jobNumber);
+
+                await $mdDialog.show(
+                    $mdDialog.alert()
+                        .clickOutsideToClose(true)
+                        .title('Successful')
+                        .textContent('POD Swap Completed Successfully')
+                        .ok('OK')
+                );
+
+                await uCSData.reSendJobs(secondJobId);
+                await uCSData.reAssignJobs(firstJobId);
+                await uCSData.reSendJobs(firstJobId);
+                $scope.refreshData(true);
+            } catch (error) {
+                console.log("POD Swap Canceled or Error occurred", error);
+            }
+        };
 
         /**
          * @param {string} jobNumber
          * @param {number} jobId
          */
-        $scope.voidJobForm = (jobNumber, jobId) => {
-            const voidJobPrompt = $mdDialog.prompt()
-                .title("Void Job")
-                .textContent("Add Note")
-                .placeholder('Note')
-                .ariaLabel('Void job')
-                .required(true)
-                .ok('Void')
-                .cancel('Cancel');
+        $scope.voidJobForm = async (jobNumber, jobId) => {
+            try {
+                const voidJobPrompt = $mdDialog.prompt()
+                    .title("Void Job")
+                    .textContent("Add Note")
+                    .placeholder('Note')
+                    .ariaLabel('Void job')
+                    .required(true)
+                    .ok('Void')
+                    .cancel('Cancel');
 
-            $mdDialog.show(voidJobPrompt).then(note => {
-                return DispatchData.addNote(jobId, note, FirstName, false).then(() => {
-                    return DispatchData.voidJob(jobId).then(() => {
-                        return $scope.getData();
-                    })
-                }, () => {
-// User canceled the void
-                });
-            });
-        }
+                const note = await $mdDialog.show(voidJobPrompt);
+
+                await DispatchData.addNote(jobId, note, FirstName, false);
+                await DispatchData.voidJob(jobId);
+                await $scope.getData();
+            } catch (error) {
+                // User canceled the void or an error occurred
+                console.log("Job void canceled or error occurred", error);
+            }
+        };
 
         /**
          * @param {$event} event
@@ -750,7 +751,7 @@ angular.module("uDispatch").controller("HomeControl", [
          * @param {string} carMarker
          * @param {number} jobNumber
          */
-        $scope.dispatchDroppedMarkerToClosestCourier = (lat, lng, flags, carMarker, jobNumber) => {
+        $scope.dispatchDroppedMarkerToClosestCourier = async (lat, lng, flags, carMarker, jobNumber) => {
             if (flags.length === 0 && carMarker === null) {
                 const confirm = $mdDialog.confirm()
                     .title('Dispatch Invalid')
@@ -758,11 +759,14 @@ angular.module("uDispatch").controller("HomeControl", [
                     .ok('Close')
                     .cancel();
 
-                $mdDialog.show(confirm).then(() => {
+                try {
+                    await $mdDialog.show(confirm);
                     const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                     displayPickupPoints(unDispatchedData, true, null);
-                    $scope.getAvailableCourierLocation();
-                });
+                    await $scope.getAvailableCourierLocation();
+                } catch (error) {
+                    console.log('Dialog dismissed', error);
+                }
                 return;
             }
 
@@ -770,7 +774,7 @@ angular.module("uDispatch").controller("HomeControl", [
 
             let toCompare = [];
 
-            angular.forEach(flags, (f, key) => {
+            Object.entries(flags).forEach(([key, f]) => {
                 toCompare.push([key, f.position.lat(), f.position.lng()]);
             });
 
@@ -783,53 +787,50 @@ angular.module("uDispatch").controller("HomeControl", [
             let foundCourier = $scope.pickCouriers.find(c => c.courierID === closestCourier.courierId);
 
             let dispatchToCourierCode = closestCourier.code;
-            if (closestIndex[0] !== 9999) {
-                if (foundCourier !== undefined) {
-                    if (foundCourier.code === undefined) {
-                        dispatchToCourierCode = foundCourier.label;
-                    } else {
-                        dispatchToCourierCode = dispatchToCourierCode + ' ' + foundCourier.code;
-                    }
-                }
+            if (closestIndex[0] !== 9999 && foundCourier !== undefined) {
+                dispatchToCourierCode = foundCourier.code === undefined ? foundCourier.label : `${dispatchToCourierCode} ${foundCourier.code}`;
             }
 
             const confirm = $mdDialog.confirm()
-                .title('Dispatch Job ' + jobNumber)
-                .textContent('Dispatch to ' + dispatchToCourierCode + '?')
+                .title(`Dispatch Job ${jobNumber}`)
+                .textContent(`Dispatch to ${dispatchToCourierCode}?`)
                 .ok('Yes')
                 .cancel('No');
 
-            $mdDialog.show(confirm).then(() => {
+            try {
+                await $mdDialog.show(confirm);
                 let j = $scope.jobList.find(jo => jo.jobNo === jobNumber);
                 let jn = j.jobNo;
 
-                if (j.dgClass !== null && j.dgClass > 0 && !foundCourier.dangerousGoods) {
-                    $mdDialog.alert().clickOutsideToClose(true).title("DG job " + jn + " can not be despatched to courier " + courier + " - doesn't have DGLicense.").ok('Close').show();
-                    return;
-                }
-                if (j.dgClass !== null && j.dgClass > 0 && (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days'))) {
-                    $mdDialog.alert().clickOutsideToClose(true).title("Courier " + courier + " doesn't have a DGLicense or license has expired.").ok('Close').show();
-                    return;
-                }
-
                 if (j.dgClass !== null && j.dgClass > 0) {
-                    DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
+                    if (!foundCourier.dangerousGoods) {
+                        await $mdDialog.alert().clickOutsideToClose(true)
+                            .title(`DG job ${jn} can not be despatched to courier ${foundCourier.code} - doesn't have DGLicense.`)
+                            .ok('Close').show();
+                        return;
+                    }
+                    if (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days')) {
+                        await $mdDialog.alert().clickOutsideToClose(true)
+                            .title(`Courier ${foundCourier.code} doesn't have a DGLicense or license has expired.`)
+                            .ok('Close').show();
+                        return;
+                    }
+                    await DispatchData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
                 }
-                let jobs = [];
-                jobs.push(j.id);
-                return DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs).then(() => {
-                    $scope.getData().then(() => {
-                        angular.element('#box-map .loading').css('display', '');
 
-                        $scope.courier = {gpsCourier: foundCourier.id};
-                        $scope.searchCourier();
-                    });
-                });
-            }, () => {
+                let jobs = [j.id];
+                await DispatchData.allocateJobs(foundCourier.courierID, ContactID, jobs);
+                await $scope.getData();
+
+                angular.element('#box-map .loading').css('display', '');
+                $scope.courier = {gpsCourier: foundCourier.id};
+                await $scope.searchCourier();
+            } catch (error) {
+                console.log('Dispatch cancelled or error occurred', error);
                 let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                 displayPickupPoints(unDispatchedData, true, null);
-                $scope.getAvailableCourierLocation();
-            });
+                await $scope.getAvailableCourierLocation();
+            }
         };
 
         $scope.selectAllContent = $event => {
@@ -860,16 +861,39 @@ angular.module("uDispatch").controller("HomeControl", [
          * @param {Job} job
          * @param {boolean} calc
          */
-        $scope.lateCall = (lateTime, lateType, job, calc) => {
-            return DispatchData.lateCall(lateType, lateTime, job.minutes, job.pickupTime, job.alertLatePickup, job.deliveryTime, job.alertLateDelivery, job.jobNo, job.clientId, job.contactName, ContactID, job.time, job.id, job.jobType, job.speed, job.notify || job.speed, FirstName, calc)
-                .then(response => {
-                    $scope.getData().then(() => {
-                        toastrService.showSuccessToast("Late call applied successfully");
-                    });
-                    return response;
-                });
-        };
+        $scope.lateCall = async (lateTime, lateType, job, calc) => {
+            try {
+                const response = await DispatchData.lateCall(
+                    lateType,
+                    lateTime,
+                    job.minutes,
+                    job.pickupTime,
+                    job.alertLatePickup,
+                    job.deliveryTime,
+                    job.alertLateDelivery,
+                    job.jobNo,
+                    job.clientId,
+                    job.contactName,
+                    ContactID,
+                    job.time,
+                    job.id,
+                    job.jobType,
+                    job.speed,
+                    job.notify || job.speed,
+                    FirstName,
+                    calc
+                );
 
+                await $scope.getData();
+                toastrService.showSuccessToast("Late call applied successfully");
+
+                return response;
+            } catch (error) {
+                console.error("Error applying late call:", error);
+                toastrService.showErrorToast("Failed to apply late call");
+                throw error;
+            }
+        };
         $scope.jobClass = job => {
             let classToUse = job.direct ? "direct " : "";
             classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTHIRE" || job.speed === "FT" || job.speed === "FTHIRE" || job.speed === "HC" || job.speed === "TC") ? "chilled" : "");
@@ -884,28 +908,21 @@ angular.module("uDispatch").controller("HomeControl", [
             return $scope.jobList.filter(jo => activeJobs.some(aJob => jo.id === angular.element(aJob).data("jobid")));
         }
 
-        $scope.dispatchJobs = courierNumber => {
-            const deferred = $q.defer();
-
+        $scope.dispatchJobs = async (courierNumber) => {
             const jobsToDispatch = $scope.getJobsToDispatch();
 
             if (!Array.isArray(jobsToDispatch) || jobsToDispatch.length === 0) {
                 console.warn('No jobs to dispatch');
-                deferred.resolve();
-                return deferred.promise;
+                return;
             }
 
-            dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch)
-                .then(() => $scope.getJobList())
-                .then(() => {
-                    deferred.resolve();
-                })
-                .catch(error => {
-                    console.log('Error dispatching jobs:', error);
-                    deferred.reject(error);
-                });
-
-            return deferred.promise;
+            try {
+                await dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch);
+                await $scope.getJobList();
+            } catch (error) {
+                console.error('Error dispatching jobs:', error);
+                throw error;
+            }
         };
 
 ////////////////////////////////////////
@@ -1192,8 +1209,8 @@ angular.module("uDispatch").controller("HomeControl", [
             $scope.searchCourier();
         };
 
-        $scope.resendJobsFromCurrentWindow = () => {
-            let callData = {
+        $scope.resendJobsFromCurrentWindow = async () => {
+            const callData = {
                 "call": "resendJobs",
                 "jobs": [],
                 "splitJobs": [],
@@ -1203,24 +1220,35 @@ angular.module("uDispatch").controller("HomeControl", [
 
             let foundCourier = null;
 
-            angular.element("#currentWork .active").each(function () {
+            const activeElements = angular.element("#currentWork .active");
+            activeElements.each(function () {
                 callData.jobs.push(angular.element(this).attr("data-jobid"));
-                foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
             });
 
-            if (callData.jobs.length > 0) {
-                DispatchData.resendJobs(callData.jobs);
-            }
+            foundCourier = $scope.pickCouriers.find(c => c.courierID === callData.courierID) ||
+                $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
 
-            $scope.getData().then(() => {
+            try {
+                if (callData.jobs.length > 0) {
+                    const result = await DispatchData.resendJobs(callData.jobs);
+                    console.log('Jobs resent successfully:', result);
+                } else {
+                    console.log('No jobs to resend');
+                }
+
+                await $scope.getData();
+
                 angular.element('#box-map .loading').css('display', '');
                 $scope.courier = {gpsCourier: foundCourier.id};
-                $scope.searchCourier();
-            });
+                await $scope.searchCourier();
+
+            } catch (error) {
+                console.error('Error in resendJobsFromCurrentWindow:', error);
+            }
         };
 
-        $scope.restoreJobsFromCurrentWindow = () => {
-            let callData = {
+        $scope.restoreJobsFromCurrentWindow = async () => {
+            const callData = {
                 "call": "restoreJobs",
                 "jobs": [],
                 "splitJobs": [],
@@ -1230,33 +1258,51 @@ angular.module("uDispatch").controller("HomeControl", [
 
             let foundCourier = null;
 
-            angular.element("#currentWork .active").each(function () {
-                let jobIdElement = angular.element(this);
-                let j = $scope.jobsCurrentList.find(jo => jo.id === jobIdElement.data("jobid"));
-                let jn = j.jobNo;
-                DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+            const activeElements = angular.element("#currentWork .active");
+            for (let i = 0; i < activeElements.length; i++) {
+                const jobIdElement = angular.element(activeElements[i]);
+                const j = $scope.jobsCurrentList.find(jo => jo.id === jobIdElement.data("jobid"));
+                const jn = j.jobNo;
+
+                try {
+                    await DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                    console.log('Restore event added successfully');
+                } catch (error) {
+                    console.error('Error adding restore event:', error);
+                }
+
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
-                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID)
+                    foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID) ||
+                        $scope.pickAllCouriers.find(c => c.courierID === j.courierData.courierID);
                 }
+
                 if (j.displaySplitJobDetail) {
                     callData.splitJobs.push(jobIdElement.data("jobid"));
                 } else {
                     callData.jobs.push(jobIdElement.attr("data-jobid"));
                 }
-            });
-
-            if (callData.splitJobs.length > 0) {
-                DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs);
-            }
-            if (callData.jobs.length > 0) {
-                DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
             }
 
-            $timeout(() => {
-                $scope.getCurrentJobs(foundCourier.courierID);
-                $scope.getData();
-            }, 1000);
+            try {
+                if (callData.splitJobs.length > 0) {
+                    await DispatchData.restoreSplitJobs(foundCourier.courierID, ContactID, callData.splitJobs);
+                }
+                if (callData.jobs.length > 0) {
+                    await DispatchData.restoreJobs(foundCourier.courierID, ContactID, callData.jobs);
+                }
+            } catch (error) {
+                console.error('Error restoring jobs:', error);
+            }
+
+            await new Promise(resolve => $timeout(resolve, 1000));
+
+            try {
+                await $scope.getCurrentJobs(foundCourier.courierID);
+                await $scope.getData();
+            } catch (error) {
+                console.error('Error updating job data:', error);
+            }
         };
 
         /**
@@ -1362,34 +1408,45 @@ angular.module("uDispatch").controller("HomeControl", [
 
 //ACTIVATE DROP
         $scope.activateDrop = () => {
-            $timeout(() => {
-                $document.ready(() => {
-                    angular.element(".droppable-row").droppable({
-                        classes: {
-                            "ui-droppable-hover": "active"
-                        }, drop() {
+            $timeout(async () => {
+                await new Promise(resolve => $document.ready(resolve));
 
-                            let parent = angular.element(this).parents(".box");
-                            let parentOffset = parent.offset();
-                            let parentTop = parentOffset.top;
-                            let parentBottom = parentTop + parent.outerHeight();
+                angular.element(".droppable-row").droppable({
+                    classes: {
+                        "ui-droppable-hover": "active"
+                    },
+                    drop: async function () {
+                        const $this = angular.element(this);
+                        const $parent = $this.parents(".box");
+                        const parentOffset = $parent.offset();
+                        const parentTop = parentOffset.top;
+                        const parentBottom = parentTop + $parent.outerHeight();
 
-                            let row = angular.element(this);
-                            let rowOffset = row.offset();
-                            let rowTop = rowOffset.top;
-                            let rowBottom = rowTop + row.outerHeight();
+                        const rowOffset = $this.offset();
+                        const rowTop = rowOffset.top;
+                        const rowBottom = rowTop + $this.outerHeight();
 
-                            if (rowTop < parentBottom && rowBottom > parentTop) {
+                        if (rowTop < parentBottom && rowBottom > parentTop) {
+                            $this.css({"background-color": "#c6dfad"});
 
-                                angular.element(this).css({"background-color": "#c6dfad"});
-                                angular.element(this).animate({backgroundColor: "inherit"}, 300, function () {
-                                    angular.element(this).removeAttr("style");
+                            await new Promise(resolve => {
+                                $this.animate({backgroundColor: "inherit"}, 300, function () {
+                                    $this.removeAttr("style");
+                                    resolve();
                                 });
-                                $scope.dispatchJobs(angular.element(this).attr("data-courier").replace(/[^\d.-]/g, ''));
-                                $scope.getClearListsData();
+                            });
+
+                            const courierId = $this.attr("data-courier").replace(/[^\d.-]/g, '');
+
+                            try {
+                                await $scope.dispatchJobs(courierId);
+                                console.log('Dispatch complete');
+                                await $scope.getClearListsData();
+                            } catch (error) {
+                                console.error('Error in drop handler:', error);
                             }
                         }
-                    });
+                    }
                 });
             }, 0);
         };
@@ -1772,12 +1829,16 @@ angular.module("uDispatch").controller("HomeControl", [
             }
         };
 
-        $scope.loadRelatedJobDetail = (id, jn) => {
+        /**
+         * @param {number} jobId
+         * @param {string} jobNumber
+         */
+        $scope.loadRelatedJobDetail = (jobId, jobNumber) => {
             angular.element("#box-jobDetail").find(".loading").show();
-            DispatchData.getJobDetail(id).then(data => {
+            DispatchData.getJobDetail(jobId).then(data => {
                 $scope.currentJob = data;
                 angular.element("#box-jobDetail").find(".loading").hide();
-                $scope.currentSelection = " for Job " + jn;
+                $scope.currentSelection = " for Job " + jobNumber;
             });
         };
 
@@ -1881,6 +1942,7 @@ angular.module("uDispatch").controller("HomeControl", [
                 }
             }, 0);
         };
+
         $scope.setCurrentWorkMenu = () => {
             return [{
                 text: "Restore", click: async () => {
@@ -2084,113 +2146,110 @@ angular.module("uDispatch").controller("HomeControl", [
         };
 
         $scope.setEventsMenu = ($event) => {
-            return [{
-                text: "Void Job", click() {
-                    $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
-                }
-            },
-
+            return [
                 {
-                    text: "Add Event - Other", click() {
+                    text: "Void Job",
+                    click: async function () {
+                        try {
+                            await $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
+                            console.log('Void Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Void Job:', error);
+                        }
+                    }
+                },
+                {
+                    text: "Add Event - Other",
+                    click: function () {
                         $scope.otherEventForm($event, $scope.currentJob);
                     }
                 },
-
                 {
-                    text: "Split Job", click() {
-                        $scope.splitJob($event, $scope.currentJob);
-                    }, enabled($itemScope) {
-                        return $itemScope.job.allowSplit;
+                    text: "Split Job",
+                    click: async function () {
+                        try {
+                            await $scope.splitJob($event, $scope.currentJob);
+                            console.log('Split Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Split Job:', error);
+                        }
                     },
-                },
-
-                {
-                    text: "Set First Job", click() {
-                        $scope.setFirstJob($scope.currentJob);
+                    enabled: function ($itemScope) {
+                        return $itemScope.job.allowSplit;
                     }
-                }];
+                },
+                {
+                    text: "Set First Job",
+                    click: async function () {
+                        try {
+                            await $scope.setFirstJob($scope.currentJob);
+                            console.log('Set First Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Set First Job:', error);
+                        }
+                    }
+                }
+            ];
         };
 
         $scope.setJobsMenu = () => {
-            let multiple = angular.element(".activeTable .active").length > 1;
+            const activeElements = angular.element(".activeTable .active");
+            const multiple = activeElements.length > 1;
             let lastCourier = null;
             let sameCourier = true;
-            angular.element(".activeTable .active").each(() => {
-                let j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
-                if (lastCourier !== null && lastCourier !== j.courier) {
+
+            activeElements.each(function () {
+                const jobId = angular.element(this).data("jobid");
+                const job = $scope.jobList.find(jo => jo.id === jobId);
+                if (lastCourier !== null && lastCourier !== job.courier) {
                     sameCourier = false;
-                    return false;
+                    return false; // break the loop
                 }
-                lastCourier = j.courier;
+                lastCourier = job.courier;
             });
 
-            console.log("same courier =" + sameCourier + " last courier =" + lastCourier);
+            console.log(`same courier = ${sameCourier}, last courier = ${lastCourier}`);
+
             if (!sameCourier) {
                 return [];
             }
 
-            let multipleMenu = [{
-                text: "Dispatch Selected", click($itemScope, $event) {
-                    $scope.dispatchJobs($itemScope.courier.courier);
+            const createMenuItem = (text, action) => ({
+                text,
+                click: async function ($itemScope, $event) {
+                    try {
+                        await action($itemScope, $event);
+                        console.log(`${text} completed successfully`);
+                    } catch (error) {
+                        console.error(`Error in ${text}:`, error);
+                    }
                 }
-            }, {
-                text: "Re-dispatch Selected", click() {
-//$scope.items.splice($itemScope.$index, 1);
+            });
+
+            let menu = [];
+
+            if (lastCourier === null) {
+                menu.push(createMenuItem("Dispatch Selected", () => $scope.dispatchJobs(null)));
+            } else {
+                menu = [
+                    createMenuItem("Restore", $scope.restoreJobs),
+                    createMenuItem("Redispatch", $scope.reAllocateJobs),
+                    createMenuItem("Resend", $scope.resendJobs)
+                ];
+
+                if (multiple) {
+                    menu = menu.map(item => ({
+                        ...item,
+                        text: `${item.text} Selected`
+                    }));
                 }
-            }];
-            if (sameCourier) {
-                multipleMenu.push({
-                    text: "Restore Selected", click() {
-                        $scope.restoreJobs();
-                    }
-                }, {
-                    text: "Redispatch Selected", click() {
-                        $scope.reAllocateJobs();
-                    }
-                }, {
-                    text: "Resend Selected", click() {
-                        $scope.resendJobs();
-                    }
-                });
             }
 
-            if ((sameCourier && lastCourier === null)) {
-
-                multipleMenu = [{
-                    text: "Dispatch Selected", click() {
-                        $scope.dispatchJobs(null);
-
-                    }
-
-                }];
+            if (multiple && lastCourier === null) {
+                menu.unshift(createMenuItem("Dispatch Selected", ($itemScope) => $scope.dispatchJobs($itemScope.courier.courier)));
             }
 
-
-            const fullMenu = [{
-                text: "Dispatch", click() {
-                    $scope.dispatchJobs(null);
-                }
-            }];
-
-            if (lastCourier !== null) {
-                multipleMenu.shift();
-                multipleMenu.shift();
-                fullMenu.shift();
-                fullMenu.push({
-                    text: "Restore", click() {
-                        $scope.restoreJobs();
-                    }
-                }, {
-                    text: "Redispatch", click() {
-                        $scope.reAllocateJobs();
-                    }
-                }, {
-                    text: "Resend", click() {
-                        $scope.resendJobs();
-                    }
-                });
-            }
-            return multiple ? multipleMenu : fullMenu;
+            return menu;
         };
 
         /**
@@ -2262,12 +2321,20 @@ angular.module("uDispatch").controller("HomeControl", [
             }
         };
 
-        $scope.courierMenu = [// NEW IMPLEMENTATION
+        $scope.courierMenu = [
             {
-                text: "Dispatch Selected", click($itemScope) {
-                    $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
+                text: "Dispatch Selected",
+                click: async function ($itemScope) {
+                    try {
+                        const courierId = $itemScope.courier.courier || $itemScope.courier.code;
+                        await $scope.dispatchJobs(courierId);
+                        console.log('Dispatch Selected completed successfully');
+                    } catch (error) {
+                        console.error('Error in Dispatch Selected:', error);
+                    }
                 }
-            }];
+            }
+        ];
 
         $scope.potentialCourierMenu = [{
             text: "Dispatch Selected", click($itemScope) {
