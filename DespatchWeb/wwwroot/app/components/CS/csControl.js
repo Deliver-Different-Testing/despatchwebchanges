@@ -662,7 +662,7 @@ angular.module('uDispatch').controller('CSControl', [
             let foundCourier = null;
             const jn = job.jobNo;
 
-            uCSData.addRestoreEvent(jn, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+            uCSData.addRestoreEvent(jn, job.clientId, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
             if (callData.courierID === null) {
                 callData.courierID = job.courierData.courierID;
                 foundCourier = $scope.pickCouriers.find(c => c.courierID === job.courierData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === job.courierData.courierID);
@@ -910,7 +910,7 @@ angular.module('uDispatch').controller('CSControl', [
                 setMapBounds();
                 map.setZoom(14);
                 if ($scope.currentJob.rootParentID) {
-                    uCSData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID).then(data => {
+                    uCSData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientId).then(data => {
                         $scope.currentJob.relatedJobs = data;
                     });
                 }
@@ -1315,7 +1315,7 @@ angular.module('uDispatch').controller('CSControl', [
                     "ClientCreated": !$scope.isAdmin,
                     "ClientFollowup": $scope.book.account !== "UCL" ? 1 : 0,
                     "EventDate": $scope.pickDateService.date,
-                    "ClientID": $scope.currentJob.clientID
+                    "clientId": $scope.currentJob.clientId
                 };
 
                 uCSData.createEvent(event, $scope.isAdmin ? $scope.book.notify : true)

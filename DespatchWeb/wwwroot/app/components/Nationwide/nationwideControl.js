@@ -763,7 +763,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                     "date": new Date(),
                     "time": time
                 },
-                submit: () => NWData.addOtherEvent($scope.currentJob.jobNo, $scope.currentJob.clientID, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(() => {
+                submit: () => NWData.addOtherEvent($scope.currentJob.jobNo, $scope.currentJob.clientId, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(() => {
                     angular.element(".eventForm").hide();
                 }),
                 cancel: () => {
@@ -943,7 +943,7 @@ angular.module("uDispatch").controller("NationwideControl", [
         /////////////////////////////////////
         // LATE CALLS
         /////////////////////////////////////
-        $scope.lateCall = (lateTime, lateType, j, calc) => NWData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientID, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName, calc).then(response => {
+        $scope.lateCall = (lateTime, lateType, j, calc) => NWData.lateCall(lateType, lateTime, j.minutes, j.pickupTime, j.alertLatePickup, j.deliveryTime, j.alertLateDelivery, j.jobNo, j.clientId, j.contactName, ContactID, j.time, j.id, j.jobType, j.speed, j.notify || j.speed, FirstName, calc).then(response => {
             $scope.getData().then(() => {
 
 
@@ -1006,7 +1006,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 }
 
                 if (j.dgClass !== null && j.dgClass > 0) {
-                    NWData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
+                    NWData.addFollowupEvent(jn, j.clientId, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
                 }
 
                 callData.jobs.push(angular.element(this).attr("data-jobid"));
@@ -1081,7 +1081,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 }
 
                 if (j.dgClass !== null && j.dgClass > 0) {
-                    NWData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
+                    NWData.addFollowupEvent(jn, j.clientId, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
                 }
 
                 callData.jobs.push(angular.element(this).attr("data-jobid"));
@@ -1145,7 +1145,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 }
 
                 if (j.dgClass !== null && j.dgClass > 0) {
-                    NWData.addFollowupEvent(jn, j.clientID, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
+                    NWData.addFollowupEvent(jn, j.clientId, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
                 }
 
                 callData.jobs.push(angular.element(this).attr("data-jobid"));
@@ -1182,7 +1182,7 @@ angular.module("uDispatch").controller("NationwideControl", [
             angular.element("#jobList .active").each(function () {
                 const j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
                 const jn = j.jobNo;
-                NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
@@ -1233,7 +1233,7 @@ angular.module("uDispatch").controller("NationwideControl", [
             angular.element("#jobListPOD .active").each(function () {
                 const j = $scope.jobListPOD.find(jo => jo.id === angular.element(this).data("jobid"));
                 const jn = j.jobNo;
-                NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
@@ -1284,7 +1284,7 @@ angular.module("uDispatch").controller("NationwideControl", [
             angular.element("#jobListDelivery .active").each(function () {
                 const j = $scope.jobListDelivery.find(jo => jo.id === angular.element(this).data("jobid"));
                 const jn = j.jobNo;
-                NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
@@ -1406,7 +1406,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 angular.element("#currentWork tr.droppable-row").each(() => {
                     let j = $scope.jobsCurrentList.find(jo => jo.id === angular.element(this).data("jobid"));
                     const jn = j.jobNo;
-                    NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                    NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                     if (callData.courierID === null) {
                         callData.courierID = j.courierData.courierID;
                         foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
@@ -1588,7 +1588,7 @@ angular.module("uDispatch").controller("NationwideControl", [
             angular.element("#currentWork .active").each(function () {
                 const j = $scope.jobsCurrentList.find(jo => jo.id === angular.element(this).data("jobid"));
                 const jn = j.jobNo;
-                NWData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                NWData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
@@ -2073,7 +2073,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 $scope.pickCouriers = data;
             });
             if (job.rootParentID) {
-                NWData.getRelatedJobs(job.rootParentID, job.clientID).then(data => {
+                NWData.getRelatedJobs(job.rootParentID, job.clientId).then(data => {
                     //data = data.filter(item => item.id !== job.id);
                     $scope.currentJob.relatedJobs = data;
                 });

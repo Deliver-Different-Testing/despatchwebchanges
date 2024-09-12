@@ -13,7 +13,6 @@ class AutoCompleteDialogController {
         'showRerateOption'
     ];
 
-
     /**
      * Create a SelectDialogController
      * @param $mdDialog - The AngularJS Material service for showing dialogs.

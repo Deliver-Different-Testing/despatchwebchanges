@@ -896,7 +896,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
 
             if (job) {
                 const jobNo = job.jobNo;
-                await DispatchData.addRestoreEvent(jobNo, job.clientID, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
+                await DispatchData.addRestoreEvent(jobNo, job.clientId, job.contactName, ContactID, job.courierData.courierID, job.id, job.jobType, FirstName);
                 console.log('Complete');
 
                 if (callData.courierID === null) {
@@ -1014,7 +1014,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                     return jo.id === angular.element(this).data("jobid")
                 });
                 const jn = j.jobNo;
-                DispatchData.addRestoreEvent(jn, j.clientID, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
+                DispatchData.addRestoreEvent(jn, j.clientId, j.contactName, ContactID, j.courierData.courierID, j.id, j.jobType, FirstName);
                 if (callData.courierID === null) {
                     callData.courierID = j.courierData.courierID;
                     foundCourier = $scope.pickCouriers.find(c => {
@@ -1238,7 +1238,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         try {
             await DispatchData.addRestoreEvent(
                 job.jobNo,
-                job.clientID,
+                job.clientId,
                 job.contactName,
                 ContactID,
                 job.courierData.courierID,
@@ -1830,7 +1830,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
 
         if ($scope.job.rootParentID) {
             try {
-                job.relatedJobs = await DispatchData.getRelatedJobs(job.rootParentID, job.clientID);
+                job.relatedJobs = await DispatchData.getRelatedJobs(job.rootParentID, job.clientId);
             } catch (error) {
                 console.error('Error getting related jobs:', error);
             }
@@ -1875,7 +1875,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             }
 
             if ($scope.currentJob.rootParentID) {
-                $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID);
+                $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientId);
             }
         } catch (error) {
             console.error('Error selecting support job detail:', error);
@@ -1920,7 +1920,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
 
             if ($scope.currentJob.rootParentID) {
                 try {
-                    $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientID);
+                    $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientId);
                 } catch (error) {
                     console.error('Error getting related jobs:', error);
                 }
