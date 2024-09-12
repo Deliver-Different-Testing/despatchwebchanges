@@ -211,7 +211,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                     const temp = $scope.pickService.channel.map(el => el.label);
                     await $scope.setSupportChannel(String(temp) || "All");
                 } catch (error) {
-                    console.error('Error in onSelectionChanged:', error);
+                    console.log('Error in onSelectionChanged:', error);
                 }
             }
         },
@@ -334,7 +334,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
 
             $timeout($scope.getData, 1000);
         } catch (error) {
-            console.error('Error in loadLayout:', error);
+            console.log('Error in loadLayout:', error);
         }
     };
 
@@ -371,7 +371,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             return {data: "OK"};
         } catch (error) {
             if (error) {
-                console.error('Error in saveLayout:', error);
+                console.log('Error in saveLayout:', error);
             } else {
                 console.log("Save Layout Cancelled!");
             }
@@ -401,7 +401,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                     angular.element("#input_" + job.id).select();
                 });
             } catch (error) {
-                console.error('Error in handleRowClick:', error);
+                console.log('Error in handleRowClick:', error);
             }
         }
     };
@@ -583,7 +583,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
 
             $scope.setFilters({'clearList': area});
         } catch (error) {
-            console.error('Error in selectClearList:', error);
+            console.log('Error in selectClearList:', error);
         }
     };
 
@@ -820,7 +820,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 console.log('Late ' + operationType + ' call completed successfully');
             })
             .catch(error => {
-                console.error('Error in late ' + operationType + ' call:', error);
+                console.log('Error in late ' + operationType + ' call:', error);
             });
     };
 
@@ -842,8 +842,8 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             return response;
         }))
         .catch(error => {
-            console.error("Error applying late call:", error);
-            console.error("Failed to apply late call");
+            console.log("Error applying late call:", error);
+            console.log("Failed to apply late call");
             return $q.reject(error);
         });
 
@@ -1158,7 +1158,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             $scope.courier = {gpsCourier: foundCourier.id};
             await $scope.searchCourier();
         } catch (error) {
-            console.error('Error in reAllocateJobsFromCurrentWindow:', error);
+            console.log('Error in reAllocateJobsFromCurrentWindow:', error);
         }
     };
 
@@ -1193,7 +1193,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             $scope.courier = {gpsCourier: foundCourier.id};
             await $scope.searchCourier();
         } catch (error) {
-            console.error('Error in resendJobsFromCurrentWindow:', error);
+            console.log('Error in resendJobsFromCurrentWindow:', error);
         }
     };
 
@@ -1230,7 +1230,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             $scope.courier = {gpsCourier: foundCourier.id};
             await $scope.searchCourier();
         } catch (error) {
-            console.error('Error in restoreJobsFromCurrentWindow:', error);
+            console.log('Error in restoreJobsFromCurrentWindow:', error);
         }
     };
 
@@ -1248,7 +1248,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             );
             console.log('Restore event added successfully');
         } catch (error) {
-            console.error('Error adding restore event:', error);
+            console.log('Error adding restore event:', error);
             throw error;  // Propagate the error
         }
     }
@@ -1284,7 +1284,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         try {
             await Promise.all(promises);
         } catch (error) {
-            console.error('Error restoring jobs:', error);
+            console.log('Error restoring jobs:', error);
             throw error;
         }
     }
@@ -1329,7 +1329,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             }
         } catch (error) {
             if (error instanceof Error) {
-                console.error(error.message);
+                console.log(error.message);
             }
             console.log("Splitting job failed:", error);
         }
@@ -1418,7 +1418,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                                         return $scope.getClearListsData();
                                     })
                                     .catch(error => {
-                                        console.error('Error in drop handler:', error);
+                                        console.log('Error in drop handler:', error);
                                     });
                             });
                         }
@@ -1452,7 +1452,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
 
             $scope.activateDrop();
         } catch (error) {
-            console.error('Error getting potential couriers:', error);
+            console.log('Error getting potential couriers:', error);
             angular.element('#box-potentialCouriers .loading').css('display', 'none');
         }
     };
@@ -1466,7 +1466,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         try {
             return await DispatchData.autocompleteSearch(searchText, url);
         } catch (error) {
-            console.error(error.message);
+            console.log(error.message);
             throw error;
         }
     };
@@ -1490,7 +1490,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             await $scope.selectJob(selectedJob);
             console.log('complete');
         } catch (error) {
-            console.error('Error in JobRecordSelected:', error);
+            console.log('Error in JobRecordSelected:', error);
         }
     };
 
@@ -1510,7 +1510,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             const result = await DispatchData.truckCourierStatus(courierID);
             $scope.truckCourierStatus = result.data;
         } catch (error) {
-            console.error('Error fetching truck courier status:', error);
+            console.log('Error fetching truck courier status:', error);
         }
     };
 
@@ -1549,7 +1549,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             }
             await $scope.updateCourierData(foundCourier.id, foundCourier.name);
         } catch (error) {
-            console.error('Error searching courier:', error);
+            console.log('Error searching courier:', error);
         } finally {
             $scope.hideLoadingIndicators();
         }
@@ -1577,7 +1577,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             const result = await DispatchData.truckCourierStatus(courier.courierID);
             $scope.truckCourierStatus = result.data;
         } catch (error) {
-            console.error('Error selecting courier:', error);
+            console.log('Error selecting courier:', error);
         } finally {
             $timeout(() => {
                 loadingElement.css('display', 'none');
@@ -1591,7 +1591,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             const result = await DispatchData.truckCourierStatus($scope.currentCourier.courierID);
             $scope.truckCourierStatus = result.data;
         } catch (error) {
-            console.error('Error refreshing truck courier status:', error);
+            console.log('Error refreshing truck courier status:', error);
         }
     };
 
@@ -1697,7 +1697,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 });
             }, 100);
         } catch (error) {
-            console.error('Error in selectPotentialCourier:', error);
+            console.log('Error in selectPotentialCourier:', error);
             // Hide loading indicators in case of error
             angular.element('.loading').css('display', 'none');
         }
@@ -1721,7 +1721,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 sizeHeadings();
             }, 2000);
         } catch (error) {
-            console.error('Error getting grouped jobs:', error);
+            console.log('Error getting grouped jobs:', error);
             angular.element('#box-jobGroups').find(".loading").css('display', 'none');
         }
     };
@@ -1758,7 +1758,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 sizeHeadings();
             }, 2000);
         } catch (error) {
-            console.error('Error getting current jobs:', error);
+            console.log('Error getting current jobs:', error);
             angular.element('#box-currentWork').find(".loading").css('display', 'none');
         }
     };
@@ -1832,7 +1832,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             try {
                 job.relatedJobs = await DispatchData.getRelatedJobs(job.rootParentID, job.clientId);
             } catch (error) {
-                console.error('Error getting related jobs:', error);
+                console.log('Error getting related jobs:', error);
             }
         }
     };
@@ -1848,7 +1848,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             angular.element("#box-jobDetail").find(".loading").hide();
             $scope.currentSelection = " for Job " + jobNumber;
         } catch (error) {
-            console.error('Error loading related job detail:', error);
+            console.log('Error loading related job detail:', error);
             angular.element("#box-jobDetail").find(".loading").hide();
         }
     };
@@ -1878,7 +1878,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientId);
             }
         } catch (error) {
-            console.error('Error selecting support job detail:', error);
+            console.log('Error selecting support job detail:', error);
             angular.element("#box-jobDetail").find(".loading").hide();
         }
     };
@@ -1915,14 +1915,14 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             try {
                 $scope.pickCouriers = await DispatchData.getActiveCouriers();
             } catch (error) {
-                console.error('Error getting active couriers:', error);
+                console.log('Error getting active couriers:', error);
             }
 
             if ($scope.currentJob.rootParentID) {
                 try {
                     $scope.currentJob.relatedJobs = await DispatchData.getRelatedJobs($scope.currentJob.rootParentID, $scope.currentJob.clientId);
                 } catch (error) {
-                    console.error('Error getting related jobs:', error);
+                    console.log('Error getting related jobs:', error);
                 }
             }
 
@@ -1959,19 +1959,19 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         text: "Restore",
         click: () => $scope.restoreJobsFromCurrentWindow()
             .catch(error => {
-                console.error('Error in restoring jobs:', error);
+                console.log('Error in restoring jobs:', error);
             })
     }, {
         text: "Redispatch",
         click: () => $scope.reAllocateJobsFromCurrentWindow()
             .catch(error => {
-                console.error('Error in redispatching jobs:', error);
+                console.log('Error in redispatching jobs:', error);
             })
     }, {
         text: "Resend",
         click: () => $scope.resendJobsFromCurrentWindow()
             .catch(error => {
-                console.error('Error in resending jobs:', error);
+                console.log('Error in resending jobs:', error);
             })
     }];
 
@@ -2167,7 +2167,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 console.log('Void Job completed successfully');
             })
             .catch(error => {
-                console.error('Error in Void Job:', error);
+                console.log('Error in Void Job:', error);
             })
     }, {
         text: "Add Event - Other",
@@ -2181,7 +2181,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 console.log('Split Job completed successfully');
             })
             .catch(error => {
-                console.error('Error in Split Job:', error);
+                console.log('Error in Split Job:', error);
             }),
         enabled: $itemScope => $itemScope.job.allowSplit
     }, {
@@ -2191,7 +2191,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 console.log('Set First Job completed successfully');
             })
             .catch(error => {
-                console.error('Error in Set First Job:', error);
+                console.log('Error in Set First Job:', error);
             })
     }];
 
@@ -2225,7 +2225,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                         console.log(text + ' completed successfully');
                     })
                     .catch(error => {
-                        console.error('Error in ' + text + ':', error);
+                        console.log('Error in ' + text + ':', error);
                     })
             };
         }
@@ -2315,7 +2315,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 const courierId = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
                 displayAvailableCouriers(returnData, courierId, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
             } catch (error) {
-                console.error('Error getting available courier location:', error);
+                console.log('Error getting available courier location:', error);
             }
         } else {
             console.log('Map or map bounds not fully loaded or initialized');
@@ -2331,7 +2331,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                     console.log('Dispatch Selected completed successfully');
                 })
                 .catch(error => {
-                    console.error('Error in Dispatch Selected:', error);
+                    console.log('Error in Dispatch Selected:', error);
                 });
         }
     }];
@@ -2364,7 +2364,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             }, 200);
 
         } catch (error) {
-            console.error('Error getting job list:', error);
+            console.log('Error getting job list:', error);
             angular.element("#box-jobsList .loading").fadeOut();
         }
     };
@@ -2375,7 +2375,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             await $scope.getSupports();
             $scope.currentSupport = null;
         } catch (error) {
-            console.error('Error closing support:', error);
+            console.log('Error closing support:', error);
         }
     };
 
@@ -2389,7 +2389,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             }
             await $scope.getSupports();
         } catch (error) {
-            console.error('Error locking/unlocking support:', error);
+            console.log('Error locking/unlocking support:', error);
         }
     };
 
@@ -2455,7 +2455,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 sizeHeadings();
             }, 2000);
         } catch (error) {
-            console.error('Error getting supports:', error);
+            console.log('Error getting supports:', error);
             angular.element("#box-supports").find(".loading").fadeOut();
         }
     };
@@ -2464,7 +2464,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         try {
             $scope.pickClients = await DispatchData.getClientContacts(ContactID);
         } catch (error) {
-            console.error('Error getting client contacts:', error);
+            console.log('Error getting client contacts:', error);
         }
     };
 
@@ -2491,7 +2491,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                     map.setZoom(13);
                     await $scope.getAvailableCourierLocation();
                 } catch (error) {
-                    console.error('Error getting clear list envelope:', error);
+                    console.log('Error getting clear list envelope:', error);
                 }
             };
 
@@ -2504,7 +2504,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                     console.log($scope.clearLists);
                     $scope.activateDrop();
                 } catch (error) {
-                    console.error('Error getting clear lists data:', error);
+                    console.log('Error getting clear lists data:', error);
                 }
             };
 
@@ -2639,7 +2639,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             // JOB DETAIL
             return await $scope.getJobList();
         } catch (error) {
-            console.error('Error in getData:', error);
+            console.log('Error in getData:', error);
         }
     };
 
@@ -2656,7 +2656,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 console.log("Critical Error");
             }
         } catch (error) {
-            console.error('Error in handleCourierAction:', error);
+            console.log('Error in handleCourierAction:', error);
         }
     }
 
@@ -2707,7 +2707,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             const dialogResult = await showEditAddressDialog($event, currentJob, selectedSuburbs, location);
             await handleDialogResult(dialogResult, currentJob);
         } catch (error) {
-            console.error(error.message);
+            console.log(error.message);
         } finally {
             console.log("Split jobs process completed.");
         }
@@ -2849,7 +2849,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             }
         } catch (error) {
             console.log('Error in createNewJob:', error);
-            console.error(error.message || "An error occurred while creating the job");
+            console.log(error.message || "An error occurred while creating the job");
         }
     };
 

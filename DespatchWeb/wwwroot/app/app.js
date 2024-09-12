@@ -90,54 +90,49 @@ angular
     .config(['$qProvider', $qProvider => {
         $qProvider.errorOnUnhandledRejections(false);
     }])
-    .config(['$mdDateLocaleProvider', $mdDateLocaleProvider => {
-        // Format date to dd/mm/yyyy
-        $mdDateLocaleProvider.formatDate = (date) => {
-            if (!date) return '';
-            const day = (date.getDate() < 10 ? '0' : '') + date.getDate();
-            const month = ((date.getMonth() + 1) < 10 ? '0' : '') + (date.getMonth() + 1);
-            return `${day}/${month}/${date.getFullYear()}`;
-        };
+    .config(['$mdDateLocaleProvider', 'moment', ($mdDateLocaleProvider, moment) => {
+        // Set locale to New Zealand English
+        moment.locale('en-nz');
 
-        // Parse date from dd/mm/yyyy
+        $mdDateLocaleProvider.formatDate = date => moment(date).format('DD/MM/YYYY');
+
         $mdDateLocaleProvider.parseDate = (dateString) => {
-            if (!dateString) return null;
-            const parts = dateString.split('/');
-            if (parts.length !== 3) return null;
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed
-            const year = parseInt(parts[2], 10);
-            return new Date(year, month, day);
+            const m = moment(dateString, 'DD/MM/YYYY', true);
+            return m.isValid() ? m.toDate() : null;
         };
 
-        // First day of the week is Monday
+        $mdDateLocaleProvider.isDateComplete = dateString => moment(dateString, 'DD/MM/YYYY', true).isValid();
+
+        // First day of the week is Monday (1) in New Zealand
         $mdDateLocaleProvider.firstDayOfWeek = 1;
 
         // Define month names
-        $mdDateLocaleProvider.months = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
+        $mdDateLocaleProvider.months = moment.months();
 
         // Define day names (start with Monday)
-        $mdDateLocaleProvider.days = [
-            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
-        ];
+        $mdDateLocaleProvider.days = moment.weekdays(true);
 
-        // Define short day names
-        $mdDateLocaleProvider.shortDays = [
-            'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
-        ];
+        // Define short day names (start with Monday)
+        $mdDateLocaleProvider.shortDays = moment.weekdaysShort(true);
 
-        // Month header format
-        $mdDateLocaleProvider.monthHeaderFormatter = (date) =>
-            `${$mdDateLocaleProvider.months[date.getMonth()]} ${date.getFullYear()}`;
+        // Month header formatter
+        $mdDateLocaleProvider.monthHeaderFormatter = (date) => moment(date).format('MMMM YYYY');
 
         // Week number formatter
         $mdDateLocaleProvider.weekNumberFormatter = (weekNumber) => `Week ${weekNumber}`;
 
         $mdDateLocaleProvider.msgCalendar = 'Calendar';
         $mdDateLocaleProvider.msgOpenCalendar = 'Open calendar';
+
+        // Date-picker specific display and parsing
+        $mdDateLocaleProvider.dateFormat = 'dd/MM/yyyy';
+        $mdDateLocaleProvider.inputDateFormat = 'dd/MM/yyyy';
+
+        // Long date format (e.g., "14 July 2023")
+        $mdDateLocaleProvider.longDateFormat = date => moment(date).format('D MMMM YYYY');
+
+        // Short time format
+        $mdDateLocaleProvider.timeFormat = 'h:mm a';
     }])
     .factory('versionUrl', ['APP_VERSION', APP_VERSION => url => url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + APP_VERSION])
     .constant('APP_CONFIG', {

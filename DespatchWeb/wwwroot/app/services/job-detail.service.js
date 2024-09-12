@@ -338,7 +338,7 @@ class JobDetailService {
         return priceBreakdownPromise
             .then(showDialog)
             .catch(error => {
-                console.error('Error fetching price breakdown:', error);
+                console.log('Error fetching price breakdown:', error);
                 return showDialog('An error occurred while fetching the price breakdown. Please try again.');
             });
     }
@@ -422,7 +422,7 @@ class JobDetailService {
                 console.log('Dialog closed successfully');
             })
             .catch(error => {
-                console.error('Error in date dialog:', error);
+                console.log('Error in date dialog:', error);
             });
     }
 
@@ -915,7 +915,7 @@ class JobDetailService {
         return this.showAddressDialog(event, currentJob, field, location, suburbText)
             .then(addressDetails => this._processAddressUpdate(currentJob, field, addressDetails))
             .catch(error => {
-                console.error('Error updating GPS:', error);
+                console.log('Error updating GPS:', error);
             });
     }
 
@@ -969,7 +969,7 @@ class JobDetailService {
                 this._toastrService.showSuccessToast("Address successfully updated");
             })
             .catch(error => {
-                console.error('Error processing address update:', error);
+                console.log('Error processing address update:', error);
             });
     }
 
@@ -1671,9 +1671,8 @@ class JobDetailService {
                 return result; // Return the result for further processing if needed
             })
             .catch((error) => {
-                console.error('Error in pallet dialog:', error);
+                console.log('Error in pallet dialog:', error);
                 console.log(`Failed to ${isEditing ? 'edit' : 'create'} pallet. Please try again.`);
-                throw error; // Re-throw the error for the caller to handle if needed
             });
     }
 

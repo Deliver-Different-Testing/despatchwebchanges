@@ -54,15 +54,15 @@
                         <label for="zipCode">ZIP Code</label>
                         <input id="zipCode" ng-model="ctrl.addressDetails.zipCode" pattern="[0-9]{5}">
                     </md-input-container>
-                </div>
 
-                <div layout-gt-sm="row" ng-if="!ctrl.useUsFormat">
-                    <md-autocomplete class="md-block" flex-gt-sm
-                                     md-floating-label="Our Suburb"
-                                     md-item-text="item.text"
-                                     md-items="item in ctrl.ourSuburbSearch(ctrl.ourSuburbSearchText)"
-                                     md-search-text="ctrl.ourSuburbSearchText"
-                                     md-selected-item="ctrl.ourSuburbSelectedItem">
+                    <md-autocomplete
+                            class="md-block"
+                            flex-gt-sm md-floating-label="Our Suburb"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.ourSuburbSearch(ctrl.ourSuburbSearchText)"
+                            md-search-text="ctrl.ourSuburbSearchText"
+                            md-selected-item="ctrl.ourSuburbSelectedItem"
+                            ng-if="!ctrl.useUsFormat">
                         <md-item-template>
                             <span md-highlight-flags="^i"
                                   md-highlight-text="ctrl.ourSuburbSearchText">{{item.text}}</span>

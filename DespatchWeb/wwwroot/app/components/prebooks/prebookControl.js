@@ -22,7 +22,7 @@ angular.module('uDispatch').controller('PBControl', ['$scope', 'JobDetailService
             console.log("Container visibility:", $window.getComputedStyle(mapDiv).display);
             console.log("Container position:", mapDiv.getBoundingClientRect());
         } else {
-            console.error("Map container #map_canvas not found in the DOM");
+            console.log("Map container #map_canvas not found in the DOM");
         }
     };
 
@@ -434,7 +434,7 @@ angular.module('uDispatch').controller('PBControl', ['$scope', 'JobDetailService
                     return $scope.refreshData();
                 })
                 .catch(error => {
-                    console.error('Error voiding prebook jobs:', error);
+                    console.log('Error voiding prebook jobs:', error);
                 });
         }, () => {
             // User clicked 'No'
@@ -486,7 +486,7 @@ angular.module('uDispatch').controller('PBControl', ['$scope', 'JobDetailService
                     return $scope.refreshData();
                 })
                 .catch(error => {
-                    console.error('Error sending prebook jobs:', error);
+                    console.log('Error sending prebook jobs:', error);
                 });
         }, () => {
             // User clicked 'No'

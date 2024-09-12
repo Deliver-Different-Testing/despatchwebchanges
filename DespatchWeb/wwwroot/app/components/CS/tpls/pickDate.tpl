@@ -14,6 +14,7 @@
             <div>
                 <label id="from-datepicker-header">From: </label>
                 <md-datepicker
+                        md-date-locale="{ firstDayOfWeek: 1 }"
                         input-aria-describedby="from-datepicker-description"
                         input-aria-labelledby="from-datepicker-header "
                         md-placeholder="Enter date"
@@ -26,6 +27,7 @@
             <div>
                 <label id="datepicker-header">To: </label>
                 <md-datepicker
+                        md-date-locale="{ firstDayOfWeek: 1 }"
                         input-aria-describedby="to-datepicker-description"
                         input-aria-labelledby="to-datepicker-header "
                         md-placeholder="Enter date"
