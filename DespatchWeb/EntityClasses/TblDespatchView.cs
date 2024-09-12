@@ -18,5 +18,6 @@ namespace DespatchWeb.EntityClasses
         public bool? ShowOnDespatch { get; set; }
         public bool? ShowOnAssistDespatch { get; set; }
         public bool? ShowOnJobFollowup { get; set; }
+        public int? ZoneGroupId { get; set; }
     }
 }

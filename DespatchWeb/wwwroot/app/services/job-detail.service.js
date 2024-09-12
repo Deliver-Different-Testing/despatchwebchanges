@@ -1098,7 +1098,6 @@ class JobDetailService {
     /**
      * Unlocks a job
      * @param {Job} job - The job to be unlocked
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     unlockJob(job) {
         return this._dispatchData.updateJobDetail(
@@ -1253,7 +1252,6 @@ class JobDetailService {
     /**
      * Toggles the Pedal status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     pedalClick(job) {
         return this.toggleJobProperty(job, 'pedal');
