@@ -1861,7 +1861,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
 
         try {
             const data = await DispatchData.getJobDetail(support.jobId);
-            $scope.selectJob(data);
+            await $scope.selectJob(data);
             $scope.currentJob = data;
 
             angular.element("#box-jobDetail").find(".loading").hide();
