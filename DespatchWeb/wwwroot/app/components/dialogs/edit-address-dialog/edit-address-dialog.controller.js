@@ -61,7 +61,21 @@ class EditAddressDialogController {
         NgMap.getMap().then(map => {
             console.log("Loading Map!")
             this.map = map;
-            this.marker = map.markers[0];
+            console.log("Map markers:", map.markers);
+
+            if (!map.markers || map.markers.length === 0) {
+                console.log("No markers found. Creating a new one.");
+                this.marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(this.addressDetails.lat, this.addressDetails.long),
+                    map: this.map,
+                    visible: true
+                });
+            } else {
+                this.marker = map.markers[0];
+            }
+
+            console.log("Marker initialized:", this.marker);
+
             this.addressSearchAutocomplete(addressDetails.address).then(_ => console.log("Address Search Complete!"));
         });
     }
@@ -143,8 +157,15 @@ class EditAddressDialogController {
             this.addressDetails.address = returnedLocation.Address.Label;
 
             const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
+
+            console.log("Setting map center to:", latLng.toString());
             this.map.setCenter(latLng);
+
+            console.log("Marker before setPosition:", this.marker);
             this.marker.setPosition(latLng);
+            console.log("Marker after setPosition:", this.marker);
+
+            this.marker.setVisible(true);
         } catch (error) {
             console.log("Error: ", error);
         }
@@ -204,36 +225,37 @@ class EditAddressDialogController {
      * Updates addressDetails with new position data when the marker finishes being dragged.
      * @param {google.maps.MouseEvent} event - A Google Maps mouse event.
      */
-    async markerDragend(event) {
+    markerDragend(event) {
         // Get the marker's new position
         const location = event.latLng;
 
         try {
             // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
             // that return the latitude and longitude values of your location
-            const data = await this._dispatchData.retrieveAddresses(location.lat(), location.lng());
-            const returnedLocation = data.Response.View[0].Result[0].Location;
+            this._dispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
+                const returnedLocation = data.Response.View[0].Result[0].Location;
 
-            // Updating scope variables with new data
-            this.addressDetails.address = returnedLocation.Address.Label;
-            this.addressDetails.suburb = returnedLocation.Address.District;
-            this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-            this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+                // Updating scope variables with new data
+                this.addressDetails.address = returnedLocation.Address.Label;
+                this.addressDetails.suburb = returnedLocation.Address.District;
+                this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
+                this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
 
-            // Log output
-            console.log("Suburb = " + returnedLocation.Address.District);
-            console.log("PostCode = " + returnedLocation.Address.PostalCode);
+                // Log output
+                console.log("Suburb = " + returnedLocation.Address.District);
+                console.log("PostCode = " + returnedLocation.Address.PostalCode);
 
-            // Updating suburb selection
-            const mappedSub = this.suburbOptions.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
+                // Updating suburb selection
+                const mappedSub = this.suburbOptions.find(obj => obj.text === returnedLocation.Address.District || obj.alias === returnedLocation.Address.District);
 
-            if (mappedSub !== undefined) {
-                console.log(mappedSub);
-                this.ourSuburbSelectedItem = mappedSub;
-            } else {
-                this.ourSuburbSelectedItem = null;
-            }
+                if (mappedSub !== undefined) {
+                    console.log(mappedSub);
+                    this.ourSuburbSelectedItem = mappedSub;
+                } else {
+                    this.ourSuburbSelectedItem = null;
+                }
 
+            });
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         }

@@ -843,7 +843,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         }))
         .catch(error => {
             console.error("Error applying late call:", error);
-            toastrService.showErrorToast("Failed to apply late call");
+            console.error("Failed to apply late call");
             return $q.reject(error);
         });
 
@@ -1329,7 +1329,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             }
         } catch (error) {
             if (error instanceof Error) {
-                toastrService.showErrorToast(error.message);
+                console.error(error.message);
             }
             console.log("Splitting job failed:", error);
         }
@@ -1466,7 +1466,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         try {
             return await DispatchData.autocompleteSearch(searchText, url);
         } catch (error) {
-            toastrService.showErrorToast(error.message);
+            console.error(error.message);
             throw error;
         }
     };
@@ -2707,7 +2707,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             const dialogResult = await showEditAddressDialog($event, currentJob, selectedSuburbs, location);
             await handleDialogResult(dialogResult, currentJob);
         } catch (error) {
-            toastrService.showErrorToast(error.message);
+            console.error(error.message);
         } finally {
             console.log("Split jobs process completed.");
         }
@@ -2849,7 +2849,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             }
         } catch (error) {
             console.log('Error in createNewJob:', error);
-            toastrService.showErrorToast(error.message || "An error occurred while creating the job");
+            console.error(error.message || "An error occurred while creating the job");
         }
     };
 

@@ -21,7 +21,9 @@ class CreateJobDialogController {
 
         this.initializeFormData($scope);
         this.initializeJob();
-        this.fetchDataLists();
+        this.fetchDataLists().then(speedOptions => {
+            this.speedOptions = speedOptions;
+        });
     }
 
     initializeFormData($scope) {
@@ -40,7 +42,7 @@ class CreateJobDialogController {
 
     initializeJob() {
         this.job = {
-            clientID: "",
+            clientId: "",
             deliverToContact: "",
             fromAddress: "",
             toAddress: "",
@@ -63,12 +65,12 @@ class CreateJobDialogController {
         };
     }
 
-    fetchDataLists() {
-        this.dispatchData.getSpeedList().then(data => {
-            this.speedOptions = data;
-        }).catch(error => {
-            this.toastrService.showErrorToast("Failed to fetch speed list: " + error.message);
-        });
+    async fetchDataLists() {
+        try {
+            return await this.dispatchData.getSpeedList();
+        } catch (error) {
+            console.error("Failed to fetch speed list: " + error.message);
+        }
     }
 
     resetChoices() {
@@ -76,33 +78,50 @@ class CreateJobDialogController {
         choices.forEach(choice => this.job[choice] = false);
     }
 
+    /**
+     * @param {string|number} key
+     */
     updateChoice(key) {
         this.resetChoices();
         this.job[key] = true;
     }
 
-    clientSearchAutocomplete(searchTerm) {
+    /**
+     * @param {string} searchTerm
+     */
+    async clientSearchAutocomplete(searchTerm) {
         return this.performAutocompleteSearch(searchTerm, "/home/ActiveClients");
     }
 
-    courierSearch(searchText) {
+    /**
+     * @param {string} searchText
+     */
+    async courierSearch(searchText) {
         return this.performAutocompleteSearch(searchText, "/courier/AllActiveSearch");
     }
 
-    performAutocompleteSearch(searchTerm, url) {
-        return this.dispatchData.autocompleteSearch(searchTerm, url)
-            .catch(error => {
-                this.toastrService.showErrorToast("Search failed: " + error.message);
-                return [];
-            });
+    /**
+     * @param {string} searchTerm
+     * @param {string} url
+     */
+    async performAutocompleteSearch(searchTerm, url) {
+        try {
+            return await this.dispatchData.autocompleteSearch(searchTerm, url);
+        } catch (error) {
+            console.error("Search failed: " + error.message);
+            return [];
+        }
     }
 
+    /**
+     * @param {string} searchText
+     */
     async addressSearchAutocomplete(searchText) {
         try {
             const suggestions = await this.dispatchData.autocompleteAddressSearch(searchText);
             return this.transformSuggestions(suggestions);
         } catch (error) {
-            this.toastrService.showErrorToast("Address search failed: " + error.message);
+            console.error("Address search failed: " + error.message);
             return [];
         }
     }
@@ -114,6 +133,9 @@ class CreateJobDialogController {
         }));
     }
 
+    /**
+     * @param {string} district
+     */
     async findSuburbByDistrict(district) {
         try {
             const ourSuburbs = await this.dispatchData.getSuburbList();
@@ -123,11 +145,15 @@ class CreateJobDialogController {
                 (localSuburb.alias && localSuburb.alias.toLowerCase() === lowerCaseDistrict)
             );
         } catch (error) {
-            this.toastrService.showErrorToast("Failed to find suburb: " + error.message);
+            console.error("Failed to find suburb: " + error.message);
             return null;
         }
     }
 
+    /**
+     * @param {Suggestion} item
+     * @param {boolean} isToAddress
+     */
     async addressSearchItemSelected(item, isToAddress) {
         try {
             const data = await this.dispatchData.getGeoCodeInformation(item);
@@ -141,10 +167,17 @@ class CreateJobDialogController {
                 this.toastrService.showWarningToast("Suburb not found for the selected address.");
             }
         } catch (error) {
-            this.toastrService.showErrorToast("Error processing address: " + error.message);
+            console.error("Error processing address: " + error.message);
         }
     }
 
+    /**
+     * @param {number} suburbId
+     * @param {string} addressFull
+     * @param {number} lat
+     * @param {number} long
+     * @param {boolean} isToAddress
+     */
     assignAddressToJob(suburbId, addressFull, lat, long, isToAddress) {
         const prefix = isToAddress ? 'to' : 'from';
         this.job[`${prefix}Suburb`] = suburbId;
@@ -153,6 +186,9 @@ class CreateJobDialogController {
         this.job[`${prefix}Long`] = long;
     }
 
+    /**
+     * @param {Job} job
+     */
     async submit(job) {
         if (!this.isFormValid()) return;
 
@@ -168,7 +204,7 @@ class CreateJobDialogController {
 
             this.$mdDialog.hide(jobId);
         } catch (error) {
-            this.toastrService.showErrorToast("Job creation failed: " + error.message);
+            console.error("Job creation failed: " + error.message);
         } finally {
             this.isLoading = false;
         }
@@ -192,7 +228,7 @@ class CreateJobDialogController {
     /**
      * @param {Job} job
      */
-    createJob(job) {
+    async createJob(job) {
         const url = "job/QuickCreateJob/";
         const callData = {
             job,
@@ -206,7 +242,7 @@ class CreateJobDialogController {
      * @param {number} courierId
      * @param {number} jobId
      */
-    dispatchJobIfCourierSelected(courierId, jobId) {
+    async dispatchJobIfCourierSelected(courierId, jobId) {
         return this.dispatchJobService.dispatchJobByJobId(courierId, jobId);
     }
 

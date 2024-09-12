@@ -858,18 +858,26 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> QuickCreateJob([FromBody] CreateJobRequest request)
     {
-        if (!IsValidRequest(request))
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Bad Request" });
+        try
+        {
+            if (!IsValidRequest(request))
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Bad Request" });
 
-        var jobId = await _jobRepo.QuickAddJob(request.Job, request.StaffId.Value);
+            var jobId = await _jobRepo.QuickAddJob(request.Job, request.StaffId.Value);
 
-        //Check if jobId is valid before continuing
-        if (jobId == 0) return StatusCode(StatusCodes.Status500InternalServerError, "Created Job Id is null");
+            //Check if jobId is valid before continuing
+            if (jobId == 0) return StatusCode(StatusCodes.Status500InternalServerError, "Created Job Id is null");
 
-        var notesList = GenerateNotesList(request.Job);
-        await AddNotesToJob(notesList, jobId, request.DespatcherName);
+            var notesList = GenerateNotesList(request.Job);
+            await AddNotesToJob(notesList, jobId, request.DespatcherName);
 
-        return Json(jobId);
+            return Json(jobId);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     private static bool IsValidRequest(CreateJobRequest request) =>
