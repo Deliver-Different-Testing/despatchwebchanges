@@ -1,7 +1,7 @@
 class JobDetailService {
-    static $inject = ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "$timeout", "moment", "versionUrl"];
+    static $inject = ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "$timeout", "moment", "versionUrl", "APP_CONFIG"];
 
-    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl) {
+    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG) {
         this._dispatchData = DispatchData;
         this._$mdDialog = $mdDialog;
         this._toastrService = toastrService;
@@ -11,6 +11,7 @@ class JobDetailService {
         this._moment = moment;
         this.versionUrl = versionUrl;
 
+        this.isUsCustomer = APP_CONFIG.US_Customer;
         this.options = {
             "detail": {
                 "size": [{
@@ -1707,5 +1708,6 @@ angular.module('uDispatch').service('JobDetailService', [
     "$timeout",
     "moment",
     "versionUrl",
-    (DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl)
+    "APP_CONFIG",
+    (DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG)
 ]);

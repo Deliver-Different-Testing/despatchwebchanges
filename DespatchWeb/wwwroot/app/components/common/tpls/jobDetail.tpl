@@ -28,7 +28,7 @@
                                 {{jdSvc.currentJob.fromAddress}}
                             </div>
                         </div>
-                        <div class="field" data-field="fromSuburb">
+                        <div class="field" data-field="fromSuburb" ng-if="!jdSvc.isUsCustomer">
                             <label class="disabled">From Suburb:</label>
                             <div class="disabled value">{{jdSvc.currentJob.fromSuburbName}}
                                 {{jdSvc.currentJob.fromPostCode}}
@@ -66,7 +66,7 @@
                                 {{jdSvc.currentJob.toAddress}}
                             </div>
                         </div>
-                        <div class="field" data-field="toSuburb">
+                        <div class="field" data-field="toSuburb" ng-if="!jdSvc.isUsCustomer">
                             <label class="disabled">To Suburb:</label>
                             <div class="disabled value">{{jdSvc.currentJob.toSuburbName}}
                                 {{ jdSvc.currentJob.toPostCode

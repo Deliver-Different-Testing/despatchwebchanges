@@ -8,7 +8,7 @@ angular
         'angularPromiseButtons', 'ng-mfb', 'md.time.picker', 'angularMoment',
         'md.data.table', 'ngFileUpload'])
     .constant('APP_CONFIG', {
-        US_Customer: false
+        US_Customer: true
     })
     .config(['$mdThemingProvider', $mdThemingProvider => {
         $mdThemingProvider.definePalette('urgentPrimary', {
