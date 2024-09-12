@@ -295,9 +295,9 @@ class JobDetailService {
         $event.stopPropagation();
         console.log(job);
 
-        const pedal = (job.fromSuburbID === 1 && job.toSuburbID === 1) ||
-            (job.fromSuburbID === 112 && job.toSuburbID === 112) ||
-            (job.fromSuburbID === 480 && job.toSuburbID === 480);
+        const pedal = (job.fromSuburbId === 1 && job.toSuburbID === 1) ||
+            (job.fromSuburbId === 112 && job.toSuburbID === 112) ||
+            (job.fromSuburbId === 480 && job.toSuburbID === 480);
 
         const isTruckJob = job.size.id === 4 && [41, 42, 43, 44, 46, 51, 52].includes(job.speedID);
 
@@ -319,7 +319,7 @@ class JobDetailService {
             priceBreakdownPromise = this._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit)
                 .then(itemSummary =>
                     this._dispatchData.truckJobAmountBreakdown(
-                        job.clientId, job.fromSuburbID, job.toSuburbID, itemSummary.weight,
+                        job.clientId, job.fromSuburbId, job.toSuburbID, itemSummary.weight,
                         job.size.id, job.speedID, itemSummary.quantity, job.booked,
                         itemSummary.pickUp, itemSummary.dropOff, job.privateRes,
                         itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass,
@@ -329,7 +329,7 @@ class JobDetailService {
                 );
         } else {
             priceBreakdownPromise = this._dispatchData.jobAmountBreakdown(
-                job.clientId, job.fromSuburbID, job.toSuburbID, job.speedID, pedal,
+                job.clientId, job.fromSuburbId, job.toSuburbID, job.speedID, pedal,
                 job.van, job.return, job.weight, job.size.id, true, job.direct,
                 job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '',
                 job.items, job.booked, job.gstRate, job.charge.replace("$", "")
@@ -349,15 +349,15 @@ class JobDetailService {
     rateJob(job) {
         const self = this;
 
-        const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
+        const pedal = job.fromSuburbId === 1 && job.toSuburbID === 1 || job.fromSuburbId === 112 && job.toSuburbID === 112 || job.fromSuburbId === 480 && job.toSuburbID === 480;
         if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52 || job.speedID === 124 || job.speedID === 125 || job.speedID === 150 || job.speedID === 151 || job.speedID === 152)) {
             //Truck Job
             return self._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
-                return self._dispatchData.rateTruckJob(job.clientId, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2);
+                return self._dispatchData.rateTruckJob(job.clientId, job.fromSuburbId, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2);
 
             });
         } else {
-            return self._dispatchData.rateJob(job.clientId, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked);
+            return self._dispatchData.rateJob(job.clientId, job.fromSuburbId, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked);
         }
     }
 
@@ -694,7 +694,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {{fromSuburbID: number, toSuburbID: number, size: {id: number}, speedID: number, truckStartTime: (string|null), truckHours: number, truckWeightLimit: (number|null), pedal: boolean, van: boolean, return: boolean, weight: number, true: boolean, direct: boolean, acceptedJobTypeID: number, ourRef: string, refA: string, refB: string, items: Array, booked: Date}} job
+     * @param {{fromSuburbId: number, toSuburbID: number, size: {id: number}, speedID: number, truckStartTime: (string|null), truckHours: number, truckWeightLimit: (number|null), pedal: boolean, van: boolean, return: boolean, weight: number, true: boolean, direct: boolean, acceptedJobTypeID: number, ourRef: string, refA: string, refB: string, items: Array, booked: Date}} job
      * @param {string} fieldName
      * @param {string} label
      * @param {Date} value
@@ -981,7 +981,7 @@ class JobDetailService {
      */
     _updateJobAddress(job, addressDetails, isDeliveryAddress) {
         const addressField = isDeliveryAddress ? 'toAddress' : 'fromAddress';
-        const suburbField = isDeliveryAddress ? 'toSuburbID' : 'fromSuburbID';
+        const suburbField = isDeliveryAddress ? 'toSuburbID' : 'fromSuburbId';
         const suburbLabel = isDeliveryAddress ? 'toSuburbName' : 'fromSuburbName';
 
         job[addressField] = addressDetails.extras ? `${addressDetails.extras},${addressDetails.address}` : addressDetails.address;
@@ -991,6 +991,11 @@ class JobDetailService {
         return job;
     }
 
+    /**
+     * @param {Job} job
+     * @param {AddressDetails} addressDetails
+     * @param {boolean} isDeliveryAddress
+     */
     _updateBulkJobIfNeeded(job, addressDetails, isDeliveryAddress) {
         if (!job.bulkJob) return Promise.resolve();
 
@@ -1009,6 +1014,11 @@ class JobDetailService {
         );
     }
 
+    /**
+     * @param {Job} job
+     * @param {AddressDetails} addressDetails
+     * @param {boolean} isDeliveryAddress
+     */
     updateJobRate(job, addressDetails, isDeliveryAddress) {
         const pedal = this.isPedalJob(job);
 
@@ -1019,16 +1029,25 @@ class JobDetailService {
             });
     }
 
+    /**
+     * @param {Job} job
+     */
     isPedalJob(job) {
-        return (job.fromSuburbID === 1 && job.toSuburbID === 1) ||
-            (job.fromSuburbID === 112 && job.toSuburbID === 112) ||
-            (job.fromSuburbID === 480 && job.toSuburbID === 480);
+        return (job.fromSuburbId === 1 && job.toSuburbID === 1) ||
+            (job.fromSuburbId === 112 && job.toSuburbID === 112) ||
+            (job.fromSuburbId === 480 && job.toSuburbID === 480);
     }
 
+    /**
+     * @param {Job} job
+     * @param {AddressDetails} addressDetails
+     * @param {number} rate
+     * @param {number|boolean} pedal
+     */
     prepareCallData(job, addressDetails, rate, pedal) {
         return {
             jobID: job.id,
-            fromSuburbId: job.fromSuburbID,
+            fromSuburbId: job.fromSuburbId,
             toSuburbId: job.toSuburbID,
             fromAddress: job.fromAddress,
             toAddress: job.toAddress,
@@ -1243,7 +1262,6 @@ class JobDetailService {
     /**
      * Toggles the Truck status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     truckClick(job) {
         return this.toggleJobProperty(job, 'truck');
@@ -1251,7 +1269,6 @@ class JobDetailService {
     /**
      * Toggles the Direct status of a job
      * @param {Job} job - The job to update
-     * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
     directClick(job) {
         const newDirectValue = !job.direct;
