@@ -1,22 +1,25 @@
 const fs = require('fs');
 const path = require('path');
 
-const packageJsonPath = path.join(__dirname, 'package.json');
-const packageJson = require(packageJsonPath);
-const currentVersion = packageJson.version;
+function generateUniqueVersion() {
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, -5);
+    return `${timestamp}`;
+}
 
-const versionParts = currentVersion.split('.');
-versionParts[2] = parseInt(versionParts[2]) + 1;
-const newVersion = versionParts.join('.');
-
-packageJson.version = newVersion;
-fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-
-const versionJsPath = path.join(__dirname, 'wwwroot', 'app', 'version.js');
-const versionFileContent = `// version.js
+function generateVersionFile() {
+    const version = generateUniqueVersion();
+    const versionJsPath = path.join(__dirname, 'wwwroot', 'app', 'version.js');
+    const versionFileContent = `// version.js
 angular.module('uDispatch')
-    .constant('APP_VERSION', '${newVersion}');`;
+    .constant('APP_VERSION', '${version}');`;
 
-fs.writeFileSync(versionJsPath, versionFileContent);
+    fs.writeFileSync(versionJsPath, versionFileContent);
+    console.log(`Generated version.js with version ${version}`);
+}
 
-console.log(`Updated version to ${newVersion}`);
+// Only generate the version file if this script is run directly
+if (require.main === module) {
+    generateVersionFile();
+}
+
+module.exports = {generateVersionFile};
