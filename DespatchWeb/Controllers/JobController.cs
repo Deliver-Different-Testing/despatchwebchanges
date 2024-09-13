@@ -214,7 +214,7 @@ public class JobController : Controller
     {
         try
         {
-            var result = await _jobRepo.JobDetail(jobId);
+            var result = await _jobRepo.JobDetailAsync(jobId);
             return Json(result);
         }
         catch (Exception e)
@@ -272,7 +272,7 @@ public class JobController : Controller
         var result = await _jobRepo.PodSearch(null, "", job, fromDate.ResetTimeToStartOfDay(),
             fromDate.ResetTimeToEndOfDay(), null, 1, 5);
 
-        return result.Item1 == 0 ? Json(false) : Json(result.Item2.First().ID);
+        return result.Item1 == 0 ? Json(false) : Json(result.Item2.First().Id);
     }
 
     public async Task<IActionResult> SwapPod(string job1, string job2)
@@ -997,14 +997,14 @@ public class JobController : Controller
 
     public async Task<IActionResult> SendPod(int jobId, string toEmail)
     {
-        var selectedJob = await _jobRepo.JobDetail(jobId);
+        var selectedJob = await _jobRepo.JobDetailAsync(jobId);
 
         if (selectedJob == null)
         {
             return NotFound();
         }
 
-        var att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo + ".png");
+        var att = new Attachment(new MemoryStream(selectedJob.PodPhoto), selectedJob.JobNo + ".png");
 
         SendEmail(toEmail, _configuration["FromAddress"],
             $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.",
