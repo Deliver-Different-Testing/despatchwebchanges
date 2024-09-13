@@ -25,7 +25,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.updateGPS($event, jdSvc.currentJob, 'fromAddress')">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">From Address:</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.currentJob.fromAddress}}
+                                {{jdSvc.currentJob.pickupAddress.fullAddress}}
                             </div>
                         </div>
                         <div class="field" data-field="fromSuburb" ng-if="!jdSvc.isUsCustomer">
@@ -63,7 +63,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.updateGPS($event, jdSvc.currentJob,'toAddress')">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">To Address:</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.currentJob.toAddress}}
+                                {{jdSvc.currentJob.deliveryAddress.fullAddress}}
                             </div>
                         </div>
                         <div class="field" data-field="toSuburb" ng-if="!jdSvc.isUsCustomer">

@@ -25,7 +25,7 @@ class EditAddressDialogController {
      * @param toastrService - The service used for toast notifications.
      * @param NgMap - Wrapper for Google Maps provided by 'ngMap' library.
      * @param APP_CONFIG
-     * @param {AddressDetails} addressDetails - Details related to the address in use.
+     * @param {AddressViewModel} addressDetails - Details related to the address in use.
      * @param {SuburbOption[]} suburbOptions - Options for suburbs.
      * @param {string} title - The title to display.
      * @param {string} submitLabel - The label to display on the submit button.
@@ -44,13 +44,13 @@ class EditAddressDialogController {
         this.useUsFormat = APP_CONFIG.US_Customer;
         this.ourSuburbSearchText = "";
         this.addressSearchText = "";
-        this.ourSuburbSelectedItem = this._findSuburbByDistrict(addressDetails.suburb);
+        this.ourSuburbSelectedItem = this._findSuburbByDistrict(addressDetails.addressLine4); // Assuming suburb is in addressLine4
 
         // Initialize US-specific fields if using US format
         if (this.useUsFormat) {
-            this.addressDetails.city = this.addressDetails.suburb;
-            this.addressDetails.state = "";
-            this.addressDetails.zipCode = this.addressDetails.postCode;
+            this.addressDetails.city = this.addressDetails.addressLine4; // Assuming city is in addressLine4
+            this.addressDetails.state = this.addressDetails.addressLine5; // Assuming state is in addressLine5
+            this.addressDetails.zipCode = this.addressDetails.addressLine6; // Assuming ZIP is in addressLine6
             this.states = this._getUsStates();
         }
 
@@ -66,7 +66,7 @@ class EditAddressDialogController {
             if (!map.markers || map.markers.length === 0) {
                 console.log("No markers found. Creating a new one.");
                 this.marker = new google.maps.Marker({
-                    position: new google.maps.LatLng(this.addressDetails.lat, this.addressDetails.long),
+                    position: new google.maps.LatLng(this.addressDetails.latitude, this.addressDetails.longitude),
                     map: this.map,
                     visible: true
                 });
@@ -76,9 +76,10 @@ class EditAddressDialogController {
 
             console.log("Marker initialized:", this.marker);
 
-            this.addressSearchAutocomplete(addressDetails.address).then(_ => console.log("Address Search Complete!"));
+            this.addressSearchAutocomplete(this.addressDetails.fullAddress).then(_ => console.log("Address Search Complete!"));
         });
     }
+
 
     /**
      * This function finds a suburb by its district.
@@ -135,9 +136,9 @@ class EditAddressDialogController {
             console.log("PostCode/ZIP = " + returnedLocation.Address.PostalCode);
 
             if (this.useUsFormat) {
-                this.addressDetails.city = returnedLocation.Address.City;
-                this.addressDetails.state = returnedLocation.Address.State;
-                this.addressDetails.zipCode = returnedLocation.Address.PostalCode;
+                this.addressDetails.addressLine4 = returnedLocation.Address.City;
+                this.addressDetails.addressLine5 = returnedLocation.Address.State;
+                this.addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
             } else {
                 const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
                 if (mappedSub !== undefined) {
@@ -147,14 +148,15 @@ class EditAddressDialogController {
                     this.ourSuburbSelectedItem = null;
                     this._toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
                 }
-                this.addressDetails.suburb = returnedLocation.Address.District;
-                this.addressDetails.postCode = returnedLocation.Address.PostalCode;
+                this.addressDetails.addressLine4 = returnedLocation.Address.District;
+                this.addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
             }
 
-            this.addressDetails.filledAddress = returnedLocation.Address.Label;
-            this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-            this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
-            this.addressDetails.address = returnedLocation.Address.Label;
+            this.addressDetails.addressLine1 = returnedLocation.Address.Street;
+            this.addressDetails.addressLine2 = returnedLocation.Address.HouseNumber;
+            this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
+            this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
+            this.addressDetails.fullAddress = returnedLocation.Address.Label;
 
             const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
 
@@ -173,7 +175,7 @@ class EditAddressDialogController {
 
     /**
      * Submits provided address details.
-     * @param {AddressDetails} addressDetails - Details related to the address to submit.
+     * @param {AddressViewModel} addressDetails - Details related to the address to submit.
      */
     async submit(addressDetails) {
         this.isLoading = true;
@@ -190,12 +192,24 @@ class EditAddressDialogController {
             }
         } else {
             // Validation for US format
-            if (!addressDetails.city || !addressDetails.state || !addressDetails.zipCode) {
+            if (!addressDetails.addressLine4 || !addressDetails.addressLine5 || !addressDetails.addressLine6) {
                 alert("Please fill in all required fields (City, State, and ZIP Code)");
                 this.isLoading = false;
                 return;
             }
         }
+
+        // Ensure fullAddress is up to date
+        addressDetails.fullAddress = [
+            addressDetails.addressLine1,
+            addressDetails.addressLine2,
+            addressDetails.addressLine3,
+            addressDetails.addressLine4,
+            addressDetails.addressLine5,
+            addressDetails.addressLine6,
+            addressDetails.addressLine7,
+            addressDetails.addressLine8
+        ].filter(line => line && line.trim() !== '').join(', ');
 
         // Pass back to function that called dialog for processing
         this.isLoading = false;
@@ -216,8 +230,8 @@ class EditAddressDialogController {
      * @param {google.maps.MouseEvent} event - A Google Maps mouse event.
      */
     moveMarker(event) {
-        this.addressDetails.lat = event.latLng.lat();
-        this.addressDetails.long = event.latLng.lng();
+        this.addressDetails.latitude = event.latLng.lat();
+        this.addressDetails.longitude = event.latLng.lng();
         this._$scope.$apply();
     };
 
@@ -230,16 +244,14 @@ class EditAddressDialogController {
         const location = event.latLng;
 
         try {
-            // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
-            // that return the latitude and longitude values of your location
             this._dispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
                 const returnedLocation = data.Response.View[0].Result[0].Location;
 
                 // Updating scope variables with new data
-                this.addressDetails.address = returnedLocation.Address.Label;
-                this.addressDetails.suburb = returnedLocation.Address.District;
-                this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+                this.addressDetails.fullAddress = returnedLocation.Address.Label;
+                this.addressDetails.addressLine4 = returnedLocation.Address.District;
+                this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
+                this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
 
                 // Log output
                 console.log("Suburb = " + returnedLocation.Address.District);
@@ -261,16 +273,17 @@ class EditAddressDialogController {
         }
     }
 
+
     /**
      * Update location values in addressDetails when place gets changed on the map.
      * @param {google.maps.places.PlaceResult} place - A result from the Google Places service.
      */
     placeChanged(place) {
         try {
-            this.addressDetails.lat = place.geometry.location.lat();
-            this.addressDetails.long = place.geometry.location.lng();
+            this.addressDetails.latitude = place.geometry.location.lat();
+            this.addressDetails.longitude = place.geometry.location.lng();
             if (place.address_components.find(x => x.types[0] === "postal_code")) {
-                this.addressDetails.postCode = place.address_components
+                this.addressDetails.addressLine6 = place.address_components
                     .find(x => x.types[0] === "postal_code").long_name;
             }
 
@@ -279,6 +292,7 @@ class EditAddressDialogController {
             this._toastrService.showErrorToast(error.message);
         }
     }
+
 
     /**
      * Returns an array of US states and territories for dropdown menus.

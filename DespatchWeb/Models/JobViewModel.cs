@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace DespatchWeb.Models;
@@ -211,4 +212,20 @@ public class AddressViewModel
     public string AddressLine6 { get; set; }
     public string AddressLine7 { get; set; }
     public string AddressLine8 { get; set; }
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
+
+    public string FullAddress =>
+        string.Join(", ", new[]
+            {
+                AddressLine1,
+                AddressLine2,
+                AddressLine3,
+                AddressLine4,
+                AddressLine5,
+                AddressLine6,
+                AddressLine7,
+                AddressLine8
+            }
+            .Where(line => !string.IsNullOrWhiteSpace(line)));
 }

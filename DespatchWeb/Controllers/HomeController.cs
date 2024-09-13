@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -27,50 +26,36 @@ public class HomeController : Controller
         _hostingEnvironment = hostingEnvironment;
     }
 
+    // Temp Login for testing
     public async Task<IActionResult> Index([FromQuery] string login)
     {
-        var disp = await _clientRepository.ValidateDispatcherLoginAsync(
-            User.Identity.Name[(User.Identity.Name.IndexOf('\\') + 1)..]);
-        if (disp != null)
-        {
-            ViewBag.FirstName = disp.FirstName;
-            ViewBag.FullName = disp.FirstName + " " + disp.LastName;
-            ViewBag.ContactID = disp.StaffID;
-            ViewBag.ClientInternal = true;
-            ViewBag.DispatcherName = User.Identity.Name[(User.Identity.Name.IndexOf('\\') + 1)..];
+        var viewModel = await _clientRepository.TempLoginAsync();
+        SetViewBagForDispatcher(viewModel, viewModel.FirstName);
+        return View();
+    }
 
+    /*public async Task<IActionResult> Index([FromQuery] string login)
+    {
+        var dispatcherName = GetDispatcherName();
+        var viewModel = await _clientRepository.ValidateDispatcherLoginAsync(dispatcherName);
+
+        if (viewModel != null)
+        {
+            SetViewBagForDispatcher(viewModel, dispatcherName);
             return View();
         }
 
-        login = _hostingEnvironment.IsDevelopment()
-            ? "WZKzmEeKz1c3/qetjbb48HcCr2UGhQ6wz8NRwSoxxOU="
-            : //uclgf
-            //login = "KssU6Ai9cGikcw/3nS0qFzBPGEwNg/QPCROLhnaoiq0="; //UCLGE
-            WebUtility.UrlDecode(login);
-
+        login = DecodeAndValidateLogin(login);
         if (string.IsNullOrEmpty(login)) return Redirect(_configuration["PublicPath"]);
-        var key = Convert.FromBase64String("8wzkFlOvNB8+7UgmX0bSyFPHxjLNjmaGhlUoSKkJ2Kc=");
-        var iv = Convert.FromBase64String("iE1+VfQbXWBkCalh+iV85Q==");
 
-
-        var loginString = DecryptStringFromBytes_Aes(Convert.FromBase64String(login), key, iv);
-
-        if (loginString == null || loginString.LastIndexOf("|") <= 0) return Redirect(_configuration["PublicPath"]);
-
-
-        var contactId = loginString[..loginString.LastIndexOf("|")];
-
+        var contactId = ExtractContactId(login);
         if (string.IsNullOrEmpty(contactId)) return Redirect(_configuration["PublicPath"]);
 
         var clientDetail = await _clientRepository.ValidateClientAsync(Convert.ToInt32(contactId));
-        ViewBag.FirstName = clientDetail.FirstName;
-        ViewBag.FullName = clientDetail.FullName;
-        ViewBag.Email = clientDetail.Email;
-        ViewBag.ClientInternal = clientDetail.Internal;
-        ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
+        SetViewBagForClient(clientDetail, contactId);
 
         return View();
-    }
+    }*/
 
     public async Task<IActionResult> ActiveClients(string searchTerm)
     {
@@ -84,10 +69,53 @@ public class HomeController : Controller
         return Json(result);
     }
 
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error() => View(new ErrorViewModel
+        { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+
+    private string GetDispatcherName() => User.Identity?.Name?[(User.Identity.Name.IndexOf('\\') + 1)..];
+
+    private void SetViewBagForDispatcher(DispatcherViewModel viewModel, string dispatcherName)
+    {
+        ViewBag.FirstName = viewModel.FirstName;
+        ViewBag.FullName = $"{viewModel.FirstName} {viewModel.LastName}";
+        ViewBag.ContactID = viewModel.StaffID;
+        ViewBag.ClientInternal = true;
+        ViewBag.DispatcherName = dispatcherName;
+    }
+
+    private string DecodeAndValidateLogin(string login)
+    {
+        if (_hostingEnvironment.IsDevelopment())
+            return "WZKzmEeKz1c3/qetjbb48HcCr2UGhQ6wz8NRwSoxxOU=";
+
+        login = WebUtility.UrlDecode(login);
+        if (string.IsNullOrEmpty(login)) return null;
+
+        var key = Convert.FromBase64String("8wzkFlOvNB8+7UgmX0bSyFPHxjLNjmaGhlUoSKkJ2Kc=");
+        var iv = Convert.FromBase64String("iE1+VfQbXWBkCalh+iV85Q==");
+
+        return DecryptStringFromBytes_Aes(Convert.FromBase64String(login), key, iv);
+    }
+
+    private static string ExtractContactId(string loginString)
+    {
+        return loginString != null && loginString.LastIndexOf("|", StringComparison.Ordinal) <= 0
+            ? null
+            : loginString?[..loginString.LastIndexOf("|", StringComparison.Ordinal)];
+    }
+
+    private void SetViewBagForClient(ClientViewModel clientDetail, string contactId)
+    {
+        ViewBag.FirstName = clientDetail?.FirstName;
+        ViewBag.FullName = clientDetail?.FullName;
+        ViewBag.Email = clientDetail?.Email;
+        ViewBag.ClientInternal = clientDetail is { Internal: true };
+        if (clientDetail != null) ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
+    }
 
     private static string DecryptStringFromBytes_Aes(byte[] cipherText, byte[] Key, byte[] IV)
     {
-        // Check arguments.
         if (cipherText is not { Length: > 0 })
             throw new ArgumentNullException(nameof(cipherText));
         if (Key is not { Length: > 0 })
@@ -95,32 +123,15 @@ public class HomeController : Controller
         if (IV is not { Length: > 0 })
             throw new ArgumentNullException(nameof(IV));
 
-        // Declare the string used to hold
-        // the decrypted text.
-
-        // Create an Aes object
-        // with the specified key and IV.
         using var aesAlg = Aes.Create();
         aesAlg.Key = Key;
         aesAlg.IV = IV;
 
-        // Create a decrytor to perform the stream transform.
-        var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+        using var decrypt = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+        using var msDecrypt = new System.IO.MemoryStream(cipherText);
+        using var csDecrypt = new CryptoStream(msDecrypt, decrypt, CryptoStreamMode.Read);
+        using var srDecrypt = new System.IO.StreamReader(csDecrypt);
 
-        // Create the streams used for decryption.
-        using var msDecrypt = new MemoryStream(cipherText);
-        using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
-        using var srDecrypt = new StreamReader(csDecrypt);
-        // Read the decrypted bytes from the decrypting stream and place them in a string.
-        var plaintext = srDecrypt.ReadToEnd();
-
-        return plaintext;
-    }
-
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        return srDecrypt.ReadToEnd();
     }
 }

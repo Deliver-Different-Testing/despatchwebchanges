@@ -293,7 +293,7 @@ public class JobRepository : IJobRepository
                 UdStatus = ud.Name,
                 RatedManually = tblJob.RatedManually,
                 Locked = (tblJob.Locked ?? 0) == 1,
-                Invoiced = tblJob.InvoiceNo is > 0,
+                Invoiced = tblJob.InvoiceNo.HasValue && tblJob.InvoiceNo.Value > 0,
                 PreBook = false,
                 Pedal = tblJob.Cbd,
                 InternalStatusId = tblJob.InternalStatus,

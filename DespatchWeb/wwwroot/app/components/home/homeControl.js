@@ -1,12 +1,19 @@
 angular.module("uDispatch")
     .controller("HomeControl",
         ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService',
-            "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG",
+            "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService",
             ($document, $filter, greetingService, jdSvc, $mdDialog, $parse, $q, $scope, $state, $window, $timeout,
-             toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG) => {
+             toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService) => {
                 $scope.isInternal = (ClientInternal === "True");
                 $scope.name = "Home";
                 $scope.jdSvc = jdSvc;
+
+                // Job Table
+                $scope.selected = [];
+                $scope.jobList = [];
+                $scope.query = JobTableService.createQuery();
+
+                $scope.jobTableService = JobTableService;
 
                 $scope.isUsCustomer = APP_CONFIG.US_Customer;
                 $scope.courierSearchText = "";
@@ -42,6 +49,32 @@ angular.module("uDispatch")
                 $scope.greetUser = () => {
                     return greetingService.greetUser(FirstName);
                 }
+
+
+                $scope.onReorder = order => {
+                    // Implement reordering logic
+                };
+
+                $scope.onPaginate = (page, limit) => {
+                    // Implement pagination logic
+                };
+
+                $scope.setEventsMenu = event => {
+                    // Implement events menu logic
+                };
+
+                $scope.clientColumnClick = (event, job) => {
+                    // Implement client column click logic
+                };
+
+                $scope.restoreJobs = () => {
+                    // Implement job restoration logic
+                };
+
+                $scope.reAllocateJobs = () => {
+                    // Implement job reallocation logic
+                };
+
 
                 jdSvc.setSelectJobDetail(async () => {
                     const currentJob = $scope.currentJob;

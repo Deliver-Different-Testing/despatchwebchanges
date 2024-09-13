@@ -150,6 +150,9 @@
  * @property {string} addressLine6
  * @property {string} addressLine7
  * @property {string} addressLine8
+ * @property {number|null} latitude
+ * @property {number|null} longitude
+ * @property {string} fullAddress
  */
 
 /**

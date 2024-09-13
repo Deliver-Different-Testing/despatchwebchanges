@@ -22,29 +22,26 @@ public class ClientRepository : IClientRepository
 
     public async Task<ClientViewModel> ValidateClientAsync(int contactId)
     {
-        var result = await _context.TucClientContacts
+        return await _context.TucClientContacts
+            .Where(contact => contact.UcctId == contactId)
             .Join(_context.TblClients,
                 contact => contact.UcctClientId,
                 client => client.ClientId,
-                (contact, client) => new { Contact = contact, Client = client })
-            .Where(joined => joined.Contact.UcctId == contactId)
-            .Select(joined => new ClientViewModel
-            {
-                Active = joined.Client.Active,
-                FirstName = joined.Contact.UcctFirstname,
-                FullName = joined.Contact.UcctFirstname + " " + joined.Contact.UcctSurname,
-                Email = joined.Contact.UcctEmail,
-                Internal = joined.Client.Internal,
-                StaffID = joined.Contact.StaffId
-            })
+                (contact, client) => new ClientViewModel
+                {
+                    Active = client.Active,
+                    FirstName = contact.UcctFirstname,
+                    FullName = $"{contact.UcctFirstname} {contact.UcctSurname}",
+                    Email = contact.UcctEmail,
+                    Internal = client.Internal,
+                    StaffID = contact.StaffId
+                })
             .FirstOrDefaultAsync();
-
-        return result;
     }
 
     public async Task<List<ClientContactViewModel>> ClientContactsAsync(int contactId)
     {
-        var clientContacts = await _context.TblClientContacts
+        return await _context.TblClientContacts
             .Where(c => c.ContactId == contactId)
             .Join(_context.TblClientContactInternetPermissions,
                 c => c.ClientContactId,
@@ -63,8 +60,21 @@ public class ClientRepository : IClientRepository
             })
             .Distinct()
             .ToListAsync();
+    }
 
-        return clientContacts;
+    public async Task<DispatcherViewModel> TempLoginAsync()
+    {
+        var account = await _context.TucStaffs
+            .Where(s => s.UcstWindowsLogonName == "jacobt")
+            .Select(s => new DispatcherViewModel
+            {
+                FirstName = s.UcstFirstName,
+                LastName = s.UcstLastName,
+                StaffID = s.UcstId
+            })
+            .FirstOrDefaultAsync();
+
+        return account;
     }
 
     public async Task<DispatcherViewModel> ValidateDispatcherLoginAsync(string name)
