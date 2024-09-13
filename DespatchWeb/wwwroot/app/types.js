@@ -3,121 +3,169 @@
 /**
  * @typedef {Object} Job
  *
- * @property {number} id - The ID of the job
- * @property {number} clientId - The ID of the client associated with the job.
- * @property {number} JobNo - The job number
- * @property {number} courierId - The ID of the courier associated with the job.
- * @property {string} deliverToContact - The contact to whom the job will be delivered.
- * @property {string} fromAddress - The address from which the job will be picked up.
- * @property {string} fromSuburb - The suburb from which the job will be picked up.
- * @property {number} fromLong - The longitude of the pickup address.
- * @property {number} fromLat - The latitude of the pickup address.
- * @property {string} toAddress - The address to which the job will be delivered.
- * @property {string} toSuburb - The suburb to which the job will be delivered.
- * @property {number} toLong - The longitude of the delivery address.
- * @property {number} toLat - The latitude of the delivery address.
- * @property {string} date - The date when the job is scheduled.
- * @property {string} fromContactName - The name of the contact from whom the job will be picked up.
- * @property {string} podNames - The name of the POD contact from whom the job will be picked up.
- * @property {string} deliveryNotes - Any notes related to the delivery of the job.
- * @property {string} pickupNotes - Any notes related to the pickup of the job.
- * @property {string} jobNotes - Any other notes related to the job.
- * @property {number} speedId - The ID of the speed at which the job will be performed.
- * @property {boolean} van - Indicator if a van is required for the job.
- * @property {boolean} truck - Indicator if a truck is required for the job.
- * @property {boolean} pedal - Indicator if a pedal vehicle is required for the job.
- * @property {boolean} attention - Indicator to draw attention to the job.
- * @property {boolean} vanOK - Indicator if a van is acceptable for the job.
- * @property {boolean} reprice - Indicator to reprice the job.
- * @property {boolean} void - Indicator if the job is voided.
- * @property {boolean} done - Indicator if the job is done.
- * @property {number} charge - The charge for the job.
- * @property {string} refA - Reference A for the job
- * @property {string} refB - Reference B for the job
- * @property {string} ourRef - Reference B for the job
- * @property {string} childNotes - The jobs for the child job
- * @property {number} pickupFrom - The suburbId the job was picked up from
- * @property {boolean} saturdayDelivery - If job has Saturday Delivery
- * @property {string} jobNo - The job number
- * @property {number} items - The quantity or number of items for the job
- * @property {string} speedName - The name of the jobs selected speed
- * @property {string} notifiedName - The name of the jobs notified name
- * @property {Date} DGLicenseExpiry - Expiry of the DG License attached to the job
- * @property {number} deliveryLongitude
- * @property {number} deliveryLatitude
- * @property {number} pickUpLongitude
- * @property {number} pickUpLatitude
- * @property {string} toSuburbName
- * @property {string} fromSuburbName
- * @property {number} postCode
- * @property {string} extras
- * @property {boolean} bulkJob
- * @property {boolean} preBook
- * @property {number} truckWeightLimit
- * @property {boolean} invoiced
- * @property {boolean} allowSplit
- * @property {number} remain
- * @property {number} minutes
- * @property {Date} pickupTime
- * @property {boolean} alertLatePickup
- * @property {Date} deliveryTime
- * @property {boolean} alertLateDelivery
- * @property {boolean} allowDispatch
- * @property {string} courier
- * @property {number} rootParentID
- * @property {boolean} allowSplit
- * @property {boolean} dgDocumentation
- * @property {string} contactName
- * @property {number} dgClass
- * @property {number} fromSuburbId
- * @property {number} toSuburbID
- * @property {number} speedID
- * @property {number} weight
- * @property {number} acceptedJobTypeID
- * @property {number} speedAccepted
- * @property {number} UDStatus
- * @property {number} internalStatusID
- * @property {string} speed
+ * @property {number} id
+ * @property {number|null} rootParentId
+ * @property {string|null} time - DateTime represented as an ISO string
+ * @property {string|null} bookedDate - DateTime represented as an ISO string
  * @property {boolean} direct
+ * @property {boolean} van
+ * @property {number|null} jobRelationshipTypeId
+ * @property {boolean|null} vanOk
+ * @property {boolean|null} done
+ * @property {boolean} void
+ * @property {boolean|null} truck
+ * @property {boolean} saturdayDelivery
  * @property {boolean} return
- * @property {Date} completedTime
- * @property {boolean} invoiced
- * @property {number} bulkJobID
- * @property {boolean} ratedManually
- * @property {string} clientNotes
- * @property {string} fromPostCode
- * @property {string} fromContactNumber
- * @property {string} toPostCode
- * @property {string} toCity
- * @property {string} podName
- * @property {boolean} airportOnly
- * @property {number} jobRelationshipTypeID
- * @property {string} internalNotes
- * @property {string} statusName
- * @property {string} phone
- * @property {string} loggedInContactName
- * @property {string} conNote
- * @property {boolean} hasNationwide
- * @property {Date} followupTime
- * @property {string} scheduleName
- * @property {string} runName
- * @property {number} runOrder
+ * @property {boolean|null} pedal
+ * @property {boolean|null} reprice
+ * @property {boolean} attention
+ * @property {number|null} pickupFrom
+ * @property {string} jobNo
+ * @property {string} speed
+ * @property {string} speedName
+ * @property {string} source
+ * @property {string} notifiedName
+ * @property {string} acceptedName
+ * @property {number|null} speedId
+ * @property {string} notify
+ * @property {Vehicle} vehicle
+ * @property {number|null} clientId
+ * @property {number} jobType
+ * @property {string} client
  * @property {string} clientName
- * @property {Date} createdDate
+ * @property {string} from - Deprecated: Use pickupAddress instead
+ * @property {number|null} fromSuburbId - Deprecated: Use pickupAddress instead
+ * @property {string} fromSuburbName - Deprecated: Use pickupAddress instead
+ * @property {string} fromPostCode - Deprecated: Use pickupAddress instead
+ * @property {string} fromAddress - Deprecated: Use pickupAddress instead
+ * @property {string} to - Deprecated: Use deliveryAddress instead
+ * @property {number|null} toSuburbId - Deprecated: Use deliveryAddress instead
+ * @property {string} toSuburbName - Deprecated: Use deliveryAddress instead
+ * @property {string} toPostCode - Deprecated: Use deliveryAddress instead
+ * @property {string} toAddress - Deprecated: Use deliveryAddress instead
+ * @property {string} toCity - Deprecated: Use deliveryAddress instead
+ * @property {string} courier
+ * @property {number|null} gstRate
+ * @property {number|null} remain
+ * @property {number|null} pickupTime
+ * @property {number|null} deliveryTime
+ * @property {number} alertLatePickup
+ * @property {number} alertLateDelivery
+ * @property {number|null} minutes
+ * @property {number|null} statusId
+ * @property {string} status
+ * @property {string} statusName
+ * @property {number|null} lp
+ * @property {number|null} ld
+ * @property {string} contactName
+ * @property {string} loggedInContactName
+ * @property {string} deliverToContact
+ * @property {number|null} trackingMethod
  * @property {string} trackingMobile
  * @property {string} trackingEmail
- * @property {string} speed
- * @property {boolean} oneOff
- * @property {string} acceptedName
- * @property {Date} time
- * @property {number} truckHours
- * @property {number} jobType
- * @property {string} status
- * @property {number} statusID
- * @property {number} courierLatitude
- * @property {number} courierLongitude
- * @property {Date} booked - The date the job was booked
- * @property {*} courierData
+ * @property {string} udStatus
+ * @property {Uint8Array} podPhoto
+ * @property {Uint8Array} deliverySignature
+ * @property {Uint8Array[]} podPhotos
+ * @property {string} podName
+ * @property {string} phone
+ * @property {string} speedAccepted
+ * @property {number|null} acceptedJobTypeId
+ * @property {number|null} notifiedJobTypeId
+ * @property {Vehicle} size
+ * @property {number|null} weight
+ * @property {number|null} items
+ * @property {string} refA
+ * @property {string} refB
+ * @property {string} ourRef
+ * @property {string} sigNotRequired
+ * @property {string} charge
+ * @property {string} date
+ * @property {string|null} dispatchTime - DateTime represented as an ISO string
+ * @property {string} booked - DateTime represented as an ISO string
+ * @property {string|null} puTime - DateTime represented as an ISO string
+ * @property {string} clientNotes
+ * @property {string} internalNotes
+ * @property {string|null} followupTime - DateTime represented as an ISO string
+ * @property {number|null} internalStatusId
+ * @property {string} childNotes
+ * @property {boolean} locked
+ * @property {boolean} invoiced
+ * @property {number|null} pickUpLongitude
+ * @property {number|null} pickUpLatitude
+ * @property {number|null} deliveryLongitude
+ * @property {number|null} deliveryLatitude
+ * @property {Pallet[]} palletInfo
+ * @property {Size[]} relatedJobs
+ * @property {number|null} courierLatitude
+ * @property {number|null} courierLongitude
+ * @property {number|null} runOrder
+ * @property {CourierData} courierData
+ * @property {boolean|null} allowDispatch
+ * @property {boolean|null} dgDocumentation
+ * @property {number|null} dgClass
+ * @property {boolean|null} displaySplitJobDetail
+ * @property {number|null} truckWeightLimit
+ * @property {string|null} truckStartTime - DateTime represented as an ISO string
+ * @property {number|null} truckHours
+ * @property {boolean} privateRes
+ * @property {boolean|null} allowSplit
+ * @property {string|null} completedTime - DateTime represented as an ISO string
+ * @property {string} fromContactName
+ * @property {string} fromContactNumber
+ * @property {boolean} ratedManually
+ * @property {number|null} sizeId
+ * @property {boolean|null} active
+ * @property {boolean|null} oneOff
+ * @property {string} inActiveBy
+ * @property {string|null} inActiveDate - DateTime represented as an ISO string
+ * @property {string|null} firstDue - DateTime represented as an ISO string
+ * @property {string|null} nextDue - DateTime represented as an ISO string
+ * @property {string|null} lastDone - DateTime represented as an ISO string
+ * @property {string|null} stopDate - DateTime represented as an ISO string
+ * @property {string|null} restartDate - DateTime represented as an ISO string
+ * @property {string} days
+ * @property {boolean} preBook
+ * @property {boolean} bulkJob
+ * @property {string} runName
+ * @property {string} scheduleName
+ * @property {string} conNote
+ * @property {boolean|null} airportOnly
+ * @property {boolean} hasNationwide
+ * @property {string|null} dispatcherName
+ * @property {string|null} createdDate - DateTime represented as an ISO string
+ * @property {AddressViewModel} pickupAddress
+ * @property {AddressViewModel} deliveryAddress
+ */
+
+/**
+ * Represents an address view model.
+ * @typedef {Object} AddressViewModel
+ *
+ * @property {string} addressLine1
+ * @property {string} addressLine2
+ * @property {string} addressLine3
+ * @property {string} addressLine4
+ * @property {string} addressLine5
+ * @property {string} addressLine6
+ * @property {string} addressLine7
+ * @property {string} addressLine8
+ */
+
+/**
+ * Represents a vehicle.
+ * @typedef {Object} Vehicle
+ *
+ * @property {number|null} id
+ * @property {string} label
+ */
+
+/**
+ * Represents a size.
+ * @typedef {Object} Size
+ *
+ * @property {number} id
+ * @property {string} label
  */
 
 /**
@@ -184,16 +232,17 @@
 /**
  * @typedef {Object} Pallet
  *
- * @property {number} amount - The quantity of pallets.
- * @property {number} weight - The weight of the pallet.
- * @property {number} length - The length of the pallet.
- * @property {number} depth - The depth of the pallet.
- * @property {number} height - The height of the pallet.
- * @property {boolean} pu - (Please define what this property does)
- * @property {boolean} do - (Please define what this property does)
- * @property {number} dgClass - (Please define what this property does)
- * @property {string} notes - Any additional comments or notes related to the pallet.
- * @property {number} itemID
+ * @property {number} id
+ * @property {number} quantity
+ * @property {number} weight
+ * @property {number} length
+ * @property {number} depth
+ * @property {number} height
+ * @property {boolean|null} pu
+ * @property {boolean|null} do
+ * @property {number|null} dgClass
+ * @property {string} notes
+ * @property {number} itemId
  */
 
 /**
@@ -242,8 +291,8 @@
  */
 
 /**
- * Represents the status of a truck courier, including their capacity and current load.
  * @typedef {Object} TruckCourierStatus
+ *
  * @property {number} ucjbCourierID - The unique identifier for the courier in the UCJB system.
  * @property {string} courierCode - The code assigned to the courier.
  * @property {string} firstName - The first name of the courier.
@@ -253,4 +302,18 @@
  * @property {number} currentWeight - The current weight (in kg) being carried by the courier.
  * @property {number} availablePallets - The number of additional pallets the courier can carry.
  * @property {number} availableWeight - The additional weight (in kg) the courier can carry.
+ */
+
+/**
+ * @typedef {Object} CourierData
+ *
+ * @property {string} courier
+ * @property {string} location
+ * @property {string} pu
+ * @property {string} del
+ * @property {string} lrm
+ * @property {string} eta2lrm
+ * @property {number|null} courierID
+ * @property {string|null} courierName
+ * @property {string|null} courierMobile
  */
