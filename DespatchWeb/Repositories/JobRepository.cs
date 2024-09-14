@@ -162,9 +162,9 @@ public class JobRepository : IJobRepository
     {
         var jobQuery = from tblJob in _context.TblJobs
             join c in _context.TblCouriers on tblJob.CourierId equals c.CourierId into courierJoin
-            from co in courierJoin.DefaultIfEmpty()
+            from courier in courierJoin.DefaultIfEmpty()
             join t in _context.TucJobTypes on tblJob.Speed equals t.UcjtId into speedJoin
-            from to in speedJoin.DefaultIfEmpty()
+            from speed in speedJoin.DefaultIfEmpty()
             join n in _context.TucJobTypes on tblJob.NotifiedJobTypeId equals n.UcjtId into notifiedSpeedJoin
             from no in notifiedSpeedJoin.DefaultIfEmpty()
             join o in _context.TucJobTypes on tblJob.AcceptedJobTypeId equals o.UcjtId into originalSpeedJoin
@@ -211,11 +211,11 @@ public class JobRepository : IJobRepository
                 Void = tblJob.Void,
                 PickupFrom = tblJob.PickupFrom,
                 JobNo = tblJob.Number,
-                Speed = to.ShortName,
+                Speed = speed.ShortName,
                 SpeedId = tblJob.Speed,
                 Notify = no.ShortName,
                 Source = source.Name,
-                SpeedName = to.UcjtName,
+                SpeedName = speed.UcjtName,
                 AcceptedJobTypeId = tblJob.AcceptedJobTypeId,
                 NotifiedJobTypeId = tblJob.NotifiedJobTypeId,
                 Client = tblJob.ClientCode,
@@ -246,7 +246,7 @@ public class JobRepository : IJobRepository
                     AddressLine7 = tblJob.DeliveryAddressLine7,
                     AddressLine8 = tblJob.DeliveryAddressLine8
                 },
-                Courier = co.Code,
+                Courier = courier.Code,
                 StatusId = tblJob.Status,
                 Status = status.UcjsCode,
                 Lp = tblJob.LatePickUp,
@@ -275,10 +275,10 @@ public class JobRepository : IJobRepository
                 RunName = tblJob.RunName,
                 CourierData = new CourierData
                 {
-                    Courier = co.Code + " " + co.FirstName + " " + co.Surname,
-                    CourierID = co.CourierId,
-                    CourierName = co.FirstName + " " + co.Surname,
-                    CourierMobile = co.Mobile
+                    Courier = courier.Code + " " + courier.FirstName + " " + courier.Surname,
+                    CourierID = courier.CourierId,
+                    CourierName = courier.FirstName + " " + courier.Surname,
+                    CourierMobile = courier.Mobile
                 },
                 DgClass = tblJob.Dgclass,
                 DgDocumentation = tblJob.Dgdocument,
@@ -316,7 +316,7 @@ public class JobRepository : IJobRepository
         job.Vehicle = new Vehicle
         {
             Id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeId,
-            Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? (short)2)
+            Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? 2)
         };
 
         job.RelatedJobs = await GetRelatedJobsAsync(job.RootParentId, job.ClientId ??= 0);

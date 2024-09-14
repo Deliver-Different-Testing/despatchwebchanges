@@ -424,7 +424,7 @@ angular.module("uDispatch")
                 $scope.onCourierSearchClick = ($event) => {
                     if ($event.target.tagName === 'INPUT') {
                         document.getElementsByName('courierSearch')[0].value = '';
-                        $scope.courierSearchText = '';
+                        $scope.courierSearchTextv = '';
                     }
                 };
 
@@ -433,18 +433,34 @@ angular.module("uDispatch")
                  * @param {Job} job
                  */
                 $scope.handleRowClick = async ($event, job) => {
-                    if (!$event.target.classList.contains('lateCallField') && !$event.target.classList.contains('dispatchField')) {
+                    const cellElement = $event.target.closest('td');
+                    if (!cellElement) return; // Exit if not clicked on a cell
+
+                    const isLpOrLdCell = cellElement.classList.contains('md-lp-cell') ||
+                        cellElement.classList.contains('md-ld-cell');
+
+                    if (!isLpOrLdCell) {
                         try {
-                            $timeout(async () => {
-                                await $scope.selectJob(job);
-                                angular.element("#input_" + job.id).select();
-                            });
+                            await $scope.selectJob(job);
+
+                            // Use a cell that's guaranteed to be in the row for the edit dialog
+                            const codeCell = cellElement.parentElement.querySelector('.md-code-cell');
+                            if (codeCell) {
+                                $scope.jobTableService.editField({target: codeCell}, job, 'courier', 'Set code').then((ctrl) => {
+                                    if (ctrl) {
+                                        ctrl.getInput().$element.focus();
+                                    }
+                                });
+                            }
                         } catch (error) {
                             console.log('Error in handleRowClick:', error);
                         }
                     }
                 };
 
+                /**
+                 * @param {Job} job
+                 */
                 $scope.attention = job => {
                     let temp = "";
 

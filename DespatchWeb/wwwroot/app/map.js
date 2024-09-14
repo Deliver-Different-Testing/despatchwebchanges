@@ -75,9 +75,9 @@ let infoWindow = new google.maps.InfoWindow();
 
 function initialize() {
     console.log("Initialize Loaded");
-    const auckland = new google.maps.LatLng(-36.8804466, 174.6117981);
+    const newYork = new google.maps.LatLng(40.7128, -74.0060);
     const myOptions = {
-        zoom: 10, mapTypeId: google.maps.MapTypeId.ROADMAP, center: auckland
+        zoom: 10, mapTypeId: google.maps.MapTypeId.ROADMAP, center: newYork
     };
 
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
