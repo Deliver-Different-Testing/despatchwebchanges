@@ -166,9 +166,9 @@ public class JobRepository : IJobRepository
             join t in _context.TucJobTypes on tblJob.Speed equals t.UcjtId into speedJoin
             from speed in speedJoin.DefaultIfEmpty()
             join n in _context.TucJobTypes on tblJob.NotifiedJobTypeId equals n.UcjtId into notifiedSpeedJoin
-            from no in notifiedSpeedJoin.DefaultIfEmpty()
+            from notifiedSpeed in notifiedSpeedJoin.DefaultIfEmpty()
             join o in _context.TucJobTypes on tblJob.AcceptedJobTypeId equals o.UcjtId into originalSpeedJoin
-            from os in originalSpeedJoin.DefaultIfEmpty()
+            from originalSpeed in originalSpeedJoin.DefaultIfEmpty()
             join cl in _context.TblClients on tblJob.ClientId equals cl.ClientId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
             join s in _context.TucJobStatuses on tblJob.Status equals s.UcjsId into statusJoin
@@ -178,14 +178,14 @@ public class JobRepository : IJobRepository
             from leave in leaveNotHomeJoin.DefaultIfEmpty()
             join u in _context.TblUndeliverableLocations on tblJob.UndeliverableLocationId equals
                 u.UndeliverableLocationId into undeliverableLocationJoin
-            from ud in undeliverableLocationJoin.DefaultIfEmpty()
+            from undeliverableLocation in undeliverableLocationJoin.DefaultIfEmpty()
             join b in _context.TblBulkJobs on tblJob.JobId equals b.JobId into bulkJoin
-            from bj in bulkJoin.DefaultIfEmpty()
-            join sc in _context.TblBulkRunSchedules on bj.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
+            from bulkJob in bulkJoin.DefaultIfEmpty()
+            join sc in _context.TblBulkRunSchedules on bulkJob.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
             from schedule in scheduleJoin.DefaultIfEmpty()
             join nationwide in _context.TucJobNationwides on tblJob.JobId equals nationwide.UcnwJobId into
                 nationwideJoin
-            from nw in nationwideJoin.DefaultIfEmpty()
+            from nationwide in nationwideJoin.DefaultIfEmpty()
             join con in _context.TblContacts on tblJob.LoggedInContactId equals con.ContactId into contactJoin
             from contact in contactJoin.DefaultIfEmpty()
             join sou in _context.TucSources on tblJob.SourceId equals sou.SourceId into sourceJoin
@@ -213,7 +213,7 @@ public class JobRepository : IJobRepository
                 JobNo = tblJob.Number,
                 Speed = speed.ShortName,
                 SpeedId = tblJob.Speed,
-                Notify = no.ShortName,
+                Notify = notifiedSpeed.ShortName,
                 Source = source.Name,
                 SpeedName = speed.UcjtName,
                 AcceptedJobTypeId = tblJob.AcceptedJobTypeId,
@@ -290,7 +290,7 @@ public class JobRepository : IJobRepository
                 TrackingMethod = tblJob.TrackingMethod,
                 TrackingMobile = tblJob.TrackingMobile,
                 TrackingEmail = tblJob.TrackingEmail,
-                UdStatus = ud.Name,
+                UdStatus = undeliverableLocation.Name,
                 RatedManually = tblJob.RatedManually,
                 Locked = (tblJob.Locked ?? 0) == 1,
                 Invoiced = tblJob.InvoiceNo.HasValue && tblJob.InvoiceNo.Value > 0,
@@ -302,9 +302,9 @@ public class JobRepository : IJobRepository
                 GstRate = tblJob.Gstrate,
                 RootParentId = tblJob.RootParentId,
                 ScheduleName = schedule.Name,
-                ConNote = nw.UcnwConNote,
-                AirportOnly = nw.UcnwAirportOnly,
-                HasNationwide = nw.UcnwJobId.HasValue,
+                ConNote = nationwide.UcnwConNote,
+                AirportOnly = nationwide.UcnwAirportOnly,
+                HasNationwide = nationwide.UcnwJobId.HasValue,
                 StatusName = status.UcjsName,
                 DispatcherName = $"{staff.UcstFirstName ?? string.Empty} {staff.UcstLastName ?? string.Empty}",
                 CreatedDate = tblJob.Date
@@ -323,9 +323,13 @@ public class JobRepository : IJobRepository
         job.PodPhotos = await GetPodPhotosAsync(job.Id, job.PodPhoto, job.DeliverySignature);
 
         job.Size = job.Vehicle;
+
+        if (job.BookedDate == null) return job;
         job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
-        job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
-                                    job.Time.Value.ToString("HH:mm:ss"));
+
+        if (job.Time != null)
+            job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
+                                        job.Time.Value.ToString("HH:mm:ss"));
 
         return job;
     }
@@ -2379,11 +2383,11 @@ public class JobRepository : IJobRepository
     public async Task AddInterCourierCharge(InterCourierChargeViewModel viewModel)
     {
         await _context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
-            fromCourierId: viewModel.FromCourierId,
-            toCourierId: viewModel.ToCourierId,
-            Amount: viewModel.Amount,
-            Reference: viewModel.Reference,
-            StaffId: viewModel.StaffId
+            fromCourierId: viewModel?.FromCourierId,
+            toCourierId: viewModel?.ToCourierId,
+            Amount: viewModel?.Amount,
+            Reference: viewModel?.Reference,
+            StaffId: viewModel?.StaffId
         );
     }
 
