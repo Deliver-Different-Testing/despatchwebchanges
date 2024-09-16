@@ -5,10 +5,7 @@ class JobTableService {
 
     createQuery() {
         return {
-            order: 'time',
-            limit: 10,
-            page: 1,
-            filter: ''
+            order: 'time', limit: 10, page: 1, filter: ''
         };
     }
 
@@ -32,34 +29,26 @@ class JobTableService {
     editField(event, job, field, placeholder, type = 'text') {
         event.stopPropagation();
         return this.$mdEditDialog.small({
-            modelValue: job[field],
-            placeholder,
-            type,
-            save: (input) => {
+            modelValue: job[field], placeholder, type, save: (input) => {
                 job[field] = input.$modelValue;
-            },
-            targetEvent: event
+            }, targetEvent: event
         });
     }
 
+    /**
+     * @param event
+     * @param {Job} job
+     */
     editTo(event, job) {
         event.stopPropagation();
         return this.$mdEditDialog.small({
-            modelValue: `${job.to} ${job.toAddress || ''}`,
-            placeholder: 'Set to',
-            save: (input) => {
+            modelValue: `${job.to} ${job.toAddress || ''}`, placeholder: 'Set to', save: (input) => {
                 const parts = input.$modelValue.split(' ');
                 job.to = parts[0];
                 job.toAddress = parts.slice(1).join(' ');
-            },
-            targetEvent: event
+            }, targetEvent: event
         });
     }
-
-    // Add other methods as needed
 }
 
-angular.module('uDispatch').service('JobTableService', [
-    '$mdEditDialog',
-    ($mdEditDialog) => new JobTableService($mdEditDialog)
-]);
+angular.module('uDispatch').service('JobTableService', ['$mdEditDialog', ($mdEditDialog) => new JobTableService($mdEditDialog)]);
