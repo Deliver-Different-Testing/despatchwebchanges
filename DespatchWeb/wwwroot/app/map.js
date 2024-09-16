@@ -326,7 +326,7 @@ function displayPickupPoints(jobs, clear, currentJob) {
 
         if (jobs[i].statusID < 5) {
             const pickupMarker = new google.maps.Marker({
-                position: new google.maps.LatLng(jobs[i].pickUpLatitude, jobs[i].pickUpLongitude),
+                position: new google.maps.LatLng(jobs[i].pickupAddress.latitude, jobs[i].pickupAddress.longitude),
                 draggable: false,
                 map: map,
                 icon: pinImage,
@@ -409,7 +409,7 @@ function displayRoutePointsOnly(courierJobs, clear) {
 
         if (courierJobs[i].statusID < 5) {
             const pickupMarker = new google.maps.Marker({
-                position: new google.maps.LatLng(courierJobs[i].pickUpLatitude, courierJobs[i].pickUpLongitude),
+                position: new google.maps.LatLng(courierJobs[i].pickupAddress.latitude, courierJobs[i].pickupAddress.longitude),
                 map: map,
                 icon: pinImage,
                 jobNumber: courierJobs[i].jobNo
@@ -487,7 +487,7 @@ function displayRoutePoints(courierJobs, clear, zoom) {
 
         if (courierJobs[i].statusID < 5) {
             const pickupMarker = new google.maps.Marker({
-                position: new google.maps.LatLng(courierJobs[i].pickUpLatitude, courierJobs[i].pickUpLongitude),
+                position: new google.maps.LatLng(courierJobs[i].pickupAddress.latitude, courierJobs[i].pickupAddress.longitude),
                 map: map,
                 icon: pinImage,
                 jobNumber: courierJobs[i].jobNo
@@ -504,7 +504,7 @@ function displayRoutePoints(courierJobs, clear, zoom) {
         }
 
         const deliveryMarker = new google.maps.Marker({
-            position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
+            position: new google.maps.LatLng(courierJobs[i].deliveryAddress.latitude, courierJobs[i].deliveryAddress.longitude),
             map: map,
             icon: deliveryPinImage,
             jobNumber: courierJobs[i].jobNo
@@ -725,8 +725,8 @@ function updateRunDetailsWithAngular(totalData) {
  * @param {Job} job
  */
 function validateGoogleJobRoute(job) {
-    const origin = new google.maps.LatLng(job.fromLat, job.fromLng);
-    const dest = new google.maps.LatLng(job.toLat, job.toLng);
+    const origin = new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude);
+    const dest = new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude);
     const request = {
         origin: origin, destination: dest, travelMode: google.maps.DirectionsTravelMode.DRIVING
     };
@@ -735,7 +735,7 @@ function validateGoogleJobRoute(job) {
         if (status === google.maps.DirectionsStatus.NOT_FOUND || status === google.maps.DirectionsStatus.ZERO_RESULTS) {
             angular.element("#box-map").find(".loading").fadeOut();
             alert("Job " + job.jobNumber + " Could not Route!");
-            angular.element(".columns").scope().selectJobFromMap(job.toLat, job.toLng);
+            angular.element(".columns").scope().selectJobFromMap(job.deliveryAddress.latitude, job.deliveryAddress.longitude);
 
         }
     });
