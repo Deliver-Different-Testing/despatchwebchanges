@@ -45,7 +45,7 @@ public interface IJobRepository
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int id);
-    Task<int> UpdateSupportEvent(TucEvent supportEvent);
+    Task<int> UpdateSupportEventAsync(TucEvent supportEvent);
     Task CloseSupportEvent(int supportId, int staffId);
     Task DispatchSelectedJobs(int courierId, int dispId, string jobIds);
     Task SwapPod(string job1, string job2);

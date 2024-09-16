@@ -196,7 +196,7 @@ public class JobController : Controller
     {
         var support = await _jobRepo.GetSupportEventAsync(id);
         support.UcevDespatcher = dispatcher;
-        var result = await _jobRepo.UpdateSupportEvent(support);
+        var result = await _jobRepo.UpdateSupportEventAsync(support);
         return Json(result > 0);
     }
 
@@ -206,7 +206,7 @@ public class JobController : Controller
         var support = await _jobRepo.GetSupportEventAsync(id);
         if (support.UcevDespatcher != dispatcher) return Json(false);
         support.UcevDespatcher = "";
-        var result = await _jobRepo.UpdateSupportEvent(support);
+        var result = await _jobRepo.UpdateSupportEventAsync(support);
         return Json(result > 0);
     }
 

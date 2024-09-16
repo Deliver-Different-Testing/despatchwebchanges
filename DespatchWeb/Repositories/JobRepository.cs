@@ -162,9 +162,9 @@ public class JobRepository : IJobRepository
             Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? 2)
         };
         job.Size = job.Vehicle;
-        job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
+        job.Date = job.BookedDate?.ToString("dd/MM/yyyy");
         job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
-                                    job.Time.Value.ToString("HH:mm:ss"));
+                                    job.Time?.ToString("HH:mm:ss"));
 
         return job;
     }
@@ -1435,7 +1435,7 @@ public class JobRepository : IJobRepository
         return support;
     }
 
-    public async Task<int> UpdateSupportEvent(TucEvent supportEvent)
+    public async Task<int> UpdateSupportEventAsync(TucEvent supportEvent)
     {
         _context.Entry(supportEvent).State = EntityState.Modified;
         return await _context.SaveChangesAsync();
