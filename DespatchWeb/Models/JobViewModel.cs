@@ -126,10 +126,19 @@ public class JobViewModel
     public string ChildNotes { get; set; }
     public bool Locked { get; set; }
     public bool Invoiced { get; set; }
+
+    [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
     public decimal? PickUpLongitude { get; set; }
+
+    [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
     public decimal? PickUpLatitude { get; set; }
+
+    [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
     public decimal? DeliveryLongitude { get; set; }
+
+    [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
     public decimal? DeliveryLatitude { get; set; }
+
     public List<PalletInfo> PalletInfo { get; set; }
     public List<Size> RelatedJobs { get; set; }
     public decimal? CourierLatitude { get; set; }
