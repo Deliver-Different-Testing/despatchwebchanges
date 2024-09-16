@@ -22,6 +22,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
+        public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
         public virtual DbSet<TblAppWidget> TblAppWidgets { get; set; }
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
         public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
@@ -541,6 +542,38 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("UDStatus");
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
+            });
+
+            modelBuilder.Entity<GlobalAddressMapping>(entity =>
+            {
+                entity.HasKey(e => e.GlobalAddressId)
+                    .HasName("PK__GlobalAd__BC00351761DC42C1");
+
+                entity.ToTable("GlobalAddressMapping");
+
+                entity.Property(e => e.GlobalAddressId).HasColumnName("GlobalAddressID");
+
+                entity.Property(e => e.AddressComponent)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.Country)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(255);
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             });
 
             modelBuilder.Entity<TblAppWidget>(entity =>

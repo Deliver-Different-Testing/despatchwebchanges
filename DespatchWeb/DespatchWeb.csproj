@@ -188,6 +188,8 @@
       <_ContentIncludedByDefault Remove="wwwroot\dist\version.js.map"/>
       <_ContentIncludedByDefault Remove="wwwroot\dist\version.min.js"/>
       <_ContentIncludedByDefault Remove="wwwroot\dist\version.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\app\components\common\top-bar\top-bar.controller.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\app\components\common\top-bar\top-bar.html"/>
   </ItemGroup>
 
   <ItemGroup>
