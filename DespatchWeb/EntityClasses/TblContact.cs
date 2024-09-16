@@ -54,5 +54,6 @@ namespace DespatchWeb.EntityClasses
         public string Password2 { get; set; }
         public string Salt { get; set; }
         public int? StaffId { get; set; }
+        public string AccessCode { get; set; }
     }
 }

@@ -12,8 +12,13 @@ namespace DespatchWeb.EntityClasses
             TblBulkJobs = new HashSet<TblBulkJob>();
             TblBulkRunScheduleParentSpeeds = new HashSet<TblBulkRunSchedule>();
             TblBulkRunScheduleSpeeds = new HashSet<TblBulkRunSchedule>();
+            TblClientAvailableSpeeds = new HashSet<TblClientAvailableSpeed>();
             TblUndeliverableLocations = new HashSet<TblUndeliverableLocation>();
             TucEvents = new HashSet<TucEvent>();
+            TucJobAcceptedJobTypes = new HashSet<TucJob>();
+            TucJobDesiredJobTypes = new HashSet<TucJob>();
+            TucJobNotifiedJobTypes = new HashSet<TucJob>();
+            TucJobUcjbSpeedNavigations = new HashSet<TucJob>();
         }
 
         public int UcjtId { get; set; }
@@ -50,11 +55,17 @@ namespace DespatchWeb.EntityClasses
         public decimal? AddonPercentage { get; set; }
         public bool? Mfv { get; set; }
         public bool? Faf { get; set; }
+        public int? UcjtClientId { get; set; }
 
         public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleSpeeds { get; set; }
+        public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; }
         public virtual ICollection<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
+        public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; }
+        public virtual ICollection<TucJob> TucJobDesiredJobTypes { get; set; }
+        public virtual ICollection<TucJob> TucJobNotifiedJobTypes { get; set; }
+        public virtual ICollection<TucJob> TucJobUcjbSpeedNavigations { get; set; }
     }
 }

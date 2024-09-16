@@ -5,7 +5,8 @@
                 <div class="row row-no-padding addresses">
                     <div class="col-md-6">
                         <div class="field">
-                            <label>Client</label><i class="fa fa-edit" ng-click="jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"
+                            <label>Client</label><i class="fa fa-edit"
+                                                    ng-click="jdSvc.editDetailField(currentJob, 'ClientCode','Client Code',currentJob.client,currentJob.id)"
                                                     title="Change Client Code"></i>
 
                             <div class="value"><a class="uline" ng-click="jdSvc.clientClick(currentJob)"
@@ -57,7 +58,8 @@
                 <div class="notes-add"></div>
                 <div class="notes field">
                     <label>Notes</label>
-                    <md-button class="md-fab md-raised md-mini" ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')"
+                    <md-button class="md-fab md-raised md-mini"
+                               ng-click="jdSvc.editDetailField(currentJob, 'Notes','Note','',currentJob.id, 'textarea')"
                                style="float: right;">
                         <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
                     </md-button>
@@ -132,7 +134,7 @@
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Speed</label>
                             <div class="value" ng-class="currentJob.locked ? 'disabled' : ''">{{currentJob.speedName}}
                             </div>
-						</div>
+                        </div>
 
                         <div class="field">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Direct</label>
@@ -143,7 +145,7 @@
                                         ng-model="currentJob.direct">
                                 </md-checkbox>
                             </div>
-						</div>
+                        </div>
 
                         <div class="field" ng-click="!currentJob.locked && jdSvc.leaveClick($event, currentJob)">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">Leave Parcel</label>
@@ -152,7 +154,8 @@
                             </div>
                         </div>
 
-                        <div class="field" ng-click="jdSvc.editDetailField(currentJob, 'DGClass','DG Class',currentJob.dgClass,currentJob.id, 'select', options.detail.DGClass)"
+                        <div class="field"
+                             ng-click="jdSvc.editDetailField(currentJob, 'DGClass','DG Class',currentJob.dgClass,currentJob.id, 'select', options.detail.DGClass)"
                              ng-if="!currentJob.bulkJob">
                             <label ng-class="currentJob.locked ? 'disabled' : ''">DG# / Docs</label>
                             <div class="value" ng-class="currentJob.locked ? 'disabled' : ''">{{currentJob.dgClass}} /
@@ -162,14 +165,16 @@
 
                         <div class="field">
                             <label>Courier</label>
-                            <div class="value" ng-click="jdSvc.courierClick(currentJob)">{{currentJob.courier}}</div>
+                            <div class="value" ng-click="jdSvc.courierClick(currentJob)">{{currentJob.courier}}
+                            </div>
                         </div>
 
                         <div class="field" ng-class="jdSvc.combos.frequency.length > 0 ? '' : 'red'">
                             <b>Frequency:</b>&nbsp;<i class="fa fa-exclamation"
                                                       ng-if="jdSvc.combos.frequency.length === 0"></i> <br/>
                             <i><span ng-repeat="item in jdSvc.combos.frequency">{{item.label}}  </span></i>
-                            <div class="multi-element" events="jdSvc.combos.frequencyEvents" extra-settings="{selectionLimit:1, showUncheckAll:false, closeOnSelect:true}"
+                            <div class="multi-element" events="jdSvc.combos.frequencyEvents"
+                                 extra-settings="{selectionLimit:1, showUncheckAll:false, closeOnSelect:true}"
                                  ng-dropdown-multiselect=""
                                  options="jdSvc.pickFrequency" selected-model="jdSvc.combos.frequency"></div>
                         </div>
@@ -178,7 +183,8 @@
                             <b>Days:</b>&nbsp;<i class="fa fa-exclamation"
                                                  ng-if="jdSvc.combos.days.length === 0"></i><br/>
                             <i><span ng-repeat="item in jdSvc.combos.days">{{item.label}}  </span></i>
-                            <div class="multi-element" events="jdSvc.combos.daysEvents" extra-settings="{showUncheckAll:false, closeOnSelect:true, closeOnDeselect:true}"
+                            <div class="multi-element" events="jdSvc.combos.daysEvents"
+                                 extra-settings="{showUncheckAll:false, closeOnSelect:true, closeOnDeselect:true}"
                                  ng-dropdown-multiselect=""
                                  options="jdSvc.pickDays" selected-model="jdSvc.combos.days"></div>
                         </div>
@@ -187,7 +193,8 @@
                             <b>Holidays:</b>&nbsp;<i class="fa fa-exclamation"
                                                      ng-if="jdSvc.combos.holidays.length === 0"></i><br/>
                             <i><span ng-repeat="item in jdSvc.combos.holidays">{{item.label}}  </span></i>
-                            <div class="multi-element" events="jdSvc.combos.holidaysEvents" extra-settings="{selectionLimit:1, showUncheckAll:false, closeOnSelect:true}"
+                            <div class="multi-element" events="jdSvc.combos.holidaysEvents"
+                                 extra-settings="{selectionLimit:1, showUncheckAll:false, closeOnSelect:true}"
                                  ng-dropdown-multiselect=""
                                  options="jdSvc.pickHolidays" selected-model="jdSvc.combos.holidays"></div>
                         </div>
@@ -354,7 +361,8 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr context-menu="jdSvc.palletMenu" ng-click="jdSvc.editPallet(pallet)"
+                        <tr context-menu="jdSvc.palletMenu"
+                            ng-click="jdSvc.editPallet($event, jdSvc.currentJob, pallet)"
                             ng-repeat="pallet in currentJob.palletInfo">
                             <td>{{pallet.quantity}}</td>
                             <td>{{pallet.weight}}</td>
@@ -381,10 +389,9 @@
     <div class="text">Please select a job or courier</div>
 </div>
 
-
 <div class="loading">
     <div class="text">
-        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+        <md-progress-circular md-mode="indeterminate"></md-progress-circular>
         <span class="sr-only">Loading...</span>
     </div>
 </div>

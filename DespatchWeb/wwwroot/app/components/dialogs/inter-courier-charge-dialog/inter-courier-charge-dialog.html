@@ -1,0 +1,103 @@
+<md-dialog aria-label="inter courier charge" style="width: 30%;">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Inter-Courier Charge</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content ng-cloak>
+        <form name="ctrl.courierChargeForm" ng-cloak
+              ng-submit="ctrl.courierChargeForm.$valid && ctrl.submit(ctrl.data)">
+            <div class="md-dialog-content">
+
+                <div layout-gt-sm="row">
+                    <md-autocomplete
+                            flex-gt-sm
+                            md-autofocus
+                            md-escape-options="clear"
+                            md-floating-label="From Courier"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.courierSearch(ctrl.fromCourierSearchText)"
+                            md-min-length="1"
+                            md-search-text="ctrl.fromCourierSearchText"
+                            md-selected-item="ctrl.fromCourierSelectedItem"
+                            md-autoselect
+                            placeholder="Start typing to search couriers">
+                        <md-item-template>
+                            <span md-highlight-flags="^i"
+                                  md-highlight-text="ctrl.fromCourierSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No couriers matching "{{ctrl.fromCourierSearchText}}" were found.
+                        </md-not-found>
+                    </md-autocomplete>
+
+                    <md-autocomplete
+                            flex-gt-sm
+                            md-escape-options="clear"
+                            md-floating-label="To Courier"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.courierSearch(ctrl.toCourierSearchText)"
+                            md-min-length="1"
+                            md-search-text="ctrl.toCourierSearchText"
+                            md-selected-item="ctrl.toCourierSelectedItem"
+                            md-autoselect
+                            placeholder="Start typing to search couriers">
+                        <md-item-template>
+                            <span md-highlight-flags="^i"
+                                  md-highlight-text="ctrl.toCourierSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No couriers matching "{{ctrl.toCourierSearchText}}" were found.
+                        </md-not-found>
+                    </md-autocomplete>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="reference">Reference</label>
+                        <input id="reference" ng-model="ctrl.data.reference">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="zones">Zones</label>
+                        <input id="zones" ng-change="ctrl.updateAmountByZones(ctrl.data.zones)"
+                               ng-model="ctrl.data.zones"
+                               type="number">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="charge-amount">Amount</label>
+                        <md-icon md-font-set="material-symbols-outlined">attach_money</md-icon>
+                        <input id="charge-amount" md-no-asterisk ng-model="ctrl.data.amount" required step="0.01"
+                               type="number">
+                    </md-input-container>
+                </div>
+
+            </div>
+        </form>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="ctrl.courierChargeForm.$invalid"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.data)"
+                   ng-disabled="ctrl.courierChargeForm.$invalid"
+                   ng-show="!ctrl.isLoading">
+            Create
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

@@ -19,11 +19,27 @@
          "ObjectType": 0
       },
       {
+        "Name": "[dbo].[GlobalAddressMapping]",
+        "ObjectType": 0
+      },
+     {
+         "Name": "[dbo].[tblAppWidgets]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblBulkJob]",
          "ObjectType": 0
       },
       {
          "Name": "[dbo].[tblBulkRunSchedule]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClientAvailableSpeed]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClientAvailableSpeedItems]",
          "ObjectType": 0
       },
       {
@@ -39,6 +55,14 @@
          "ObjectType": 0
       },
       {
+        "Name": "[dbo].[TblDespatchViews]",
+        "ObjectType": 0
+      },
+     {
+         "Name": "[dbo].[tblDFRNTApps]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblInternetPermission]",
          "ObjectType": 0
       },
@@ -51,6 +75,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblWidget]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucClient]",
          "ObjectType": 0
       },
@@ -59,11 +87,19 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucClientItems]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucEvent]",
          "ObjectType": 0
       },
       {
          "Name": "[dbo].[tucEventType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJob]",
          "ObjectType": 0
       },
       {
@@ -107,6 +143,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[UserWidgetPreferences]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[DES_qryAllJobTypes]",
          "ObjectType": 3
       },
@@ -143,11 +183,103 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[DES_qdfEvent_Insert]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_qryCourierCombo_Active]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_qryTruckCourierStatus]",
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DES_stpJob_ColsolidateMarsInformation]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_stpJob_DirectToASAP]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_DisplayInDespatch]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpJob_SplitJob]",
+         "ObjectType": 1
+      },
+      {
+        "Name": "[dbo].[DES_stpJobBooking_AddNotes]",
+        "ObjectType": 1
+      },
+     {
+         "Name": "[dbo].[DESWEB_qryClientsActive]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_qryCourierActive]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWeb_qryCourierCombo]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_qryPotentialCouriers]",
+         "ObjectType": 1
+      },
+     {
+       "Name": "[dbo].[DESWEB_stpBulkJob_AddNotes]",
+       "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpCreateInterCourierJobs]",
+         "ObjectType": 1
+      },
+     {
+       "Name": "[dbo].[DESWEB_stpJob_AddNotes]",
+       "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpMapEnvelope]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpQuickCreateJob]",
+         "ObjectType": 1
+      },
+      {
+        "Name": "[dbo].[DESWEB_stpUpdateBulkJob]",
+        "ObjectType": 1
+      },
+     {
+       "Name": "[dbo].[DESWEB_stpUpdateJob]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpUpdateJobBooking]",
+       "ObjectType": 1
+     },
+     {
+         "Name": "[dbo].[DESWEB_stpUpdateSplitJobMeetingAddress]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[INT_stpIsValidLogin_Despatch]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[sp_RateJob2]",
+         "ObjectType": 1
+      },
+     {
+       "Name": "[dbo].[UTL_stpJob_tblBulkJob_ReleaseByJobNumber]",
+       "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpPPD_ExclusiveAmount]",
          "ObjectType": 1
       },
       {

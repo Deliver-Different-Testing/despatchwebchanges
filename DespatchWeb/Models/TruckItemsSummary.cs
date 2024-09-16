@@ -1,31 +1,22 @@
 ﻿using System.Text.Json.Serialization;
 
+namespace DespatchWeb.Models;
 
-namespace DespatchWeb.Models
+public class TruckItemsSummary
 {
-    public class TruckItemsSummary
-    {
-        [JsonPropertyName("quantity")]
-        public int intQuantity { get; set; }
+    [JsonPropertyName("quantity")] public int intQuantity { get; set; }
 
-        [JsonPropertyName("weight")]
-        public double intWeight { get; set; }
+    [JsonPropertyName("weight")] public double intWeight { get; set; }
 
-        public double TotalWeight { get; set; }
+    public double TotalWeight { get; set; }
 
-        [JsonPropertyName("pickUp")]
-        public int intPU { get; set; }
+    [JsonPropertyName("pickUp")] public int intPU { get; set; }
 
-        [JsonPropertyName("dropOff")]
-        public int intDO { get; set; }
+    [JsonPropertyName("dropOff")] public int intDO { get; set; }
 
-        [JsonPropertyName("overSize")]
-        public double intOverSizeItems { get; set; }
+    [JsonPropertyName("overSize")] public double intOverSizeItems { get; set; }
 
-        [JsonPropertyName("overWeight")]
-        public int intOverWeightItems { get; set; }
+    [JsonPropertyName("overWeight")] public int intOverWeightItems { get; set; }
 
-        public int DGClass { get; set; }
-
-    }
+    public int DGClass { get; set; }
 }

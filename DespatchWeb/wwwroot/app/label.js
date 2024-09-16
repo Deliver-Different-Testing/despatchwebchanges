@@ -4,17 +4,17 @@ function Label(opt_options) {
     this.setValues(opt_options);
 
     // Label specific
-    var span = this.span_ = document.createElement('span');
+    const span = this.span_ = document.createElement('span');
     span.className = 'marker ' + this.cssClass;
 
-    var div = this.div_ = document.createElement('div');
+    const div = this.div_ = document.createElement('div');
     div.appendChild(span);
     div.style.cssText = 'position: absolute; display: none; border 1px solid red;';
 }
 Label.prototype = new google.maps.OverlayView;
 
 Label.prototype.setVisible = function (visible) {
-    var div = this.div_;
+    const div = this.div_;
     if (div === null) return;
     if (visible) {
         div.style.display = 'block';
@@ -29,11 +29,11 @@ Label.prototype.setVisible = function (visible) {
 
 // Implement onAdd
 Label.prototype.onAdd = function () {
-    var pane = this.getPanes().overlayLayer;
+    const pane = this.getPanes().overlayLayer;
     pane.appendChild(this.div_);
 
     // Ensures the label is redrawn if the text or position is changed.
-    var me = this;
+    const me = this;
 
     this.listeners_ = [
         google.maps.event.addListener(this, 'position_changed',
@@ -55,7 +55,9 @@ Label.prototype.onRemove = function () {
     this.div_.parentNode.removeChild(this.div_);
 
     // Label is removed from the map, stop updating its position/text.
-    for (var i = 0, I = this.listeners_.length; i < I; ++i) {
+    let i = 0;
+    const I = this.listeners_.length;
+    for (; i < I; ++i) {
         google.maps.event.removeListener(this.listeners_[i]);
     }
     return true;
@@ -63,10 +65,10 @@ Label.prototype.onRemove = function () {
 
 // Implement draw
 Label.prototype.draw = function () {
-    var projection = this.getProjection();
-    var position = projection.fromLatLngToDivPixel(this.get('position'));
+    const projection = this.getProjection();
+    const position = projection.fromLatLngToDivPixel(this.get('position'));
 
-    var div = this.div_;
+    const div = this.div_;
     div.style.left = position.x + 'px';
     div.style.top = position.y + 'px';
     //div.style.display = 'block';
@@ -74,7 +76,7 @@ Label.prototype.draw = function () {
         div.style.display = 'block';
     else
         div.style.display = 'none';
-    var clickable = this.get('clickable');
+    const clickable = this.get('clickable');
     this.span_.style.cursor = clickable ? 'pointer' : '';
 
 

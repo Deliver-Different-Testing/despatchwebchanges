@@ -1,511 +1,917 @@
-angular
-    .module("uDispatch")
-    .factory("DispatchData",
-        [
-            "$http", function ($http) {
-            return {
-                addNote: function (jobId, note, despatcherName, preBook) {
-                    const method = preBook ? "job/AddJobBookingNote" : "job/AddNote";
-                    return $http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                addBulkJobNote: function (id, note, despatcherName, preBook) {
-                    return $http.post("job/AddBulkJobNote?BulkJobId=" + id + "&note=" + note + "&despatcher=" + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                addPallet: function (pallet, preBook, despatcherName) {
-                    return $http({
-                        url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName,
-                        method: "POST",
-                        data: pallet
-                    }).then(function (response) {
-                        return response.data;
-                    });
-                },
-                editPallet: function (pallet, preBook, despatcherName) {
-                    return $http({
-                        url: "job/EditPallet?preBook=" + preBook + "&despatcher=" + despatcherName,
-                        method: "POST",
-                        data: pallet
-                    }).then(function (response) {
-                        return response.data;
-                    });
-                },
-                deletePallet: function (pallet, preBook, despatcherName) {
-                    return $http({
-                        url: "job/DeletePallet?preBook=" + preBook + "&despatcher=" + despatcherName,
-                        method: "POST",
-                        data: pallet
-                    }).then(function (response) {
-                        return response.data;
-                    });
-                },
-                addFollowupEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-                    return $http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(function (response) {
-                        return response.data;
-                    });
-                },
-                addRestoreEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-                    return $http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(function (response) {
-                        return response.data;
-                    });
-                },
-                addPriceSuburbChangeEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-                    return $http.post("job/addPriceSuburbChangeEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName).then(function (response) {
-                        return response.data;
-                    });
-                },
-                addOtherEvent: function (jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
-                    return $http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes).then(function (response) {
-                        return response.data;
-                    });
-                },
-                allocateJobs: function (courierId, dispId, jobIds) {
-                    return $http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
-                        return response;
-                    });
-                },
-                reAllocateJobs: function (courierId, dispId, jobIds) {
-                    return $http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
-                        return response;
-                    });
-                },
-                transferJob: function (courierId, dispId, jobId) {
-                    return $http.post("job/Transfer?jobId=" + jobId + "&courierId=" + courierId + "&dispId=" + dispId).then(function (response) {
-                        return response;
-                    });
-                },
-                setFirstJob: function (jobId, courierId) {
-                    return $http.post("job/SetFirstJob?jobId=" + jobId + "&courierId=" + courierId).then(function (response) {
-                        return response;
-                    });
-                },
-                truckCourierStatus: function (courierId) {
-                    return $http.post("courier/TruckCourierStatus?courierId=" + courierId).then(function (response) {
-                        return response;
-                    });
-                },
-                validateSwapPOD: function (jobNumber) {
-                    return $http.post('Job/ValidateSwapPOD?job=' + jobNumber).then(function (response) {
-                        return response.data;
-                    });
-                },
-                swapPOD: function (job1, job2) {
-                    return $http.post('Job/SwapPOD?job1=' + job1 + '&job2=' + job2).then(function (response) {
-                        return response.data;
-                    });
-                },
-                voidJob: function (jobId) {
-                    return $http.post("job/Void?jobId=" + jobId).then(function (response) {
-                        return response;
-                    });
-                },
-                processUncheckDirect: function (jobId, despatcherName, staffId, currentSpeed) {
-                    return $http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed).then(function (response) {
-                        return response.data;
-                    });
-                },
-                restoreJobs: function (courierId, dispId, jobIds) {
-                    return $http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
-                        return response.data;
-                    });
-                },
-                restoreSplitJobs: function (courierId, dispId, jobIds) {
-                    return $http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispId + "&jobIds=" + jobIds).then(function (response) {
-                        return response.data;
-                    });
-                },
-                resendJobs: function (jobIds) {
-                    return $http.post("job/ResendSelected?jobIds=" + jobIds).then(function (response) {
-                        return response.data;
-                    });
-                },
-                resendAllJobs: function (courierId) {
-                    return $http.post("job/ResendAll?courierId=" + courierId).then(function (response) {
-                        return response.data;
-                    });
-                },
-                reAssignJobs: function (jobIds) {
-                    return $http.post("job/ReAssignSelected?jobIds=" + jobIds).then(function (response) {
-                        return response.data;
-                    });
-                },
-                sendPOD: function (jobId, email) {
-                    return $http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getJobs: function () {
-                    return $http.get("app/components/home/api/jobsList.php").then(function (response) {
-                        return response.data;
-                    });
+class DispatchData {
+    static $inject = ['$http', 'moment', 'APP_CONFIG'];
 
-                },
-                getJobDetail: function (id) {
-                    return $http.get('/Job/Detail?jobId=' + id).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getRelatedJobs: function (id, clientId) {
-                    return $http.get('/Job/Related?parentId=' + id + '&clientId=' + clientId).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getJobsGrouped: function () {
-                    return $http.get("app/components/home/api/jobsGroupedList.json").then(function (response) {
-                        return response.data;
-                    });
+    constructor($http, moment, APP_CONFIG) {
+        this.$http = $http;
+        this.moment = moment;
+        this.useUsFormat = APP_CONFIG.US_Customer;
+    }
 
-                },
-                getJobsCurrent: function (courierId, done) {
-                    return $http.get("job/current?courierId=" + courierId + "&done=" + done).then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * @param {number} jobId
+     * @param {string} note
+     * @param {string} despatcherName
+     * @param {boolean} preBook
+     */
+    async addNote(jobId, note, despatcherName, preBook) {
+        const method = preBook ? 'job/AddJobBookingNote' : 'job/AddNote';
+        return await this.$http.post(method + '?jobId=' + jobId + '&note=' + note + '&despatcher=' + despatcherName);
+    }
 
-                },
-                getCouriersPicked: function () {
-                    return $http.get("app/components/home/api/couriersPicked.json").then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * @param {number} bulkJobId
+     * @param {string} note
+     * @param {string} despatcherName
+     * @param {boolean} preBook
+     */
+    async addBulkJobNote(bulkJobId, note, despatcherName, preBook) {
+        return await this.$http.post('job/AddBulkJobNote?BulkJobId=' + bulkJobId + '&note=' + note + '&despatcher=' + despatcherName);
+    }
 
-                },
-                getCouriersThrough: function () {
-                    return $http.get("app/components/home/api/couriersThrough.json").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getCouriersClear: function () {
-                    return $http.get("app/components/home/api/couriersClear.json").then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * @param {Pallet} pallet
+     * @param {boolean} preBook
+     * @param {string} despatcherName
+     */
+    async addPallet(pallet, preBook, despatcherName) {
+        const response = await this.$http({
+            url: 'job/AddPallet?preBook=' + preBook + '&despatcher=' + despatcherName, method: 'POST', data: pallet
+        });
+        return response.data;
+    }
 
-                },
-                getAreaList: function () {
-                    return $http.get("app/components/home/api/areaList.json").then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * @param {Pallet} pallet
+     * @param {boolean} preBook
+     * @param {string} despatcherName
+     */
+    async editPallet(pallet, preBook, despatcherName) {
+        const response = await this.$http({
+            url: 'job/EditPallet?preBook=' + preBook + '&despatcher=' + despatcherName, method: 'POST', data: pallet
+        });
+        return response.data;
+    }
 
-                },
-                getJobUpdates: function () {
-                    return $http.get("app/components/home/api/jobUpdates.json").then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * @param {Pallet} pallet
+     * @param {boolean} preBook
+     * @param {string} despatcherName
+     */
+    async deletePallet(pallet, preBook, despatcherName) {
+        const response = await this.$http({
+            url: 'job/DeletePallet?preBook=' + preBook + '&despatcher=' + despatcherName, method: 'POST', data: pallet
+        });
+        return response.data;
+    }
 
-                },
-                getSupports: function (channel) {
-                    return $http.get("job/supports?channel=" + channel).then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * @param {string} jobNo
+     * @param {number} clientId
+     * @param {string} contact
+     * @param {number} staffId
+     * @param {number} courierId
+     * @param {number} jobId
+     * @param {number} jobType
+     * @param {string} despatcherName
+     */
+    async addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+        const response = await this.$http.post('courier/AddFollowupEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName);
+        return response.data;
+    }
 
-                },
-                closeSupport: function (supportId, staffId) {
-                    return $http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId).then(function (response) {
-                        return response;
-                    });
-                },
-                lockSupport: function (id, dispatcher) {
-                    return $http.post("job/LockSupport?id=" + id + "&dispatcher=" + dispatcher).then(function (response) {
-                        return response;
-                    });
-                },
-                unLockSupport: function (id, dispatcher) {
-                    return $http.post("job/UnLockSupport?id=" + id + "&dispatcher=" + dispatcher).then(function (response) {
-                        return response;
-                    });
-                },
-                getLateCalls: function () {
-                    return $http.get("app/components/home/api/lateCalls.json").then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * Sends a request to add a restore event for a specific job.
+     *
+     * @param {string} jobNo - The number identifier of the job.
+     * @param {number} clientId - The identifier of the client.
+     * @param {string} contact - Contact related to the event.
+     * @param {number} staffId - The identifier of the staff member involved.
+     * @param {number} courierId - The identifier of the courier.
+     * @param {number} jobId - The identifier of the job.
+     * @param {string} jobType - The type of the job.
+     * @param {string} despatcherName - The name of the despatcher.
+     */
+    async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
+        const response = await this.$http.post('job/AddRestoreEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName);
+        return response.data;
+    }
 
-                },
-                getClearLists: function () {
-                    return $http.get("courier").then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * @param {string} jobNo
+     * @param {number} clientId
+     * @param {string} contact
+     * @param {number} staffId
+     * @param {number} courierId
+     * @param {number} jobId
+     * @param {number} jobType
+     * @param {string} despatcherName
+     * @param {string} notes
+     */
+    async addOtherEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
+        const response = await this.$http.post('job/addOtherEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName + '&notes=' + notes);
+        return response.data;
+    }
 
-                },
-                getClearListEnvelope: function (id) {
-                    return $http.get("courier/ClearListEnvelope?clearListId=" + id).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getActiveCouriers: function () {
-                    return $http.get("courier/active").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getAllCouriers: function () {
-                    return $http.get("courier/AllActive").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getActiveClients: function () {
-                    return $http.get("home/ActiveClients").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getClientContacts: function (contactId) {
-                    return $http.get("home/ClientContacts?contactId=" + contactId).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getPotentialCouriers: function (jobId) {
-                    return $http.get("courier/PotentialCouriers?jobId=" + jobId).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getCourierPosition: function (code) {
-                    return $http.get("courier/location?code=" + code).then(function (response) {
-                        return response.data;
-                    });
+    /**
+     * @param {number} courierId
+     * @param {number} dispatcherId
+     * @param {number[]} jobIds
+     */
+    async allocateJobs(courierId, dispatcherId, jobIds) {
+        return await this.$http.post('job/Allocate?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
+    }
 
-                },
-                getAvailableCourierLocation: function (minLng, minLat, maxLng, maxLat) {
-                    return $http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getSuburbList: function () {
-                    return $http.get("job/SuburbList").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getSpeedList: function () {
-                    return $http.get("job/SpeedList").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getContactList: function (clientId) {
-                    return $http.get("job/ContactList?clientId=" + clientId).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getContactDetailList: function (clientId) {
-                    return $http.get("job/ContactDetailList?clientId=" + clientId).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getLeaveList: function () {
-                    return $http.get("job/LeaveList").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getUndeliverableList: function () {
-                    return $http.get("job/UndeliverableList").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getInternalStatusList: function () {
-                    return $http.get("job/InternalStatusList").then(function (response) {
-                        return response.data;
-                    });
-                },
-                getTruckItemsSummary: function (jobId, truckWeightLimit) {
-                    return $http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit).then(function (response) {
-                        return response.data;
-                    });
-                },
-                lateCall: function (lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId, jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calc) {
-                    return $http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup +
-                        "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact +
-                        "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed +
-                        "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc).then(function (response) {
-                        return response.data;
-                    });
-                },
+    /**
+     * @param {number} courierId
+     * @param {number} dispatcherId
+     * @param {number[]} jobIds
+     */
+    async reAllocateJobs(courierId, dispatcherId, jobIds) {
+        return await this.$http.post('job/ReAllocate?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
+    }
 
-                rateTruckJob: function (cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
-                    return $http.get("job/RateTruckJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate +
-                        "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass +
-                        "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours).then(function (response) {
-                        return response.data;
-                    });
-                },
-                truckJobAmountBreakdown: function (cid, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours, gstRate) {
-                    return $http.get("job/TruckJobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate +
-                        "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass +
-                        "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours + "&gstRate=" + gstRate).then(function (response) {
-                        return response.data;
-                    });
-                },
-                rateJob: function (cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
-                                   ourRef, refA, refB, quantity, booked) {
-                    return $http.get("job/RateJob?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van +
-                        "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct +
-                        "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity +
-                        "&booked=" + booked).then(function (response) {
-                        return response.data;
-                    });
-                },
-                jobAmountBreakdown: function (cid, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId,
-                                              ourRef, refA, refB, quantity, booked, gstRate, amount) {
-                    return $http.get("job/JobAmountBreakdown?clientId=" + cid + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van +
-                        "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct +
-                        "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity +
-                        "&booked=" + booked + "&gstRate=" + gstRate + "&amount=" + amount).then(function (response) {
-                        return response.data;
-                    });
-                },
+    /**
+     * @param {number} jobId
+     * @param {number} courierId
+     */
+    async setFirstJob(jobId, courierId) {
+        return await this.$http.post('job/SetFirstJob?jobId=' + jobId + '&courierId=' + courierId);
+    }
 
-                ppdExclusiveAmount: function (cid, amount) {
-                    return $http.get("job/PPDExclusiveAmount?clientId=" + cid + "&amount=" + amount).then(
-                        function (response) {
-                            return response.data;
-                        });
-                },
-                splitJob: function (jobId, despatcherName) {
-                    return $http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                finishSplitJobProcess: function (jobId, despatcherName) {
-                    return $http.post("job/finishSplitJobProcess?jobId=" + jobId + "&despatcherName=" + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                updatePODDetail: function (jobNumber, jobStatus, podName, podTime) {
-                    return $http.post("job/UpdatePODDetails?jobNumber=" + jobNumber + "&jobStatus=" + jobStatus + "&podName=" + podName + "&podTime=" + podTime).then(function (response) {
-                        return response;
-                    });
-                },
-                sendSMS: function (courierId, staffId, despatcherName, message) {
-                    return $http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message).then(function (response) {
-                        return response.data;
-                    });
-                },
-                reRateSplitJob: function (jobId) {
-                    return $http.post("job/ReRateSplitJob?jobId=" + jobId).then(function (response) {
-                        return response;
-                    });
-                },
-                updateDeliveryAddress: function (jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
-                    const method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
-                    return $http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                updateBulkDeliveryAddress: function (bulkJobId, toSuburb, toPostCode, address, lat, lng, despatcherName) {
-                    return $http.post("job/UpdateBulkDeliveryAddress?bulkJobId=" + bulkJobId + "&toSuburb=" + toSuburb + "&toPostCode=" + toPostCode + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + '&despatcherName=' + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                updatePickupAddress: function (jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
-                    const method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
-                    return $http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                updateBulkPickupAddress: function (bulkJobId, fromSuburb, fromPostCode, address, lat, lng, despatcherName) {
-                    return $http.post("job/UpdateBulkPickupAddress?bulkJobId=" + bulkJobId + "&fromSuburb=" + fromSuburb + "&fromPostCode=" + fromPostCode + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + '&despatcherName=' + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                updateJobType: function (jobId, jobType, despatcherName) {
-                    return $http.post("job/UpdateJobType?jobId=" + jobId + "&jobType=" + jobType + '&despatcherName=' + despatcherName).then(function (response) {
-                        return response;
-                    });
-                },
-                updateSplitJobAddress: function (jobId, toSuburbId, address, lat, lng) {
-                    return $http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng).then(function (response) {
-                        return response;
-                    });
-                },
-                releaseBulkJob: function (jobNumber, bookDate) {
-                    const dt = moment(bookDate).format("YYYY-MM-DD");
-                    return $http.post("job/ReleaseBulkJob?jobNumber=" + jobNumber + "&bookDate=" + dt).then(function (response) {
-                        return response;
-                    });
-                },
-                updateJobDetail: function (jobId, field, value, rate, despatcherName, staffId, preBook) {
-                    if (field === "Time" || field === "CompletedTime") {
-                        value = moment().format("YYYY-MM-DD") +
-                            " " +
-                            moment(value).format("HH:mm:ss");
-                    }
-                    if (field === "FollowupTime") {
-                        value = moment(value).format("YYYY-MM-DD") +
-                            " " +
-                            moment(value).format("HH:mm:ss");
-                    }
-                    if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-                        value = moment(value).format("YYYY-MM-DD");
-                    }
-                    const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
-                    return $http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
-                        return response;
-                    });
-                },
-                updateBulkJobDetail: function (bulkJobId, field, value, rate, despatcherName, staffId) {
-                    if (field === "Time" || field === "CompletedTime") {
-                        value = moment().format("YYYY-MM-DD") +
-                            " " +
-                            moment(value).format("HH:mm:ss");
-                    }
-                    if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
-                        value = moment(value).format("YYYY-MM-DD");
-                    }
-                    return $http.post("job/UpdateBulkJob?bulkJobId=" + bulkJobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId).then(function (response) {
-                        return response;
-                    });
-                },
-                doAPI: function (data) {
-                    return $http.post("app/components/home/api/api.php", data).then(function (response) {
-                        return response.data;
-                    });
-                },
-                getJobsFilter: function (data, selectedClients, internal) {
-                    return $http.get("job?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients).then(function (response) {
-                        return response.data;
-                    });
-                },
-                autocompleteAddressSearch: function (text) {
-                    return $http({
-                        url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
-                        method: 'GET',
-                        params: {
-                            query: text,
-                            app_id: "bBPfh2x8Cauun3ygLMAx",
-                            app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                            country: "NZL"
-                        }
-                    }).then(response => response.data);
-                },
-                getGeoCodeInformation: function (item) {
-                    return $http.get("https://geocoder.cit.api.here.com/6.2/geocode.json", {
-                        params: {
-                            app_id: "bBPfh2x8Cauun3ygLMAx",
-                            app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                            locationId: item.id
-                        }
-                    }).then(response => response.data);
-                },
-                retrieveAddresses: function (lat, long) {
-                    return $http.get("https://reverse.geocoder.api.here.com/6.2/reversegeocode.json", {
-                        params: {
-                            app_id: "bBPfh2x8Cauun3ygLMAx",
-                            app_code: "yjfwTdkin_R2rGXYTrwWVg",
-                            mode: "retrieveAddresses",
-                            prox: lat.toString() + "," + long.toString() + "," + "250"
-                        }
-                    }).then(response => response.data);
-                },
-                autocompleteSearch: function (searchTerm, url) {
-                    return $http.get(url, {
-                        params: {
-                            searchTerm: searchTerm
-                        }
-                    }).then(response => response.data);
-                },
-                getSingleCourier: function (courierId) {
-                    return $http.get("courier/GetSingleCourier", {
-                        params: {
-                            courierId
-                        }
-                    }).then(response => response.data);
-                }
-            };
+    /**
+     * @param {number} courierId
+     */
+    async truckCourierStatus(courierId) {
+        return await this.$http.post('courier/TruckCourierStatus?courierId=' + courierId);
+    }
+
+    /**
+     * @param {string} jobNumber
+     */
+    async validateSwapPOD(jobNumber) {
+        const response = await this.$http.post('Job/ValidateSwapPOD?job=' + jobNumber);
+        return response.data;
+    }
+
+    /**
+     * @param {string} jobNumber1
+     * @param {string} jobNumber2
+     */
+    async swapPOD(jobNumber1, jobNumber2) {
+        const response = await this.$http.post('Job/SwapPOD?job1=' + jobNumber1 + '&job2=' + jobNumber2);
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     */
+    async voidJob(jobId) {
+        return await this.$http.post('job/Void?jobId=' + jobId);
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {string} despatcherName
+     * @param {number} staffId
+     * @param {string} currentSpeed
+     */
+    async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
+        const response = await this.$http.post('job/ProcessUncheckDirect?jobId=' + jobId + '&despatcher=' + despatcherName + '&staffId=' + staffId + '&currentSpeed=' + currentSpeed);
+        return response.data;
+    }
+
+    /**
+     * @param {number} courierId
+     * @param {number} dispatcherId
+     * @param {number[]} jobIds
+     */
+    async restoreJobs(courierId, dispatcherId, jobIds) {
+        const response = await this.$http.post('job/RestoreJobs?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
+        return response.data;
+    }
+
+    /**
+     * @param {number} courierId
+     * @param {number} dispatcherId
+     * @param {number[]} jobIds
+     */
+    async restoreSplitJobs(courierId, dispatcherId, jobIds) {
+        const response = await this.$http.post('job/RestoreSplitJobs?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
+        return response.data;
+    }
+
+    /**
+     * @param {number[]} jobIds
+     */
+    async resendJobs(jobIds) {
+        const response = await this.$http.post('job/ResendSelected?jobIds=' + jobIds);
+        return response.data;
+    }
+
+    /**
+     * @param {number} courierId
+     */
+    async resendAllJobs(courierId) {
+        const response = await this.$http.post('job/ResendAll?courierId=' + courierId);
+        return response.data;
+    }
+
+    /**
+     * @param {number[]} jobIds
+     */
+    async reAssignJobs(jobIds) {
+        const response = await this.$http.post('job/ReAssignSelected?jobIds=' + jobIds);
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {string} email
+     */
+    async sendPOD(jobId, email) {
+        const response = await this.$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
+        return response.data;
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} speedId
+     */
+    async hasClientItemsAvailable(clientId, speedId) {
+        const response = await this.$http.get('job/HasClientItemsAvailable?clientId=' + clientId + '&speedId=' + speedId);
+        return response.data;
+    }
+
+    async getJobs() {
+        const response = await this.$http.get('app/components/home/api/jobsList.php');
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     */
+    async getJobDetail(jobId) {
+        const response = await this.$http.get('/Job/Detail?jobId=' + jobId);
+        return response.data;
+    }
+
+    /**
+     * @param {number} parentId
+     * @param {number} clientId
+     */
+    async getRelatedJobs(parentId, clientId) {
+        const response = await this.$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
+        return response.data;
+    }
+
+    async getJobsGrouped() {
+        const response = await this.$http.get('app/components/home/api/jobsGroupedList.json');
+        return response.data;
+    }
+
+    /**
+     * @param {number} courierId
+     * @param {boolean} done
+     */
+    async getJobsCurrent(courierId, done) {
+        const response = await this.$http.get('job/current?courierId=' + courierId + '&done=' + done);
+        return response.data;
+    }
+
+    async getCouriersPicked() {
+        const response = await this.$http.get('app/components/home/api/couriersPicked.json');
+        return response.data;
+
+    }
+
+    async getCouriersThrough() {
+        const response = await this.$http.get('app/components/home/api/couriersThrough.json');
+        return response.data;
+    }
+
+    async getCouriersClear() {
+        const response = await this.$http.get('app/components/home/api/couriersClear.json');
+        return response.data;
+
+    }
+
+    async getAreaList() {
+        const response = await this.$http.get('app/components/home/api/areaList.json');
+        return response.data;
+    }
+
+    /**
+     * @param {string} channel
+     */
+    async getSupports(channel) {
+        const response = await this.$http.get('job/supports?channel=' + channel);
+        return response.data;
+
+    }
+
+    /**
+     * Closes the support request with the provided supportId and marks it closed by the provided staffId.
+     *
+     * @param {number} supportId - The unique identifier of the support request.
+     * @param {number} staffId - The unique identifier of the staff member marking the request as closed.
+     */
+    async closeSupport(supportId, staffId) {
+        return await this.$http.post('job/CloseSupport?supportId=' + supportId + '&staffId=' + staffId);
+    }
+
+    /**
+     * Locks a support request with the provided id and locks it by the provided dispatcher.
+     *
+     * @param {number} supportId - The unique identifier of the support request.
+     * @param {string} dispatcherName - The unique identifier of the dispatcher locking the request.
+     */
+    async lockSupport(supportId, dispatcherName) {
+        return await this.$http.post('job/LockSupport?id=' + supportId + '&dispatcher=' + dispatcherName);
+    }
+
+    /**
+     * Unlocks a support request with the provided id and unlocks it by the provided dispatcher.
+     *
+     * @param {number} supportId - The unique identifier of the support request.
+     * @param {string} dispatcherName - The unique identifier of the dispatcher unlocking the request.
+     */
+    async unLockSupport(supportId, dispatcherName) {
+        return await this.$http.post('job/UnLockSupport?id=' + supportId + '&dispatcher=' + dispatcherName);
+    }
+
+    async getLateCalls() {
+        const response = await this.$http.get('app/components/home/api/lateCalls.json');
+        return response.data;
+    }
+
+    async getClearLists() {
+        const response = await this.$http.get('');
+        return response.data;
+    }
+
+    /**
+     * @param {number} clearListId
+     */
+    async getClearListEnvelope(clearListId) {
+        const response = await this.$http.get('courier/ClearListEnvelope?clearListId=' + clearListId);
+        return response.data;
+    }
+
+    async getActiveCouriers() {
+        const response = await this.$http.get('courier/active');
+        return response.data;
+    }
+
+    async getAllCouriers() {
+        const response = await this.$http.get('courier/AllActive');
+        return response.data;
+    }
+
+    async getActiveClients() {
+        const response = await this.$http.get('home/ActiveClients');
+        return response.data;
+    }
+
+    /**
+     * @param {number} contactId
+     */
+    async getClientContacts(contactId) {
+        const response = await this.$http.get('home/ClientContacts?contactId=' + contactId);
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     */
+    async getPotentialCouriers(jobId) {
+        const response = await this.$http.get('courier/PotentialCouriers?jobId=' + jobId);
+        return response.data;
+    }
+
+    /**
+     * @param {string} code
+     */
+    async getCourierPosition(code) {
+        const response = await this.$http.get('courier/location?code=' + code);
+        return response.data;
+
+    }
+
+    /**
+     * Retrieves the available courier location within a geographical boundary.
+     *
+     * @param {number} minLng - The minimum longitude of the boundary.
+     * @param {number} minLat - The minimum latitude of the boundary.
+     * @param {number} maxLng - The maximum longitude of the boundary.
+     * @param {number} maxLat - The maximum latitude of the boundary.
+     */
+    async getAvailableCourierLocation(minLng, minLat, maxLng, maxLat) {
+        const response = await this.$http.get('courier/AvailableCourierLocation?minLng=' + minLng + '&minLat=' + minLat + '&maxLng=' + maxLng + '&maxLat=' + maxLat);
+        return response.data;
+    }
+
+    async getSuburbList() {
+        const response = await this.$http.get('job/SuburbList');
+        return response.data;
+    }
+
+    async getSpeedList() {
+        const response = await this.$http.get('job/SpeedList');
+        return response.data;
+    }
+
+    /**
+     * Retrieves the contact list for the client with the provided clientId.
+     *
+     * @param {number} clientId - The unique identifier of the client.
+     */
+    async getContactList(clientId) {
+        const response = await this.$http.get('job/ContactList?clientId=' + clientId);
+        return response.data;
+    }
+
+    /**
+     * Retrieves the detailed contact list for the client with the provided clientId.
+     *
+     * @param {number} clientId - The unique identifier of the client.
+     */
+    async getContactDetailList(clientId) {
+        const response = await this.$http.get('job/ContactDetailList?clientId=' + clientId);
+        return response.data;
+    }
+
+    async getLeaveList() {
+        const response = await this.$http.get('job/LeaveList');
+        return response.data;
+    }
+
+    async getUndeliverableList() {
+        const response = await this.$http.get('job/UndeliverableList');
+        return response.data;
+    }
+
+    async getInternalStatusList() {
+        const response = await this.$http.get('job/InternalStatusList');
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {number} truckWeightLimit
+     */
+    async getTruckItemsSummary(jobId, truckWeightLimit) {
+        const response = await this.$http.get('job/TruckItemsSummary?jobId=' + jobId + '&truckWeightLimit=' + truckWeightLimit);
+        return response.data;
+    }
+
+    /**
+     * @param {number} lateType
+     * @param {number} lateTime
+     * @param {number} minutes
+     * @param {number} pickupTime
+     * @param {number} alertLatePickup
+     * @param {number} deliveryTime
+     * @param {number} alertLateDelivery
+     * @param {string} jobNo
+     * @param {number} clientId
+     * @param {string} contact
+     * @param {number} staffId
+     * @param {Date} jobTime
+     * @param {number} jobId
+     * @param {number} jobType
+     * @param {string} bookedSpeed
+     * @param {string} notifiedSpeed
+     * @param {string} despatcherName
+     * @param {boolean} calculationRequired
+     */
+    async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup,
+                   deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId,
+                   jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calculationRequired) {
+        const url = 'job/LateCall';
+        const data = {
+            lateType,
+            lateTime,
+            minutes,
+            pickupTime,
+            alertLatePickup,
+            deliveryTime,
+            alertLateDelivery,
+            jobNo,
+            clientId,
+            contact,
+            staffId,
+            jobTime,
+            jobId,
+            jobType,
+            bookedSpeed,
+            notifiedSpeed,
+            despatcherName,
+            calculationRequired
+        };
+
+        try {
+            const response = await this.$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
+            return response.data;
+        } catch (error) {
+            console.error('Error in lateCall:', error);
+            throw error;
         }
-        ]);
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} fromId
+     * @param {number} toId
+     * @param {number} weight
+     * @param {number} size
+     * @param {number} speed
+     * @param {number} qty
+     * @param {Date} bookedDate
+     * @param {number} pickUp
+     * @param {number} dropOff
+     * @param {boolean} privateRes
+     * @param {number} oversizeItems
+     * @param {number} overWeightItems
+     * @param {number} dGClass
+     * @param {Date} truckStartTime
+     * @param {number} truckHours
+     */
+    async rateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
+        const response = await this.$http.get('job/RateTruckJob?clientId=' + clientId + '&fromId=' + fromId + '&toId=' + toId + '&weight=' + weight + '&size=' + size + '&speed=' + speed + '&qty=' + qty + '&bookedDate=' + bookedDate + '&pickup=' + pickUp + '&dropOff=' + dropOff + '&privateRes=' + privateRes + '&oversizeItems=' + oversizeItems + '&overWeightItems=' + overWeightItems + '&dgClass=' + dGClass + '&truckStartTime=' + truckStartTime + '&truckHours=' + truckHours);
+        return response.data;
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} fromId
+     * @param {number} toId
+     * @param {number} weight
+     * @param {number} size
+     * @param {number} speed
+     * @param {number} qty
+     * @param {Date} bookedDate
+     * @param {number} pickUp
+     * @param {number} dropOff
+     * @param {boolean} privateRes
+     * @param {number} oversizeItems
+     * @param {number} overWeightItems
+     * @param {number} dGClass
+     * @param {Date} truckStartTime
+     * @param {number} truckHours
+     * @param {number} gstRate
+     */
+    async truckJobAmountBreakdown(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours, gstRate) {
+        const response = await this.$http.get('job/TruckJobAmountBreakdown?clientId=' + clientId + '&fromId=' + fromId + '&toId=' + toId + '&weight=' + weight + '&size=' + size + '&speed=' + speed + '&qty=' + qty + '&bookedDate=' + bookedDate + '&pickup=' + pickUp + '&dropOff=' + dropOff + '&privateRes=' + privateRes + '&oversizeItems=' + oversizeItems + '&overWeightItems=' + overWeightItems + '&dgClass=' + dGClass + '&truckStartTime=' + truckStartTime + '&truckHours=' + truckHours + '&gstRate=' + gstRate);
+        return response.data;
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} fromId
+     * @param {number} toId
+     * @param {number} speed
+     * @param {boolean} pedal
+     * @param {boolean} van
+     * @param {boolean} returnJob
+     * @param {number} weight
+     * @param {number} size
+     * @param {boolean} includeFuelSurcharge
+     * @param {boolean} direct
+     * @param {number} acceptedJobTypeId
+     * @param {string} ourRef
+     * @param {string} refA
+     * @param {string} refB
+     * @param {number} quantity
+     * @param {Date} booked
+     */
+    async rateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
+        const response = await this.$http.get('job/RateJob?clientId=' + clientId + '&fromId=' + fromId + '&toId=' + toId + '&speed=' + speed + '&pedal=' + pedal + '&van=' + van + '&returnJob=' + returnJob + '&weight=' + weight + '&size=' + size + '&includeFuelSurcharge=' + includeFuelSurcharge + '&direct=' + direct + '&acceptedJobTypeId=' + acceptedJobTypeId + '&ourRef=' + ourRef + '&refA=' + refA + '&refB=' + refB + '&quantity=' + quantity + '&booked=' + booked);
+        return response.data;
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} fromId
+     * @param {number} toId
+     * @param {number} speed
+     * @param {boolean} pedal
+     * @param {boolean} van
+     * @param {boolean} returnJob
+     * @param {number} weight
+     * @param {number} size
+     * @param {boolean} includeFuelSurcharge
+     * @param {boolean} direct
+     * @param {number} acceptedJobTypeId
+     * @param {string} ourRef
+     * @param {string} refA
+     * @param {string} refB
+     * @param {number} quantity
+     * @param {Date} booked
+     * @param {number} gstRate
+     * @param {number} amount
+     */
+    async jobAmountBreakdown(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked, gstRate, amount) {
+        const response = await this.$http.get('job/JobAmountBreakdown?clientId=' + clientId + '&fromId=' + fromId + '&toId=' + toId + '&speed=' + speed + '&pedal=' + pedal + '&van=' + van + '&returnJob=' + returnJob + '&weight=' + weight + '&size=' + size + '&includeFuelSurcharge=' + includeFuelSurcharge + '&direct=' + direct + '&acceptedJobTypeId=' + acceptedJobTypeId + '&ourRef=' + ourRef + '&refA=' + refA + '&refB=' + refB + '&quantity=' + quantity + '&booked=' + booked + '&gstRate=' + gstRate + '&amount=' + amount);
+        return response.data;
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} amount
+     */
+    async ppdExclusiveAmount(clientId, amount) {
+        const response = await this.$http.get('job/PPDExclusiveAmount?clientId=' + clientId + '&amount=' + amount);
+        return response.data;
+    }
+
+    /**
+     * @param {number} clientId
+     * @param {number} speedId
+     * @param {number} jobId
+     */
+    async getServices(clientId, speedId, jobId) {
+        const url = 'job/GetAllClientItems';
+        const response = await this.$http.get(url + '?clientId=' + clientId + '&speedId=' + speedId + '&jobId=' + jobId);
+
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {number[]} serviceIds
+     * @param {number} totalCost
+     */
+    async addServicesToJob(jobId, serviceIds, totalCost) {
+        const url = 'job/AddClientItemsToJob'
+
+        return await this.$http({
+            method: 'POST', url: url + '?jobId=' + jobId, data: {serviceIds, totalCost}
+        });
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {string} despatcherName
+     */
+    async splitJob(jobId, despatcherName) {
+        return await this.$http.post('job/splitJob?jobId=' + jobId + '&despatcherName=' + despatcherName);
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {string} despatcherName
+     */
+    async finishSplitJobProcess(jobId, despatcherName) {
+        return await this.$http.post('job/finishSplitJobProcess?jobId=' + jobId + '&despatcherName=' + despatcherName);
+    }
+
+    /**
+     * @param {string} jobNumber
+     * @param {number} jobStatus
+     * @param {string} podName
+     * @param {Date} podTime
+     */
+    async updatePODDetail(jobNumber, jobStatus, podName, podTime) {
+        return await this.$http.post('job/UpdatePODDetails?jobNumber=' + jobNumber + '&jobStatus=' + jobStatus + '&podName=' + podName + '&podTime=' + podTime);
+    }
+
+    /**
+     * @param {number} courierId
+     * @param {number} staffId
+     * @param {string} despatcherName
+     * @param {string} message
+     */
+    async sendSMS(courierId, staffId, despatcherName, message) {
+        const response = await this.$http.post('job/SendSMS?courierId=' + courierId + '&dispId=' + staffId + '&despatcherName=' + despatcherName + '&message=' + message);
+        return response.data;
+    }
+
+    /**
+     * @param {number} jobId
+     */
+    async reRateSplitJob(jobId) {
+        return await this.$http.post('job/ReRateSplitJob?jobId=' + jobId);
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {number} toSuburbId
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     * @param {boolean} cbd
+     * @param {number} rate
+     * @param {string} despatcherName
+     * @param {boolean} prebook
+     */
+    updateDeliveryAddress = async (jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) => {
+        const method = prebook ? 'job/UpdateBookingDeliveryAddress' : 'job/UpdateDeliveryAddress';
+        return await this.$http.post(method + '?jobId=' + jobId + '&toSuburbId=' + toSuburbId + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
+    }
+
+    /**
+     * @param {number} bulkJobId
+     * @param {number} toSuburb
+     * @param {string|number} toPostCode
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     * @param {string} despatcherName
+     */
+    async updateBulkDeliveryAddress(bulkJobId, toSuburb, toPostCode, address, lat, lng, despatcherName) {
+        return await this.$http.post('job/UpdateBulkDeliveryAddress?bulkJobId=' + bulkJobId + '&toSuburb=' + toSuburb + '&toPostCode=' + toPostCode + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng + '&despatcherName=' + despatcherName);
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {number} fromSuburbId
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     * @param {boolean} cbd
+     * @param {number} rate
+     * @param {string} despatcherName
+     * @param {boolean} prebook
+     */
+    async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
+        const method = prebook ? 'job/UpdateBookingPickupAddress' : 'job/UpdatePickupAddress';
+        return await this.$http.post(method + '?jobId=' + jobId + '&fromSuburbId=' + fromSuburbId + '&address=' + address + '&pickupLat=' + lat + '&pickupLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
+    }
+
+    /**
+     * @param {number} bulkJobId
+     * @param {number} fromSuburb
+     * @param {number} fromPostCode
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     * @param {string} despatcherName
+     */
+    async updateBulkPickupAddress(bulkJobId, fromSuburb, fromPostCode, address, lat, lng, despatcherName) {
+        return await this.$http.post('job/UpdateBulkPickupAddress?bulkJobId=' + bulkJobId + '&fromSuburb=' + fromSuburb + '&fromPostCode=' + fromPostCode + '&address=' + address + '&pickupLat=' + lat + '&pickupLng=' + lng + '&despatcherName=' + despatcherName);
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {number} jobType
+     * @param {string} despatcherName
+     */
+    async updateJobType(jobId, jobType, despatcherName) {
+        return await this.$http.post('job/UpdateJobType?jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName);
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {number} toSuburbId
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     */
+    async updateSplitJobAddress(jobId, toSuburbId, address, lat, lng) {
+        return await this.$http.post('job/UpdateSplitJobAddress?jobId=' + jobId + '&toSuburbId=' + toSuburbId + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng);
+    }
+
+    /**
+     * @param {number} jobNumber
+     * @param {Date} bookDate
+     */
+    async releaseBulkJob(jobNumber, bookDate) {
+        const dt = this.moment(bookDate).format('YYYY-MM-DD');
+        return await this.$http.post('job/ReleaseBulkJob?jobNumber=' + jobNumber + '&bookDate=' + dt);
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {string} field
+     * @param {string|Date|number} value
+     * @param {number} rate
+     * @param {string} despatcherName
+     * @param {number} staffId
+     * @param {boolean} preBook
+     */
+    async updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
+        if (field === 'Time' || field === 'CompletedTime') {
+            value = this.moment().format('YYYY-MM-DD') + ' ' + this.moment(value).format('HH:mm:ss');
+        }
+        if (field === 'FollowupTime') {
+            value = this.moment(value).format('YYYY-MM-DD') + ' ' + this.moment(value).format('HH:mm:ss');
+        }
+        if (field === 'Date' || field === 'StopDate' || field === 'RestartDate' || field === 'InActiveDate' || field === 'FirstDue' || field === 'LastDone' || field === 'NextDue') {
+            value = this.moment(value).format('YYYY-MM-DD');
+        }
+        if (field === 'DeliverToContact') {
+            field = 'ToContactName';
+        }
+        const method = preBook ? 'job/UpdateJobBooking' : 'job/UpdateJob';
+        return await this.$http.post(method + '?jobId=' + jobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+    }
+
+    /**
+     * @param {number} bulkJobId
+     * @param {string} field
+     * @param {string|number|Date} value
+     * @param {number} rate
+     * @param {string} despatcherName
+     * @param {number} staffId
+     */
+    async updateBulkJobDetail(bulkJobId, field, value, rate, despatcherName, staffId) {
+        if (field === 'Time' || field === 'CompletedTime') {
+            value = this.moment().format('YYYY-MM-DD') + ' ' + this.moment(value).format('HH:mm:ss');
+        }
+        if (field === 'Date' || field === 'StopDate' || field === 'RestartDate' || field === 'InActiveDate' || field === 'FirstDue' || field === 'LastDone' || field === 'NextDue') {
+            value = this.moment(value).format('YYYY-MM-DD');
+        }
+        return await this.$http.post('job/UpdateBulkJob?bulkJobId=' + bulkJobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+    }
+
+    async doAPI(data) {
+        const response = await this.$http.post('app/components/home/api/api.php', data);
+        return response.data;
+    }
+
+    /**
+     * @param {*|{area: string, asc: string, status: string, order: string}} data
+     * @param {*[]|string} selectedClients
+     * @param {boolean} internal
+     */
+    async getJobsFilter(data, selectedClients, internal) {
+        const response = await this.$http.get('job?status=' + data.status + '&area=' + data.area + '&order=' + data.order + '&asc=' + data.asc + '&isInternal=' + internal + '&cid=' + ContactID + '&clientIds=' + selectedClients);
+        return response.data;
+    }
+
+    /**
+     * Retrieves the auto-complete search results for the given address text from a geocoder service.
+     *
+     * @param {string} text - The search text for which auto-complete results are to be fetched.
+     */
+    async autocompleteAddressSearch(text) {
+        const response = await this.$http({
+            url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
+            method: 'GET',
+            params: {
+                query: text,
+                app_id: 'bBPfh2x8Cauun3ygLMAx',
+                app_code: 'yjfwTdkin_R2rGXYTrwWVg',
+                country: this.useUsFormat ? 'USA' : 'NZL'
+            }
+        });
+        return await response.data;
+    }
+
+    /**
+     * @param {{text: string, id: number}} item
+     */
+    async getGeoCodeInformation(item) {
+        const response = await this.$http.get('https://geocoder.cit.api.here.com/6.2/geocode.json', {
+            params: {
+                app_id: 'bBPfh2x8Cauun3ygLMAx', app_code: 'yjfwTdkin_R2rGXYTrwWVg', locationId: item.id
+            }
+        });
+        return await response.data;
+    }
+
+    /**
+     * Retrieves addresses based on the provided latitude and longitude.
+     *
+     * @param {number} lat - Latitude of the location.
+     * @param {number} long - Longitude of the location.
+     */
+    async retrieveAddresses(lat, long) {
+        const response = await this.$http.get('https://reverse.geocoder.api.here.com/6.2/reversegeocode.json', {
+            params: {
+                app_id: 'bBPfh2x8Cauun3ygLMAx',
+                app_code: 'yjfwTdkin_R2rGXYTrwWVg',
+                mode: 'retrieveAddresses',
+                prox: lat.toString() + ',' + long.toString() + ',' + '250'
+            }
+        });
+        return await response.data;
+    }
+
+    /**
+     * Performs an async search using the provided search term and URL.
+     *
+     * @param {string} searchTerm - The term to search for.
+     * @param {string} url - The URL to perform the search in.
+     */
+    async autocompleteSearch(searchTerm, url) {
+        const response = await this.$http.get(url, {
+            params: {
+                searchTerm: searchTerm
+            }
+        });
+        return await response.data;
+    }
+
+    /**
+     * Checks if job has any attached files
+     *
+     * @param {number} jobId
+     */
+    async isFilesAttachedToJob(jobId) {
+        const response = await this.$http.get(`job/IsFilesAttachedToJob/${jobId}`);
+        return await response.data;
+    }
+}
+
+angular.module('uDispatch').service('DispatchData', ['$http', 'moment', 'APP_CONFIG', ($http, moment, APP_CONFIG) => new DispatchData($http, moment, APP_CONFIG)]);

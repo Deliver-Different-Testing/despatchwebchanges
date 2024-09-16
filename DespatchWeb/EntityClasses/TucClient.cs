@@ -10,8 +10,10 @@ namespace DespatchWeb.EntityClasses
         public TucClient()
         {
             TblBulkRunSchedules = new HashSet<TblBulkRunSchedule>();
+            TblClientAvailableSpeeds = new HashSet<TblClientAvailableSpeed>();
             TblClientContacts = new HashSet<TblClientContact>();
             TucClientContacts = new HashSet<TucClientContact>();
+            TucClientItems = new HashSet<TucClientItem>();
             TucEvents = new HashSet<TucEvent>();
         }
 
@@ -281,11 +283,23 @@ namespace DespatchWeb.EntityClasses
         public int? FrozenTruckRateCodeId { get; set; }
         public int? ChilledTruckExcessZoneRateCodeId { get; set; }
         public int? FrozenTruckExcessZoneRateCodeId { get; set; }
+        public string AddressLine1 { get; set; }
+        public string AddressLine2 { get; set; }
+        public string AddressLine3 { get; set; }
+        public string AddressLine4 { get; set; }
+        public string AddressLine5 { get; set; }
+        public string AddressLine6 { get; set; }
+        public string AddressLine7 { get; set; }
+        public string AddressLine8 { get; set; }
+        public bool? IsTenantClient { get; set; }
+        public int? PreferRatingMethod { get; set; }
 
         public virtual TucSuburb UcclSuburb { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
+        public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; }
         public virtual ICollection<TblClientContact> TblClientContacts { get; set; }
         public virtual ICollection<TucClientContact> TucClientContacts { get; set; }
+        public virtual ICollection<TucClientItem> TucClientItems { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
     }
 }

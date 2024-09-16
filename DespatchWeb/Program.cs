@@ -1,14 +1,18 @@
-﻿using DespatchWeb;
+﻿using System.IO;
+using DespatchWeb.Automapper;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using EntityFrameworkCore.UseRowNumberForPaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Server.IISIntegration;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Mindscape.Raygun4Net.AspNetCore;
 
@@ -26,9 +30,26 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => true;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
-builder.Services.AddScoped<JobRepository, JobRepository>();
-builder.Services.AddScoped<CourierRepository, CourierRepository>();
-builder.Services.AddScoped<ClientRepository, ClientRepository>();
+builder.Services.Configure<FormOptions>(x =>
+{
+    x.ValueLengthLimit = int.MaxValue;
+    x.MultipartBodyLengthLimit = int.MaxValue;
+    x.MultipartHeadersLengthLimit = int.MaxValue;
+});
+builder.Services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = int.MaxValue; });
+
+builder.Services.Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = int.MaxValue; });
+
+
+builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<ICourierRepository, CourierRepository>();
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+
+
+// Automapper
+builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile), typeof(PotentialCouriersViewModelMapperProfile),
+    typeof(GenericMapperProfiles), typeof(ActiveCouriersMapperProfile));
+
 
 var connectionString = builder.Configuration.GetConnectionString("Connection");
 //var connectionTimeout = builder.Configuration.GetValue<int>("ConnectionTimeout");
@@ -47,9 +68,16 @@ var provider = new FileExtensionContentTypeProvider { Mappings = { [".tpl"] = "t
 
 app.UseStaticFiles(new StaticFileOptions
 {
-
     ContentTypeProvider = provider
 });
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist")),
+    RequestPath = "/dist"
+});
+
 app.UseRaygun();
 app.UseAuthentication();
 app.UseHttpsRedirection();

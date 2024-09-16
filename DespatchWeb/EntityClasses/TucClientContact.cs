@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucClientContact()
         {
             TblClientContacts = new HashSet<TblClientContact>();
+            TucJobs = new HashSet<TucJob>();
         }
 
         public int UcctId { get; set; }
@@ -50,8 +51,10 @@ namespace DespatchWeb.EntityClasses
         public string Password2 { get; set; }
         public string Salt { get; set; }
         public int? StaffId { get; set; }
+        public string AccessCode { get; set; }
 
         public virtual TucClient UcctClient { get; set; }
         public virtual ICollection<TblClientContact> TblClientContacts { get; set; }
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

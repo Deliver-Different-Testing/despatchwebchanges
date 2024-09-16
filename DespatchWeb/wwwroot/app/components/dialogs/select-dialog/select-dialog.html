@@ -1,0 +1,57 @@
+<md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Edit {{ ctrl.title }}</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <form ng-submit="ctrl.submit(ctrl.selectedOption)">
+
+                <!-- Select field -->
+                <md-select aria-label="Select an option" ng-model="ctrl.selectedOption"
+                           placeholder="{{ ctrl.options.placeholder }}">
+                    <md-option ng-repeat="item in ctrl.options.items" ng-value="item">
+                        {{ item.text }}
+                    </md-option>
+                </md-select>
+
+                <div ng-show="ctrl.showCheckbox" style="display: flex; justify-content: center; align-items: center;">
+                    <div>
+                        <md-divider></md-divider>
+
+                        <!-- Checkbox -->
+                        <md-checkbox aria-label="Checkbox" ng-model="ctrl.checkboxValue">
+                            {{ ctrl.checkboxLabel }}
+                        </md-checkbox>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="!ctrl.selectedOption"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.selectedOption)"
+                   ng-disabled="!ctrl.selectedOption"
+                   ng-show="!ctrl.isLoading">
+            Save
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>
