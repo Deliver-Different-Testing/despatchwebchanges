@@ -37,12 +37,14 @@
                       ng-style="jobTableService.getClientBoxStyle(job)">{{job.client}}</span>
                 </td>
                 <td class="md-address-cell" md-cell>
-                    {{job.from}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+                    {{job.pickupAddress.addressLine5}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickupAddress.longitude">warning
+                    </md-icon>
                 </td>
                 <td class="md-address-cell" colspan="2" md-cell>
-                    {{job.to}} {{job.toAddress}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+                    {{job.deliveryAddress.fullAddress}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryAddress.longitude">warning
+                    </md-icon>
                 </td>
                 <td class="md-code-cell" md-cell
                     ng-click="jobTableService.editField($event, job, 'courier', 'Courier Code')">

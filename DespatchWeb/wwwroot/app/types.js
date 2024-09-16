@@ -134,13 +134,13 @@
  * @property {boolean} hasNationwide
  * @property {string|null} dispatcherName
  * @property {string|null} createdDate - DateTime represented as an ISO string
- * @property {AddressViewModel} pickupAddress
- * @property {AddressViewModel} deliveryAddress
+ * @property {AddressDetails} pickupAddress
+ * @property {AddressDetails} deliveryAddress
  */
 
 /**
  * Represents an address view model.
- * @typedef {Object} AddressViewModel
+ * @typedef {Object} AddressDetails
  *
  * @property {string} addressLine1
  * @property {string} addressLine2
