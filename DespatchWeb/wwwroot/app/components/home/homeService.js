@@ -345,9 +345,8 @@ class DispatchData {
     }
 
     async getClearLists() {
-        const response = await this.$http.get('courier');
+        const response = await this.$http.get('');
         return response.data;
-
     }
 
     /**

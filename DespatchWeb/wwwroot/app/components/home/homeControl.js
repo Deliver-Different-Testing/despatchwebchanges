@@ -636,7 +636,7 @@ angular.module("uDispatch")
                             await $scope.getClearListEnvelope(id);
                         }
 
-                        $scope.setFilters({'clearList': area});
+                        await $scope.setFilters({'clearList': area});
                     } catch (error) {
                         console.log('Error in selectClearList:', error);
                     }
@@ -2559,7 +2559,190 @@ angular.module("uDispatch")
 
                         $scope.getClearListsData = async () => {
                             try {
-                                $scope.clearLists = await DispatchData.getClearLists();
+                                // Hardcoded clearlists for demo
+                                $scope.clearLists = {
+                                    columns: [
+                                        {
+                                            areas: [
+                                                {
+                                                    id: 1,
+                                                    name: "Manhattan",
+                                                    totalRemaining: 50,
+                                                    percentHeight: 70,
+                                                    couriers: [
+                                                        {
+                                                            courierNumber: "M001",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Downtown"},
+                                                                {label: "Midtown"}
+                                                            ]
+                                                        },
+                                                        {
+                                                            courierNumber: "M002",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Upper East Side"},
+                                                                {label: "Harlem"}
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    id: 2,
+                                                    name: "Staten Island",
+                                                    totalRemaining: 10,
+                                                    percentHeight: 30,
+                                                    couriers: [
+                                                        {
+                                                            courierNumber: "S001",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "St. George"},
+                                                                {label: "Tottenville"}
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            areas: [
+                                                {
+                                                    id: 3,
+                                                    name: "Brooklyn",
+                                                    totalRemaining: 40,
+                                                    percentHeight: 60,
+                                                    couriers: [
+                                                        {
+                                                            courierNumber: "B001",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Williamsburg"},
+                                                                {label: "DUMBO"}
+                                                            ]
+                                                        },
+                                                        {
+                                                            courierNumber: "B002",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Park Slope"},
+                                                                {label: "Brooklyn Heights"}
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    id: 4,
+                                                    name: "Williamsburg",
+                                                    totalRemaining: 15,
+                                                    percentHeight: 40,
+                                                    couriers: [
+                                                        {
+                                                            courierNumber: "W001",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "North Side"},
+                                                                {label: "South Side"}
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            areas: [
+                                                {
+                                                    id: 5,
+                                                    name: "Queens",
+                                                    totalRemaining: 35,
+                                                    percentHeight: 50,
+                                                    couriers: [
+                                                        {
+                                                            courierNumber: "Q001",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Long Island City"},
+                                                                {label: "Flushing"}
+                                                            ]
+                                                        },
+                                                        {
+                                                            courierNumber: "Q002",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Jamaica"},
+                                                                {label: "Forest Hills"}
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    id: 6,
+                                                    name: "Astoria",
+                                                    totalRemaining: 20,
+                                                    percentHeight: 50,
+                                                    couriers: [
+                                                        {
+                                                            courierNumber: "A001",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Ditmars"},
+                                                                {label: "Broadway"}
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            areas: [
+                                                {
+                                                    id: 7,
+                                                    name: "Bronx",
+                                                    totalRemaining: 30,
+                                                    percentHeight: 60,
+                                                    couriers: [
+                                                        {
+                                                            courierNumber: "BX001",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Riverdale"},
+                                                                {label: "Fordham"}
+                                                            ]
+                                                        },
+                                                        {
+                                                            courierNumber: "BX002",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Pelham Bay"},
+                                                                {label: "Mott Haven"}
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    id: 8,
+                                                    name: "Long Island",
+                                                    totalRemaining: 25,
+                                                    percentHeight: 40,
+                                                    couriers: [
+                                                        {
+                                                            courierNumber: "LI001",
+                                                            courierData: { /* courier details */},
+                                                            destinations: [
+                                                                {label: "Nassau County"},
+                                                                {label: "Suffolk County"}
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                };
+
+
+
                                 $timeout(() => {
                                     angular.element("#clearLists .loading").fadeOut();
                                 }, 0);

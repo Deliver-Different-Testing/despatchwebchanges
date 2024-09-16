@@ -163,7 +163,7 @@ public class JobRepository : IJobRepository
         };
         job.Size = job.Vehicle;
         job.Date = job.BookedDate?.ToString("dd/MM/yyyy");
-        job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
+        job.Booked = DateTime.Parse(job.BookedDate?.ToString("yyyy-MM-dd") + " " +
                                     job.Time?.ToString("HH:mm:ss"));
 
         return job;
