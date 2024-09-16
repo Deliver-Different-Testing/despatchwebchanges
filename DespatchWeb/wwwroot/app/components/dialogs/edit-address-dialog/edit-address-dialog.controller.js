@@ -13,7 +13,7 @@ class EditAddressDialogController {
      * @param toastrService - The service used for toast notifications.
      * @param NgMap - Wrapper for Google Maps provided by 'ngMap' library.
      * @param APP_CONFIG
-     * @param {AddressDetails} addressDetails - Details related to the address in use.
+     * @param {AddressViewModel} addressDetails - Details related to the address in use.
      * @param {SuburbOption[]} suburbOptions - Options for suburbs.
      * @param {string} title - The title to display.
      * @param {string} submitLabel - The label to display on the submit button.
@@ -168,7 +168,7 @@ class EditAddressDialogController {
 
     /**
      * Submits provided address details.
-     * @param {AddressDetails} addressDetails - Details related to the address to submit.
+     * @param {AddressViewModel} addressDetails - Details related to the address to submit.
      */
     async submit(addressDetails) {
         this.isLoading = true;

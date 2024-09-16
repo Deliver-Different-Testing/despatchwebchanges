@@ -44,7 +44,7 @@ public interface IJobRepository
         string ascending, bool isInternal, string clientIds, int windowPane);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
-    Task<TucEvent> GetSupportEvent(int id);
+    Task<TucEvent> GetSupportEventAsync(int id);
     Task<int> UpdateSupportEvent(TucEvent supportEvent);
     Task CloseSupportEvent(int supportId, int staffId);
     Task DispatchSelectedJobs(int courierId, int dispId, string jobIds);

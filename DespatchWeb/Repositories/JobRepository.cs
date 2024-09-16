@@ -83,8 +83,6 @@ public class JobRepository : IJobRepository
                     Latitude = jobBooking.PickUpLatitude,
                     Longitude = jobBooking.PickUpLongitude,
                 },
-                FromContactName = jobBooking.PickupFromContact,
-                FromContactNumber = jobBooking.PickupFromPhone,
                 DeliveryAddress = new AddressViewModel
                 {
                     AddressLine1 = jobBooking.DeliveryAddressLine1,
@@ -98,6 +96,8 @@ public class JobRepository : IJobRepository
                     Latitude = jobBooking.DeliveryLatitude,
                     Longitude = jobBooking.DeliveryLongitude,
                 },
+                FromContactName = jobBooking.PickupFromContact,
+                FromContactNumber = jobBooking.PickupFromPhone,
                 Courier = courier.Code,
                 ContactName = jobBooking.UcbkContact,
                 Phone = jobBooking.DeliverToPhone,
@@ -794,79 +794,39 @@ public class JobRepository : IJobRepository
     public async Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
         bool isInternal, string clientIds)
     {
-        var orderToUse = "";
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
-        {
             return new List<JobViewModel>();
-        }
 
-        //ToDo verify clientids
-
-        switch (order)
+        var orderToUse = order switch
         {
-            case "remain":
-                orderToUse = $"ucjbDispTime {ascending}, Remaintime {ascending}, ucjbtime {ascending}";
-                break;
-            case "to":
-                orderToUse =
-                    $"SuburbTo {ascending}, ucjbTime {ascending}, SuburbFrom {ascending}, CourierCode {ascending}";
-                break;
-            case "from":
-                orderToUse =
-                    $"SuburbFrom {ascending}, SuburbTo {ascending}, ucjbTime {ascending}, CourierCode {ascending}";
-                break;
-            case "client":
-                orderToUse = $"ucclCode {ascending}, ucjbTime {ascending}, CourierCode {ascending}";
-                break;
-            case "jobNo":
-                orderToUse = $"ucjbNumber {ascending}, ucjbTime {ascending}, CourierCode {ascending}";
-                break;
-            case "status":
-                orderToUse = $"ucjbStatus {ascending}";
-                break;
-            case "speed":
-                orderToUse = $"SpeedShortName {ascending}";
-                break;
-            case "notify":
-                orderToUse = $"NotifiedSpeed {ascending}";
-                break;
-            case "lp":
-                orderToUse = $"ucjbLatePick {ascending}";
-                break;
-            case "ld":
-                orderToUse = $"ucjbLateDel {ascending}";
-                break;
-            case "time":
-                orderToUse = $"ucjbTime {ascending}";
-                break;
-            default:
-                orderToUse = $"RemainTime {ascending}";
-                break;
-        }
-
-        var areas = new List<string>
-        {
-            "city", "truck", "main1", "main2", "central", "shore", "west", "deep shore", "shallow shore", "east mid",
-            "deep west", "shallow west", "west mid", "other", "mangere", "deep south", "deep east", "parnell",
-            "eden terrace", "regional"
+            "remain" => $"ucjbDispTime {ascending}, Remaintime {ascending}, ucjbtime {ascending}",
+            "to" => $"SuburbTo {ascending}, ucjbTime {ascending}, SuburbFrom {ascending}, CourierCode {ascending}",
+            "from" => $"SuburbFrom {ascending}, SuburbTo {ascending}, ucjbTime {ascending}, CourierCode {ascending}",
+            "client" => $"ucclCode {ascending}, ucjbTime {ascending}, CourierCode {ascending}",
+            "jobNo" => $"ucjbNumber {ascending}, ucjbTime {ascending}, CourierCode {ascending}",
+            "status" => $"ucjbStatus {ascending}",
+            "speed" => $"SpeedShortName {ascending}",
+            "notify" => $"NotifiedSpeed {ascending}",
+            "lp" => $"ucjbLatePick {ascending}",
+            "ld" => $"ucjbLateDel {ascending}",
+            "time" => $"ucjbTime {ascending}",
+            _ => $"RemainTime {ascending}"
         };
-        var selectedAreas = area.Split(',').ToList();
+
+        var selectedAreas = await _context.TblDespatchViews1.Select(x => x.Name).ToListAsync();
+
         var whereToUse = "";
         if (isInternal)
         {
             var filter =
                 _context.TblDespatchViews.Where(v =>
                         (v.ShowOnAssistDespatch ?? false) == true &&
-                        area != "all" && selectedAreas.Contains(v.Name) ||
-                        (area == "all" && areas.Contains(v.Name)))
+                        area == "all" && selectedAreas.Contains(v.Name))
                     .ToList();
 
             foreach (var w in filter)
             {
-                if (!string.IsNullOrEmpty(whereToUse))
-                {
-                    whereToUse += " OR ";
-                }
+                if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " OR ";
 
                 whereToUse += $" ({w.WhereCondition}) ";
             }
@@ -875,10 +835,7 @@ public class JobRepository : IJobRepository
         }
 
 
-        if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status) && status != "all")
-        {
-            whereToUse += " AND";
-        }
+        if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status) && status != "all") whereToUse += " AND";
 
         switch (status)
         {
@@ -901,20 +858,12 @@ public class JobRepository : IJobRepository
                 break;
         }
 
-        if (!string.IsNullOrEmpty(whereToUse))
-        {
-            whereToUse += " AND ";
-        }
-
+        if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " AND ";
         whereToUse += " ucjbStatus <> 9";
 
         if (isInternal == false && !string.IsNullOrEmpty(clientIds))
         {
-            if (!string.IsNullOrEmpty(whereToUse))
-            {
-                whereToUse += " AND ";
-            }
-
+            if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " AND ";
             whereToUse += $" ucjbClientID in ({clientIds})";
         }
 
@@ -922,8 +871,6 @@ public class JobRepository : IJobRepository
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
         var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListAsync();
-        //var pallets = _context.TucJobItems.ToList();
-
 
         var list = (from j in jobs
             select new JobViewModel
@@ -956,19 +903,34 @@ public class JobRepository : IJobRepository
                 ClientId = j.UcjbClientId,
                 ClientName = j.ClientName,
                 JobType = (int)(j.UcjbType ?? 0),
-                From = j.SuburbFrom,
                 FromContactName = j.PickupFromContact,
                 FromContactNumber = j.PickupFromPhone,
-                FromSuburbId = j.FromSuburbId,
-                FromSuburbName = j.FromSuburbName,
-                FromPostCode = j.FromPostCode,
-                FromAddress = j.UcjbFromAddr,
-                To = j.SuburbTo,
-                ToSuburbId = j.ToSuburbId,
-                ToSuburbName = j.ToSuburbName,
-                ToPostCode = j.ToPostCode,
-                ToAddress = j.UcjbToAddr,
-                ToCity = j.ToCity,
+                PickupAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8,
+                    Latitude = j.PickUpLatitude,
+                    Longitude = j.PickUpLongitude,
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8,
+                    Latitude = j.DeliveryLatitude,
+                    Longitude = j.DeliveryLongitude,
+                },
                 Courier = j.CourierCode,
                 Remain = j.RemainTime,
                 StatusId = j.UcjbStatus,
@@ -991,17 +953,13 @@ public class JobRepository : IJobRepository
                 SigNotRequired = j.SigNotRequired,
                 Charge = $"{j.UcjbAmount:C}",
                 Booked =
-                    DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
+                    DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime?.ToString("HH:mm:ss")),
                 Date = j.UcjbDate.ToString("dd/MM/yyyy"),
                 DispatchTime = j.UcjbDispTime,
                 PuTime = j.Putime,
                 ClientNotes = j.ClientNotes,
                 InternalNotes = j.JobNotes,
                 ChildNotes = j.ChildNotes,
-                PickUpLatitude = j.PickUpLatitude,
-                PickUpLongitude = j.PickUpLongitude,
-                DeliveryLatitude = j.DeliveryLatitude,
-                DeliveryLongitude = j.DeliveryLongitude,
                 PalletInfo = (
                     from pa in _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
                     select new PalletInfo
@@ -1042,8 +1000,8 @@ public class JobRepository : IJobRepository
                 PodPhoto = j.DeliveryPhoto,
                 PodName = j.UcjbPodname,
                 CompletedTime = j.UcjbComplTime.HasValue
-                    ? DateTime.Parse(j.UcjbComplTime.Value.ToString("yyyy-MM-dd") + " " +
-                                     j.UcjbComplTime.Value.ToString("HH:mm"))
+                    ? DateTime.Parse(j.UcjbComplTime?.ToString("yyyy-MM-dd") + " " +
+                                     j.UcjbComplTime?.ToString("HH:mm"))
                     : j.UcjbComplTime,
                 Done = j.UcjbJobDone,
                 TrackingMethod = j.TrackingMethod,
@@ -1084,61 +1042,29 @@ public class JobRepository : IJobRepository
     {
         var orderToUse = "";
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
-        {
             return new List<JobViewModel>();
-        }
 
-        //ToDo verify clientids
-
-        switch (order)
+        orderToUse = order switch
         {
-            case "courier":
-                orderToUse = $"Convert(int, CourierCode) {ascending}, ucjbtime {ascending}";
-                break;
-            case "remain":
-                orderToUse =
-                    $"FollowupTime {ascending},  ucjbDispTime {ascending}, Remaintime {ascending}, ucjbtime {ascending}";
-                break;
-            case "to":
-                orderToUse =
-                    $"SuburbTo {ascending}, ucjbTime {ascending}, SuburbFrom {ascending}, Convert(int, CourierCode) {ascending}";
-                break;
-            case "from":
-                orderToUse =
-                    $"SuburbFrom {ascending}, SuburbTo {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}";
-                break;
-            case "client":
-                orderToUse = $"ucclCode {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}";
-                break;
-            case "jobNo":
-                orderToUse = $"ucjbNumber {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}";
-                break;
-            case "status":
-                orderToUse = $"ucjbStatus {ascending}";
-                break;
-            case "speed":
-                orderToUse = $"SpeedShortName {ascending}";
-                break;
-            case "notify":
-                orderToUse = $"NotifiedSpeed {ascending}";
-                break;
-            case "lp":
-                orderToUse = $"ucjbLatePick {ascending}";
-                break;
-            case "ld":
-                orderToUse = $"ucjbLateDel {ascending}";
-                break;
-            case "time":
-                orderToUse = $"ucjbTime {ascending}, Convert(int,CourierCode) {ascending}";
-                break;
-            case "pod":
-                orderToUse = $"ucjbPODName {ascending}, Convert(int, CourierCode) {ascending}";
-                break;
-            default:
-                orderToUse =
-                    $"FollowupTime {ascending}, ucjbDispTime {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}";
-                break;
-        }
+            "courier" => $"Convert(int, CourierCode) {ascending}, ucjbtime {ascending}",
+            "remain" =>
+                $"FollowupTime {ascending},  ucjbDispTime {ascending}, Remaintime {ascending}, ucjbtime {ascending}",
+            "to" =>
+                $"SuburbTo {ascending}, ucjbTime {ascending}, SuburbFrom {ascending}, Convert(int, CourierCode) {ascending}",
+            "from" =>
+                $"SuburbFrom {ascending}, SuburbTo {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}",
+            "client" => $"ucclCode {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}",
+            "jobNo" => $"ucjbNumber {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}",
+            "status" => $"ucjbStatus {ascending}",
+            "speed" => $"SpeedShortName {ascending}",
+            "notify" => $"NotifiedSpeed {ascending}",
+            "lp" => $"ucjbLatePick {ascending}",
+            "ld" => $"ucjbLateDel {ascending}",
+            "time" => $"ucjbTime {ascending}, Convert(int,CourierCode) {ascending}",
+            "pod" => $"ucjbPODName {ascending}, Convert(int, CourierCode) {ascending}",
+            _ =>
+                $"FollowupTime {ascending}, ucjbDispTime {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}"
+        };
 
         var selectedAreas = area.Split(',').ToList();
 
@@ -1179,18 +1105,15 @@ public class JobRepository : IJobRepository
 
         if (isInternal)
         {
-            var filter =
+            var filter = await
                 _context.TblDespatchViews.Where(v =>
                         (v.ShowOnJobFollowup ?? false) == true &&
                         selectedViews.Contains(v.DespatchViewId))
-                    .ToList();
+                    .ToListAsync();
 
             foreach (var w in filter)
             {
-                if (!string.IsNullOrEmpty(whereToUse))
-                {
-                    whereToUse += " OR ";
-                }
+                if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " OR ";
 
                 whereToUse += $" ({w.WhereCondition}) ";
             }
@@ -1199,10 +1122,7 @@ public class JobRepository : IJobRepository
         }
 
 
-        if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status))
-        {
-            whereToUse += " AND ";
-        }
+        if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status)) whereToUse += " AND ";
 
         switch (status)
         {
@@ -1235,10 +1155,7 @@ public class JobRepository : IJobRepository
                 break;
         }
 
-        if (!string.IsNullOrEmpty(whereToUse))
-        {
-            whereToUse += " AND ";
-        }
+        if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " AND ";
 
         switch (windowPane)
         {
@@ -1259,10 +1176,7 @@ public class JobRepository : IJobRepository
 
         if (isInternal == false && !string.IsNullOrEmpty(clientIds))
         {
-            if (!string.IsNullOrEmpty(whereToUse))
-            {
-                whereToUse += " AND ";
-            }
+            if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " AND ";
 
             whereToUse += $" ucjbClientID in ({clientIds})";
         }
@@ -1271,7 +1185,7 @@ public class JobRepository : IJobRepository
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
         var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListAsync();
-        var pallets = _context.TucJobItems.ToList();
+        var pallets = await _context.TucJobItems.ToListAsync();
 
 
         var list = (from j in jobs
@@ -1304,19 +1218,34 @@ public class JobRepository : IJobRepository
                 ClientId = j.UcjbClientId,
                 ClientName = j.ClientName,
                 JobType = (int)(j.UcjbType ?? 0),
-                From = j.SuburbFrom,
                 FromContactName = j.PickupFromContact,
                 FromContactNumber = j.PickupFromPhone,
-                FromSuburbId = j.FromSuburbId,
-                FromSuburbName = j.FromSuburbName,
-                FromPostCode = j.FromPostCode,
-                FromAddress = j.UcjbFromAddr,
-                To = j.SuburbTo,
-                ToSuburbId = j.ToSuburbId,
-                ToSuburbName = j.ToSuburbName,
-                ToPostCode = j.ToPostCode,
-                ToAddress = j.UcjbToAddr,
-                ToCity = j.ToCity,
+                PickupAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8,
+                    Latitude = j.PickUpLatitude,
+                    Longitude = j.PickUpLongitude,
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8,
+                    Latitude = j.DeliveryLatitude,
+                    Longitude = j.DeliveryLongitude,
+                },
                 Courier = j.CourierCode,
                 Remain = j.RemainTime,
                 StatusId = j.UcjbStatus,
@@ -1346,10 +1275,6 @@ public class JobRepository : IJobRepository
                 ClientNotes = j.ClientNotes,
                 InternalNotes = j.JobNotes,
                 ChildNotes = j.ChildNotes,
-                PickUpLatitude = j.PickUpLatitude,
-                PickUpLongitude = j.PickUpLongitude,
-                DeliveryLatitude = j.DeliveryLatitude,
-                DeliveryLongitude = j.DeliveryLongitude,
                 PalletInfo = (
                     from pa in pallets.Where(p => p.JobId == j.UcjbId)
                     select new PalletInfo
@@ -1389,8 +1314,8 @@ public class JobRepository : IJobRepository
                 PodPhoto = j.DeliveryPhoto,
                 PodName = j.UcjbPodname,
                 CompletedTime = j.UcjbComplTime.HasValue
-                    ? DateTime.Parse(j.UcjbComplTime.Value.ToString("yyyy-MM-dd") + " " +
-                                     j.UcjbComplTime.Value.ToString("HH:mm"))
+                    ? DateTime.Parse(j.UcjbComplTime?.ToString("yyyy-MM-dd") + " " +
+                                     j.UcjbComplTime?.ToString("HH:mm"))
                     : j.UcjbComplTime,
                 Done = j.UcjbJobDone,
                 TrackingMethod = j.TrackingMethod,
@@ -1424,9 +1349,9 @@ public class JobRepository : IJobRepository
         var whereToUse = "";
         const string orderToUse = "CASE WHEN ucevType = 1 THEN 1 WHEN ucevType = 2 THEN 2 ELSE 0 END, ucevTime";
 
-        var channelItems = channel.Split(',');
+        var channelItems = channel?.Split(',');
 
-        if (channelItems.Length == 3)
+        if (channelItems != null && channelItems.Length == 3)
         {
             channel = "All";
         }
@@ -1485,7 +1410,7 @@ public class JobRepository : IJobRepository
             ? $"select * from DES_qrySupportEvents_CustomerAndCourier order by {orderToUse}"
             : $"select * from DES_qrySupportEvents_CustomerAndCourier where {whereToUse} order by {orderToUse}";
 
-        var events = _context.DesQrySupportEventsCustomerAndCouriers.FromSqlRaw(s).ToList();
+        var events = await _context.DesQrySupportEventsCustomerAndCouriers.FromSqlRaw(s).ToListAsync();
         var evm = (from e in events
             select new SupportViewModel
             {
@@ -1504,7 +1429,7 @@ public class JobRepository : IJobRepository
         return evm;
     }
 
-    public async Task<TucEvent> GetSupportEvent(int id)
+    public async Task<TucEvent> GetSupportEventAsync(int id)
     {
         var support = await _context.TucEvents.FindAsync(id);
         return support;

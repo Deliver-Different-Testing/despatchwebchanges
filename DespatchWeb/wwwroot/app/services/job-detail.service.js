@@ -967,7 +967,7 @@ class JobDetailService {
 
     /**
      * @param {Job} job
-     * @param {AddressDetails} addressDetails
+     * @param {AddressViewModel} addressDetails
      * @param {boolean} isDeliveryAddress
      */
     _updateJobAddress(job, addressDetails, isDeliveryAddress) {
@@ -978,7 +978,7 @@ class JobDetailService {
 
     /**
      * @param {Job} job
-     * @param {AddressDetails} addressDetails
+     * @param {AddressViewModel} addressDetails
      * @param {boolean} isDeliveryAddress
      */
     _updateBulkJobIfNeeded(job, addressDetails, isDeliveryAddress) {
@@ -1001,7 +1001,7 @@ class JobDetailService {
 
     /**
      * @param {Job} job
-     * @param {AddressDetails} addressDetails
+     * @param {AddressViewModel} addressDetails
      * @param {boolean} isDeliveryAddress
      */
     updateJobRate(job, addressDetails, isDeliveryAddress) {
@@ -1025,7 +1025,7 @@ class JobDetailService {
 
     /**
      * @param {Job} job
-     * @param {AddressDetails} addressDetails
+     * @param {AddressViewModel} addressDetails
      * @param {number} rate
      * @param {number|boolean} pedal
      */

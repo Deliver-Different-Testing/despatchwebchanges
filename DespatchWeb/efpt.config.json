@@ -51,6 +51,10 @@
          "ObjectType": 0
       },
       {
+        "Name": "[dbo].[TblDespatchViews]",
+        "ObjectType": 0
+      },
+     {
          "Name": "[dbo].[tblDFRNTApps]",
          "ObjectType": 0
       },

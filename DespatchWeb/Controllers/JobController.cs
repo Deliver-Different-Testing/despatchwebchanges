@@ -194,7 +194,7 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> LockSupport(int id, string dispatcher)
     {
-        var support = await _jobRepo.GetSupportEvent(id);
+        var support = await _jobRepo.GetSupportEventAsync(id);
         support.UcevDespatcher = dispatcher;
         var result = await _jobRepo.UpdateSupportEvent(support);
         return Json(result > 0);
@@ -203,7 +203,7 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> UnLockSupport(int id, string dispatcher)
     {
-        var support = await _jobRepo.GetSupportEvent(id);
+        var support = await _jobRepo.GetSupportEventAsync(id);
         if (support.UcevDespatcher != dispatcher) return Json(false);
         support.UcevDespatcher = "";
         var result = await _jobRepo.UpdateSupportEvent(support);
