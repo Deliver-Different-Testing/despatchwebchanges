@@ -7,10 +7,13 @@ class CreateJobDialogController {
         '$http',
         'dispatchJobService',
         'staffId',
-        'despatcherName'
+        'despatcherName',
+        'APP_CONFIG',
+        'UsStatesService'
     ];
 
-    constructor($scope, $mdDialog, DispatchData, toastrService, $http, dispatchJobService, staffId, despatcherName) {
+    constructor($scope, $mdDialog, DispatchData, toastrService, $http, dispatchJobService, staffId, despatcherName, APP_CONFIG, UsStatesService) {
+        this.$scope = $scope;
         this.$mdDialog = $mdDialog;
         this.dispatchData = DispatchData;
         this.$http = $http;
@@ -18,12 +21,19 @@ class CreateJobDialogController {
         this.staffId = staffId;
         this.despatcherName = despatcherName;
         this.dispatchJobService = dispatchJobService;
+        this.APP_CONFIG = APP_CONFIG;
+        this.UsStatesService = UsStatesService;
 
         this.initializeFormData($scope);
         this.initializeJob();
         this.fetchDataLists().then(speedOptions => {
             this.speedOptions = speedOptions;
         });
+
+        this.useUsFormat = APP_CONFIG.US_Customer;
+        if (this.useUsFormat) {
+            this.states = this.UsStatesService.getStates();
+        }
     }
 
     initializeFormData($scope) {
@@ -44,7 +54,8 @@ class CreateJobDialogController {
         this.job = {
             clientId: "",
             deliverToContact: "",
-            fromAddress: "",
+            pickupAddress: {},
+            deliveryAddress: {},
             toAddress: "",
             date: "",
             fromContactName: "",
@@ -78,32 +89,19 @@ class CreateJobDialogController {
         choices.forEach(choice => this.job[choice] = false);
     }
 
-    /**
-     * @param {string|number} key
-     */
     updateChoice(key) {
         this.resetChoices();
         this.job[key] = true;
     }
 
-    /**
-     * @param {string} searchTerm
-     */
     async clientSearchAutocomplete(searchTerm) {
         return this.performAutocompleteSearch(searchTerm, "/home/ActiveClients");
     }
 
-    /**
-     * @param {string} searchText
-     */
     async courierSearch(searchText) {
         return this.performAutocompleteSearch(searchText, "/courier/AllActiveSearch");
     }
 
-    /**
-     * @param {string} searchTerm
-     * @param {string} url
-     */
     async performAutocompleteSearch(searchTerm, url) {
         try {
             return await this.dispatchData.autocompleteSearch(searchTerm, url);
@@ -113,29 +111,23 @@ class CreateJobDialogController {
         }
     }
 
-    /**
-     * @param {string} searchText
-     */
     async addressSearchAutocomplete(searchText) {
         try {
             const suggestions = await this.dispatchData.autocompleteAddressSearch(searchText);
-            return this.transformSuggestions(suggestions);
+            return this._transformSuggestions(suggestions);
         } catch (error) {
-            console.error("Address search failed: " + error.message);
+            this.toastrService.showErrorToast(error.message);
             return [];
         }
     }
 
-    transformSuggestions(data) {
+    _transformSuggestions(data) {
         return data.suggestions.map(obj => ({
             id: obj.locationId,
             text: obj.label.split(", ").reverse().join(", ")
         }));
     }
 
-    /**
-     * @param {string} district
-     */
     async findSuburbByDistrict(district) {
         try {
             const ourSuburbs = await this.dispatchData.getSuburbList();
@@ -151,44 +143,52 @@ class CreateJobDialogController {
     }
 
     /**
-     * @param {Suggestion} item
+     * @param {{text: string, id: number}} item
      * @param {boolean} isToAddress
      */
     async addressSearchItemSelected(item, isToAddress) {
         try {
             const data = await this.dispatchData.getGeoCodeInformation(item);
             const returnedLocation = data.Response.View[0].Result[0].Location;
-            const {Latitude: lat, Longitude: long} = returnedLocation.DisplayPosition;
-            const mappedSub = await this.findSuburbByDistrict(returnedLocation.Address.District);
 
-            if (mappedSub) {
-                this.assignAddressToJob(mappedSub.id, item.text, lat, long, isToAddress);
+            console.log("Suburb/City = " + returnedLocation.Address.District);
+            console.log("PostCode/ZIP = " + returnedLocation.Address.PostalCode);
+
+            const addressDetails = isToAddress ? this.job.deliveryAddress : this.job.pickupAddress;
+
+            if (this.useUsFormat) {
+                addressDetails.addressLine4 = returnedLocation.Address.City;
+                addressDetails.addressLine5 = returnedLocation.Address.State;
+                addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
+
+                const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.addressLine5);
+                if (stateObj) {
+                    addressDetails.stateName = stateObj.name;
+                }
             } else {
-                this.toastrService.showWarningToast("Suburb not found for the selected address.");
+                const mappedSub = await this.findSuburbByDistrict(returnedLocation.Address.District);
+                if (mappedSub) {
+                    addressDetails.our_suburb = mappedSub.id;
+                } else {
+                    addressDetails.our_suburb = null;
+                    this.toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
+                }
+                addressDetails.addressLine4 = returnedLocation.Address.District;
+                addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
             }
+
+            addressDetails.addressLine1 = returnedLocation.Address.Street;
+            addressDetails.addressLine2 = returnedLocation.Address.HouseNumber;
+            addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
+            addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
+            addressDetails.fullAddress = returnedLocation.Address.Label;
+
+            this.$scope.$apply();
         } catch (error) {
-            console.error("Error processing address: " + error.message);
+            console.log("Error: ", error);
         }
     }
 
-    /**
-     * @param {number} suburbId
-     * @param {string} addressFull
-     * @param {number} lat
-     * @param {number} long
-     * @param {boolean} isToAddress
-     */
-    assignAddressToJob(suburbId, addressFull, lat, long, isToAddress) {
-        const prefix = isToAddress ? 'to' : 'from';
-        this.job[`${prefix}Suburb`] = suburbId;
-        this.job[`${prefix}Address`] = addressFull;
-        this.job[`${prefix}Lat`] = lat;
-        this.job[`${prefix}Long`] = long;
-    }
-
-    /**
-     * @param {Job} job
-     */
     async submit(job) {
         if (!this.isFormValid()) return;
 
@@ -216,18 +216,27 @@ class CreateJobDialogController {
         return false;
     }
 
-    /**
-     * @param {Job} job
-     */
     applyFormValuesToJob(job) {
         job.clientId = this.selectedClient.id;
         job.date = this.jobDate.toISOString();
         job.speedId = this.selectedSpeed.id;
+
+        // Ensure fullAddress is up-to-date for both pickup and delivery addresses
+        ['pickupAddress', 'deliveryAddress'].forEach(addressType => {
+            const address = job[addressType];
+            address.fullAddress = [
+                address.addressLine1,
+                address.addressLine2,
+                address.addressLine3,
+                address.addressLine4,
+                address.addressLine5,
+                address.addressLine6,
+                address.addressLine7,
+                address.addressLine8
+            ].filter(line => line && line.trim() !== '').join(', ');
+        });
     }
 
-    /**
-     * @param {Job} job
-     */
     async createJob(job) {
         const url = "job/QuickCreateJob/";
         const callData = {
@@ -238,10 +247,6 @@ class CreateJobDialogController {
         return this.$http.post(url, callData, {headers: {'Content-Type': 'application/json'}});
     }
 
-    /**
-     * @param {number} courierId
-     * @param {number} jobId
-     */
     async dispatchJobIfCourierSelected(courierId, jobId) {
         return this.dispatchJobService.dispatchJobByJobId(courierId, jobId);
     }

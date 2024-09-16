@@ -98,7 +98,9 @@
                                 </div>
 
                                 <div ng-if="box.name == 'jobDetail'">
-                                    <md-fab-speed-dial class="md-scale" md-direction="left"
+                                    <md-fab-speed-dial class="md-scale"
+                                                       md-direction="left"
+                                                       ng-if="currentJob"
                                                        md-open="jobDetailFabIsOpen"
                                                        ng-class="{ 'md-hover-full': true }"
                                                        ng-mouseenter="jobDetailFabIsOpen=true"

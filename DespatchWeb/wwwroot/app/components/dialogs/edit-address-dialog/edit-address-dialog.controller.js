@@ -3,19 +3,7 @@
  * @class
  */
 class EditAddressDialogController {
-    static $inject = [
-        '$scope',
-        '$timeout',
-        '$mdDialog',
-        'DispatchData',
-        'toastrService',
-        'NgMap',
-        'APP_CONFIG',
-        'addressDetails',
-        'suburbOptions',
-        'title',
-        'submitLabel'
-    ];
+    static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'addressDetails', 'suburbOptions', 'title', 'submitLabel', 'UsStatesService'];
 
     /**
      * @param $scope - The active AngularJS scope.
@@ -30,17 +18,18 @@ class EditAddressDialogController {
      * @param {string} title - The title to display.
      * @param {string} submitLabel - The label to display on the submit button.
      */
-    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, addressDetails, suburbOptions, title, submitLabel) {
+    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, addressDetails, suburbOptions, title, submitLabel, UsStatesService) {
         this._$scope = $scope;
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
         this._toastrService = toastrService;
+        this.UsStatesService = UsStatesService;
 
         this.isLoading = false;
         this.title = title;
         this.addressDetails = addressDetails;
         this.suburbOptions = suburbOptions;
-        this.submitLabel = submitLabel
+        this.submitLabel = submitLabel;
         this.useUsFormat = APP_CONFIG.US_Customer;
         this.ourSuburbSearchText = "";
         this.addressSearchText = "";
@@ -51,7 +40,7 @@ class EditAddressDialogController {
             this.addressDetails.city = this.addressDetails.addressLine4; // Assuming city is in addressLine4
             this.addressDetails.state = this.addressDetails.addressLine5; // Assuming state is in addressLine5
             this.addressDetails.zipCode = this.addressDetails.addressLine6; // Assuming ZIP is in addressLine6
-            this.states = this._getUsStates();
+            this.states = this.UsStatesService.getStates();
         }
 
         $timeout(() => {
@@ -59,7 +48,7 @@ class EditAddressDialogController {
         }, 500);
 
         NgMap.getMap().then(map => {
-            console.log("Loading Map!")
+            console.log("Loading Map!");
             this.map = map;
             console.log("Map markers:", map.markers);
 
@@ -79,7 +68,6 @@ class EditAddressDialogController {
             this.addressSearchAutocomplete(this.addressDetails.fullAddress).then(_ => console.log("Address Search Complete!"));
         });
     }
-
 
     /**
      * This function finds a suburb by its district.
@@ -139,6 +127,11 @@ class EditAddressDialogController {
                 this.addressDetails.addressLine4 = returnedLocation.Address.City;
                 this.addressDetails.addressLine5 = returnedLocation.Address.State;
                 this.addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
+                // Use the UsStatesService to get the full state name if needed
+                const stateObj = this.UsStatesService.getStateByAbbreviation(this.addressDetails.addressLine5);
+                if (stateObj) {
+                    this.addressDetails.stateName = stateObj.name;
+                }
             } else {
                 const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
                 if (mappedSub !== undefined) {
@@ -197,19 +190,17 @@ class EditAddressDialogController {
                 this.isLoading = false;
                 return;
             }
+            // Use the UsStatesService to validate the state if needed
+            const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.addressLine5);
+            if (!stateObj) {
+                alert("Please enter a valid US state abbreviation");
+                this.isLoading = false;
+                return;
+            }
         }
 
-        // Ensure fullAddress is up to date
-        addressDetails.fullAddress = [
-            addressDetails.addressLine1,
-            addressDetails.addressLine2,
-            addressDetails.addressLine3,
-            addressDetails.addressLine4,
-            addressDetails.addressLine5,
-            addressDetails.addressLine6,
-            addressDetails.addressLine7,
-            addressDetails.addressLine8
-        ].filter(line => line && line.trim() !== '').join(', ');
+        // Ensure fullAddress is up-to-date
+        addressDetails.fullAddress = [addressDetails.addressLine1, addressDetails.addressLine2, addressDetails.addressLine3, addressDetails.addressLine4, addressDetails.addressLine5, addressDetails.addressLine6, addressDetails.addressLine7, addressDetails.addressLine8].filter(line => line && line.trim() !== '').join(', ');
 
         // Pass back to function that called dialog for processing
         this.isLoading = false;
@@ -291,67 +282,6 @@ class EditAddressDialogController {
         } catch (error) {
             this._toastrService.showErrorToast(error.message);
         }
-    }
-
-
-    /**
-     * Returns an array of US states and territories for dropdown menus.
-     * @returns {Array<{abbreviation: string, name: string}>} An array of state objects with abbreviation and name.
-     */
-    _getUsStates() {
-        return [
-            {abbreviation: 'AL', name: 'Alabama'},
-            {abbreviation: 'AK', name: 'Alaska'},
-            {abbreviation: 'AZ', name: 'Arizona'},
-            {abbreviation: 'AR', name: 'Arkansas'},
-            {abbreviation: 'CA', name: 'California'},
-            {abbreviation: 'CO', name: 'Colorado'},
-            {abbreviation: 'CT', name: 'Connecticut'},
-            {abbreviation: 'DE', name: 'Delaware'},
-            {abbreviation: 'DC', name: 'District of Columbia'},
-            {abbreviation: 'FL', name: 'Florida'},
-            {abbreviation: 'GA', name: 'Georgia'},
-            {abbreviation: 'HI', name: 'Hawaii'},
-            {abbreviation: 'ID', name: 'Idaho'},
-            {abbreviation: 'IL', name: 'Illinois'},
-            {abbreviation: 'IN', name: 'Indiana'},
-            {abbreviation: 'IA', name: 'Iowa'},
-            {abbreviation: 'KS', name: 'Kansas'},
-            {abbreviation: 'KY', name: 'Kentucky'},
-            {abbreviation: 'LA', name: 'Louisiana'},
-            {abbreviation: 'ME', name: 'Maine'},
-            {abbreviation: 'MD', name: 'Maryland'},
-            {abbreviation: 'MA', name: 'Massachusetts'},
-            {abbreviation: 'MI', name: 'Michigan'},
-            {abbreviation: 'MN', name: 'Minnesota'},
-            {abbreviation: 'MS', name: 'Mississippi'},
-            {abbreviation: 'MO', name: 'Missouri'},
-            {abbreviation: 'MT', name: 'Montana'},
-            {abbreviation: 'NE', name: 'Nebraska'},
-            {abbreviation: 'NV', name: 'Nevada'},
-            {abbreviation: 'NH', name: 'New Hampshire'},
-            {abbreviation: 'NJ', name: 'New Jersey'},
-            {abbreviation: 'NM', name: 'New Mexico'},
-            {abbreviation: 'NY', name: 'New York'},
-            {abbreviation: 'NC', name: 'North Carolina'},
-            {abbreviation: 'ND', name: 'North Dakota'},
-            {abbreviation: 'OH', name: 'Ohio'},
-            {abbreviation: 'OK', name: 'Oklahoma'},
-            {abbreviation: 'OR', name: 'Oregon'},
-            {abbreviation: 'PA', name: 'Pennsylvania'},
-            {abbreviation: 'RI', name: 'Rhode Island'},
-            {abbreviation: 'SC', name: 'South Carolina'},
-            {abbreviation: 'SD', name: 'South Dakota'},
-            {abbreviation: 'TN', name: 'Tennessee'},
-            {abbreviation: 'TX', name: 'Texas'},
-            {abbreviation: 'UT', name: 'Utah'},
-            {abbreviation: 'VT', name: 'Vermont'},
-            {abbreviation: 'VA', name: 'Virginia'},
-            {abbreviation: 'WA', name: 'Washington'},
-            {abbreviation: 'WV', name: 'West Virginia'},
-            {abbreviation: 'WI', name: 'Wisconsin'},
-            {abbreviation: 'WY', name: 'Wyoming'}
-        ];
     }
 
     /**
