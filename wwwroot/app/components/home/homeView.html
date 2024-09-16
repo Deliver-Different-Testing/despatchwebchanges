@@ -1,299 +1,427 @@
 <div class="top-bar">
     <img src="/images/DFRNT-logo.png" class="logo" />
 
-    <div id="status-group" class="btn-group" role="group">
-        <button type="button" class="btn new btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'new'})">
-            New
-        </button>
-        <button type="button" class="btn nda btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'nda'})">
-            NDA
-        </button>
-        <button type="button" class="btn active btn-sm btn-secondary"
-                ng-click="setFiltersFromTopBar({'status':'active'})">Active
-        </button>
-        <button type="button" class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})">
-            Done
-        </button>
-        <button type="button" class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})">
-            All
-        </button>
-    </div>
-
-    <div id="area-group" class="btn-group" role="group" aria-label="Basic example" ng-show="isInternal">
-        <button type="button" class="btn city btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'city'})">
-            City
-        </button>
-        <button type="button" class="btn truck btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'truck'})">
-            Truck
-        </button>
-        <button type="button" class="btn main1 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main1'})">
-            Main1
-        </button>
-        <button type="button" class="btn main2 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main2'})">
-            Main2
-        </button>
-        <button type="button" class="btn central btn-sm btn-secondary"
-                ng-click="setFiltersFromTopBar({'area':'central'})">Central
-        </button>
-        <button type="button" class="btn shore btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'shore'})">
-            Shore
-        </button>
-        <button type="button" class="btn west btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'west'})">
-            West
-        </button>
-        <button type="button" class="btn remoteouter btn-sm btn-secondary"
-                ng-click="setFiltersFromTopBar({'area':'remote outer'})">Remote Outer
-        </button>
-        <button type="button" class="btn remotecity btn-sm btn-secondary"
-                ng-click="setFiltersFromTopBar({'area':'remote city'})">Remote City
-        </button>
-        <button type="button" class="btn remotecentral btn-sm btn-secondary"
-                ng-click="setFiltersFromTopBar({'area':'remote central'})">Remote Central
-        </button>
-        <button type="button" class="btn regional btn-sm btn-secondary"
-                ng-click="setFiltersFromTopBar({'area':'regional'})">Regional
-        </button>
-
-    </div>
-    <div class="topbar-NavButtons" role="navigation">
-        <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
-        <a ui-sref="nw" href="#/NW" target="_blank" class="btn btn-sm topbar-button" ui-sref-active="topbar-active">Nationwide</a>
-        <a ui-sref="cs" href="#/CS" target="_blank" class="btn btn-sm topbar-button" ui-sref-active="topbar-active">POD/Search</a>
-        <a ui-sref="prebooks" href="#/prebooks" target="_blank" class="btn btn-sm topbar-button"
-           ui-sref-active="topbar-active">PreBooks</a>
-
-    </div>
-
-    <div class="btn-group box-search chat" ng-show="showChat">
-
-        <i class="fa fa-search" ng-click="openChat()"></i>
-        <i class="fa fa-remove" ng-click="chatBox = ''" title="Clear"></i>
-        <input type="text" ng-model="chatBox" placeholder="Chat to..." ng-model-options="{debounce: 300}">
-    </div>
-
-    <div class="topbar-buttons">
-        <span ng-show="!isInternal" style="color:white;">Clients:</span>
-        <div ng-show="!isInternal" class="multi-element btn-sm topbar-active"
-             style="display: inline-block; margin-top: -5px; padding-left: 0px; padding-right: 50px;" disabled="false"
-             extra-settings="pickService.settings" ng-dropdown-multiselect="" options="pickClients"
-             selected-model="pickService.clients">
-
-        </div>
-        <div class="btn topbar-button" style="color: white;">
-            <span>hi {{userName}} - layout: {{currentLayoutName}}</span></div>
-        <div class="btn btn-sm btn-primary topbar-button" ng-click="getData()"><i class="fa fa-refresh"></i></div>
-        <div class="dropdown topbar-button">
-            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenu1"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                Layout
-                <span class="caret"></span>
+        <div class="btn-group" id="status-group" role="group">
+            <button class="btn new btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'new'})"
+                    type="button">
+                New
             </button>
-            <ul class="dropdown-menu dropdown-menu-right list-group w-50" aria-labelledby="dropdownMenu1">
-                <li class="list-group-item" ng-click="saveLayout()"><b>Save Layout</b></li>
-                <li ng-repeat="lo in layouts track by $index" class="list-group-item">
-                    <i ng-click="deleteLayout($index)" style="cursor: pointer" title="Delete Layout"
-                       class="fa fa-trash"></i>
-                    <span ng-click="loadLayout($index)" style="cursor: pointer">{{lo.name}}</span>
-                </li>
-            </ul>
+            <button class="btn nda btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'nda'})"
+                    type="button">
+                NDA
+            </button>
+            <button class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})"
+                    type="button">Active
+            </button>
+            <button class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})"
+                    type="button">
+                Done
+            </button>
+            <button class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})"
+                    type="button">
+                All
+            </button>
+        </div>
+
+        <div aria-label="Basic example" class="btn-group" id="area-group" ng-if="isInternal" role="group">
+            <button class="btn city btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'city'})"
+                    type="button">
+                City
+            </button>
+            <button class="btn truck btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'truck'})"
+                    type="button">
+                Truck
+            </button>
+            <button class="btn main1 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main1'})"
+                    type="button">
+                Main1
+            </button>
+            <button class="btn main2 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main2'})"
+                    type="button">
+                Main2
+            </button>
+            <button class="btn central btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'central'})"
+                    type="button">Central
+            </button>
+            <button class="btn shore btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'shore'})"
+                    type="button">
+                Shore
+            </button>
+            <button class="btn west btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'west'})"
+                    type="button">
+                West
+            </button>
+            <button class="btn remoteouter btn-sm btn-secondary"
+                    ng-click="setFiltersFromTopBar({'area':'remote outer'})"
+                    type="button">Remote Outer
+            </button>
+            <button class="btn remotecity btn-sm btn-secondary"
+                    ng-click="setFiltersFromTopBar({'area':'remote city'})"
+                    type="button">Remote City
+            </button>
+            <button class="btn remotecentral btn-sm btn-secondary"
+                    ng-click="setFiltersFromTopBar({'area':'remote central'})"
+                    type="button">Remote Central
+            </button>
+            <button class="btn regional btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'regional'})"
+                    type="button">Regional
+            </button>
+
+        </div>
+
+        <div class="topbar-NavButtons" role="navigation">
+            <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
+            <a class="btn btn-sm topbar-button" href="#/NW" target="_blank" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</a>
+            <a class="btn btn-sm topbar-button" href="#/CS" target="_blank" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</a>
+            <a class="btn btn-sm topbar-button" href="#/prebooks" target="_blank" ui-sref="prebooks"
+               ui-sref-active="topbar-active">PreBooks</a>
+
+        </div>
+
+        <div class="btn-group box-search chat" ng-if="showChat">
+            <i class="material-symbols-outlined small-icon" ng-click="openChat()">search</i>
+            <i class="material-symbols-outlined small-icon" ng-click="chatBox = ''" title="Clear"></i>
+            <input ng-model="chatBox" ng-model-options="{debounce: 300}" placeholder="Chat to..." type="text">
+        </div>
+
+        <div class="topbar-buttons">
+            <span ng-if="!isInternal" style="color:white;">Clients:</span>
+            <div class="multi-element btn-sm topbar-active" disabled="false"
+                 extra-settings="pickService.settings"
+                 ng-dropdown-multiselect=""
+                 ng-if="!isInternal" option="pickClients" selected-model="pickService.clients"
+                 style="display: inline-block; margin-top: -5px; padding-left: 0; padding-right: 50px;">
+            </div>
+
+            <div style="display: flex; align-items: center;">
+                <div class="btn topbar-button" style="color: white;">
+                    <span>{{greetUser()}}</span>
+                </div>
+                <md-menu md-position-mode="target-right target">
+                    <md-button aria-label="Open layout options menu"
+                               class="md-fab md-mini md-primary"
+                               ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
+                        <md-tooltip md-direction="bottom">Layouts</md-tooltip>
+                    </md-button>
+                    <md-menu-content width="2">
+                        <md-menu-item>
+                            <md-button ng-click="saveLayout()">
+                                <md-icon md-font-set="material-symbols-outlined">save</md-icon>
+                                Save Layout
+                            </md-button>
+                        </md-menu-item>
+                        <md-menu-divider></md-menu-divider>
+                        <md-menu-item ng-repeat="lo in layouts track by $index">
+                            <md-button>
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-click="deleteLayout($index)">
+                                    delete
+                                </md-icon>
+                                <span ng-click="loadLayout($index)"
+                                      ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                            </md-button>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="">
+    <div class="">
+        <div class="columns">
 
-    <div class="columns">
+            <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in layout.columns"
+                 r-directions="['right']"
+                 r-flex="true" resizable style="flex-basis: {{column.width}}">
+                <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
+                    <div class="box" id="box-{{box.name}}" ng-repeat="(boxName,box) in column.boxes"
+                         r-directions="['bottom']"
+                         r-flex="true" resizable style="flex-basis: {{box.height}}">
 
-        <div class="column" ng-repeat="(colKey,column) in layout.columns" id="co-{{column.id}}" resizablelayout
-             r-directions="['right']" r-flex="true" style="flex-basis: {{column.width}}">
-            <div class="column-sortable" ng-model="column.boxes" ui-sortable="sortableOptions">
-                <div class="box" ng-repeat="(boxName,box) in column.boxes" id="box-{{box.name}}" resizablelayout
-                     r-directions="['bottom']" r-flex="true" style="flex-basis: {{box.height}}">
-                    <div class="box-bar">
-                        <div class="box-bar-title"
-                             ng-class="{'related':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}">
-                            {{boxes[box.name].title}}
+                        <md-toolbar class="md-accent">
+                            <div class="md-toolbar-tools">
 
-                            <span ng-show="box.name == 'jobDetail'">{{currentSelection}}</span>
-                            <span ng-show="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
-                            <span ng-show="box.name == 'supports'"> ({{supportChannel}})</span>
-                            <span ng-show="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
-                            <span ng-show="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
-                            <span ng-show="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1"
-                                  ng-repeat="jo in currentJob.relatedJobs">&nbsp;<span
+                                <span class="md-headline-title" flex>{{boxes[box.name].title}}
+                                          <span ng-if="box.name == 'jobDetail'">{{currentSelection}}</span>
+                            <span ng-if="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
+                            <span ng-if="box.name == 'supports'"> ({{supportChannel}})</span>
+                            <span ng-if="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
+                            <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>
+                            <span ng-repeat="jo in currentJob.relatedJobs"
+                                  ng-if="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1">&nbsp;<span
                                     ng-click="loadRelatedJobDetail(jo.id, jo.label)"
                                     ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
-                                    style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span></span>
-                        </div>
+                                    style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span>
+                                    </span>
+                                </span>
 
-                        <div class="box-buttons">
-                            <div class="box-details" ng-show="box.name === 'currentWork'" ng-if="currentCourier">
+                                <md-button class="md-icon-button md-primary" ng-click="getData()"
+                                           ng-if="boxes[box.name].showRefresh">
+                                    <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
+                                </md-button>
 
-                                <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button class="btn btn-sm btn-secondary" ng-click="truckLoadingStatus()"
-                                            ng-if="truckCourierStatus.length >0"
-                                            title="Truck Loading Status" type="button">
-                                        <i class="material-symbols-outlined small-icon">local_shipping</i>
-                                    </button>
-                                    <button class="btn btn-sm btn-secondary" ng-click="restoreAll()"
-                                            title="Restore All"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">undo</i>
-                                    </button>
-                                    <button class="btn btn-sm btn-secondary" ng-click="redispatchAll()"
-                                            title="Redispatch All"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">repeat</i>
-                                    </button>
-                                    <button class="btn btn-sm btn-secondary" ng-click="resendAll()" title="Resend All Jobs"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">send</i>
-                                    </button>
-                                    <button class="btn btn-sm btn-secondary" ng-click="messageClick($event, currentJob)"
-                                            title="Send Message"
-                                            type="button">
-                                        <i class="material-symbols-outlined small-icon">sms</i>
-                                    </button>
+                                <!-- Courier Card Buttons-->
+                                <div class="row-overflow" ng-if="box.name === 'currentWork' && currentCourier">
+                                    <md-fab-speed-dial class="md-scale" md-direction="left"
+                                                       md-open="courierListFabIsOpen"
+                                                       ng-class="{ 'md-hover-full': true }"
+                                                       ng-mouseenter="courierListFabIsOpen=true"
+                                                       ng-mouseleave="courierListFabIsOpen=false">
+                                        <md-fab-trigger>
+                                            <md-button aria-label="menu" class="md-fab md-mini md-primary">
+                                                <md-tooltip md-direction="bottom">Options</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">page_info</md-icon>
+                                            </md-button>
+                                        </md-fab-trigger>
+
+                                        <md-fab-actions>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="truckLoadingStatus($event)"
+                                                       ng-if="truckCourierStatus.length > 0">
+                                                <md-tooltip md-direction="bottom">Truck Loading Status</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">local_shipping
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="restoreAll($event)">
+                                                <md-tooltip md-direction="bottom">Restore All</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="redispatchAll($event)">
+                                                <md-tooltip md-direction="bottom">Redispatch All</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">repeat</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="resendAll($event)">
+                                                <md-tooltip md-direction="bottom">Resend All Jobs</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">send</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="messageClick($event, currentJob)">
+                                                <md-tooltip md-direction="bottom">Send Message</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">sms</md-icon>
+                                            </md-button>
+                                        </md-fab-actions>
+                                    </md-fab-speed-dial>
+                                </div>
+
+                                <!-- Detail Buttons-->
+                                <div class="row-overflow"
+                                     ng-if="boxes[box.name].showDetailButtons && currentJob">
+                                    <md-fab-speed-dial class="md-scale" md-direction="left"
+                                                       md-open="jobDetailFabIsOpen"
+                                                       ng-class="{ 'md-hover-full': true }"
+                                                       ng-mouseenter="jobDetailFabIsOpen=true"
+                                                       ng-mouseleave="jobDetailFabIsOpen=false">
+                                        <md-fab-trigger>
+                                            <md-button aria-label="menu" class="md-fab md-mini md-primary">
+                                                <md-tooltip md-direction="bottom">Options</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">page_info</md-icon>
+                                            </md-button>
+                                        </md-fab-trigger>
+
+                                        <md-fab-actions>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="showAdditionalServicesMenu($event, currentJob)">
+                                                <md-tooltip md-direction="bottom">Additional Services</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">add_shopping_cart
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="otherEventForm($event, currentJob)">
+                                                <md-tooltip md-direction="bottom">Add Event</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">edit_calendar
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="closeSupport(currentSupport);"
+                                                       ng-disabled="!currentSupport">
+                                                <md-tooltip md-direction="bottom">Close Event</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">event_available
+                                                </md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="unlockJob(currentJob)"
+                                                       ng-if="currentJob && (currentJob.locked && !currentJob.invoiced)">
+                                                <md-tooltip md-direction="bottom">Unlock Job</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">lock_open</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="lockJob(currentJob)"
+                                                       ng-if="currentJob && (!currentJob.locked && !currentJob.invoiced)">
+                                                <md-tooltip md-direction="bottom">Lock Job</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">lock</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="splitJob($event, currentJob)"
+                                                       ng-if="currentJob && (currentJob.allowSplit)">
+                                                <md-tooltip md-direction="bottom">Split Job</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">shuffle</md-icon>
+                                            </md-button>
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="swapPOD($event)"
+                                                       ng-if="currentJob && currentJob.done && !currentJob.bulkJob && !currentJob.preBook">
+                                                <md-tooltip md-direction="bottom">Swap POD</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">swap_calls
+                                                </md-icon>
+                                            </md-button>
+                                        </md-fab-actions>
+                                    </md-fab-speed-dial>
+                                </div>
+
+                                <!-- Courier Search-->
+                                <div layout="row" ng-if="box.name === 'jobsList'">
+                                    <md-autocomplete
+                                            md-input-name="courierSearch"
+                                            class="fixed-size-autocomplete"
+                                            md-autoselect
+                                            md-select-on-focus
+                                            md-escape-options="clear"
+                                            md-item-text="item.text"
+                                            md-items="item in courierSearch(courierSearchText)"
+                                            md-min-length="1"
+                                            md-search-text="courierSearchText"
+                                            md-selected-item="selectedCourier"
+                                            md-selected-item-change="selectedCourierChange(item)"
+                                            ng-click="onCourierSearchClick($event)"
+                                            placeholder="Search Courier...">
+                                        <md-item-template>
+            <span md-highlight-flags="^i"
+                  md-highlight-text="courierSearchText">{{item.text}}</span>
+                                        </md-item-template>
+                                        <md-not-found>
+                                            No couriers matching "{{courierSearchText}}" were found.
+                                        </md-not-found>
+                                    </md-autocomplete>
+                                </div>
+
+                                <div class="row-overflow" ng-if="box.name === 'clearLists'">
+                                    <md-menu>
+                                        <md-button aria-label="truck mode" class="md-raised md-accent"
+                                                   ng-click="$mdMenu.open($event)">
+                                            Trucks <span>{{truckMode}} </span>
+                                        </md-button>
+                                        <md-menu-content class="md-dense">
+                                            <md-menu-item>
+                                                <md-button ng-click="setTruckMode('On');">
+                                                    On
+                                                </md-button>
+                                            </md-menu-item>
+                                            <md-menu-item>
+                                                <md-button ng-click="setTruckMode('Off');">
+                                                    Off
+                                                </md-button>
+                                            </md-menu-item>
+                                            <md-menu-item>
+                                                <md-button ng-click="setTruckMode('Only');">
+                                                    Only
+                                                </md-button>
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
+                                </div>
+
+                                <div class="row-overflow" layout="row" ng-if="box.name === 'map'">
+                                    <div class="switch-container">
+                                        <md-switch class="md-primary" ng-model="areaListCity"
+                                                   ng-if="box.name === 'clearLists'">
+                                            City
+                                        </md-switch>
+                                        <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                                   ng-if="box.name === 'map'" ng-model="allCouriers.display">
+                                            All
+                                        </md-switch>
+                                        <md-switch class="md-primary" ng-change="storeMapZoomDisplay()"
+                                                   ng-model="mapZoom.display" ng-show="box.name === 'map'">
+                                            Auto Zoom
+                                        </md-switch>
+                                        <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                                   ng-if="box.name === 'map'" ng-model="allCouriers.includeUA">
+                                            Include UA
+                                        </md-switch>
+                                    </div>
+                                </div>
+
+                                <div class="row-overflow" id="box-{{box.name}}-{{$index}}" layout="row"
+                                     ng-if="boxes[box.name].showSearch">
+                                    <md-button aria-label="open search" class="md-icon-button"
+                                               ng-click="openSearch(box.name, $index)">
+                                        <md-icon md-font-set="material-symbols-outlined"
+                                                 ng-if="!showInput[box.name + '-' + $index]">search
+                                        </md-icon>
+                                        <md-icon md-font-set="material-symbols-outlined"
+                                                 ng-if="showInput[box.name + '-' + $index]">close
+                                        </md-icon>
+                                    </md-button>
+
+                                    <md-autocomplete
+                                            md-autoselect
+                                            md-escape-options="clear"
+                                            md-item-text="item.text"
+                                            md-items="item in jobRecordSearch(jobRecordSearchText)"
+                                            md-min-length="1"
+                                            md-search-text="jobRecordSearchText"
+                                            md-selected-item="selectedJobRecord"
+                                            md-selected-item-change="JobRecordSelected(item.id)"
+                                            ng-if="showInput[box.name + '-' + $index]"
+                                            placeholder="Search by job number...">
+                                        <md-item-template>
+                                            <span md-highlight-flags="^i"
+                                                  md-highlight-text="jobRecordSearchText">{{item.text}}</span>
+                                        </md-item-template>
+                                        <md-not-found>
+                                            No jobs matching "{{jobRecordSearchText}}" were found. Please check the
+                                            POD page.
+                                        </md-not-found>
+                                    </md-autocomplete>
+                                </div>
+
+                                <div class="box-handle md-icon-button">
+                                    <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
+                                        drag_indicator
+                                    </md-icon>
                                 </div>
 
                             </div>
+                        </md-toolbar>
 
-                            <div class="box-details" ng-show="boxes[box.name].showDetailButtons" ng-if="currentJob">
-                                <div class="btn-group" role="group" aria-label="Basic example">
-                                    <button class="btn btn-sm btn-secondary" title="Add Event" type="button"
-                                            ng-click="otherEventForm(currentJob.jobNo)">
-                                        <i class="material-symbols-outlined small-icon">edit_calendar</i>
-                                    </button>
-                                    <button class="btn btn-sm btn-secondary" title="Close Event" type="button"
-                                            ng-click="closeSupport(currentSupport);" ng-disabled="!currentSupport">
-                                        <i class="material-symbols-outlined small-icon">event_available</i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Unlock Job"
-                                            ng-show="currentJob && (currentJob.locked && !currentJob.invoiced)"
-                                            ng-click="unlockJob()">
-                                        <i class="material-symbols-outlined small-icon">lock_open</i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Lock Job"
-                                            ng-show="currentJob && (!currentJob.locked && !currentJob.invoiced)"
-                                            ng-click="lockJob()">
-                                        <i class="material-symbols-outlined small-icon">lock</i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Split Job"
-                                            ng-show="currentJob && (currentJob.allowSplit)"
-                                            ng-click="splitJob($event, currentJob)">
-                                        <i class="material-symbols-outlined small-icon">shuffle</i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-secondary" title="Swap POD"
-                                            ng-show="currentJob && currentJob.done && !currentJob.bulkJob && !currentJob.preBook"
-                                            ng-click="swapPOD()">
-                                        <i class="fa fa-exchange"></i>
-                                    </button>
-
-
-                                    <!--<button type="button" class="btn btn-sm btn-secondary" title="SEND POD"><i class="fa fa-send"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" title="TEXT POD"><i class="fa fa-file-text"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" title="EMAIL POD"><i class="fa fa-envelope"></i></button>
-    <button type="button" class="btn btn-sm btn-secondary" title="Clear POD"><i class="fa fa-retweet"></i></button>-->
-                                </div>
-                            </div>
-
-                            <md-button class="md-fab md-mini md-primary"
-                                       ng-show="boxes[box.name].showRefresh" ng-click="getData()">
-                                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                            </md-button>
-
-                            <div class="btn-group " style="padding:8px 5px;" ng-show="box.name === 'jobsList'">
-                                <i class="fa fa-search" ng-click="searchCourier()" title="GPS Courier"></i>
-                                <input type="text" style="color: black;display:inline-block!important;"
-                                       placeholder="gps courier (enter code)..."
-                                       ng-model="$parent.$parent.courier.gpsCourier" id="gps"/>
-                                <i class="fa fa-remove" ng-click="clearCourierSearch();" title="Clear"></i>
-                            </div>
-                            <div class="btn btn-sm btn-primary box-refresh" ng-show="boxes[box.name].showRefresh" ng-click="getData()"><i class="fa fa-refresh"></i></div>
-                            <div class="dropdown box-trucks" ng-show="box.name === 'clearLists'">
-                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button"
-                                        data-toggle="dropdown">
-                                    Trucks <span>{{truckMode}} </span>
-                                    <span class="caret"></span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a href="#" ng-click="setTruckMode('On');">On</a></li>
-                                    <li><a href="#" ng-click="setTruckMode('Off');">Off</a></li>
-                                    <li><a href="#" ng-click="setTruckMode('Only');">Only</a></li>
-                                </ul>
-                            </div>
-
-                            <div ng-show="box.name === 'supports'" id="SupportChannels"
-                                 translation-texts="pickService.channelTexts" events="pickService.channelEvents"
-                                 class="multi-element btn-sm btn-primary dropdown-toggle"
-                                 style="background-color: inherit; display: inline-block; box-shadow: none; z-index: 100000"
-                                 extra-settings="pickService.settings" ng-dropdown-multiselect=""
-                                 options="pickChannels" selected-model="pickService.channel"></div>
-
-                            <md-button class="md-fab md-mini md-primary" style="margin-left: 8px;"
-                                       ng-show="box.name == 'supports'" ng-click="getSupports()">
-                                <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
-                            </md-button>
-
-
-                            <div layout="row" ng-show="box.name === 'map'">
-                                <md-switch class="md-primary" ng-model="areaListCity"
-                                           ng-show="box.name === 'clearLists'">
-                                    City
-                                </md-switch>
-                                <md-switch ng-show="box.name === 'map'" ng-model="allCouriers.display"
-                                           ng-change="getAvailableCourierLocation()" class="md-primary">
-                                    All
-                                </md-switch>
-                                <md-switch ng-show="box.name === 'map'" ng-model="mapZoom.display"
-                                           ng-change="storeMapZoomDisplay()" class="md-primary">
-                                    Auto Zoom
-                                </md-switch>
-                                <md-switch ng-show="box.name === 'map'" ng-model="allCouriers.includeUA"
-                                           ng-change="getAvailableCourierLocation()" class="md-primary">
-                                    Include UA
-                                </md-switch>
-                            </div>
-
-                            <div class="box-search" ng-show="boxes[box.name].showSearch">
-                                <i class="fa fa-search" ng-click="openSearch(box.name)"></i>
-                                <i class="fa fa-remove" ng-click="box.searchBox = ''" title="Clear"></i>
-                                <input ng-model="box.searchBox" ng-model-options="{debounce: 300}"
-                                       placeholder="Search..."
-                                       type="text">
-                            </div>
-
-                            <div class="box-handle"><i class="fa fa-ellipsis-v"></i></div>
-                        </div>
+                        <div class="box-content"
+                             ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}"
+                             ng-include="boxes[box.name].tpl"></div>
                     </div>
-                    <div class="box-content"
-                         ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}"
-                         ng-include="boxes[box.name].tpl"></div>
                 </div>
-
             </div>
         </div>
 
+        <ul active-icon="close"
+            effect="slidein"
+            mfb-menu
+            position="bl"
+            resting-icon="menu"
+            template-url="ng-mfb-menu-md.tpl.html"
+            toggling-method="hover">
+            <mfb-button
+                    icon="add"
+                    label="Add New Job"
+                    ng-click="createNewJob($event)"
+                    template-url="ng-mfb-button-md.tpl.html">
+            </mfb-button>
+            <mfb-button
+                    icon="attach_money"
+                    label="Inter-Courier Charge"
+                    ng-click="interCourierCharge($event)"
+                    template-url="ng-mfb-button-md.tpl.html">
+            </mfb-button>
+        </ul>
+
     </div>
 
+    <div id='draggingItems'></div>
 </div>
 
-
-<div ng-include="'app/components/home/tpls/eventForm.tpl'"></div>
-
-<div ng-include="'app/components/home/tpls/truckCourierStatus.tpl'"></div>
-
-<div ng-include="'app/components/home/tpls/lateForm.tpl'"></div>
-
-<div ng-include="'app/components/home/tpls/gatherForm.tpl'"></div>
-
-<div ng-include="'app/components/home/tpls/gatherFormMulti.tpl'"></div>
-
-<div id='draggingItems'></div>
-
 <script>
-
-
     document.onkeydown = overrideKeyboardEvent;
     document.onkeyup = overrideKeyboardEvent;
     var keyIsDown = {};
@@ -303,10 +431,6 @@
             case "keydown":
                 if (!keyIsDown[e.keyCode]) {
                     keyIsDown[e.keyCode] = true;
-                    // do key down stuff here
-                    if (e.keyCode === 82 && e.ctrlKey) {
-                        //location.reload();
-                    }
                 }
                 break;
             case "keyup":
@@ -332,46 +456,46 @@
     }
 
 
-    $(document).on('keydown', '.dispatchField, .lateCallField', function (event) {
+    angular.element(document).on('keydown', '.dispatchField, .lateCallField', function (event) {
         if (event.keyCode === 13) {
-            $(this).parents(".clickable-row").addClass("doing");
+            angular.element(this).parents(".clickable-row").addClass("doing");
         }
     });
 
-    $(document).on('click', '.top-bar .btn-group .btn', function (event) {
+    angular.element(document).on('click', '.top-bar .btn-group .btn', function (event) {
         if (!event.ctrlKey && !event.metaKey) {
-            $(this).parent().find('.topBarActive').removeClass('topBarActive');
+            angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
         }
 
-        $(this).addClass('topBarActive');
+        angular.element(this).addClass('topBarActive');
     });
 
-    $(document).on('click', '.clearLists-list-title', function (event) {
+    angular.element(document).on('click', '.clearLists-list-title', function (event) {
         if (!event.ctrlKey && !event.metaKey) {
-            $("#clearLists").find('.listActive').removeClass('listActive');
+            angular.element("#clearLists").find('.listActive').removeClass('listActive');
         }
 
-        $(this).addClass('listActive');
+        angular.element(this).addClass('listActive');
     });
 
 
-    $(document).ready(function () {
+    angular.element(document).ready(function () {
 
         var isDown = false;   // Tracks status of mouse button
 
-        $(document).mousedown(function () {
+        angular.element(document).mousedown(function () {
             isDown = true;      // When mouse goes down, set isDown to true
         })
             .mouseup(function () {
                 isDown = false;    // When mouse goes up, set isDown to false
             });
 
-        $(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
+        angular.element(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
 
             if (event.ctrlKey) {
                 if (isDown) {        // Only change css if mouse is down
-                    $(this).addClass("active");
-                    $(this).siblings(".test").click();
+                    angular.element(this).addClass("active");
+                    angular.element(this).siblings(".test").click();
                 }
             }
         });
@@ -382,12 +506,12 @@
 
     var mouseDown = 0;
 
-    $(document).on('mousedown', '.clickable-row', function (event) {
+    angular.element(document).on('mousedown', '.clickable-row', function (event) {
 
-        if ($(".activeTable .clickable-row.active").length > 1) {
-            var jobNo = $(".activeTable .clickable-row.active").length + " Jobs";
+        if (angular.element(".activeTable .clickable-row.active").length > 1) {
+            var jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
         } else {
-            var jobNo = $(this).attr("data-jobno");
+            var jobNo = angular.element(this).attr("data-jobno");
         }
 
 
@@ -396,47 +520,47 @@
 
             if (event.which === 1) {
                 if (event.ctrlKey) {
-                    if ($(this).hasClass("active")) {
-                        $(this).removeClass('active');
+                    if (angular.element(this).hasClass("active")) {
+                        angular.element(this).removeClass('active');
                     } else {
-                        $(this).addClass('active');
+                        angular.element(this).addClass('active');
                     }
                 } else {
-                    if (!$(this).hasClass("active")) {
+                    if (!angular.element(this).hasClass("active")) {
 
-                        var group = $(this).parents(".table-rows").attr("data-group");
-                        $('*[data-group="' + group + '"]').each(function () {
-                            $(this).find('.active').removeClass('active');
+                        var group = angular.element(this).parents(".table-rows").attr("data-group");
+                        angular.element('*[data-group="' + group + '"]').each(function () {
+                            angular.element(this).find('.active').removeClass('active');
                         });
 
-                        $(this).addClass('active');
+                        angular.element(this).addClass('active');
                     }
                 }
 
-                $(".activeTable").removeClass("activeTable");
-                $(this).parents(".table").addClass("activeTable");
+                angular.element(".activeTable").removeClass("activeTable");
+                angular.element(this).parents(".table").addClass("activeTable");
             }
 
             if (!event.ctrlKey) {
-                if ($(this).hasClass("draggable-row")) {
+                if (angular.element(this).hasClass("draggable-row")) {
 
-                    if (!$(this).hasClass("active")) {
+                    if (!angular.element(this).hasClass("active")) {
 
-                        var group = $(this).parents(".table-rows").attr("data-group");
-                        $('*[data-group="' + group + '"]').each(function () {
-                            $(this).find('.active').removeClass('active');
+                        var group = angular.element(this).parents(".table-rows").attr("data-group");
+                        angular.element('*[data-group="' + group + '"]').each(function () {
+                            angular.element(this).find('.active').removeClass('active');
                         });
-                        $(this).addClass('active');
+                        angular.element(this).addClass('active');
 
                     }
                     setTimeout(function () {
                         if (mouseDown === 1) {
-                            $("#draggingItems").show();
-                            $("#draggingItems").html(jobNo);
+                            angular.element("#draggingItems").show();
+                            angular.element("#draggingItems").html(jobNo);
 
-                            $("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
-                            $("#draggingItems").draggable();
-                            $("#draggingItems").trigger(event);
+                            angular.element("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
+                            angular.element("#draggingItems").draggable();
+                            angular.element("#draggingItems").trigger(event);
                         }
                     }, 200);
                 }
@@ -446,22 +570,22 @@
 
     });
 
-    $(document).on('mouseup', '.clickable-row', function (event) {
+    angular.element(document).on('mouseup', '.clickable-row', function (event) {
         if (event.which === 3) {
 
-            $(".rightActiveTable").removeClass("rightActiveTable");
-            $(this).parents(".table").addClass("rightActiveTable");
+            angular.element(".rightActiveTable").removeClass("rightActiveTable");
+            angular.element(this).parents(".table").addClass("rightActiveTable");
         }
         if (!event.ctrlKey) {
 
-            if ($(this).hasClass("active")) {
+            if (angular.element(this).hasClass("active")) {
             } else {
-                var group = $(this).parents(".table-rows").attr("data-group");
+                var group = angular.element(this).parents(".table-rows").attr("data-group");
 
-                $('*[data-group="' + group + '"]').each(function () {
-                    $(this).find('.active').removeClass('active');
+                angular.element('*[data-group="' + group + '"]').each(function () {
+                    angular.element(this).find('.active').removeClass('active');
                 });
-                $(this).addClass('active');
+                angular.element(this).addClass('active');
             }
 
         }
@@ -469,45 +593,36 @@
     });
 
 
-    $(document).on("mouseup", function (ev) {
-        $("#draggingItems").hide();
+    angular.element(document).on("mouseup", function (ev) {
+        angular.element("#draggingItems").hide();
         mouseDown = 0;
     });
 
-    $(document).on("keydown", function (e) {
+    angular.element(document).on("keydown", function (e) {
         var code = (e.keyCode ? e.keyCode : e.which);
         if (code === 40) {
-            $(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
+            angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
         } else if (code === 38) {
-            $(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+            angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
         }
     });
 
-
-    //var delay = 250; // delay between calls
-    //var throttled = false; // are we currently throttled?
-
-    //setTimeout(function(){ sizeHeadings($("#jobList").parents(".column")); }, 100);
-
     function sizeHeadings(ele) {
 
-        $("body").find(".box").each(function () {
-            var box = $(this);
+        angular.element("body").find(".box").each(function () {
+            var box = angular.element(this);
             box.find(".table-headings thead tr th").each(function (index) {
                 var newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
-                $(this).outerWidth(newWidth);
+                angular.element(this).outerWidth(newWidth);
             });
             box.find(".table-headings table").width(box.find(".table").width());
         });
 
-        var height = $("#box-clearLists").find(".box-content").height() - 30;
+        var height = angular.element("#box-clearLists").find(".box-content").height() - 30;
 
-        $(".clearLists-list").each(function () {
-            var newHeight = $(this).data("height") * height / 100;
-            $(this).height(newHeight);
+        angular.element(".clearLists-list").each(function () {
+            var newHeight = angular.element(this).data("height") * height / 100;
+            angular.element(this).height(newHeight);
         });
-
     }
-
-
 </script>

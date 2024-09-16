@@ -1,35 +1,31 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 
-namespace DespatchWeb.Models
+namespace DespatchWeb.Models;
+
+public class ActiveCouriersViewModel
 {
-    public class ActiveCouriersViewModel
+    private string _label;
+    private string _text;
+    public int CourierID { get; set; }
+
+    [JsonPropertyName("id")] public string Code { get; set; }
+
+    public string Name { get; set; }
+
+    public byte DangerousGoods { get; set; }
+
+    public DateTime? DGLicenseExpiry { get; set; }
+
+    public string Label
     {
+        get => $"{Code} {Name}";
+        set => _label = value;
+    }
 
-        private string _label;
-        private string _text;
-        public int CourierID { get; set; }
-
-        [JsonPropertyName("id")]
-        public string Code{ get; set; }
-
-        public string Name { get; set; }
-
-        public byte DangerousGoods { get; set; }
-
-        public DateTime DGLicenseExpiry { get; set; }
-
-        public string Label
-        {
-            get => $"{Code} {Name}";
-            set => _label = value;
-        }
-
-        public string Text
-        {
-            get => $"{Code} {Name}";
-            set => _text = value;
-
-        }
+    public string Text
+    {
+        get => $"{Code} {Name}";
+        set => _text = value;
     }
 }

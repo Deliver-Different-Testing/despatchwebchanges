@@ -10,6 +10,137 @@ md-dialog {
   min-width: 400px;
 }
 
+/* Global scrollbar styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: fade(@yellow, 70%) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: fade(@yellow, 70%);
+  border-radius: 4px;
+}
+
+.horizontal-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.md-headline-title {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 21px;
+  letter-spacing: 0.1125px;
+  max-height: 48px;
+  overflow: auto;
+}
+
+.box-handle {
+  padding: 8px;
+  height: 48px;
+}
+
+/* Autocomplete Animations */
+@animationDuration: 1s;
+
+md-autocomplete.ng-enter {
+  animation: fadeIn @animationDuration;
+}
+
+md-autocomplete.ng-leave {
+  animation: fadeOut @animationDuration;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+
+.md-drag-button {
+  font-size: 24px;
+}
+
+.row-overflow {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
+
+  /* For Chrome and Safari */
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: fade(@yellow, 70%);
+    border-radius: 4px;
+  }
+
+  /* For Firefox */
+  scrollbar-color: fade(@yellow, 70%) transparent;
+  scrollbar-width: thin;
+}
+
+@inputHeight: 40px;
+
+.autocomplete-style {
+  width: 250px !important;
+
+  & md-autocomplete-wrap {
+    height: @inputHeight !important;
+  }
+
+  & input {
+    height: 100% !important;
+    line-height: @inputHeight !important;
+  }
+}
+
+.switch-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px;
+}
+
+.md-switch {
+  margin: 0 8px;
+}
+
 .material-button-mixin(@bgColor) {
   background-color: @bgColor;
   color: #000;
@@ -236,9 +367,9 @@ md-divider {
     align-items: center;
     justify-content: space-between;
 
-    .topbar-NavButtons {
-        margin-right: auto; // To align items to the right
-        margin-left: 40px;
+  .topbar-NavButtons {
+    margin-right: auto;
+    margin-left: 30px;
 
         .topbar-button {
             display: inline-block;
@@ -279,10 +410,7 @@ md-divider {
         height: 26px;
     }
 
-    .box-search {
-        margin-left: auto;
-        margin-right: auto;
-        color: #FFF;
+  .box-search {
 
         input {
             display: none;
@@ -609,7 +737,6 @@ md-divider {
 
             span {
               font-size: 15px;
-              font-size: 15px;
             }
 
             /* For Chrome and Safari */
@@ -638,47 +765,17 @@ md-divider {
             flex-shrink: 0;
             gap: 5px;
 
-            .box-handle {
-              padding: 8px;
-              background-color: #000;
-              cursor: move;
-              display: inline-flex;
-              vertical-align: top;
-              border-radius: 4px;
-
-              &:hover {
-                background-color: rgba(0, 0, 0, 0.08);
-              }
-            }
-
-
             .box-search {
-              padding: 8px;
-              background-color: #000;
-              cursor: pointer;
-              display: inline-flex;
-              vertical-align: top;
-              height: 40px;
-              border-radius: 4px;
-              align-items: center;
-
-              &:hover {
-                background-color: rgba(0, 0, 0, 0.08);
-              }
-
-              .fa {
-                padding: 8px 5px;
-              }
-
               input {
                 display: none;
-                width: 161px;
+                width: 150px;
                 margin-left: 2px;
                 height: 29px;
                 border: 0;
                 color: #656565;
                 font-size: 11px;
-                padding-left: 4px;
+                padding-left: 5px;
+                padding-right: 5px;
               }
             }
 
@@ -1171,15 +1268,6 @@ span.courier {
   padding: 1px 2px;
 }
 
-.label {
-  width: 36px;
-  float: left;
-  text-align: right;
-  font-size: 9px;
-  line-height: 25px;
-}
-
-
 .marker {
   position: relative;
   top: -30px;
@@ -1218,21 +1306,17 @@ span.courierRed {
   }
 }
 
-md-toast.md-success-toast-theme {
-  .md-toast-content {
-    background-color: green;
+.md-toast .md-toast-content {
+  &.md-success-toast-theme {
+    background-color: #4CAF50;
   }
-}
 
-md-toast.md-error-toast-theme {
-  .md-toast-content {
-    background-color: red;
+  &.md-error-toast-theme {
+    background-color: #F44336;
   }
-}
 
-md-toast.md-warning-toast-theme {
-  .md-toast-content {
-    background-color: yellow;
+  &.md-warning-toast-theme {
+    background-color: #FF9800;
   }
 }
 
@@ -1240,8 +1324,351 @@ md-toast.md-warning-toast-theme {
   font-size: 16px;
 }
 
+.job-table-icon {
+  font-size: 14px;
+}
+
+.colum-table-icon {
+  font-size: 7px;
+  color: red;
+}
+
 .resizeable-checkbox-container {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.DropBox {
+  background: #f0f0f0;
+  border: 2px dashed #999;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  padding: 25px;
+  text-align: center;
+
+  .DragOver {
+    background: #e8eaf6;
+    border-color: @yellow;
+  }
+
+  md-icon {
+    color: @yellow;
+    margin-bottom: 10px;
+  }
+
+  p {
+    margin: 5px 0;
+  }
+}
+
+@hoverColor: rgba(0, 0, 0, 0.05);
+@selectedHoverColor: rgba(0, 0, 0, 0.12);
+@textColor: rgba(0, 0, 0, 0.87);
+@labelColor: rgba(0, 0, 0, 0.54);
+@disabledColor: rgba(0, 0, 0, 0.38);
+
+md-table-container table.md-table tbody.md-body > tr.md-row:not([disabled]) {
+  &:hover {
+    background-color: @hoverColor !important;
+  }
+
+  &.md-selected:hover {
+    background-color: @selectedHoverColor !important;
+  }
+}
+
+md-table-pagination {
+  color: @textColor !important;
+
+  .label,
+  md-select .md-select-value,
+  md-select .md-select-value.md-select-placeholder,
+  .md-button {
+    color: @textColor !important;
+  }
+
+  .md-button[disabled] {
+    color: @disabledColor !important;
+  }
+}
+
+.search-input {
+  @input-height: 36px;
+  @input-bg-color: rgba(255, 255, 255, 0.2);
+  @input-bg-color-hover: rgba(255, 255, 255, 0.25);
+  @input-bg-color-focus: rgba(255, 255, 255, 0.3);
+  @input-text-color: rgba(255, 255, 255, 0.95);
+  @input-placeholder-color: rgba(255, 255, 255, 0.7);
+  @icon-color: rgba(255, 255, 255, 0.9);
+  @transition-duration: 0.2s;
+
+  &-container {
+    margin: 0;
+    padding: 0;
+    height: @input-height;
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .md-errors-spacer {
+      display: none;
+    }
+
+    input {
+      border: none;
+      background-color: @input-bg-color;
+      color: @input-text-color;
+      border-radius: 4px;
+      padding: 0 16px 0 40px;
+      height: @input-height;
+      line-height: @input-height;
+      transition: all @transition-duration cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%;
+      font-size: 16px;
+      font-weight: 500;
+
+      &:hover {
+        background-color: @input-bg-color-hover;
+      }
+
+      &:focus {
+        background-color: @input-bg-color-focus;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+      }
+
+      &::placeholder {
+        color: @input-placeholder-color;
+        transition: color @transition-duration ease;
+      }
+
+      &:focus::placeholder {
+        color: fade(@input-placeholder-color, 50%);
+      }
+    }
+
+    md-icon {
+      color: @icon-color;
+      position: absolute;
+      left: 45px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+      pointer-events: none;
+    }
+
+    &:hover {
+      input {
+        background-color: @input-bg-color-hover;
+      }
+    }
+  }
+}
+
+md-table-container {
+  overflow-x: auto;
+
+  .md-table {
+    width: 100%;
+    table-layout: fixed;
+
+    thead, tbody {
+      tr {
+        display: flex;
+        width: 100%;
+      }
+    }
+
+    th.md-column, td.md-cell {
+      display: flex;
+      flex: 1 1 0;
+      min-width: 80px;
+      padding: 0 8px !important;
+      align-items: center;
+      border-right: 1px solid rgba(0, 0, 0, 0.12);
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+    }
+
+    // Scrollbar styles (unchanged)
+    th.md-column::-webkit-scrollbar, td.md-cell::-webkit-scrollbar {
+      height: 4px;
+      background-color: transparent;
+    }
+
+    th.md-column::-webkit-scrollbar-thumb, td.md-cell::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.26);
+      border-radius: 2px;
+    }
+
+    th.md-column:hover::-webkit-scrollbar-thumb, td.md-cell:hover::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    th.md-column:last-child, td.md-cell:last-child {
+      border-right: none;
+    }
+
+    thead {
+      tr {
+        background-color: #e6f2ff; // New header background color
+        th {
+          font-size: 13px;
+          font-weight: 500;
+          color: rgba(0, 0, 0, 0.87); // Darker color for better contrast
+        }
+      }
+    }
+
+    tbody {
+      tr {
+        height: 36px;
+
+        td {
+          font-size: 13px;
+          color: rgba(0, 0, 0, 0.87);
+        }
+      }
+    }
+
+    .md-row:nth-child(even) {
+      background-color: #f8f8f8; // Lighter background for even rows
+    }
+
+    .md-row:nth-child(odd) {
+      background-color: #ffffff; // White background for odd rows
+    }
+
+    .md-row {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .md-column, .md-cell {
+      &.md-date-cell {
+        flex: 0 0 120px;
+      }
+
+      &.md-speed-cell {
+        flex: 0 0 90px;
+      }
+
+      &.md-job-cell {
+        flex: 2;
+      }
+
+      &.md-client-cell {
+        flex: 1;
+      }
+
+      &.md-address-cell {
+        flex: 3;
+      }
+
+      &.md-code-cell {
+        flex: 1;
+      }
+
+      &.md-status-cell {
+        flex: 1;
+      }
+    }
+
+    // New styles for client box
+    .client-box {
+      display: inline-block;
+      padding: 2px 4px;
+      color: white;
+      font-weight: bold;
+      border-radius: 2px;
+    }
+
+    // New styles for 'Remain' column
+    .md-cell.highlight {
+      color: #ff0000; // Red color for negative values
+    }
+
+    // New styles for action buttons
+    .md-button.md-icon-button {
+      width: 24px;
+      height: 24px;
+      min-height: 24px;
+      line-height: 24px;
+      padding: 0;
+      margin: 0 2px;
+    }
+
+    .md-icon {
+      font-size: 18px;
+    }
+
+    // Responsive styles (unchanged)
+    @media screen and (max-width: 1200px) {
+      font-size: 12px;
+    }
+
+    @media screen and (max-width: 600px) {
+      th.md-column, td.md-cell {
+        padding: 0 4px !important;
+        font-size: 11px;
+      }
+    }
+  }
+}
+
+// Adjust pagination styles
+md-table-pagination {
+  .md-text {
+    font-size: 12px;
+  }
+
+  .md-select-value {
+    font-size: 12px;
+  }
+
+  @media screen and (max-width: 600px) {
+    md-select {
+      margin: 0;
+    }
+
+    .md-text, .md-select-value {
+      font-size: 10px;
+    }
+  }
+}
+
+// Uses the full height and width of the widget to display google map
+.full-card-map {
+  height: 100%;
+  width: 100%;
+}
+
+.map-label {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.courierMarker {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.courierCream {
+  color: #000;
+}
+
+.courierRed {
+  color: #fff;
+}
+
+.gm-style img[src^="data:image/svg+xml"] {
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.1);
+    transform-origin: bottom left;
+  }
 }

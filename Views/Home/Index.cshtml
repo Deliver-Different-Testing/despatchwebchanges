@@ -8,18 +8,16 @@
          var firstName = ViewBag.FirstName;
          var fullName = ViewBag.FullName;
          var dispatcher = ViewBag.DispatcherName;
-         //var email = ViewBag.Email;
+     }
+
+     const ContactID = '@contactId';
+     const ClientInternal = '@clientInternal';
+     const FirstName = '@firstName';
+     const FullName = '@fullName';
+     const Dispatcher = '@dispatcher';
 
 
-      }
-    var ContactID = '@contactId';
-    var ClientInternal = '@clientInternal';
-    var FirstName = '@firstName';
-    var FullName = '@fullName';
-    var Dispatcher = '@dispatcher';
-    
-
-    rg4js('setUser', {
+     rg4js('setUser', {
         identifier: ContactID,
         isAnonymous: false,
         firstName: FirstName,
@@ -27,7 +25,6 @@
     });
 </script>
 <div class="ui-viewer" ui-view>
-
 
 
 </div>

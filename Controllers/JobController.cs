@@ -6,7 +6,6 @@ using RestSharp;
 using RestSharp.Authenticators;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -28,8 +27,8 @@ namespace DespatchWeb.Controllers
             //Security check to confirm these clients belong to this contact and have permissions set
             if (!isInternal && !string.IsNullOrEmpty(clientIds))
             {
-                var clientContacts = await clientRepo.ClientContacts(cid);
-                if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
+                var clientContacts = await clientRepo.ClientContactsAsync(cid);
+                if (clientContacts != null && !clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
                 {
                     var empty = new List<Models.JobViewModel>();
                     return Json(empty);
@@ -46,7 +45,7 @@ namespace DespatchWeb.Controllers
             //Security check to confirm these clients belong to this contact and have permissions set
             if (!isInternal && !string.IsNullOrEmpty(clientIds))
             {
-                var clientContacts = await clientRepo.ClientContacts(cid);
+                var clientContacts = await clientRepo.ClientContactsAsync(cid);
                 if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
                 {
                     var empty = new List<Models.JobViewModel>();
@@ -58,13 +57,13 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        public async Task<IActionResult> NationwideJobListPOD(string status, string area, string order, string asc, bool isInternal,
+        public async Task<IActionResult> NationwideJobListPod(string status, string area, string order, string asc, bool isInternal,
             int cid, string clientIds)
         {
             //Security check to confirm these clients belong to this contact and have permissions set
             if (!isInternal && !string.IsNullOrEmpty(clientIds))
             {
-                var clientContacts = await clientRepo.ClientContacts(cid);
+                var clientContacts = await clientRepo.ClientContactsAsync(cid);
                 if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
                 {
                     var empty = new List<Models.JobViewModel>();
@@ -82,7 +81,7 @@ namespace DespatchWeb.Controllers
             //Security check to confirm these clients belong to this contact and have permissions set
             if (!isInternal && !string.IsNullOrEmpty(clientIds))
             {
-                var clientContacts = await clientRepo.ClientContacts(cid);
+                var clientContacts = await clientRepo.ClientContactsAsync(cid);
                 if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
                 {
                     var empty = new List<Models.JobViewModel>();
@@ -100,7 +99,7 @@ namespace DespatchWeb.Controllers
             //Security check to confirm these clients belong to this contact and have permissions set
             if (!isInternal && !string.IsNullOrEmpty(clientIds))
             {
-                var clientContacts = await clientRepo.ClientContacts(cid);
+                var clientContacts = await clientRepo.ClientContactsAsync(cid);
                 if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
                 {
                     var empty = new List<Models.JobViewModel>();
@@ -151,6 +150,12 @@ namespace DespatchWeb.Controllers
             var result = jobRepository.CurrentJobList(courierId, done);
             return Json(result);
         }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 
         public async Task<IActionResult> Supports(string channel)
         {
@@ -168,26 +173,21 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> LockSupport(int id, string dispatcher)
         {
-            var support = await jobRepository.GetSupportEvent(id);
+            var support = await jobRepository.GetSupportEventAsync(id);
             support.UcevDespatcher = dispatcher;
-            var result = await jobRepository.UpdateSupportEvent(support);
+            var result = await jobRepository.UpdateSupportEventAsync(support);
             return Json(result > 0);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UnLockSupport(int id, string dispatcher)
-        {
-            var support = await jobRepository.GetSupportEvent(id);
-            if (support.UcevDespatcher == dispatcher)
-            {
-                support.UcevDespatcher = "";
-                var result = await jobRepository.UpdateSupportEvent(support);
-                return Json(result > 0);
-            }
-            else
-            {
-                return Json(false);
-            }
+    [HttpPost]
+    public async Task<IActionResult> UnLockSupport(int id, string dispatcher)
+    {
+        var support = await jobRepository.GetSupportEventAsync(id);
+        if (support.UcevDespatcher != dispatcher) return Json(false);
+        support.UcevDespatcher = "";
+        var result = await jobRepository.UpdateSupportEventAsync(support);
+        return Json(result > 0);
+    }
 
         }
 
@@ -274,6 +274,12 @@ namespace DespatchWeb.Controllers
             result.PODPhotos = photos;
             return Json(result);
         }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 
         [HttpGet]
         public async Task<IActionResult> ScanJobDetailAsync(DateTime? runDate, string scan)
@@ -306,36 +312,31 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        public IActionResult PODSearch(int? courierId, int? clientId, string wild, string job, DateTime fromDate, DateTime toDate,
-            int pageIndex, int pageSize)
-        {
-            var result = jobRepository.PODSearch(courierId, wild ?? "", job ?? "", fromDate.ResetTimeToStartOfDay(),
-                toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
+    public async Task<IActionResult> PodSearch(int? courierId, int? clientId, string wild, string job,
+        DateTime fromDate,
+        DateTime toDate,
+        int pageIndex, int pageSize)
+    {
+        var result = await jobRepository.PodSearch(courierId, wild ?? "", job ?? "", fromDate.ResetTimeToStartOfDay(),
+            toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
-            return Json(result);
-        }
+        return Json(result);
+    }
 
-        public IActionResult ValidateSwapPOD(string job)
-        {
-            var fromDate = DateTime.Today;
-            var result = jobRepository.PODSearch(null, "", job, fromDate.ResetTimeToStartOfDay(),
-                fromDate.ResetTimeToEndOfDay(), null, 1, 5);
-            if (result.Item1 == 0)
-            {
-                return Json(false);
-            }
-            else
-            {
-                return Json(result.Item2.First().ID);
-            }
+    public async Task<IActionResult> ValidateSwapPod(string job)
+    {
+        var fromDate = DateTime.Today;
+        var result = await jobRepository.PodSearch(null, "", job, fromDate.ResetTimeToStartOfDay(),
+            fromDate.ResetTimeToEndOfDay(), null, 1, 5);
 
-        }
+        return result.Item1 == 0 ? Json(false) : Json(result.Item2.First().Id);
+    }
 
-        public async Task<IActionResult> SwapPOD(string job1, string job2)
-        {
-            await jobRepository.SwapPOD(job1, job2);
-            return Json("OK");
-        }
+    public async Task<IActionResult> SwapPod(string job1, string job2)
+    {
+        await jobRepository.SwapPod(job1, job2);
+        return Json("OK");
+    }
 
         public async Task<IActionResult> BulkSearch(int? courierId, int? clientId, string job, string wild, DateTime fromDate, DateTime toDate,
             int pageIndex, int pageSize)
@@ -343,8 +344,8 @@ namespace DespatchWeb.Controllers
             var result = await jobRepository.BulkSearchAsync(courierId, job ?? "", wild ?? "", fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
-            return Json(result);
-        }
+        return Json(result);
+    }
 
         public async Task<IActionResult> PreBookSearch(int? courierId, int? clientId, string wild, string job, DateTime fromDate, DateTime toDate,
             int pageIndex, int pageSize)
@@ -352,99 +353,118 @@ namespace DespatchWeb.Controllers
             var result = await jobRepository.PreBookSearchAsync(courierId, wild ?? "", job ?? "", fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
-            return Json(result);
-        }
+        return Json(result);
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> LateCall(int lateType, int lateTime, int minutes, int pickupTime,
-            int alertLatePickup, int deliveryTime, int alertLateDelivery, string jobNo, int clientId, string contact,
-            int staffId, DateTime jobTime, int jobId, int jobType, string bookedSpeed, string notifiedSpeed,
-            string despatcherName, bool calculationRequired)
+    [HttpPost]
+    public async Task<IActionResult> LateCall([FromBody] LateCallRequest request)
+    {
+        var (createEvent, _, late) = await DetermineLateStatus(request);
+
+        if (createEvent) await CreateLateEvent(request, late);
+
+        await jobRepository.ResetLateEvent(request.JobId, request.LateType);
+
+        await UpdateJobStatus(request);
+
+        return Json("OK");
+    }
+
+    private async Task<(bool createEvent, int jobStatus, int late)> DetermineLateStatus(LateCallRequest request)
+    {
+        bool createEvent;
+        var jobStatus = 0;
+        var late = request.LateTime;
+
+        if (request.LateType is 1 or 2)
         {
-            var late = lateTime;
-            var createEvent = false;
-            var jobStatus = 0;
-
-
-            if (lateType == 1 || lateType == 2)
+            (createEvent, jobStatus, late) = request.LateType switch
             {
-                switch (lateType)
-                {
-                    case 1:
-                        jobStatus = 4;
-                        if (alertLatePickup >= 0)
-                        {
-                            var maxAutoLate = await jobRepository.MaxAutoLatePickupAlert();
-                            if (minutes < maxAutoLate)
-                            {
-                                if (lateTime > pickupTime)
-                                {
-                                    createEvent = true;
-                                }
-                            }
-                            else
-                            {
-                                if ((lateTime - pickupTime) > alertLatePickup)
-                                {
-                                    createEvent = true;
-                                }
-                            }
-                        }
-
-                        break;
-                    case 2:
-                        jobStatus = 8;
-                        late = lateTime + deliveryTime;
-                        if (alertLateDelivery >= 0)
-                        {
-                            var maxAutoLateDelAlert = await jobRepository.MaxAutoLateDeliveryAlert();
-                            if (minutes < maxAutoLateDelAlert)
-                            {
-                                createEvent = true;
-                            }
-                            else
-                            {
-                                if (late > alertLateDelivery)
-                                {
-                                    createEvent = true;
-                                }
-                            }
-                        }
-
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-            else
-            {
-                createEvent = true;
-            }
-
-            if (createEvent)
-            {
-                //Event_Insert Me.ucjbNumber, Me.ucjbClientID, Me.ucjbContact, intLateType, intLateTime, DateAdd("n", intLate, Me.ucjbTime), _
-                //    lngUserID, 0, Null, "Late Call from Despatch", False, False, 2, Null, Null, Me.ucjbID, Null, Me.ucjbType, Date, Now
-                await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, null, jobId, jobType, null,
-                    "Late Call from Despatch", lateType, lateTime, jobTime.AddMinutes(late));
-            }
-
-            await jobRepository.ResetLateEvent(jobId, lateType);
-
-            if (lateType == 1)
-            {
-                await jobRepository.LatePickup(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName,
-                    calculationRequired);
-            }
-            else
-            {
-                await jobRepository.LateDelivery(jobId, bookedSpeed, notifiedSpeed, lateTime, despatcherName,
-                    calculationRequired);
-            }
-
-            return Json("OK");
+                1 => await DeterminePickupLateStatus(request),
+                2 => await DetermineDeliveryLateStatus(request),
+                _ => throw new ArgumentException("Invalid LateType")
+            };
         }
+        else
+        {
+            createEvent = true;
+        }
+
+        return (createEvent, jobStatus, late);
+    }
+
+    private async Task<(bool createEvent, int jobStatus, int late)> DeterminePickupLateStatus(LateCallRequest request)
+    {
+        const int jobStatus = 4;
+        var late = request.LateTime;
+
+        if (request.AlertLatePickup < 0) return (false, jobStatus, late);
+
+        var maxAutoLate = await jobRepository.MaxAutoLatePickupAlert();
+        var createEvent = request.Minutes < maxAutoLate
+            ? late > request.PickupTime
+            : late - request.PickupTime > request.AlertLatePickup;
+
+        return (createEvent, jobStatus, late);
+    }
+
+    private async Task<(bool createEvent, int jobStatus, int late)> DetermineDeliveryLateStatus(LateCallRequest request)
+    {
+        var createEvent = false;
+        const int jobStatus = 8;
+        var late = request.LateTime + request.DeliveryTime;
+
+        if (request.AlertLateDelivery < 0) return (createEvent, jobStatus, late);
+
+        var maxAutoLateDelAlert = await _jobRepo.MaxAutoLateDeliveryAlert();
+        createEvent = request.Minutes < maxAutoLateDelAlert || late > request.AlertLateDelivery;
+
+        return (createEvent, jobStatus, late);
+    }
+
+    private async Task CreateLateEvent(LateCallRequest request, int late)
+    {
+        await courierRepo.AddEventAsync(
+            request.JobNo,
+            request.ClientId,
+            request.Contact,
+            int.Parse(request.StaffId),
+            null,
+            request.JobId,
+            request.JobType,
+            null,
+            "Late Call from Despatch",
+            request.LateType,
+            request.LateTime,
+            request.JobTime.AddMinutes(late)
+        );
+    }
+
+    private async Task UpdateJobStatus(LateCallRequest request)
+    {
+        if (request is { LateType: 1 })
+        {
+            await jobRepository.LatePickup(
+                request.JobId,
+                request.BookedSpeed,
+                request.NotifiedSpeed,
+                request.LateTime,
+                request.DespatcherName,
+                request.CalculationRequired
+            );
+        }
+        else
+        {
+            await jobRepository.LateDelivery(
+                request.JobId,
+                request.BookedSpeed,
+                request.NotifiedSpeed,
+                request.LateTime,
+                request.DespatcherName,
+                request.CalculationRequired
+            );
+        }
+    }
 
         [HttpPost]
         public async Task<IActionResult> Allocate(int courierId, int dispId, string jobIds)
@@ -531,12 +551,13 @@ namespace DespatchWeb.Controllers
             return Json(message);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> UpdatePODDetails(string jobNumber, int jobStatus, string podName, DateTime podTime)
-        {
-            await jobRepository.UpdatePODDetails(jobNumber, jobStatus, podName, podTime);
-            return Json("OK");
-        }
+    [HttpPost]
+    public async Task<IActionResult> UpdatePodDetails(string jobNumber, int jobStatus, string podName,
+        DateTime podTime)
+    {
+        await jobRepository.UpdatePodDetails(jobNumber, jobStatus, podName, podTime);
+        return Json("OK");
+    }
 
 
         public async Task<IActionResult> ReRateSplitJob(int jobId)
@@ -551,12 +572,12 @@ namespace DespatchWeb.Controllers
             return Json("OK");
         }
 
-        [HttpPost]
-        public async Task<IActionResult> SendSMS(int courierId, int dispId, string despatcherName, string message)
-        {
-            await jobRepository.MessageCourier(courierId, dispId, despatcherName, message);
-            return Json("OK");
-        }
+    [HttpPost]
+    public async Task<IActionResult> SendSms(int courierId, int dispId, string despatcherName, string message)
+    {
+        await jobRepository.MessageCourier(courierId, dispId, despatcherName, message);
+        return Json("OK");
+    }
 
         [HttpPost]
         public async Task<IActionResult> UpdateSplitJobAddress(int jobId, int toSuburbId, string address,
@@ -574,8 +595,8 @@ namespace DespatchWeb.Controllers
             await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
                 despatcherName, "Job Restored", 33);
 
-            return Json("OK");
-        }
+        return Json("OK");
+    }
 
         [HttpPost]
         public async Task<IActionResult> AddPriceSuburbChangeEvent(string jobNo, int clientId, string contact,
@@ -585,8 +606,8 @@ namespace DespatchWeb.Controllers
             await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null,
                 "Changed Price or Suburb", 35);
 
-            return Json("OK");
-        }
+        return Json("OK");
+    }
 
         [HttpPost]
         public async Task<IActionResult> AddOtherEvent(string jobNo, int clientId, string contact, int staffId,
@@ -596,13 +617,15 @@ namespace DespatchWeb.Controllers
             await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, null, notes,
                 66);
 
-            return Json("OK");
-        }
+        return Json("OK");
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> AddEvent(string jobNo, int clientId, string contact, int staffId,
-            int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType)
-        {
+    [HttpPost]
+    public async Task<IActionResult> AddEvent(string jobNo, int clientId, string contact, int staffId,
+        int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType)
+    {
+        await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
+            despatcherName, notes, eventType);
 
             await courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes, eventType);
 
@@ -619,21 +642,19 @@ namespace DespatchWeb.Controllers
             var rco = new RestClientOptions() { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl) };
             var client = new RestClient(rco);
 
-            var body = new ExsalerateActivity()
-            {
-                SiteOwnerID = 11,
-                CustomerRefCode = clientId.ToString(),
-                Subject = $"Dispatch:{despatcherName} {eventName}",
-                ActivityType = eventName,
-                Description = $"Job Number: {jobNumber} - {notes}"
+        var body = new ExsalerateActivity()
+        {
+            SiteOwnerID = 11,
+            CustomerRefCode = clientId.ToString(),
+            Subject = $"Dispatch:{despatcherName} {eventName}",
+            ActivityType = eventName,
+            Description = $"Job Number: {jobNumber} - {notes}"
+        };
 
-            };
-
-            var request = new RestRequest("activity", Method.Post).AddJsonBody(body);
-
+        var request = new RestRequest("activity", Method.Post).AddJsonBody(body);
 
 
-            var restResponse = await client.PostAsync(request);
+        var restResponse = await client.PostAsync(request);
 
             if (restResponse.StatusCode != System.Net.HttpStatusCode.OK)
             {
@@ -641,8 +662,8 @@ namespace DespatchWeb.Controllers
                 throw e;
             }
 
-            return Json("OK");
-        }
+        return Json("OK");
+    }
 
 
         public IActionResult SuburbList()
@@ -657,11 +678,11 @@ namespace DespatchWeb.Controllers
             return Json(data);
         }
 
-        public IActionResult ContactList(int clientId)
-        {
-            var data = jobRepository.Contacts(clientId);
-            return Json(data);
-        }
+    public async Task<IActionResult> ContactList(int clientId)
+    {
+        var data = await jobRepository.ContactsAsync(clientId);
+        return Json(data);
+    }
 
         public async Task<IActionResult> ContactDetailList(int clientId)
         {
@@ -669,23 +690,23 @@ namespace DespatchWeb.Controllers
             return Json(data);
         }
 
-        public IActionResult LeaveList()
-        {
-            var data = jobRepository.LeaveParcelLocations();
-            return Json(data);
-        }
+    public async Task<IActionResult> LeaveList()
+    {
+        var data = await jobRepository.LeaveParcelLocationsAsync();
+        return Json(data);
+    }
 
-        public IActionResult UndeliverableList()
-        {
-            var data = jobRepository.UndeliverableLocations();
-            return Json(data);
-        }
+    public async Task<IActionResult> UndeliverableList()
+    {
+        var data = await jobRepository.UndeliverableLocationsAsync();
+        return Json(data);
+    }
 
-        public IActionResult InternalStatusList()
-        {
-            var data = jobRepository.InternalStatusList();
-            return Json(data);
-        }
+    public async Task<IActionResult> InternalStatusList()
+    {
+        var data = await jobRepository.InternalStatusListAsync();
+        return Json(data);
+    }
 
         public IActionResult EventTypeList()
         {
@@ -716,27 +737,30 @@ namespace DespatchWeb.Controllers
             return Json($"{rate:C}");
         }
 
-        public async Task<IActionResult> JobAmountBreakdown(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
-            bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
-            string ourRef, string refA, string refB, int quantity, DateTime booked, decimal gstRate, decimal amount)
-        {
-
-            var currentRateAmount = await jobRepository.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
-                includeFuelSurcharge, direct, acceptedJobTypeId,
-                ourRef, refA, refB, quantity, booked);
-            var finalDescription = direct ? "DIRECT PRICE\r" : currentRateAmount != amount ? "NORMAL PRICE\r" : "";
-            var description = await jobRepository.RateJobDescription(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
-                includeFuelSurcharge, direct, acceptedJobTypeId,
-                ourRef, refA, refB, quantity, booked);
-            finalDescription += description;
-            finalDescription += $"\rTotal = {currentRateAmount:C}";
-            finalDescription += $"\rTotal (+GST) = {currentRateAmount * (1 + gstRate):C}";
+    public async Task<IActionResult> JobAmountBreakdown(int clientId, int fromId, int toId, int speed, bool pedal,
+        bool van,
+        bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
+        string ourRef, string refA, string refB, int quantity, DateTime booked, decimal gstRate, decimal amount)
+    {
+        var currentRateAmount = await jobRepository.RateJobAsync(clientId, fromId, toId, speed, pedal, van, returnJob,
+            weight,
+            size,
+            includeFuelSurcharge, direct, acceptedJobTypeId,
+            ourRef, refA, refB, quantity, booked);
+        var finalDescription = direct ? "DIRECT PRICE\r" : currentRateAmount != amount ? "NORMAL PRICE\r" : "";
+        var description = await jobRepository.RateJobDescription(clientId, fromId, toId, speed, pedal, van, returnJob,
+            weight, size,
+            includeFuelSurcharge, direct, acceptedJobTypeId,
+            ourRef, refA, refB, quantity, booked);
+        finalDescription += description;
+        finalDescription += $"\rTotal = {currentRateAmount:C}";
+        finalDescription += $"\rTotal (+GST) = {currentRateAmount * (1 + gstRate):C}";
 
             if (currentRateAmount != amount)
             {
                 var fs = includeFuelSurcharge ? await jobRepository.FuelSurchargeInclusiveAmount(clientId, amount, fromId, toId, booked, size) : 0;
                 var ppd = includeFuelSurcharge ? await jobRepository.PPDInclusiveAmount(clientId, amount) : 0;
-                finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}");
+                finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}" );
                 if (fs > 0)
                 {
                     //strDescription = strDescription & vbCrLf & "Plus fuel surcharge = $" & Format(curFuelSurcharge, "0.00")
@@ -747,14 +771,14 @@ namespace DespatchWeb.Controllers
                 }
             }
 
-            return Json(finalDescription);
-        }
+        return Json(finalDescription);
+    }
 
         public async Task<IActionResult> RateJob(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
             bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
             string ourRef, string refA, string refB, int quantity, DateTime booked)
         {
-            var rate = await jobRepository.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
+            var rate = await _jobRepo.RateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size,
                 includeFuelSurcharge, direct, acceptedJobTypeId,
                 ourRef, refA, refB, quantity, booked);
             return Json($"{rate:C}");
@@ -762,7 +786,7 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> PPDExclusiveAmount(int clientId, decimal amount)
         {
-            var ppd = jobRepository.PPDExclusiveAmount(clientId, amount);
+            var ppd = _jobRepo.PPDExclusiveAmount(clientId, amount);
             return Json(ppd);
         }
 
@@ -823,128 +847,208 @@ namespace DespatchWeb.Controllers
         {
             await jobRepository.UpdateBookingPickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
                 despatcherName);
-            return Json("OK");
-        }
+        await jobRepository.UpdateBookingPickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
+            despatcherName);
+        return Json("OK");
+    }
 
-        public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal? rate,
-            string despatcherName, int staffId)
-        {
+    public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal? rate,
+        string despatcherName, int staffId)
+    {
             await jobRepository.UpdateJob(jobId, field, value, rate, despatcherName, staffId);
             return Json("OK");
+    }
+
+    public async Task<IActionResult> UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate,
+        string despatcherName, int staffId)
+    {
+        await jobRepository.UpdateBulkJobAsync(bulkJobId, field, value, rate, despatcherName, staffId);
+        return Json("OK");
         }
 
-        public async Task<IActionResult> UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate,
-            string despatcherName, int staffId)
-        {
-            await jobRepository.UpdateBulkJob(bulkJobId, field, value, rate, despatcherName, staffId);
+    public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
+    {
+        await jobRepository.ReleaseBulkJobAsync(jobNumber, bookDate);
+        return Json("OK");
+    }
+
+    public async Task<IActionResult> UpdateJobBooking(int jobId, string field, string value, decimal? rate,
+        string despatcherName, int staffId)
+    {
+        await jobRepository.UpdateJobBookingAsync(jobId, field, value, rate, despatcherName, staffId);
+        return Json("OK");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddNote(int jobId, string note, string despatcher)
+    {
+        note = FormatNote(note);
+        await jobRepository.AddNoteAsync(jobId, note, despatcher);
             return Json("OK");
-        }
+    }
 
-        public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
-        {
-            await jobRepository.ReleaseBulkJob(jobNumber, bookDate);
-            return Json("OK");
-        }
-
-        public async Task<IActionResult> UpdateJobBooking(int jobId, string field, string value, decimal? rate,
-            string despatcherName, int staffId)
-        {
-            await jobRepository.UpdateJobBooking(jobId, field, value, rate, despatcherName, staffId);
-            return Json("OK");
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> AddNote(int jobId, string note, string despatcher)
-        {
-            note = FormatNote(note);
-            await jobRepository.AddNote(jobId, note, despatcher);
-            return Json("OK");
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> AddBulkJobNote(int bulkJobId, string note, string despatcher)
-        {
-            note = FormatNote(note);
+    [HttpPost]
+    public async Task<IActionResult> AddBulkJobNote(int bulkJobId, string note, string despatcher)
+    {
+        note = FormatNote(note);
             await jobRepository.AddBulkJobNote(bulkJobId, note, despatcher);
-            return Json("OK");
-        }
+        return Json("OK");
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> AddJobBookingNote(int jobId, string note, string despatcher)
-        {
-            note = FormatNote(note);
+    [HttpPost]
+    public async Task<IActionResult> AddJobBookingNote(int jobId, string note, string despatcher)
+    {
+        note = FormatNote(note);
             await jobRepository.AddJobBookingNote(jobId, note, despatcher);
-            return Json("OK");
-        }
+        return Json("OK");
+    }
 
-        private static string FormatNote(string note) => $"\n{note}";
+    private static string FormatNote(string note) => $"\n{note}";
 
-        [HttpPost]
-        public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId, string currentSpeed)
+
+    [HttpPost]
         {
-            var jobData = await jobRepository.DirectToASAP(jobId);
-            var settingData = await jobRepository.Settings();
-            var emailMessage = FormatDelimMessage(settingData.UncheckDirectEmailMessage, "[", "]", jobData);
-            await courierRepo.AddEventAsync(jobData.Number, jobData.ClientID ?? 0, jobData.Recipient, staffId, null,
-                jobId, jobData.JobTypeID ?? 0, despatcher, "Direct job changed to ASAP", 42, null, null,
-                jobData.CloseEvent);
-            if (jobData.NotifyViaEmail)
+    {
+        try
+        {
+            if (!IsValidRequest(request))
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Bad Request" });
+
+            var jobId = await jobRepository.QuickAddJobAsync(request.Job, request.StaffId.Value);
             {
                 SendEmail(jobData.ContactEmail, "noreply@urgent.co.nz", emailMessage,
                     settingData.UncheckDirectEmailSubject ?? "");
-            }
-            var result = await jobRepository.UpdateFirstAvailableSpeed(jobId);
 
-            var msg =
-                $"Client advised by email that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
-            var msgPhone =
-                $" to be called and advised that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
-            if (jobData.NotifyViaEmail)
+            var notesList = GenerateNotesList(request.Job);
+            await AddNotesToJob(notesList, jobId, request.DespatcherName);
+
+            return Json(jobId);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    private static bool IsValidRequest(CreateJobRequest request) =>
+        !(request?.Job == null || request.Job.ClientId == 0 || request.StaffId == null);
+
+    private static List<string> GenerateNotesList(JobCreateViewModel job)
+    {
+        return new List<string>
+        {
+            FormatNote($"Job Notes: {job.JobNotes}"),
+            FormatNote($"Pickup Notes: {job.PickupNotes}"),
+            FormatNote($"Delivery Notes: {job.DeliveryNotes}")
+        };
+    }
+
+    private async Task AddNotesToJob(List<string> notesList, int jobId, string despatcherName)
+    {
+        if (notesList != null)
+        {
+            foreach (var note in notesList)
+                await AddNote(jobId, note, despatcherName);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> InterCourierCharge([FromBody] InterCourierChargeViewModel viewModel)
+    {
+        if (viewModel == null) throw new ArgumentNullException(nameof(viewModel), "ViewModel is null");
+
+        await jobRepository.AddInterCourierChargeAsync(viewModel);
+        return Json("OK");
+    }
+
+
+    [HttpPost]
+    public async Task<IActionResult> ProcessUncheckDirect(int jobId, string despatcher, int staffId,
+        string currentSpeed)
+    {
+        var jobData = await _jobRepo.DirectToAsap(jobId);
+        var settingData = await _jobRepo.Settings();
+        var emailMessage = FormatDelimMessage(settingData.UncheckDirectEmailMessage, "[", "]", jobData);
+        await courierRepo.AddEventAsync(jobData.Number, jobData.ClientID ?? 0, jobData.Recipient, staffId, null,
+            jobId, jobData.JobTypeID ?? 0, despatcher, "Direct job changed to ASAP", 42, null, null,
+            jobData.CloseEvent);
+        if (jobData.NotifyViaEmail)
+        {
+            SendEmail(jobData.ContactEmail, "noreply@urgent.co.nz", emailMessage,
+                settingData.UncheckDirectEmailSubject ?? "");
+        }
+
+        var result = await jobRepository.UpdateFirstAvailableSpeed(jobId);
+
+        var msg =
+            $"Client advised by email that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
+        var msgPhone =
+            $" to be called and advised that job changed from a Direct {currentSpeed} to ASAP {result.Name ?? currentSpeed}";
+        if (jobData.NotifyViaEmail)
+        {
+            await AddNote(jobId, msg, despatcher);
+        }
+        else
+        {
+            await AddNote(jobId, jobData.Contact + msgPhone, despatcher);
+        }
+
+        return Json("OK");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> HasClientItemsAvailable(int clientId, int speedId)
+    {
+        var hasItems = await _jobRepo.HasClientItemsAvailableAsync(clientId, speedId);
+        return Json(hasItems);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId)
+    {
+        var clientItems = await _jobRepo.GetAllClientItemsBySpeedAsync(clientId, speedId, jobId);
+        return Json(clientItems);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddClientItemsToJob(int jobId, [FromBody] ClientItemsModel itemsModel)
+    {
+        if (itemsModel != null)
+            await _jobRepo.AddClientsItemToJobAsync(jobId, itemsModel.ServiceIds, itemsModel.TotalCost);
+        return Json("OK");
+    }
+
+    private string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
+    {
+        var message = "";
+        while (format?.Length > 0)
+        {
+
+            var c = Strings.Left(format, 1);
+            format = Strings.Mid(format, 2);
+            if (c == startDelim)
             {
-                await AddNote(jobId, msg, despatcher);
+                var fieldName = Strings.Left(format, Strings.InStr(format, endDelim) - 1);
+                format = Strings.Mid(format, Strings.InStr(format, endDelim) + 1);
+                var props = typeof(T).GetRuntimeProperties();
+                    x => string.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
+
+                message += p?.GetValue(data)?.ToString();
             }
             else
             {
-                await AddNote(jobId, jobData.Contact + msgPhone, despatcher);
+                message += c;
             }
-
-            return Json("OK");
         }
 
+        message = message.Replace("  ", " ");
+        message = Strings.Trim(message);
+        return message;
+    }
+    }
 
-
-
-
-        private string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
-        {
-            var message = "";
-            while (format?.Length > 0)
-            {
-
-                var c = Strings.Left(format, 1);
-                format = Strings.Mid(format, 2);
-                if (c == startDelim)
-                {
-                    var fieldName = Strings.Left(format, Strings.InStr(format, endDelim) - 1);
-                    format = Strings.Mid(format, Strings.InStr(format, endDelim) + 1);
-                    var props = typeof(T).GetRuntimeProperties();
-                    var p = props.First(x => String.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
-
-                    message += p?.GetValue(data)?.ToString();
-                }
-                else
-                {
-                    message += c;
-                }
-
-            };
-
-            message = message.Replace("  ", " ");
-            message = Strings.Trim(message);
-            return message;
-        }
-
-        public async Task<IActionResult> SendPOD(int jobId, string toEmail)
+        public async Task<IActionResult> SendPod(int jobId, string toEmail)
         {
 
             var selectedJob = await jobRepository.JobDetail(jobId);
@@ -956,18 +1060,23 @@ namespace DespatchWeb.Controllers
 
             Attachment att = new Attachment(new MemoryStream(selectedJob.PODPhoto), selectedJob.JobNo.ToString() + ".png");
 
-            SendEmail(toEmail, Environment.GetEnvironmentVariable("FromAddress"), $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.", $"Delivery Photo for {selectedJob.JobNo}", att);
+        SendEmail(toEmail, _configuration["FromAddress"], $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.", $"Delivery Photo for {selectedJob.JobNo}", att);
 
             return Json("OK");
         }
         private void SendEmail(string toAddress, string fromAddress, string body, string subject, Attachment attachment = null, string replyTo = null)
+    {
+
+        using (var message = new MailMessage
         {
-            using var message = new MailMessage();
-            message.IsBodyHtml = true;
-            message.From = new MailAddress(fromAddress);
-            message.Subject = subject;
-            message.Body = body;
-            message.Priority = MailPriority.High;
+            IsBodyHtml = true,
+            From = new MailAddress(fromAddress),
+            Subject = subject,
+            Body = body,
+            message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@urgent.co.nz>");
+
+        })
+        {
             message.To.Add(toAddress);
             message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@urgent.co.nz>");
             if (attachment != null)
@@ -979,13 +1088,21 @@ namespace DespatchWeb.Controllers
                 message.ReplyToList.Add(new MailAddress(replyTo));
             }
 
-            using var smtp = new SmtpClient();
-            smtp.Host = Environment.GetEnvironmentVariable("SMTPServer");
-            smtp.UseDefaultCredentials = false;
-            smtp.EnableSsl = true;
-            smtp.Credentials = new NetworkCredential(Environment.GetEnvironmentVariable("SMTPUser"), Environment.GetEnvironmentVariable("SMTPPass"));
-            smtp.Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_Port"));
-            smtp.Send(message);
+            using (var smtp = new SmtpClient
+            {
+                Host = _configuration["SMTPServer"],
+                UseDefaultCredentials = false,
+                EnableSsl = true,
+                Credentials = new NetworkCredential(_configuration["SMTPUser"], _configuration["SMTPPass"]),
+                Port = int.Parse(_configuration["SMTP_Port"])
+            })
+            {
+                smtp.Send(message);
+            }
+
         }
+
+
     }
+}
 }

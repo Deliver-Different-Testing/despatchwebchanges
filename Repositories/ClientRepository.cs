@@ -1,76 +1,70 @@
-﻿using DespatchWeb.Models;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using DespatchWeb.EntityClasses;
-using DespatchWebContextExtensions;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace DespatchWeb.Repositories
+namespace DespatchWeb.Repositories;
+
+public class ClientRepository : IClientRepository
 {
-    public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory)
+    public class ClientRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory)
     {
         public async Task<ClientViewModel> ValidateClientAsync(int contactId)
         {
-            var contact = await Context.TucClientContacts.FirstOrDefaultAsync(c=>c.UcctId == contactId);
-            if (contact == null)
-            {
-                return null;
-            }
-            var client = await Context.TblClients.FirstOrDefaultAsync(x=>x.ClientId == contact.UcctClientId);
-            if (client == null)
-            {
-                return null;
-            }
-            return new ClientViewModel
-            {
-                Active = client.Active,
-                FirstName = contact.UcctFirstname,
-                FullName = contact.UcctFirstname + " " + contact.UcctSurname,
-                Email = contact.UcctEmail,
-                Internal = client.Internal,
-                StaffID = contact.StaffId
-            };
-            
+            return await Context.TucClientContacts
+                .Where(contact => contact.UcctId == contactId)
+                .Join(Context.TblClients,
+                    contact => contact.UcctClientId,
+                    client => client.ClientId,
+                    (contact, client) => new ClientViewModel
+                    {
+                        Active = client.Active,
+                        FirstName = contact.UcctFirstname,
+                        FullName = $"{contact.UcctFirstname} {contact.UcctSurname}",
+                        Email = contact.UcctEmail,
+                        Internal = client.Internal,
+                        StaffID = contact.StaffId
+                    })
+                .FirstOrDefaultAsync();
         }
 
-        public async Task<List<ClientContactViewModel>> ClientContacts(int contactId)
+
+        public async Task<List<ClientContactViewModel>> ClientContactsAsync(int contactId)
         {
-            var clientContacts = from c in Context.TblClientContacts
-                join cip in Context.TblClientContactInternetPermissions on c.ClientContactId equals cip.ClientContactId
-                join ip in Context.TblInternetPermissions on cip.InternetPermissionId equals ip.InternetPermissionId
-                where (c.ContactId == contactId && ip.SystemName == "DespatchWeb")
-                orderby (c.IsDefaultAccount)
-                select new ClientContactViewModel()
+            return await Context.TblClientContacts
+                .Where(c => c.ContactId == contactId)
+                .Join(Context.TblClientContactInternetPermissions,
+                    c => c.ClientContactId,
+                    cip => cip.ClientContactId,
+                    (c, cip) => new { c, cip })
+                .Join(Context.TblInternetPermissions,
+                    joined => joined.cip.InternetPermissionId,
+                    ip => ip.InternetPermissionId,
+                    (joined, ip) => new { joined.c, ip })
+                .Where(joined => joined.ip.SystemName == "DespatchWeb")
+                .OrderByDescending(joined => joined.c.IsDefaultAccount)
+                .Select(joined => new ClientContactViewModel
                 {
-                    ID = c.ClientId,
-                    Text = c.Client.UcclName
-                };
-            return await clientContacts.ToListAsync();
-
+                    ID = joined.c.ClientId,
+                    Text = joined.c.Client.UcclName
+                })
+                .Distinct()
+                .ToListAsync();
         }
 
-        public async Task<DispatcherViewModel> ValidateDispatcherLogin(string name)
-        {
-            var result = new List<DispatcherViewModel>();
-            await Context.LoadStoredProc("INT_stpIsValidLogin_Despatch")
-                .WithSqlParam("@WindowsLogonUserName", name)
-                .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DispatcherViewModel>().ToList(); });
-            return result.FirstOrDefault();
+    public async Task<DispatcherViewModel> ValidateDispatcherLoginAsync(string name)
+    {
+        var result = await Context.Procedures.INT_stpIsValidLogin_DespatchAsync(name);
+        return _mapper.Map<DispatcherViewModel>(result.FirstOrDefault());
+    }
 
-        }
-
-        public async Task<List<ClientActiveViewModel>> ActiveClients(string searchTerm)
-        {
-            var activeCouriers = new List<ClientActiveViewModel>();
-            await Context.LoadStoredProc("DESWEB_qryClientsActive")
-                .WithSqlParam("@SearchTerm", searchTerm)
-                .ExecuteStoredProcAsync(handle =>
-                {
-                    activeCouriers = handle.ReadToList<ClientActiveViewModel>().ToList();
-                });
-            return activeCouriers;
-        }
+    public async Task<List<ClientActiveViewModel>> ActiveClientsAsync(string searchTerm)
+    {
+        var result = await _context.Procedures.DESWEB_qryClientsActiveAsync(searchTerm);
+        return _mapper.Map<List<ClientActiveViewModel>>(result);
     }
 }

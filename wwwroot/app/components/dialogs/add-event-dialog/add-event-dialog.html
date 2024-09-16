@@ -1,0 +1,84 @@
+<md-dialog aria-label="Add event" style="width: 50%;">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Add Event</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content ng-cloak>
+        <form name="ctrl.eventForm" ng-cloak ng-submit="ctrl.eventForm.$valid && ctrl.submit(ctrl.event)">
+            <div class="md-dialog-content">
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="jobNumber">Job Number</label>
+                        <input disabled id="jobNumber" ng-model="ctrl.event.jobNumber" type="text">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="clientCode">Client</label>
+                        <input disabled id="clientCode" ng-model="ctrl.event.clientCode" type="text">
+                    </md-input-container>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="EventDate">Event Date</label>
+                        <input disabled id="EventDate" ng-model="ctrl.event.eventDate" type="date">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label>Event</label>
+                        <md-select name="eventTypes" ng-model="ctrl.selectedEvent" required>
+                            <md-option ng-repeat="eventType in ctrl.eventTypes" ng-value="eventType">
+                                {{ eventType.text }}
+                            </md-option>
+                        </md-select>
+                        <div class="errors" ng-messages="eventForm.eventTypes.$error">
+                            <div ng-message="required">Event Required</div>
+                        </div>
+                    </md-input-container>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="eventTime">Event Time</label>
+                        <input disabled id="eventTime" ng-model="ctrl.event.eventTime" type="time">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" md-maxlength="150" md-select-on-focus ng-model="ctrl.event.notes"
+                                  rows="5"></textarea>
+                    </md-input-container>
+                </div>
+
+            </div>
+        </form>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="ctrl.eventForm.$invalid"
+                ng-if="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button
+                ng-if="!ctrl.isLoading"
+                class="md-raised md-primary"
+                ng-click="ctrl.submit(ctrl.event)"
+                ng-disabled="!ctrl.event">
+            Save
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>

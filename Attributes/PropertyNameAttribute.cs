@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿namespace DespatchWeb.Attributes;
 
 namespace DespatchWeb.Attributes
 {
@@ -12,9 +9,8 @@ namespace DespatchWeb.Attributes
     {
         string name = name;
 
-        public string GetName()
-        {
-            return name;
-        }
+    public string GetName()
+    {
+        return name;
     }
 }

@@ -1,8 +1,8 @@
 ﻿using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.Interfaces;
 
 namespace DespatchWeb.Controllers
 {
@@ -35,18 +35,26 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        [HttpGet]
-        public IActionResult PotentialCouriers(int jobId)
+    [HttpGet]
+    public async Task<IActionResult> PotentialCouriers(int jobId)
+    {
+        try
         {
-            var result = courierRepository.GetPotentialCouriers(jobId);
+            var result = await courierRepository.GetPotentialCouriers(jobId);
             return Json(result);
         }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 
-        public async Task<IActionResult> AllActiveSearch(string searchTerm)
-        {
-            var result =  await courierRepository.AllActiveCouriers(searchTerm);
-            return Json(result);
-        }
+    public async Task<IActionResult> AllActiveSearch(string searchTerm)
+    {
+        var result = await courierRepository.AllActiveCouriersAsync(searchTerm);
+        return Json(result);
+    }
 
         public async Task<IActionResult> AllActive()
         {
@@ -74,27 +82,13 @@ namespace DespatchWeb.Controllers
             return Json(result);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddFollowupEvent(string jobNo, int clientId, string contact, int staffId,
-            int courierId, int jobId, int jobType, string despatcherName)
-        {
-            await courierRepository.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, "Follow up dangerous goods license with courier", 69);
-            return Json("OK");
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetSingleCourier(int courierId)
-        {
-            var result = await courierRepository.ActiveCouriers();
-            var currentCourier = result.FirstOrDefault(c => c.CourierID == courierId);
-
-            var courier = new
-            {
-                id = currentCourier.CourierID,
-                text = currentCourier.Text
-            };
-
-            return Json(courier);
-        }
+    [HttpPost]
+    public async Task<IActionResult> AddFollowupEvent(string jobNo, int clientId, string contact, int staffId,
+        int courierId, int jobId, int jobType, string despatcherName)
+    {
+        await courierRepository.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
+            despatcherName, "Follow up dangerous goods license with courier", 69);
+        return Json("OK");
     }
+}
 }

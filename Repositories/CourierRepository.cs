@@ -1,21 +1,20 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
-using DespatchWeb.EntityClasses;
-using DespatchWeb.Models;
-using System.Linq.Dynamic.Core;
+using AutoMapper;
 using DespatchWeb.Controllers;
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 
+namespace DespatchWeb.Repositories;
 
-namespace DespatchWeb.Repositories
+public class CourierRepository : ICourierRepository
 {
-    public class CourierRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory)
+    public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory)
     {
         public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId)
         {
@@ -23,43 +22,41 @@ namespace DespatchWeb.Repositories
             return result;
         }
 
-        public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null, bool close = false)
-        {
-            int? staffOut = null;
-            DateTime? responseTime = null;
-            var pageCourier = false;
-            
-            string description = null;
-            var date = DateTime.Now;
-            var time = DateTime.Now;
+    public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId,
+        int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null,
+        DateTime? etaTime = null, bool close = false)
+    {
+        int? staffOut = null;
+        DateTime? responseTime = null;
+        const bool pageCourier = false;
 
+        string description = null;
+        var date = DateTime.Now;
+        var time = DateTime.Now;
 
-            await Context.LoadStoredProc("DES_qdfEvent_Insert")
-                .WithSqlParam("@JobNo", jobNo)
-                .WithSqlParam("@ClientID", clientId)
-                .WithSqlParam("@Contact", contact)
-                .WithSqlParam("@Date", date.Date)
-                .WithSqlParam("@Time", time)
-                .WithSqlParam("@Type", eventType)
-                .WithSqlParam("@LateTime", lateTime)
-                .WithSqlParam("@ETATime", etaTime)
-                .WithSqlParam("@StaffIDIn", staffId)
-                .WithSqlParam("@StaffIDOut", staffOut)
-                .WithSqlParam("@ResponseTime", responseTime)
-                .WithSqlParam("@Notes", notes)
-                .WithSqlParam("@PageCourier", pageCourier)
-                .WithSqlParam("@Closed", close)
-                .WithSqlParam("@Originator", staffId)
-                .WithSqlParam("@Description", description)
-                .WithSqlParam("@CourierID", courierId)
-                .WithSqlParam("@JobID", jobId)
-                .WithSqlParam("@Despatcher", despatcherName)
-                .WithSqlParam("@JobType", jobType)
-                .ExecuteStoredNonQueryAsync();
-
-
-
-        }
+        await Context.Procedures.DES_qdfEvent_InsertAsync(
+            JobNo: jobNo,
+            ClientID: clientId,
+            Contact: contact,
+            Date: date.Date,
+            Time: time,
+            Type: eventType,
+            LateTime: lateTime,
+            ETATime: etaTime,
+            StaffIDIn: staffId,
+            StaffIDOut: staffOut,
+            ResponseTime: responseTime,
+            Notes: notes,
+            PageCourier: pageCourier,
+            Closed: close,
+            Originator: staffId,
+            Description: description,
+            CourierID: courierId,
+            JobID: jobId,
+            Despatcher: despatcherName,
+            JobType: jobType
+        );
+    }
 
         public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
         {
@@ -76,49 +73,36 @@ namespace DespatchWeb.Repositories
             return result;
         }
 
-        public List<PotentialCouriersViewModel> GetPotentialCouriers(int jobId)
-        {
-            var result = new List<PotentialCouriersViewModel>();
-            Context.LoadStoredProc("DESWEB_qryPotentialCouriers")
-                .WithSqlParam("@JobID", jobId)
+    public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
+    {
+        var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
+        return mapper.Map<List<PotentialCouriersViewModel>>(results);
+    }
 
-                .ExecuteStoredProc(handle =>
-                {
-                    result = handle.ReadToList<PotentialCouriersViewModel>().ToList();
-                });
-            return result;
-        }
+    /// <summary>
+    /// filters by active, sms setting and logged in
+    /// </summary>
+    /// <returns></returns>
+    public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
+    {
+        var results = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+        return mapper.Map<List<ActiveCouriersViewModel>>(results);
+    }
 
-        /// <summary>
-        /// filters by active, sms setting and logged in
-        /// </summary>
-        /// <returns></returns>
-        public async Task<List<ActiveCouriersViewModel>> ActiveCouriers()
-        {
-            var activeCouriers = new List<ActiveCouriersViewModel>();
-            await Context.LoadStoredProc("DES_qryCourierCombo_Active")
-                .ExecuteStoredProcAsync(handle =>
-                {
-                    activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
-                });
-            return activeCouriers;
-        }
+    /// <summary>
+    /// All active couriers regardless of logged in or not via search
+    /// </summary>
+    /// <returns></returns>
+    public async Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm)
+    {
+        var results = await Context.Procedures.DESWeb_qryCourierComboAsync(SearchTerm: searchTerm);
 
-        /// <summary>
-        /// All active couriers regardless of logged in or not via search
-        /// </summary>
-        /// <returns></returns>
-        public async Task<List<AllCourierActiveViewModel>> AllActiveCouriers(string searchTerm)
+        return results.Select(r => new AllCourierActiveViewModel
         {
-            var activeCouriers = new List<AllCourierActiveViewModel>();
-            await Context.LoadStoredProc("DESWEB_qryCourierCombo")
-                .WithSqlParam("@SearchTerm", searchTerm)
-                .ExecuteStoredProcAsync(handle =>
-                {
-                    activeCouriers = handle.ReadToList<AllCourierActiveViewModel>().ToList();
-                });
-            return activeCouriers;
-        }
+            ID = r.ID,
+            Text = r.Text
+        }).ToList();
+    }
 
         public async Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end)
         {
@@ -131,20 +115,15 @@ namespace DespatchWeb.Repositories
             return result;
         }
 
-        /// <summary>
-        /// All active couriers regardless of logged in or not 
-        /// </summary>
-        /// <returns></returns>
-        public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
-        {
-            var activeCouriers = new List<ActiveCouriersViewModel>();
-            await Context.LoadStoredProc("DESWEB_qryCourierActive")
-                .ExecuteStoredProcAsync(handle =>
-                {
-                    activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
-                });
-            return activeCouriers;
-        }
+    /// <summary>
+    /// All active couriers regardless of logged in or not
+    /// </summary>
+    /// <returns></returns>
+    public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
+    {
+        var results = await Context.Procedures.DESWEB_qryCourierActiveAsync();
+        return mapper.Map<List<ActiveCouriersViewModel>>(results);
+    }
 
 
         public CourierLocation Location(string code)
@@ -187,49 +166,54 @@ namespace DespatchWeb.Repositories
                 DeepEast = BuildClearListViewModel(activeCouriers, 3, 33)
             };
 
-            data.Central.TotalRemaining = await ClearListTotalRemainingAsync("central");
-            data.City.TotalRemaining = await ClearListTotalRemainingAsync("city");
-            data.Parnell.TotalRemaining = await ClearListTotalRemainingAsync("parnell");
-            data.Ponsonby.TotalRemaining = await ClearListTotalRemainingAsync("ponsonby");
-            data.NewMarket.TotalRemaining = await ClearListTotalRemainingAsync("newmarket");
-            data.Eden.TotalRemaining = await ClearListTotalRemainingAsync("eden");
-            data.Other.TotalRemaining = await ClearListTotalRemainingAsync("other");
-            data.WestMid.TotalRemaining = await ClearListTotalRemainingAsync("west mid");
-            data.EastMid.TotalRemaining = await ClearListTotalRemainingAsync("east mid");
-            data.ShallowWest.TotalRemaining = await ClearListTotalRemainingAsync("shallow west");
-            data.DeepWest.TotalRemaining = await ClearListTotalRemainingAsync("deep west");
-            data.ShallowShore.TotalRemaining = await ClearListTotalRemainingAsync("shallow shore");
-            data.DeepShore.TotalRemaining = await ClearListTotalRemainingAsync("deep shore");
-            data.Mangere.TotalRemaining = await ClearListTotalRemainingAsync("mangere");
-            data.DeepSouth.TotalRemaining = await ClearListTotalRemainingAsync("deep south");
-            data.DeepEast.TotalRemaining = await ClearListTotalRemainingAsync("deep east");
-            return data;
+        data.Central.TotalRemaining = await ClearListTotalRemainingAsync("central");
+        data.City.TotalRemaining = await ClearListTotalRemainingAsync("city");
+        data.Parnell.TotalRemaining = await ClearListTotalRemainingAsync("parnell");
+        data.Ponsonby.TotalRemaining = await ClearListTotalRemainingAsync("ponsonby");
+        data.NewMarket.TotalRemaining = await ClearListTotalRemainingAsync("newmarket");
+        data.Eden.TotalRemaining = await ClearListTotalRemainingAsync("eden");
+        data.Other.TotalRemaining = await ClearListTotalRemainingAsync("other");
+        data.WestMid.TotalRemaining = await ClearListTotalRemainingAsync("west mid");
+        data.EastMid.TotalRemaining = await ClearListTotalRemainingAsync("east mid");
+        data.ShallowWest.TotalRemaining = await ClearListTotalRemainingAsync("shallow west");
+        data.DeepWest.TotalRemaining = await ClearListTotalRemainingAsync("deep west");
+        data.ShallowShore.TotalRemaining = await ClearListTotalRemainingAsync("shallow shore");
+        data.DeepShore.TotalRemaining = await ClearListTotalRemainingAsync("deep shore");
+        data.Mangere.TotalRemaining = await ClearListTotalRemainingAsync("mangere");
+        data.DeepSouth.TotalRemaining = await ClearListTotalRemainingAsync("deep south");
+        data.DeepEast.TotalRemaining = await ClearListTotalRemainingAsync("deep east");
+        return data;
+    }
+
+    public async Task<int> ClearListTotalRemainingAsync(string area)
+    {
+        var filter =
+            Context.TblDespatchViews.FirstOrDefault(v =>
+                (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
+        if (string.IsNullOrEmpty(filter))
+        {
+            return 0;
         }
 
-        internal ClearListEnvelopeViewModel ClearListEnvelope(int id)
-        {
-            var envelope = new ClearListEnvelopeViewModel();
-            Context.LoadStoredProc("MAP_stpClearListArea_Envelope")
-                .WithSqlParam("@ClearListAreaID", id)
-                .WithSqlParam("@IncludeCouriers", false)
-                .ExecuteStoredProc(handle => { envelope = handle.ReadToList<ClearListEnvelopeViewModel>().FirstOrDefault(); });
-            return envelope;
-        }
+        filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
+        var s =
+            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
+        var jobs = await Context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
+        return jobs.Count;
+    }
 
-        public async Task<int> ClearListTotalRemainingAsync(string area)
-        {
-            var filter =
-                Context.TblDespatchViews.FirstOrDefault(v =>
-                        (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
-            if (string.IsNullOrEmpty(filter))
+    public ClearListEnvelopeViewModel ClearListEnvelope(int id)
+    {
+        var envelope = new ClearListEnvelopeViewModel();
+        _context.LoadStoredProc("MAP_stpClearListArea_Envelope")
+            .WithSqlParam("@ClearListAreaID", id)
+            .WithSqlParam("@IncludeCouriers", false)
+            .ExecuteStoredProc(handle =>
             {
-                return 0;
-            }
-            filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
-            var s = $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
-            var jobs = await Context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
-            return jobs.Count;
-        }
+                envelope = handle.ReadToList<ClearListEnvelopeViewModel>().FirstOrDefault();
+            });
+        return envelope;
+    }
 
 
         private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers, int clearListId, int percentHeight)
@@ -239,72 +223,70 @@ namespace DespatchWeb.Repositories
                 .WithSqlParam("@ClearListAreaID", clearListId)
                 .ExecuteStoredProc(handle => { result = handle.ReadToList<CourierClearListViewModel>().ToList(); });
 
-            var acl = new AreaClearList
+        var acl = new AreaClearList
+        {
+            PercentHeight = percentHeight,
+            Top = result.Where(c => c.DisplayOrder == 1).Select(x => new ClearListSection()
             {
-                PercentHeight = percentHeight,
-                Top = result.Where(c => c.DisplayOrder == 1).Select(x => new ClearListSection()
+                CourierNumber = x.CourierCode,
+                CourierData = new CourierData()
                 {
-                    CourierNumber = x.CourierCode,
-                    CourierData = new CourierData()
-                    {
-                        Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
-                                  activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
-                        Location = "Penrose 373 Neilson St",
-                        Pu = "Central 1",
-                        Del = "Shallow Shore 3 | Deep Shore 2",
-                        Lrm = "36 Min",
-                        Eta2lrm = "25 Min",
-                        CourierID = x.CourierID
-
-                    },
-                    Destinations = x.Deliver.Split(",").Select(d => new Destination()
-                    {
-                        Id = 1,
-                        Label = d.Trim()
-                    }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
-                }).ToList(),
-                Middle = result.Where(c => c.DisplayOrder == 3).Select(x => new ClearListSection()
+                    Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
+                              activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
+                    Location = "Penrose 373 Neilson St",
+                    Pu = "Central 1",
+                    Del = "Shallow Shore 3 | Deep Shore 2",
+                    Lrm = "36 Min",
+                    Eta2lrm = "25 Min",
+                    CourierID = x.CourierID
+                },
+                Destinations = x.Deliver.Split(",").Select(d => new Destination()
                 {
-                    CourierNumber = x.CourierCode,
-                    CourierData = new CourierData()
-                    {
-                        Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
-                                  activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
-                        Location = "Penrose 373 Neilson St",
-                        Pu = "Central 1",
-                        Del = "Shallow Shore 3 | Deep Shore 2",
-                        Lrm = "36 Min",
-                        Eta2lrm = "25 Min",
-                        CourierID = x.CourierID
-                    },
-                    Destinations = x.Deliver.Split(",").Select(d => new Destination()
-                    {
-                        Id = 1,
-                        Label = d.Trim()
-                    }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
-                }).ToList(),
-                Bottom = result.Where(c => c.DisplayOrder == 5).Select(x => new ClearListSection()
+                    Id = 1,
+                    Label = d.Trim()
+                }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
+            }).ToList(),
+            Middle = result.Where(c => c.DisplayOrder == 3).Select(x => new ClearListSection()
+            {
+                CourierNumber = x.CourierCode,
+                CourierData = new CourierData()
                 {
-                    CourierNumber = x.CourierCode,
-                    CourierData = new CourierData()
-                    {
-                        Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
-                                  activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
-                        Location = "Penrose 373 Neilson St",
-                        Pu = "Central 1",
-                        Del = "Shallow Shore 3 | Deep Shore 2",
-                        Lrm = "36 Min",
-                        Eta2lrm = "25 Min",
-                        CourierID = x.CourierID
-                    },
-                    Destinations = x.Deliver.Split(",").Select(d => new Destination()
-                    {
-                        Id = 1,
-                        Label = d.Trim()
-                    }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
-                }).ToList()
-            };
-            return acl;
-        }
+                    Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
+                              activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
+                    Location = "Penrose 373 Neilson St",
+                    Pu = "Central 1",
+                    Del = "Shallow Shore 3 | Deep Shore 2",
+                    Lrm = "36 Min",
+                    Eta2lrm = "25 Min",
+                    CourierID = x.CourierID
+                },
+                Destinations = x.Deliver.Split(",").Select(d => new Destination()
+                {
+                    Id = 1,
+                    Label = d.Trim()
+                }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
+            }).ToList(),
+            Bottom = result.Where(c => c.DisplayOrder == 5).Select(x => new ClearListSection()
+            {
+                CourierNumber = x.CourierCode,
+                CourierData = new CourierData()
+                {
+                    Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
+                              activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
+                    Location = "Penrose 373 Neilson St",
+                    Pu = "Central 1",
+                    Del = "Shallow Shore 3 | Deep Shore 2",
+                    Lrm = "36 Min",
+                    Eta2lrm = "25 Min",
+                    CourierID = x.CourierID
+                },
+                Destinations = x.Deliver.Split(",").Select(d => new Destination()
+                {
+                    Id = 1,
+                    Label = d.Trim()
+                }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
+            }).ToList()
+        };
+        return acl;
     }
 }

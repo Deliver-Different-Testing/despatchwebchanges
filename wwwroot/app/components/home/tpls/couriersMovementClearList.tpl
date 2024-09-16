@@ -2,8 +2,12 @@
     <table>
         <thead class="thead-dark no select">
         <tr>
-        <th scope="col" ng-click="orderList('couriersClear', 'courier')">Courier <i class="fa fa-caret-down" ng-show="sort.couriersClear == 'courier'"></i><i class="fa fa-caret-up" ng-show="sort.couriersClear == 'd-courier'"></i></th>
-        <th scope="col" ng-click="orderList('couriersClear', 'location')">Location <i class="fa fa-caret-down" ng-show="sort.couriersClear == 'location'"></i><i class="fa fa-caret-up" ng-show="sort.couriersClear == 'd-location'"></i></th>
+            <th ng-click="orderList('couriersClear', 'courier')" scope="col">Courier <i class="fa fa-caret-down"
+                                                                                        ng-if="sort.couriersClear == 'courier'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersClear == 'd-courier'"></i></th>
+            <th ng-click="orderList('couriersClear', 'location')" scope="col">Location <i class="fa fa-caret-down"
+                                                                                          ng-if="sort.couriersClear == 'location'"></i><i
+                    class="fa fa-caret-up" ng-if="sort.couriersClear == 'd-location'"></i></th>
         </tr>
         </thead>
     </table>
@@ -18,9 +22,9 @@
     </tbody>
 </table>
 
-<div class="loading" style="display:block">
+<div class="loading">
     <div class="text">
-        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+        <md-progress-circular md-mode="indeterminate"></md-progress-circular>
         <span class="sr-only">Loading...</span>
     </div>
 </div>
@@ -28,9 +32,9 @@
 
 <script>
 
-    $(".box-content").on("scroll", function() {
-        var newTop = $(this).scrollTop();
-        $(this).find(".table-headings").css({"top":newTop});
+    angular.element(".box-content").on("scroll", function () {
+        var newTop = angular.element(this).scrollTop();
+        angular.element(this).find(".table-headings").css({"top": newTop});
     });
 
 </script>

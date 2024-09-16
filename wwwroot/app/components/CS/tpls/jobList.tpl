@@ -1,100 +1,47 @@
-
-<div class="droppable-box" style="min-height:500px">
-
-   <div class="table-headings">
-    <table>
-        <thead class="thead-dark no select">
-        <tr>
-        <th scope="col" ng-click="orderList('jobList', 'booked')">Booked <i class="fa fa-caret-down" ng-show="sort.jobList =='booked'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-booked'"></i></th>
-        <th scope="col" ng-click="orderList('jobList', 'status')">Status <i class="fa fa-caret-down" ng-show="sort.jobList =='status'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-status'"></i></th>
-		<th scope="col" ng-click="orderList('jobList', 'speed')">Speed <i class="fa fa-caret-down" ng-show="sort.jobList =='speed'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-speed'"></i></th>
-        <th scope="col" ng-click="orderList('jobList', 'jobNo')">Job <i class="fa fa-caret-down" ng-show="sort.jobList =='jobNo'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-jobNo'"></i></th>
-        <th scope="col" ng-click="orderList('jobList', 'client')">Client <i class="fa fa-caret-down" ng-show="sort.jobList =='client'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-client'"></i></th>
-        <th scope="col" ng-click="orderList('jobList', 'from')">From <i class="fa fa-caret-down" ng-show="sort.jobList =='from'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-from'"></i></th>
-        <th scope="col" ng-click="orderList('jobList', 'to')">To <i class="fa fa-caret-down" ng-show="sort.jobList =='to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList =='d-to'"></i></th>
-		<th scope="col" ng-click="orderList('jobList','to')">Street <i class="fa fa-caret-down" ng-show="sort.jobList == 'to'"></i><i class="fa fa-caret-up" ng-show="sort.jobList == 'd-to'"></i></th>
-        
+<!-- Job List Table -->
+<md-table-container>
+    <table md-progress="jobPromise" md-row-select md-table ng-model="selectedJobs">
+        <thead md-head md-order="jobQuery.order">
+        <tr md-row>
+            <th class="md-date-cell" md-column md-order-by="booked"><span>Booked</span></th>
+            <th class="md-speed-cell" md-column md-order-by="status"><span>Status</span></th>
+            <th class="md-speed-cell" md-column md-order-by="speed"><span>Speed</span></th>
+            <th class="md-job-cell" md-column md-order-by="jobNo"><span>Job</span></th>
+            <th class="md-client-cell" md-column md-order-by="client"><span>Client</span></th>
+            <th md-column md-order-by="from"><span>From</span></th>
+            <th md-column md-order-by="to"><span>To</span></th>
+            <th class="md-address-cell" md-column md-order-by="toAddress"><span>Street</span></th>
         </tr>
         </thead>
+        <tbody md-body>
+        <tr md-row md-select="job" md-select-id="id" ng-click="selectJobDetail(job.id)"
+            ng-repeat="job in jobList | orderBy: jobQuery.order">
+            <td class="md-date-cell" md-cell>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
+            <td class="status md-speed-cell" md-cell ng-class="job.status">{{job.status}}</td>
+            <td class="md-speed-cell" md-cell>{{job.speed}}</td>
+            <td class="md-job-cell" md-cell>{{job.jobNo}}</td>
+            <td class="md-client-cell" md-cell>{{job.client}}</td>
+            <td md-cell>
+                {{job.from}}
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+            </td>
+            <td md-cell>
+                {{job.to}}
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+            </td>
+            <td class="md-address-cell" md-cell>
+                {{job.toAddress}}
+            </td>
+        </tr>
+        </tbody>
     </table>
+</md-table-container>
 
-
-</div>
-
-    <table class="table table-striped table-responsive table-rows" id="jobList" data-group="jobList">
-    <thead class="thead-dark no select">
-
-    </tr>
-    </thead>
-    <tbody>
-    <tr class="droppable-row draggable-row clickable-row noselect" ng-repeat="job in jobList | filter: box.searchBox"  ng-click="selectJobDetail(job.id);" data-courier="{{job.courier}}" data-jobid="{{job.id}}" data-jobNo="{{job.jobNo}}">
-            <td>{{job.booked | date : "dd/MM/yy hh:mm"}}</td>
-            <td class="status" ng-class="job.status">{{job.status}}</td>
-            <td right-click action="speedColumnClick(event)">{{job.speed}}</td>
-
-            <td>{{job.jobNo}}</td>
-            <td right-click action="clientColumnClick(event)">{{job.client}}</td>
-            <td right-click action="fromColumnClick(event)">{{job.from}} <i ng-if="!job.pickUpLongitude" class="fa fa-exclamation"></i></td>
-			<td right-click action="toColumnClick(event)">{{job.to}} <i ng-if="!job.deliveryLongitude" class="fa fa-exclamation"></i></td>
-			<td context-menu="setCurrentWorkMenu"><div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">{{job.toAddress}}</div></td>
-
-        </tr>
-        <tr>
-            <td><div></div></td>
-            <td><div></div></td>
-            <td><div></div></td>
-            <td><div></div></td>
-            <td><div></div></td>
-            <td><div></div></td>
-            <td><div></div></td>
-            <td><div></div></td>
-
-        </tr>
-    </tbody>
-    <tfoot>  
-        <tr>  
-            <td align="center" colspan="6">  
-                <!--<span class="form-group pull-left page-size form-inline">  
-                    <select id="ddlPageSize" class="form-control control-color"  
-                            ng-model="pageSizeSelected"  
-                            ng-change="changePageSize(pageSizeSelected)">  
-                        <option value="5">5</option>  
-                        <option value="10">10</option>  
-                        <option value="25">25</option>  
-                        <option value="50">50</option>  
-                    </select>  
-                </span>  -->
-            
-                <div class="pull-right">  
-                    <uib-pagination total-items="totalCount" ng-change="pageChanged(pageIndex)" items-per-page="pageSizeSelected" 
-                    direction-links="true" ng-model="pageIndex" max-size="maxSize" class="pagination" boundary-links="true" rotate="false"
-                    num-pages="numPages"></uib-pagination>  
-                    <a class="btn btn-primary">Page: {{pageIndex}} / {{numPages}}</a>  
-                </div>  
-            </td>  
-        </tr>  
-    </tfoot>  
-</table>
-    
-
-</div>
-
-<div class="loading">
-    <div class="text">
-        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
-        <span class="sr-only">Loading...</span>
-    </div>
-</div>
-
-
-
-<script>
-
-    $(".box-content").on("scroll", function() {
-
-        var newTop2 = $(this).scrollTop(); 
-        $(this).find(".box-calculator").css({"top":newTop2});
-
-    });
-
-</script>
+<md-table-pagination
+        md-limit="jobQuery.limit"
+        md-limit-options="[5, 10, 25, 50]"
+        md-on-paginate="jobPageChanged"
+        md-page="jobQuery.page"
+        md-page-select
+        md-total="{{totalCount}}">
+</md-table-pagination>

@@ -19,7 +19,7 @@
             <td style="width:30%">{{scan.scanDateTime  | date : "dd/MM/yyyy h:mm:a"}}</td>
             <td style="width:20%">{{scan.scanDetail}}</td>
             <td>{{scan.courier}}</td>
-           
+
         </tr>
 
 
@@ -28,8 +28,8 @@
             <td><div></div></td>
             <td><div></div></td>
             <td><div></div></td>
-            
-            
+
+
         </tr>
         </tbody>
     </table>
@@ -40,7 +40,7 @@
 </div>
 <div class="loading">
     <div class="text">
-        <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+        <md-progress-circular md-mode="indeterminate"></md-progress-circular>
         <span class="sr-only">Loading...</span>
     </div>
 </div>
@@ -49,10 +49,10 @@
 
 <script>
 
-    $(".box-content").on("scroll", function() {
+    angular.element(".box-content").on("scroll", function () {
 
-        var newTop2 = $(this).scrollTop(); 
-        $(this).find(".box-calculator").css({"top":newTop2});
+        var newTop2 = angular.element(this).scrollTop();
+        angular.element(this).find(".box-calculator").css({"top": newTop2});
 
     });
 

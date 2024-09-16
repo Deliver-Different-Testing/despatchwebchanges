@@ -1,0 +1,135 @@
+<md-dialog aria-label="{{ ctrl.title }}" style="width: 50%;">
+    <form ng-cloak>
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <h2>{{ ctrl.title }}</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                    <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                        close
+                    </md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-dialog-content ng-cloak>
+            <div class="md-dialog-content">
+
+                <div layout-gt-xs="row">
+                    <md-input-container class="md-icon-float md-block" flex-gt-xs>
+                        <md-icon md-font-set="material-symbols-outlined">home</md-icon>
+                        <label for="address">{{ ctrl.useUsFormat ? 'Street Address' : 'Address' }}</label>
+                        <input id="address" ng-model="ctrl.addressDetails.address">
+                    </md-input-container>
+
+                    <md-button class="md-fab md-mini md-raised" style="align-items: center;"
+                               ng-click="ctrl.copyGpsAddress(ctrl.addressDetails.address)">
+                        <md-icon md-font-set="material-symbols-outlined">content_copy</md-icon>
+                        <md-tooltip md-direction="bottom">Copy To Search</md-tooltip>
+                    </md-button>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm ng-if="!ctrl.useUsFormat">
+                        <label for="suburb">Suburb</label>
+                        <input id="suburb" ng-model="ctrl.addressDetails.suburb">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm ng-if="ctrl.useUsFormat">
+                        <label for="city">City</label>
+                        <input id="city" ng-model="ctrl.addressDetails.city">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm ng-if="ctrl.useUsFormat">
+                        <label for="state">State</label>
+                        <md-select id="state" ng-model="ctrl.addressDetails.state">
+                            <md-option ng-repeat="state in ctrl.states" value="{{state.abbreviation}}">
+                                {{state.name}}
+                            </md-option>
+                        </md-select>
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm ng-if="ctrl.useUsFormat">
+                        <label for="zipCode">ZIP Code</label>
+                        <input id="zipCode" ng-model="ctrl.addressDetails.zipCode" pattern="[0-9]{5}">
+                    </md-input-container>
+
+                    <md-autocomplete
+                            class="md-block"
+                            flex-gt-sm md-floating-label="Our Suburb"
+                            md-item-text="item.text"
+                            md-items="item in ctrl.ourSuburbSearch(ctrl.ourSuburbSearchText)"
+                            md-search-text="ctrl.ourSuburbSearchText"
+                            md-selected-item="ctrl.ourSuburbSelectedItem"
+                            ng-if="!ctrl.useUsFormat">
+                        <md-item-template>
+                            <span md-highlight-flags="^i"
+                                  md-highlight-text="ctrl.ourSuburbSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No matches found for "{{ctrl.ourSuburbSearchText}}" in Suburb.
+                        </md-not-found>
+                    </md-autocomplete>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="lat">Latitude</label>
+                        <input id="lat" ng-model="ctrl.addressDetails.lat">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="long">{{ ctrl.useUsFormat ? 'Longitude' : 'Longtitude' }}</label>
+                        <input id="long" ng-model="ctrl.addressDetails.long">
+                    </md-input-container>
+                </div>
+
+                <md-input-container class="md-block">
+                    <label for="extras">Address Extras</label>
+                    <input id="extras" ng-model="ctrl.addressDetails.extras">
+                </md-input-container>
+
+                <md-autocomplete class="md-block" flex-gt-sm
+                                 md-floating-label="Search Address"
+                                 md-item-text="item.text"
+                                 md-items="item in ctrl.addressSearchAutocomplete(ctrl.addressSearchText)"
+                                 md-min-length="3"
+                                 md-search-text="ctrl.addressSearchText"
+                                 md-selected-item="ctrl.addressDetails.filledAddress"
+                                 md-selected-item-change="ctrl.addressSearchItemSelected(item)">
+                    <md-item-template>
+                        <span md-highlight-flags="^i" md-highlight-text="ctrl.addressSearchText">{{item.text}}</span>
+                    </md-item-template>
+                    <md-not-found>
+                        No addresses matching "{{ctrl.addressSearchText}}" were found.
+                    </md-not-found>
+                </md-autocomplete>
+
+                <label>Map</label>
+                <ng-map center="{{ctrl.addressDetails.lat}}, {{ctrl.addressDetails.long}}"
+                        id="map"
+                        ng-if="ctrl.mapDisplay"
+                        on-rightclick="ctrl.moveMarker($event)">
+                    <marker draggable="true" on-dragend="ctrl.markerDragend($event)"
+                            position="{{ctrl.addressDetails.lat}}, {{ctrl.addressDetails.long}}"></marker>
+                </ng-map>
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions>
+            <md-progress-circular
+                    class="md-primary"
+                    md-diameter="40"
+                    md-mode="indeterminate"
+                    ng-disabled="ctrl.selectedItem === null"
+                    ng-show="ctrl.isLoading">
+            </md-progress-circular>
+
+            <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.addressDetails)"
+                       ng-show="!ctrl.isLoading">
+                {{ ctrl.submitLabel }}
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

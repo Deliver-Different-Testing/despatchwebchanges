@@ -1,0 +1,83 @@
+<md-dialog aria-label="Add pallet" style="width: 50%;">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Add Pallet</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content ng-cloak>
+        <form name="ctrl.palletForm" ng-cloak ng-submit="ctrl.palletForm.$valid && ctrl.submit(ctrl.pallet)">
+            <div class="md-dialog-content">
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="amount"># Of Pallets</label>
+                        <input id="amount" ng-model="ctrl.pallet.amount" type="number">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="weight">Weight (KG)</label>
+                        <input id="weight" ng-model="ctrl.pallet.weight" type="number">
+                    </md-input-container>
+                </div>
+
+                <div layout-gt-sm="row">
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="length">Length (m)</label>
+                        <input id="length" ng-model="ctrl.pallet.length" type="number">
+                    </md-input-container>
+
+                    <md-input-container class="md-block" flex-gt-sm>
+                        <label for="depth">Depth (m)</label>
+                        <input id="depth" ng-model="ctrl.pallet.depth" type="number">
+                    </md-input-container>
+                </div>
+
+                <div layout="row" layout-align="center center" layout-wrap>
+                    <md-checkbox ng-model="ctrl.pallet.pu">
+                        PU
+                    </md-checkbox>
+
+                    <md-checkbox ng-model="ctrl.pallet.do">
+                        DO
+                    </md-checkbox>
+                </div>
+
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label for="dgClass">DG Class</label>
+                    <input id="dgClass" ng-model="ctrl.pallet.dgClass" type="number">
+                </md-input-container>
+
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" md-maxlength="150" md-select-on-focus ng-model="ctrl.pallet.notes"
+                              rows="5"></textarea>
+                </md-input-container>
+
+            </div>
+        </form>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="ctrl.palletForm.$invalid"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.pallet)"
+                   ng-disabled="ctrl.palletForm.$invalid"
+                   ng-show="!ctrl.isLoading">
+            Save
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>
