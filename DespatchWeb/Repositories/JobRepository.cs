@@ -2299,91 +2299,100 @@ public class JobRepository : IJobRepository
             .ExecuteStoredNonQueryAsync();
     }
 
-    public async Task ReleaseBulkJob(string jobNumber, DateTime bookDate)
+    public async Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate)
     {
-        await _context.LoadStoredProc("UTL_stpJob_tblBulkJob_ReleaseByJobNumber")
-            .WithSqlParam("@JobNumber", jobNumber)
-            .WithSqlParam("@DateTime", bookDate)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(
+            JobNumber: jobNumber,
+            DateTime: bookDate);
     }
 
-    public async Task UpdateJob(int jobId, string field, string value, decimal? rate, string despatcher, int staffId)
-    {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJob")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@PropertyName", field)
-            .WithSqlParam("@Value", value)
-            .WithSqlParam("@Rate", rate)
-            .WithSqlParam("@Username", despatcher)
-            .WithSqlParam("@StaffID", staffId)
-            .ExecuteStoredNonQueryAsync();
-    }
-
-    public async Task UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate, string despatcher,
+    public async Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher,
         int staffId)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateBulkJob")
-            .WithSqlParam("@BulkJobID", bulkJobId)
-            .WithSqlParam("@PropertyName", field)
-            .WithSqlParam("@Value", value)
-            .WithSqlParam("@Rate", rate)
-            .WithSqlParam("@Username", despatcher)
-            .WithSqlParam("@StaffID", staffId)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateJobAsync(
+            JobID: jobId,
+            PropertyName: field,
+            Value: value,
+            Rate: rate,
+            Username: despatcher,
+            StaffID: staffId);
     }
 
-    public async Task UpdateJobBooking(int jobId, string field, string value, decimal? rate, string despatcher,
+
+    public async Task UpdateBulkJobAsync(int bulkJobId, string field, string value, decimal? rate, string despatcher,
         int staffId)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobBooking")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@PropertyName", field)
-            .WithSqlParam("@Value", value)
-            .WithSqlParam("@Rate", rate)
-            .WithSqlParam("@Username", despatcher)
-            .WithSqlParam("@StaffID", staffId)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateBulkJobAsync(
+            BulkJobID: bulkJobId,
+            PropertyName: field,
+            Value: value,
+            Rate: rate,
+            Username: despatcher,
+            StaffID: staffId);
     }
 
-    public async Task AddNote(int jobId, string note, string despatcher)
+    public async Task UpdateJobBookingAsync(int jobId, string field, string value, decimal? rate, string despatcher,
+        int staffId)
     {
-        await _context.LoadStoredProc("DESWEB_stpJob_AddNotes")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@Notes", note)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateJobBookingAsync(
+            JobID: jobId,
+            PropertyName: field,
+            Value: value,
+            Rate: rate,
+            Username: despatcher,
+            StaffID: staffId);
     }
 
-    public async Task AddBulkJobNote(int bulkJobId, string note, string despatcher)
+    public async Task AddNoteAsync(int jobId, string note, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpBulkJob_AddNotes")
-            .WithSqlParam("@BulkJobID", bulkJobId)
-            .WithSqlParam("@Notes", note)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpJob_AddNotesAsync(
+            JobID: jobId,
+            Notes: note,
+            Username: despatcher);
     }
 
-    public async Task AddJobBookingNote(int jobId, string note, string despatcher)
+    public async Task AddBulkJobNoteAsync(int bulkJobId, string note, string despatcher)
     {
-        await _context.LoadStoredProc("DES_stpJobBooking_AddNotes")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@Notes", note)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpBulkJob_AddNotesAsync(
+            BulkJobID: bulkJobId,
+            Notes: note,
+            Username: despatcher);
     }
 
-    public async Task<int> QuickAddJob(JobCreateViewModel job, int staffId)
+    public async Task AddJobBookingNoteAsync(int jobId, string note, string despatcher)
+    {
+        await _context.Procedures.DES_stpJobBooking_AddNotesAsync(
+            JobID: jobId,
+            Notes: note,
+            Username: despatcher);
+    }
+
+    public async Task<int> QuickAddJobAsync(JobCreateViewModel job, int staffId)
     {
         var jobId = new OutputParameter<int?>();
 
         await _context.Procedures.DESWEB_stpQuickCreateJobAsync(
             ClientId: job.ClientId,
-            FromAddress: job.FromAddress,
-            FromLat: job.FromLat,
-            FromLong: job.FromLong,
-            ToAddress: job.ToAddress,
-            ToLat: job.ToLat,
-            ToLong: job.ToLong,
+            PickupAddressLine1: job.PickUpAddress.AddressLine1,
+            PickupAddressLine2: job.PickUpAddress.AddressLine2,
+            PickupAddressLine3: job.PickUpAddress.AddressLine3,
+            PickupAddressLine4: job.PickUpAddress.AddressLine4,
+            PickupAddressLine5: job.PickUpAddress.AddressLine5,
+            PickupAddressLine6: job.PickUpAddress.AddressLine6,
+            PickupAddressLine7: job.PickUpAddress.AddressLine7,
+            PickupAddressLine8: job.PickUpAddress.AddressLine8,
+            PickupLat: job.FromLat,
+            PickupLong: job.FromLong,
+            DeliveryAddressLine1: job.DeliveryAddress.AddressLine1,
+            DeliveryAddressLine2: job.DeliveryAddress.AddressLine2,
+            DeliveryAddressLine3: job.DeliveryAddress.AddressLine3,
+            DeliveryAddressLine4: job.DeliveryAddress.AddressLine4,
+            DeliveryAddressLine5: job.DeliveryAddress.AddressLine5,
+            DeliveryAddressLine6: job.DeliveryAddress.AddressLine6,
+            DeliveryAddressLine7: job.DeliveryAddress.AddressLine7,
+            DeliveryAddressLine8: job.DeliveryAddress.AddressLine8,
+            DeliveryLat: job.ToLat,
+            DeliveryLong: job.ToLong,
             PickupFromContact: job.FromContactName,
             JobDate: job.Date,
             Void: job.Void,
@@ -2396,8 +2405,6 @@ public class JobRepository : IJobRepository
             Reprice: job.Reprice,
             Amount: job.Charge,
             SpeedId: job.SpeedId,
-            ToSuburbId: job.ToSuburb,
-            FromSuburbId: job.FromSuburb,
             StaffId: staffId,
             RefA: job.RefA,
             RefB: job.RefB,
@@ -2406,7 +2413,7 @@ public class JobRepository : IJobRepository
         return jobId.Value ?? 0;
     }
 
-    public async Task AddInterCourierCharge(InterCourierChargeViewModel viewModel)
+    public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
     {
         await _context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
             fromCourierId: viewModel?.FromCourierId,
@@ -2417,7 +2424,7 @@ public class JobRepository : IJobRepository
         );
     }
 
-    public async Task<bool> HasClientItemsAvailable(int clientId, int speedId)
+    public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
     {
         var count = await _context.TblClientAvailableSpeeds
             .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
@@ -2435,7 +2442,8 @@ public class JobRepository : IJobRepository
         return count > 0;
     }
 
-    public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId)
+    public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeedAsync(int clientId, int speedId,
+        int jobId)
     {
         var job = await GetJobInfo(jobId);
         var clientItemIds = GetClientItemIds(job?.ClientItemIds);
@@ -2443,7 +2451,7 @@ public class JobRepository : IJobRepository
         return await CreatePagedList(clientItemsQuery);
     }
 
-    public async Task AddClientsItemToJob(int jobId, List<int> clientItemIds, decimal totalCost)
+    public async Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost)
     {
         var clientItemsString = clientItemIds is null || !clientItemIds.Any()
             ? string.Empty

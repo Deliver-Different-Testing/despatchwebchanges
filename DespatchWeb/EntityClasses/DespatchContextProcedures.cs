@@ -44,7 +44,9 @@ namespace DespatchWeb.EntityClasses
             modelBuilder.Entity<DESWeb_qryCourierComboResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWEB_qryPotentialCouriersResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWEB_stpMapEnvelopeResult>().HasNoKey().ToView(null);
+            modelBuilder.Entity<DESWEB_stpQuickCreateJobResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<INT_stpIsValidLogin_DespatchResult>().HasNoKey().ToView(null);
+            modelBuilder.Entity<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>().HasNoKey().ToView(null);
         }
     }
 
@@ -359,6 +361,46 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<int> DES_stpJobBooking_AddNotesAsync(int? JobID, string Notes, string Username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobID",
+                    Value = JobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Notes",
+                    Size = 8000,
+                    Value = Notes ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Username",
+                    Size = 200,
+                    Value = Username ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_stpJobBooking_AddNotes] @JobID = @JobID, @Notes = @Notes, @Username = @Username", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<DESWEB_qryClientsActiveResult>> DESWEB_qryClientsActiveAsync(string SearchTerm, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -459,6 +501,46 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
+        public virtual async Task<int> DESWEB_stpBulkJob_AddNotesAsync(int? BulkJobID, string Notes, string Username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "BulkJobID",
+                    Value = BulkJobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Notes",
+                    Size = 8000,
+                    Value = Notes ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Username",
+                    Size = 200,
+                    Value = Username ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpBulkJob_AddNotes] @BulkJobID = @BulkJobID, @Notes = @Notes, @Username = @Username", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<int> DESWEB_stpCreateInterCourierJobsAsync(int? fromCourierId, int? toCourierId, decimal? Amount, string Reference, int? StaffId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -506,6 +588,46 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpCreateInterCourierJobs] @fromCourierId = @fromCourierId, @toCourierId = @toCourierId, @Amount = @Amount, @Reference = @Reference, @StaffId = @StaffId", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> DESWEB_stpJob_AddNotesAsync(int? JobID, string Notes, string Username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobID",
+                    Value = JobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Notes",
+                    Size = 8000,
+                    Value = Notes ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Username",
+                    Size = 200,
+                    Value = Username ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpJob_AddNotes] @JobID = @JobID, @Notes = @Notes, @Username = @Username", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
@@ -564,7 +686,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, decimal? FromLat, decimal? FromLong, string ToAddress, decimal? ToLat, decimal? ToLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, string PodName, bool? Truck, bool? VanOk, bool? Reprice, decimal? Amount, int? SpeedId, int? ToSuburbId, int? FromSuburbId, int? StaffId, string RefA, string RefB, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DESWEB_stpQuickCreateJobResult>> DESWEB_stpQuickCreateJobAsync(int? ClientId, string PickupAddressLine1, string PickupAddressLine2, string PickupAddressLine3, string PickupAddressLine4, string PickupAddressLine5, string PickupAddressLine6, string PickupAddressLine7, string PickupAddressLine8, decimal? PickupLat, decimal? PickupLong, string DeliveryAddressLine1, string DeliveryAddressLine2, string DeliveryAddressLine3, string DeliveryAddressLine4, string DeliveryAddressLine5, string DeliveryAddressLine6, string DeliveryAddressLine7, string DeliveryAddressLine8, decimal? DeliveryLat, decimal? DeliveryLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, string PodName, bool? Truck, bool? VanOk, bool? Reprice, decimal? Amount, int? SpeedId, int? StaffId, string RefA, string RefB, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobId = new SqlParameter
             {
@@ -590,44 +712,146 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "FromAddress",
+                    ParameterName = "PickupAddressLine1",
                     Size = 300,
-                    Value = FromAddress ?? Convert.DBNull,
+                    Value = PickupAddressLine1 ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "FromLat",
-                    Precision = 18,
-                    Value = FromLat ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Decimal,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "FromLong",
-                    Precision = 18,
-                    Value = FromLong ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Decimal,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "ToAddress",
+                    ParameterName = "PickupAddressLine2",
                     Size = 300,
-                    Value = ToAddress ?? Convert.DBNull,
+                    Value = PickupAddressLine2 ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "ToLat",
-                    Precision = 18,
-                    Value = ToLat ?? Convert.DBNull,
+                    ParameterName = "PickupAddressLine3",
+                    Size = 300,
+                    Value = PickupAddressLine3 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PickupAddressLine4",
+                    Size = 300,
+                    Value = PickupAddressLine4 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PickupAddressLine5",
+                    Size = 300,
+                    Value = PickupAddressLine5 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PickupAddressLine6",
+                    Size = 300,
+                    Value = PickupAddressLine6 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PickupAddressLine7",
+                    Size = 300,
+                    Value = PickupAddressLine7 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PickupAddressLine8",
+                    Size = 300,
+                    Value = PickupAddressLine8 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PickupLat",
+                    Precision = 10,
+                    Scale = 8,
+                    Value = PickupLat ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Decimal,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "ToLong",
-                    Precision = 18,
-                    Value = ToLong ?? Convert.DBNull,
+                    ParameterName = "PickupLong",
+                    Precision = 11,
+                    Scale = 8,
+                    Value = PickupLong ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryAddressLine1",
+                    Size = 300,
+                    Value = DeliveryAddressLine1 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryAddressLine2",
+                    Size = 300,
+                    Value = DeliveryAddressLine2 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryAddressLine3",
+                    Size = 300,
+                    Value = DeliveryAddressLine3 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryAddressLine4",
+                    Size = 300,
+                    Value = DeliveryAddressLine4 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryAddressLine5",
+                    Size = 300,
+                    Value = DeliveryAddressLine5 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryAddressLine6",
+                    Size = 300,
+                    Value = DeliveryAddressLine6 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryAddressLine7",
+                    Size = 300,
+                    Value = DeliveryAddressLine7 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryAddressLine8",
+                    Size = 300,
+                    Value = DeliveryAddressLine8 ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryLat",
+                    Precision = 10,
+                    Scale = 8,
+                    Value = DeliveryLat ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DeliveryLong",
+                    Precision = 11,
+                    Scale = 8,
+                    Value = DeliveryLong ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Decimal,
                 },
                 new SqlParameter
@@ -709,18 +933,6 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "ToSuburbId",
-                    Value = ToSuburbId ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "FromSuburbId",
-                    Value = FromSuburbId ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
                     ParameterName = "StaffId",
                     Value = StaffId ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
@@ -742,9 +954,192 @@ namespace DespatchWeb.EntityClasses
                 parameterJobId,
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @FromLat = @FromLat, @FromLong = @FromLong, @ToAddress = @ToAddress, @ToLat = @ToLat, @ToLong = @ToLong, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @PodName = @PodName, @Truck = @Truck, @VanOk = @VanOk, @Reprice = @Reprice, @Amount = @Amount, @SpeedId = @SpeedId, @ToSuburbId = @ToSuburbId, @FromSuburbId = @FromSuburbId, @StaffId = @StaffId, @RefA = @RefA, @RefB = @RefB, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DESWEB_stpQuickCreateJobResult>("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @PickupAddressLine1 = @PickupAddressLine1, @PickupAddressLine2 = @PickupAddressLine2, @PickupAddressLine3 = @PickupAddressLine3, @PickupAddressLine4 = @PickupAddressLine4, @PickupAddressLine5 = @PickupAddressLine5, @PickupAddressLine6 = @PickupAddressLine6, @PickupAddressLine7 = @PickupAddressLine7, @PickupAddressLine8 = @PickupAddressLine8, @PickupLat = @PickupLat, @PickupLong = @PickupLong, @DeliveryAddressLine1 = @DeliveryAddressLine1, @DeliveryAddressLine2 = @DeliveryAddressLine2, @DeliveryAddressLine3 = @DeliveryAddressLine3, @DeliveryAddressLine4 = @DeliveryAddressLine4, @DeliveryAddressLine5 = @DeliveryAddressLine5, @DeliveryAddressLine6 = @DeliveryAddressLine6, @DeliveryAddressLine7 = @DeliveryAddressLine7, @DeliveryAddressLine8 = @DeliveryAddressLine8, @DeliveryLat = @DeliveryLat, @DeliveryLong = @DeliveryLong, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @PodName = @PodName, @Truck = @Truck, @VanOk = @VanOk, @Reprice = @Reprice, @Amount = @Amount, @SpeedId = @SpeedId, @StaffId = @StaffId, @RefA = @RefA, @RefB = @RefB, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
 
             JobId.SetValue(parameterJobId.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> DESWEB_stpUpdateBulkJobAsync(int? BulkJobID, string PropertyName, string Value, decimal? Rate, string Username, int? StaffID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "BulkJobID",
+                    Value = BulkJobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PropertyName",
+                    Size = 100,
+                    Value = PropertyName ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Value",
+                    Size = 300,
+                    Value = Value ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Rate",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = Rate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Username",
+                    Size = 200,
+                    Value = Username ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "StaffID",
+                    Value = StaffID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpUpdateBulkJob] @BulkJobID = @BulkJobID, @PropertyName = @PropertyName, @Value = @Value, @Rate = @Rate, @Username = @Username, @StaffID = @StaffID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> DESWEB_stpUpdateJobAsync(int? JobID, string PropertyName, string Value, decimal? Rate, string Username, int? StaffID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobID",
+                    Value = JobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PropertyName",
+                    Size = 100,
+                    Value = PropertyName ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Value",
+                    Size = 300,
+                    Value = Value ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Rate",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = Rate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Username",
+                    Size = 200,
+                    Value = Username ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "StaffID",
+                    Value = StaffID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpUpdateJob] @JobID = @JobID, @PropertyName = @PropertyName, @Value = @Value, @Rate = @Rate, @Username = @Username, @StaffID = @StaffID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> DESWEB_stpUpdateJobBookingAsync(int? JobID, string PropertyName, string Value, decimal? Rate, string Username, int? StaffID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobID",
+                    Value = JobID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "PropertyName",
+                    Size = 100,
+                    Value = PropertyName ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Value",
+                    Size = 300,
+                    Value = Value ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Rate",
+                    Precision = 19,
+                    Scale = 4,
+                    Value = Rate ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Money,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "Username",
+                    Size = 200,
+                    Value = Username ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "StaffID",
+                    Value = StaffID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpUpdateJobBooking] @JobID = @JobID, @PropertyName = @PropertyName, @Value = @Value, @Rate = @Rate, @Username = @Username, @StaffID = @StaffID", sqlParameters, cancellationToken);
+
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
@@ -951,6 +1346,39 @@ namespace DespatchWeb.EntityClasses
             var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[sp_RateJob2] @intClientID = @intClientID, @intFromID = @intFromID, @intToID = @intToID, @intSpeed = @intSpeed, @bolPedal = @bolPedal, @bolVan = @bolVan, @bolReturn = @bolReturn, @intWeight = @intWeight, @curAmount = @curAmount OUTPUT, @Size = @Size, @IncludeFuelSurcharge = @IncludeFuelSurcharge, @OurRef = @OurRef, @ClientRefA = @ClientRefA, @ClientRefB = @ClientRefB, @Quantity = @Quantity, @Booked = @Booked", sqlParameters, cancellationToken);
 
             curAmount.SetValue(parametercurAmount.Value);
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>> UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(string JobNumber, DateTime? DateTime, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "JobNumber",
+                    Size = 100,
+                    Value = JobNumber ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DateTime",
+                    Value = DateTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.DateTime,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>("EXEC @returnValue = [dbo].[UTL_stpJob_tblBulkJob_ReleaseByJobNumber] @JobNumber = @JobNumber, @DateTime = @DateTime", sqlParameters, cancellationToken);
+
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;

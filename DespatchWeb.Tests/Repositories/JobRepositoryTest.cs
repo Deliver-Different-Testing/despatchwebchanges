@@ -106,7 +106,7 @@ public class JobRepositoryTest
             StaffId = 1
         };
 
-        await _repository.AddInterCourierCharge(viewModel);
+        await _repository.AddInterCourierChargeAsync(viewModel);
         _mockContext.Verify(c => c.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
             viewModel.FromCourierId,
             viewModel.ToCourierId,
@@ -120,14 +120,14 @@ public class JobRepositoryTest
     [Test]
     public async Task HasClientItemsAvailable_Should_Return_True_When_Items_Are_Available()
     {
-        var result = await _repository.HasClientItemsAvailable(1, 1);
+        var result = await _repository.HasClientItemsAvailableAsync(1, 1);
         Assert.That(result, Is.True);
     }
 
     [Test]
     public async Task HasClientItemsAvailable_Should_Return_False_When_No_Items_Are_Available()
     {
-        var result = await _repository.HasClientItemsAvailable(2, 2);
+        var result = await _repository.HasClientItemsAvailableAsync(2, 2);
         Assert.That(result, Is.Not.Null);
         Assert.That(result, Is.False);
     }
@@ -135,7 +135,7 @@ public class JobRepositoryTest
     [Test]
     public async Task GetAllClientItemsBySpeed_Should_Return_List_When_Items_Are_Available()
     {
-        var result = await _repository.GetAllClientItemsBySpeed(1, 1, 1);
+        var result = await _repository.GetAllClientItemsBySpeedAsync(1, 1, 1);
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(2));
         Assert.That(result.Items.Count, Is.EqualTo(2));
@@ -154,7 +154,7 @@ public class JobRepositoryTest
     [Test]
     public async Task GetAllClientItemsBySpeed_Should_Return_Empty_List_When_No_Items_Are_Available()
     {
-        var result = await _repository.GetAllClientItemsBySpeed(2, 2, 2);
+        var result = await _repository.GetAllClientItemsBySpeedAsync(2, 2, 2);
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(0));
         Assert.That(result.Items.Count, Is.EqualTo(0));

@@ -140,23 +140,23 @@ public interface IJobRepository
     Task UpdateBookingPickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat,
         decimal pickupLng, bool cbd, decimal rate, string despatcher);
 
-    Task ReleaseBulkJob(string jobNumber, DateTime bookDate);
-    Task UpdateJob(int jobId, string field, string value, decimal? rate, string despatcher, int staffId);
+    Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);
+    Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher, int staffId);
 
-    Task UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate, string despatcher,
+    Task UpdateBulkJobAsync(int bulkJobId, string field, string value, decimal? rate, string despatcher,
         int staffId);
 
-    Task UpdateJobBooking(int jobId, string field, string value, decimal? rate, string despatcher,
+    Task UpdateJobBookingAsync(int jobId, string field, string value, decimal? rate, string despatcher,
         int staffId);
 
-    Task AddNote(int jobId, string note, string despatcher);
-    Task AddBulkJobNote(int bulkJobId, string note, string despatcher);
-    Task AddJobBookingNote(int jobId, string note, string despatcher);
-    Task<int> QuickAddJob(JobCreateViewModel job, int staffId);
-    Task AddInterCourierCharge(InterCourierChargeViewModel viewModel);
-    Task<bool> HasClientItemsAvailable(int clientId, int speedId);
+    Task AddNoteAsync(int jobId, string note, string despatcher);
+    Task AddBulkJobNoteAsync(int bulkJobId, string note, string despatcher);
+    Task AddJobBookingNoteAsync(int jobId, string note, string despatcher);
+    Task<int> QuickAddJobAsync(JobCreateViewModel job, int staffId);
+    Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
+    Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 
-    Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeed(int clientId, int speedId, int jobId);
+    Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeedAsync(int clientId, int speedId, int jobId);
 
-    Task AddClientsItemToJob(int jobId, List<int> clientItemIds, decimal totalCost);
+    Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
 }

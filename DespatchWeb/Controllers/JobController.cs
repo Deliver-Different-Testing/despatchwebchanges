@@ -804,27 +804,27 @@ public class JobController : Controller
     public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal? rate,
         string despatcherName, int staffId)
     {
-        await _jobRepo.UpdateJob(jobId, field, value, rate, despatcherName, staffId);
+        await _jobRepo.UpdateJobAsync(jobId, field, value, rate, despatcherName, staffId);
         return Json("OK");
     }
 
     public async Task<IActionResult> UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate,
         string despatcherName, int staffId)
     {
-        await _jobRepo.UpdateBulkJob(bulkJobId, field, value, rate, despatcherName, staffId);
+        await _jobRepo.UpdateBulkJobAsync(bulkJobId, field, value, rate, despatcherName, staffId);
         return Json("OK");
     }
 
     public async Task<IActionResult> ReleaseBulkJob(string jobNumber, DateTime bookDate)
     {
-        await _jobRepo.ReleaseBulkJob(jobNumber, bookDate);
+        await _jobRepo.ReleaseBulkJobAsync(jobNumber, bookDate);
         return Json("OK");
     }
 
     public async Task<IActionResult> UpdateJobBooking(int jobId, string field, string value, decimal? rate,
         string despatcherName, int staffId)
     {
-        await _jobRepo.UpdateJobBooking(jobId, field, value, rate, despatcherName, staffId);
+        await _jobRepo.UpdateJobBookingAsync(jobId, field, value, rate, despatcherName, staffId);
         return Json("OK");
     }
 
@@ -832,7 +832,7 @@ public class JobController : Controller
     public async Task<IActionResult> AddNote(int jobId, string note, string despatcher)
     {
         note = FormatNote(note);
-        await _jobRepo.AddNote(jobId, note, despatcher);
+        await _jobRepo.AddNoteAsync(jobId, note, despatcher);
         return Json("OK");
     }
 
@@ -840,7 +840,7 @@ public class JobController : Controller
     public async Task<IActionResult> AddBulkJobNote(int bulkJobId, string note, string despatcher)
     {
         note = FormatNote(note);
-        await _jobRepo.AddBulkJobNote(bulkJobId, note, despatcher);
+        await _jobRepo.AddBulkJobNoteAsync(bulkJobId, note, despatcher);
         return Json("OK");
     }
 
@@ -848,7 +848,7 @@ public class JobController : Controller
     public async Task<IActionResult> AddJobBookingNote(int jobId, string note, string despatcher)
     {
         note = FormatNote(note);
-        await _jobRepo.AddJobBookingNote(jobId, note, despatcher);
+        await _jobRepo.AddJobBookingNoteAsync(jobId, note, despatcher);
         return Json("OK");
     }
 
@@ -863,7 +863,7 @@ public class JobController : Controller
             if (!IsValidRequest(request))
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Bad Request" });
 
-            var jobId = await _jobRepo.QuickAddJob(request.Job, request.StaffId.Value);
+            var jobId = await _jobRepo.QuickAddJobAsync(request.Job, request.StaffId.Value);
 
             //Check if jobId is valid before continuing
             if (jobId == 0) return StatusCode(StatusCodes.Status500InternalServerError, "Created Job Id is null");
@@ -907,7 +907,7 @@ public class JobController : Controller
     {
         if (viewModel == null) throw new ArgumentNullException(nameof(viewModel), "ViewModel is null");
 
-        await _jobRepo.AddInterCourierCharge(viewModel);
+        await _jobRepo.AddInterCourierChargeAsync(viewModel);
         return Json("OK");
     }
 
@@ -949,21 +949,22 @@ public class JobController : Controller
     [HttpGet]
     public async Task<IActionResult> HasClientItemsAvailable(int clientId, int speedId)
     {
-        var hasItems = await _jobRepo.HasClientItemsAvailable(clientId, speedId);
+        var hasItems = await _jobRepo.HasClientItemsAvailableAsync(clientId, speedId);
         return Json(hasItems);
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId)
     {
-        var clientItems = await _jobRepo.GetAllClientItemsBySpeed(clientId, speedId, jobId);
+        var clientItems = await _jobRepo.GetAllClientItemsBySpeedAsync(clientId, speedId, jobId);
         return Json(clientItems);
     }
 
     [HttpPost]
     public async Task<IActionResult> AddClientItemsToJob(int jobId, [FromBody] ClientItemsModel itemsModel)
     {
-        if (itemsModel != null) await _jobRepo.AddClientsItemToJob(jobId, itemsModel.ServiceIds, itemsModel.TotalCost);
+        if (itemsModel != null)
+            await _jobRepo.AddClientsItemToJobAsync(jobId, itemsModel.ServiceIds, itemsModel.TotalCost);
         return Json("OK");
     }
 

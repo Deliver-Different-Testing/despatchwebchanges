@@ -11,9 +11,9 @@ public class JobCreateViewModel
 
     [JsonProperty("podName")] public string PodName { get; set; }
 
-    [JsonProperty("fromAddress")] public string FromAddress { get; set; }
+    [JsonProperty("pickUpAddress")] public AddressViewModel PickUpAddress { get; set; }
 
-    [JsonProperty("toAddress")] public string ToAddress { get; set; }
+    [JsonProperty("deliveryAddress")] public AddressViewModel DeliveryAddress { get; set; }
 
     [JsonProperty("date")] public DateTime Date { get; set; }
 
@@ -47,13 +47,9 @@ public class JobCreateViewModel
 
     [JsonProperty("charge")] public decimal Charge { get; set; }
 
-    [JsonProperty("fromSuburb")] public int FromSuburb { get; set; }
-
     [JsonProperty("fromLat")] public decimal FromLat { get; set; }
 
     [JsonProperty("fromLong")] public decimal FromLong { get; set; }
-
-    [JsonProperty("toSuburb")] public int ToSuburb { get; set; }
 
     [JsonProperty("toLat")] public decimal ToLat { get; set; }
 

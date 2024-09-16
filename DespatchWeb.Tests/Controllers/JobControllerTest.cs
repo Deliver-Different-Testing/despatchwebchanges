@@ -89,7 +89,7 @@ public class JobControllerTest
         };
 
         const int expectedJobId = 1;
-        _mockJobRepo.Setup(jr => jr.QuickAddJob(validRequest.Job, validRequest.StaffId.Value))
+        _mockJobRepo.Setup(jr => jr.QuickAddJobAsync(validRequest.Job, validRequest.StaffId.Value))
             .ReturnsAsync(expectedJobId);
 
         var result = await _controller.QuickCreateJob(validRequest) as JsonResult;
@@ -136,7 +136,7 @@ public class JobControllerTest
         const int speedId = 1;
         const bool hasItems = true;
 
-        _mockJobRepo.Setup(x => x.HasClientItemsAvailable(clientId, speedId)).ReturnsAsync(hasItems);
+        _mockJobRepo.Setup(x => x.HasClientItemsAvailableAsync(clientId, speedId)).ReturnsAsync(hasItems);
 
         // Act
         var result = await _controller.HasClientItemsAvailable(clientId, speedId) as JsonResult;
@@ -175,7 +175,7 @@ public class JobControllerTest
         };
 
         _mockJobRepo
-            .Setup(x => x.GetAllClientItemsBySpeed(clientId, speedId, jobId))
+            .Setup(x => x.GetAllClientItemsBySpeedAsync(clientId, speedId, jobId))
             .ReturnsAsync(pagedExpectedClientItems);
 
         // Act
