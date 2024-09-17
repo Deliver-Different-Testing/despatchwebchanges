@@ -21,6 +21,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
         public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
+        public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
         public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
         public virtual DbSet<TblAppWidget> TblAppWidgets { get; set; }
@@ -58,6 +59,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucSource> TucSources { get; set; }
         public virtual DbSet<TucStaff> TucStaffs { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
+        public virtual DbSet<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; }
         public virtual DbSet<UserWidgetPreference> UserWidgetPreferences { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
@@ -217,6 +219,48 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("ucstWindowsLogonName");
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
+            });
+
+            modelBuilder.Entity<DespatchViewZoneGroup>(entity =>
+            {
+                entity.ToTable("DespatchViewZoneGroup");
+
+                entity.HasIndex(e => new { e.DespatchViewId, e.ZoneGroupId }, "UQ_DespatchViewZoneGroup_DespatchView_ZoneGroup")
+                    .IsUnique();
+
+                entity.Property(e => e.DespatchViewZoneGroupId).HasColumnName("DespatchViewZoneGroupID");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedDate)
+                    .HasPrecision(0)
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.LastModifiedDate)
+                    .HasPrecision(0)
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+
+                entity.HasOne(d => d.DespatchView)
+                    .WithMany(p => p.DespatchViewZoneGroups)
+                    .HasForeignKey(d => d.DespatchViewId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_DespatchViewZoneGroup_DespatchView");
+
+                entity.HasOne(d => d.ZoneGroup)
+                    .WithMany(p => p.DespatchViewZoneGroups)
+                    .HasForeignKey(d => d.ZoneGroupId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_DespatchViewZoneGroup_ZoneGroup");
             });
 
             modelBuilder.Entity<DeswebQryDespatch>(entity =>
@@ -5135,6 +5179,30 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("ucsuName");
 
                 entity.Property(e => e.UcsuRegion).HasColumnName("ucsuRegion");
+            });
+
+            modelBuilder.Entity<UserDespatchViewPreference>(entity =>
+            {
+                entity.HasKey(e => e.UserDespatchViewPrefId)
+                    .HasName("PK__UserDesp__B13A9F177A08D20D");
+
+                entity.Property(e => e.UserDespatchViewPrefId)
+                    .ValueGeneratedNever()
+                    .HasColumnName("UserDespatchViewPrefID");
+
+                entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
+
+                entity.Property(e => e.UserId).HasColumnName("UserID");
+
+                entity.HasOne(d => d.DespatchView)
+                    .WithMany(p => p.UserDespatchViewPreferences)
+                    .HasForeignKey(d => d.DespatchViewId)
+                    .HasConstraintName("FK__UserDespa__Despa__7CE53EB8");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.UserDespatchViewPreferences)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK__UserDespa__UserI__7BF11A7F");
             });
 
             modelBuilder.Entity<UserWidgetPreference>(entity =>

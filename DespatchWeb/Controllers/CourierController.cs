@@ -7,7 +7,7 @@ namespace DespatchWeb.Controllers;
 
 public class CourierController : Controller
 {
-    private ICourierRepository _courierRepo;
+    private readonly ICourierRepository _courierRepo;
 
     public CourierController(ICourierRepository courierRepository)
     {

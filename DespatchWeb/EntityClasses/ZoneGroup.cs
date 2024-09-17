@@ -9,6 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public ZoneGroup()
         {
+            DespatchViewZoneGroups = new HashSet<DespatchViewZoneGroup>();
             TblClearListZoneGroups = new HashSet<TblClearListZoneGroup>();
             TblDespatchViews = new HashSet<TblDespatchView>();
             ZoneNames = new HashSet<ZoneName>();
@@ -21,6 +22,7 @@ namespace DespatchWeb.EntityClasses
         public string LastModifiedBy { get; set; }
         public DateTime? LastModified { get; set; }
 
+        public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
         public virtual ICollection<TblClearListZoneGroup> TblClearListZoneGroups { get; set; }
         public virtual ICollection<TblDespatchView> TblDespatchViews { get; set; }
         public virtual ICollection<ZoneName> ZoneNames { get; set; }
