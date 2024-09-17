@@ -26,6 +26,8 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblAppWidget> TblAppWidgets { get; set; }
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
         public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
+        public virtual DbSet<TblClearListArea> TblClearListAreas { get; set; }
+        public virtual DbSet<TblClearListZoneGroup> TblClearListZoneGroups { get; set; }
         public virtual DbSet<TblClient> TblClients { get; set; }
         public virtual DbSet<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; }
         public virtual DbSet<TblClientAvailableSpeedItem> TblClientAvailableSpeedItems { get; set; }
@@ -34,7 +36,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblContact> TblContacts { get; set; }
         public virtual DbSet<TblCourier> TblCouriers { get; set; }
         public virtual DbSet<TblDespatchView> TblDespatchViews { get; set; }
-        public virtual DbSet<TblDespatchView1> TblDespatchViews1 { get; set; }
         public virtual DbSet<TblDfrntapp> TblDfrntapps { get; set; }
         public virtual DbSet<TblInternetPermission> TblInternetPermissions { get; set; }
         public virtual DbSet<TblJob> TblJobs { get; set; }
@@ -60,6 +61,9 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<UserWidgetPreference> UserWidgetPreferences { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
+        public virtual DbSet<ZoneGroup> ZoneGroups { get; set; }
+        public virtual DbSet<ZoneName> ZoneNames { get; set; }
+        public virtual DbSet<ZoneZip> ZoneZips { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -826,6 +830,91 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TblBulkRunScheduleSpeeds)
                     .HasForeignKey(d => d.SpeedId)
                     .HasConstraintName("FK_tblBulkRunSchedule_tucJobType");
+            });
+
+            modelBuilder.Entity<TblClearListArea>(entity =>
+            {
+                entity.HasKey(e => e.ClearListAreaId);
+
+                entity.ToTable("tblClearListArea");
+
+                entity.HasIndex(e => e.ChannelId, "ChannelID");
+
+                entity.HasIndex(e => new { e.Name, e.ChannelId }, "UC_NameChannelID")
+                    .IsUnique();
+
+                entity.HasIndex(e => new { e.Name, e.Code }, "UC_NameCode")
+                    .IsUnique();
+
+                entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+
+                entity.Property(e => e.ChannelId).HasColumnName("ChannelID");
+
+                entity.Property(e => e.Code)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
+                entity.Property(e => e.Order).HasDefaultValueSql("((1))");
+            });
+
+            modelBuilder.Entity<TblClearListZoneGroup>(entity =>
+            {
+                entity.HasKey(e => e.ClearListZoneId)
+                    .HasName("PK__ClearLis__346361B868DE460B");
+
+                entity.ToTable("tblClearListZoneGroups");
+
+                entity.Property(e => e.ClearListZoneId).HasColumnName("ClearListZoneID");
+
+                entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(255);
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+
+                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+
+                entity.HasOne(d => d.ClearListArea)
+                    .WithMany(p => p.TblClearListZoneGroups)
+                    .HasForeignKey(d => d.ClearListAreaId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_ClearListZone_ClearList");
+
+                entity.HasOne(d => d.ZoneGroup)
+                    .WithMany(p => p.TblClearListZoneGroups)
+                    .HasForeignKey(d => d.ZoneGroupId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_ClearListZone_ZoneGroup");
             });
 
             modelBuilder.Entity<TblClient>(entity =>
@@ -2206,6 +2295,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
 
+                entity.Property(e => e.AreaGroupIds).HasColumnName("AreaGroupIDs");
+
+                entity.Property(e => e.ClearListAreaIds).HasColumnName("ClearListAreaIDs");
+
                 entity.Property(e => e.Created).HasColumnType("datetime");
 
                 entity.Property(e => e.CreatedBy)
@@ -2233,30 +2326,11 @@ namespace DespatchWeb.EntityClasses
                     .IsUnicode(false);
 
                 entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
-            });
 
-            modelBuilder.Entity<TblDespatchView1>(entity =>
-            {
-                entity.HasKey(e => e.DespatchViewId)
-                    .HasName("PK__Despatch__646EA66858A7DE42");
-
-                entity.ToTable("TblDespatchViews");
-
-                entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
-
-                entity.Property(e => e.AreaGroupIds).HasColumnName("AreaGroupIDs");
-
-                entity.Property(e => e.ClearListAreaIds).HasColumnName("ClearListAreaIDs");
-
-                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.LastModified).HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.Name)
-                    .IsRequired()
-                    .HasMaxLength(255);
-
-                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+                entity.HasOne(d => d.ZoneGroup)
+                    .WithMany(p => p.TblDespatchViews)
+                    .HasForeignKey(d => d.ZoneGroupId)
+                    .HasConstraintName("FK__tblDespat__ZoneG__12B48446");
             });
 
             modelBuilder.Entity<TblDfrntapp>(entity =>
@@ -5252,6 +5326,93 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("ucjtName");
+            });
+
+            modelBuilder.Entity<ZoneGroup>(entity =>
+            {
+                entity.ToTable("ZoneGroup");
+
+                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(255);
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+
+                entity.Property(e => e.Name).HasMaxLength(255);
+            });
+
+            modelBuilder.Entity<ZoneName>(entity =>
+            {
+                entity.ToTable("ZoneName");
+
+                entity.Property(e => e.ZoneNameId).HasColumnName("ZoneNameID");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(255);
+
+                entity.Property(e => e.GeoPolygonId).HasColumnName("GeoPolygonID");
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+
+                entity.Property(e => e.LocationId).HasColumnName("LocationID");
+
+                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+
+                entity.Property(e => e.ZoneName1)
+                    .HasMaxLength(255)
+                    .HasColumnName("ZoneName");
+
+                entity.HasOne(d => d.ZoneGroup)
+                    .WithMany(p => p.ZoneNames)
+                    .HasForeignKey(d => d.ZoneGroupId)
+                    .HasConstraintName("FK__ZoneName__LastMo__0B13627E");
+            });
+
+            modelBuilder.Entity<ZoneZip>(entity =>
+            {
+                entity.ToTable("ZoneZip");
+
+                entity.Property(e => e.ZoneZipId).HasColumnName("ZoneZipID");
+
+                entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(255);
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+
+                entity.Property(e => e.Zip)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.ZoneNameId).HasColumnName("ZoneNameID");
+
+                entity.HasOne(d => d.ZoneName)
+                    .WithMany(p => p.ZoneZips)
+                    .HasForeignKey(d => d.ZoneNameId)
+                    .HasConstraintName("FK__ZoneZip__LastMod__11C0600D");
             });
 
             OnModelCreatingGeneratedProcedures(modelBuilder);

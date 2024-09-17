@@ -19,5 +19,9 @@ namespace DespatchWeb.EntityClasses
         public bool? ShowOnAssistDespatch { get; set; }
         public bool? ShowOnJobFollowup { get; set; }
         public int? ZoneGroupId { get; set; }
+        public string AreaGroupIds { get; set; }
+        public string ClearListAreaIds { get; set; }
+
+        public virtual ZoneGroup ZoneGroup { get; set; }
     }
 }

@@ -27,7 +27,7 @@ public class JobRepository : IJobRepository
 
     public async Task<JobViewModel> PreBookDetailAsync(int prebookId)
     {
-        var pallets = await _context.TucJobBookingItems.Where(x => x.BookingId == prebookId).ToListAsync();
+        var pallets = await _context.TucJobBookingItems.Where(predicate: x => x.BookingId == prebookId).ToListAsync();
         var jobQuery = from jobBooking in _context.TucJobBookings
             join c in _context.TblCouriers on jobBooking.CourierId equals c.CourierId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
@@ -159,12 +159,12 @@ public class JobRepository : IJobRepository
         job.Vehicle = new Vehicle
         {
             Id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeId,
-            Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? 2)
+            Label = job.Van ? "Van" : Enum.GetName(enumType: typeof(Enums.Vehicle), value: job.SizeId ?? 2)
         };
         job.Size = job.Vehicle;
-        job.Date = job.BookedDate?.ToString("dd/MM/yyyy");
-        job.Booked = DateTime.Parse(job.BookedDate?.ToString("yyyy-MM-dd") + " " +
-                                    job.Time?.ToString("HH:mm:ss"));
+        job.Date = job.BookedDate?.ToString(format: "dd/MM/yyyy");
+        job.Booked = DateTime.Parse(s: job.BookedDate?.ToString(format: "yyyy-MM-dd") + " " +
+                                       job.Time?.ToString(format: "HH:mm:ss"));
 
         return job;
     }
@@ -328,20 +328,21 @@ public class JobRepository : IJobRepository
         job.Vehicle = new Vehicle
         {
             Id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeId,
-            Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? 2)
+            Label = job.Van ? "Van" : Enum.GetName(enumType: typeof(Enums.Vehicle), value: job.SizeId ?? 2)
         };
 
-        job.RelatedJobs = await GetRelatedJobsAsync(job.RootParentId, job.ClientId ??= 0);
-        job.PodPhotos = await GetPodPhotosAsync(job.Id, job.PodPhoto, job.DeliverySignature);
+        job.RelatedJobs = await GetRelatedJobsAsync(rootParentId: job.RootParentId, clientId: job.ClientId ??= 0);
+        job.PodPhotos = await GetPodPhotosAsync(jobId: job.Id, podPhoto: job.PodPhoto,
+            deliverySignature: job.DeliverySignature);
 
         job.Size = job.Vehicle;
 
         if (job.BookedDate == null) return job;
-        job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
+        job.Date = job.BookedDate.Value.ToString(format: "dd/MM/yyyy");
 
         if (job.Time != null)
-            job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
-                                        job.Time.Value.ToString("HH:mm:ss"));
+            job.Booked = DateTime.Parse(s: job.BookedDate.Value.ToString(format: "yyyy-MM-dd") + " " +
+                                           job.Time.Value.ToString(format: "HH:mm:ss"));
 
         return job;
     }
@@ -452,12 +453,12 @@ public class JobRepository : IJobRepository
         job.Vehicle = new Vehicle
         {
             Id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeId,
-            Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? 2)
+            Label = job.Van ? "Van" : Enum.GetName(enumType: typeof(Enums.Vehicle), value: job.SizeId ?? 2)
         };
         job.Size = job.Vehicle;
-        job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
-        job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
-                                    job.Time.Value.ToString("HH:mm:ss"));
+        job.Date = job.BookedDate.Value.ToString(format: "dd/MM/yyyy");
+        job.Booked = DateTime.Parse(s: job.BookedDate.Value.ToString(format: "yyyy-MM-dd") + " " +
+                                       job.Time.Value.ToString(format: "HH:mm:ss"));
 
         return job;
     }
@@ -530,22 +531,22 @@ public class JobRepository : IJobRepository
         stopwatch.Start();
         var total = await jobsQuery.CountWithNoLockAsync();
         stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
+        Console.WriteLine(value: stopwatch.ElapsedMilliseconds);
         stopwatch.Reset();
         stopwatch.Start();
 
         var jobs = await jobsQuery
-            .OrderBy(a => a.BookedDate)
-            .ThenBy(v => v.Time)
-            .Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize)
+            .OrderBy(keySelector: a => a.BookedDate)
+            .ThenBy(keySelector: v => v.Time)
+            .Skip(count: (pageIndex - 1) * pageSize)
+            .Take(count: pageSize)
             .ToListAsync();
 
         stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
+        Console.WriteLine(value: stopwatch.ElapsedMilliseconds);
         stopwatch.Reset();
         stopwatch.Start();
-        var jobList = jobs.Select(v => new JobViewModel
+        var jobList = jobs.Select(selector: v => new JobViewModel
         {
             Id = v.Id,
             Time = v.Time,
@@ -560,12 +561,12 @@ public class JobRepository : IJobRepository
             Speed = v.Speed,
             PreBook = false,
             SpeedId = v.SpeedId,
-            Booked = DateTime.Parse(v.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
-                                    v.Time.Value.ToString("HH:mm:ss"))
+            Booked = DateTime.Parse(s: v.BookedDate.Value.ToString(format: "yyyy-MM-dd") + " " +
+                                       v.Time.Value.ToString(format: "HH:mm:ss"))
         }).ToList();
         stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        return Tuple.Create(total, jobList);
+        Console.WriteLine(value: stopwatch.ElapsedMilliseconds);
+        return Tuple.Create(item1: total, item2: jobList);
     }
 
     public async Task<Tuple<int, List<JobViewModel>>> PodSearch(int? courierId, string wild, string job,
@@ -625,16 +626,16 @@ public class JobRepository : IJobRepository
                                         x.Time.Value.ToString("HH:mm:ss"))
             };
 
-        var orderedQuery = jobsQuery.OrderBy(a => a.BookedDate).ThenBy(v => v.Time);
+        var orderedQuery = jobsQuery.OrderBy(keySelector: a => a.BookedDate).ThenBy(keySelector: v => v.Time);
 
         var total = orderedQuery.Count();
 
         var jobs = await orderedQuery
-            .Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize)
+            .Skip(count: (pageIndex - 1) * pageSize)
+            .Take(count: pageSize)
             .ToListAsync();
 
-        return Tuple.Create(total, jobs);
+        return Tuple.Create(item1: total, item2: jobs);
     }
 
     public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
@@ -687,20 +688,22 @@ public class JobRepository : IJobRepository
         stopwatch.Start();
         var total = await jobsQuery.CountWithNoLockAsync();
         stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
+        Console.WriteLine(value: stopwatch.ElapsedMilliseconds);
         stopwatch.Reset();
         stopwatch.Start();
         var jobs = await jobsQuery
-            .OrderBy(a => a.BookedDate).ThenBy(v => v.Time).Skip((pageIndex - 1) * pageSize).Take(pageSize)
+            .OrderBy(keySelector: a => a.BookedDate).ThenBy(keySelector: v => v.Time)
+            .Skip(count: (pageIndex - 1) * pageSize).Take(count: pageSize)
             .ToListAsync();
         stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
+        Console.WriteLine(value: stopwatch.ElapsedMilliseconds);
         stopwatch.Reset();
         stopwatch.Start();
-        var jobList = jobs.Select(j => new JobViewModel
+        var jobList = jobs.Select(selector: j => new JobViewModel
         {
             Id = j.Id,
-            Booked = DateTime.Parse(j.Booked.ToString("yyyy-MM-dd") + " " + j.Time.Value.ToString("HH:mm:ss")),
+            Booked = DateTime.Parse(s: j.Booked.ToString(format: "yyyy-MM-dd") + " " +
+                                       j.Time.Value.ToString(format: "HH:mm:ss")),
             Client = j.Client,
             FromAddress = j.FromAddress,
             ToAddress = j.ToAddress,
@@ -710,22 +713,23 @@ public class JobRepository : IJobRepository
             Speed = j.Speed
         }).ToList();
         stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
-        return Tuple.Create(total, jobList);
+        Console.WriteLine(value: stopwatch.ElapsedMilliseconds);
+        return Tuple.Create(item1: total, item2: jobList);
     }
 
     public async Task<List<JobViewModel>> PreBookJobList()
     {
         var jobs = await _context.UvwBookingTodays
             .FromSqlRaw(
+                sql:
                 "SELECT * FROM uvwBookingToday WHERE ucbkDone=0  ORDER BY CONVERT(nvarchar(10), ucbkTime, 108), ucbkJobNumber")
             .ToListAsync();
         var jobList = (from j in jobs
             select new JobViewModel
             {
                 Id = j.UcbkId,
-                Booked = DateTime.Parse(j.UcbkNextDue.Value.ToString("yyyy-MM-dd") + " " +
-                                        j.UcbkTime.Value.ToString("HH:mm:ss")),
+                Booked = DateTime.Parse(s: j.UcbkNextDue.Value.ToString(format: "yyyy-MM-dd") + " " +
+                                           j.UcbkTime.Value.ToString(format: "HH:mm:ss")),
                 Client = j.UcbkClientCode,
                 FromAddress = j.UcbkFromAddr,
                 ToAddress = j.UcbkToAddr,
@@ -740,16 +744,16 @@ public class JobRepository : IJobRepository
     public async Task<List<JobViewModel>> CurrentJobList(int courierId, bool done)
     {
         // 2. Execute the compiled query
-        var jobs = await GetJobsQuery(_context, courierId, done).ToListAsync();
+        var jobs = await GetJobsQuery(context: _context, cId: courierId, isDone: done).ToListAsync();
 
         // 3. Use AutoMapper for mapping
-        var jobViewModels = _mapper.Map<List<JobViewModel>>(jobs);
+        var jobViewModels = _mapper.Map<List<JobViewModel>>(source: jobs);
 
         // 4. Load related data separately to avoid N+1 query problem
-        var jobIds = jobViewModels.Select(j => j.Id).ToList();
+        var jobIds = jobViewModels.Select(selector: j => j.Id).ToList();
         var palletInfoItems = await _context.TucJobItems
-            .Where(p => jobIds.Contains(p.JobId))
-            .Select(p => new
+            .Where(predicate: p => jobIds.Contains(p.JobId))
+            .Select(selector: p => new
             {
                 p.JobId,
                 PalletInfo = new PalletInfo
@@ -771,13 +775,14 @@ public class JobRepository : IJobRepository
 
         // 5. Group PalletInfo by JobId
         var palletInfoDict = palletInfoItems
-            .GroupBy(p => p.JobId)
-            .ToDictionary(g => g.Key, g => g.Select(p => p.PalletInfo).ToList());
+            .GroupBy(keySelector: p => p.JobId)
+            .ToDictionary(keySelector: g => g.Key,
+                elementSelector: g => g.Select(selector: p => p.PalletInfo).ToList());
 
         // 6. Assign PalletInfo to each JobViewModel
         foreach (var job in jobViewModels)
         {
-            job.PalletInfo = palletInfoDict.TryGetValue(job.Id, out var palletInfo)
+            job.PalletInfo = palletInfoDict.TryGetValue(key: job.Id, value: out var palletInfo)
                 ? palletInfo
                 : new List<PalletInfo>();
         }
@@ -787,14 +792,14 @@ public class JobRepository : IJobRepository
         // 1. Use a compiled query for better performance
         static IQueryable<DeswebQryDespatch> GetJobsQuery(DespatchContext context, int cId, bool isDone)
         {
-            return context.DeswebQryDespatches.FromSqlRaw($"exec [DESWeb_qryCourierJobs] {cId}, {isDone}");
+            return context.DeswebQryDespatches.FromSqlRaw(sql: $"exec [DESWeb_qryCourierJobs] {cId}, {isDone}");
         }
     }
 
     public async Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
         bool isInternal, string clientIds)
     {
-        if (isInternal == false && string.IsNullOrEmpty(clientIds))
+        if (isInternal == false && string.IsNullOrEmpty(value: clientIds))
             return new List<JobViewModel>();
 
         var orderToUse = order switch
@@ -813,20 +818,26 @@ public class JobRepository : IJobRepository
             _ => $"RemainTime {ascending}"
         };
 
-        var selectedAreas = await _context.TblDespatchViews1.Select(x => x.Name).ToListAsync();
+        var areas = new List<string>
+        {
+            "city", "truck", "main1", "main2", "central", "shore", "west", "deep shore", "shallow shore", "east mid",
+            "deep west", "shallow west", "west mid", "other", "mangere", "deep south", "deep east", "parnell",
+            "eden terrace", "regional"
+        };
 
+        var selectedAreas = area.Split(separator: ',').ToList();
         var whereToUse = "";
         if (isInternal)
         {
             var filter =
-                _context.TblDespatchViews.Where(v =>
+                _context.TblDespatchViews.Where(predicate: v =>
                         (v.ShowOnAssistDespatch ?? false) == true &&
                         area == "all" && selectedAreas.Contains(v.Name))
                     .ToList();
 
             foreach (var w in filter)
             {
-                if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " OR ";
+                if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " OR ";
 
                 whereToUse += $" ({w.WhereCondition}) ";
             }
@@ -835,7 +846,8 @@ public class JobRepository : IJobRepository
         }
 
 
-        if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status) && status != "all") whereToUse += " AND";
+        if (!string.IsNullOrEmpty(value: whereToUse) && !string.IsNullOrEmpty(value: status) && status != "all")
+            whereToUse += " AND";
 
         switch (status)
         {
@@ -858,19 +870,19 @@ public class JobRepository : IJobRepository
                 break;
         }
 
-        if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " AND ";
+        if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " AND ";
         whereToUse += " ucjbStatus <> 9";
 
-        if (isInternal == false && !string.IsNullOrEmpty(clientIds))
+        if (isInternal == false && !string.IsNullOrEmpty(value: clientIds))
         {
-            if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " AND ";
+            if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " AND ";
             whereToUse += $" ucjbClientID in ({clientIds})";
         }
 
         var s =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListAsync();
+        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql: s).ToListAsync();
 
         var list = (from j in jobs
             select new JobViewModel
@@ -897,7 +909,9 @@ public class JobRepository : IJobRepository
                 Vehicle = new Vehicle
                 {
                     Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                    Label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                    Label = j.UcjbVan
+                        ? "Van"
+                        : Enum.GetName(enumType: typeof(Enums.Vehicle), value: (int)(j.UcjbSize ?? 2))
                 },
                 Client = j.UcclCode,
                 ClientId = j.UcjbClientId,
@@ -943,7 +957,9 @@ public class JobRepository : IJobRepository
                 Size = new Vehicle
                 {
                     Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                    Label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                    Label = j.UcjbVan
+                        ? "Van"
+                        : Enum.GetName(enumType: typeof(Enums.Vehicle), value: (int)(j.UcjbSize ?? 2))
                 },
                 Weight = j.UcjbWeight,
                 Items = j.UcjbQty,
@@ -953,15 +969,16 @@ public class JobRepository : IJobRepository
                 SigNotRequired = j.SigNotRequired,
                 Charge = $"{j.UcjbAmount:C}",
                 Booked =
-                    DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime?.ToString("HH:mm:ss")),
-                Date = j.UcjbDate.ToString("dd/MM/yyyy"),
+                    DateTime.Parse(s: j.UcjbDate.ToString(format: "yyyy-MM-dd") + " " +
+                                      j.UcjbTime?.ToString(format: "HH:mm:ss")),
+                Date = j.UcjbDate.ToString(format: "dd/MM/yyyy"),
                 DispatchTime = j.UcjbDispTime,
                 PuTime = j.Putime,
                 ClientNotes = j.ClientNotes,
                 InternalNotes = j.JobNotes,
                 ChildNotes = j.ChildNotes,
                 PalletInfo = (
-                    from pa in _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
+                    from pa in _context.TucJobItems.Where(predicate: p => p.JobId == j.UcjbId)
                     select new PalletInfo
                     {
                         Id = pa.JobId,
@@ -979,7 +996,7 @@ public class JobRepository : IJobRepository
 
                 CourierData = new CourierData
                 {
-                    Courier = string.IsNullOrEmpty(j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
+                    Courier = string.IsNullOrEmpty(value: j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
                     CourierID = j.UcjbCourierId
                 },
                 AllowDispatch = j.AllowDespatch,
@@ -1000,8 +1017,8 @@ public class JobRepository : IJobRepository
                 PodPhoto = j.DeliveryPhoto,
                 PodName = j.UcjbPodname,
                 CompletedTime = j.UcjbComplTime.HasValue
-                    ? DateTime.Parse(j.UcjbComplTime?.ToString("yyyy-MM-dd") + " " +
-                                     j.UcjbComplTime?.ToString("HH:mm"))
+                    ? DateTime.Parse(s: j.UcjbComplTime?.ToString(format: "yyyy-MM-dd") + " " +
+                                        j.UcjbComplTime?.ToString(format: "HH:mm"))
                     : j.UcjbComplTime,
                 Done = j.UcjbJobDone,
                 TrackingMethod = j.TrackingMethod,
@@ -1041,7 +1058,7 @@ public class JobRepository : IJobRepository
         string ascending, bool isInternal, string clientIds, int windowPane)
     {
         var orderToUse = "";
-        if (isInternal == false && string.IsNullOrEmpty(clientIds))
+        if (isInternal == false && string.IsNullOrEmpty(value: clientIds))
             return new List<JobViewModel>();
 
         orderToUse = order switch
@@ -1066,7 +1083,7 @@ public class JobRepository : IJobRepository
                 $"FollowupTime {ascending}, ucjbDispTime {ascending}, ucjbTime {ascending}, Convert(int, CourierCode) {ascending}"
         };
 
-        var selectedAreas = area.Split(',').ToList();
+        var selectedAreas = area.Split(separator: ',').ToList();
 
 
         var whereToUse = "";
@@ -1076,28 +1093,28 @@ public class JobRepository : IJobRepository
             switch (a)
             {
                 case "mainfu":
-                    selectedViews.AddRange(new List<int> { 11, 15, 3, 4, 18, 19 });
+                    selectedViews.AddRange(collection: new List<int> { 11, 15, 3, 4, 18, 19 });
                     break;
                 case "nwakl":
-                    selectedViews.Add(17);
+                    selectedViews.Add(item: 17);
                     break;
                 case "baggage":
-                    selectedViews.Add(20);
+                    selectedViews.Add(item: 20);
                     break;
                 case "chch":
-                    selectedViews.Add(4);
+                    selectedViews.Add(item: 4);
                     break;
                 case "int":
-                    selectedViews.Add(15);
+                    selectedViews.Add(item: 15);
                     break;
                 case "nwother":
-                    selectedViews.Add(18);
+                    selectedViews.Add(item: 18);
                     break;
                 case "sameday":
-                    selectedViews.Add(11);
+                    selectedViews.Add(item: 11);
                     break;
                 case "wlg":
-                    selectedViews.Add(3);
+                    selectedViews.Add(item: 3);
                     break;
             }
         }
@@ -1106,14 +1123,14 @@ public class JobRepository : IJobRepository
         if (isInternal)
         {
             var filter = await
-                _context.TblDespatchViews.Where(v =>
+                _context.TblDespatchViews.Where(predicate: v =>
                         (v.ShowOnJobFollowup ?? false) == true &&
                         selectedViews.Contains(v.DespatchViewId))
                     .ToListAsync();
 
             foreach (var w in filter)
             {
-                if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " OR ";
+                if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " OR ";
 
                 whereToUse += $" ({w.WhereCondition}) ";
             }
@@ -1122,7 +1139,7 @@ public class JobRepository : IJobRepository
         }
 
 
-        if (!string.IsNullOrEmpty(whereToUse) && !string.IsNullOrEmpty(status)) whereToUse += " AND ";
+        if (!string.IsNullOrEmpty(value: whereToUse) && !string.IsNullOrEmpty(value: status)) whereToUse += " AND ";
 
         switch (status)
         {
@@ -1155,7 +1172,7 @@ public class JobRepository : IJobRepository
                 break;
         }
 
-        if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " AND ";
+        if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " AND ";
 
         switch (windowPane)
         {
@@ -1174,9 +1191,9 @@ public class JobRepository : IJobRepository
         }
 
 
-        if (isInternal == false && !string.IsNullOrEmpty(clientIds))
+        if (isInternal == false && !string.IsNullOrEmpty(value: clientIds))
         {
-            if (!string.IsNullOrEmpty(whereToUse)) whereToUse += " AND ";
+            if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " AND ";
 
             whereToUse += $" ucjbClientID in ({clientIds})";
         }
@@ -1184,7 +1201,7 @@ public class JobRepository : IJobRepository
         var s =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
 
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(s).ToListAsync();
+        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql: s).ToListAsync();
         var pallets = await _context.TucJobItems.ToListAsync();
 
 
@@ -1212,7 +1229,9 @@ public class JobRepository : IJobRepository
                 Vehicle = new Vehicle
                 {
                     Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                    Label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                    Label = j.UcjbVan
+                        ? "Van"
+                        : Enum.GetName(enumType: typeof(Enums.Vehicle), value: (int)(j.UcjbSize ?? 2))
                 },
                 Client = j.UcclCode,
                 ClientId = j.UcjbClientId,
@@ -1258,7 +1277,9 @@ public class JobRepository : IJobRepository
                 Size = new Vehicle
                 {
                     Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                    Label = j.UcjbVan ? "Van" : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                    Label = j.UcjbVan
+                        ? "Van"
+                        : Enum.GetName(enumType: typeof(Enums.Vehicle), value: (int)(j.UcjbSize ?? 2))
                 },
                 Weight = j.UcjbWeight,
                 Items = j.UcjbQty,
@@ -1268,15 +1289,16 @@ public class JobRepository : IJobRepository
                 SigNotRequired = j.SigNotRequired,
                 Charge = $"{j.UcjbAmount:C}",
                 Booked =
-                    DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
-                Date = j.UcjbDate.ToString("dd/MM/yyyy"),
+                    DateTime.Parse(s: j.UcjbDate.ToString(format: "yyyy-MM-dd") + " " +
+                                      j.UcjbTime.Value.ToString(format: "HH:mm:ss")),
+                Date = j.UcjbDate.ToString(format: "dd/MM/yyyy"),
                 DispatchTime = j.UcjbDispTime,
                 PuTime = j.Putime,
                 ClientNotes = j.ClientNotes,
                 InternalNotes = j.JobNotes,
                 ChildNotes = j.ChildNotes,
                 PalletInfo = (
-                    from pa in pallets.Where(p => p.JobId == j.UcjbId)
+                    from pa in pallets.Where(predicate: p => p.JobId == j.UcjbId)
                     select new PalletInfo
                     {
                         Id = pa.JobId,
@@ -1293,7 +1315,7 @@ public class JobRepository : IJobRepository
                     }).ToList(),
                 CourierData = new CourierData
                 {
-                    Courier = string.IsNullOrEmpty(j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
+                    Courier = string.IsNullOrEmpty(value: j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
                     CourierID = j.UcjbCourierId
                 },
                 AllowDispatch = j.AllowDespatch,
@@ -1314,8 +1336,8 @@ public class JobRepository : IJobRepository
                 PodPhoto = j.DeliveryPhoto,
                 PodName = j.UcjbPodname,
                 CompletedTime = j.UcjbComplTime.HasValue
-                    ? DateTime.Parse(j.UcjbComplTime?.ToString("yyyy-MM-dd") + " " +
-                                     j.UcjbComplTime?.ToString("HH:mm"))
+                    ? DateTime.Parse(s: j.UcjbComplTime?.ToString(format: "yyyy-MM-dd") + " " +
+                                        j.UcjbComplTime?.ToString(format: "HH:mm"))
                     : j.UcjbComplTime,
                 Done = j.UcjbJobDone,
                 TrackingMethod = j.TrackingMethod,
@@ -1349,7 +1371,7 @@ public class JobRepository : IJobRepository
         var whereToUse = "";
         const string orderToUse = "CASE WHEN ucevType = 1 THEN 1 WHEN ucevType = 2 THEN 2 ELSE 0 END, ucevTime";
 
-        var channelItems = channel?.Split(',');
+        var channelItems = channel?.Split(separator: ',');
 
         if (channelItems != null && channelItems.Length == 3)
         {
@@ -1364,7 +1386,7 @@ public class JobRepository : IJobRepository
                     case "Main":
                         const string main =
                             "(RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 1 OR RegionToID = 4 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) or ((RegionFromID = 2 OR RegionFromID = 3) AND (RegionToID = 2 OR RegionToID = 3) And ucjbVan=1) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND (RegionFromID = 4 OR RegionFromID = 10 OR (RegionFromID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39,53,54))) AND   (RegionToID < 5 OR RegionToID = 10 OR (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND  NOT (RegionFromID = 10 AND (RegionToID = 5 AND ucjbSpeed IN (1,2,3,4,10,20,25,29,39))) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) ";
-                        if (string.IsNullOrEmpty(whereToUse))
+                        if (string.IsNullOrEmpty(value: whereToUse))
                         {
                             whereToUse = main;
                         }
@@ -1377,7 +1399,7 @@ public class JobRepository : IJobRepository
                     case "City":
                         const string city =
                             "((RemoteJob = 0 AND (RegionFromID = 2 OR RegionFromID = 3 Or RegionFromID = 10) AND (RegionToID = 2 OR RegionToID = 3 Or RegionToID = 10)) AND (IsParentJob = 0) AND (Truck = 0 OR Truck is NULL OR (Truck = 1 AND VanOK = 1))) or (RemoteJob = 0 AND RegionFromID = 3  AND RegionToID = 3  AND ucjbSize in(0,1) AND (Truck = 0 OR Truck is NULL))";
-                        if (string.IsNullOrEmpty(whereToUse))
+                        if (string.IsNullOrEmpty(value: whereToUse))
                         {
                             whereToUse = city;
                         }
@@ -1389,7 +1411,7 @@ public class JobRepository : IJobRepository
                         break;
                     case "Trucks":
                         const string trucks = "(ucjbSpeed IN (45,109) OR Truck = 1) AND IsParentJob = 0";
-                        if (string.IsNullOrEmpty(whereToUse))
+                        if (string.IsNullOrEmpty(value: whereToUse))
                         {
                             whereToUse = trucks;
                         }
@@ -1410,7 +1432,7 @@ public class JobRepository : IJobRepository
             ? $"select * from DES_qrySupportEvents_CustomerAndCourier order by {orderToUse}"
             : $"select * from DES_qrySupportEvents_CustomerAndCourier where {whereToUse} order by {orderToUse}";
 
-        var events = await _context.DesQrySupportEventsCustomerAndCouriers.FromSqlRaw(s).ToListAsync();
+        var events = await _context.DesQrySupportEventsCustomerAndCouriers.FromSqlRaw(sql: s).ToListAsync();
         var evm = (from e in events
             select new SupportViewModel
             {
@@ -1431,124 +1453,128 @@ public class JobRepository : IJobRepository
 
     public async Task<TucEvent> GetSupportEventAsync(int id)
     {
-        var support = await _context.TucEvents.FindAsync(id);
+        var support = await _context.TucEvents.FindAsync(keyValues: id);
         return support;
     }
 
     public async Task<int> UpdateSupportEventAsync(TucEvent supportEvent)
     {
-        _context.Entry(supportEvent).State = EntityState.Modified;
+        _context.Entry(entity: supportEvent).State = EntityState.Modified;
         return await _context.SaveChangesAsync();
     }
 
     public async Task CloseSupportEvent(int supportId, int staffId)
     {
-        await _context.LoadStoredProc("uspCompleteEvent")
-            .WithSqlParam("@intEventID", supportId)
-            .WithSqlParam("@intStaffID", staffId)
+        await _context.LoadStoredProc(storedProcName: "uspCompleteEvent")
+            .WithSqlParam(paramName: "@intEventID", paramValue: supportId)
+            .WithSqlParam(paramName: "@intStaffID", paramValue: staffId)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task DispatchSelectedJobs(int courierId, int dispId, string jobIds)
     {
-        await _context.LoadStoredProc("DESWEB_stpJob_AutoDespatchSelectedJobs")
-            .WithSqlParam("@JobIDs", jobIds)
-            .WithSqlParam("@CourierID", courierId)
-            .WithSqlParam("@DispID", dispId)
+        await _context.LoadStoredProc(storedProcName: "DESWEB_stpJob_AutoDespatchSelectedJobs")
+            .WithSqlParam(paramName: "@JobIDs", paramValue: jobIds)
+            .WithSqlParam(paramName: "@CourierID", paramValue: courierId)
+            .WithSqlParam(paramName: "@DispID", paramValue: dispId)
             .ExecuteStoredNonQueryAsync();
 
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+        foreach (var jid in jobIds.Split(separator: ",").ToList()
+                     .Where(predicate: x => !string.IsNullOrWhiteSpace(value: x)))
         {
-            await _context.LoadStoredProc("DES_stpJob_AutoDespatchChildJobs")
-                .WithSqlParam("@JobID", int.Parse(jid))
+            await _context.LoadStoredProc(storedProcName: "DES_stpJob_AutoDespatchChildJobs")
+                .WithSqlParam(paramName: "@JobID", paramValue: int.Parse(s: jid))
                 .ExecuteStoredNonQueryAsync();
         }
     }
 
     public async Task SwapPod(string job1, string job2)
     {
-        await _context.LoadStoredProc("DESWEB_qdfSwapPOD")
-            .WithSqlParam("@ucjbNumber1", job1)
-            .WithSqlParam("@ucjbNumber2", job2)
+        await _context.LoadStoredProc(storedProcName: "DESWEB_qdfSwapPOD")
+            .WithSqlParam(paramName: "@ucjbNumber1", paramValue: job1)
+            .WithSqlParam(paramName: "@ucjbNumber2", paramValue: job2)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task ReDispatchSelectedJobs(int courierId, int dispId, string jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+        foreach (var jid in jobIds.Split(separator: ",").ToList()
+                     .Where(predicate: x => !string.IsNullOrWhiteSpace(value: x)))
         {
-            await _context.LoadStoredProc("uspRestoreJob")
-                .WithSqlParam("@intJobID", int.Parse(jid))
+            await _context.LoadStoredProc(storedProcName: "uspRestoreJob")
+                .WithSqlParam(paramName: "@intJobID", paramValue: int.Parse(s: jid))
                 .ExecuteStoredNonQueryAsync();
         }
 
-        await DispatchSelectedJobs(courierId, dispId, jobIds);
+        await DispatchSelectedJobs(courierId: courierId, dispId: dispId, jobIds: jobIds);
     }
 
     public async Task ReSendSelectedJobs(string jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+        foreach (var jid in jobIds.Split(separator: ",").ToList()
+                     .Where(predicate: x => !string.IsNullOrWhiteSpace(value: x)))
         {
-            await _context.LoadStoredProc("uspReDespatchJob")
-                .WithSqlParam("@intJobID", int.Parse(jid))
+            await _context.LoadStoredProc(storedProcName: "uspReDespatchJob")
+                .WithSqlParam(paramName: "@intJobID", paramValue: int.Parse(s: jid))
                 .ExecuteStoredNonQueryAsync();
         }
     }
 
     public async Task<List<BulkScanDetail>> ScanList(DateTime? runDate, string scan)
     {
-        var cmd = _context.LoadStoredProc("DESWeb_stpScanDetail")
-            .WithSqlParam("@RunDate", runDate)
-            .WithSqlParam("@Scan", scan);
+        var cmd = _context.LoadStoredProc(storedProcName: "DESWeb_stpScanDetail")
+            .WithSqlParam(paramName: "@RunDate", paramValue: runDate)
+            .WithSqlParam(paramName: "@Scan", paramValue: scan);
         var scans = new List<BulkScanDetail>();
 
-        await cmd.ExecuteStoredProcAsync(h => { scans = h.ReadToList<BulkScanDetail>().ToList(); });
+        await cmd.ExecuteStoredProcAsync(handleResults: h => { scans = h.ReadToList<BulkScanDetail>().ToList(); });
         return scans;
     }
 
     public async Task ReAssignSelectedJobs(string jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+        foreach (var jid in jobIds.Split(separator: ",").ToList()
+                     .Where(predicate: x => !string.IsNullOrWhiteSpace(value: x)))
         {
-            await _context.LoadStoredProc("uspReassignJob")
-                .WithSqlParam("@intJobID", int.Parse(jid))
+            await _context.LoadStoredProc(storedProcName: "uspReassignJob")
+                .WithSqlParam(paramName: "@intJobID", paramValue: int.Parse(s: jid))
                 .ExecuteStoredNonQueryAsync();
         }
     }
 
     public async Task SetFirstJob(int jobId, int courierId)
     {
-        await _context.LoadStoredProc("DES_stpJob_AutoDespatchSelectedJobs_FSCourierID")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@CourierID", courierId)
+        await _context.LoadStoredProc(storedProcName: "DES_stpJob_AutoDespatchSelectedJobs_FSCourierID")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
+            .WithSqlParam(paramName: "@CourierID", paramValue: courierId)
             .ExecuteStoredNonQueryAsync();
     }
 
 
     public async Task TransferJob(int jobId, int courierId, int dispId)
     {
-        await _context.LoadStoredProc("DESWEB_stpJob_TransferJob")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@CourierID", courierId)
-            .WithSqlParam("@DispID", dispId)
+        await _context.LoadStoredProc(storedProcName: "DESWEB_stpJob_TransferJob")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
+            .WithSqlParam(paramName: "@CourierID", paramValue: courierId)
+            .WithSqlParam(paramName: "@DispID", paramValue: dispId)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task UpdatePodDetails(string jobNumber, int jobStatus, string podName, DateTime podTime)
     {
-        await _context.LoadStoredProc("DESWEB_qdfJob_UpdatePODDetails")
-            .WithSqlParam("@ucjbNumber", jobNumber)
-            .WithSqlParam("@ucjbJobDone", true)
-            .WithSqlParam("@ucjbStatus", jobStatus)
-            .WithSqlParam("@ucjbPODName", podName)
-            .WithSqlParam("@ucjbComplTime", podTime)
+        await _context.LoadStoredProc(storedProcName: "DESWEB_qdfJob_UpdatePODDetails")
+            .WithSqlParam(paramName: "@ucjbNumber", paramValue: jobNumber)
+            .WithSqlParam(paramName: "@ucjbJobDone", paramValue: true)
+            .WithSqlParam(paramName: "@ucjbStatus", paramValue: jobStatus)
+            .WithSqlParam(paramName: "@ucjbPODName", paramValue: podName)
+            .WithSqlParam(paramName: "@ucjbComplTime", paramValue: podTime)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task ReSendAllJobs(int courierId)
     {
-        await _context.LoadStoredProc("uspReDespatchJobByCourierID")
-            .WithSqlParam("@CourierID", courierId)
+        await _context.LoadStoredProc(storedProcName: "uspReDespatchJobByCourierID")
+            .WithSqlParam(paramName: "@CourierID", paramValue: courierId)
             .ExecuteStoredNonQueryAsync();
     }
 
@@ -1556,8 +1582,8 @@ public class JobRepository : IJobRepository
     public async Task<int> MaxAutoLatePickupAlert()
     {
         DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLatePickupAlert")
-            .WithSqlParam("@MaxAutoLatePickupAlert", (dbParam) =>
+        await _context.LoadStoredProc(storedProcName: "GEN_qdfSetting_GetMaxAutoLatePickupAlert")
+            .WithSqlParam(paramName: "@MaxAutoLatePickupAlert", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.Int32;
@@ -1571,8 +1597,8 @@ public class JobRepository : IJobRepository
     public async Task<int> MaxAutoLateDeliveryAlert()
     {
         DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLateDeliveryAlert")
-            .WithSqlParam("@MaxAutoLateDeliveryAlert", (dbParam) =>
+        await _context.LoadStoredProc(storedProcName: "GEN_qdfSetting_GetMaxAutoLateDeliveryAlert")
+            .WithSqlParam(paramName: "@MaxAutoLateDeliveryAlert", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.Int32;
@@ -1585,12 +1611,12 @@ public class JobRepository : IJobRepository
 
     public async Task<decimal> PpdExclusiveAmount(int clientId, decimal amount)
     {
-        return await CalculateAmountAsync(clientId, amount);
+        return await CalculateAmountAsync(clientId: clientId, amount: amount);
     }
 
     public async Task<decimal> PpdInclusiveAmount(int clientId, decimal amount)
     {
-        return await CalculateAmountAsync(clientId, amount);
+        return await CalculateAmountAsync(clientId: clientId, amount: amount);
     }
 
 
@@ -1598,14 +1624,14 @@ public class JobRepository : IJobRepository
         DateTime booked, int size)
     {
         DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("UTL_stpFuelSurcharge_InclusiveAmount")
-            .WithSqlParam("@ClientID", clientId)
-            .WithSqlParam("@Date", booked)
-            .WithSqlParam("@Size", size)
-            .WithSqlParam("@Amount", amount)
-            .WithSqlParam("@FromSuburbID", from)
-            .WithSqlParam("@ToSuburbID", to)
-            .WithSqlParam("@FuelSurcharge", (dbParam) =>
+        await _context.LoadStoredProc(storedProcName: "UTL_stpFuelSurcharge_InclusiveAmount")
+            .WithSqlParam(paramName: "@ClientID", paramValue: clientId)
+            .WithSqlParam(paramName: "@Date", paramValue: booked)
+            .WithSqlParam(paramName: "@Size", paramValue: size)
+            .WithSqlParam(paramName: "@Amount", paramValue: amount)
+            .WithSqlParam(paramName: "@FromSuburbID", paramValue: from)
+            .WithSqlParam(paramName: "@ToSuburbID", paramValue: to)
+            .WithSqlParam(paramName: "@FuelSurcharge", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.Currency;
@@ -1619,72 +1645,74 @@ public class JobRepository : IJobRepository
 
     public async Task ResetLateEvent(int jobId, int eventType)
     {
-        await _context.LoadStoredProc("DESWEB_qdfLateCall_Reset")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@Type", eventType)
+        await _context.LoadStoredProc(storedProcName: "DESWEB_qdfLateCall_Reset")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
+            .WithSqlParam(paramName: "@Type", paramValue: eventType)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task LatePickup(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher,
         bool calculationRequired)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobPickupLateCall")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@BookedSpeed", bookedSpeed)
-            .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
-            .WithSqlParam("@Late", late)
-            .WithSqlParam("@Despatcher", despatcher)
-            .WithSqlParam("@CalculationRequired", calculationRequired)
+        await _context.LoadStoredProc(storedProcName: "DESWEB_stpUpdateJobPickupLateCall")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
+            .WithSqlParam(paramName: "@BookedSpeed", paramValue: bookedSpeed)
+            .WithSqlParam(paramName: "@NotifiedSpeed", paramValue: notifiedSpeed)
+            .WithSqlParam(paramName: "@Late", paramValue: late)
+            .WithSqlParam(paramName: "@Despatcher", paramValue: despatcher)
+            .WithSqlParam(paramName: "@CalculationRequired", paramValue: calculationRequired)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task LateDelivery(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher,
         bool calculationRequired)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryLateCall")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@BookedSpeed", bookedSpeed)
-            .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
-            .WithSqlParam("@Late", late)
-            .WithSqlParam("@Despatcher", despatcher)
-            .WithSqlParam("@CalculationRequired", calculationRequired)
+        await _context.LoadStoredProc(storedProcName: "DESWEB_stpUpdateJobDeliveryLateCall")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
+            .WithSqlParam(paramName: "@BookedSpeed", paramValue: bookedSpeed)
+            .WithSqlParam(paramName: "@NotifiedSpeed", paramValue: notifiedSpeed)
+            .WithSqlParam(paramName: "@Late", paramValue: late)
+            .WithSqlParam(paramName: "@Despatcher", paramValue: despatcher)
+            .WithSqlParam(paramName: "@CalculationRequired", paramValue: calculationRequired)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task RestoreSplitJobs(string jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+        foreach (var jid in jobIds.Split(separator: ",").ToList()
+                     .Where(predicate: x => !string.IsNullOrWhiteSpace(value: x)))
         {
-            await _context.LoadStoredProc("DES_stpJob_SplitJobRestore")
-                .WithSqlParam("@JobID", int.Parse(jid))
+            await _context.LoadStoredProc(storedProcName: "DES_stpJob_SplitJobRestore")
+                .WithSqlParam(paramName: "@JobID", paramValue: int.Parse(s: jid))
                 .ExecuteStoredNonQueryAsync();
         }
     }
 
     public async Task RestoreJobs(string jobIds)
     {
-        foreach (var jid in jobIds.Split(",").ToList().Where(x => !string.IsNullOrWhiteSpace(x)))
+        foreach (var jid in jobIds.Split(separator: ",").ToList()
+                     .Where(predicate: x => !string.IsNullOrWhiteSpace(value: x)))
         {
-            await _context.LoadStoredProc("uspRestoreJob")
-                .WithSqlParam("@intJobID", int.Parse(jid))
+            await _context.LoadStoredProc(storedProcName: "uspRestoreJob")
+                .WithSqlParam(paramName: "@intJobID", paramValue: int.Parse(s: jid))
                 .ExecuteStoredNonQueryAsync();
         }
     }
 
     public async Task MessageCourier(int courierId, int dispId, string despatcher, string message)
     {
-        await _context.LoadStoredProc("DES_stpManualMessage_Insert")
-            .WithSqlParam("@SendToID", courierId)
-            .WithSqlParam("@StaffID", dispId)
-            .WithSqlParam("@WindowsUser", despatcher)
-            .WithSqlParam("@Message", message)
+        await _context.LoadStoredProc(storedProcName: "DES_stpManualMessage_Insert")
+            .WithSqlParam(paramName: "@SendToID", paramValue: courierId)
+            .WithSqlParam(paramName: "@StaffID", paramValue: dispId)
+            .WithSqlParam(paramName: "@WindowsUser", paramValue: despatcher)
+            .WithSqlParam(paramName: "@Message", paramValue: message)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task VoidJob(int jobId)
     {
-        await _context.LoadStoredProc("DES_stpJob_Void")
-            .WithSqlParam("@JobID", jobId)
+        await _context.LoadStoredProc(storedProcName: "DES_stpJob_Void")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
             .ExecuteStoredNonQueryAsync();
     }
 
@@ -1700,9 +1728,9 @@ public class JobRepository : IJobRepository
     public async Task<string> UnSplitJob(int jobId)
     {
         DbParameter messageOutput = null;
-        await _context.LoadStoredProc("DES_stpJob_UnSplit")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@Message", (dbParam) =>
+        await _context.LoadStoredProc(storedProcName: "DES_stpJob_UnSplit")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
+            .WithSqlParam(paramName: "@Message", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.String;
@@ -1727,9 +1755,9 @@ public class JobRepository : IJobRepository
 
     public async Task ReRateSplitJob(int jobId)
     {
-        await _context.LoadStoredProc("DES_stpJob_SplitJob_ReRate")
-            .WithSqlParam("@ParentJobID", jobId)
-            .WithSqlParam("@PreBookJob", false)
+        await _context.LoadStoredProc(storedProcName: "DES_stpJob_SplitJob_ReRate")
+            .WithSqlParam(paramName: "@ParentJobID", paramValue: jobId)
+            .WithSqlParam(paramName: "@PreBookJob", paramValue: false)
             .ExecuteStoredNonQueryAsync();
     }
 
@@ -1750,7 +1778,7 @@ public class JobRepository : IJobRepository
     public async Task<List<SuburbLookup>> SuburbsAsync()
     {
         return await _context.TucSuburbs
-            .Select(x => new SuburbLookup
+            .Select(selector: x => new SuburbLookup
             {
                 ID = x.UcsuId,
                 Text = x.UcsuName,
@@ -1762,7 +1790,7 @@ public class JobRepository : IJobRepository
     public async Task<List<Lookup>> SpeedsAsync()
     {
         return await _context.DesQryAllJobTypes
-            .Select(x => new Lookup
+            .Select(selector: x => new Lookup
             {
                 ID = x.JobTypeId,
                 Text = x.Name
@@ -1773,12 +1801,12 @@ public class JobRepository : IJobRepository
     public async Task<List<Lookup>> ContactsAsync(int clientId)
     {
         return await _context.UtlQryContactLookups
-            .Join(_context.TblClientContacts,
-                s => s.ContactId,
-                cc => cc.ContactId,
-                (s, cc) => new { s, cc })
-            .Where(x => x.cc.ClientId == clientId && x.s.Active)
-            .Select(x => new Lookup
+            .Join(inner: _context.TblClientContacts,
+                outerKeySelector: s => s.ContactId,
+                innerKeySelector: cc => cc.ContactId,
+                resultSelector: (s, cc) => new { s, cc })
+            .Where(predicate: x => x.cc.ClientId == clientId && x.s.Active)
+            .Select(selector: x => new Lookup
             {
                 ID = x.s.ContactId,
                 Text = x.s.Name
@@ -1805,8 +1833,8 @@ public class JobRepository : IJobRepository
     public async Task<List<Lookup>> LeaveParcelLocationsAsync()
     {
         return await _context.TblJobLeaveNotHomes
-            .OrderBy(l => l.Sequence)
-            .Select(x => new Lookup
+            .OrderBy(keySelector: l => l.Sequence)
+            .Select(selector: x => new Lookup
             {
                 ID = x.LeaveNotHomeId,
                 Text = x.Name
@@ -1817,8 +1845,8 @@ public class JobRepository : IJobRepository
     public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync()
     {
         return await _context.TblUndeliverableLocations
-            .OrderBy(u => u.Name)
-            .Select(x => new UndeliverableLocation
+            .OrderBy(keySelector: u => u.Name)
+            .Select(selector: x => new UndeliverableLocation
             {
                 ID = x.UndeliverableLocationId,
                 Text = x.Name,
@@ -1830,8 +1858,8 @@ public class JobRepository : IJobRepository
     public async Task<List<InternalStatus>> InternalStatusListAsync()
     {
         return await _context.TucJobInternalStatuses
-            .OrderBy(u => u.Tcis)
-            .Select(x => new InternalStatus
+            .OrderBy(keySelector: u => u.Tcis)
+            .Select(selector: x => new InternalStatus
             {
                 ID = x.Tcis,
                 Text = x.TcisName,
@@ -1844,9 +1872,9 @@ public class JobRepository : IJobRepository
     public async Task<List<Lookup>> EventTypeListAsync()
     {
         return await _context.TucEventTypes
-            .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
-            .OrderBy(u => u.UcetName)
-            .Select(x => new Lookup
+            .Where(predicate: u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
+            .OrderBy(keySelector: u => u.UcetName)
+            .Select(selector: x => new Lookup
             {
                 ID = x.UcetId,
                 Text = x.UcetName
@@ -1862,31 +1890,31 @@ public class JobRepository : IJobRepository
         DbParameter outputDescriptionParam = null;
         DbParameter outputRateParam = null;
 
-        await _context.LoadStoredProc("DES_stpJob_Truck_Rate_Described")
-            .WithSqlParam("@ClientID", clientId)
-            .WithSqlParam("@FromSuburbID", fromId)
-            .WithSqlParam("@ToSuburbID", toId)
-            .WithSqlParam("@AverageWeight", weight)
-            .WithSqlParam("@Size", size)
-            .WithSqlParam("@Speed", speed)
-            .WithSqlParam("@Quantity", qty)
-            .WithSqlParam("@Booked", bookedDate)
-            .WithSqlParam("@Pickup", pickUp)
-            .WithSqlParam("@Dropoff", dropOff)
-            .WithSqlParam("@PrivateRes", privateRes)
-            .WithSqlParam("@OversizeItems", oversizeItems)
-            .WithSqlParam("@OverWeightItems", overWeightItems)
-            .WithSqlParam("@DangerousGoods", dGClass)
-            .WithSqlParam("@TruckStartTime", truckStartTime)
-            .WithSqlParam("@TruckHours", truckHours)
-            .WithSqlParam("@Description", (dbParam) =>
+        await _context.LoadStoredProc(storedProcName: "DES_stpJob_Truck_Rate_Described")
+            .WithSqlParam(paramName: "@ClientID", paramValue: clientId)
+            .WithSqlParam(paramName: "@FromSuburbID", paramValue: fromId)
+            .WithSqlParam(paramName: "@ToSuburbID", paramValue: toId)
+            .WithSqlParam(paramName: "@AverageWeight", paramValue: weight)
+            .WithSqlParam(paramName: "@Size", paramValue: size)
+            .WithSqlParam(paramName: "@Speed", paramValue: speed)
+            .WithSqlParam(paramName: "@Quantity", paramValue: qty)
+            .WithSqlParam(paramName: "@Booked", paramValue: bookedDate)
+            .WithSqlParam(paramName: "@Pickup", paramValue: pickUp)
+            .WithSqlParam(paramName: "@Dropoff", paramValue: dropOff)
+            .WithSqlParam(paramName: "@PrivateRes", paramValue: privateRes)
+            .WithSqlParam(paramName: "@OversizeItems", paramValue: oversizeItems)
+            .WithSqlParam(paramName: "@OverWeightItems", paramValue: overWeightItems)
+            .WithSqlParam(paramName: "@DangerousGoods", paramValue: dGClass)
+            .WithSqlParam(paramName: "@TruckStartTime", paramValue: truckStartTime)
+            .WithSqlParam(paramName: "@TruckHours", paramValue: truckHours)
+            .WithSqlParam(paramName: "@Description", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.String;
                 dbParam.Size = 1000;
                 outputDescriptionParam = dbParam;
             })
-            .WithSqlParam("@Rate", (dbParam) =>
+            .WithSqlParam(paramName: "@Rate", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.Currency;
@@ -1904,31 +1932,31 @@ public class JobRepository : IJobRepository
         DbParameter outputDescriptionParam = null;
         DbParameter outputRateParam = null;
 
-        await _context.LoadStoredProc("DES_stpJob_Truck_Rate_Described")
-            .WithSqlParam("@ClientID", clientId)
-            .WithSqlParam("@FromSuburbID", fromId)
-            .WithSqlParam("@ToSuburbID", toId)
-            .WithSqlParam("@AverageWeight", weight)
-            .WithSqlParam("@Size", size)
-            .WithSqlParam("@Speed", speed)
-            .WithSqlParam("@Quantity", qty)
-            .WithSqlParam("@Booked", bookedDate)
-            .WithSqlParam("@Pickup", pickUp)
-            .WithSqlParam("@Dropoff", dropOff)
-            .WithSqlParam("@PrivateRes", privateRes)
-            .WithSqlParam("@OversizeItems", oversizeItems)
-            .WithSqlParam("@OverWeightItems", overWeightItems)
-            .WithSqlParam("@DangerousGoods", dGClass)
-            .WithSqlParam("@TruckStartTime", truckStartTime)
-            .WithSqlParam("@TruckHours", truckHours)
-            .WithSqlParam("@Description", (dbParam) =>
+        await _context.LoadStoredProc(storedProcName: "DES_stpJob_Truck_Rate_Described")
+            .WithSqlParam(paramName: "@ClientID", paramValue: clientId)
+            .WithSqlParam(paramName: "@FromSuburbID", paramValue: fromId)
+            .WithSqlParam(paramName: "@ToSuburbID", paramValue: toId)
+            .WithSqlParam(paramName: "@AverageWeight", paramValue: weight)
+            .WithSqlParam(paramName: "@Size", paramValue: size)
+            .WithSqlParam(paramName: "@Speed", paramValue: speed)
+            .WithSqlParam(paramName: "@Quantity", paramValue: qty)
+            .WithSqlParam(paramName: "@Booked", paramValue: bookedDate)
+            .WithSqlParam(paramName: "@Pickup", paramValue: pickUp)
+            .WithSqlParam(paramName: "@Dropoff", paramValue: dropOff)
+            .WithSqlParam(paramName: "@PrivateRes", paramValue: privateRes)
+            .WithSqlParam(paramName: "@OversizeItems", paramValue: oversizeItems)
+            .WithSqlParam(paramName: "@OverWeightItems", paramValue: overWeightItems)
+            .WithSqlParam(paramName: "@DangerousGoods", paramValue: dGClass)
+            .WithSqlParam(paramName: "@TruckStartTime", paramValue: truckStartTime)
+            .WithSqlParam(paramName: "@TruckHours", paramValue: truckHours)
+            .WithSqlParam(paramName: "@Description", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.String;
                 dbParam.Size = 1000;
                 outputDescriptionParam = dbParam;
             })
-            .WithSqlParam("@Rate", (dbParam) =>
+            .WithSqlParam(paramName: "@Rate", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.Currency;
@@ -1974,30 +2002,30 @@ public class JobRepository : IJobRepository
         DbParameter outputDescriptionParam = null;
         DbParameter outputCourierParam = null;
 
-        await _context.LoadStoredProc("sp_RateJob_Described")
-            .WithSqlParam("@intClientID", clientId)
-            .WithSqlParam("@intFromID", fromId)
-            .WithSqlParam("@intToID", toId)
-            .WithSqlParam("@intSpeed", direct ? acceptedJobTypeId : speed)
-            .WithSqlParam("@bolPedal", pedal)
-            .WithSqlParam("@bolVan", van)
-            .WithSqlParam("@bolReturn", returnJob)
-            .WithSqlParam("@intWeight", weight)
-            .WithSqlParam("@strDescription", (dbParam) =>
+        await _context.LoadStoredProc(storedProcName: "sp_RateJob_Described")
+            .WithSqlParam(paramName: "@intClientID", paramValue: clientId)
+            .WithSqlParam(paramName: "@intFromID", paramValue: fromId)
+            .WithSqlParam(paramName: "@intToID", paramValue: toId)
+            .WithSqlParam(paramName: "@intSpeed", paramValue: direct ? acceptedJobTypeId : speed)
+            .WithSqlParam(paramName: "@bolPedal", paramValue: pedal)
+            .WithSqlParam(paramName: "@bolVan", paramValue: van)
+            .WithSqlParam(paramName: "@bolReturn", paramValue: returnJob)
+            .WithSqlParam(paramName: "@intWeight", paramValue: weight)
+            .WithSqlParam(paramName: "@strDescription", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.String;
                 dbParam.Size = 1000;
                 outputDescriptionParam = dbParam;
             })
-            .WithSqlParam("@Size", size)
-            .WithSqlParam("@IncludeFuelSurcharge", includeFuelSurcharge)
-            .WithSqlParam("@OurRef", ourRef)
-            .WithSqlParam("@ClientRefA", refA)
-            .WithSqlParam("@ClientRefB", refB)
-            .WithSqlParam("@Quantity", quantity)
-            .WithSqlParam("@Booked", booked)
-            .WithSqlParam("@CourierID", (dbParam) =>
+            .WithSqlParam(paramName: "@Size", paramValue: size)
+            .WithSqlParam(paramName: "@IncludeFuelSurcharge", paramValue: includeFuelSurcharge)
+            .WithSqlParam(paramName: "@OurRef", paramValue: ourRef)
+            .WithSqlParam(paramName: "@ClientRefA", paramValue: refA)
+            .WithSqlParam(paramName: "@ClientRefB", paramValue: refB)
+            .WithSqlParam(paramName: "@Quantity", paramValue: quantity)
+            .WithSqlParam(paramName: "@Booked", paramValue: booked)
+            .WithSqlParam(paramName: "@CourierID", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.Int32;
@@ -2011,9 +2039,12 @@ public class JobRepository : IJobRepository
     public async Task<DirectToASAPViewModel> DirectToAsap(int jobId)
     {
         var result = new List<DirectToASAPViewModel>();
-        await _context.LoadStoredProc("DESWEB_stpJob_DirectToASAP")
-            .WithSqlParam("@JobID", jobId)
-            .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DirectToASAPViewModel>().ToList(); });
+        await _context.LoadStoredProc(storedProcName: "DESWEB_stpJob_DirectToASAP")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
+            .ExecuteStoredProcAsync(handleResults: handle =>
+            {
+                result = handle.ReadToList<DirectToASAPViewModel>().ToList();
+            });
         return result.FirstOrDefault();
     }
 
@@ -2021,15 +2052,15 @@ public class JobRepository : IJobRepository
     {
         DbParameter outputParam = null;
         DbParameter nameOutput = null;
-        await _context.LoadStoredProc("DESWEB_stpJob_UpdateFirstAvailableSpeed")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@JobTypeID", (dbParam) =>
+        await _context.LoadStoredProc(storedProcName: "DESWEB_stpJob_UpdateFirstAvailableSpeed")
+            .WithSqlParam(paramName: "@JobID", paramValue: jobId)
+            .WithSqlParam(paramName: "@JobTypeID", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.Int32;
                 outputParam = dbParam;
             })
-            .WithSqlParam("@Name", (dbParam) =>
+            .WithSqlParam(paramName: "@Name", configureParam: (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
                 dbParam.DbType = System.Data.DbType.String;
@@ -2045,183 +2076,116 @@ public class JobRepository : IJobRepository
         return updateReturn;
     }
 
-    public async Task<SettingsViewModel> Settings()
+    public async Task<SettingsViewModel> SettingsAsync()
     {
-        var result = new List<SettingsViewModel>();
-        await _context.LoadStoredProc("DES_stpSettings")
-            .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<SettingsViewModel>().ToList(); });
-        return result.FirstOrDefault();
+        var result = await _context.Procedures.DES_stpSettingsAsync();
+        var settingsResult = result.FirstOrDefault();
+
+        return settingsResult == null
+            ? new SettingsViewModel()
+            : _mapper.Map<SettingsViewModel>(source: settingsResult);
     }
 
-    public async Task AddPalletInfo(PalletInfo p, bool preBook, string despatcher)
+    public async Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpJobItems_Insert")
-            .WithSqlParam("@JobID", p.Id)
-            .WithSqlParam("@Items", p.Quantity)
-            .WithSqlParam("@Weight", p.Weight)
-            .WithSqlParam("@Depth", p.Depth)
-            .WithSqlParam("@Length", p.Length)
-            .WithSqlParam("@Height", p.Height)
-            .WithSqlParam("@PU", p.Pu)
-            .WithSqlParam("@DO", p.Do)
-            .WithSqlParam("@DGClass", p.DgClass)
-            .WithSqlParam("@Notes", p.Notes)
-            .WithSqlParam("@Prebook", preBook)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpJobItems_InsertAsync(
+            JobID: p.Id, Items: p.Quantity, Weight: p.Weight, Length: p.Length, Height: p.Height, Depth: p.Depth,
+            PU: p.Pu, DO: p.Do, DGClass: p.DgClass, Notes: p.Notes, Prebook: preBook, Username: despatcher);
     }
 
-    public async Task EditPalletInfo(PalletInfo p, bool preBook, string despatcher)
+    public async Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpJobItems_Update")
-            .WithSqlParam("@JobID", p.Id)
-            .WithSqlParam("@ItemID", p.ItemId)
-            .WithSqlParam("@Items", p.Quantity)
-            .WithSqlParam("@Weight", p.Weight)
-            .WithSqlParam("@Depth", p.Depth)
-            .WithSqlParam("@Length", p.Length)
-            .WithSqlParam("@Height", p.Height)
-            .WithSqlParam("@PU", p.Pu)
-            .WithSqlParam("@DO", p.Do)
-            .WithSqlParam("@DGClass", p.DgClass)
-            .WithSqlParam("@Notes", p.Notes)
-            .WithSqlParam("@Prebook", preBook)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpJobItems_UpdateAsync(
+            JobID: p.Id, ItemID: p.ItemId, Items: p.Quantity, Weight: p.Weight, Length: p.Length, Height: p.Height,
+            Depth: p.Depth,
+            PU: p.Pu, DO: p.Do, DGClass: p.DgClass, Notes: p.Notes, Prebook: preBook, Username: despatcher);
     }
 
-    public async Task DeletePalletInfo(PalletInfo p, bool preBook, string despatcher)
+    public async Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpJobItems_Delete")
-            .WithSqlParam("@JobID", p.Id)
-            .WithSqlParam("@ItemID", p.ItemId)
-            .WithSqlParam("@Prebook", preBook)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpJobItems_DeleteAsync(JobID: p.Id, ItemID: p.ItemId, Prebook: preBook,
+            Username: despatcher);
     }
 
-    public async Task SendPrebookJob(int jobId)
+    public async Task SendPrebookJobAsync(int jobId)
     {
-        await _context.LoadStoredProc("DES_stpJobBooking_InsertJobAndChildren")
-            .WithSqlParam("@JobBookingID", jobId)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(JobBookingID: jobId);
     }
 
-    public async Task VoidPrebookJob(int jobId, string despatcher, int staffId)
+    public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId)
     {
-        await _context.LoadStoredProc("DESWEB_stpVoidPrebookJob")
-            .WithSqlParam("@JobBookingID", jobId)
-            .WithSqlParam("@Username", despatcher)
-            .WithSqlParam("@StaffID", staffId)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpVoidPrebookJobAsync(JobBookingID: jobId, Username: despatcher,
+            StaffID: staffId);
     }
 
-
-    public async Task<TruckItemsSummary> TruckJobItems(int jobId, int truckWeightLimit)
+    public async Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit)
     {
-        var result = new List<TruckItemsSummary>();
-        await _context.LoadStoredProc("qry_tucJobItems")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@TruckWeightLimit", truckWeightLimit)
-            .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<TruckItemsSummary>().ToList(); });
-        return result.FirstOrDefault();
+        var result = await _context.Procedures.qry_tucJobItemsAsync(JobID: jobId, TruckWeightLimit: truckWeightLimit);
+        return result.Select(selector: item => new TruckItemsSummary
+            {
+                intQuantity = item.intQuantity,
+                intWeight = item.intWeight,
+                TotalWeight = item.totalWeight,
+                intPU = item.intPU,
+                intDO = item.intDO,
+                intOverSizeItems = item.intOversizeItems,
+                intOverWeightItems = item.intOverWeightItems,
+                DGClass = item.DGClass
+            })
+            .FirstOrDefault() ?? new TruckItemsSummary();
     }
 
-    public async Task UpdateDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
+    public async Task UpdateDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
         decimal deliveryLng, bool cbd, decimal rate, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryAddress")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@ToSuburb", toSuburbId)
-            .WithSqlParam("@Address", address)
-            .WithSqlParam("@DeliveryLatitude", deliveryLat)
-            .WithSqlParam("@DeliveryLongitude", deliveryLng)
-            .WithSqlParam("@CBD", cbd)
-            .WithSqlParam("@Rate", rate)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateJobDeliveryAddressAsync(JobID: jobId, ToSuburb: toSuburbId,
+            Address: address, DeliveryLatitude: deliveryLat,
+            DeliveryLongitude: deliveryLng, CBD: cbd, Rate: rate, Username: despatcher);
     }
 
-    public async Task UpdateBulkDeliveryAddress(int bulkJobId, string toSuburb, int toPostCode, string address,
+    public async Task UpdateBulkDeliveryAddressAsync(int bulkJobId, string toSuburb, int toPostCode, string address,
         decimal deliveryLat, decimal deliveryLng, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateBulkJobDeliveryAddress")
-            .WithSqlParam("@BulkJobID", bulkJobId)
-            .WithSqlParam("@ToSuburb", toSuburb)
-            .WithSqlParam("@ToPostCode", toPostCode)
-            .WithSqlParam("@Address", address)
-            .WithSqlParam("@DeliveryLatitude", deliveryLat)
-            .WithSqlParam("@DeliveryLongitude", deliveryLng)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateBulkJobDeliveryAddressAsync(BulkJobID: bulkJobId, ToSuburb: toSuburb,
+            ToPostCode: toPostCode, Address: address,
+            DeliveryLatitude: deliveryLat, DeliveryLongitude: deliveryLng, Username: despatcher);
     }
 
-    public async Task UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat,
+    public async Task UpdatePickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
         decimal pickupLng, bool cbd, decimal rate, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobPickupAddress")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@FromSuburb", fromSuburbId)
-            .WithSqlParam("@Address", address)
-            .WithSqlParam("@PickupLatitude", pickupLat)
-            .WithSqlParam("@PickupLongitude", pickupLng)
-            .WithSqlParam("@CBD", cbd)
-            .WithSqlParam("@Rate", rate)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateJobPickupAddressAsync(JobID: jobId, FromSuburb: fromSuburbId,
+            Address: address, PickupLatitude: pickupLat,
+            PickupLongitude: pickupLng, CBD: cbd, Rate: rate, Username: despatcher);
     }
 
-    public async Task UpdateJobType(int jobId, int jobType, string despatcher)
+    public async Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobType")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@JobType", jobType)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateJobTypeAsync(JobID: jobId, JobType: jobType, Username: despatcher);
     }
 
-    public async Task UpdateBulkPickupAddress(int bulkJobId, string fromSuburb, int fromPostCode, string address,
+    public async Task UpdateBulkPickupAddressAsync(int bulkJobId, string fromSuburb, int fromPostCode, string address,
         decimal pickupLat, decimal pickupLng, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateBulkJobPickupAddress")
-            .WithSqlParam("@BulkJobID", bulkJobId)
-            .WithSqlParam("@FromSuburb", fromSuburb)
-            .WithSqlParam("@FromPostCode", fromPostCode)
-            .WithSqlParam("@Address", address)
-            .WithSqlParam("@PickupLatitude", pickupLat)
-            .WithSqlParam("@PickupLongitude", pickupLng)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateBulkJobPickupAddressAsync(BulkJobID: bulkJobId,
+            FromSuburb: fromSuburb, FromPostCode: fromPostCode,
+            Address: address, PickupLatitude: pickupLat, PickupLongitude: pickupLng, Username: despatcher);
     }
 
-    public async Task UpdateBookingDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
+    public async Task UpdateBookingDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
         decimal deliveryLng, bool cbd, decimal rate, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobBookingDeliveryAddress")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@ToSuburb", toSuburbId)
-            .WithSqlParam("@Address", address)
-            .WithSqlParam("@DeliveryLatitude", deliveryLat)
-            .WithSqlParam("@DeliveryLongitude", deliveryLng)
-            .WithSqlParam("@CBD", cbd)
-            .WithSqlParam("@Rate", rate)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateJobBookingDeliveryAddressAsync(JobID: jobId, ToSuburb: toSuburbId,
+            Address: address,
+            DeliveryLatitude: deliveryLat, DeliveryLongitude: deliveryLng, CBD: cbd, Rate: rate, Username: despatcher);
     }
 
-    public async Task UpdateBookingPickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat,
+    public async Task UpdateBookingPickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
         decimal pickupLng, bool cbd, decimal rate, string despatcher)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobBookingPickupAddress")
-            .WithSqlParam("@JobID", jobId)
-            .WithSqlParam("@FromSuburb", fromSuburbId)
-            .WithSqlParam("@Address", address)
-            .WithSqlParam("@PickupLatitude", pickupLat)
-            .WithSqlParam("@PickupLongitude", pickupLng)
-            .WithSqlParam("@CBD", cbd)
-            .WithSqlParam("@Rate", rate)
-            .WithSqlParam("@Username", despatcher)
-            .ExecuteStoredNonQueryAsync();
+        await _context.Procedures.DESWEB_stpUpdateJobBookingPickupAddressAsync(JobID: jobId, FromSuburb: fromSuburbId,
+            Address: address, PickupLatitude: pickupLat, PickupLongitude: pickupLng, CBD: cbd, Rate: rate,
+            Username: despatcher);
     }
 
     public async Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate)
@@ -2352,16 +2316,16 @@ public class JobRepository : IJobRepository
     public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
     {
         var count = await _context.TblClientAvailableSpeeds
-            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
-            .Join(_context.TblClientAvailableSpeedItems,
-                cas => cas.Id,
-                casi => casi.ClientAvailableSpeedId,
-                (cas, casi) => new { cas, casi })
-            .Where(x => x.casi.Active)
-            .Join(_context.TucClientItems,
-                x => x.casi.ClientItemId,
-                ci => ci.ItemId,
-                (x, ci) => ci)
+            .Where(predicate: cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .Join(inner: _context.TblClientAvailableSpeedItems,
+                outerKeySelector: cas => cas.Id,
+                innerKeySelector: casi => casi.ClientAvailableSpeedId,
+                resultSelector: (cas, casi) => new { cas, casi })
+            .Where(predicate: x => x.casi.Active)
+            .Join(inner: _context.TucClientItems,
+                outerKeySelector: x => x.casi.ClientItemId,
+                innerKeySelector: ci => ci.ItemId,
+                resultSelector: (x, ci) => ci)
             .CountAsync();
 
         return count > 0;
@@ -2370,23 +2334,24 @@ public class JobRepository : IJobRepository
     public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeedAsync(int clientId, int speedId,
         int jobId)
     {
-        var job = await GetJobInfo(jobId);
-        var clientItemIds = GetClientItemIds(job?.ClientItemIds);
-        var clientItemsQuery = BuildClientItemsQuery(clientId, speedId, clientItemIds);
-        return await CreatePagedList(clientItemsQuery);
+        var job = await GetJobInfo(jobId: jobId);
+        var clientItemIds = GetClientItemIds(clientItemIdsString: job?.ClientItemIds);
+        var clientItemsQuery =
+            BuildClientItemsQuery(clientId: clientId, speedId: speedId, clientItemIds: clientItemIds);
+        return await CreatePagedList(query: clientItemsQuery);
     }
 
     public async Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost)
     {
         var clientItemsString = clientItemIds is null || !clientItemIds.Any()
             ? string.Empty
-            : string.Join(",", clientItemIds);
+            : string.Join(separator: ",", values: clientItemIds);
 
         var job = new TucJob { UcjbId = jobId, ClientItemIds = clientItemsString, UcjbAmount = totalCost };
 
-        _context.TucJobs.Attach(job);
-        _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
-        _context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
+        _context.TucJobs.Attach(entity: job);
+        _context.Entry(entity: job).Property(propertyExpression: x => x.ClientItemIds).IsModified = true;
+        _context.Entry(entity: job).Property(propertyExpression: x => x.UcjbAmount).IsModified = true;
         await _context.SaveChangesAsync();
     }
 
@@ -2395,10 +2360,10 @@ public class JobRepository : IJobRepository
         if (!rootParentId.HasValue) return new List<Size>();
 
         return await _context.TblJobs
-            .Where(r => r.ParentId == rootParentId && r.ClientId == clientId)
-            .OrderBy(t => t.Date)
-            .ThenBy(x => x.Time)
-            .Select(rel => new Size
+            .Where(predicate: r => r.ParentId == rootParentId && r.ClientId == clientId)
+            .OrderBy(keySelector: t => t.Date)
+            .ThenBy(keySelector: x => x.Time)
+            .Select(selector: rel => new Size
             {
                 Id = rel.JobId,
                 Label = rel.Number
@@ -2409,12 +2374,12 @@ public class JobRepository : IJobRepository
     private async Task<List<byte[]>> GetPodPhotosAsync(int jobId, byte[] podPhoto, byte[] deliverySignature)
     {
         var photos = new List<byte[]>();
-        if (podPhoto != null) photos.Add(podPhoto);
-        if (deliverySignature != null) photos.Add(deliverySignature);
+        if (podPhoto != null) photos.Add(item: podPhoto);
+        if (deliverySignature != null) photos.Add(item: deliverySignature);
 
-        photos.AddRange(await _context.DeliveryPhotos
-            .Where(d => d.JobId == jobId)
-            .Select(del => del.Photo)
+        photos.AddRange(collection: await _context.DeliveryPhotos
+            .Where(predicate: d => d.JobId == jobId)
+            .Select(selector: del => del.Photo)
             .ToListAsync());
 
         return photos;
@@ -2423,8 +2388,8 @@ public class JobRepository : IJobRepository
     private async Task<JobInfo> GetJobInfo(int jobId)
     {
         return await _context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new JobInfo
+            .Where(predicate: j => j.UcjbId == jobId)
+            .Select(selector: j => new JobInfo
             {
                 ClientItemIds = j.ClientItemIds,
                 IsVan = j.UcjbSize == 3
@@ -2434,31 +2399,31 @@ public class JobRepository : IJobRepository
 
     private static IEnumerable<int> GetClientItemIds(string clientItemIdsString)
     {
-        if (string.IsNullOrEmpty(clientItemIdsString))
+        if (string.IsNullOrEmpty(value: clientItemIdsString))
             return Enumerable.Empty<int>();
 
-        return clientItemIdsString.Split(',')
-            .Where(s => !string.IsNullOrEmpty(s))
-            .Select(int.Parse);
+        return clientItemIdsString.Split(separator: ',')
+            .Where(predicate: s => !string.IsNullOrEmpty(value: s))
+            .Select(selector: int.Parse);
     }
 
     private IQueryable<ClientItemsViewModel> BuildClientItemsQuery(int clientId, int speedId,
         IEnumerable<int> clientItemIds)
     {
         return _context.TblClientAvailableSpeeds
-            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
-            .Join(_context.TblClientAvailableSpeedItems,
-                cas => cas.Id,
-                casi => casi.ClientAvailableSpeedId,
-                (cas, casi) => new { cas, casi })
-            .Where(x => x.casi.Active)
-            .Join(_context.TucClientItems,
-                x => x.casi.ClientItemId,
-                ci => ci.ItemId,
-                (x, ci) => ci)
-            .Where(ci => ci.ClientId == clientId)
-            .OrderBy(ci => ci.Name)
-            .Select(ci => new ClientItemsViewModel
+            .Where(predicate: cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .Join(inner: _context.TblClientAvailableSpeedItems,
+                outerKeySelector: cas => cas.Id,
+                innerKeySelector: casi => casi.ClientAvailableSpeedId,
+                resultSelector: (cas, casi) => new { cas, casi })
+            .Where(predicate: x => x.casi.Active)
+            .Join(inner: _context.TucClientItems,
+                outerKeySelector: x => x.casi.ClientItemId,
+                innerKeySelector: ci => ci.ItemId,
+                resultSelector: (x, ci) => ci)
+            .Where(predicate: ci => ci.ClientId == clientId)
+            .OrderBy(keySelector: ci => ci.Name)
+            .Select(selector: ci => new ClientItemsViewModel
             {
                 ItemId = ci.ItemId,
                 ClientId = ci.ClientId,

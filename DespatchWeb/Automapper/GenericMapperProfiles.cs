@@ -16,5 +16,7 @@ public class GenericMapperProfiles : Profile
         CreateMap<DESWEB_qryClientsActiveResult, ClientActiveViewModel>()
             .ForMember(dest => dest.ID, opt => opt.MapFrom(src => src.ID))
             .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Text));
+
+        CreateMap<DES_stpSettingsResult, SettingsViewModel>();
     }
 }

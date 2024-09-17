@@ -133,34 +133,34 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> AddPallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
     {
-        await _jobRepo.AddPalletInfo(palletInfo, preBook, despatcher);
+        await _jobRepo.AddPalletInfoAsync(palletInfo, preBook, despatcher);
         return Ok("OK");
     }
 
     [HttpPost]
     public async Task<IActionResult> EditPallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
     {
-        await _jobRepo.EditPalletInfo(palletInfo, preBook, despatcher);
+        await _jobRepo.EditPalletInfoAsync(palletInfo, preBook, despatcher);
         return Ok("OK");
     }
 
     [HttpPost]
     public async Task<IActionResult> DeletePallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
     {
-        await _jobRepo.DeletePalletInfo(palletInfo, preBook, despatcher);
+        await _jobRepo.DeletePalletInfoAsync(palletInfo, preBook, despatcher);
         return Ok("OK");
     }
 
 
     public async Task<IActionResult> SendPrebookJob(int jobId)
     {
-        await _jobRepo.SendPrebookJob(jobId);
+        await _jobRepo.SendPrebookJobAsync(jobId);
         return Ok("OK");
     }
 
     public async Task<IActionResult> VoidPrebookJob(int jobId, string despatcher, int staffId)
     {
-        await _jobRepo.VoidPrebookJob(jobId, despatcher, staffId);
+        await _jobRepo.VoidPrebookJobAsync(jobId, despatcher, staffId);
         return Ok("OK");
     }
 
@@ -739,14 +739,14 @@ public class JobController : Controller
 
     public async Task<IActionResult> TruckItemsSummary(int jobId, int truckWeightLimit)
     {
-        var summary = await _jobRepo.TruckJobItems(jobId, truckWeightLimit);
+        var summary = await _jobRepo.TruckJobItemsAsync(jobId, truckWeightLimit);
         return Json(summary);
     }
 
     public async Task<IActionResult> UpdateDeliveryAddress(int jobId, int toSuburbId, string address,
         decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcherName)
     {
-        await _jobRepo.UpdateDeliveryAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
+        await _jobRepo.UpdateDeliveryAddressAsync(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
             despatcherName);
         return Json("OK");
     }
@@ -755,7 +755,8 @@ public class JobController : Controller
         string address,
         decimal deliveryLat, decimal deliveryLng, string despatcherName)
     {
-        await _jobRepo.UpdateBulkDeliveryAddress(bulkJobId, toSuburb, toPostCode, address, deliveryLat, deliveryLng,
+        await _jobRepo.UpdateBulkDeliveryAddressAsync(bulkJobId, toSuburb, toPostCode, address, deliveryLat,
+            deliveryLng,
             despatcherName);
         return Json("OK");
     }
@@ -763,7 +764,8 @@ public class JobController : Controller
     public async Task<IActionResult> UpdateBookingDeliveryAddress(int jobId, int toSuburbId, string address,
         decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcherName)
     {
-        await _jobRepo.UpdateBookingDeliveryAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
+        await _jobRepo.UpdateBookingDeliveryAddressAsync(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd,
+            rate,
             despatcherName);
         return Json("OK");
     }
@@ -771,14 +773,14 @@ public class JobController : Controller
     public async Task<IActionResult> UpdatePickupAddress(int jobId, int fromSuburbId, string address,
         decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
     {
-        await _jobRepo.UpdatePickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
+        await _jobRepo.UpdatePickupAddressAsync(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
             despatcherName);
         return Json("OK");
     }
 
     public async Task<IActionResult> UpdateJobType(int jobId, int jobType, string despatcherName)
     {
-        await _jobRepo.UpdateJobType(jobId, jobType, despatcherName);
+        await _jobRepo.UpdateJobTypeAsync(jobId, jobType, despatcherName);
         return Json("OK");
     }
 
@@ -787,7 +789,7 @@ public class JobController : Controller
         string address,
         decimal pickupLat, decimal pickupLng, string despatcherName)
     {
-        await _jobRepo.UpdateBulkPickupAddress(bulkJobId, fromSuburb, fromPostCode, address, pickupLat, pickupLng,
+        await _jobRepo.UpdateBulkPickupAddressAsync(bulkJobId, fromSuburb, fromPostCode, address, pickupLat, pickupLng,
             despatcherName);
         return Json("OK");
     }
@@ -796,7 +798,7 @@ public class JobController : Controller
     public async Task<IActionResult> UpdateBookingPickupAddress(int jobId, int fromSuburbId, string address,
         decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
     {
-        await _jobRepo.UpdateBookingPickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
+        await _jobRepo.UpdateBookingPickupAddressAsync(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
             despatcherName);
         return Json("OK");
     }
@@ -917,7 +919,7 @@ public class JobController : Controller
         string currentSpeed)
     {
         var jobData = await _jobRepo.DirectToAsap(jobId);
-        var settingData = await _jobRepo.Settings();
+        var settingData = await _jobRepo.SettingsAsync();
         var emailMessage = FormatDelimMessage(settingData.UncheckDirectEmailMessage, "[", "]", jobData);
         await _courierRepo.AddEventAsync(jobData.Number, jobData.ClientID ?? 0, jobData.Recipient, staffId, null,
             jobId, jobData.JobTypeID ?? 0, despatcher, "Direct job changed to ASAP", 42, null, null,

@@ -35,6 +35,14 @@
          "ObjectType": 0
       },
       {
+        "Name": "[dbo].[tblClearListArea]",
+        "ObjectType": 0
+      },
+     {
+       "Name": "[dbo].[tblClearListZoneGroups]",
+       "ObjectType": 0
+     },
+     {
          "Name": "[dbo].[tblClientAvailableSpeed]",
          "ObjectType": 0
       },
@@ -55,10 +63,6 @@
          "ObjectType": 0
       },
       {
-        "Name": "[dbo].[TblDespatchViews]",
-        "ObjectType": 0
-      },
-     {
          "Name": "[dbo].[tblDFRNTApps]",
          "ObjectType": 0
       },
@@ -146,6 +150,18 @@
          "Name": "[dbo].[UserWidgetPreferences]",
          "ObjectType": 0
       },
+     {
+       "Name": "[dbo].[ZoneGroup]",
+       "ObjectType": 0
+     },
+     {
+       "Name": "[dbo].[ZoneName]",
+       "ObjectType": 0
+     },
+     {
+       "Name": "[dbo].[ZoneZip]",
+       "ObjectType": 0
+      },
       {
          "Name": "[dbo].[DES_qryAllJobTypes]",
          "ObjectType": 3
@@ -215,6 +231,14 @@
         "ObjectType": 1
       },
      {
+       "Name": "[dbo].[DES_stpJobBooking_InsertJobAndChildren]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DES_stpSettings]",
+       "ObjectType": 1
+     },
+     {
          "Name": "[dbo].[DESWEB_qryClientsActive]",
          "ObjectType": 1
       },
@@ -241,6 +265,18 @@
      {
        "Name": "[dbo].[DESWEB_stpJob_AddNotes]",
        "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpJobItems_Delete]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpJobItems_Insert]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpJobItems_Update]",
+       "ObjectType": 1
       },
       {
          "Name": "[dbo].[DESWEB_stpMapEnvelope]",
@@ -255,6 +291,14 @@
         "ObjectType": 1
       },
      {
+       "Name": "[dbo].[DESWEB_stpUpdateBulkJobDeliveryAddress]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpUpdateBulkJobPickupAddress]",
+       "ObjectType": 1
+     },
+     {
        "Name": "[dbo].[DESWEB_stpUpdateJob]",
        "ObjectType": 1
      },
@@ -263,12 +307,40 @@
        "ObjectType": 1
      },
      {
+       "Name": "[dbo].[DESWEB_stpUpdateJobBookingDeliveryAddress]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpUpdateJobBookingPickupAddress]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpUpdateJobDeliveryAddress]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpUpdateJobPickupAddress]",
+       "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[DESWEB_stpUpdateJobType]",
+       "ObjectType": 1
+     },
+     {
          "Name": "[dbo].[DESWEB_stpUpdateSplitJobMeetingAddress]",
          "ObjectType": 1
       },
       {
+        "Name": "[dbo].[DESWEB_stpVoidPrebookJob]",
+        "ObjectType": 1
+      },
+     {
          "Name": "[dbo].[INT_stpIsValidLogin_Despatch]",
          "ObjectType": 1
+     },
+     {
+       "Name": "[dbo].[qry_tucJobItems]",
+       "ObjectType": 1
       },
       {
          "Name": "[dbo].[sp_RateJob2]",
