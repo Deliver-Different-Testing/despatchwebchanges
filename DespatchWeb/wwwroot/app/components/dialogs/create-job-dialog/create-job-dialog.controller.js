@@ -170,7 +170,6 @@ class CreateJobDialogController {
                     addressDetails.stateName = stateObj.name;
                 }
             } else {
-
                 // NZ address format
                 addressDetails.addressLine1 = returnedLocation.Address.Place || ''; // Business name or building name
                 addressDetails.addressLine2 = returnedLocation.Address.Subunit || ''; // Apartment or unit number

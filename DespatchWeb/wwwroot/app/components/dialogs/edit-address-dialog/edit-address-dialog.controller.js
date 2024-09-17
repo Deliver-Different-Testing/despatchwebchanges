@@ -124,15 +124,29 @@ class EditAddressDialogController {
             console.log("PostCode/ZIP = " + returnedLocation.Address.PostalCode);
 
             if (this.useUsFormat) {
-                this.addressDetails.addressLine4 = returnedLocation.Address.City;
-                this.addressDetails.addressLine5 = returnedLocation.Address.State;
-                this.addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
-                // Use the UsStatesService to get the full state name if needed
+                this.addressDetails.addressLine1 = returnedLocation.Address.Place;
+                this.addressDetails.addressLine2 = returnedLocation.Address.Subunit;
+                this.addressDetails.addressLine3 = returnedLocation.Address.HouseNumber;
+                this.addressDetails.addressLine4 = returnedLocation.Address.Street;
+                this.addressDetails.addressLine5 = returnedLocation.Address.City;
+                this.addressDetails.addressLine6 = returnedLocation.Address.State;
+                this.addressDetails.addressLine7 = returnedLocation.Address.PostalCode;
+
                 const stateObj = this.UsStatesService.getStateByAbbreviation(this.addressDetails.addressLine5);
                 if (stateObj) {
                     this.addressDetails.stateName = stateObj.name;
                 }
             } else {
+                // NZ address format
+                this.addressDetails.addressLine1 = returnedLocation.Address.Place || ''; // Business name or building name
+                this.addressDetails.addressLine2 = returnedLocation.Address.Subunit || ''; // Apartment or unit number
+                this.addressDetails.addressLine3 = returnedLocation.Address.HouseNumber || '';
+                this.addressDetails.addressLine4 = returnedLocation.Address.Street || '';
+                this.addressDetails.addressLine5 = returnedLocation.Address.District || ''; // Suburb
+                this.addressDetails.addressLine6 = returnedLocation.Address.City || '';
+                this.addressDetails.addressLine7 = returnedLocation.Address.County || ''; // Region
+                this.addressDetails.addressLine8 = returnedLocation.Address.PostalCode || '';
+
                 const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
                 if (mappedSub !== undefined) {
                     console.log(mappedSub);
@@ -141,15 +155,11 @@ class EditAddressDialogController {
                     this.ourSuburbSelectedItem = null;
                     this._toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
                 }
-                this.addressDetails.addressLine4 = returnedLocation.Address.District;
-                this.addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
             }
 
-            this.addressDetails.addressLine1 = returnedLocation.Address.Street;
-            this.addressDetails.addressLine2 = returnedLocation.Address.HouseNumber;
+            // Coordinates
             this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
             this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
-            this.addressDetails.fullAddress = returnedLocation.Address.Label;
 
             const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
 
