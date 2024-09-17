@@ -18,5 +18,7 @@ public class GenericMapperProfiles : Profile
             .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Text));
 
         CreateMap<DES_stpSettingsResult, SettingsViewModel>();
+
+        CreateMap<MAP_stpClearListArea_EnvelopeResult, ClearListEnvelopeViewModel>();
     }
 }

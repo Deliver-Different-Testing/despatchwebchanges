@@ -47,6 +47,7 @@ namespace DespatchWeb.EntityClasses
             modelBuilder.Entity<DESWEB_qryPotentialCouriersResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWEB_stpMapEnvelopeResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<INT_stpIsValidLogin_DespatchResult>().HasNoKey().ToView(null);
+            modelBuilder.Entity<MAP_stpClearListArea_EnvelopeResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<qry_tucJobItemsResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>().HasNoKey().ToView(null);
         }
@@ -2028,6 +2029,38 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.SqlQueryAsync<INT_stpIsValidLogin_DespatchResult>("EXEC @returnValue = [dbo].[INT_stpIsValidLogin_Despatch] @WindowsLogonUserName = @WindowsLogonUserName", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<MAP_stpClearListArea_EnvelopeResult>> MAP_stpClearListArea_EnvelopeAsync(int? ClearListAreaID, bool? IncludeCouriers, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "ClearListAreaID",
+                    Value = ClearListAreaID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "IncludeCouriers",
+                    Value = IncludeCouriers ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<MAP_stpClearListArea_EnvelopeResult>("EXEC @returnValue = [dbo].[MAP_stpClearListArea_Envelope] @ClearListAreaID = @ClearListAreaID, @IncludeCouriers = @IncludeCouriers", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

@@ -22,7 +22,7 @@ public class CourierController : Controller
 
     public IActionResult ClearListEnvelope(int clearListId)
     {
-        var result = _courierRepo.ClearListEnvelope(clearListId);
+        var result = _courierRepo.ClearListEnvelopeAsync(clearListId);
         return Json(result);
     }
 

@@ -339,6 +339,10 @@
          "ObjectType": 1
      },
      {
+       "Name": "[dbo].[MAP_stpClearListArea_Envelope]",
+       "ObjectType": 1
+     },
+     {
        "Name": "[dbo].[qry_tucJobItems]",
        "ObjectType": 1
       },
