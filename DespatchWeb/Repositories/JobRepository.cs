@@ -175,6 +175,10 @@ public class JobRepository : IJobRepository
         var jobQuery = from tblJob in _context.TblJobs
             join c in _context.TblCouriers on tblJob.CourierId equals c.CourierId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
+            join y in _context.TucSuburbs on tblJob.FromSuburbId equals y.UcsuId into fromJoin
+            from fromSuburb in fromJoin.DefaultIfEmpty()
+            join z in _context.TucSuburbs on tblJob.ToSuburbId equals z.UcsuId into toJoin
+            from toSuburb in toJoin.DefaultIfEmpty()
             join t in _context.TucJobTypes on tblJob.Speed equals t.UcjtId into speedJoin
             from speed in speedJoin.DefaultIfEmpty()
             join n in _context.TucJobTypes on tblJob.NotifiedJobTypeId equals n.UcjtId into notifiedSpeedJoin
@@ -262,6 +266,17 @@ public class JobRepository : IJobRepository
                     Latitude = tblJob.DeliveryLatitude,
                     Longitude = tblJob.DeliveryLongitude,
                 },
+                From = fromSuburb.UcsuName,
+                FromSuburbId = tblJob.FromSuburbId,
+                FromSuburbName = fromSuburb.UcsuName,
+                FromPostCode = fromSuburb.PostCode,
+                FromAddress = tblJob.FromAddress,
+                To = toSuburb.UcsuName,
+                ToSuburbId = tblJob.ToSuburbId,
+                ToSuburbName = toSuburb.UcsuName,
+                ToCity = toSuburb.City,
+                ToPostCode = toSuburb.PostCode,
+                ToAddress = tblJob.ToAddress,
                 Courier = courier.Code,
                 StatusId = tblJob.Status,
                 Status = status.UcjsCode,
@@ -945,6 +960,17 @@ public class JobRepository : IJobRepository
                     Latitude = j.DeliveryLatitude,
                     Longitude = j.DeliveryLongitude,
                 },
+                From = j.SuburbFrom,
+                FromSuburbId = j.FromSuburbId,
+                FromSuburbName = j.FromSuburbName,
+                FromPostCode = j.FromPostCode,
+                FromAddress = j.UcjbFromAddr,
+                To = j.SuburbTo,
+                ToSuburbId = j.ToSuburbId,
+                ToSuburbName = j.ToSuburbName,
+                ToPostCode = j.ToPostCode,
+                ToAddress = j.UcjbToAddr,
+                ToCity = j.ToCity,
                 Courier = j.CourierCode,
                 Remain = j.RemainTime,
                 StatusId = j.UcjbStatus,
@@ -1131,7 +1157,6 @@ public class JobRepository : IJobRepository
             foreach (var w in filter)
             {
                 if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " OR ";
-
                 whereToUse += $" ({w.WhereCondition}) ";
             }
 
@@ -1204,12 +1229,13 @@ public class JobRepository : IJobRepository
         var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql: s).ToListAsync();
         var pallets = await _context.TucJobItems.ToListAsync();
 
-
         var list = (from j in jobs
+            let jUcjbTime = j.UcjbTime
+            where jUcjbTime != null
             select new JobViewModel
             {
                 Id = j.UcjbId,
-                Time = j.UcjbTime,
+                Time = jUcjbTime,
                 Direct = j.Direct,
                 Van = j.UcjbVan,
                 VanOk = j.VanOk,
@@ -1265,6 +1291,17 @@ public class JobRepository : IJobRepository
                     Latitude = j.DeliveryLatitude,
                     Longitude = j.DeliveryLongitude,
                 },
+                From = j.SuburbFrom,
+                FromSuburbId = j.FromSuburbId,
+                FromSuburbName = j.FromSuburbName,
+                FromPostCode = j.FromPostCode,
+                FromAddress = j.UcjbFromAddr,
+                To = j.SuburbTo,
+                ToSuburbId = j.ToSuburbId,
+                ToSuburbName = j.ToSuburbName,
+                ToPostCode = j.ToPostCode,
+                ToAddress = j.UcjbToAddr,
+                ToCity = j.ToCity,
                 Courier = j.CourierCode,
                 Remain = j.RemainTime,
                 StatusId = j.UcjbStatus,
@@ -1290,7 +1327,7 @@ public class JobRepository : IJobRepository
                 Charge = $"{j.UcjbAmount:C}",
                 Booked =
                     DateTime.Parse(s: j.UcjbDate.ToString(format: "yyyy-MM-dd") + " " +
-                                      j.UcjbTime.Value.ToString(format: "HH:mm:ss")),
+                                      jUcjbTime.Value.ToString(format: "HH:mm:ss")),
                 Date = j.UcjbDate.ToString(format: "dd/MM/yyyy"),
                 DispatchTime = j.UcjbDispTime,
                 PuTime = j.Putime,
@@ -1373,7 +1410,7 @@ public class JobRepository : IJobRepository
 
         var channelItems = channel?.Split(separator: ',');
 
-        if (channelItems != null && channelItems.Length == 3)
+        if (channelItems is { Length: 3 })
         {
             channel = "All";
         }
