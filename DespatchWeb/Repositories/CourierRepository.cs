@@ -145,14 +145,58 @@ public class CourierRepository : ICourierRepository
         return currentLocation;
     }
 
-    public async Task<ClearListViewModel> ClearLists()
+    public async Task<int> ClearListTotalRemainingAsync(string area)
     {
-        var activeCouriers = new List<ActiveCouriersViewModel>();
-        _context.LoadStoredProc(storedProcName: "DES_qryCourierCombo_Active")
-            .ExecuteStoredProc(handleResults: handle =>
-            {
-                activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
-            });
+        var filter =
+            _context.TblDespatchViews.FirstOrDefault(predicate: v =>
+                (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
+
+        if (string.IsNullOrEmpty(value: filter))
+            return 0;
+
+        filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
+        var query =
+            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
+        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql: query).ToListAsync();
+        return jobs.Count;
+    }
+
+    public async Task<ClearListEnvelopeViewModel> ClearListEnvelopeAsync(int id)
+    {
+        var result =
+            await _context.Procedures.MAP_stpClearListArea_EnvelopeAsync(ClearListAreaID: id, IncludeCouriers: false);
+
+        return result == null
+            ? _mapper.Map<ClearListEnvelopeViewModel>(result.First())
+            : new ClearListEnvelopeViewModel();
+    }
+
+    public async Task<ClearListViewModel> ClearLists(int despatchViewId)
+    {
+        var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+
+        var clearLists = await _context.TblDespatchViews
+            .Where(dv => dv.DespatchViewId == despatchViewId)
+            .SelectMany(dv => dv.DespatchViewZoneGroups)
+            .Select(dvzg => dvzg.ZoneGroup)
+            .SelectMany(zg => zg.TblClearListZoneGroups)
+            .Select(clzg => clzg.ClearListArea)
+            .ToListAsync();
+
+        var viewModel = new ClearListViewModel();
+        foreach (var area in clearLists.Select(clear => new AreaClearList
+                 {
+                     Id = clear.ClearListAreaId,
+                     Name = clear.Name,
+                     PercentHeight = 33
+                 }).Select(area => BuildClearListViewModel(activeCouriers, area.Id, area.PercentHeight)))
+        {
+            area.TotalRemaining = await ClearListTotalRemainingAsync(area.Name.ToLower());
+
+            viewModel.Areas.Add(area);
+        }
+
+
         var data = new ClearListViewModel
         {
             Central = BuildClearListViewModel(activeCouriers: activeCouriers, clearListId: 1, percentHeight: 70),
@@ -192,32 +236,6 @@ public class CourierRepository : ICourierRepository
         return data;
     }
 
-    public async Task<int> ClearListTotalRemainingAsync(string area)
-    {
-        var filter =
-            _context.TblDespatchViews.FirstOrDefault(predicate: v =>
-                (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
-
-        if (string.IsNullOrEmpty(value: filter))
-            return 0;
-
-        filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
-        var query =
-            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql: query).ToListAsync();
-        return jobs.Count;
-    }
-
-    public async Task<ClearListEnvelopeViewModel> ClearListEnvelopeAsync(int id)
-    {
-        var result =
-            await _context.Procedures.MAP_stpClearListArea_EnvelopeAsync(ClearListAreaID: id, IncludeCouriers: false);
-
-        return result == null
-            ? _mapper.Map<ClearListEnvelopeViewModel>(result.First())
-            : new ClearListEnvelopeViewModel();
-    }
-
 
     private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers,
         int clearListId, int percentHeight)
@@ -233,10 +251,10 @@ public class CourierRepository : ICourierRepository
         var acl = new AreaClearList
         {
             PercentHeight = percentHeight,
-            Top = result.Where(predicate: c => c.DisplayOrder == 1).Select(selector: x => new ClearListSection()
+            Top = result.Where(predicate: c => c.DisplayOrder == 1).Select(selector: x => new ClearListSection
             {
                 CourierNumber = x.CourierCode,
-                CourierData = new CourierData()
+                CourierData = new CourierData
                 {
                     Courier = activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Code + " " +
                               activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Name,
@@ -244,19 +262,19 @@ public class CourierRepository : ICourierRepository
                     Pu = "Central 1",
                     Del = "Shallow Shore 3 | Deep Shore 2",
                     Lrm = "36 Min",
-                    Eta2lrm = "25 Min",
-                    CourierID = x.CourierID
+                    Eta2Lrm = "25 Min",
+                    CourierId = x.CourierID
                 },
-                Destinations = x.Deliver.Split(separator: ",").Select(selector: d => new Destination()
+                Destinations = x.Deliver.Split(separator: ",").Select(selector: d => new Destination
                 {
                     Id = 1,
                     Label = d.Trim()
                 }).Where(predicate: y => !string.IsNullOrWhiteSpace(value: y.Label)).ToList()
             }).ToList(),
-            Middle = result.Where(predicate: c => c.DisplayOrder == 3).Select(selector: x => new ClearListSection()
+            Middle = result.Where(predicate: c => c.DisplayOrder == 3).Select(selector: x => new ClearListSection
             {
                 CourierNumber = x.CourierCode,
-                CourierData = new CourierData()
+                CourierData = new CourierData
                 {
                     Courier = activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Code + " " +
                               activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Name,
@@ -264,19 +282,19 @@ public class CourierRepository : ICourierRepository
                     Pu = "Central 1",
                     Del = "Shallow Shore 3 | Deep Shore 2",
                     Lrm = "36 Min",
-                    Eta2lrm = "25 Min",
-                    CourierID = x.CourierID
+                    Eta2Lrm = "25 Min",
+                    CourierId = x.CourierID
                 },
-                Destinations = x.Deliver.Split(separator: ",").Select(selector: d => new Destination()
+                Destinations = x.Deliver.Split(separator: ",").Select(selector: d => new Destination
                 {
                     Id = 1,
                     Label = d.Trim()
                 }).Where(predicate: y => !string.IsNullOrWhiteSpace(value: y.Label)).ToList()
             }).ToList(),
-            Bottom = result.Where(predicate: c => c.DisplayOrder == 5).Select(selector: x => new ClearListSection()
+            Bottom = result.Where(predicate: c => c.DisplayOrder == 5).Select(selector: x => new ClearListSection
             {
                 CourierNumber = x.CourierCode,
-                CourierData = new CourierData()
+                CourierData = new CourierData
                 {
                     Courier = activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Code + " " +
                               activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Name,
@@ -284,10 +302,10 @@ public class CourierRepository : ICourierRepository
                     Pu = "Central 1",
                     Del = "Shallow Shore 3 | Deep Shore 2",
                     Lrm = "36 Min",
-                    Eta2lrm = "25 Min",
-                    CourierID = x.CourierID
+                    Eta2Lrm = "25 Min",
+                    CourierId = x.CourierID
                 },
-                Destinations = x.Deliver.Split(separator: ",").Select(selector: d => new Destination()
+                Destinations = x.Deliver.Split(separator: ",").Select(selector: d => new Destination
                 {
                     Id = 1,
                     Label = d.Trim()
