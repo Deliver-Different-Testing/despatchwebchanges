@@ -24,9 +24,16 @@
                              context-menu="detailAddressMenu" data-field="fromAddress"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.updateGPS($event, jdSvc.currentJob, 'fromAddress')">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">From Address:</label>
-                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
+                                 ng-if="!jdSvc.isUsCustomer">
+                                {{jdSvc.currentJob.fromAddress}}
+                            </div>
+
+                            <div class="value"
+                                 ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{jdSvc.currentJob.pickupAddress.fullAddress}}
                             </div>
+
                         </div>
                         <div class="field" data-field="fromSuburb" ng-if="!jdSvc.isUsCustomer">
                             <label class="disabled">From Suburb:</label>
@@ -34,6 +41,15 @@
                                 {{jdSvc.currentJob.fromPostCode}}
                             </div>
                         </div>
+
+                        <div class="field" data-field="fromCity">
+                            <label class="disabled">From City:</label>
+                            <div class="disabled value" ng-if="!jdSvc.isUsCustomer">{{jdSvc.currentJob.fromCity}}</div>
+                            <div class="disabled value" ng-if="jdSvc.isUsCustomer">
+                                {{jdSvc.currentJob.pickupAddress.AddressLine5}}
+                            </div>
+                        </div>
+
 
                         <div class="field"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.editFromJobContact($event, jdSvc.currentJob)">
@@ -62,7 +78,13 @@
                              context-menu="detailAddressMenu" data-field="toAddress"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.updateGPS($event, jdSvc.currentJob,'toAddress')">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">To Address:</label>
-                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
+                                 ng-if="!jdSvc.isUsCustomer">
+                                {{jdSvc.currentJob.toAddress}}
+                            </div>
+
+                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
+                                 ng-if="jdSvc.isUsCustomer">
                                 {{jdSvc.currentJob.deliveryAddress.fullAddress}}
                             </div>
                         </div>
@@ -75,8 +97,12 @@
                         </div>
                         <div class="field" data-field="toCity">
                             <label class="disabled">To City:</label>
-                            <div class="disabled value">{{jdSvc.currentJob.toCity}}</div>
+                            <div class="disabled value" ng-if="!jdSvc.isUsCustomer">{{jdSvc.currentJob.toCity}}</div>
+                            <div class="disabled value" ng-if="jdSvc.isUsCustomer">
+                                {{jdSvc.currentJob.deliveryAddress.AddressLine5}}
+                            </div>
                         </div>
+
                         <div class="field contact"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.editToJobContact($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">To Contact</label>
@@ -121,7 +147,7 @@
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''" ng-disabled="true">Booked
                                 by Contact</label>&nbsp; <i class="material-symbols-outlined job-table-icon"
                                                             ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
-                                title="Show Client Contact List"
+                                                            title="Show Client Contact List"
                                                             ng-click="!jdSvc.currentJob.locked && jdSvc.getClientContactDetail($event, jdSvc.currentJob)"
                                                             ng-disabled="jdSvc.currentJob.locked">info</i>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
@@ -468,7 +494,8 @@
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
                                    ng-if="jdSvc.currentJob.ratedManually">Charge
                                 (Manually Rated)</label>
-                            <i class="material-symbols-outlined job-table-icon" ng-click="jdSvc.displayPriceBreakdown($event, jdSvc.currentJob)"
+                            <i class="material-symbols-outlined job-table-icon"
+                               ng-click="jdSvc.displayPriceBreakdown($event, jdSvc.currentJob)"
                                ng-disabled="jdSvc.currentJob.locked"
                                title="Click for Price Breakdown">info</i>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
@@ -655,9 +682,9 @@
             <div style="display: flex; justify-content: space-between;">
                 <label>Pallet Info</label>
                 <md-button aria-label="new pallet"
-                        class="md-fab md-mini md-raised"
-                        ng-click="jdSvc.newPallet($event, jdSvc.currentJob)"
-                        ng-disabled="jdSvc.currentJob.locked">
+                           class="md-fab md-mini md-raised"
+                           ng-click="jdSvc.newPallet($event, jdSvc.currentJob)"
+                           ng-disabled="jdSvc.currentJob.locked">
                     <md-icon md-font-set="material-symbols-outlined">box_add</md-icon>
                     <md-tooltip md-direction="bottom">Add Pallet</md-tooltip>
                 </md-button>

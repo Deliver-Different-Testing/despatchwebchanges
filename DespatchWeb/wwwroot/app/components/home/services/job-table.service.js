@@ -51,4 +51,5 @@ class JobTableService {
     }
 }
 
-angular.module('uDispatch').service('JobTableService', ['$mdEditDialog', ($mdEditDialog) => new JobTableService($mdEditDialog)]);
+angular.module('uDispatch').service('JobTableService',
+    ['$mdEditDialog', ($mdEditDialog) => new JobTableService($mdEditDialog)]);
