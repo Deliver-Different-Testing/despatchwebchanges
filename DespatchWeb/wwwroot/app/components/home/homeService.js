@@ -8,6 +8,14 @@ class DispatchData {
     }
 
     /**
+     * @param {number} userId
+     */
+    async getDespatchViews(userId) {
+        const response = await this.$http.get('clearListZones/GetDespatchViews?userid=' + userId);
+        return response.data;
+    }
+
+    /**
      * @param {number} jobId
      * @param {string} note
      * @param {string} despatcherName

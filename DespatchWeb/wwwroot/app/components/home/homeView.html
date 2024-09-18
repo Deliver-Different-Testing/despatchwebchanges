@@ -24,50 +24,16 @@
             </button>
         </div>
 
-        <div aria-label="Basic example" class="btn-group" id="area-group" ng-if="isInternal" role="group">
-            <button class="btn city btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'city'})"
-                    type="button">
-                City
-            </button>
-            <button class="btn truck btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'truck'})"
-                    type="button">
-                Truck
-            </button>
-            <button class="btn main1 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main1'})"
-                    type="button">
-                Main1
-            </button>
-            <button class="btn main2 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main2'})"
-                    type="button">
-                Main2
-            </button>
-            <button class="btn central btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'central'})"
-                    type="button">Central
-            </button>
-            <button class="btn shore btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'shore'})"
-                    type="button">
-                Shore
-            </button>
-            <button class="btn west btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'west'})"
-                    type="button">
-                West
-            </button>
-            <button class="btn remoteouter btn-sm btn-secondary"
-                    ng-click="setFiltersFromTopBar({'area':'remote outer'})"
-                    type="button">Remote Outer
-            </button>
-            <button class="btn remotecity btn-sm btn-secondary"
-                    ng-click="setFiltersFromTopBar({'area':'remote city'})"
-                    type="button">Remote City
-            </button>
-            <button class="btn remotecentral btn-sm btn-secondary"
-                    ng-click="setFiltersFromTopBar({'area':'remote central'})"
-                    type="button">Remote Central
-            </button>
-            <button class="btn regional btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'regional'})"
-                    type="button">Regional
-            </button>
-
+        <div ng-if="isInternal">
+            <md-progress-circular md-mode="indeterminate" ng-if="!areas"></md-progress-circular>
+            <md-input-container ng-if="areas">
+                <label>Select Areas</label>
+                <md-select multiple ng-change="updateFilters()" ng-model="selectedAreas">
+                    <md-option ng-repeat="(id, name) in areas" ng-value="id">
+                        {{name}}
+                    </md-option>
+                </md-select>
+            </md-input-container>
         </div>
 
         <div class="topbar-NavButtons" role="navigation">

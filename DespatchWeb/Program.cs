@@ -44,6 +44,7 @@ builder.Services.Configure<KestrelServerOptions>(options => { options.Limits.Max
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IClearListZonesRepository, ClearListZonesRepository>();
 
 
 // Automapper

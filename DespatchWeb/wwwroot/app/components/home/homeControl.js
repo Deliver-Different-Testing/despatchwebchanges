@@ -18,6 +18,9 @@ angular.module("uDispatch")
         $scope.isCheckingAttachments = false
         $scope.hasAttachedFile = false;
 
+        $scope.areas = [];
+        $scope.selectedAreas = [];
+
         const cleanupFunctions = [];
         const safeOn = (eventName, selector, handler) => {
             $document.on(eventName, selector, handler);
@@ -42,10 +45,17 @@ angular.module("uDispatch")
         };
         $scope.$on('$destroy', cleanup);
 
-        $scope.greetUser = () => {
-            return greetingService.greetUser(FirstName);
-        }
+        // Get Dispatch Views
+        DispatchData.getDespatchViews.then(data => {
+            $scope.areas = data;
+        });
 
+        $scope.updateFilters = () => {
+            const areaFilter = $scope.selectedAreas.join(',');
+            $scope.setFiltersFromTopBar({'area': areaFilter});
+        };
+
+        $scope.greetUser = () => greetingService.greetUser(FirstName);
 
         $scope.onReorder = order => {
             // Implement reordering logic
