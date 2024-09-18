@@ -113,7 +113,7 @@ public class JobRepository : IJobRepository
                 CourierData = new CourierData
                 {
                     Courier = courier.Code + " " + courier.FirstName + " " + courier.Surname,
-                    CourierID = courier.CourierId
+                    CourierId = courier.CourierId
                 },
                 DgClass = jobBooking.Dgclass,
                 DgDocumentation = jobBooking.Dgdocument,
@@ -303,7 +303,7 @@ public class JobRepository : IJobRepository
                 CourierData = new CourierData
                 {
                     Courier = courier.Code + " " + courier.FirstName + " " + courier.Surname,
-                    CourierID = courier.CourierId,
+                    CourierId = courier.CourierId,
                     CourierName = courier.FirstName + " " + courier.Surname,
                     CourierMobile = courier.Mobile
                 },
@@ -444,7 +444,7 @@ public class JobRepository : IJobRepository
                 CourierData = new CourierData
                 {
                     Courier = co.Code + " " + co.FirstName + " " + co.Surname,
-                    CourierID = co.CourierId
+                    CourierId = co.CourierId
                 },
 
                 DeliverToContact = j.DeliverToContact,
@@ -1023,7 +1023,7 @@ public class JobRepository : IJobRepository
                 CourierData = new CourierData
                 {
                     Courier = string.IsNullOrEmpty(value: j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
-                    CourierID = j.UcjbCourierId
+                    CourierId = j.UcjbCourierId
                 },
                 AllowDispatch = j.AllowDespatch,
                 AllowSplit = j.AllowSplit,
@@ -1353,7 +1353,7 @@ public class JobRepository : IJobRepository
                 CourierData = new CourierData
                 {
                     Courier = string.IsNullOrEmpty(value: j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
-                    CourierID = j.UcjbCourierId
+                    CourierId = j.UcjbCourierId
                 },
                 AllowDispatch = j.AllowDespatch,
                 AllowSplit = j.AllowSplit,
