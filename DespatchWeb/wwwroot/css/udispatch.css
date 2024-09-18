@@ -39,6 +39,26 @@ md-dialog {
   padding: 8px;
   height: 48px;
 }
+
+.vertical-divider {
+  width: 1px;
+  height: 32px;
+  /* Adjust height as needed, typically half of the toolbar height */
+  background-color: rgba(0, 0, 0, 0.12);
+  /* Light gray color, adjust alpha for desired intensity */
+  margin: 0 15px;
+  /* Adjust horizontal spacing as needed */
+  align-self: center;
+  /* Ensures vertical centering within the toolbar */
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .vertical-divider {
+    margin: 0 16px;
+    /* Reduced spacing on smaller screens */
+  }
+}
 /* Autocomplete Animations */
 md-autocomplete.ng-enter {
   animation: fadeIn 1s;

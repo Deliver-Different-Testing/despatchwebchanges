@@ -1,5 +1,5 @@
 angular.module("uDispatch")
-    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", ($document, $filter, greetingService, jdSvc, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService) => {
+    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "$mdSidenav", ($document, $filter, greetingService, jdSvc, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, $mdSidenav) => {
         $scope.isInternal = (ClientInternal === "True");
         $scope.name = "Home";
         $scope.jdSvc = jdSvc;
@@ -18,8 +18,52 @@ angular.module("uDispatch")
         $scope.isCheckingAttachments = false
         $scope.hasAttachedFile = false;
 
+        // new appbar selects
         $scope.areas = [];
         $scope.selectedAreas = [];
+
+        DispatchData.getDespatchViews(ContactID).then(data => {
+            $scope.areas = data;
+
+            // If there are areas, select the first one by default
+            if ($scope.areas.length > 0) {
+                const firstArea = $scope.areas[0];
+                $scope.selectedAreas[firstArea.id] = true;
+            }
+
+            // Initialize the rest of the areas as unselected
+            $scope.areas.forEach(area => {
+                if (!$scope.selectedAreas.hasOwnProperty(area.id)) {
+                    $scope.selectedAreas[area.id] = false;
+                }
+            });
+
+            // Optionally, trigger any function that should run when selections change
+            if (typeof $scope.updateFilters === 'function') {
+                $scope.updateFilters().then(_ => console.log('Completed!'));
+            }
+        }).catch(error => {
+            console.error('Error fetching dispatch views:', error);
+        });
+
+        $scope.filters = {
+            new: false, nda: true, active: false, done: false, all: false
+        };
+
+        $scope.updateFilters = async () => {
+            // Handle status filters
+            const activeStatuses = Object.keys($scope.filters).filter(key => $scope.filters[key]);
+            let statusFilter = activeStatuses.length > 0 ? activeStatuses.join(',') : 'all';
+
+            // Handle area filters
+            const activeAreas = Object.keys($scope.selectedAreas).filter(key => $scope.selectedAreas[key]);
+            const areaFilter = activeAreas.join(',');
+
+            // Combine filters and call setFiltersFromTopBar
+            await $scope.setFiltersFromTopBar({
+                'status': statusFilter, 'area': areaFilter
+            });
+        };
 
         const cleanupFunctions = [];
         const safeOn = (eventName, selector, handler) => {
@@ -43,16 +87,11 @@ angular.module("uDispatch")
             $scope.currentJob = null;
             $scope.currentCourier = null;
         };
+
         $scope.$on('$destroy', cleanup);
 
-        // Get Dispatch Views
-        DispatchData.getDespatchViews.then(data => {
-            $scope.areas = data;
-        });
-
-        $scope.updateFilters = () => {
-            const areaFilter = $scope.selectedAreas.join(',');
-            $scope.setFiltersFromTopBar({'area': areaFilter});
+        $scope.toggleLeft = () => {
+            $mdSidenav('left').toggle();
         };
 
         $scope.greetUser = () => greetingService.greetUser(FirstName);

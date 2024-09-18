@@ -757,8 +757,7 @@
         </div>
 
     </div>
-    </div>
-</md-content>
+</md-content>  <!-- Close the md-content here -->
 
 <div class="container-fluid" id="jobDetail" ng-if="jdSvc.currentJob && jdSvc.currentJob.preBook"
      style="padding:0">

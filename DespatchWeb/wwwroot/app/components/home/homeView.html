@@ -1,75 +1,75 @@
 <div>
-    <div class="top-bar">
-        <img class="logo" src="/images/menu-urgent.png"/>
+    <div ng-controller="HomeControl">
+        <md-toolbar class="md-hue-2">
+            <div class="md-toolbar-tools">
+                <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleLeft()">
+                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
+                </md-button>
 
-        <div class="btn-group" id="status-group" role="group">
-            <button class="btn new btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'new'})"
-                    type="button">
-                New
-            </button>
-            <button class="btn nda btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'nda'})"
-                    type="button">
-                NDA
-            </button>
-            <button class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})"
-                    type="button">Active
-            </button>
-            <button class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})"
-                    type="button">
-                Done
-            </button>
-            <button class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})"
-                    type="button">
-                All
-            </button>
-        </div>
+                <img alt="logo" class="logo" src="/images/menu-urgent.png"/>
 
-        <div ng-if="isInternal">
-            <md-progress-circular md-mode="indeterminate" ng-if="!areas"></md-progress-circular>
-            <md-input-container ng-if="areas">
-                <label>Select Areas</label>
-                <md-select multiple ng-change="updateFilters()" ng-model="selectedAreas">
-                    <md-option ng-repeat="(id, name) in areas" ng-value="id">
-                        {{name}}
-                    </md-option>
-                </md-select>
-            </md-input-container>
-        </div>
+                <span flex></span>
 
-        <div class="topbar-NavButtons" role="navigation">
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
-            <a class="btn btn-sm topbar-button" href="#/NW" target="_blank" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</a>
-            <a class="btn btn-sm topbar-button" href="#/CS" target="_blank" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</a>
-            <a class="btn btn-sm topbar-button" href="#/prebooks" target="_blank" ui-sref="prebooks"
-               ui-sref-active="topbar-active">PreBooks</a>
+                <md-menu>
+                    <md-button aria-label="Open status menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
+                    </md-button>
+                    <md-menu-content>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.new">New</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.nda">NDA</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.active">Active</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.done">Done</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.all">All</md-checkbox>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
 
-        </div>
+                <md-menu ng-if="isInternal">
+                    <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">location_on</md-icon>
+                        <md-progress-circular md-diameter="18" md-mode="indeterminate"
+                                              ng-if="!areas"></md-progress-circular>
+                    </md-button>
+                    <md-menu-content>
+                        <md-menu-item ng-if="areas && areas.length === 0">
+                            <p>No areas available.</p>
+                        </md-menu-item>
+                        <md-menu-item ng-if="areas && areas.length > 0" ng-repeat="area in areas">
+                            <md-checkbox ng-change="updateFilters()" ng-model="selectedAreas[area.id]">{{area.name}}
+                            </md-checkbox>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
 
-        <div class="btn-group box-search chat" ng-if="showChat">
-            <i class="material-symbols-outlined small-icon" ng-click="openChat()">search</i>
-            <i class="material-symbols-outlined small-icon" ng-click="chatBox = ''" title="Clear"></i>
-            <input ng-model="chatBox" ng-model-options="{debounce: 300}" placeholder="Chat to..." type="text">
-        </div>
+                <md-input-container class="md-block" ng-if="showChat">
+                    <label>Chat to...</label>
+                    <input ng-model="chatBox" ng-model-options="{debounce: 300}" type="text">
+                </md-input-container>
 
-        <div class="topbar-buttons">
-            <span ng-if="!isInternal" style="color:white;">Clients:</span>
-            <div class="multi-element btn-sm topbar-active" disabled="false"
-                 extra-settings="pickService.settings"
-                 ng-dropdown-multiselect=""
-                 ng-if="!isInternal" option="pickClients" selected-model="pickService.clients"
-                 style="display: inline-block; margin-top: -5px; padding-left: 0; padding-right: 50px;">
-            </div>
-
-            <div style="display: flex; align-items: center;">
-                <div class="btn topbar-button" style="color: white;">
-                    <span>{{greetUser()}}</span>
+                <div ng-if="!isInternal">
+                    <span>Clients:</span>
+                    <md-select multiple ng-model="pickService.clients" placeholder="Select Clients">
+                        <md-option ng-repeat="client in pickClients" ng-value="client.id">{{client.name}}</md-option>
+                    </md-select>
                 </div>
-                <md-menu md-position-mode="target-right target">
-                    <md-button aria-label="Open layout options menu"
-                               class="md-fab md-mini md-primary"
+
+                <md-divider class="vertical-divider"></md-divider>
+
+                <span>{{greetUser()}}</span>
+
+                <md-menu>
+                    <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
-                        <md-tooltip md-direction="bottom">Layouts</md-tooltip>
                     </md-button>
                     <md-menu-content width="2">
                         <md-menu-item>
@@ -78,11 +78,10 @@
                                 Save Layout
                             </md-button>
                         </md-menu-item>
-                        <md-menu-divider></md-menu-divider>
+                        <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
-                                <md-icon md-font-set="material-symbols-outlined"
-                                         ng-click="deleteLayout($index)">
+                                <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($index)">
                                     delete
                                 </md-icon>
                                 <span ng-click="loadLayout($index)"
@@ -92,8 +91,37 @@
                     </md-menu-content>
                 </md-menu>
             </div>
-        </div>
+        </md-toolbar>
+
+        <md-sidenav class="md-sidenav-left" md-component-id="left">
+            <md-toolbar>
+                <h1 class="md-toolbar-tools">
+                    Despatch
+                </h1>
+            </md-toolbar>
+            <md-content>
+                <md-list>
+                    <md-list-item ng-click="null" ui-sref="home" ui-sref-active="md-active">
+                        <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
+                        <p>Dispatch</p>
+                    </md-list-item>
+                    <md-list-item ng-click="null" ui-sref="nw" ui-sref-active="md-active">
+                        <md-icon md-font-set="material-symbols-outlined">public</md-icon>
+                        <p>Nationwide</p>
+                    </md-list-item>
+                    <md-list-item ng-click="null" ui-sref="cs" ui-sref-active="md-active">
+                        <md-icon md-font-set="material-symbols-outlined">search</md-icon>
+                        <p>POD/Search</p>
+                    </md-list-item>
+                    <md-list-item ng-click="null" ui-sref="prebooks" ui-sref-active="md-active">
+                        <md-icon md-font-set="material-symbols-outlined">book</md-icon>
+                        <p>PreBooks</p>
+                    </md-list-item>
+                </md-list>
+            </md-content>
+        </md-sidenav>
     </div>
+
 
     <div class="">
         <div class="columns">
@@ -346,7 +374,8 @@
                                 </div>
 
                                 <div class="box-handle md-icon-button">
-                                    <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
+                                    <md-icon class="md-drag-button" md-font-set="material-symbols-outlined"
+                                             md-font-set="material-symbols-outlined">
                                         drag_indicator
                                     </md-icon>
                                 </div>
