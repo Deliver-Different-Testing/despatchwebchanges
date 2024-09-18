@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
@@ -11,21 +11,24 @@ namespace DespatchWeb.Repositories;
 public class ClearListZonesRepository : IClearListZonesRepository
 {
     private readonly DespatchContext _context;
-    private readonly IMapper _mapper;
 
-    public ClearListZonesRepository(DespatchContext context, IMapper mapper)
+    public ClearListZonesRepository(DespatchContext context)
     {
         _context = context;
-        _mapper = mapper;
     }
 
     // Get the views available to populate the top-bar
-    public async Task<Dictionary<int, string>> GetDispatchViewsAsync(int userId)
+    public async Task<List<SelectItem>> GetDispatchViewsAsync(int userId)
     {
         var dispatchViews = await _context.UserDespatchViewPreferences
             .Where(udvp => udvp.UserId == userId)
             .Select(udvp => udvp.DespatchView)
-            .ToDictionaryAsync(dv => dv.DespatchViewId, dv => dv.Name);
+            .Select(dv => new SelectItem
+            {
+                Id = dv.DespatchViewId,
+                Name = dv.Name
+            })
+            .ToListAsync();
 
         return dispatchViews;
     }

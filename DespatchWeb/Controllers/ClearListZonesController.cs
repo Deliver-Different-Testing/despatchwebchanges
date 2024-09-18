@@ -1,14 +1,14 @@
 using System.Threading.Tasks;
-using DespatchWeb.Repositories;
+using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Controllers;
 
 public class ClearListZonesController : Controller
 {
-    private readonly ClearListZonesRepository _clearListZonesRepository;
+    private readonly IClearListZonesRepository _clearListZonesRepository;
 
-    public ClearListZonesController(ClearListZonesRepository clearListZonesRepository)
+    public ClearListZonesController(IClearListZonesRepository clearListZonesRepository)
     {
         _clearListZonesRepository = clearListZonesRepository;
     }
