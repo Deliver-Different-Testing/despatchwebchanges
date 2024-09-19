@@ -1,53 +1,58 @@
 angular.module("uDispatch")
     .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "$mdSidenav", ($document, $filter, greetingService, jdSvc, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, $mdSidenav) => {
-        $scope.isInternal = (ClientInternal === "True");
-        $scope.name = "Home";
-        $scope.jdSvc = jdSvc;
+        $scope.initializeVariables = () => {
+            $scope.isInternal = (ClientInternal === "True");
+            $scope.name = "Home";
+            $scope.jdSvc = jdSvc;
 
-        // Job Table
-        $scope.selected = [];
-        $scope.jobList = [];
-        $scope.query = JobTableService.createQuery();
+            // Job Table
+            $scope.jobList = [];
+            $scope.query = JobTableService.createQuery();
+            $scope.selected = [];
 
-        $scope.jobTableService = JobTableService;
+            $scope.jobTableService = JobTableService;
 
-        $scope.isUsCustomer = APP_CONFIG.US_Customer;
-        $scope.courierSearchText = "";
-        $scope.jobDetailFabIsOpen = false;
-        $scope.courierListFabIsOpen = false;
-        $scope.isCheckingAttachments = false
-        $scope.hasAttachedFile = false;
+            $scope.isUsCustomer = APP_CONFIG.US_Customer;
+            $scope.courierSearchText = "";
+            $scope.jobDetailFabIsOpen = false;
+            $scope.courierListFabIsOpen = false;
+            $scope.isCheckingAttachments = false
+            $scope.hasAttachedFile = false;
 
-        // new appbar selects
-        $scope.areas = [];
-        $scope.selectedAreas = [];
+            // new appbar selects
+            $scope.areas = [];
+            $scope.selectedAreas = [];
 
-        DispatchData.getDespatchViews(ContactID).then(data => {
-            $scope.areas = data;
+            $scope.filters = {
+                new: false, nda: true, active: false, done: false, all: false
+            };
+        };
 
-            // If there are areas, select the first one by default
+
+        // Load DespatchViews and initialize areas
+        $scope.loadDespatchViews = async () => {
+            try {
+                $scope.areas = await DispatchData.getDespatchViews(ContactID);
+                $scope.initializeAreas();
+                await $scope.updateFilters();
+                await $scope.getData();
+            } catch (error) {
+                console.error('Error fetching dispatch views:', error);
+            }
+        };
+
+        // Initialize areas
+        $scope.initializeAreas = () => {
+            $scope.selectedAreas = [];
             if ($scope.areas.length > 0) {
                 const firstArea = $scope.areas[0];
                 $scope.selectedAreas[firstArea.id] = true;
             }
-
-            // Initialize the rest of the areas as unselected
             $scope.areas.forEach(area => {
                 if (!$scope.selectedAreas.hasOwnProperty(area.id)) {
                     $scope.selectedAreas[area.id] = false;
                 }
             });
-
-            // Optionally, trigger any function that should run when selections change
-            if (typeof $scope.updateFilters === 'function') {
-                $scope.updateFilters().then(_ => console.log('Completed!'));
-            }
-        }).catch(error => {
-            console.error('Error fetching dispatch views:', error);
-        });
-
-        $scope.filters = {
-            new: false, nda: true, active: false, done: false, all: false
         };
 
         $scope.updateFilters = async () => {
@@ -2421,7 +2426,7 @@ angular.module("uDispatch")
             const selectedClients = $scope.pickService.clients.map(a => a.id);
 
             try {
-                const data = await DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal);
+                const data = await DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas);
                 $scope.jobList = data;
                 angular.element("#box-jobsList .loading").fadeOut();
 
@@ -2431,6 +2436,7 @@ angular.module("uDispatch")
                         const unDispatchedData = data.filter(x => x.courierData.courierID === null);
                         displayPickupPoints(unDispatchedData, true, null);
                     }
+
                     await $scope.getAvailableCourierLocation();
                 }, 200);
 
@@ -2560,7 +2566,8 @@ angular.module("uDispatch")
 
                 $scope.getClearListsData = async () => {
                     try {
-                        $scope.clearLists = await DispatchData.getClearLists();
+                        const despatchWebId = $scope.selectedAreas
+                        $scope.clearLists = await DispatchData.getClearLists($scope.selectedAreas);
                         $timeout(() => {
                             angular.element("#clearLists .loading").fadeOut();
                         }, 0);
@@ -2702,8 +2709,6 @@ angular.module("uDispatch")
         if (!$scope.isInternal) {
             $scope.getClientContacts().then(() => console.log('Get Data Complete!'));
         }
-
-        $scope.getData().then(() => console.log('Get Data Complete!'));
 
         const runSupportsUpdate = () => {
             $scope.getSupports().then(() => {
@@ -3029,6 +3034,10 @@ angular.module("uDispatch")
                     }
                 }
             }
+
+            // Init functions
+            $scope.initializeVariables();
+            $scope.loadDespatchViews();
         };
 
 // Call the init function when the controller loads

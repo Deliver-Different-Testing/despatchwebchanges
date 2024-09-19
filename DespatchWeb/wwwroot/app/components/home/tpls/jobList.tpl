@@ -1,6 +1,6 @@
 <div class="table-container">
     <md-table-container>
-        <table class="md-table" md-progress="promise" md-row-select md-table multiple ng-model="selected">
+        <table class="md-table" md-progress="getData" md-row-select md-table multiple ng-model="selected">
             <thead md-head md-on-reorder="ctrl.onReorder" md-order="ctrl.query.order">
             <tr md-row>
                 <th class="md-date-cell" md-column md-order-by="time"><span>T</span></th>

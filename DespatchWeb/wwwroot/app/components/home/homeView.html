@@ -96,24 +96,25 @@
         <md-sidenav class="md-sidenav-left" md-component-id="left">
             <md-toolbar>
                 <h1 class="md-toolbar-tools">
-                    Despatch
+                    <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
+                    <p>Despatch</p>
                 </h1>
             </md-toolbar>
             <md-content>
                 <md-list>
-                    <md-list-item ng-click="null" ui-sref="home" ui-sref-active="md-active">
+                    <md-list-item ui-sref="home" ui-sref-active="md-active">
                         <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
                         <p>Dispatch</p>
                     </md-list-item>
-                    <md-list-item ng-click="null" ui-sref="nw" ui-sref-active="md-active">
+                    <md-list-item ui-sref="nw" ui-sref-active="md-active">
                         <md-icon md-font-set="material-symbols-outlined">public</md-icon>
                         <p>Nationwide</p>
                     </md-list-item>
-                    <md-list-item ng-click="null" ui-sref="cs" ui-sref-active="md-active">
+                    <md-list-item ui-sref="cs" ui-sref-active="md-active">
                         <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                         <p>POD/Search</p>
                     </md-list-item>
-                    <md-list-item ng-click="null" ui-sref="prebooks" ui-sref-active="md-active">
+                    <md-list-item ui-sref="prebooks" ui-sref-active="md-active">
                         <md-icon md-font-set="material-symbols-outlined">book</md-icon>
                         <p>PreBooks</p>
                     </md-list-item>
@@ -583,9 +584,7 @@
                 });
                 angular.element(this).addClass('active');
             }
-
         }
-
     });
 
 
@@ -604,16 +603,6 @@
     });
 
     function sizeHeadings(ele) {
-
-        angular.element("body").find(".box").each(function () {
-            var box = angular.element(this);
-            box.find(".table-headings thead tr th").each(function (index) {
-                var newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
-                angular.element(this).outerWidth(newWidth);
-            });
-            box.find(".table-headings table").width(box.find(".table").width());
-        });
-
         var height = angular.element("#box-clearLists").find(".box-content").height() - 30;
 
         angular.element(".clearLists-list").each(function () {

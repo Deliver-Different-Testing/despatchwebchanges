@@ -352,9 +352,19 @@ class DispatchData {
         return response.data;
     }
 
-    async getClearLists() {
-        const response = await this.$http.get('');
-        return response.data;
+    /**
+     * @param {Object} despatchViewIds
+     */
+    async getClearLists(despatchViewIds) {
+        const query = this._prepareDespatchViewIds(despatchViewIds);
+
+        try {
+            const response = await this.$http.get('courier?' + query);
+            return response.data;
+        } catch (error) {
+            console.error('Error in getClearLists:', error);
+            throw error;
+        }
     }
 
     /**
@@ -402,7 +412,6 @@ class DispatchData {
     async getCourierPosition(code) {
         const response = await this.$http.get('courier/location?code=' + code);
         return response.data;
-
     }
 
     /**
@@ -492,9 +501,7 @@ class DispatchData {
      * @param {string} despatcherName
      * @param {boolean} calculationRequired
      */
-    async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup,
-                   deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId,
-                   jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calculationRequired) {
+    async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId, jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calculationRequired) {
         const url = 'job/LateCall';
         const data = {
             lateType,
@@ -841,9 +848,13 @@ class DispatchData {
      * @param {*|{area: string, asc: string, status: string, order: string}} data
      * @param {*[]|string} selectedClients
      * @param {boolean} internal
+     * @param {Object} despatchViewIds
      */
-    async getJobsFilter(data, selectedClients, internal) {
-        const response = await this.$http.get('job?status=' + data.status + '&area=' + data.area + '&order=' + data.order + '&asc=' + data.asc + '&isInternal=' + internal + '&cid=' + ContactID + '&clientIds=' + selectedClients);
+    async getJobsFilter(data, selectedClients, internal, despatchViewIds) {
+        const query = this._prepareDespatchViewIds(despatchViewIds);
+
+        const response = await this.$http.get('job?status=' + data.status + '&area=' + data.area + '&order=' + data.order + '&asc=' +
+            data.asc + '&isInternal=' + internal + '&cid=' + ContactID + '&clientIds=' + selectedClients + '&' + query);
         return response.data;
     }
 
@@ -854,9 +865,7 @@ class DispatchData {
      */
     async autocompleteAddressSearch(text) {
         const response = await this.$http({
-            url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json',
-            method: 'GET',
-            params: {
+            url: 'https://autocomplete.geocoder.cit.api.here.com/6.2/suggest.json', method: 'GET', params: {
                 query: text,
                 app_id: 'bBPfh2x8Cauun3ygLMAx',
                 app_code: 'yjfwTdkin_R2rGXYTrwWVg',
@@ -919,6 +928,20 @@ class DispatchData {
     async isFilesAttachedToJob(jobId) {
         const response = await this.$http.get(`job/IsFilesAttachedToJob/${jobId}`);
         return await response.data;
+    }
+
+    /**
+     * @param {Object} despatchViewIds
+     * @returns {string}
+     */
+    _prepareDespatchViewIds(despatchViewIds) {
+        // Extract the IDs that are set to true
+        const selectedIds = Object.keys(despatchViewIds).filter(key =>
+            despatchViewIds[key] === true && !isNaN(parseInt(key))
+        );
+
+        // Create the query string
+        return selectedIds.map(id => 'despatchViewIds=' + id).join('&');
     }
 }
 
