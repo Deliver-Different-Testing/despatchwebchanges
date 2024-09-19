@@ -581,7 +581,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
                 await $scope.getClearListEnvelope(id);
             }
 
-            $scope.setFilters({'clearList': area});
+            await $scope.setFilters({'clearList': area});
         } catch (error) {
             console.log('Error in selectClearList:', error);
         }
@@ -847,7 +847,10 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             return $q.reject(error);
         });
 
-    $scope.jobClass = job => {
+    /**
+     * @param {Job} job
+     */
+    $scope.jobClass = (job) => {
         let classToUse = job.direct ? "direct " : "";
         classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTHIRE" || job.speed === "FT" || job.speed === "FTHIRE" || job.speed === "HC" || job.speed === "TC") ? "chilled" : "");
         return classToUse;
@@ -1081,8 +1084,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             await $scope.getData();
             angular.element('#box-map .loading').css('display', '');
             $scope.courier = {gpsCourier: foundCourier.id};
-            $scope.searchCourier();
-
+            await $scope.searchCourier();
         } catch {
             // Cancelled dialog.
         }
@@ -1126,7 +1128,7 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             await $scope.getData();
             angular.element('#box-map .loading').css('display', '');
             $scope.courier = {gpsCourier: foundCourier.id};
-            $scope.searchCourier();
+            await $scope.searchCourier();
         } catch {
             // No action for 'No'
         }
@@ -1595,23 +1597,25 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
         }
     };
 
-    $scope.selectMapCourier = courier => {
+    $scope.selectMapCourier = async courier => {
         angular.element("#box-jobDetail .loading").css('display', 'block');
         angular.element('#box-map .loading').css('display', 'block');
-
         angular.element("#box-currentWork .loading").css('display', 'block');
+
         let foundCourier = $scope.pickCouriers.find(x => x.courierID === courier.courierID);
 
         $scope.currentCourier = {
-            courierID: foundCourier.courierID, courier: foundCourier.label
+            courierID: foundCourier.courierID,
+            courier: foundCourier.label
         };
 
-        DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(data => {
+        try {
+            const data = await DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done");
             angular.element("#box-currentWork .loading").css('display', 'none');
 
             $scope.jobsCurrentList = data;
             if (data.length > 0) {
-                displayRoutePointsOnly(data, false, $scope.mapZoom.display);
+                displayRoutePointsOnly(data, false);
             }
             $scope.activateDrop();
 
@@ -1622,22 +1626,24 @@ angular.module("uDispatch").controller("HomeControl", ['$document', "$filter", '
             $timeout(() => {
                 sizeHeadings();
             }, 2000);
-        });
 
-        $scope.currentWorkSelection = " for Courier " + courier.label;
-        $scope.currentSelection = " for Courier " + courier.label;
+            $scope.currentWorkSelection = " for Courier " + courier.label;
+            $scope.currentSelection = " for Courier " + courier.label;
 
-        $timeout(() => {
-            $document.ready(() => {
-                angular.element("#box-jobDetail .loading").css('display', 'none');
-                angular.element("#box-map .loading").css('display', 'none');
-            });
-        }, 100);
+            $timeout(() => {
+                $document.ready(() => {
+                    angular.element("#box-jobDetail .loading").css('display', 'none');
+                    angular.element("#box-map .loading").css('display', 'none');
+                });
+            }, 100);
 
-        DispatchData.truckCourierStatus(courier.courierID).then(data => {
-            $scope.truckCourierStatus = data;
-        });
+            $scope.truckCourierStatus = await DispatchData.truckCourierStatus(courier.courierID);
+        } catch (error) {
+            console.error('An error occurred:', error);
+            // Handle the error appropriately
+        }
     };
+
     $scope.clearCourierSearch = () => {
         $scope.jobsCurrentList = false;
         $scope.courier.gpsCourier = '';

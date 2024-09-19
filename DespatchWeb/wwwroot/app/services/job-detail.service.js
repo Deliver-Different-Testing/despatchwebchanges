@@ -241,7 +241,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     getClientContactDetail($event, job) {
@@ -287,7 +287,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     displayPriceBreakdown($event, job) {
@@ -342,26 +342,9 @@ class JobDetailService {
                 return showDialog('An error occurred while fetching the price breakdown. Please try again.');
             });
     }
-    /**
-     * @param {Job} job
-     */
-    rateJob(job) {
-        const self = this;
-
-        const pedal = job.fromSuburbID === 1 && job.toSuburbID === 1 || job.fromSuburbID === 112 && job.toSuburbID === 112 || job.fromSuburbID === 480 && job.toSuburbID === 480;
-        if (job.size.id === 4 && (job.speedID === 41 || job.speedID === 42 || job.speedID === 43 || job.speedID === 44 || job.speedID === 46 || job.speedID === 51 || job.speedID === 52 || job.speedID === 124 || job.speedID === 125 || job.speedID === 150 || job.speedID === 151 || job.speedID === 152)) {
-            //Truck Job
-            return self._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit).then(function (itemSummary) {
-                return self._dispatchData.rateTruckJob(job.clientId, job.fromSuburbID, job.toSuburbID, itemSummary.weight, job.size.id, job.speedID, itemSummary.quantity, job.booked, itemSummary.pickUp, itemSummary.dropOff, job.privateRes, itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass, job.truckStartTime || this.moment().format("YYYY-MM-DDThh:mm:ss"), job.truckHours || 2);
-
-            });
-        } else {
-            return self._dispatchData.rateJob(job.clientId, job.fromSuburbID, job.toSuburbID, job.speedID, pedal, job.van, job.return, job.weight, job.size.id, true, job.direct, job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '', job.items, job.booked);
-        }
-    }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
@@ -389,7 +372,7 @@ class JobDetailService {
 
     /**
      * Shows a dialog for editing a date
-     * @param {$event} $event - The triggering event
+     * @param {Object} $event - The triggering event
      * @param {Job} job - The job being edited
      * @param {string} title - The title of the dialog
      * @param {string} fieldName - The name of the field being edited
@@ -428,7 +411,7 @@ class JobDetailService {
 
     /**
      * Opens a dialog to edit the job date
-     * @param {$event} $event - The triggering event
+     * @param {Object} $event - The triggering event
      * @param {Job} job - The job to edit
      * @returns {Promise} A promise that resolves when the edit is complete
      */
@@ -437,7 +420,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
@@ -446,7 +429,7 @@ class JobDetailService {
      */
     showEditTimeDialog($event, job, title, fieldName, time, id = "editForm") {
         return this._$mdDialog.show({
-            controller: EditDateTimeDialogController,
+            controller: 'EditDateTimeDialogController',
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
@@ -462,6 +445,7 @@ class JobDetailService {
                 showDate: false,
                 showTime: true
             },
+            bindToController: true
         }).then(_ => {
             this.selectJobDetail(job.id);
             console.log('Dialog closed!');
@@ -469,7 +453,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editLogTime($event, job) {
@@ -477,7 +461,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editCompletedTime($event, job) {
@@ -485,7 +469,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      * @param {string} title
      * @param {string} fieldName
@@ -518,7 +502,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editFollowUpTime($event, job) {
@@ -527,7 +511,7 @@ class JobDetailService {
 
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      * @param {string} title
      * @param {string} placeholder
@@ -571,7 +555,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editClientCode($event, job) {
@@ -579,7 +563,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editItems($event, job) {
@@ -587,7 +571,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editJobToPhone($event, job) {
@@ -595,7 +579,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} event
+     * @param {Object} event
      * @param {Job} job
      */
     editJobFromPhone(event, job) {
@@ -603,7 +587,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editToJobContact($event, job) {
@@ -611,7 +595,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
 
@@ -620,7 +604,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editFromJobContact($event, job) {
@@ -628,7 +612,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editJobWeight($event, job) {
@@ -636,7 +620,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editAmount($event, job) {
@@ -644,7 +628,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      * @param {boolean} isRefA
      */
@@ -658,7 +642,7 @@ class JobDetailService {
 
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editOurRef($event, job) {
@@ -666,7 +650,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editTrackingMobile($event, job) {
@@ -674,7 +658,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     editTrackingEmail($event, job) {
@@ -902,7 +886,7 @@ class JobDetailService {
 
     /**
      * Updates the GPS coordinates and address for a job
-     * @param {$event} event - The triggering event
+     * @param {Object} event - The triggering event
      * @param {Job} currentJob - The job to update
      * @param {string} field - The field to update ('toAddress' or 'fromAddress')
      * @returns {Promise} A promise that resolves when the update is complete
@@ -1349,7 +1333,7 @@ class JobDetailService {
 
     /**
      * Marks a job as done
-     * @param {$event} $event - The triggering event
+     * @param {Object} $event - The triggering event
      * @param {Job} job - The job to update
      * @returns {Promise} A promise that resolves with the response or rejects with an error
      */
@@ -1375,7 +1359,7 @@ class JobDetailService {
 
     /**
      * Shows a dialog for missing information
-     * @param {$event} $event - The triggering event
+     * @param {Object} $event - The triggering event
      * @param {Job} job - The job being updated
      * @returns {Promise} A promise that resolves when the dialog is closed
      */
@@ -1414,7 +1398,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     trackingMethodClick($event, job) {
@@ -1428,7 +1412,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     leaveClick($event, job) {
@@ -1436,7 +1420,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     undeliverableClick($event, job) {
@@ -1444,7 +1428,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} event
+     * @param {Object} event
      * @param {Job} job
      */
     sizeClick(event, job) {
@@ -1458,7 +1442,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      * @param {[]} data
      * @param {string} fieldName
@@ -1468,7 +1452,8 @@ class JobDetailService {
      * @param {boolean} showCheckbox
      * @param {string} checkboxLabel
      */
-    showSelectDialog($event, job, data, fieldName, title, initialValue = null, id = "editField", showCheckbox = false, checkboxLabel = "") {
+    showSelectDialog($event, job, data, fieldName, title, initialValue = null,
+                     id = "editField", showCheckbox = false, checkboxLabel = "") {
         const options = {
             minimumInputLength: 1, items: data, placeholder: title
         };
@@ -1492,7 +1477,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     dgClassClick($event, job) {
@@ -1507,7 +1492,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     notifyClick($event, job) {
@@ -1515,7 +1500,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} event
+     * @param {Object} event
      * @param {Job} job
      */
     acceptedClick(event, job) {
@@ -1523,7 +1508,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     speedClick($event, job) {
@@ -1531,7 +1516,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     contactClick($event, job) {
@@ -1555,7 +1540,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     jobTypeClick($event, job) {
@@ -1571,7 +1556,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     internalStatusClick($event, job) {
@@ -1579,7 +1564,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      * @param {string} url
      * @param {string} placeholder
@@ -1612,7 +1597,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     clientClick($event, job) {
@@ -1628,7 +1613,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} $event
+     * @param {Object} $event
      * @param {Job} job
      */
     courierClick($event, job) {
@@ -1640,7 +1625,7 @@ class JobDetailService {
 
     /**
      * Shows a dialog for creating or editing a pallet
-     * @param {$event} $event - The triggering event
+     * @param {Object} $event - The triggering event
      * @param {Job} job - The job associated with the pallet
      * @param {Object} [existingPallet] - The pallet to edit (if editing an existing pallet)
      * @returns {Promise} A promise that resolves when the dialog is closed
@@ -1678,7 +1663,7 @@ class JobDetailService {
 
     /**
      * Opens a dialog to create a new pallet
-     * @param {$event} event - The triggering event
+     * @param {Object} event - The triggering event
      * @param {Job} job - The job to associate with the new pallet
      * @returns {Promise} A promise that resolves when the creation is complete
      */
@@ -1688,7 +1673,7 @@ class JobDetailService {
 
     /**
      * Opens a dialog to edit an existing pallet
-     * @param {$event} event - The triggering event
+     * @param {Object} event - The triggering event
      * @param {Job} job - The job associated with the pallet
      * @param {Object} pallet - The pallet to edit
      * @returns {Promise} A promise that resolves when the edit is complete
