@@ -207,6 +207,10 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[DES_qdfCourier_ClearLists]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_qdfEvent_Insert]",
          "ObjectType": 1
       },

@@ -35,6 +35,7 @@ namespace DespatchWeb.EntityClasses
 
         protected void OnModelCreatingGeneratedProcedures(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<DES_qdfCourier_ClearListsResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_qryCourierCombo_ActiveResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_qryTruckCourierStatusResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DES_stpJob_ColsolidateMarsInformationResult>().HasNoKey().ToView(null);
@@ -60,6 +61,32 @@ namespace DespatchWeb.EntityClasses
         public DespatchContextProcedures(DespatchContext context)
         {
             _context = context;
+        }
+
+        public virtual async Task<List<DES_qdfCourier_ClearListsResult>> DES_qdfCourier_ClearListsAsync(int? ClearListAreaID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "ClearListAreaID",
+                    Value = ClearListAreaID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DES_qdfCourier_ClearListsResult>("EXEC @returnValue = [dbo].[DES_qdfCourier_ClearLists] @ClearListAreaID = @ClearListAreaID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
         }
 
         public virtual async Task<int> DES_qdfEvent_InsertAsync(string JobNo, int? ClientID, string Contact, DateTime? Date, DateTime? Time, double? Type, double? LateTime, DateTime? ETATime, double? StaffIDIn, double? StaffIDOut, DateTime? ResponseTime, string Notes, bool? PageCourier, bool? Closed, int? Originator, string Description, int? CourierID, int? JobID, string Despatcher, int? JobType, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)

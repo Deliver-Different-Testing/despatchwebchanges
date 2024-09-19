@@ -13,6 +13,7 @@ namespace DespatchWeb.EntityClasses
 {
     public partial interface IDespatchContextProcedures
     {
+        Task<List<DES_qdfCourier_ClearListsResult>> DES_qdfCourier_ClearListsAsync(int? ClearListAreaID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> DES_qdfEvent_InsertAsync(string JobNo, int? ClientID, string Contact, DateTime? Date, DateTime? Time, double? Type, double? LateTime, DateTime? ETATime, double? StaffIDIn, double? StaffIDOut, DateTime? ResponseTime, string Notes, bool? PageCourier, bool? Closed, int? Originator, string Description, int? CourierID, int? JobID, string Despatcher, int? JobType, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_qryCourierCombo_ActiveResult>> DES_qryCourierCombo_ActiveAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<DES_qryTruckCourierStatusResult>> DES_qryTruckCourierStatusAsync(string CourierID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);

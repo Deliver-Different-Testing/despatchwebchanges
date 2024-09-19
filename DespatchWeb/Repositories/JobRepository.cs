@@ -812,7 +812,7 @@ public class JobRepository : IJobRepository
     }
 
     public async Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
-        bool isInternal, string clientIds)
+        bool isInternal, string clientIds, List<int> despatchViewIds)
     {
         if (isInternal == false && string.IsNullOrEmpty(value: clientIds))
             return new List<JobViewModel>();
@@ -833,22 +833,19 @@ public class JobRepository : IJobRepository
             _ => $"RemainTime {ascending}"
         };
 
-        var areas = new List<string>
-        {
-            "city", "truck", "main1", "main2", "central", "shore", "west", "deep shore", "shallow shore", "east mid",
-            "deep west", "shallow west", "west mid", "other", "mangere", "deep south", "deep east", "parnell",
-            "eden terrace", "regional"
-        };
+        var views = await _context.TblDespatchViews
+            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
+            .ToListAsync();
 
-        var selectedAreas = area.Split(separator: ',').ToList();
-        var whereToUse = "";
+        var selectedAreas = views.Select(x => x.Name.ToLower());
+
+        var whereToUse = string.Empty;
         if (isInternal)
         {
-            var filter =
+            var filter = await
                 _context.TblDespatchViews.Where(predicate: v =>
-                        (v.ShowOnAssistDespatch ?? false) == true &&
                         area == "all" && selectedAreas.Contains(v.Name))
-                    .ToList();
+                    .ToListAsync();
 
             foreach (var w in filter)
             {

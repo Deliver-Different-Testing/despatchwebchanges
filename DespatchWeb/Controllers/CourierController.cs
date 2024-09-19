@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +15,9 @@ public class CourierController : Controller
         _courierRepo = courierRepository;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(List<int> despatchViewIds)
     {
-        var result = await _courierRepo.ClearLists();
+        var result = await _courierRepo.ClearLists(despatchViewIds);
         return Json(result);
     }
 

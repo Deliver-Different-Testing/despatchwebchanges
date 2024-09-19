@@ -35,7 +35,7 @@ public class JobController : Controller
     }
 
     public async Task<IActionResult> Index(string status, string area, string order, string asc, bool isInternal,
-        int cid, string clientIds)
+        int cid, string clientIds, List<int> despatchViewIds)
     {
         //Security check to confirm these clients belong to this contact and have permissions set
         if (!isInternal && !string.IsNullOrEmpty(clientIds))
@@ -50,7 +50,7 @@ public class JobController : Controller
             }
         }
 
-        var result = await _jobRepo.JobListAsync(status, area, order, asc, isInternal, clientIds);
+        var result = await _jobRepo.JobListAsync(status, area, order, asc, isInternal, clientIds, despatchViewIds);
         return Json(result);
     }
 

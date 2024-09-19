@@ -27,7 +27,7 @@ public interface IJobRepository
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
     Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
-        bool isInternal, string clientIds);
+        bool isInternal, string clientIds, List<int> despatchViewIds);
 
     /// <summary>
     /// Main query for Nationwide job window panes. New =1, POD=2, BookDel=3, Reprice=4
