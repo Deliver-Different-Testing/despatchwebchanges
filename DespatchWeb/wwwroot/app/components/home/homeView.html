@@ -1,5 +1,5 @@
 <div>
-    <div ng-controller="HomeControl">
+    <div>
         <md-toolbar class="md-hue-2">
             <div class="md-toolbar-tools">
                 <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleLeft()">
@@ -96,13 +96,12 @@
         <md-sidenav class="md-sidenav-left" md-component-id="left">
             <md-toolbar>
                 <h1 class="md-toolbar-tools">
-                    <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
-                    <p>Despatch</p>
+                    Despatch
                 </h1>
             </md-toolbar>
             <md-content>
                 <md-list>
-                    <md-list-item ui-sref="home" ui-sref-active="md-active">
+                    <md-list-item class="selected" ui-sref="home" ui-sref-active="md-active">
                         <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
                         <p>Dispatch</p>
                     </md-list-item>

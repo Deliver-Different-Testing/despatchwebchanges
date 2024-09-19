@@ -1687,3 +1687,27 @@ md-table-pagination {
     transform-origin: bottom left;
   }
 }
+
+md-list-item.selected {
+  background-color: rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+md-list-item.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #3f51b5; /* Use your primary color here */
+}
+
+md-list-item.selected md-icon,
+md-list-item.selected p {
+  color: #3f51b5; /* Use your primary color here */
+}
+
+md-list-item:not(.selected):hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}

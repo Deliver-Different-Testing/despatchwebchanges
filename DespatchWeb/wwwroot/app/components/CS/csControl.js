@@ -20,10 +20,15 @@ angular.module('uDispatch').controller('CSControl', [
     'moment',
     'DispatchData',
     'versionUrl',
-    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl) => {
+    '$mdSidenav',
+    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, $mdSidenav) => {
         $scope.isAdmin = (ClientInternal === "True");
         $scope.mapSetting = {
             "allCouriers": false, "allRuns": false
+        };
+
+        $scope.toggleLeft = () => {
+            $mdSidenav('left').toggle();
         };
 
         $scope.userName = FirstName;

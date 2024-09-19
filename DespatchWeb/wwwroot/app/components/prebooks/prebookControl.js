@@ -1,10 +1,16 @@
-angular.module('uDispatch').controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout', 'versionUrl', '$window', ($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout, versionUrl, $window) => {
+angular.module('uDispatch')
+    .controller('PBControl', ['$scope', 'JobDetailService', 'uPBData', "$state", "$stateParams", "$filter", '$parse', "hotkeys", "$location", 'NgMap', 'GeoCoder', '$mdDialog', '$timeout', 'versionUrl', '$window', '$mdSidenav',
+        ($scope, jdSvc, uPBData, $state, $stateParams, $filter, $parse, hotkeys, $location, NgMap, GeoCoder, $mdDialog, $timeout, versionUrl, $window, $mdSidenav) => {
     $scope.isAdmin = (ClientInternal === "True");
     $scope.mapSetting = {
         "allCouriers": false, "allRuns": false
     };
 
     $scope.jdSvc = jdSvc;
+
+            $scope.toggleLeft = () => {
+                $mdSidenav('left').toggle();
+            };
 
     $scope.selectedPrebooks = [];
 
