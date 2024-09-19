@@ -837,21 +837,14 @@ public class JobRepository : IJobRepository
             .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
             .ToListAsync();
 
-        var selectedAreas = views.Select(x => x.Name.ToLower());
-
         var whereToUse = string.Empty;
         if (isInternal)
         {
-            var filter = await
-                _context.TblDespatchViews.Where(predicate: v =>
-                        area == "all" && selectedAreas.Contains(v.Name))
-                    .ToListAsync();
-
-            foreach (var w in filter)
+            var filters = views.Select(v => v.WhereCondition).ToList();
+            foreach (var filter in filters)
             {
                 if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " OR ";
-
-                whereToUse += $" ({w.WhereCondition}) ";
+                whereToUse += $" ({filter}) ";
             }
 
             whereToUse = $"({whereToUse})";
