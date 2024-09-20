@@ -21,7 +21,7 @@ class SidenavService {
         sidenav.on('mouseleave', () => {
             this.timeoutId = this.$timeout(() => {
                 this.$mdSidenav('right').close();
-            }, 300); // Adjust this delay as needed
+            }, 300);
         });
 
         return () => {
