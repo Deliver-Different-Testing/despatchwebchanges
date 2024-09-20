@@ -78,6 +78,7 @@ class SelectDialogController {
 
                 if (this._fieldName === "NotifiedJobTypeID") {
                     this._job.notifiedName = selectedOption.text;
+                    this._job.notifiedId = selectedOption.id;
                 }
 
                 // Rate job

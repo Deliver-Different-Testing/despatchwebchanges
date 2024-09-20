@@ -1184,10 +1184,10 @@ class JobDetailService {
         const vanValue = !job.van;
 
         try {
-            const rate = await this._rateJobService.rateJob(job);
+            this.currentJob.charge = await this._rateJobService.rateJob(job);
             console.log(rate);
 
-            const numericRate = Number(rate.replace(/[^0-9.-]+/g, ""));
+            const numericRate = Number(this.currentJob.charge.replace(/[^0-9.-]+/g, ""));
 
             try {
                 return await this._dispatchData.updateJobDetail(
