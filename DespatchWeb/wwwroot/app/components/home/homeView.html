@@ -9,6 +9,7 @@
                 <md-menu>
                     <md-button aria-label="Open status menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
+                        <md-tooltip md-direction="bottom">Filters</md-tooltip>
                     </md-button>
                     <md-menu-content>
                         <md-menu-item>
@@ -32,6 +33,7 @@
                 <md-menu ng-if="isInternal">
                     <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="areas">location_on</md-icon>
+                        <md-tooltip md-direction="bottom">Areas</md-tooltip>
                         <md-progress-circular md-diameter="18" md-mode="indeterminate"
                                               ng-if="!areas"></md-progress-circular>
                     </md-button>
@@ -62,6 +64,7 @@
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
+                        <md-tooltip md-direction="bottom">Layouts</md-tooltip>
                     </md-button>
                     <md-menu-content width="2">
                         <md-menu-item>
@@ -73,7 +76,8 @@
                         <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
-                                <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($index)">
+                                <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($index)"
+                                         ng-if="lo.name != 'Default'">
                                     delete
                                 </md-icon>
                                 <span ng-click="loadLayout($index)"

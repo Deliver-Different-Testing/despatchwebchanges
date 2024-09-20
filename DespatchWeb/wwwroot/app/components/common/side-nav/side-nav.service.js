@@ -1,8 +1,14 @@
 class SidenavService {
-    constructor($mdSidenav, $timeout) {
+    constructor($mdSidenav, $timeout, $rootScope) {
         this.$mdSidenav = $mdSidenav;
         this.$timeout = $timeout;
         this.timeoutId = null;
+        this.currentState = '';
+
+        // Listen for state changes
+        $rootScope.$on('$stateChangeSuccess', (event, toState) => {
+            this.currentState = toState.name;
+        });
     }
 
     toggle() {
@@ -30,9 +36,13 @@ class SidenavService {
             sidenav.off('mouseleave');
         };
     }
+
+    isActive(stateName) {
+        return this.currentState === stateName;
+    }
 }
 
 angular.module('uDispatch')
-    .service('materialSidenavService', ['$mdSidenav', '$timeout',
-        ($mdSidenav, $timeout) => new SidenavService($mdSidenav, $timeout)
+    .service('materialSidenavService', ['$mdSidenav', '$timeout', '$rootScope',
+        ($mdSidenav, $timeout, $rootScope) => new SidenavService($mdSidenav, $timeout, $rootScope)
     ]);

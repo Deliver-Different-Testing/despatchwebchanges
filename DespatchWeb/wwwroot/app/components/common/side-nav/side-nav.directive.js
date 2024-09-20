@@ -1,6 +1,9 @@
+// sidenavDirective.js
+
 angular.module('uDispatch')
     .directive('materialSidenav', ['materialSidenavService', materialSidenavService => ({
-        restrict: 'E', template: `
+        restrict: 'E',
+        template: `
             <md-sidenav class="md-sidenav-right" md-component-id="right">
                 <md-toolbar>
                     <h1 class="md-toolbar-tools">
@@ -9,27 +12,31 @@ angular.module('uDispatch')
                 </md-toolbar>
                 <md-content>
                     <md-list>
-                        <md-list-item class="selected" ui-sref="home" ui-sref-active="md-active">
+                        <md-list-item ng-class="{'md-active': materialSidenavService.isActive('home')}" ui-sref="home">
                             <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
                             <p>Dispatch</p>
                         </md-list-item>
-                        <md-list-item ui-sref="nw" ui-sref-active="md-active">
+                        <md-list-item ng-class="{'md-active': materialSidenavService.isActive('nw')}" ui-sref="nw">
                             <md-icon md-font-set="material-symbols-outlined">public</md-icon>
                             <p>Domestic</p>
                         </md-list-item>
-                        <md-list-item ui-sref="cs" ui-sref-active="md-active">
+                        <md-list-item ng-class="{'md-active': materialSidenavService.isActive('cs')}" ui-sref="cs">
                             <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                             <p>Job Search</p>
                         </md-list-item>
-                        <md-list-item ui-sref="prebooks" ui-sref-active="md-active">
+                        <md-list-item ng-class="{'md-active': materialSidenavService.isActive('prebooks')}" ui-sref="prebooks">
                             <md-icon md-font-set="material-symbols-outlined">book</md-icon>
                             <p>PreBooks</p>
                         </md-list-item>
                     </md-list>
                 </md-content>
             </md-sidenav>
-        `, link: (scope, element, attrs) => {
+        `,
+        link: (scope, element, attrs) => {
             const cleanup = materialSidenavService.setupAutoClose(element);
+
+            // Make the service available in the scope
+            scope.materialSidenavService = materialSidenavService;
 
             // Clean up when the scope is destroyed
             scope.$on('$destroy', cleanup);
