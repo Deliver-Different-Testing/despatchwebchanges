@@ -8,7 +8,7 @@ angular.module('uDispatch')
         $scope.jdSvc = jdSvc;
 
         $scope.toggleSidenav = () => {
-            materialSidenavService.toggleLeft();
+            materialSidenavService.toggle();
         };
 
         $scope.selectedPrebooks = [];

@@ -2,10 +2,6 @@
     <div>
         <md-toolbar class="md-hue-2">
             <div class="md-toolbar-tools">
-                <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleSidenav()">
-                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
-                </md-button>
-
                 <img alt="logo" class="logo" src="/images/menu-urgent.png"/>
 
                 <span flex></span>
@@ -36,9 +32,16 @@
                         </md-menu-item>
                     </md-menu-content>
                 </md-menu>
+
+                <md-divider class="vertical-divider"></md-divider>
+
+                <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleSidenav()"
+                           ng-mouseover="toggleSidenav()">
+                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
+                </md-button>
+
             </div>
         </md-toolbar>
-
         <material-sidenav></material-sidenav>
     </div>
 

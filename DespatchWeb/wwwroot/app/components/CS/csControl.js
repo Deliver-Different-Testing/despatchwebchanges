@@ -28,7 +28,7 @@ angular.module('uDispatch').controller('CSControl', [
         };
 
         $scope.toggleSidenav = () => {
-            materialSidenavService.toggleLeft();
+            materialSidenavService.toggle();
         };
 
         $scope.userName = FirstName;

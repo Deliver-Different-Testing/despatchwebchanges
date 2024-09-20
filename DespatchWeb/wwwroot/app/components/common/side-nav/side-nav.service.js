@@ -5,8 +5,8 @@ class SidenavService {
         this.$mdSidenav = $mdSidenav;
     }
 
-    toggleLeft() {
-        this.$mdSidenav('left').toggle();
+    toggle() {
+        this.$mdSidenav('right').toggle();
     }
 }
 

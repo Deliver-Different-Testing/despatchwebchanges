@@ -2,13 +2,12 @@
 
 angular.module('uDispatch')
     .directive('materialSidenav', ['materialSidenavService', materialSidenavService => ({
-        restrict: 'E',
-        template: `
-                <md-sidenav class="md-sidenav-left" md-component-id="left">
+        restrict: 'E', template: `
+                <md-sidenav class="md-sidenav-right" md-component-id="right">
                     <md-toolbar>
                         <h1 class="md-toolbar-tools">
                             Despatch
-                        </h1>
+                        </h1>                       
                     </md-toolbar>
                     <md-content>
                         <md-list>
@@ -31,8 +30,7 @@ angular.module('uDispatch')
                         </md-list>
                     </md-content>
                 </md-sidenav>
-            `,
-        link: (scope, element, attrs) => {
+            `, link: (scope, element, attrs) => {
             // You can add any additional functionality here if needed
         }
     })]);

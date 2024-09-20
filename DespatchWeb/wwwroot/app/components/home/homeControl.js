@@ -33,7 +33,7 @@ angular.module("uDispatch")
             };
 
             $scope.toggleSidenav = () => {
-                materialSidenavService.toggleLeft();
+                materialSidenavService.toggle();
             };
 
             $scope.greetUser = () => greetingService.greetUser(FirstName);
