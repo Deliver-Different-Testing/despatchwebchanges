@@ -81,7 +81,7 @@ class SelectDialogController {
                 }
 
                 // Rate job
-                this._job.charge = this.rateJobService.rateJob(this._job);
+                this._job.charge = await this.rateJobService.rateJob(this._job);
 
                 this._job.bulkJob ?
                     await this._dispatchData.updateBulkJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID) :
