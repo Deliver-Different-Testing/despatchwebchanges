@@ -1,6 +1,4 @@
 class DispatchData {
-    static $inject = ['$http', 'moment', 'APP_CONFIG'];
-
     constructor($http, moment, APP_CONFIG) {
         this._$http = $http;
         this._moment = moment;
@@ -355,16 +353,11 @@ class DispatchData {
     /**
      * @param {Object} despatchViewIds
      */
-    async getClearLists(despatchViewIds) {
+    async getDriverLocations(despatchViewIds) {
         const query = this._prepareDespatchViewIds(despatchViewIds);
 
-        try {
-            const response = await this._$http.get('courier?' + query);
-            return response.data;
-        } catch (error) {
-            console.error('Error in getClearLists:', error);
-            throw error;
-        }
+        const response = await this._$http.get('courier?' + query);
+        return response.data;
     }
 
     /**
@@ -853,8 +846,7 @@ class DispatchData {
     async getJobsFilter(data, selectedClients, internal, despatchViewIds) {
         const query = this._prepareDespatchViewIds(despatchViewIds);
 
-        const response = await this._$http.get('job?status=' + data.status + '&area=' + data.area + '&order=' + data.order + '&asc=' +
-            data.asc + '&isInternal=' + internal + '&cid=' + ContactID + '&clientIds=' + selectedClients + '&' + query);
+        const response = await this._$http.get('job?status=' + data.status + '&area=' + data.area + '&order=' + data.order + '&asc=' + data.asc + '&isInternal=' + internal + '&cid=' + ContactID + '&clientIds=' + selectedClients + '&' + query);
         return response.data;
     }
 
@@ -936,9 +928,7 @@ class DispatchData {
      */
     _prepareDespatchViewIds(despatchViewIds) {
         // Extract the IDs that are set to true
-        const selectedIds = Object.keys(despatchViewIds).filter(key =>
-            despatchViewIds[key] === true && !isNaN(parseInt(key))
-        );
+        const selectedIds = Object.keys(despatchViewIds).filter(key => despatchViewIds[key] === true && !isNaN(parseInt(key)));
 
         // Create the query string
         return selectedIds.map(id => 'despatchViewIds=' + id).join('&');

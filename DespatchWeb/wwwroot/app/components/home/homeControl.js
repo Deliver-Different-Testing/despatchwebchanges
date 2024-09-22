@@ -5,7 +5,7 @@ angular.module("uDispatch")
         ($document, $filter, greetingService, jdSvc, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData,
          dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService) => {
             $scope.initializeVariables = () => {
-                $scope.isInternal = (ClientInternal === "True");
+                $scope.isInternal = true; // (ClientInternal === "True");
                 $scope.name = "Home";
                 $scope.jdSvc = jdSvc;
 
@@ -282,7 +282,7 @@ angular.module("uDispatch")
                     "templateUrl": versionUrl("app/components/home/partials/map.html"),
                     "showSearch": 0,
                     "showRefresh": 1
-                }, "clearLists": {
+                }, "driverLocations": {
                     "title": "Driver Locations",
                     "templateUrl": versionUrl("app/components/home/partials/clearLists.html"),
                     "showSearch": 0,
@@ -346,7 +346,7 @@ angular.module("uDispatch")
                         }]
                     }, {
                         "id": "col3", "width": "300px", "boxes": $scope.isInternal ? [{
-                            "name": "clearLists", "height": "600px"
+                            "name": "driverLocations", "height": "600px"
                         }, {
                             "name": "map"
                         }] : [{
@@ -476,7 +476,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param $event
+             * @param {Object} $event
              * @param {Job} job
              */
             $scope.handleRowClick = async ($event, job) => {
@@ -669,7 +669,7 @@ angular.module("uDispatch")
 
             /**
              * @param {number} id
-             * @param $event
+             * @param {Object} $event
              * @param {string} area
              */
             $scope.selectClearList = async (id, $event, area) => {
@@ -677,8 +677,8 @@ angular.module("uDispatch")
                     let areaGroupButtons = angular.element("#area-group .btn");
                     areaGroupButtons.removeClass("topBarActive");
 
-                    let clearListsActive = angular.element("#clearLists .listActive");
-                    if (clearListsActive.length <= 1) {
+                    let driverLocationsActive = angular.element("#driverLocations .listActive");
+                    if (driverLocationsActive.length <= 1) {
                         await $scope.getClearListEnvelope(id);
                     }
 
@@ -786,7 +786,7 @@ angular.module("uDispatch")
             }
 
             /**
-             * @param $event
+             * @param {Object} $event
              * @param {Job} job
              */
             $scope.otherEventForm = ($event, job) => {
@@ -1404,7 +1404,7 @@ angular.module("uDispatch")
 //  SPLIT JOB //
 /////////////////////////////
             /**
-             * @param $event
+             * @param {Object} $event
              * @param {Job} job
              */
             $scope.splitJob = async ($event, job) => {
@@ -1428,7 +1428,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param $event
+             * @param {Object} $event
              * @param {string} title
              * @param {string} content
              */
@@ -1444,7 +1444,7 @@ angular.module("uDispatch")
             }
 
             /**
-             * @param $event
+             * @param {Object} $event
              * @param {string} title
              * @param {string} content
              */
@@ -1506,7 +1506,7 @@ angular.module("uDispatch")
                                         $scope.dispatchJobs(courierId)
                                             .then(() => {
                                                 console.log('Dispatch complete');
-                                                return $scope.getClearListsData();
+                                                return $scope.getDriverLocationsData();
                                             })
                                             .catch(error => {
                                                 console.log('Error in drop handler:', error);
@@ -1876,7 +1876,7 @@ angular.module("uDispatch")
             $scope.sort["jobList"] = "remain";
 
             $scope.setFiltersFromTopBar = async data => {
-                angular.element('.clearLists-list-title').removeClass('listActive');
+                angular.element('.driverLocations-list-title').removeClass('listActive');
                 await $scope.setFilters(data);
             };
 
@@ -1897,7 +1897,7 @@ angular.module("uDispatch")
                     }
 
                     if (data.clearList) {
-                        let clSelected = angular.element("#clearLists").find('.listActive').length;
+                        let clSelected = angular.element("#driverLocations").find('.listActive').length;
                         if (clSelected > 1) {
                             $scope.jobFilters.area += "," + data.clearList;
                         } else {
@@ -2573,20 +2573,22 @@ angular.module("uDispatch")
                         }
                     };
 
-                    $scope.getClearListsData = async () => {
+                    $scope.getDriverLocationsData = async () => {
                         try {
-                            const despatchWebId = $scope.selectedAreas
-                            $scope.clearLists = await DispatchData.getClearLists($scope.selectedAreas);
+                            $scope.driverLocations = await DispatchData.getDriverLocations($scope.selectedAreas);
+
                             $timeout(() => {
-                                angular.element("#clearLists .loading").fadeOut();
+                                angular.element("#driverLocations .loading").fadeOut();
                             }, 0);
-                            console.log($scope.clearLists);
+
+                            console.log($scope.driverLocations);
                             $scope.activateDrop();
                         } catch (error) {
                             console.log('Error getting clear lists data:', error);
                         }
                     };
-                    await $scope.getClearListsData();
+
+                    await $scope.getDriverLocationsData();
 
                     const [activeCouriers, allCouriers] = await Promise.all([DispatchData.getActiveCouriers(), DispatchData.getAllCouriers()]);
                     $scope.pickCouriers = activeCouriers;
@@ -2743,7 +2745,7 @@ angular.module("uDispatch")
 /////////////////////////
 
             /**
-             * @param $event
+             * @param {Object} $event
              * @param {Job} currentJob
              */
             $scope.setSplitJobMeetingPoint = async ($event, currentJob) => {
@@ -2861,7 +2863,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param $event
+             * @param {Object} $event
              */
             $scope.createNewJob = async ($event) => {
                 async function showCreateJobDialog() {

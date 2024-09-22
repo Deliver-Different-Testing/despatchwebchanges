@@ -53,12 +53,13 @@
                     <input ng-model="chatBox" ng-model-options="{debounce: 300}" type="text">
                 </md-input-container>
 
-                <div ng-if="!isInternal">
-                    <span>Clients:</span>
-                    <md-select multiple ng-model="pickService.clients" placeholder="Select Clients">
-                        <md-option ng-repeat="client in pickClients" ng-value="client.id">{{client.name}}</md-option>
-                    </md-select>
-                </div>
+                <!-- <div ng-if="!isInternal">
+                     <span>Clients:</span>
+                     <md-select multiple ng-model="pickService.clients" placeholder="Select Clients">
+                         <md-option ng-repeat="client in pickClients" ng-value="client.id">{{client.name}}</md-option>
+                     </md-select>
+                 </div>
+ -->
 
                 <md-menu>
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
@@ -275,7 +276,7 @@
                                     </md-autocomplete>
                                 </div>
 
-                                <div class="row-overflow" ng-if="box.name === 'clearLists'">
+                                <div class="row-overflow" ng-if="box.name === 'driverLocations'">
                                     <md-menu>
                                         <md-button aria-label="truck mode" class="md-raised md-accent"
                                                    ng-click="$mdMenu.open($event)">
@@ -304,7 +305,7 @@
                                 <div class="row-overflow" layout="row" ng-if="box.name === 'map'">
                                     <div class="switch-container">
                                         <md-switch class="md-primary" ng-model="areaListCity"
-                                                   ng-if="box.name === 'clearLists'">
+                                                   ng-if="box.name === 'driverLocations'">
                                             City
                                         </md-switch>
                                         <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
@@ -357,8 +358,7 @@
                                 </div>
 
                                 <div class="box-handle md-icon-button">
-                                    <md-icon class="md-drag-button" md-font-set="material-symbols-outlined"
-                                             md-font-set="material-symbols-outlined">
+                                    <md-icon class="md-drag-button" md-font-set="material-symbols-outlined">
                                         drag_indicator
                                     </md-icon>
                                 </div>
@@ -400,6 +400,7 @@
 
     <div id='draggingItems'></div>
 </div>
+
 <script>
     (function () {
         var keyIsDown = {};
@@ -449,10 +450,10 @@
             $this.addClass('topBarActive');
         });
 
-        $document.on('click', '.clearLists-list-title', function (event) {
+        $document.on('click', '.driverLocations-list-title', function (event) {
             var $this = angular.element(this);
             if (!event.ctrlKey && !event.metaKey) {
-                angular.element("#clearLists").find('.listActive').removeClass('listActive');
+                angular.element("#driverLocations").find('.listActive').removeClass('listActive');
             }
             $this.addClass('listActive');
         });
@@ -566,8 +567,8 @@
                 $box.find(".table-headings table").width($box.find(".table").width());
             });
 
-            var height = angular.element("#box-clearLists").find(".box-content").height() - 30;
-            angular.element(".clearLists-list").each(function () {
+            var height = angular.element("#box-driverLocations").find(".box-content").height() - 30;
+            angular.element(".driverLocations-list").each(function () {
                 var $this = angular.element(this);
                 var newHeight = $this.data("height") * height / 100;
                 $this.height(newHeight);
