@@ -224,24 +224,21 @@ angular.module('uDispatch')
         $scope.layouts = [{
             name: "Default", layout: {
                 "columns": [
-
                     {
-                        "id": "col1", "width": "1650px", "boxes": [{
-
+                        "id": "col1", "width": "70%", "boxes": [{
                             "name": "jobList"
                         }]
                     },
-
                     {
-                        "id": "col2", "boxes": [{
+                        "id": "col2", "width": "30%", "boxes": [{
                             "name": "jobDetail", "height": "950px"
                         }, {
                             "name": "map"
                         }]
-                    }]
+                    }
+                ]
             }
         }];
-
 
         $scope.layout = angular.copy($scope.layouts[0].layout);
 
