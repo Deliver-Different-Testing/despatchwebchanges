@@ -787,7 +787,7 @@ class DispatchData {
     }
 
     /**
-     * @param {number} jobNumber
+     * @param {string} jobNumber
      * @param {Date} bookDate
      */
     async releaseBulkJob(jobNumber, bookDate) {

@@ -954,11 +954,14 @@ angular.module("uDispatch")
                     return $q.reject(error);
                 });
 
-            $scope.jobClass = job => {
-                let classToUse = job.direct ? "direct " : "";
-                classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTHIRE" || job.speed === "FT" || job.speed === "FTHIRE" || job.speed === "HC" || job.speed === "TC") ? "chilled" : "");
-                return classToUse;
-            }
+    /**
+     * @param {Job} job
+     */
+    $scope.jobClass = (job) => {
+        let classToUse = job.direct ? "direct " : "";
+        classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTHIRE" || job.speed === "FT" || job.speed === "FTHIRE" || job.speed === "HC" || job.speed === "TC") ? "chilled" : "");
+        return classToUse;
+    }
 
 ////////////////////////////////////////
 // DISPATCH THE JOBS
@@ -1183,25 +1186,24 @@ angular.module("uDispatch")
                         await DispatchData.reAllocateJobs(callData.courierID, ContactID, callData.jobs);
                     }
 
-                    await $scope.getData();
-                    angular.element('#box-map .loading').css('display', '');
-                    $scope.courier = {gpsCourier: foundCourier.id};
-                    $scope.searchCourier();
-
-                } catch {
-                    // Cancelled dialog.
-                }
-            };
-            /**
-             * @param  {$event}  $event
-             */
-            $scope.resendAll = async $event => {
-                let confirm = $mdDialog.confirm()
-                    .title('Resend All Jobs')
-                    .textContent('Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier)
-                    .targetEvent($event)
-                    .ok('Yes')
-                    .cancel('No');
+            await $scope.getData();
+            angular.element('#box-map .loading').css('display', '');
+            $scope.courier = {gpsCourier: foundCourier.id};
+            await $scope.searchCourier();
+        } catch {
+            // Cancelled dialog.
+        }
+    };
+    /**
+     * @param  {$event}  $event
+     */
+    $scope.resendAll = async $event => {
+        let confirm = $mdDialog.confirm()
+            .title('Resend All Jobs')
+            .textContent('Are you sure you wish to resend all jobs for ' + $scope.currentCourier.courier)
+            .targetEvent($event)
+            .ok('Yes')
+            .cancel('No');
 
                 try {
                     await $mdDialog.show(confirm);
@@ -1228,14 +1230,14 @@ angular.module("uDispatch")
                         await DispatchData.resendAllJobs(callData.courierID);
                     }
 
-                    await $scope.getData();
-                    angular.element('#box-map .loading').css('display', '');
-                    $scope.courier = {gpsCourier: foundCourier.id};
-                    $scope.searchCourier();
-                } catch {
-                    // No action for 'No'
-                }
-            };
+            await $scope.getData();
+            angular.element('#box-map .loading').css('display', '');
+            $scope.courier = {gpsCourier: foundCourier.id};
+            await $scope.searchCourier();
+        } catch {
+            // No action for 'No'
+        }
+    };
 
             $scope.reAllocateJobsFromCurrentWindow = async () => {
                 const callData = {
@@ -1681,54 +1683,58 @@ angular.module("uDispatch")
                 }
             };
 
-            $scope.selectMapCourier = courier => {
-                angular.element("#box-jobDetail .loading").css('display', 'block');
-                angular.element('#box-map .loading').css('display', 'block');
+    $scope.selectMapCourier = async courier => {
+        angular.element("#box-jobDetail .loading").css('display', 'block');
+        angular.element('#box-map .loading').css('display', 'block');
+        angular.element("#box-currentWork .loading").css('display', 'block');
 
-                angular.element("#box-currentWork .loading").css('display', 'block');
-                let foundCourier = $scope.pickCouriers.find(x => x.courierID === courier.courierID);
+        let foundCourier = $scope.pickCouriers.find(x => x.courierID === courier.courierID);
 
-                $scope.currentCourier = {
-                    courierID: foundCourier.courierID, courier: foundCourier.label
-                };
+        $scope.currentCourier = {
+            courierID: foundCourier.courierID,
+            courier: foundCourier.label
+        };
 
-                DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done").then(data => {
-                    angular.element("#box-currentWork .loading").css('display', 'none');
+        try {
+            const data = await DispatchData.getJobsCurrent(courier.courierID, $scope.jobFilters.status === "done");
+            angular.element("#box-currentWork .loading").css('display', 'none');
 
-                    $scope.jobsCurrentList = data;
-                    if (data.length > 0) {
-                        displayRoutePointsOnly(data, false, $scope.mapZoom.display);
-                    }
-                    $scope.activateDrop();
+            $scope.jobsCurrentList = data;
+            if (data.length > 0) {
+                displayRoutePointsOnly(data, false);
+            }
+            $scope.activateDrop();
 
                     $timeout(() => {
                         sizeHeadings();
                     }, 1000);
 
-                    $timeout(() => {
-                        sizeHeadings();
-                    }, 2000);
+            $timeout(() => {
+                sizeHeadings();
+            }, 2000);
+
+            $scope.currentWorkSelection = " for Courier " + courier.label;
+            $scope.currentSelection = " for Courier " + courier.label;
+
+            $timeout(() => {
+                $document.ready(() => {
+                    angular.element("#box-jobDetail .loading").css('display', 'none');
+                    angular.element("#box-map .loading").css('display', 'none');
                 });
+            }, 100);
 
-                $scope.currentWorkSelection = " for Courier " + courier.label;
-                $scope.currentSelection = " for Courier " + courier.label;
+            $scope.truckCourierStatus = await DispatchData.truckCourierStatus(courier.courierID);
+        } catch (error) {
+            console.error('An error occurred:', error);
+            // Handle the error appropriately
+        }
+    };
 
-                $timeout(() => {
-                    $document.ready(() => {
-                        angular.element("#box-jobDetail .loading").css('display', 'none');
-                        angular.element("#box-map .loading").css('display', 'none');
-                    });
-                }, 100);
-
-                DispatchData.truckCourierStatus(courier.courierID).then(data => {
-                    $scope.truckCourierStatus = data;
-                });
-            };
-            $scope.clearCourierSearch = () => {
-                $scope.jobsCurrentList = false;
-                $scope.courier.gpsCourier = '';
-                $scope.currentWorkSelection = '';
-            }
+    $scope.clearCourierSearch = () => {
+        $scope.jobsCurrentList = false;
+        $scope.courier.gpsCourier = '';
+        $scope.currentWorkSelection = '';
+    }
 
             $scope.selectPotentialCourier = async (courier) => {
                 try {
