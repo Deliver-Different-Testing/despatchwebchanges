@@ -513,11 +513,10 @@ angular.module("uDispatch")
                         // Use a cell that's guaranteed to be in the row for the edit dialog
                         const codeCell = cellElement.parentElement.querySelector('.md-code-cell');
                         if (codeCell) {
-                            $scope.jobTableService.editField({target: codeCell}, job, 'courier', 'Set code').then((ctrl) => {
-                                if (ctrl) {
+                            const ctrl = await $scope.jobTableService.editField({target: codeCell}, job, 'courier', 'Set code');
+                            if (ctrl) {
                                     ctrl.getInput().$element.focus();
                                 }
-                            });
                         }
                     } catch (error) {
                         console.log('Error in handleRowClick:', error);
@@ -3087,7 +3086,9 @@ angular.module("uDispatch")
 
                 // Init functions
                 $scope.initializeVariables();
-                $scope.loadDespatchViews();
+                $scope.loadDespatchViews().then(() => {
+                    console.log('Complete!');
+                });
             };
 
 // Call the init function when the controller loads
