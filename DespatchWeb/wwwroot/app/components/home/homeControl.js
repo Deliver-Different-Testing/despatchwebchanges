@@ -131,7 +131,7 @@ angular.module("uDispatch")
 
             jdSvc.setSelectJobDetail(async () => {
                 const currentJob = $scope.currentJob;
-                jdSvc.setJob($scope.currentJob);
+                await jdSvc.setJob($scope.currentJob);
 
                 await $scope.getData();
                 if (currentJob === null || currentJob === undefined || currentJob === false) {
@@ -224,67 +224,67 @@ angular.module("uDispatch")
             $scope.boxes = {
                 "jobsList": {
                     "title": "Jobs List",
-                    "tpl": versionUrl("app/components/home/tpls/jobList.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/jobList.html"),
                     "showSearch": 1,
                     "showRefresh": 1
                 }, "jobDetail": {
                     "title": "Detail",
-                    "tpl": versionUrl("app/components/common/tpls/jobDetail.tpl"),
+                    "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
                     "showSearch": 0,
                     "showRefresh": 0,
                     "showDetailButtons": 1
                 }, "potentialCouriers": {
                     "title": "Potential Couriers",
-                    "tpl": versionUrl("app/components/home/tpls/potentialCouriers.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/potentialCouriers.html"),
                     "showSearch": 1
                 }, "currentWork": {
                     "title": "Current Work",
-                    "tpl": versionUrl("app/components/home/tpls/currentWork.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/currentWork.html"),
                     "showSearch": 1,
                     "showRefresh": 0
                 }, "couriersMoveThrough": {
                     "title": "Couriers Movement Through List",
-                    "tpl": versionUrl("app/components/home/tpls/couriersMovementThroughList.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/couriersMovementThroughList.html"),
                     "showSearch": 1,
                     "showRefresh": 0
                 }, "courierMovePickedUp": {
                     "title": "Couriers Movement Picked Up Run",
-                    "tpl": versionUrl("app/components/home/tpls/couriersMovementPickedUp.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/couriersMovementPickedUp.html"),
                     "showSearch": 1,
                     "showRefresh": 0
                 }, "courierMoveClear": {
                     "title": "Couriers Movement Clear List",
-                    "tpl": versionUrl("app/components/home/tpls/couriersMovementClearList.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/couriersMovementClearList.html"),
                     "showSearch": 1,
                     "showRefresh": 0
                 }, "areaList": {
                     "title": "Area List",
-                    "tpl": versionUrl("app/components/home/tpls/areaList.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/areaList.html"),
                     "showSearch": 0,
                     "showRefresh": 0
                 }, "jobUpdates": {
                     "title": "Job Updates",
-                    "tpl": versionUrl("app/components/home/tpls/jobUpdates.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/jobUpdates.html"),
                     "showSearch": 0,
                     "showRefresh": 0
                 }, "supports": {
                     "title": "Supports",
-                    "tpl": versionUrl("app/components/home/tpls/supports.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/supports.html"),
                     "showSearch": 0,
                     "showRefresh": 0
                 }, "lateCalls": {
                     "title": "Late Calls",
-                    "tpl": versionUrl("app/components/home/tpls/lateCalls.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/lateCalls.html"),
                     "showSearch": 0,
                     "showRefresh": 0
                 }, "map": {
                     "title": "Google Map",
-                    "tpl": versionUrl("app/components/home/tpls/map.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/map.html"),
                     "showSearch": 0,
                     "showRefresh": 1
                 }, "clearLists": {
                     "title": "Driver Locations",
-                    "tpl": versionUrl("app/components/home/tpls/clearLists.tpl"),
+                    "templateUrl": versionUrl("app/components/home/partials/clearLists.html"),
                     "showSearch": 0,
                     "showRefresh": 0
                 }
