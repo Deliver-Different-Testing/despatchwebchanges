@@ -924,10 +924,9 @@ class JobDetailService {
     async updateGPS(event, currentJob, field) {
         const isDeliveryAddress = field === "toAddress";
         const location = this.getJobLocation(currentJob, isDeliveryAddress);
-        const suburbText = isDeliveryAddress ? currentJob.toSuburbName : currentJob.fromSuburbName;
 
         try {
-            const addressDetails = await this.showAddressDialog(event, currentJob, field, location, suburbText);
+            const addressDetails = await this.showAddressDialog(event, currentJob, isDeliveryAddress);
             return await this._processAddressUpdate(currentJob, field, addressDetails);
         } catch (error) {
             console.log('Error updating GPS:', error);
@@ -944,7 +943,7 @@ class JobDetailService {
     }
 
     /**
-     * @param {$event} event
+     * @param {Object} event
      * @param {Job} currentJob
      * @param {boolean} isDeliveryAddress
      */
@@ -969,7 +968,7 @@ class JobDetailService {
         });
     }
 
-    _processAddressUpdate(job, field, addressDetails) {
+    async _processAddressUpdate(job, field, addressDetails) {
         const isDeliveryAddress = field === "deliveryAddress";
         const updatedJob = this._updateJobAddress(job, addressDetails, isDeliveryAddress);
 
@@ -999,7 +998,7 @@ class JobDetailService {
      * @param {AddressViewModel} addressDetails
      * @param {boolean} isDeliveryAddress
      */
-    _updateBulkJobIfNeeded(job, addressDetails, isDeliveryAddress) {
+    async _updateBulkJobIfNeeded(job, addressDetails, isDeliveryAddress) {
         if (!job.bulkJob) return Promise.resolve();
 
         const updateMethod = isDeliveryAddress ?
@@ -1022,7 +1021,7 @@ class JobDetailService {
      * @param {AddressViewModel} addressDetails
      * @param {boolean} isDeliveryAddress
      */
-    updateJobRate(job, addressDetails, isDeliveryAddress) {
+    async updateJobRate(job, addressDetails, isDeliveryAddress) {
         const pedal = this.isPedalJob(job);
 
         job.charge = await this._rateJobService.rateJob(job);
