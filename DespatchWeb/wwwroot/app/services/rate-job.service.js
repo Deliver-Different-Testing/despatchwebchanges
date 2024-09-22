@@ -3,8 +3,6 @@
  * @class
  */
 class RateJobService {
-    static $inject = ["DispatchData", "moment"];
-
     constructor(DispatchData, moment) {
         this._dispatchData = DispatchData;
         this._moment = moment;

@@ -1,6 +1,4 @@
 class JobDetailService {
-    static $inject = ["DispatchData", "$mdDialog", "toastrService", "rateJobService", "$document", "$timeout", "moment", "versionUrl"];
-
     constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl) {
         this._dispatchData = DispatchData;
         this._$mdDialog = $mdDialog;
@@ -9,7 +7,7 @@ class JobDetailService {
         this._$document = $document;
         this._$timeout = $timeout;
         this._moment = moment;
-        this.versionUrl = versionUrl;
+        this._versionUrl = versionUrl;
 
         this.options = {
             "detail": {
@@ -356,7 +354,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: 'AddNotesDialogController',
             controllerAs: "ctrl",
-            templateUrl: this.versionUrl("app/components/dialogs/add-notes-dialog/add-notes-dialog.html"),
+            templateUrl: this._versionUrl("app/components/dialogs/add-notes-dialog/add-notes-dialog.html"),
             parent: angular.element(this._$document.body),
             targetEvent: $event,
             clickOutsideToClose: true,
@@ -388,7 +386,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
-            templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+            templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -435,7 +433,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
-            templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+            templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -484,7 +482,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
-            templateUrl: this.versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+            templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -550,9 +548,6 @@ class JobDetailService {
             };
 
             await this.updateField(false, job, callData);
-
-            // Relate job
-            job.charge = await this._rateJobService.rateJob(job);
 
             console.log('Complete');
         } catch (error) {
@@ -680,6 +675,7 @@ class JobDetailService {
         if (reRate && !job.bulkJob) {
             const rate = await this._rateJobService.rateJob(job);
             const numericRate = Number(rate.replace(/[^0-9.-]+/g, ""));
+
             return await this._dispatchData.updateJobDetail(
                 callData.jobID,
                 callData.field,
@@ -958,7 +954,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: event,
-            templateUrl: this.versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
+            templateUrl: this._versionUrl("app/components/dialogs/edit-address-dialog/edit-address-dialog.html"),
             clickOutsideToClose: false,
             fullscreen: true,
             locals: {
@@ -1509,7 +1505,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
-            templateUrl: this.versionUrl('app/components/dialogs/select-dialog/select-dialog.html'),
+            templateUrl: this._versionUrl('app/components/dialogs/select-dialog/select-dialog.html'),
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1629,7 +1625,7 @@ class JobDetailService {
             controllerAs: 'ctrl',
             parent: angular.element(this._$document.body),
             targetEvent: $event,
-            templateUrl: this.versionUrl('app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html'),
+            templateUrl: this._versionUrl('app/components/dialogs/auto-complete-dialog/auto-complete-dialog.html'),
             clickOutsideToClose: true,
             fullscreen: true,
             locals: {
@@ -1681,7 +1677,7 @@ class JobDetailService {
         return this._$mdDialog.show({
             controller: 'PalletDialogController',
             controllerAs: "ctrl",
-            templateUrl: this.versionUrl("app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html"),
+            templateUrl: this._versionUrl("app/components/dialogs/add-pallet-dialog/add-pallet-dialog.html"),
             parent: angular.element(this._$document.body),
             targetEvent: $event,
             clickOutsideToClose: true,
