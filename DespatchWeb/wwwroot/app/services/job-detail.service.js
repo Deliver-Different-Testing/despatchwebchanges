@@ -305,7 +305,7 @@ class JobDetailService {
         const isTruckJob = job.size.id === 4 && [41, 42, 43, 44, 46, 51, 52].includes(job.speedID);
 
         const showDialog = async (description) => {
-            return await this._$mdDialog.show(
+            return this._$mdDialog.show(
                 this._$mdDialog.alert()
                     .parent(angular.element(this._$document.body))
                     .clickOutsideToClose(true)
@@ -678,7 +678,7 @@ class JobDetailService {
             const rate = await this._rateJobService.rateJob(job);
             const numericRate = Number(rate.replace(/[^0-9.-]+/g, ""));
 
-            return await this._dispatchData.updateJobDetail(
+            return this._dispatchData.updateJobDetail(
                 callData.jobID,
                 callData.field,
                 callData.value,
@@ -689,7 +689,7 @@ class JobDetailService {
             );
         } else {
             if (job.bulkJob) {
-                return await this._dispatchData.updateBulkJobDetail(
+                return this._dispatchData.updateBulkJobDetail(
                     job.id,
                     callData.field,
                     callData.value,
@@ -698,7 +698,7 @@ class JobDetailService {
                     ContactID
                 );
             } else {
-                return await this._dispatchData.updateJobDetail(
+                return this._dispatchData.updateJobDetail(
                     callData.jobID,
                     callData.field,
                     callData.value,
@@ -928,7 +928,7 @@ class JobDetailService {
 
         try {
             const addressDetails = await this.showAddressDialog(event, currentJob, isDeliveryAddress);
-            return await this._processAddressUpdate(currentJob, field, addressDetails);
+            return this._processAddressUpdate(currentJob, field, addressDetails);
         } catch (error) {
             console.log('Error updating GPS:', error);
         }
@@ -1070,7 +1070,7 @@ class JobDetailService {
         const rate = Number(callData.rate.replace(/[^0-9.-]+/g, ""));
 
         if (isDeliveryAddress) {
-            return await this._dispatchData.updateDeliveryAddress(
+            return this._dispatchData.updateDeliveryAddress(
                 callData.jobID,
                 suburbId,
                 address,
@@ -1082,7 +1082,7 @@ class JobDetailService {
                 job.preBook
             );
         } else {
-            return await this._dispatchData.updatePickupAddress(
+            return this._dispatchData.updatePickupAddress(
                 callData.jobID,
                 suburbId,
                 address,
@@ -1194,7 +1194,7 @@ class JobDetailService {
             const numericRate = Number(this.currentJob.charge.replace(/[^0-9.-]+/g, ""));
 
             try {
-                return await this._dispatchData.updateJobDetail(
+                return this._dispatchData.updateJobDetail(
                     job.id,
                     "Van",
                     vanValue,
@@ -1232,7 +1232,7 @@ class JobDetailService {
         const capitalizedProperty = property.charAt(0).toUpperCase() + property.slice(1);
 
         const updateJob = async (rate) => {
-            return await this._dispatchData.updateJobDetail(
+            return this._dispatchData.updateJobDetail(
                 job.id,
                 capitalizedProperty,
                 newValue,
@@ -1292,7 +1292,7 @@ class JobDetailService {
                 throw error;
             }
         } else {
-            return await this.toggleJobProperty(job, 'direct', false);
+            return this.toggleJobProperty(job, 'direct', false);
         }
     }
 

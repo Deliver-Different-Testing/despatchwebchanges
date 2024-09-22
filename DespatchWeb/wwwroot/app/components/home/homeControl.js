@@ -843,7 +843,7 @@ angular.module("uDispatch")
                             .cancel());
                         const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                         displayPickupPoints(unDispatchedData, true, null);
-                        return await $scope.getAvailableCourierLocation();
+                        return $scope.getAvailableCourierLocation();
                     }
 
                     console.log(jobNumber);
@@ -905,7 +905,7 @@ angular.module("uDispatch")
                     console.log('Dispatch cancelled or error occurred', error);
                     const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                     displayPickupPoints(unDispatchedData, true, null);
-                    return await $scope.getAvailableCourierLocation();
+                    return $scope.getAvailableCourierLocation();
                 }
             };
 
@@ -1195,7 +1195,7 @@ angular.module("uDispatch")
         }
     };
     /**
-     * @param  {$event}  $event
+     * @param  {Object}  $event
      */
     $scope.resendAll = async $event => {
         let confirm = $mdDialog.confirm()
@@ -1554,7 +1554,7 @@ angular.module("uDispatch")
                 const url = "/courier/AllActiveSearch";
 
                 try {
-                    return await DispatchData.autocompleteSearch(searchText, url);
+                    return DispatchData.autocompleteSearch(searchText, url);
                 } catch (error) {
                     console.log(error.message);
                     throw error;
@@ -2691,7 +2691,7 @@ angular.module("uDispatch")
                     $timeout(() => sizeHeadings(), 2000);
 
                     // JOB DETAIL
-                    return await $scope.getJobList();
+                    return $scope.getJobList();
                 } catch (error) {
                     console.log('Error in getData:', error);
                 }
@@ -2985,7 +2985,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param  {$event}  $event
+             * @param  {Object}  $event
              * @param  {Job}  job
              */
             $scope.showAdditionalServicesMenu = async ($event, job) => {
