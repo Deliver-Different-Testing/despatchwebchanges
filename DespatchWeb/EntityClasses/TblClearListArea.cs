@@ -20,8 +20,8 @@ namespace DespatchWeb.EntityClasses
         public string CreatedBy { get; set; }
         public DateTime LastModified { get; set; }
         public string LastModifiedBy { get; set; }
-        public string Notes { get; set; }
         public int Order { get; set; }
+        public string Notes { get; set; }
 
         public virtual ICollection<TblClearListZoneGroup> TblClearListZoneGroups { get; set; }
     }

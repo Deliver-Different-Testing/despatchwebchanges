@@ -171,7 +171,7 @@ public class CourierRepository : ICourierRepository
             : new ClearListEnvelopeViewModel();
     }
 
-    public async Task<ClearListViewModel> ClearLists(List<int> despatchViewIds)
+    public async Task<ClearListViewModel> ClearListsAsync(List<int> despatchViewIds)
     {
         var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
 
@@ -181,13 +181,14 @@ public class CourierRepository : ICourierRepository
             .Select(dvzg => dvzg.ZoneGroup)
             .SelectMany(zg => zg.TblClearListZoneGroups)
             .Select(clzg => clzg.ClearListArea)
+            .Distinct()
             .ToListAsync();
 
         var viewModel = new ClearListViewModel();
-        foreach (var area in clearLists)
+        foreach (var clearList in clearLists)
         {
-            var areaClearList = await BuildClearListViewModel(activeCouriers, area.ClearListAreaId, 33);
-            areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(area.Name?.ToLower());
+            var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
+            areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearList.Name?.ToLower());
 
             viewModel.Areas?.Add(areaClearList);
         }
@@ -195,82 +196,77 @@ public class CourierRepository : ICourierRepository
         return viewModel;
     }
 
-    private async Task<AreaClearList> BuildClearListViewModel(List<DES_qryCourierCombo_ActiveResult> activeCouriers,
-        int clearListId, int percentHeight)
+    private async Task<AreaClearList> BuildClearListViewModel(
+        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers, TblClearListArea clearList,
+        int percentHeight)
     {
-        var result = await GetCourierClearList(clearListId);
+        var result =
+            await _context.Procedures.DES_qdfCourier_ClearListsAsync(ClearListAreaID: clearList?.ClearListAreaId);
 
         var acl = new AreaClearList
         {
-            PercentHeight = percentHeight,
-            Top = result.Where(predicate: c => c.DisplayOrder == 1).Select(selector: x => new ClearListSection
-            {
-                CourierNumber = x.CourierCode,
-                CourierData = new CourierData
-                {
-                    Courier = activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Code + " " +
-                              activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Name,
-                    Location = "Penrose 373 Neilson St",
-                    Pu = "Central 1",
-                    Del = "Shallow Shore 3 | Deep Shore 2",
-                    Lrm = "36 Min",
-                    Eta2Lrm = "25 Min",
-                    CourierId = x.CourierID
-                },
-                Destinations = x.Deliver?.Split(separator: ",").Select(selector: d => new Destination
-                {
-                    Id = 1,
-                    Label = d.Trim()
-                }).Where(predicate: y => !string.IsNullOrWhiteSpace(value: y.Label)).ToList()
-            }).ToList(),
-            Middle = result.Where(predicate: c => c.DisplayOrder == 3).Select(selector: x => new ClearListSection
-            {
-                CourierNumber = x.CourierCode,
-                CourierData = new CourierData
-                {
-                    Courier = activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Code + " " +
-                              activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Name,
-                    Location = "Penrose 373 Neilson St",
-                    Pu = "Central 1",
-                    Del = "Shallow Shore 3 | Deep Shore 2",
-                    Lrm = "36 Min",
-                    Eta2Lrm = "25 Min",
-                    CourierId = x.CourierID
-                },
-                Destinations = x.Deliver?.Split(separator: ",").Select(selector: d => new Destination
-                {
-                    Id = 1,
-                    Label = d.Trim()
-                }).Where(predicate: y => !string.IsNullOrWhiteSpace(value: y.Label)).ToList()
-            }).ToList(),
-            Bottom = result.Where(predicate: c => c.DisplayOrder == 5).Select(selector: x => new ClearListSection
-            {
-                CourierNumber = x.CourierCode,
-                CourierData = new CourierData
-                {
-                    Courier = activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Code + " " +
-                              activeCouriers.FirstOrDefault(predicate: c => c.CourierID == x.CourierID)?.Name,
-                    Location = "Penrose 373 Neilson St",
-                    Pu = "Central 1",
-                    Del = "Shallow Shore 3 | Deep Shore 2",
-                    Lrm = "36 Min",
-                    Eta2Lrm = "25 Min",
-                    CourierId = x.CourierID
-                },
-                Destinations = x.Deliver.Split(separator: ",").Select(selector: d => new Destination
-                {
-                    Id = 1,
-                    Label = d.Trim()
-                }).Where(predicate: y => !string.IsNullOrWhiteSpace(value: y.Label)).ToList()
-            }).ToList()
+            Name = clearList?.Name,
+            PercentHeight = percentHeight
         };
+
+        var sections = new Dictionary<string, int>
+        {
+            { "Top", 1 },
+            { "Middle", 3 },
+            { "Bottom", 5 }
+        };
+
+        foreach (var section in sections)
+        {
+            var sectionData = BuildClearListSection(result, activeCouriers, section.Value);
+            if (section.Key != null) typeof(AreaClearList).GetProperty(section.Key)?.SetValue(acl, sectionData);
+        }
 
         return acl;
     }
 
-    private async Task<List<CourierClearListViewModel>> GetCourierClearList(int clearListId)
+    private static List<ClearListSection> BuildClearListSection(IEnumerable<DES_qdfCourier_ClearListsResult> result,
+        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers, int displayOrder)
     {
-        var result = await _context.Procedures.DES_qdfCourier_ClearListsAsync(ClearListAreaID: clearListId);
-        return _mapper.Map<List<CourierClearListViewModel>>(result);
+        if (result == null)
+            return new List<ClearListSection>();
+
+        return result.Where(c => c.DisplayOrder == displayOrder)
+            .Select(x => new ClearListSection
+            {
+                CourierNumber = x.Hash,
+                CourierData = BuildCourierData(x, activeCouriers),
+                Destinations = BuildDestinations(x.Deliver)
+            }).ToList();
+    }
+
+    private static CourierData BuildCourierData(DES_qdfCourier_ClearListsResult x,
+        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers)
+    {
+        if (activeCouriers == null) return new CourierData();
+        var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierID == x?.CourierID);
+
+        return new CourierData
+        {
+            Courier = $"{activeCourier?.Code} {activeCourier?.Name}".Trim(),
+            Location = "Unknown",
+            Pu = "Unknown",
+            Del = x.Deliver ?? "Unknown",
+            Lrm = "Unknown",
+            Eta2Lrm = "Unknown",
+            CourierId = x.CourierID
+        };
+    }
+
+    private static List<Destination> BuildDestinations(string deliver)
+    {
+        return deliver?.Split(',')
+            .Select((d, index) => new Destination
+            {
+                Id = index + 1,
+                Label = d.Trim()
+            })
+            .Where(y => !string.IsNullOrWhiteSpace(y.Label))
+            .ToList() ?? new List<Destination>();
     }
 }

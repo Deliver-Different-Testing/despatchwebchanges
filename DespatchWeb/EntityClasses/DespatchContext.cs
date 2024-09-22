@@ -918,8 +918,6 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(100);
 
-                entity.Property(e => e.Notes).HasColumnType("ntext");
-
                 entity.Property(e => e.Order).HasDefaultValueSql("((1))");
             });
 

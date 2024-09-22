@@ -23,6 +23,6 @@ public class GenericMapperProfiles : Profile
 
         CreateMap<DES_qdfCourier_ClearListsResult, CourierClearListViewModel>()
             .ForMember(dest => dest.CourierCode,
-                opt => opt.MapFrom(src => src.Hash)); // Assuming 'Hash' is the property name in the result for '#'
+                opt => opt.MapFrom(src => src.Hash));
     }
 }

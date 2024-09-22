@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Controllers;
@@ -17,8 +18,19 @@ public class CourierController : Controller
 
     public async Task<IActionResult> Index(List<int> despatchViewIds)
     {
-        var result = await _courierRepo.ClearLists(despatchViewIds);
-        return Json(result);
+        try
+        {
+            if (despatchViewIds is { Count: 0 })
+                return Json(new ClearListViewModel());
+
+            var result = await _courierRepo.ClearListsAsync(despatchViewIds);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public IActionResult ClearListEnvelope(int clearListId)
