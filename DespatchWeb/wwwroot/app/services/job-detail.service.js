@@ -547,7 +547,7 @@ class JobDetailService {
                 "call": "updateDetailField", "field": field, "value": result, "jobID": job.id
             };
 
-            await this.updateField(false, job, callData);
+            await this.updateField(true, job, callData);
 
             console.log('Complete');
         } catch (error) {
