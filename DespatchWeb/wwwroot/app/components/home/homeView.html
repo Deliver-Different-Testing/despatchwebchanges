@@ -48,19 +48,6 @@
                     </md-menu-content>
                 </md-menu>
 
-                <md-input-container class="md-block" ng-if="showChat">
-                    <label>Chat to...</label>
-                    <input ng-model="chatBox" ng-model-options="{debounce: 300}" type="text">
-                </md-input-container>
-
-                <!-- <div ng-if="!isInternal">
-                     <span>Clients:</span>
-                     <md-select multiple ng-model="pickService.clients" placeholder="Select Clients">
-                         <md-option ng-repeat="client in pickClients" ng-value="client.id">{{client.name}}</md-option>
-                     </md-select>
-                 </div>
- -->
-
                 <md-menu>
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
