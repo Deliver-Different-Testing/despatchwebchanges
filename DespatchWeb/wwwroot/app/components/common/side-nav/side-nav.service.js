@@ -1,7 +1,7 @@
 class SidenavService {
     constructor($mdSidenav, $timeout, $rootScope) {
-        this.$mdSidenav = $mdSidenav;
-        this.$timeout = $timeout;
+        this._$mdSidenav = $mdSidenav;
+        this._$timeout = $timeout;
         this.timeoutId = null;
         this.currentState = '';
 
@@ -12,7 +12,7 @@ class SidenavService {
     }
 
     toggle() {
-        this.$mdSidenav('right').toggle();
+        this._$mdSidenav('right').toggle();
     }
 
     setupAutoClose(element) {
@@ -20,13 +20,13 @@ class SidenavService {
 
         sidenav.on('mouseenter', () => {
             if (this.timeoutId) {
-                this.$timeout.cancel(this.timeoutId);
+                this._$timeout.cancel(this.timeoutId);
             }
         });
 
         sidenav.on('mouseleave', () => {
-            this.timeoutId = this.$timeout(() => {
-                this.$mdSidenav('right').close();
+            this.timeoutId = this._$timeout(() => {
+                this._$mdSidenav('right').close();
             }, 300);
         });
 

@@ -1,5 +1,5 @@
 class JobDetailService {
-    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl) {
+    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG) {
         this._dispatchData = DispatchData;
         this._$mdDialog = $mdDialog;
         this._toastrService = toastrService;
@@ -8,6 +8,7 @@ class JobDetailService {
         this._$timeout = $timeout;
         this._moment = moment;
         this._versionUrl = versionUrl;
+        this.APP_CONFIG = APP_CONFIG;
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.options = {
