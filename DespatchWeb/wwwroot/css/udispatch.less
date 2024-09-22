@@ -4,6 +4,7 @@
 
 body {
   overflow: hidden;
+  font-family: 'Roboto', sans-serif;
 }
 
 md-dialog {
@@ -214,34 +215,38 @@ md-divider {
   margin: 15px 0;
 }
 
-#box-clearLists {
+#box-driverLocations {
   .box-content {
     overflow: hidden !important;
   }
 }
 
-#clearLists {
+#driverLocations {
   .col-xs-3 {
     padding: 4px;
   }
 
-  .clearLists-list {
+  .driverLocations-list {
     margin-bottom: 10px;
     background: #bfbfbf;
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 
-    .clearLists-list-title {
+    .driverLocations-list-title {
       background: #5d5d5d;
       color: #FFF;
-      padding: 5px;
+      padding: 8px 16px;
       position: relative;
       cursor: pointer;
       min-height: 48px;
-      box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
-      transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
         background-color: #707070;
-        box-shadow: 0 8px 10px -5px rgba(0, 0, 0, 0.2), 0px 16px 20px 0px rgba(0, 0, 0, 0.14), 0px 6px 30px 5px rgba(0, 0, 0, 0.12);
       }
     }
 
@@ -250,13 +255,11 @@ md-divider {
       color: #000;
 
       &:hover {
-        background-color: @yellow;
-        color: #000;
+        background-color: darken(@yellow, 5%);
       }
 
       &:active {
-        box-shadow: none;
-        outline: none;
+        background-color: darken(@yellow, 10%);
       }
     }
 
@@ -264,7 +267,7 @@ md-divider {
       width: 100%;
     }
 
-    .clearLists-list-items {
+    .driverLocations-list-items {
       position: relative;
       overflow: auto;
       height: 100%;
@@ -276,72 +279,77 @@ md-divider {
       flex-direction: column;
 
       &::-webkit-scrollbar {
-        display: none; // Safari and Chrome
+        display: none;
       }
 
-      .clearLists-list-items-item {
+      .driverLocations-list-items-item {
         display: flex;
         align-items: center;
         background-color: #bae1ff;
         border-bottom: 1px solid #a4d2f5;
+        transition: background-color 0.15s ease-in-out;
 
-        &.active {
-          background-color: lighten(#bae1ff, 10);
+        &:hover {
+          background-color: darken(#bae1ff, 5%);
         }
 
-        .clearLists-list-items-item-number {
-          padding: 2px;
-          width: 33px;
+        &.active {
+          background-color: darken(#bae1ff, 10%);
+        }
+
+        .driverLocations-list-items-item-number {
+          padding: 4px 8px;
+          min-width: 33px;
           background: #94c5ea;
           text-align: center;
           font-weight: 700;
 
           &.active {
-            background-color: lighten(#94c5ea, 10);
+            background-color: darken(#94c5ea, 5%);
           }
         }
 
-        .clearLists-list-items-item-dest {
-          padding: 1px;
+        .driverLocations-list-items-item-dest {
+          padding: 2px 4px;
           display: inline-block;
           background: #efefef;
           border: 1px solid #CCC;
-          margin-top: 1px;
-          margin-bottom: 1px;
-          margin-left: 1px;
-          border-radius: 1px;
-          flex-grow: 1; // It takes remaining space
+          margin: 2px 0 2px 4px;
+          border-radius: 2px;
+          flex-grow: 1;
         }
       }
 
-      .clearLists-list-items-middle {
+      .driverLocations-list-items-middle {
         background-color: #d4c7ff;
         border-bottom: 1px solid #c6b6fd;
 
-        .clearLists-list-items-item-number {
-          padding: 2px;
+        &:hover {
+          background-color: darken(#d4c7ff, 5%);
+        }
+
+        .driverLocations-list-items-item-number {
           background: #bdaeef;
-          text-align: center;
-          font-weight: 700;
 
           &.active {
-            background-color: lighten(#d4c7ff, 10);
+            background-color: darken(#bdaeef, 5%);
           }
         }
       }
 
-      .clearLists-list-items-bottom {
+      .driverLocations-list-items-bottom {
         background-color: #ffdfba;
         border-bottom: 1px solid #efcea9;
 
-        .clearLists-list-items-item-number {
-          padding: 2px;
+        &:hover {
+          background-color: darken(#ffdfba, 5%);
+        }
+
+        .driverLocations-list-items-item-number {
           background: #ffc888;
-          text-align: center;
-          font-weight: 700;
 
           &.active {
-            background-color: lighten(#ffc888, 10);
+            background-color: darken(#ffc888, 5%);
           }
         }
       }

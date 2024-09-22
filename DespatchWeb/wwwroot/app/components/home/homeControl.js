@@ -284,7 +284,7 @@ angular.module("uDispatch")
                     "showRefresh": 1
                 }, "driverLocations": {
                     "title": "Driver Locations",
-                    "templateUrl": versionUrl("app/components/home/partials/clearLists.html"),
+                    "templateUrl": versionUrl("app/components/home/partials/driverLocations.html"),
                     "showSearch": 0,
                     "showRefresh": 0
                 }
@@ -364,7 +364,7 @@ angular.module("uDispatch")
                     }, {
                         "id": "col3",
                         "width": "300px",
-                        "boxes": $scope.isInternal ? [
+                        "boxes": [
                             {
                                 "name": "driverLocations",
                                 "height": "50%"
@@ -372,11 +372,6 @@ angular.module("uDispatch")
                             {
                                 "name": "map",
                                 "height": "50%"
-                            }
-                        ] : [
-                            {
-                                "name": "map",
-                                "height": "100%"
                             }
                         ]
                     }]

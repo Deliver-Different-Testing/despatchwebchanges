@@ -54,8 +54,8 @@ angular
 
         // Material Theme
         $mdThemingProvider.theme('default')
-            .primaryPalette('urgentPrimary')
-            .accentPalette('urgentAccent');
+            .primaryPalette('urgentAccent')
+            .accentPalette('urgentPrimary');
 
         // Register Toast themes
         $mdThemingProvider.theme('success-toast')
