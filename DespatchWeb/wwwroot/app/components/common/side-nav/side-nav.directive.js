@@ -1,37 +1,9 @@
 // sidenavDirective.js
 
 angular.module('uDispatch')
-    .directive('materialSidenav', ['materialSidenavService', materialSidenavService => ({
+    .directive('materialSidenav', ['materialSidenavService', 'versionUrl', (materialSidenavService, versionUrl) => ({
         restrict: 'E',
-        template: `
-            <md-sidenav class="md-sidenav-right" md-component-id="right">
-                <md-toolbar>
-                    <h1 class="md-toolbar-tools">
-                        Despatch
-                    </h1>                       
-                </md-toolbar>
-                <md-content>
-                    <md-list>
-                        <md-list-item ng-class="{'md-active': materialSidenavService.isActive('home')}" ui-sref="home">
-                            <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
-                            <p>Dispatch</p>
-                        </md-list-item>
-                        <md-list-item ng-class="{'md-active': materialSidenavService.isActive('nw')}" ui-sref="nw">
-                            <md-icon md-font-set="material-symbols-outlined">public</md-icon>
-                            <p>Domestic</p>
-                        </md-list-item>
-                        <md-list-item ng-class="{'md-active': materialSidenavService.isActive('cs')}" ui-sref="cs">
-                            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
-                            <p>Job Search</p>
-                        </md-list-item>
-                        <md-list-item ng-class="{'md-active': materialSidenavService.isActive('prebooks')}" ui-sref="prebooks">
-                            <md-icon md-font-set="material-symbols-outlined">book</md-icon>
-                            <p>PreBooks</p>
-                        </md-list-item>
-                    </md-list>
-                </md-content>
-            </md-sidenav>
-        `,
+        templateUrl: versionUrl('app/components/common/side-nav/side-nav.template.html'),
         link: (scope, element, attrs) => {
             const cleanup = materialSidenavService.setupAutoClose(element);
 
