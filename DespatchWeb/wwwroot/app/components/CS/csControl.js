@@ -621,11 +621,13 @@ angular.module('uDispatch').controller('CSControl', [
             $scope.refreshPreBookData(true);
         };
 
-        $scope.unlockJob = () => jdSvc
-            .unlockJob($scope.currentJob);
+        $scope.unlockJob = () => {
+            return jdSvc.unlockJob($scope.currentJob);
+        };
 
-        $scope.lockJob = () => jdSvc
-            .lockJob($scope.currentJob);
+        $scope.lockJob = () => {
+            return jdSvc.lockJob($scope.currentJob);
+        };
 
         $scope.unSplitJob = () => {
             const confirm = $mdDialog.confirm()
