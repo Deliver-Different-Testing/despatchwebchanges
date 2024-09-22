@@ -181,7 +181,7 @@ angular.module('uDispatch')
         $scope.boxes = {
             "jobList": {
                 "title": "Job Data",
-                "tpl": versionUrl("app/components/prebooks/tpls/pbList.tpl"),
+                "templateUrl": versionUrl("app/components/prebooks/partials/pbList.html"),
                 "showSearch": 1,
                 "showRefresh": 1,
                 "model": "jobList",
@@ -209,11 +209,13 @@ angular.module('uDispatch')
                 ]
             }, "jobDetail": {
                 "title": "Detail",
-                "tpl": versionUrl("app/components/prebooks/tpls/preBookDetail.tpl"),
+                "templateUrl": versionUrl("app/components/prebooks/partials/preBookDetail.html"),
                 "showSearch": 0,
                 "showDetailButtons": 1
             }, "map": {
-                "title": "Google Map", "tpl": versionUrl("app/components/prebooks/tpls/map.tpl"), "showSearch": 0
+                "title": "Google Map",
+                "templateUrl": versionUrl("app/components/prebooks/partials/map.html"),
+                "showSearch": 0
             }
 
         };
@@ -242,8 +244,11 @@ angular.module('uDispatch')
 
         $scope.layout = angular.copy($scope.layouts[0].layout);
 
-        $scope.loadLayout = i => {
-            $scope.layout = angular.copy($scope.layouts[i].layout, () => {
+        /**
+         * @param {Number} index
+         */
+        $scope.loadLayout = (index) => {
+            $scope.layout = angular.copy($scope.layouts[index].layout, () => {
                 $timeout(sizeHeadings(), 1000);
 
             });
@@ -540,41 +545,6 @@ angular.module('uDispatch')
                     })
                 }, escapeMarkup: markup => markup
             };
-
-            angular.element("#location").select2(options).on("select2:select", e => {
-                $.getJSON("https://geocoder.cit.api.here.com/6.2/geocode.json", {
-                    app_id: "bBPfh2x8Cauun3ygLMAx", app_code: "yjfwTdkin_R2rGXYTrwWVg", locationId: e.params.data.id
-                }).done(data => {
-                    const locn = data.Response.View[0].Result[0].Location;
-                    console.log("Suburb = " + locn.Address.District);
-                    console.log("PostCode = " + locn.Address.PostalCode);
-                    angular.element("#suburb").val(locn.Address.District);
-                    const mappedSub = jdSvc.pickSuburbs.find(obj => obj.text === locn.Address.District || obj.alias === locn.Address.District);
-                    if (mappedSub !== undefined) {
-                        console.log(mappedSub);
-                        angular.element('#our_suburb').val(mappedSub.id).trigger('change');
-                    } else {
-                        angular.element('#our_suburb').val(null).trigger('change');
-                    }
-
-
-                    jdSvc.gpsForm.data.lat = locn.DisplayPosition.Latitude;
-                    jdSvc.gpsForm.data.long = locn.DisplayPosition.Longitude;
-                    jdSvc.gpsForm.data.address = locn.Address.Label;
-                    const ll = new google.maps.LatLng(locn.DisplayPosition.Latitude, locn.DisplayPosition.Longitude);
-                    $scope.map.setCenter(ll);
-                    $scope.marker.setPosition(ll);
-
-                });
-            });
-
-            const suburbOptions = {
-                minimumInputLength: 1, data: jdSvc.pickSuburbs
-            };
-
-            angular.element("#our_suburb").select2(suburbOptions);
-
-            waitingDialog.hide();
         };
 
         $scope.highlightEvent = () => {

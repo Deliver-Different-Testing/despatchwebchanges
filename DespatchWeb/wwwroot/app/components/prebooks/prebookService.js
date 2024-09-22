@@ -1,6 +1,4 @@
 class PrebookService {
-    static $inject = ['$http'];
-
     constructor($http) {
         this._http = $http;
     }
