@@ -80,6 +80,10 @@
                                          ng-if="lo.name != 'Default'">
                                     delete
                                 </md-icon>
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-if="lo.name == 'Default'">
+                                    tune
+                                </md-icon>
                                 <span ng-click="loadLayout($index)"
                                       ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
                             </md-button>

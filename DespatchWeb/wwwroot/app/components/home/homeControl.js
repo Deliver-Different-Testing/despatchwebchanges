@@ -741,7 +741,6 @@ angular.module("uDispatch")
                     await uCSData.reAssignJobs(firstJobId);
                     await uCSData.reSendJobs(firstJobId);
                     await $scope.refreshData(true);
-
                 } catch (error) {
                     console.log("POD Swap Canceled or Error occurred", error);
                 }
@@ -884,6 +883,7 @@ angular.module("uDispatch")
                                 .ok('Close'));
                             return;
                         }
+
                         if (j.DGLicenseExpiry === null || moment(foundCourier.dgLicenseExpiry) < moment().add(1, 'days')) {
                             await $mdDialog.show($mdDialog.alert()
                                 .clickOutsideToClose(true)
@@ -891,6 +891,7 @@ angular.module("uDispatch")
                                 .ok('Close'));
                             return;
                         }
+
                         await DispatchData.addFollowupEvent(jn, j.clientId, j.contactName, ContactID, foundCourier.courierID, j.id, j.jobType, FirstName);
                     }
 
