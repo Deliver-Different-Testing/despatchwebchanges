@@ -15,10 +15,10 @@
    "T4TemplatePath": null,
    "Tables": [
       {
-        "Name": "[dbo].[ClearListAreaZipPolygon]",
-        "ObjectType": 0
+         "Name": "[dbo].[ClearListAreaZipPolygon]",
+         "ObjectType": 0
       },
-     {
+      {
          "Name": "[dbo].[DeliveryPhoto]",
          "ObjectType": 0
       },
@@ -46,9 +46,9 @@
          "Name": "[dbo].[tblClearListArea]",
          "ObjectType": 0
       },
-     {
-       "Name": "[dbo].[tblClearListAreaPolygon]",
-       "ObjectType": 0
+      {
+         "Name": "[dbo].[tblClearListAreaPolygon]",
+         "ObjectType": 0
       },
       {
          "Name": "[dbo].[tblClearListZoneGroups]",
@@ -71,6 +71,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblCourierGPS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblCourierLogInOut]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblDespatchView]",
          "ObjectType": 0
       },
@@ -84,6 +92,18 @@
       },
       {
          "Name": "[dbo].[tblJobLeaveNotHome]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygon]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygonGPS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygonSuburb]",
          "ObjectType": 0
       },
       {
@@ -204,6 +224,10 @@
       },
       {
          "Name": "[dbo].[tblJob]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblJob_Today]",
          "ObjectType": 3
       },
       {

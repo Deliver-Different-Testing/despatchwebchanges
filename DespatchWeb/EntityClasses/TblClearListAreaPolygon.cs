@@ -18,5 +18,6 @@ namespace DespatchWeb.EntityClasses
         public int? ZipPolygonId { get; set; }
 
         public virtual TblClearListArea ClearListArea { get; set; }
+        public virtual TblPolygon Polygon { get; set; }
     }
 }

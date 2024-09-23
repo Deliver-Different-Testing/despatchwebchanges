@@ -8,7 +8,7 @@ namespace DespatchWeb.Interfaces;
 
 public interface ICourierRepository
 {
-    Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId);
+    Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatusAsync(string courierId);
 
     Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType,
         string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null,
@@ -29,7 +29,7 @@ public interface ICourierRepository
     /// <returns></returns>
     Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm);
 
-    Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end);
+    Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end);
 
     /// <summary>
     /// All active couriers regardless of logged in or not
@@ -40,5 +40,7 @@ public interface ICourierRepository
     CourierLocation Location(string code);
     Task<ClearListViewModel> ClearListsAsync(List<int> despatchViewIds);
     Task<int> ClearListTotalRemainingAsync(string area);
-    Task<ClearListEnvelopeViewModel> ClearListEnvelopeAsync(int clearListId);
+
+    Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
+        bool includeCouriers = false);
 }

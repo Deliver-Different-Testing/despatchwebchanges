@@ -9,6 +9,8 @@ namespace DespatchWeb.EntityClasses
     {
         public TucSuburb()
         {
+            TblPolygonGps = new HashSet<TblPolygonGp>();
+            TblPolygonSuburbs = new HashSet<TblPolygonSuburb>();
             TucClients = new HashSet<TucClient>();
             TucStaffs = new HashSet<TucStaff>();
         }
@@ -43,6 +45,8 @@ namespace DespatchWeb.EntityClasses
         public string PrefixRunName { get; set; }
         public string Gsscity { get; set; }
 
+        public virtual ICollection<TblPolygonGp> TblPolygonGps { get; set; }
+        public virtual ICollection<TblPolygonSuburb> TblPolygonSuburbs { get; set; }
         public virtual ICollection<TucClient> TucClients { get; set; }
         public virtual ICollection<TucStaff> TucStaffs { get; set; }
     }

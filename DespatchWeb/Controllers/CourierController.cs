@@ -28,7 +28,7 @@ public class CourierController : Controller
     [HttpGet]
     public async Task<IActionResult> ClearListEnvelope(int clearListId)
     {
-        var result = await _courierRepo.ClearListEnvelopeAsync(clearListId);
+        var result = await _courierRepo.GetClearListAreaEnvelopeAsync(clearListId);
         return Json(result);
     }
 
@@ -74,13 +74,13 @@ public class CourierController : Controller
     [HttpGet]
     public async Task<IActionResult> Route(string code, DateTime? start, DateTime? end)
     {
-        var result = await _courierRepo.GetCourierRoute(code, start, end);
+        var result = await _courierRepo.GetCourierRouteAsync(code, start, end);
         return Json(result);
     }
 
     public async Task<IActionResult> TruckCourierStatus(string courierId)
     {
-        var result = await _courierRepo.TruckCourierStatus(courierId);
+        var result = await _courierRepo.TruckCourierStatusAsync(courierId);
         return Json(result);
     }
 

@@ -22,7 +22,7 @@ public class CourierRepository : ICourierRepository
         _mapper = mapper;
     }
 
-    public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId)
+    public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatusAsync(string courierId)
     {
         var result = await _context.Procedures.DES_qryTruckCourierStatusAsync(CourierID: courierId);
         return result;
@@ -111,7 +111,7 @@ public class CourierRepository : ICourierRepository
         }).ToList();
     }
 
-    public async Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end)
+    public async Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end)
     {
         var result = new List<CourierPosition>();
         await _context.LoadStoredProc(storedProcName: "MAP_stpCourierGPS_CourierTimeTrace_New")
@@ -161,15 +161,64 @@ public class CourierRepository : ICourierRepository
         return jobs.Count;
     }
 
-    public async Task<ClearListEnvelopeViewModel> ClearListEnvelopeAsync(int clearListId)
+    public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
+        bool includeCouriers = false)
     {
-        var result =
-            await _context.Procedures.MAP_stpClearListArea_EnvelopeAsync(ClearListAreaID: clearListId,
-                IncludeCouriers: false);
+        var today = DateTime.Today;
 
-        return result == null
-            ? _mapper.Map<ClearListEnvelopeViewModel>(result.First())
-            : new ClearListEnvelopeViewModel();
+        var areaPolygonsQuery =
+            from cla in _context.TblClearListAreas
+            join clap in _context.TblClearListAreaPolygons on cla.ClearListAreaId equals clap.ClearListAreaId
+            join pgps in _context.TblPolygonGps on clap.PolygonId equals pgps.PolygonId
+            where cla.ClearListAreaId == clearListAreaId
+            select new EnvelopeCoordinate { Longitude = pgps.Longitude, Latitude = pgps.Latitude };
+
+        var courierQuery = includeCouriers
+            ? from c in _context.TblCouriers
+            join jt in _context.TblJobTodays on c.CourierId equals jt.CourierId
+            join dps in _context.TblPolygonSuburbs on jt.ToSuburbId equals dps.SuburbId
+            join dp in _context.TblPolygons on dps.PolygonId equals dp.PolygonId
+            join dclap in _context.TblClearListAreaPolygons on dp.PolygonId equals dclap.PolygonId
+            join dcla in _context.TblClearListAreas on dclap.ClearListAreaId equals dcla.ClearListAreaId
+            join clio in _context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
+            join cgps in _context.TblCourierGps on c.CourierGpsid equals cgps.CourierGpsid
+            where dcla.ClearListAreaId == clearListAreaId
+                  && clio.LogInTime.Date == today
+                  && clio.LogOutTime == null
+                  && jt.JobDone == false
+                  && jt.Void == false
+                  && dcla.ChannelId == c.ChannelId
+            select new EnvelopeCoordinate { Longitude = (decimal)cgps.Longitude, Latitude = (decimal)cgps.Latitude }
+            : Enumerable.Empty<EnvelopeCoordinate>();
+
+        var unassignedJobsQuery = includeCouriers
+            ? from jt in _context.TblJobTodays
+            join ps in _context.TblPolygonSuburbs on jt.ToSuburbId equals ps.SuburbId
+            join clap in _context.TblClearListAreaPolygons on ps.PolygonId equals clap.PolygonId
+            where clap.ClearListAreaId == clearListAreaId
+                  && jt.JobDone == false
+                  && jt.Void == false
+                  && jt.CourierId == null
+            select new EnvelopeCoordinate
+                { Longitude = (decimal)jt.DeliveryLongitude, Latitude = (decimal)jt.DeliveryLatitude }
+            : Enumerable.Empty<EnvelopeCoordinate>();
+
+        var combinedQuery = areaPolygonsQuery
+            .Concat(courierQuery)
+            .Concat(unassignedJobsQuery);
+
+        var areaEnvelope = await combinedQuery
+            .GroupBy(_ => 1)
+            .Select(g => new ClearListEnvelopeViewModel
+            {
+                MinimumLongitude = g.Min(x => x.Longitude),
+                MinimumLatitude = g.Min(x => x.Latitude),
+                MaximumLongitude = g.Max(x => x.Longitude),
+                MaximumLatitude = g.Max(x => x.Latitude)
+            })
+            .FirstOrDefaultAsync();
+
+        return areaEnvelope ?? new ClearListEnvelopeViewModel();
     }
 
     public async Task<ClearListViewModel> ClearListsAsync(List<int> despatchViewIds)
@@ -178,12 +227,12 @@ public class CourierRepository : ICourierRepository
 
         var clearLists = await _context.TblDespatchViews
             .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-            .SelectMany(dv => dv.DespatchViewZoneGroups)
-            .Select(dvzg => dvzg.ZoneGroup)
-            .SelectMany(zg => zg.TblClearListZoneGroups)
-            .Select(clzg => clzg.ClearListArea)
+            .SelectMany(dv => dv.DespatchViewZoneGroups
+                .SelectMany(dvzg => dvzg.ZoneGroup.TblClearListZoneGroups
+                    .Select(clzg => clzg.ClearListArea)))
             .Distinct()
             .ToListAsync();
+
 
         var viewModel = new ClearListViewModel();
         foreach (var clearList in clearLists)
