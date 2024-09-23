@@ -10,7 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TblClearListArea()
         {
             TblClearListAreaPolygons = new HashSet<TblClearListAreaPolygon>();
-            TblClearListZoneGroups = new HashSet<TblClearListZoneGroup>();
+            ZoneGroups = new HashSet<ZoneGroup>();
         }
 
         public int ClearListAreaId { get; set; }
@@ -25,6 +25,6 @@ namespace DespatchWeb.EntityClasses
         public string Notes { get; set; }
 
         public virtual ICollection<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; }
-        public virtual ICollection<TblClearListZoneGroup> TblClearListZoneGroups { get; set; }
+        public virtual ICollection<ZoneGroup> ZoneGroups { get; set; }
     }
 }

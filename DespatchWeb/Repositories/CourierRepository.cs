@@ -227,9 +227,8 @@ public class CourierRepository : ICourierRepository
 
         var clearLists = await _context.TblDespatchViews
             .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-            .SelectMany(dv => dv.DespatchViewZoneGroups
-                .SelectMany(dvzg => dvzg.ZoneGroup.TblClearListZoneGroups
-                    .Select(clzg => clzg.ClearListArea)))
+            .SelectMany(dv => dv.DespatchViewZoneGroups)
+            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
             .Distinct()
             .ToListAsync();
 

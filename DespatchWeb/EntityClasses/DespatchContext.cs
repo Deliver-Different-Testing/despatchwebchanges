@@ -30,7 +30,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual DbSet<TblClearListArea> TblClearListAreas { get; set; }
         public virtual DbSet<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; }
-        public virtual DbSet<TblClearListZoneGroup> TblClearListZoneGroups { get; set; }
         public virtual DbSet<TblClient> TblClients { get; set; }
         public virtual DbSet<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; }
         public virtual DbSet<TblClientAvailableSpeedItem> TblClientAvailableSpeedItems { get; set; }
@@ -1004,44 +1003,6 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TblClearListAreaPolygons)
                     .HasForeignKey(d => d.PolygonId)
                     .HasConstraintName("FK_TblClearListAreaPolygon_tblPolygon");
-            });
-
-            modelBuilder.Entity<TblClearListZoneGroup>(entity =>
-            {
-                entity.HasKey(e => e.ClearListZoneId)
-                    .HasName("PK__ClearLis__346361B868DE460B");
-
-                entity.ToTable("tblClearListZoneGroups");
-
-                entity.Property(e => e.ClearListZoneId).HasColumnName("ClearListZoneID");
-
-                entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
-
-                entity.Property(e => e.Created)
-                    .HasColumnType("datetime")
-                    .HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.CreatedBy).HasMaxLength(255);
-
-                entity.Property(e => e.LastModified)
-                    .HasColumnType("datetime")
-                    .HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
-
-                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
-
-                entity.HasOne(d => d.ClearListArea)
-                    .WithMany(p => p.TblClearListZoneGroups)
-                    .HasForeignKey(d => d.ClearListAreaId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_ClearListZone_ClearList");
-
-                entity.HasOne(d => d.ZoneGroup)
-                    .WithMany(p => p.TblClearListZoneGroups)
-                    .HasForeignKey(d => d.ZoneGroupId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_ClearListZone_ZoneGroup");
             });
 
             modelBuilder.Entity<TblClient>(entity =>
@@ -6213,6 +6174,11 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
 
                 entity.Property(e => e.Name).HasMaxLength(255);
+
+                entity.HasOne(d => d.ClearListArea)
+                    .WithMany(p => p.ZoneGroups)
+                    .HasForeignKey(d => d.ClearListAreaId)
+                    .HasConstraintName("FK_ZoneGroup_ClearListArea");
             });
 
             modelBuilder.Entity<ZoneName>(entity =>

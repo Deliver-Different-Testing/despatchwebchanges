@@ -51,10 +51,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[tblClearListZoneGroups]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[tblClientAvailableSpeed]",
          "ObjectType": 0
       },
