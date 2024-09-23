@@ -5,7 +5,7 @@ angular.module("uDispatch")
         ($document, $filter, greetingService, jdSvc, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData,
          dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService) => {
             $scope.initializeVariables = () => {
-                $scope.isInternal = true; // (ClientInternal === "True");
+                $scope.isInternal = (ClientInternal === "True");
                 $scope.name = "Home";
                 $scope.jdSvc = jdSvc;
 
