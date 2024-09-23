@@ -9,7 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public int? CourierID { get; set; }
         [Column("#")]
-        public string Hash { get; set; }
+        public string # { get; set; }
         public int? DisplayOrder { get; set; }
         public string Deliver { get; set; }
         public DateTime? DisplayOrderDESC { get; set; }

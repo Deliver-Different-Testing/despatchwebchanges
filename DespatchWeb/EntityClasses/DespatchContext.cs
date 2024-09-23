@@ -18,6 +18,7 @@ namespace DespatchWeb.EntityClasses
         {
         }
 
+        public virtual DbSet<ClearListAreaZipPolygon> ClearListAreaZipPolygons { get; set; }
         public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
         public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
@@ -28,6 +29,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
         public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual DbSet<TblClearListArea> TblClearListAreas { get; set; }
+        public virtual DbSet<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; }
         public virtual DbSet<TblClearListZoneGroup> TblClearListZoneGroups { get; set; }
         public virtual DbSet<TblClient> TblClients { get; set; }
         public virtual DbSet<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; }
@@ -69,6 +71,32 @@ namespace DespatchWeb.EntityClasses
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ClearListAreaZipPolygon>(entity =>
+            {
+                entity.ToTable("ClearListAreaZipPolygon");
+
+                entity.HasIndex(e => new { e.ClearListAreaId, e.ZipPolygonId }, "UC_ClearListArea_ZipPolygon")
+                    .IsUnique();
+
+                entity.Property(e => e.ClearListAreaZipPolygonId).HasColumnName("ClearListAreaZipPolygonID");
+
+                entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+            });
+
             modelBuilder.Entity<DeliveryPhoto>(entity =>
             {
                 entity.ToTable("DeliveryPhoto");
@@ -919,6 +947,52 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(100);
 
                 entity.Property(e => e.Order).HasDefaultValueSql("((1))");
+            });
+
+            modelBuilder.Entity<TblClearListAreaPolygon>(entity =>
+            {
+                entity.HasKey(e => e.ClearListAreaPolygonId);
+
+                entity.ToTable("tblClearListAreaPolygon");
+
+                entity.HasIndex(e => e.ClearListAreaId, "ClearListAreaID");
+
+                entity.HasIndex(e => e.ZipPolygonId, "IX_ClearListAreaPolygon_ZipPolygonID");
+
+                entity.HasIndex(e => e.PolygonId, "PolygonID");
+
+                entity.HasIndex(e => new { e.ClearListAreaId, e.PolygonId }, "UC_ClearListArea_Polygon")
+                    .IsUnique();
+
+                entity.Property(e => e.ClearListAreaPolygonId).HasColumnName("ClearListAreaPolygonID");
+
+                entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
+
+                entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+
+                entity.HasOne(d => d.ClearListArea)
+                    .WithMany(p => p.TblClearListAreaPolygons)
+                    .HasForeignKey(d => d.ClearListAreaId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClearListAreaPolygon_tblClearListArea");
             });
 
             modelBuilder.Entity<TblClearListZoneGroup>(entity =>

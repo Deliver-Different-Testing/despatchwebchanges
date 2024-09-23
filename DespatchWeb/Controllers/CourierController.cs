@@ -18,24 +18,17 @@ public class CourierController : Controller
 
     public async Task<IActionResult> Index(List<int> despatchViewIds)
     {
-        try
-        {
-            if (despatchViewIds is { Count: 0 })
-                return Json(new ClearListViewModel());
+        if (despatchViewIds is { Count: 0 })
+            return Json(new ClearListViewModel());
 
-            var result = await _courierRepo.ClearListsAsync(despatchViewIds);
-            return Json(result);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        var result = await _courierRepo.ClearListsAsync(despatchViewIds);
+        return Json(result);
     }
 
-    public IActionResult ClearListEnvelope(int clearListId)
+    [HttpGet]
+    public async Task<IActionResult> ClearListEnvelope(int clearListId)
     {
-        var result = _courierRepo.ClearListEnvelopeAsync(clearListId);
+        var result = await _courierRepo.ClearListEnvelopeAsync(clearListId);
         return Json(result);
     }
 
@@ -44,7 +37,6 @@ public class CourierController : Controller
         var result = await _courierRepo.ActiveCouriersAsync();
         return Json(result);
     }
-
 
     [HttpGet]
     public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
@@ -56,16 +48,8 @@ public class CourierController : Controller
     [HttpGet]
     public async Task<IActionResult> PotentialCouriers(int jobId)
     {
-        try
-        {
-            var result = await _courierRepo.GetPotentialCouriersAsync(jobId);
-            return Json(result);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        var result = await _courierRepo.GetPotentialCouriersAsync(jobId);
+        return Json(result);
     }
 
     public async Task<IActionResult> AllActiveSearch(string searchTerm)

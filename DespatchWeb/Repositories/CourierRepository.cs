@@ -161,10 +161,11 @@ public class CourierRepository : ICourierRepository
         return jobs.Count;
     }
 
-    public async Task<ClearListEnvelopeViewModel> ClearListEnvelopeAsync(int id)
+    public async Task<ClearListEnvelopeViewModel> ClearListEnvelopeAsync(int clearListId)
     {
         var result =
-            await _context.Procedures.MAP_stpClearListArea_EnvelopeAsync(ClearListAreaID: id, IncludeCouriers: false);
+            await _context.Procedures.MAP_stpClearListArea_EnvelopeAsync(ClearListAreaID: clearListId,
+                IncludeCouriers: false);
 
         return result == null
             ? _mapper.Map<ClearListEnvelopeViewModel>(result.First())
@@ -205,7 +206,9 @@ public class CourierRepository : ICourierRepository
 
         var acl = new AreaClearList
         {
-            Name = clearList?.Name,
+            Id = clearList.ClearListAreaId,
+            Name = clearList.Name,
+            Order = clearList.Order,
             PercentHeight = percentHeight
         };
 

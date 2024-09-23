@@ -11,6 +11,7 @@ public class AreaClearList
 {
     public int Id { get; set; }
     public string Name { get; set; }
+    public int Order { get; set; }
     public int PercentHeight { get; set; }
     public List<ClearListSection> Top { get; set; } = new();
     public List<ClearListSection> Middle { get; set; } = new();

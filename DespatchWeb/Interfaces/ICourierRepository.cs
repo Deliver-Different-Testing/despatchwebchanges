@@ -40,5 +40,5 @@ public interface ICourierRepository
     CourierLocation Location(string code);
     Task<ClearListViewModel> ClearListsAsync(List<int> despatchViewIds);
     Task<int> ClearListTotalRemainingAsync(string area);
-    Task<ClearListEnvelopeViewModel> ClearListEnvelopeAsync(int id);
+    Task<ClearListEnvelopeViewModel> ClearListEnvelopeAsync(int clearListId);
 }
