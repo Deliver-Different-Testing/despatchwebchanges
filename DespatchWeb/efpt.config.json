@@ -183,6 +183,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[ZipPolygon]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[ZoneGroup]",
          "ObjectType": 0
       },

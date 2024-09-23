@@ -70,6 +70,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<UserWidgetPreference> UserWidgetPreferences { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
+        public virtual DbSet<ZipPolygon> ZipPolygons { get; set; }
         public virtual DbSet<ZoneGroup> ZoneGroups { get; set; }
         public virtual DbSet<ZoneName> ZoneNames { get; set; }
         public virtual DbSet<ZoneZip> ZoneZips { get; set; }
@@ -1003,6 +1004,11 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TblClearListAreaPolygons)
                     .HasForeignKey(d => d.PolygonId)
                     .HasConstraintName("FK_TblClearListAreaPolygon_tblPolygon");
+
+                entity.HasOne(d => d.ZipPolygon)
+                    .WithMany(p => p.TblClearListAreaPolygons)
+                    .HasForeignKey(d => d.ZipPolygonId)
+                    .HasConstraintName("FK_ClearListAreaPolygon_ZipPolygon");
             });
 
             modelBuilder.Entity<TblClient>(entity =>
@@ -6153,6 +6159,25 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("ucjtName");
+            });
+
+            modelBuilder.Entity<ZipPolygon>(entity =>
+            {
+                entity.ToTable("ZipPolygon");
+
+                entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+
+                entity.Property(e => e.FixedWkt).HasColumnName("FixedWKT");
+
+                entity.Property(e => e.Latitude).HasColumnType("decimal(18, 8)");
+
+                entity.Property(e => e.Longitude).HasColumnType("decimal(18, 8)");
+
+                entity.Property(e => e.Wkt).HasColumnName("WKT");
+
+                entity.Property(e => e.Zip)
+                    .HasMaxLength(20)
+                    .IsUnicode(false);
             });
 
             modelBuilder.Entity<ZoneGroup>(entity =>
