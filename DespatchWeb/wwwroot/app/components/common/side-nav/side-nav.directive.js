@@ -9,6 +9,8 @@ angular.module('uDispatch')
 
             // Make the service available in the scope
             scope.materialSidenavService = materialSidenavService;
+            scope.userName = FirstName;
+            scope.companyName = 'DFRNT';
 
             // Clean up when the scope is destroyed
             scope.$on('$destroy', cleanup);

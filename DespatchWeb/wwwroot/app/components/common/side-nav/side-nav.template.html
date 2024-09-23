@@ -1,4 +1,3 @@
-<!-- materialSidenav.template.html -->
 <md-sidenav class="md-sidenav-right" md-component-id="right">
     <md-toolbar>
         <h1 class="md-toolbar-tools">
@@ -6,6 +5,16 @@
         </h1>
     </md-toolbar>
     <md-content>
+        <!-- Account header -->
+        <div class="md-padding account-header" layout="column" layout-align="center center">
+            <md-icon md-font-set="material-symbols-outlined"
+                     style="font-size: 48px; height: 48px; width: 48px; margin-bottom: 8px;">account_circle
+            </md-icon>
+            <span class="md-subhead">{{userName}}</span>
+            <span class="md-caption">{{companyName}}</span>
+        </div>
+        <md-divider></md-divider>
+        <!-- Navigation menu items -->
         <md-list>
             <md-list-item ng-class="{'md-active': materialSidenavService.isActive('home')}" ui-sref="home">
                 <md-icon md-font-set="material-symbols-outlined">dashboard</md-icon>
@@ -26,3 +35,13 @@
         </md-list>
     </md-content>
 </md-sidenav>
+
+<style>
+    .account-header {
+        pointer-events: none;
+    }
+
+    .account-header * {
+        user-select: none;
+    }
+</style>
