@@ -20,8 +20,8 @@ angular.module('uDispatch').controller('CSControl', [
     'moment',
     'DispatchData',
     'versionUrl',
-    '$mdSidenav',
-    ($scope, materialSidenavServicejdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, materialSidenavService) => {
+    'materialSidenavService',
+    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, materialSidenavService) => {
         $scope.isAdmin = (ClientInternal === "True");
         $scope.mapSetting = {
             "allCouriers": false, "allRuns": false
@@ -35,8 +35,6 @@ angular.module('uDispatch').controller('CSControl', [
         $scope.jobDetailFabIsOpen = false;
         $scope.dateSearchRange = 1; // Set to fortnight
         $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
-
-        //$scope.selectedJobs = [];
 
         $scope.searchBox = "";
         $scope.selectedEvents = [];
