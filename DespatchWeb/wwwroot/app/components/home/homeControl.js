@@ -688,18 +688,19 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {number} id
-             * @param {Object} $event
-             * @param {string} area
+             * @param driverDestination
              */
-            $scope.selectClearList = async (id, $event, area) => {
+            $scope.selectClearList = async (driverDestination) => {
                 try {
+                    const clearListId = driverDestination.id;
+                    const area = driverDestination.area;
+
                     let areaGroupButtons = angular.element("#area-group .btn");
                     areaGroupButtons.removeClass("topBarActive");
 
                     let driverLocationsActive = angular.element("#driverLocations .listActive");
                     if (driverLocationsActive.length <= 1) {
-                        await $scope.getClearListEnvelope(id);
+                        await $scope.getClearListEnvelope(clearListId);
                     }
 
                     await $scope.setFilters({'clearList': area});
@@ -2596,7 +2597,7 @@ angular.module("uDispatch")
             async function fetchDriverLocations() {
                 $scope.getClearListEnvelope = async (clearListId) => {
                     try {
-                        const data = await DispatchData.getClearListEnvelope(clearListId);
+                        const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
                         updateMapBounds(data);
                         await $scope.getAvailableCourierLocation();
                     } catch (error) {

@@ -1,5 +1,3 @@
-// sidenavDirective.js
-
 angular.module('uDispatch')
     .directive('materialSidenav', ['materialSidenavService', 'versionUrl', 'APP_CONFIG', (materialSidenavService, versionUrl, APP_CONFIG) => ({
         restrict: 'E',

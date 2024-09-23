@@ -3,7 +3,7 @@
         <div class="row">
             <div class="col-xs-3" ng-repeat="area in driverLocations.areas">
                 <div class="driverLocations-list" ng-style="{ 'height': area.percentHeight + '%' }">
-                    <div class="driverLocations-list-title" ng-click="selectClearList(area.id, $event, area.name);">
+                    <div class="driverLocations-list-title" ng-click="selectClearList(area);">
                         {{area.name}} {{area.totalRemaining}}
                     </div>
                     <div class="driverLocations-list-items">
