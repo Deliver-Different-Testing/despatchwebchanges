@@ -43,8 +43,8 @@ angular.module('uDispatch')
 
         // Material Theme
         $mdThemingProvider.theme('default')
-            .primaryPalette('grey')
-            .accentPalette('urgentPrimary');
+            .primaryPalette('urgentPrimary')
+            .accentPalette('urgentAccent');
 
         // Register Toast themes
         $mdThemingProvider.theme('success-toast')
