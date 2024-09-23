@@ -22,7 +22,8 @@
             </md-list-item>
             <md-list-item ng-class="{'md-active': materialSidenavService.isActive('nw')}" ui-sref="nw">
                 <md-icon md-font-set="material-symbols-outlined">public</md-icon>
-                <p>Domestic</p>
+                <p ng-if="isUsCustomer">Domestic</p>
+                <p ng-if="!isUsCustomer">Nationwide</p>
             </md-list-item>
             <md-list-item ng-class="{'md-active': materialSidenavService.isActive('cs')}" ui-sref="cs">
                 <md-icon md-font-set="material-symbols-outlined">search</md-icon>
