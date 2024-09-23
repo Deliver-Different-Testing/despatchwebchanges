@@ -83,7 +83,7 @@ angular.module('uDispatch').controller('CSControl', [
         };
 
         /**
-         * @param  {$event}  $event
+         * @param  {Object}  $event
          * @param  {Job}  job
          */
         $scope.selectAndDispatchJob = ($event, job) => {
@@ -112,7 +112,7 @@ angular.module('uDispatch').controller('CSControl', [
         }
 
         /**
-         * @param  {$event}  $event
+         * @param  {Object}  $event
          */
         $scope.createNewJob = $event => {
             // Dialog
@@ -139,7 +139,7 @@ angular.module('uDispatch').controller('CSControl', [
         }
 
         /**
-         * @param  {$event}  $event
+         * @param  {Object}  $event
          * @param  {Job}  job
          */
         $scope.showAdditionalServicesMenu = ($event, job) => {
@@ -176,7 +176,7 @@ angular.module('uDispatch').controller('CSControl', [
         }
 
         /**
-         * @param  {$event}  $event
+         * @param  {Object}  $event
          */
         $scope.interCourierCharge = $event => {
             $mdDialog.show({
