@@ -275,12 +275,14 @@ angular.module('uDispatch').controller('CSControl', [
 
         $scope.boxes = {
             "pickDate": {
-                "title": "Filters", "tpl": versionUrl("app/components/CS/tpls/pickDate.tpl"), "showSearch": 0
+                "title": "Filters",
+                "templateUrl": versionUrl("app/components/CS/partials/pickDate.html"),
+                "showSearch": 0
             },
 
             "jobList": {
                 "title": "Live Job Data",
-                "tpl": versionUrl("app/components/CS/tpls/jobList.tpl"),
+                "templateUrl": versionUrl("app/components/CS/partials/jobList.html"),
                 "showSearch": 1,
                 "model": "jobList",
                 "headings": [{
@@ -307,7 +309,7 @@ angular.module('uDispatch').controller('CSControl', [
                 ]
             }, "bulkJobList": {
                 "title": "Bulk Job Data",
-                "tpl": versionUrl("app/components/CS/tpls/bulkJobList.tpl"),
+                "templateUrl": versionUrl("app/components/CS/partials/bulkJobList.html"),
                 "showSearch": 1,
                 "model": "bulkJobList",
                 "headings": [{
@@ -329,12 +331,10 @@ angular.module('uDispatch').controller('CSControl', [
                 }, {
                     "label": "Notes", "name": "notes"
                 }
-
-
                 ]
             }, "pbList": {
                 "title": "PreBook Data",
-                "tpl": versionUrl("app/components/CS/tpls/pbList.tpl"),
+                "templateUrl": versionUrl("app/components/CS/partials/pbList.html"),
                 "showSearch": 1,
                 "showRefresh": 1,
                 "model": "pbList",
@@ -360,12 +360,12 @@ angular.module('uDispatch').controller('CSControl', [
                 ]
             }, "jobDetail": {
                 "title": "Detail",
-                "tpl": versionUrl("app/components/common/tpls/jobDetail.tpl"),
+                "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
                 "showSearch": 0,
                 "showDetailButtons": 1
             }, "scanList": {
                 "title": "Scan Detail",
-                "tpl": versionUrl("app/components/CS/tpls/scanList.tpl"),
+                "templateUrl": versionUrl("app/components/CS/partials/scanList.html"),
                 "showSearch": 0,
                 "model": "scanList",
                 "headings": [{
@@ -376,7 +376,7 @@ angular.module('uDispatch').controller('CSControl', [
                     "label": "Courier", "name": "courier"
                 }]
             }, "map": {
-                "title": "Google Map", "tpl": versionUrl("app/components/CS/tpls/map.tpl"), "showSearch": 0
+                "title": "Google Map", "templateUrl": versionUrl("app/components/CS/partials/map.html"), "showSearch": 0
             }
 
         };
@@ -1239,7 +1239,7 @@ angular.module('uDispatch').controller('CSControl', [
                 controller: $scope.eventDialogController,
                 scope: $scope,
                 preserveScope: true,
-                templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
+                templateUrl: "app/components/CS/partials/createEvent.html?v=1.13",
                 parent: angular.element($document.body),
                 clickOutsideToClose: true,
                 onComplete: afterShowAnimation
@@ -1256,7 +1256,7 @@ angular.module('uDispatch').controller('CSControl', [
                 controller: $scope.eventDialogController,
                 scope: $scope,
                 preserveScope: true,
-                templateUrl: "app/components/CS/tpls/createEvent.html?v=1.13",
+                templateUrl: "app/components/CS/partials/createEvent.html?v=1.13",
                 parent: angular.element($document.body),
                 clickOutsideToClose: true
             });
