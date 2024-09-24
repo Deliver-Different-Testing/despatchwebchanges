@@ -22,7 +22,7 @@ public class CourierController : Controller
         if (despatchViewIds is { Count: 0 })
             return Json(new ClearListViewModel());
 
-        var result = await _courierRepo.ClearListsAsync(despatchViewIds);
+        var result = await _courierRepo.GetClearListsAsync(despatchViewIds);
         return Json(result);
     }
 

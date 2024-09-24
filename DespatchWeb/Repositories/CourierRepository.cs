@@ -167,7 +167,7 @@ public class CourierRepository : ICourierRepository
         };
     }
 
-    public async Task<ClearListViewModel> ClearListsAsync(List<int> despatchViewIds)
+    public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
         var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
 
