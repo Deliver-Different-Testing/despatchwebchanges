@@ -79,6 +79,12 @@ angular.module("uDispatch")
                 });
             };
 
+            $scope.setActiveArea = selectedArea => {
+                angular.forEach($scope.driverLocations.areas, area => {
+                    area.isActive = (area === selectedArea);
+                });
+            };
+
             const cleanupFunctions = [];
             const safeOn = (eventName, selector, handler) => {
                 $document.on(eventName, selector, handler);
@@ -1673,6 +1679,19 @@ angular.module("uDispatch")
                 try {
                     loadingElement.css('display', 'block');
                     mapLoadingElement.css('display', '');
+
+                    // Deactivate all couriers
+                    angular.forEach($scope.driverLocations.areas, (area) => {
+                        angular.forEach(['top', 'middle', 'bottom'], (section) => {
+                            angular.forEach(area[section], (c) => {
+                                c.isActive = false;
+                            });
+                        });
+                    });
+
+                    // Activate the selected courier
+                    courier.isActive = true;
+
                     if (!courier.courier) {
                         courier.courier = `${courier.code} ${courier.firstName}`;
                     }
@@ -1686,6 +1705,9 @@ angular.module("uDispatch")
 
                     const result = await DispatchData.truckCourierStatus(courier.courierID);
                     $scope.truckCourierStatus = result.data;
+
+                    // Ensure the view is updated
+                    $scope.$apply();
                 } catch (error) {
                     console.log('Error selecting courier:', error);
                 } finally {
@@ -1694,8 +1716,7 @@ angular.module("uDispatch")
                         mapLoadingElement.css('display', 'none');
                     }, 100);
                 }
-            }
-
+            };
             $scope.refreshTruckCourierStatus = async () => {
                 try {
                     const result = await DispatchData.truckCourierStatus($scope.currentCourier.courierID);

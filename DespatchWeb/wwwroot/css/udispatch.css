@@ -1418,25 +1418,21 @@ md-table-container .md-table {
   width: 100%;
   table-layout: auto;
 }
-
 md-table-container .md-table th,
 md-table-container .md-table td {
   white-space: nowrap;
   min-width: 30px;
 }
-
 md-table-container .md-table th::-webkit-scrollbar,
 md-table-container .md-table td::-webkit-scrollbar {
   height: 4px;
   background-color: transparent;
 }
-
 md-table-container .md-table th::-webkit-scrollbar-thumb,
 md-table-container .md-table td::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.26);
   border-radius: 2px;
 }
-
 md-table-container .md-table th:hover::-webkit-scrollbar-thumb,
 md-table-container .md-table td:hover::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.4);
@@ -1552,13 +1548,11 @@ md-list-item.selected::before {
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: #3f51b5;
-  /* Use your primary color here */
+  background-color: #fddd00;
 }
 md-list-item.selected md-icon,
 md-list-item.selected p {
-  color: #3f51b5;
-  /* Use your primary color here */
+  color: #fddd00;
 }
 md-list-item:not(.selected):hover {
   background-color: rgba(0, 0, 0, 0.03);

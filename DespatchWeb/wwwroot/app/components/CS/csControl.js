@@ -782,10 +782,10 @@ angular.module('uDispatch').controller('CSControl', [
             });
         }
 
-        $scope.refreshAllData = () => {
+        $scope.refreshAllData = async () => {
             if (($scope.pickDateService.client || "") === "" && ($scope.pickDateService.courier || "") === "" && ($scope.pickDateService.job || "") === "" && ($scope.pickDateService.wild || "") === "") {
 
-                $mdDialog.show($mdDialog.alert()
+                await $mdDialog.show($mdDialog.alert()
                     .clickOutsideToClose(true)
                     .title('Missing Criteria')
                     .textContent('Please provide more detailed search criteria.')
@@ -793,34 +793,68 @@ angular.module('uDispatch').controller('CSControl', [
                 return;
             }
 
-            return $q.all([$scope.refreshData(), $scope.refreshBulkData(), $scope.refreshPreBookData()]);
+            await Promise.all([$scope.refreshData(), $scope.refreshBulkData(), $scope.refreshPreBookData()]);
+            $scope.$broadcast('autoResizeTable');
         };
 
-        $scope.refreshData = () => {
-            $scope.jobPromise = uCSData.getPodJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.wild || ""), ($scope.pickDateService.job || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.jobQuery.page, $scope.jobQuery.limit).then(data => {
+        $scope.refreshData = async () => {
+            try {
+                const data = await uCSData.getPodJobs(
+                    $scope.pickDateService.courier,
+                    $scope.pickDateService.client,
+                    ($scope.pickDateService.wild || ""),
+                    ($scope.pickDateService.job || ""),
+                    moment($scope.pickDateService.from_date),
+                    moment($scope.pickDateService.to_date),
+                    $scope.jobQuery.page,
+                    $scope.jobQuery.limit
+                );
+
                 $scope.jobList = data.item2;
                 $scope.totalCount = data.item1;
-            });
-
-            return $scope.jobPromise;
+            } catch (error) {
+                console.error('Error in refreshData:', error);
+            }
         };
 
-        $scope.refreshBulkData = () => {
-            $scope.bulkJobPromise = uCSData.searchBulkJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.job || ""), ($scope.pickDateService.wild || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.bulkJobQuery.page, $scope.bulkJobQuery.limit).then(data => {
+        $scope.refreshBulkData = async () => {
+            try {
+                const data = await uCSData.searchBulkJobs(
+                    $scope.pickDateService.courier,
+                    $scope.pickDateService.client,
+                    ($scope.pickDateService.job || ""),
+                    ($scope.pickDateService.wild || ""),
+                    moment($scope.pickDateService.from_date),
+                    moment($scope.pickDateService.to_date),
+                    $scope.bulkJobQuery.page,
+                    $scope.bulkJobQuery.limit
+                );
+
                 $scope.bulkJobList = data.item2;
                 $scope.bulkTotalCount = data.item1;
-            });
-
-            return $scope.bulkJobPromise;
+            } catch (error) {
+                console.error('Error in refreshBulkData:', error);
+            }
         };
 
-        $scope.refreshPreBookData = () => {
-            $scope.preBookPromise = uCSData.searchPreBookJobs($scope.pickDateService.courier, $scope.pickDateService.client, ($scope.pickDateService.wild || ""), ($scope.pickDateService.job || ""), moment($scope.pickDateService.from_date), moment($scope.pickDateService.to_date), $scope.preBookQuery.page, $scope.preBookQuery.limit).then(data => {
+        $scope.refreshPreBookData = async () => {
+            try {
+                const data = await uCSData.searchPreBookJobs(
+                    $scope.pickDateService.courier,
+                    $scope.pickDateService.client,
+                    ($scope.pickDateService.wild || ""),
+                    ($scope.pickDateService.job || ""),
+                    moment($scope.pickDateService.from_date),
+                    moment($scope.pickDateService.to_date),
+                    $scope.preBookQuery.page,
+                    $scope.preBookQuery.limit
+                );
+
                 $scope.pbList = data.item2;
                 $scope.pbTotalCount = data.item1;
-            });
-
-            return $scope.preBookPromise;
+            } catch (error) {
+                console.error('Error in refreshPreBookData:', error);
+            }
         };
 
         /**
@@ -1156,7 +1190,7 @@ angular.module('uDispatch').controller('CSControl', [
             }
 
             $scope.pickDateService.client = item.id;
-            $scope.refreshAllData(true);
+            return $scope.refreshAllData(true);
         };
 
         /**
@@ -1174,7 +1208,7 @@ angular.module('uDispatch').controller('CSControl', [
             }
 
             $scope.pickDateService.courier = item.id;
-            $scope.refreshAllData(true);
+            return refreshAllData(true);
         };
 
         uCSData.getActiveCouriers().then(data => {
