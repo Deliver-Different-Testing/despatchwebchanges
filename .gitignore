@@ -339,7 +339,9 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 
-/DespatchWeb/wwwroot/dist/
+
 healthchecksdb
 /DespatchWeb/Properties/launchSettings.json
 /Properties/launchSettings.json
+/wwwroot/dist/**
+/wwwroot/dist/homeControl.js
