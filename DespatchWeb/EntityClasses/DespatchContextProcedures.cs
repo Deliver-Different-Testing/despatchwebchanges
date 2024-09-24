@@ -49,6 +49,7 @@ namespace DespatchWeb.EntityClasses
             modelBuilder.Entity<DESWEB_stpMapEnvelopeResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<INT_stpIsValidLogin_DespatchResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<MAP_stpClearListArea_EnvelopeResult>().HasNoKey().ToView(null);
+            modelBuilder.Entity<MAP_stpCourierGPS_LastPositionTodayResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<qry_tucJobItemsResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<UTL_stpJob_tblBulkJob_ReleaseByJobNumberResult>().HasNoKey().ToView(null);
         }
@@ -2088,6 +2089,33 @@ namespace DespatchWeb.EntityClasses
                 parameterreturnValue,
             };
             var _ = await _context.SqlQueryAsync<MAP_stpClearListArea_EnvelopeResult>("EXEC @returnValue = [dbo].[MAP_stpClearListArea_Envelope] @ClearListAreaID = @ClearListAreaID, @IncludeCouriers = @IncludeCouriers", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<List<MAP_stpCourierGPS_LastPositionTodayResult>> MAP_stpCourierGPS_LastPositionTodayAsync(string CourierCode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "CourierCode",
+                    Size = 100,
+                    Value = CourierCode ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<MAP_stpCourierGPS_LastPositionTodayResult>("EXEC @returnValue = [dbo].[MAP_stpCourierGPS_LastPositionToday] @CourierCode = @CourierCode", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

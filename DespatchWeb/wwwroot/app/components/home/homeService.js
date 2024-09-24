@@ -364,7 +364,9 @@ class DispatchData {
      * @param {number} clearListId
      */
     async getDriverDestinationEnvelope(clearListId) {
-        const response = await this._$http.get('courier/ClearListEnvelope?clearListId=' + clearListId);
+        const countryId = this._useUsFormat ? 2 : 1;
+
+        const response = await this._$http.get('courier/ClearListEnvelope?clearListId=' + clearListId + '&countryId=' + countryId);
         return response.data;
     }
 

@@ -320,3 +320,13 @@
  * @property {string|null} courierName
  * @property {string|null} courierMobile
  */
+
+/**
+ * Represents the envelope (bounding box) of a clear list area.
+ * @typedef {Object} ClearListEnvelope
+ *
+ * @property {number} minimumLatitude - The southernmost latitude of the envelope.
+ * @property {number} minimumLongitude - The westernmost longitude of the envelope.
+ * @property {number} maximumLatitude - The northernmost latitude of the envelope.
+ * @property {number} maximumLongitude - The easternmost longitude of the envelope.
+ */

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -26,10 +27,19 @@ public class CourierController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ClearListEnvelope(int clearListId)
+    public async Task<IActionResult> ClearListEnvelope(int clearListId, int countryId)
     {
-        var result = await _courierRepo.GetClearListAreaEnvelopeAsync(clearListId);
-        return Json(result);
+        try
+        {
+            var country = (Country)countryId;
+            var result = await _courierRepo.GetClearListAreaEnvelopeAsync(clearListId, country);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<IActionResult> Active()

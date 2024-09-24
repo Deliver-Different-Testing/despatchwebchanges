@@ -2621,6 +2621,9 @@ angular.module("uDispatch")
                 await $scope.getDriverLocationsData();
             }
 
+            /**
+             * @param {ClearListEnvelope} clearListId
+             */
             function updateMapBounds(data) {
                 const swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
                 const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
