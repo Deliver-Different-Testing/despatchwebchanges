@@ -114,14 +114,8 @@ public class CourierRepository : ICourierRepository
 
     public async Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end)
     {
-        var result = new List<CourierPosition>();
-        await _context.LoadStoredProc(storedProcName: "MAP_stpCourierGPS_CourierTimeTrace_New")
-            .WithSqlParam(paramName: "@CourierCode", paramValue: code)
-            .WithSqlParam(paramName: "@StartTime", paramValue: start)
-            .WithSqlParam(paramName: "@EndTime", paramValue: end)
-            .ExecuteStoredProcAsync(
-                handleResults: handle => { result = handle.ReadToList<CourierPosition>().ToList(); });
-        return result;
+        var results = await _context.Procedures.MAP_stpCourierGPS_LastPositionTodayAsync(CourierCode: code);
+        return _mapper.Map<List<CourierPosition>>(results);
     }
 
     /// <summary>

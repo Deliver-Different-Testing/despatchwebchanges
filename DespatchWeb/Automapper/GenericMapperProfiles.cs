@@ -25,5 +25,7 @@ public class GenericMapperProfiles : Profile
         CreateMap<DESWEB_qryCourierActiveResult, ActiveCouriersViewModel>();
 
         CreateMap<DES_qryCourierCombo_ActiveResult, ActiveCouriersViewModel>();
+
+        CreateMap<MAP_stpCourierGPS_LastPositionTodayResult, CourierPosition>();
     }
 }
