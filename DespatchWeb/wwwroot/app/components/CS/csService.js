@@ -11,8 +11,7 @@ class CsService {
      * @param {number[]} jobIds
      */
     async allocateJobs(courierId, dispatcherId, jobIds) {
-        const response = await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-        return response;
+        return this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
@@ -117,6 +116,9 @@ class CsService {
         return response.data;
     }
 
+    /**
+     * @param {number} bulkJobId
+     */
     async getBulkJobDetail(bulkJobId) {
         const response = await this._$http.get('/Job/BulkDetail?bulkJobId=' + bulkJobId);
         return response.data;
@@ -259,6 +261,18 @@ class CsService {
 
     async doAPI(path, data) {
         const response = await this._$http.post(path, data);
+        return response.data;
+    }
+
+    async snapToRoads(path) {
+        const response = await this._$http.get('https://roads.googleapis.com/v1/snapToRoads', {
+            params: {
+                interpolate: true,
+                key: googleMapsApiKey,
+                path: path.join('|')
+            }
+        });
+
         return response.data;
     }
 }

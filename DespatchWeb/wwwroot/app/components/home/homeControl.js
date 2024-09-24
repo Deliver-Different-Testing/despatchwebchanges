@@ -404,6 +404,7 @@ angular.module("uDispatch")
             };
 
             $scope.layout = angular.copy($scope.layouts[0].layout);
+            $scope.currentLayoutName = $scope.layouts[0].name;
 
             /**
              * @param {Number} index

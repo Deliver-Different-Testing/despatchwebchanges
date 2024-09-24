@@ -193,7 +193,7 @@
  */
 
 /**
- * @typedef {Object} AddressDetails - Details related to the address in use.
+ * @typedef {Object} AddressDetails_Old - Details related to the address in use.
  *
  * @property {string} filledAddress - The fully formed address.
  * @property {number} lat - The latitude of the address.
