@@ -1416,42 +1416,30 @@ md-table-container {
 }
 md-table-container .md-table {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
 }
-md-table-container .md-table thead tr,
-md-table-container .md-table tbody tr {
-  display: flex;
-  width: 100%;
-}
-md-table-container .md-table th.md-column,
-md-table-container .md-table td.md-cell {
-  display: flex;
-  flex: 1 1 0;
-  min-width: 80px;
-  padding: 0 8px !important;
-  align-items: center;
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
-  overflow-x: auto;
-  overflow-y: hidden;
+
+md-table-container .md-table th,
+md-table-container .md-table td {
   white-space: nowrap;
+  min-width: 30px;
 }
-md-table-container .md-table th.md-column::-webkit-scrollbar,
-md-table-container .md-table td.md-cell::-webkit-scrollbar {
+
+md-table-container .md-table th::-webkit-scrollbar,
+md-table-container .md-table td::-webkit-scrollbar {
   height: 4px;
   background-color: transparent;
 }
-md-table-container .md-table th.md-column::-webkit-scrollbar-thumb,
-md-table-container .md-table td.md-cell::-webkit-scrollbar-thumb {
+
+md-table-container .md-table th::-webkit-scrollbar-thumb,
+md-table-container .md-table td::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.26);
   border-radius: 2px;
 }
-md-table-container .md-table th.md-column:hover::-webkit-scrollbar-thumb,
-md-table-container .md-table td.md-cell:hover::-webkit-scrollbar-thumb {
+
+md-table-container .md-table th:hover::-webkit-scrollbar-thumb,
+md-table-container .md-table td:hover::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.4);
-}
-md-table-container .md-table th.md-column:last-child,
-md-table-container .md-table td.md-cell:last-child {
-  border-right: none;
 }
 md-table-container .md-table thead tr {
   background-color: #e6f2ff;
@@ -1476,34 +1464,6 @@ md-table-container .md-table .md-row:nth-child(odd) {
 }
 md-table-container .md-table .md-row {
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-md-table-container .md-table .md-column.md-date-cell,
-md-table-container .md-table .md-cell.md-date-cell {
-  flex: 0 0 120px;
-}
-md-table-container .md-table .md-column.md-speed-cell,
-md-table-container .md-table .md-cell.md-speed-cell {
-  flex: 0 0 90px;
-}
-md-table-container .md-table .md-column.md-job-cell,
-md-table-container .md-table .md-cell.md-job-cell {
-  flex: 2;
-}
-md-table-container .md-table .md-column.md-client-cell,
-md-table-container .md-table .md-cell.md-client-cell {
-  flex: 1;
-}
-md-table-container .md-table .md-column.md-address-cell,
-md-table-container .md-table .md-cell.md-address-cell {
-  flex: 3;
-}
-md-table-container .md-table .md-column.md-code-cell,
-md-table-container .md-table .md-cell.md-code-cell {
-  flex: 1;
-}
-md-table-container .md-table .md-column.md-status-cell,
-md-table-container .md-table .md-cell.md-status-cell {
-  flex: 1;
 }
 md-table-container .md-table .client-box {
   display: inline-block;
@@ -1532,8 +1492,8 @@ md-table-container .md-table .md-icon {
   }
 }
 @media screen and (max-width: 600px) {
-  md-table-container .md-table th.md-column,
-  md-table-container .md-table td.md-cell {
+  md-table-container .md-table th,
+  md-table-container .md-table td {
     padding: 0 4px !important;
     font-size: 11px;
   }

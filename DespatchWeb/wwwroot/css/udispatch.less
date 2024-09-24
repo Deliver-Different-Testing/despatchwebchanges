@@ -1486,49 +1486,31 @@ md-table-container {
 
   .md-table {
     width: 100%;
-    table-layout: fixed;
+    table-layout: auto;
 
-    thead, tbody {
-      tr {
-        display: flex;
-        width: 100%;
-      }
-    }
-
-    th.md-column, td.md-cell {
-      display: flex;
-      flex: 1 1 0;
-      min-width: 80px;
-      padding: 0 8px !important;
-      align-items: center;
-      border-right: 1px solid rgba(0, 0, 0, 0.12);
-      overflow-x: auto;
-      overflow-y: hidden;
+    th, td {
       white-space: nowrap;
+      min-width: 30px;
     }
 
-    // Scrollbar styles (unchanged)
-    th.md-column::-webkit-scrollbar, td.md-cell::-webkit-scrollbar {
+    // Scrollbar styles
+    th::-webkit-scrollbar, td::-webkit-scrollbar {
       height: 4px;
       background-color: transparent;
     }
 
-    th.md-column::-webkit-scrollbar-thumb, td.md-cell::-webkit-scrollbar-thumb {
+    th::-webkit-scrollbar-thumb, td::-webkit-scrollbar-thumb {
       background-color: rgba(0, 0, 0, 0.26);
       border-radius: 2px;
     }
 
-    th.md-column:hover::-webkit-scrollbar-thumb, td.md-cell:hover::-webkit-scrollbar-thumb {
+    th:hover::-webkit-scrollbar-thumb, td:hover::-webkit-scrollbar-thumb {
       background-color: rgba(0, 0, 0, 0.4);
-    }
-
-    th.md-column:last-child, td.md-cell:last-child {
-      border-right: none;
     }
 
     thead {
       tr {
-        background-color: #e6f2ff; // New header background color
+        background-color: #e6f2ff; // Header background color
         th {
           font-size: 13px;
           font-weight: 500;
@@ -1560,36 +1542,6 @@ md-table-container {
       border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     }
 
-    .md-column, .md-cell {
-      &.md-date-cell {
-        flex: 0 0 120px;
-      }
-
-      &.md-speed-cell {
-        flex: 0 0 90px;
-      }
-
-      &.md-job-cell {
-        flex: 2;
-      }
-
-      &.md-client-cell {
-        flex: 1;
-      }
-
-      &.md-address-cell {
-        flex: 3;
-      }
-
-      &.md-code-cell {
-        flex: 1;
-      }
-
-      &.md-status-cell {
-        flex: 1;
-      }
-    }
-
     // New styles for client box
     .client-box {
       display: inline-block;
@@ -1618,13 +1570,13 @@ md-table-container {
       font-size: 18px;
     }
 
-    // Responsive styles (unchanged)
+    // Responsive styles
     @media screen and (max-width: 1200px) {
       font-size: 12px;
     }
 
     @media screen and (max-width: 600px) {
-      th.md-column, td.md-cell {
+      th, td {
         padding: 0 4px !important;
         font-size: 11px;
       }

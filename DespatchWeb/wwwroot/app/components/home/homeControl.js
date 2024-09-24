@@ -2575,7 +2575,9 @@ angular.module("uDispatch")
                     await fetchCourierMovements();
                     await fetchAreaList();
                     await fetchLateCalls();
-                    return await $scope.getJobList();
+                    await $scope.getJobList();
+
+                    $scope.$broadcast('autoResizeTable');
                 } catch (error) {
                     console.error('Error in getData:', error);
                 }
