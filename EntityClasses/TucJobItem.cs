@@ -30,4 +30,6 @@ public partial class TucJobItem
     public string Notes { get; set; }
 
     public bool? PrivateRes { get; set; }
+
+    public virtual TucJob Job { get; set; }
 }

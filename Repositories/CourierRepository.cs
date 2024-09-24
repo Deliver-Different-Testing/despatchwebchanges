@@ -12,15 +12,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
-public class CourierRepository : ICourierRepository
+
+public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), ICourierRepository
 {
-    public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory)
+    public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId)
     {
-        public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId)
-        {
-            var result = await Context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
-            return result;
-        }
+        var result = await Context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
+        return result;
+    }
 
     public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId,
         int jobId, int jobType, string despatcherName, string notes, int eventType, float? lateTime = null,
@@ -58,20 +57,20 @@ public class CourierRepository : ICourierRepository
         );
     }
 
-        public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
-        {
-            var result = new List<AvailableCourierPosition>();
-            Context.LoadStoredProc("DESWEB_stpMapEnvelope")
-                .WithSqlParam("@MinimumLongitude", minLng)
-                .WithSqlParam("@MinimumLatitude", minLat)
-                .WithSqlParam("@MaximumLongitude", maxLng)
-                .WithSqlParam("@MaximumLatitude", maxLat)
-                .ExecuteStoredProc(handle =>
-                {
-                    result = handle.ReadToList<AvailableCourierPosition>().ToList();
-                });
-            return result;
-        }
+    public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
+    {
+        var result = new List<AvailableCourierPosition>();
+        Context.LoadStoredProc("DESWEB_stpMapEnvelope")
+            .WithSqlParam("@MinimumLongitude", minLng)
+            .WithSqlParam("@MinimumLatitude", minLat)
+            .WithSqlParam("@MaximumLongitude", maxLng)
+            .WithSqlParam("@MaximumLatitude", maxLat)
+            .ExecuteStoredProc(handle =>
+            {
+                result = handle.ReadToList<AvailableCourierPosition>().ToList();
+            });
+        return result;
+    }
 
     public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
@@ -85,7 +84,7 @@ public class CourierRepository : ICourierRepository
     /// <returns></returns>
     public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
     {
-        var results = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+        var results = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
         return mapper.Map<List<ActiveCouriersViewModel>>(results);
     }
 
@@ -104,16 +103,16 @@ public class CourierRepository : ICourierRepository
         }).ToList();
     }
 
-        public async Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end)
-        {
-            var result = new List<CourierPosition>();
-            await Context.LoadStoredProc("MAP_stpCourierGPS_CourierTimeTrace_New")
-                .WithSqlParam("@CourierCode", code)
-                .WithSqlParam("@StartTime", start)
-                .WithSqlParam("@EndTime", end)
-                .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<CourierPosition>().ToList(); });
-            return result;
-        }
+    public async Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end)
+    {
+        var result = new List<CourierPosition>();
+        await Context.LoadStoredProc("MAP_stpCourierGPS_CourierTimeTrace_New")
+            .WithSqlParam("@CourierCode", code)
+            .WithSqlParam("@StartTime", start)
+            .WithSqlParam("@EndTime", end)
+            .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<CourierPosition>().ToList(); });
+        return result;
+    }
 
     /// <summary>
     /// All active couriers regardless of logged in or not
@@ -126,45 +125,45 @@ public class CourierRepository : ICourierRepository
     }
 
 
-        public CourierLocation Location(string code)
-        {
-            var currentLocation = new CourierLocation();
-            Context.LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
-                .WithSqlParam("@CourierCode", code)
-                .ExecuteStoredProc(handle =>
-                    {
-                        currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
-                    });
-            return currentLocation;
-        }
-
-        public async Task<ClearListViewModel> ClearLists()
-        {
-            var activeCouriers = new List<ActiveCouriersViewModel>();
-            Context.LoadStoredProc("DES_qryCourierCombo_Active")
-                .ExecuteStoredProc(handle =>
+    public CourierLocation Location(string code)
+    {
+        var currentLocation = new CourierLocation();
+        Context.LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
+            .WithSqlParam("@CourierCode", code)
+            .ExecuteStoredProc(handle =>
                 {
-                    activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
+                    currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
                 });
-            var data = new ClearListViewModel
+        return currentLocation;
+    }
+
+    public async Task<ClearListViewModel> ClearLists()
+    {
+        var activeCouriers = new List<ActiveCouriersViewModel>();
+        Context.LoadStoredProc("DES_qryCourierCombo_Active")
+            .ExecuteStoredProc(handle =>
             {
-                Central = BuildClearListViewModel(activeCouriers, 1, 70),
-                City = BuildClearListViewModel(activeCouriers, 2, 33),
-                Parnell = BuildClearListViewModel(activeCouriers, 12, 33),
-                Ponsonby = BuildClearListViewModel(activeCouriers, 15, 33),
-                NewMarket = BuildClearListViewModel(activeCouriers, 13, 33),
-                Eden = BuildClearListViewModel(activeCouriers, 14, 33),
-                Other = BuildClearListViewModel(activeCouriers, 8, 30),
-                WestMid = BuildClearListViewModel(activeCouriers, 6, 33),
-                EastMid = BuildClearListViewModel(activeCouriers, 16, 33),
-                ShallowWest = BuildClearListViewModel(activeCouriers, 9, 33),
-                DeepWest = BuildClearListViewModel(activeCouriers, 5, 33),
-                ShallowShore = BuildClearListViewModel(activeCouriers, 7, 33),
-                DeepShore = BuildClearListViewModel(activeCouriers, 18, 33),
-                Mangere = BuildClearListViewModel(activeCouriers, 17, 33),
-                DeepSouth = BuildClearListViewModel(activeCouriers, 4, 33),
-                DeepEast = BuildClearListViewModel(activeCouriers, 3, 33)
-            };
+                activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
+            });
+        var data = new ClearListViewModel
+        {
+            Central = BuildClearListViewModel(activeCouriers, 1, 70),
+            City = BuildClearListViewModel(activeCouriers, 2, 33),
+            Parnell = BuildClearListViewModel(activeCouriers, 12, 33),
+            Ponsonby = BuildClearListViewModel(activeCouriers, 15, 33),
+            NewMarket = BuildClearListViewModel(activeCouriers, 13, 33),
+            Eden = BuildClearListViewModel(activeCouriers, 14, 33),
+            Other = BuildClearListViewModel(activeCouriers, 8, 30),
+            WestMid = BuildClearListViewModel(activeCouriers, 6, 33),
+            EastMid = BuildClearListViewModel(activeCouriers, 16, 33),
+            ShallowWest = BuildClearListViewModel(activeCouriers, 9, 33),
+            DeepWest = BuildClearListViewModel(activeCouriers, 5, 33),
+            ShallowShore = BuildClearListViewModel(activeCouriers, 7, 33),
+            DeepShore = BuildClearListViewModel(activeCouriers, 18, 33),
+            Mangere = BuildClearListViewModel(activeCouriers, 17, 33),
+            DeepSouth = BuildClearListViewModel(activeCouriers, 4, 33),
+            DeepEast = BuildClearListViewModel(activeCouriers, 3, 33)
+        };
 
         data.Central.TotalRemaining = await ClearListTotalRemainingAsync("central");
         data.City.TotalRemaining = await ClearListTotalRemainingAsync("city");
@@ -205,7 +204,7 @@ public class CourierRepository : ICourierRepository
     public ClearListEnvelopeViewModel ClearListEnvelope(int id)
     {
         var envelope = new ClearListEnvelopeViewModel();
-        _context.LoadStoredProc("MAP_stpClearListArea_Envelope")
+        Context.LoadStoredProc("MAP_stpClearListArea_Envelope")
             .WithSqlParam("@ClearListAreaID", id)
             .WithSqlParam("@IncludeCouriers", false)
             .ExecuteStoredProc(handle =>
@@ -216,12 +215,12 @@ public class CourierRepository : ICourierRepository
     }
 
 
-        private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers, int clearListId, int percentHeight)
-        {
-            var result = new List<CourierClearListViewModel>();
-            Context.LoadStoredProc("DES_qdfCourier_ClearLists")
-                .WithSqlParam("@ClearListAreaID", clearListId)
-                .ExecuteStoredProc(handle => { result = handle.ReadToList<CourierClearListViewModel>().ToList(); });
+    private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers, int clearListId, int percentHeight)
+    {
+        var result = new List<CourierClearListViewModel>();
+        Context.LoadStoredProc("DES_qdfCourier_ClearLists")
+            .WithSqlParam("@ClearListAreaID", clearListId)
+            .ExecuteStoredProc(handle => { result = handle.ReadToList<CourierClearListViewModel>().ToList(); });
 
         var acl = new AreaClearList
         {

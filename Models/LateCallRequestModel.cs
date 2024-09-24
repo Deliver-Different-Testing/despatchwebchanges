@@ -1,43 +1,43 @@
 using System;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models;
 
 public class LateCallRequest
 {
-    [JsonProperty("clientId")] public int ClientId { get; set; }
+    [JsonPropertyName("clientId")] public int ClientId { get; set; }
 
-    [JsonProperty("lateType")] public int LateType { get; set; }
+    [JsonPropertyName("lateType")] public int LateType { get; set; }
 
-    [JsonProperty("lateTime")] public int LateTime { get; set; }
+    [JsonPropertyName("lateTime")] public int LateTime { get; set; }
 
-    [JsonProperty("minutes")] public int Minutes { get; set; }
+    [JsonPropertyName("minutes")] public int Minutes { get; set; }
 
-    [JsonProperty("pickupTime")] public int PickupTime { get; set; }
+    [JsonPropertyName("pickupTime")] public int PickupTime { get; set; }
 
-    [JsonProperty("alertLatePickup")] public int AlertLatePickup { get; set; }
+    [JsonPropertyName("alertLatePickup")] public int AlertLatePickup { get; set; }
 
-    [JsonProperty("deliveryTime")] public int DeliveryTime { get; set; }
+    [JsonPropertyName("deliveryTime")] public int DeliveryTime { get; set; }
 
-    [JsonProperty("alertLateDelivery")] public int AlertLateDelivery { get; set; }
+    [JsonPropertyName("alertLateDelivery")] public int AlertLateDelivery { get; set; }
 
-    [JsonProperty("jobNo")] public string JobNo { get; set; }
+    [JsonPropertyName("jobNo")] public string JobNo { get; set; }
 
-    [JsonProperty("contact")] public string Contact { get; set; }
+    [JsonPropertyName("contact")] public string Contact { get; set; }
 
-    [JsonProperty("staffId")] public string StaffId { get; set; }
+    [JsonPropertyName("staffId")] public string StaffId { get; set; }
 
-    [JsonProperty("jobTime")] public DateTime JobTime { get; set; }
+    [JsonPropertyName("jobTime")] public DateTime JobTime { get; set; }
 
-    [JsonProperty("jobId")] public int JobId { get; set; }
+    [JsonPropertyName("jobId")] public int JobId { get; set; }
 
-    [JsonProperty("jobType")] public int JobType { get; set; }
+    [JsonPropertyName("jobType")] public int JobType { get; set; }
 
-    [JsonProperty("bookedSpeed")] public string BookedSpeed { get; set; }
+    [JsonPropertyName("bookedSpeed")] public string BookedSpeed { get; set; }
 
-    [JsonProperty("notifiedSpeed")] public string NotifiedSpeed { get; set; }
+    [JsonPropertyName("notifiedSpeed")] public string NotifiedSpeed { get; set; }
 
-    [JsonProperty("despatcherName")] public string DespatcherName { get; set; }
+    [JsonPropertyName("despatcherName")] public string DespatcherName { get; set; }
 
-    [JsonProperty("calculationRequired")] public bool CalculationRequired { get; set; }
+    [JsonPropertyName("calculationRequired")] public bool CalculationRequired { get; set; }
 }

@@ -57,6 +57,4 @@ function initMap() {
     console.log("Maps Loaded");
 }
 
-// Raygun initialization
-rg4js('apiKey', 'iAbyCH3AlUySXlZxGuH0HQ');
-rg4js('enableCrashReporting', true);
+

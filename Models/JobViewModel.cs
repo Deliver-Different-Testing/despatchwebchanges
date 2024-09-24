@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models;
 
@@ -31,11 +31,11 @@ public class JobViewModel
     public string Source { get; set; }
     public string NotifiedName { get; set; }
     public string AcceptedName { get; set; }
-    [JsonProperty("speedID")] public int? SpeedId { get; set; }
+    [JsonPropertyName("speedID")] public int? SpeedId { get; set; }
     public string Notify { get; set; }
     public Vehicle Vehicle { get; set; }
 
-    [JsonProperty("clientID")] public int? ClientId { get; set; }
+    [JsonPropertyName("clientID")] public int? ClientId { get; set; }
 
     public int JobType { get; set; }
     public string Client { get; set; }
@@ -45,18 +45,18 @@ public class JobViewModel
     public string From { get; set; }
 
     [Obsolete("Use PickupAddress instead. This property will be removed in a future version.")]
-    [JsonProperty("fromSuburbID")]
+    [JsonPropertyName("fromSuburbID")]
     public int? FromSuburbId { get; set; }
 
     [Obsolete("Use PickupAddress instead. This property will be removed in a future version.")]
-    [JsonProperty("fromSuburbName")]
+    [JsonPropertyName("fromSuburbName")]
     public string FromSuburbName { get; set; }
 
     [Obsolete("Use PickupAddress instead. This property will be removed in a future version.")]
     public string FromPostCode { get; set; }
 
     [Obsolete("Use PickupAddress instead. This property will be removed in a future version.")]
-    [JsonProperty("fromAddress")]
+    [JsonPropertyName("fromAddress")]
     public string FromAddress { get; set; }
 
     [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
@@ -93,7 +93,7 @@ public class JobViewModel
     public string ContactName { get; set; }
     public string LoggedInContactName { get; set; }
 
-    [JsonProperty("deliverToContact")] public string DeliverToContact { get; set; }
+    [JsonPropertyName("deliverToContact")] public string DeliverToContact { get; set; }
 
     public int? TrackingMethod { get; set; }
     public string TrackingMobile { get; set; }

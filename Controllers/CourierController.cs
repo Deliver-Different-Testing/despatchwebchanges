@@ -6,7 +6,7 @@ using DespatchWeb.Interfaces;
 
 namespace DespatchWeb.Controllers
 {
-    public class CourierController(CourierRepository courierRepository) : Controller
+    public class CourierController(ICourierRepository courierRepository) : Controller
     {
 
         public async Task<IActionResult> Index()
@@ -23,7 +23,7 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> Active()
         {
-            var result = await courierRepository.ActiveCouriers();
+            var result = await courierRepository.ActiveCouriersAsync();
             return Json(result);
         }
 
@@ -40,7 +40,7 @@ namespace DespatchWeb.Controllers
     {
         try
         {
-            var result = await courierRepository.GetPotentialCouriers(jobId);
+            var result = await courierRepository.GetPotentialCouriersAsync(jobId);
             return Json(result);
         }
         catch (Exception e)

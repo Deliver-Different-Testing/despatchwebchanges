@@ -30,4 +30,6 @@ public partial class TblUndeliverableLocation
     public string WebDeliveredTimeLabel { get; set; }
 
     public virtual TucJobType JobType { get; set; }
+
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

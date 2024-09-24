@@ -75,13 +75,25 @@ public partial class TucJobType
 
     public bool? Faf { get; set; }
 
+    public int? UcjtClientId { get; set; }
+
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
 
     public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; } = new List<TblBulkRunSchedule>();
 
     public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleSpeeds { get; set; } = new List<TblBulkRunSchedule>();
 
+    public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; } = new List<TblClientAvailableSpeed>();
+
     public virtual ICollection<TblUndeliverableLocation> TblUndeliverableLocations { get; set; } = new List<TblUndeliverableLocation>();
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
+
+    public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<TucJob> TucJobDesiredJobTypes { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<TucJob> TucJobNotifiedJobTypes { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<TucJob> TucJobUcjbSpeedNavigations { get; set; } = new List<TucJob>();
 }

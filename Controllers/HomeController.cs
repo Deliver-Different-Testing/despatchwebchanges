@@ -1,6 +1,5 @@
 ﻿using ClientManager.Core.Domain;
 using DespatchWeb.Models;
-using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;
@@ -8,10 +7,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using DespatchWeb.Interfaces;
 
 namespace DespatchWeb.Controllers
 {
-    public class HomeController(ClientRepository clientRepository, IConnectionStringManager connectionStringManager) : Controller
+    public class HomeController(IClientRepository clientRepository, IConnectionStringManager connectionStringManager) : Controller
     {
 
         public async Task<IActionResult> Index([FromQuery] string login)
@@ -23,6 +23,8 @@ namespace DespatchWeb.Controllers
                 var contactId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "ContactID")?.Value;
                 var connectionString = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
                 var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+                var isUsTenant =HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "IsUsTenant")?.Value;
+                var isUsTenantFlag = bool.TryParse(isUsTenant, out bool result) && result;
 
                 if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(tenantId))
                 {
@@ -48,6 +50,7 @@ namespace DespatchWeb.Controllers
                 ViewBag.Email = clientDetail.Email;
                 ViewBag.ClientInternal = clientDetail.Internal;
                 ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
+                ViewBag.IsUsTenant= isUsTenantFlag;
 
                 return View();
             }
@@ -75,38 +78,19 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> ActiveClients(string searchTerm)
         {
-            var result = await clientRepository.ActiveClients(searchTerm);
+            var result = await clientRepository.ActiveClientsAsync(searchTerm);
             return Json(result);
         }
 
         public async Task<IActionResult> ClientContacts(int contactId)
         {
-            var result = await clientRepository.ClientContacts(contactId);
+            var result = await clientRepository.ClientContactsAsync(contactId);
             return Json(result);
         }
         
 
 
-        public IActionResult About()
-        {
-            ViewData["Message"] = "Your application description page.";
-            var x = "test";
-
-
-            return View();
-        }
-
-        public IActionResult Contact()
-        {
-            ViewData["Message"] = "Your contact page.";
-
-            return View();
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+     
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

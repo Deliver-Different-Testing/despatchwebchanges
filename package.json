@@ -18,6 +18,7 @@
     "@babel/plugin-transform-classes": "^7.25.4",
     "@babel/preset-env": "^7.25.4",
     "core-js": "^3.38.1",
+    "eslint": "^9.10.0",
     "glob": "^11.0.0",
     "uglify-js": "^3.19.3"
   },

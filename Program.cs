@@ -1,29 +1,32 @@
-﻿using DespatchWeb.EntityClasses;
+﻿using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
+using Amazon.S3;
+using ClientManager.Core.Domain;
+using DespatchWeb.Automapper;
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Mindscape.Raygun4Net.AspNetCore;
+using Microsoft.Extensions.FileProviders;
+using Serilog;
 using StackExchange.Redis;
 using System;
+using System.IO;
 using System.Threading.Tasks;
-using Amazon.Runtime;
-using Serilog;
-using Amazon.Runtime.CredentialManagement;
-using Amazon.S3;
-using ClientManager.Core.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddHealthChecks();
-builder.Services.AddRaygun(builder.Configuration);
 builder.Services.AddControllersWithViews();
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 Log.Logger =  new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).WriteTo.Console().CreateLogger();
@@ -45,9 +48,28 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => true;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
-builder.Services.AddScoped<JobRepository, JobRepository>();
-builder.Services.AddScoped<CourierRepository, CourierRepository>();
-builder.Services.AddScoped<ClientRepository, ClientRepository>();
+
+builder.Services.Configure<FormOptions>(x =>
+{
+    x.ValueLengthLimit = int.MaxValue;
+    x.MultipartBodyLengthLimit = int.MaxValue;
+    x.MultipartHeadersLengthLimit = int.MaxValue;
+});
+builder.Services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = int.MaxValue; });
+
+builder.Services.Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = int.MaxValue; });
+
+builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<ICourierRepository, CourierRepository>();
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+
+
+// Automapper
+builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile), typeof(PotentialCouriersViewModelMapperProfile),
+    typeof(GenericMapperProfiles), typeof(ActiveCouriersMapperProfile));
 
 
 // Register DespatchContext with a dummy connection string
@@ -115,7 +137,13 @@ app.UseStaticFiles(new StaticFileOptions
 
     ContentTypeProvider = provider
 });
-app.UseRaygun();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist")),
+    RequestPath = "/dist"
+});
+//app.UseRaygun();
 //app.UseHttpsRedirection();
 app.UseCookiePolicy();
 app.UseRouting();

@@ -290,4 +290,36 @@ public partial class DeswebQryDespatch
     public string ToCity { get; set; }
 
     public string ClientItemIds { get; set; }
+
+    public string PickupAddressLine1 { get; set; }
+
+    public string PickupAddressLine2 { get; set; }
+
+    public string PickupAddressLine3 { get; set; }
+
+    public string PickupAddressLine4 { get; set; }
+
+    public string PickupAddressLine5 { get; set; }
+
+    public string PickupAddressLine6 { get; set; }
+
+    public string PickupAddressLine7 { get; set; }
+
+    public string PickupAddressLine8 { get; set; }
+
+    public string DeliveryAddressLine1 { get; set; }
+
+    public string DeliveryAddressLine2 { get; set; }
+
+    public string DeliveryAddressLine3 { get; set; }
+
+    public string DeliveryAddressLine4 { get; set; }
+
+    public string DeliveryAddressLine5 { get; set; }
+
+    public string DeliveryAddressLine6 { get; set; }
+
+    public string DeliveryAddressLine7 { get; set; }
+
+    public string DeliveryAddressLine8 { get; set; }
 }
