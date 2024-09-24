@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Models;
 
 namespace DespatchWeb.Interfaces;
@@ -42,5 +43,5 @@ public interface ICourierRepository
     Task<int> ClearListTotalRemainingAsync(string area);
 
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
-        bool includeCouriers = false);
+        Country country, bool includeCouriers = false);
 }

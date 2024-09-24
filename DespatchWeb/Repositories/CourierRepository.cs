@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWebContextExtensions;
@@ -162,7 +163,73 @@ public class CourierRepository : ICourierRepository
     }
 
     public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
-        bool includeCouriers = false)
+        Country country, bool includeCouriers = false)
+    {
+        // Works for NZ (Urgent) and US clients currently. Allows for the set-up of clients in additional countries
+        return country switch
+        {
+            Country.Nz => await ClearListEnvelopesNzAsync(clearListAreaId, includeCouriers),
+            Country.Us => await ClearListEnvelopesUsAsync(clearListAreaId, includeCouriers),
+            _ => throw new ArgumentOutOfRangeException(nameof(country), country, null)
+        };
+    }
+
+    public async Task<ClearListViewModel> ClearListsAsync(List<int> despatchViewIds)
+    {
+        var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+
+        var clearLists = await _context.TblDespatchViews
+            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
+            .SelectMany(dv => dv.DespatchViewZoneGroups)
+            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
+            .Distinct()
+            .ToListAsync();
+
+
+        var viewModel = new ClearListViewModel();
+        foreach (var clearList in clearLists)
+        {
+            var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
+            if (areaClearList == null) continue;
+            areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearList?.Name?.ToLower());
+
+            viewModel.Areas?.Add(areaClearList);
+        }
+
+        return viewModel;
+    }
+
+    private async Task<ClearListEnvelopeViewModel> ClearListEnvelopesUsAsync(int clearListAreaId, bool includeCouriers)
+    {
+        var today = DateTime.Today;
+
+        var zipAreaPolygonsQuery =
+            from cla in _context.TblClearListAreas
+            join clap in _context.ClearListAreaZipPolygons on cla.ClearListAreaId equals clap.ClearListAreaId
+            join zp in _context.ZipPolygons on clap.ZipPolygonId equals zp.ZipPolygonId
+            where cla.ClearListAreaId == clearListAreaId
+            select new EnvelopeCoordinate { Longitude = (decimal)zp.Longitude, Latitude = (decimal)zp.Latitude };
+
+        var courierQuery = includeCouriers
+            ? from c in _context.TblCouriers
+            join jt in _context.TblJobTodays on c.CourierId equals jt.CourierId
+            join dps in _context.TblPolygonSuburbs on jt.ToSuburbId equals dps.SuburbId
+            join dp in _context.ZipPolygons on dps.PolygonId equals dp.PolygonId
+            join dclap in _context.ClearListAreaZipPolygons on dp.PolygonId equals dclap.PolygonId
+            join dcla in _context.TblClearListAreas on dclap.ClearListAreaId equals dcla.ClearListAreaId
+            join clio in _context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
+            join cgps in _context.TblCourierGps on c.CourierGpsid equals cgps.CourierGpsid
+            where dcla.ClearListAreaId == clearListAreaId
+                  && clio.LogInTime.Date == today
+                  && clio.LogOutTime == null
+                  && jt.JobDone == false
+                  && jt.Void == false
+                  && dcla.ChannelId == c.ChannelId
+            select new EnvelopeCoordinate { Longitude = (decimal)cgps.Longitude, Latitude = (decimal)cgps.Latitude }
+            : Enumerable.Empty<EnvelopeCoordinate>();
+    }
+
+    private async Task<ClearListEnvelopeViewModel> ClearListEnvelopesNzAsync(int clearListAreaId, bool includeCouriers)
     {
         var today = DateTime.Today;
 
@@ -219,30 +286,6 @@ public class CourierRepository : ICourierRepository
             .FirstOrDefaultAsync();
 
         return areaEnvelope ?? new ClearListEnvelopeViewModel();
-    }
-
-    public async Task<ClearListViewModel> ClearListsAsync(List<int> despatchViewIds)
-    {
-        var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
-
-        var clearLists = await _context.TblDespatchViews
-            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-            .SelectMany(dv => dv.DespatchViewZoneGroups)
-            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
-            .Distinct()
-            .ToListAsync();
-
-
-        var viewModel = new ClearListViewModel();
-        foreach (var clearList in clearLists)
-        {
-            var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
-            areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearList.Name?.ToLower());
-
-            viewModel.Areas?.Add(areaClearList);
-        }
-
-        return viewModel;
     }
 
     private async Task<AreaClearList> BuildClearListViewModel(
@@ -302,10 +345,10 @@ public class CourierRepository : ICourierRepository
             Courier = $"{activeCourier?.Code} {activeCourier?.Name}".Trim(),
             Location = "Unknown",
             Pu = "Unknown",
-            Del = x.Deliver ?? "Unknown",
+            Del = x?.Deliver ?? "Unknown",
             Lrm = "Unknown",
             Eta2Lrm = "Unknown",
-            CourierId = x.CourierID
+            CourierId = x?.CourierID
         };
     }
 
