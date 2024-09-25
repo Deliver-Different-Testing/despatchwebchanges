@@ -44,7 +44,7 @@
                     <md-input-container class="md-block" flex-gt-sm ng-if="ctrl.useUsFormat">
                         <label for="state">State</label>
                         <md-select id="state" ng-model="ctrl.addressDetails.state">
-                            <md-option ng-repeat="state in ctrl.states" value="{{state.abbreviation}}">
+                            <md-option ng-repeat="state in ctrl.UsStates" value="{{state.abbreviation}}">
                                 {{state.name}}
                             </md-option>
                         </md-select>
@@ -80,7 +80,7 @@
                     </md-input-container>
 
                     <md-input-container class="md-block" flex-gt-sm>
-                        <label for="long">{{ ctrl.useUsFormat ? 'Longitude' : 'Longtitude' }}</label>
+                        <label for="long">Longitude</label>
                         <input id="long" ng-model="ctrl.addressDetails.long">
                     </md-input-container>
                 </div>

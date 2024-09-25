@@ -4,8 +4,7 @@ public class CourierClearListViewModel
 {
     public int CourierID { get; set; }
 
-    [DespatchWeb.EntityClasses.PropName("#")]
-    public string CourierCode { get; set; }
+    [EntityClasses.PropName("#")] public string CourierCode { get; set; }
 
     public int DisplayOrder { get; set; }
 

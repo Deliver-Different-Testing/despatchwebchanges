@@ -3,25 +3,14 @@
  * @class
  */
 class SelectDialogController {
-    static $inject = [
-        '$mdDialog',
-        'DispatchData',
-        'toastrService',
-        'id',
-        'fieldName',
-        'title',
-        'job',
-        'options',
-        'initialValue',
-        'showCheckbox',
-        'checkboxLabel'
-    ];
+    static $inject = ['$mdDialog', 'DispatchData', 'toastrService', 'rateJobService', 'id', 'fieldName', 'title', 'job', 'options', 'initialValue', 'showCheckbox', 'checkboxLabel'];
 
     /**
      * Create a SelectDialogController
      * @param $mdDialog - The AngularJS Material service for showing dialogs.
      * @param DispatchData - The service used for data dispatching.
      * @param toastrService - The service to display toast messages
+     * @param rateJobService
      * @param {number} id - The ID related to the selection.
      * @param {string} fieldName - The name of the field for which the selection is being made.
      * @param {string} title - The title of the dialog.
@@ -31,22 +20,11 @@ class SelectDialogController {
      * @param {boolean} showCheckbox - Determines if the checkbox option should be shown on the view
      * @param {string} checkboxLabel - Label to display for the checkbox if shown to view
      */
-    constructor(
-        $mdDialog,
-        DispatchData,
-        toastrService,
-        id,
-        fieldName,
-        title,
-        job,
-        options,
-        initialValue,
-        showCheckbox,
-        checkboxLabel
-    ) {
+    constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel) {
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
         this.toastrService = toastrService;
+        this.rateJobService = rateJobService;
         this.showCheckbox = !showCheckbox ? false : showCheckbox;
         this.checkboxLabel = !checkboxLabel ? "" : checkboxLabel;
 
@@ -84,23 +62,31 @@ class SelectDialogController {
             } else {
                 if (this._fieldName === "Size") {
                     this._job.size.label = selectedOption.text;
+                    this._job.size.id = selectedOption.id;
                     this._job.van = true;
                 }
 
                 if (this._fieldName === "SpeedID") {
                     this._job.speedName = selectedOption.text;
+                    this._job.speedId = selectedOption.id;
                 }
 
                 if (this._fieldName === "AcceptedJobTypeID") {
                     this._job.acceptedName = selectedOption.text;
+                    this._job.acceptedJobTypeID = selectedOption.id;
                 }
 
                 if (this._fieldName === "NotifiedJobTypeID") {
                     this._job.notifiedName = selectedOption.text;
+                    this._job.notifiedId = selectedOption.id;
                 }
 
+                // Rate job
+                this._job.charge = await this.rateJobService.rateJob(this._job);
 
-                this._job.bulkJob ? await this._dispatchData.updateBulkJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID) : await this._dispatchData.updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID);
+                this._job.bulkJob ?
+                    await this._dispatchData.updateBulkJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID) :
+                    await this._dispatchData.updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID);
             }
 
             this._$mdDialog.hide();

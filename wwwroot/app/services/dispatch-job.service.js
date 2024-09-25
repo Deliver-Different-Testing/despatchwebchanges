@@ -3,8 +3,6 @@
  * @class
  */
 class DispatchJobService {
-    static $inject = ['$mdDialog', '$document', 'DispatchData', 'moment'];
-
     constructor($mdDialog, $document, DispatchData, moment) {
         this.$mdDialog = $mdDialog;
         this.$document = $document;

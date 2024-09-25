@@ -1,28 +1,17 @@
-<div class="top-bar">
-    <img src="/images/DFRNT-logo.png" class="logo" />
+<div>
+    <div>
+        <md-toolbar class="md-hue-2">
+            <div class="md-toolbar-tools">
+                <img alt="logo" class="logo" src="/images/DFRNT-logo.png"/>
 
-    <div class="top-bar">
-        <img class="logo" src="/images/menu-urgent.png"/>
-        <div class="topbar-NavButtons" role="navigation">
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks
-            </div>
-        </div>
+                <span flex></span>
 
-        <div class="topbar-buttons">
+                <span style="font-size: medium;">{{greetUser()}}</span>
 
-            <div style="display: flex; align-items: center;">
-                <div class="btn topbar-button" style="color: white;">
-                    <span>{{greetUser()}}</span>
-                </div>
-                <md-menu md-position-mode="target-right target">
-                    <md-button aria-label="Open layout options menu"
-                               class="md-fab md-mini md-primary"
+                <md-menu>
+                    <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
-                        <md-tooltip md-direction="bottom">Layouts</md-tooltip>
                     </md-button>
                     <md-menu-content width="2">
                         <md-menu-item>
@@ -31,11 +20,10 @@
                                 Save Layout
                             </md-button>
                         </md-menu-item>
-                        <md-menu-divider></md-menu-divider>
+                        <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
-                                <md-icon md-font-set="material-symbols-outlined"
-                                         ng-click="deleteLayout($index)">
+                                <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($index)">
                                     delete
                                 </md-icon>
                                 <span ng-click="loadLayout($index)"
@@ -44,8 +32,17 @@
                         </md-menu-item>
                     </md-menu-content>
                 </md-menu>
+
+                <md-divider class="vertical-divider"></md-divider>
+
+                <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleSidenav()"
+                           ng-mouseover="toggleSidenav()">
+                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
+                </md-button>
+
             </div>
-        </div>
+        </md-toolbar>
+        <material-sidenav></material-sidenav>
     </div>
 
 
@@ -195,7 +192,7 @@
 
                         <div class="box-content"
                              ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}"
-                             ng-include="boxes[box.name].tpl"></div>
+                             ng-include="boxes[box.name].templateUrl"></div>
                     </div>
 
                 </div>
@@ -226,12 +223,13 @@
     </div>
 
     <div id='draggingItems'></div>
+</div>
 
-    <script>
+<script>
+    (function () {
         document.onkeydown = overrideKeyboardEvent;
         document.onkeyup = overrideKeyboardEvent;
-        const keyIsDown = {};
-
+        var keyIsDown = {};
 
         angular.element(document).on('focus', '.searchBox input', function () {
             angular.element(".results").fadeIn(100);
@@ -252,7 +250,7 @@
                     }
                     break;
                 case "keyup":
-                    delete (keyIsDown[e.keyCode]);
+                    delete keyIsDown[e.keyCode];
                     // do key up stuff here
                     break;
             }
@@ -277,17 +275,15 @@
             }
         }
 
-
         angular.element(document).on('click', '.top-bar .btn-group .btn', function (event) {
             angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
             angular.element(this).addClass('topBarActive');
         });
 
-
         angular.element(document).ready(function () {
-            const favicon = document.getElementById("favicon");
+            var favicon = document.getElementById("favicon");
             favicon.setAttribute("href", "/POD_favicon.ico");
-            let isDown = false;   // Tracks status of mouse button
+            var isDown = false;   // Tracks status of mouse button
 
             angular.element(document).mousedown(function () {
                 isDown = true;      // When mouse goes down, set isDown to true
@@ -296,17 +292,14 @@
                     isDown = false;    // When mouse goes up, set isDown to false
                 });
 
-            let isOnRow = false;
-
+            var isOnRow = false;
 
             angular.element(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
-
                 if (event.ctrlKey) {
                     if (isDown) {        // Only change css if mouse is down
                         angular.element(this).addClass("active");
                     }
                 }
-
             });
 
             angular.element(document).on("hover", ".activeTable .clickable-row", function (event) {
@@ -322,24 +315,19 @@
                 if (isOnRow) {
                     angular.element(".activeTable .active").removeClass("active");
                 }
-
             });
-
         });
 
-
-        let mouseDown = 0;
+        var mouseDown = 0;
 
         angular.element(document).on('mousedown', '.clickable-row', function (event) {
-
-            let group;
-            let jobNo;
+            var group;
+            var jobNo;
             if (angular.element(".activeTable .clickable-row.active").length > 1) {
                 jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
             } else {
                 jobNo = angular.element(this).attr("data-jobno");
             }
-
 
             if (mouseDown === 0) {
                 mouseDown = 1;
@@ -353,7 +341,6 @@
                         }
                     } else {
                         if (!angular.element(this).hasClass("active")) {
-
                             group = angular.element(this).parents(".table-rows").attr("data-group");
                             angular.element('*[data-group="' + group + '"]').each(function () {
                                 angular.element(this).find('.active').removeClass('active');
@@ -369,15 +356,12 @@
 
                 if (!event.ctrlKey) {
                     if (angular.element(this).hasClass("draggable-row")) {
-
                         if (!angular.element(this).hasClass("active")) {
-
                             group = angular.element(this).parents(".table-rows").attr("data-group");
                             angular.element('*[data-group="' + group + '"]').each(function () {
                                 angular.element(this).find('.active').removeClass('active');
                             });
                             angular.element(this).addClass('active');
-
                         }
                         setTimeout(function () {
                             if (mouseDown === 1) {
@@ -394,39 +378,29 @@
                         }, 200);
                     }
                 }
-
             }
-
         });
 
         angular.element(document).on('mouseup', '.clickable-row', function (event) {
-
             if (event.which === 3) {
-
                 angular.element(".rightActiveTable").removeClass("rightActiveTable");
                 angular.element(this).parents(".table").addClass("rightActiveTable");
             }
             if (!event.ctrlKey) {
-
-                if (angular.element(this).hasClass("active")) {
-                } else {
-                    const group = angular.element(this).parents(".table-rows").attr("data-group");
+                if (!angular.element(this).hasClass("active")) {
+                    var group = angular.element(this).parents(".table-rows").attr("data-group");
 
                     angular.element('*[data-group="' + group + '"]').each(function () {
                         angular.element(this).find('.active').removeClass('active');
                     });
                     angular.element(this).addClass('active');
                 }
-
             }
-
         });
-
 
         angular.element(document).on('click', '.clickable-row', function (event) {
             event.stopPropagation();
         });
-
 
         angular.element(document).on("mouseup", function (ev) {
             angular.element("#draggingItems").hide();
@@ -434,7 +408,7 @@
         });
 
         angular.element(document).on("keydown", function (e) {
-            const code = (e.keyCode ? e.keyCode : e.which);
+            var code = (e.keyCode ? e.keyCode : e.which);
             if (code === 40) {
                 angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
             } else if (code === 38) {
@@ -442,34 +416,24 @@
             }
         });
 
-
-        //var delay = 250; // delay between calls
-        //var throttled = false; // are we currently throttled?
-
-        //setTimeout(function(){ sizeHeadings(angular.element("#jobList").parents(".column")); }, 100);
-
         function sizeHeadings(ele) {
-
             angular.element("body").find(".box").each(function () {
-                const box = angular.element(this);
+                var box = angular.element(this);
                 box.find(".table-headings thead tr th").each(function (index) {
-                    const newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                    var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
                     angular.element(this).width(newWidth);
                 });
                 box.find(".table-headings table").width(box.find(".table").width());
             });
 
             angular.element("body").find(".box").each(function () {
-                const box = angular.element(this);
+                var box = angular.element(this);
                 box.find(".table-b-headings thead tr th").each(function (index) {
-                    const newWidth = box.find(".table tbody tr td:visible").eq(index).width();
+                    var newWidth = box.find(".table tbody tr td:visible").eq(index).width();
                     angular.element(this).width(newWidth);
                 });
                 box.find(".table-b-headings table").width(box.find(".table").width());
             });
-
         }
-
-
-    </script>
-</div>
+    })();
+</script>

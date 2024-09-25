@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWebContextExtensions;
@@ -15,9 +15,9 @@ namespace DespatchWeb.Repositories;
 
 public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), ICourierRepository
 {
-    public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatus(string courierId)
+    public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatusAsync(string courierId)
     {
-        var result = await Context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
+        var result = await Context.Procedures.DES_qryTruckCourierStatusAsync(CourierID: courierId);
         return result;
     }
 
@@ -60,12 +60,12 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     public List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
     {
         var result = new List<AvailableCourierPosition>();
-        Context.LoadStoredProc("DESWEB_stpMapEnvelope")
-            .WithSqlParam("@MinimumLongitude", minLng)
-            .WithSqlParam("@MinimumLatitude", minLat)
-            .WithSqlParam("@MaximumLongitude", maxLng)
-            .WithSqlParam("@MaximumLatitude", maxLat)
-            .ExecuteStoredProc(handle =>
+        Context.LoadStoredProc(storedProcName: "DESWEB_stpMapEnvelope")
+            .WithSqlParam(paramName: "@MinimumLongitude", paramValue: minLng)
+            .WithSqlParam(paramName: "@MinimumLatitude", paramValue: minLat)
+            .WithSqlParam(paramName: "@MaximumLongitude", paramValue: maxLng)
+            .WithSqlParam(paramName: "@MaximumLatitude", paramValue: maxLat)
+            .ExecuteStoredProc(handleResults: handle =>
             {
                 result = handle.ReadToList<AvailableCourierPosition>().ToList();
             });
@@ -74,8 +74,8 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
-        var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
-        return mapper.Map<List<PotentialCouriersViewModel>>(results);
+        var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(JobID: jobId);
+        return mapper.Map<List<PotentialCouriersViewModel>>(source: results);
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
     {
         var results = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
-        return mapper.Map<List<ActiveCouriersViewModel>>(results);
+        return mapper.Map<List<ActiveCouriersViewModel>>(source: results);
     }
 
     /// <summary>
@@ -96,22 +96,17 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     {
         var results = await Context.Procedures.DESWeb_qryCourierComboAsync(SearchTerm: searchTerm);
 
-        return results.Select(r => new AllCourierActiveViewModel
+        return results.Select(selector: r => new AllCourierActiveViewModel
         {
             ID = r.ID,
             Text = r.Text
         }).ToList();
     }
 
-    public async Task<List<CourierPosition>> GetCourierRoute(string code, DateTime? start, DateTime? end)
+    public async Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end)
     {
-        var result = new List<CourierPosition>();
-        await Context.LoadStoredProc("MAP_stpCourierGPS_CourierTimeTrace_New")
-            .WithSqlParam("@CourierCode", code)
-            .WithSqlParam("@StartTime", start)
-            .WithSqlParam("@EndTime", end)
-            .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<CourierPosition>().ToList(); });
-        return result;
+        var results = await Context.Procedures.MAP_stpCourierGPS_LastPositionTodayAsync(CourierCode: code);
+        return mapper.Map<List<CourierPosition>>(results);
     }
 
     /// <summary>
@@ -121,171 +116,277 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
     {
         var results = await Context.Procedures.DESWEB_qryCourierActiveAsync();
-        return mapper.Map<List<ActiveCouriersViewModel>>(results);
+        return mapper.Map<List<ActiveCouriersViewModel>>(source: results);
     }
 
 
     public CourierLocation Location(string code)
     {
         var currentLocation = new CourierLocation();
-        Context.LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
-            .WithSqlParam("@CourierCode", code)
-            .ExecuteStoredProc(handle =>
-                {
-                    currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
-                });
-        return currentLocation;
-    }
-
-    public async Task<ClearListViewModel> ClearLists()
-    {
-        var activeCouriers = new List<ActiveCouriersViewModel>();
-        Context.LoadStoredProc("DES_qryCourierCombo_Active")
-            .ExecuteStoredProc(handle =>
+        Context.LoadStoredProc(storedProcName: "MAP_stpCourierGPS_LastPositionToday")
+            .WithSqlParam(paramName: "@CourierCode", paramValue: code)
+            .ExecuteStoredProc(handleResults: handle =>
             {
-                activeCouriers = handle.ReadToList<ActiveCouriersViewModel>().ToList();
+                currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
             });
-        var data = new ClearListViewModel
-        {
-            Central = BuildClearListViewModel(activeCouriers, 1, 70),
-            City = BuildClearListViewModel(activeCouriers, 2, 33),
-            Parnell = BuildClearListViewModel(activeCouriers, 12, 33),
-            Ponsonby = BuildClearListViewModel(activeCouriers, 15, 33),
-            NewMarket = BuildClearListViewModel(activeCouriers, 13, 33),
-            Eden = BuildClearListViewModel(activeCouriers, 14, 33),
-            Other = BuildClearListViewModel(activeCouriers, 8, 30),
-            WestMid = BuildClearListViewModel(activeCouriers, 6, 33),
-            EastMid = BuildClearListViewModel(activeCouriers, 16, 33),
-            ShallowWest = BuildClearListViewModel(activeCouriers, 9, 33),
-            DeepWest = BuildClearListViewModel(activeCouriers, 5, 33),
-            ShallowShore = BuildClearListViewModel(activeCouriers, 7, 33),
-            DeepShore = BuildClearListViewModel(activeCouriers, 18, 33),
-            Mangere = BuildClearListViewModel(activeCouriers, 17, 33),
-            DeepSouth = BuildClearListViewModel(activeCouriers, 4, 33),
-            DeepEast = BuildClearListViewModel(activeCouriers, 3, 33)
-        };
-
-        data.Central.TotalRemaining = await ClearListTotalRemainingAsync("central");
-        data.City.TotalRemaining = await ClearListTotalRemainingAsync("city");
-        data.Parnell.TotalRemaining = await ClearListTotalRemainingAsync("parnell");
-        data.Ponsonby.TotalRemaining = await ClearListTotalRemainingAsync("ponsonby");
-        data.NewMarket.TotalRemaining = await ClearListTotalRemainingAsync("newmarket");
-        data.Eden.TotalRemaining = await ClearListTotalRemainingAsync("eden");
-        data.Other.TotalRemaining = await ClearListTotalRemainingAsync("other");
-        data.WestMid.TotalRemaining = await ClearListTotalRemainingAsync("west mid");
-        data.EastMid.TotalRemaining = await ClearListTotalRemainingAsync("east mid");
-        data.ShallowWest.TotalRemaining = await ClearListTotalRemainingAsync("shallow west");
-        data.DeepWest.TotalRemaining = await ClearListTotalRemainingAsync("deep west");
-        data.ShallowShore.TotalRemaining = await ClearListTotalRemainingAsync("shallow shore");
-        data.DeepShore.TotalRemaining = await ClearListTotalRemainingAsync("deep shore");
-        data.Mangere.TotalRemaining = await ClearListTotalRemainingAsync("mangere");
-        data.DeepSouth.TotalRemaining = await ClearListTotalRemainingAsync("deep south");
-        data.DeepEast.TotalRemaining = await ClearListTotalRemainingAsync("deep east");
-        return data;
+        return currentLocation;
     }
 
     public async Task<int> ClearListTotalRemainingAsync(string area)
     {
         var filter =
-            Context.TblDespatchViews.FirstOrDefault(v =>
+            Context.TblDespatchViews.FirstOrDefault(predicate: v =>
                 (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
-        if (string.IsNullOrEmpty(filter))
-        {
+
+        if (string.IsNullOrEmpty(value: filter))
             return 0;
-        }
 
         filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
-        var s =
+        var query =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
-        var jobs = await Context.DeswebQryDespatches.FromSqlRaw(s).ToListWithNoLockAsync();
+        var jobs = await Context.DeswebQryDespatches.FromSqlRaw(sql: query).ToListAsync();
         return jobs.Count;
     }
 
-    public ClearListEnvelopeViewModel ClearListEnvelope(int id)
+    public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
+        Country country, bool includeCouriers = false)
     {
-        var envelope = new ClearListEnvelopeViewModel();
-        Context.LoadStoredProc("MAP_stpClearListArea_Envelope")
-            .WithSqlParam("@ClearListAreaID", id)
-            .WithSqlParam("@IncludeCouriers", false)
-            .ExecuteStoredProc(handle =>
-            {
-                envelope = handle.ReadToList<ClearListEnvelopeViewModel>().FirstOrDefault();
-            });
-        return envelope;
+        return country switch
+        {
+            Country.Nz => await GetClearListEnvelopeNzAsync(clearListAreaId, includeCouriers),
+            Country.Us => await GetClearListEnvelopeUsAsync(clearListAreaId, includeCouriers),
+            _ => throw new ArgumentOutOfRangeException(nameof(country), country, null)
+        };
     }
 
-
-    private AreaClearList BuildClearListViewModel(IReadOnlyCollection<ActiveCouriersViewModel> activeCouriers, int clearListId, int percentHeight)
+    public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
-        var result = new List<CourierClearListViewModel>();
-        Context.LoadStoredProc("DES_qdfCourier_ClearLists")
-            .WithSqlParam("@ClearListAreaID", clearListId)
-            .ExecuteStoredProc(handle => { result = handle.ReadToList<CourierClearListViewModel>().ToList(); });
+        var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+
+        var clearLists = await _context.TblDespatchViews
+            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
+            .SelectMany(dv => dv.DespatchViewZoneGroups)
+            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
+            .Distinct()
+            .ToListAsync();
+
+        var viewModel = new ClearListViewModel();
+        foreach (var clearList in clearLists)
+        {
+            var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
+            if (areaClearList == null) continue;
+            areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearList?.Name?.ToLower());
+
+            viewModel.Areas?.Add(areaClearList);
+        }
+
+        return viewModel;
+    }
+
+    private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeUsAsync(int clearListAreaId,
+        bool includeCouriers)
+    {
+        var query = GetClearListAreaBoundariesQuery(clearListAreaId);
+
+        if (!includeCouriers) return await CalculateEnvelopeAsync(query);
+        var courierLocationsQuery = GetCourierLocationsQueryUs(clearListAreaId);
+        var unassingedJobLocationsQuery = GetUnassignedJobLocationsQueryUs(clearListAreaId);
+
+        query = (query ?? throw new InvalidOperationException())
+            .Concat(courierLocationsQuery ?? throw new InvalidOperationException())
+            .Concat(unassingedJobLocationsQuery ?? throw new InvalidOperationException());
+
+        return await CalculateEnvelopeAsync(query);
+    }
+
+    private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeNzAsync(int clearListAreaId,
+        bool includeCouriers)
+    {
+        var query = GetAreaPolygonsQueryNz(clearListAreaId);
+
+        if (!includeCouriers) return await CalculateEnvelopeAsync(query);
+        var courierLocationsQuery = GetCourierLocationsQueryNz(clearListAreaId);
+        var unassignedJobsQuery = GetUnassignedJobLocationsQueryNz(clearListAreaId);
+
+        query = (query ?? throw new InvalidOperationException())
+            .Concat(courierLocationsQuery ?? throw new InvalidOperationException())
+            .Concat(unassignedJobsQuery ?? throw new InvalidOperationException());
+
+        return await CalculateEnvelopeAsync(query);
+    }
+
+    private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId)
+    {
+        return from cla in _context.TblClearListAreas
+            join clazp in _context.ClearListAreaZipPolygons on cla.ClearListAreaId equals clazp.ClearListAreaId
+            join zp in _context.ZipPolygons on clazp.ZipPolygonId equals zp.ZipPolygonId
+            where cla.ClearListAreaId == clearListAreaId
+            select new EnvelopeCoordinate { Longitude = (decimal)zp.Longitude, Latitude = (decimal)zp.Latitude };
+    }
+
+    private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)
+    {
+        var today = DateTime.Today;
+        return from c in _context.TblCouriers
+            join jt in _context.TblJobTodays on c.CourierId equals jt.CourierId
+            join zp in _context.ZipPolygons on new { Lat = jt.PickUpLatitude, Lon = jt.PickUpLongitude }
+                equals new { Lat = zp.Latitude, Lon = zp.Longitude }
+            join clazp in _context.ClearListAreaZipPolygons on zp.ZipPolygonId equals clazp.ZipPolygonId
+            join cla in _context.TblClearListAreas on clazp.ClearListAreaId equals cla.ClearListAreaId
+            join clio in _context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
+            join cg in _context.TblCourierGps on c.CourierGpsid equals cg.CourierGpsid
+            where cla.ClearListAreaId == clearListAreaId
+                  && clio.LogInTime.Date == today
+                  && clio.LogOutTime == null
+                  && jt.JobDone == false
+                  && jt.Void == false
+                  && cla.ChannelId == c.ChannelId
+            select new EnvelopeCoordinate { Longitude = (decimal)cg.Longitude, Latitude = (decimal)cg.Latitude };
+    }
+
+    private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryUs(int clearListAreaId)
+    {
+        return from jt in _context.TblJobTodays
+            join zp in _context.ZipPolygons on new { Lat = jt.PickUpLatitude, Lon = jt.PickUpLongitude }
+                equals new { Lat = zp.Latitude, Lon = zp.Longitude }
+            join clazp in _context.ClearListAreaZipPolygons on zp.ZipPolygonId equals clazp.ZipPolygonId
+            where clazp.ClearListAreaId == clearListAreaId
+                  && jt.JobDone == false
+                  && jt.Void == false
+                  && jt.CourierId == null
+            select new EnvelopeCoordinate
+                { Longitude = (decimal)jt.DeliveryLongitude, Latitude = (decimal)jt.DeliveryLatitude };
+    }
+
+    private IQueryable<EnvelopeCoordinate> GetAreaPolygonsQueryNz(int clearListAreaId)
+    {
+        return from cla in _context.TblClearListAreas
+            join clap in _context.TblClearListAreaPolygons on cla.ClearListAreaId equals clap.ClearListAreaId
+            join pgps in _context.TblPolygonGps on clap.PolygonId equals pgps.PolygonId
+            where cla.ClearListAreaId == clearListAreaId
+            select new EnvelopeCoordinate { Longitude = pgps.Longitude, Latitude = pgps.Latitude };
+    }
+
+    private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
+    {
+        var today = DateTime.Today;
+        return from c in _context.TblCouriers
+            join jt in _context.TblJobTodays on c.CourierId equals jt.CourierId
+            join dps in _context.TblPolygonSuburbs on jt.ToSuburbId equals dps.SuburbId
+            join dp in _context.TblPolygons on dps.PolygonId equals dp.PolygonId
+            join dclap in _context.TblClearListAreaPolygons on dp.PolygonId equals dclap.PolygonId
+            join dcla in _context.TblClearListAreas on dclap.ClearListAreaId equals dcla.ClearListAreaId
+            join clio in _context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
+            join cgps in _context.TblCourierGps on c.CourierGpsid equals cgps.CourierGpsid
+            where dcla.ClearListAreaId == clearListAreaId
+                  && clio.LogInTime.Date == today
+                  && clio.LogOutTime == null
+                  && jt.JobDone == false
+                  && jt.Void == false
+                  && dcla.ChannelId == c.ChannelId
+            select new EnvelopeCoordinate { Longitude = (decimal)cgps.Longitude, Latitude = (decimal)cgps.Latitude };
+    }
+
+    private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryNz(int clearListAreaId)
+    {
+        return from jt in _context.TblJobTodays
+            join ps in _context.TblPolygonSuburbs on jt.ToSuburbId equals ps.SuburbId
+            join clap in _context.TblClearListAreaPolygons on ps.PolygonId equals clap.PolygonId
+            where clap.ClearListAreaId == clearListAreaId
+                  && jt.JobDone == false
+                  && jt.Void == false
+                  && jt.CourierId == null
+            select new EnvelopeCoordinate
+                { Longitude = (decimal)jt.DeliveryLongitude, Latitude = (decimal)jt.DeliveryLatitude };
+    }
+
+    private static async Task<ClearListEnvelopeViewModel> CalculateEnvelopeAsync(IQueryable<EnvelopeCoordinate> query)
+    {
+        var result = await query.GroupBy(_ => 1)
+            .Select(g => new ClearListEnvelopeViewModel
+            {
+                MinimumLongitude = g.Min(x => x.Longitude),
+                MinimumLatitude = g.Min(x => x.Latitude),
+                MaximumLongitude = g.Max(x => x.Longitude),
+                MaximumLatitude = g.Max(x => x.Latitude)
+            }).FirstOrDefaultAsync();
+
+        return result ?? new ClearListEnvelopeViewModel();
+    }
+
+    private async Task<AreaClearList> BuildClearListViewModel(
+        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers, TblClearListArea clearList,
+        int percentHeight)
+    {
+        var result =
+            await _context.Procedures.DES_qdfCourier_ClearListsAsync(ClearListAreaID: clearList?.ClearListAreaId);
 
         var acl = new AreaClearList
         {
-            PercentHeight = percentHeight,
-            Top = result.Where(c => c.DisplayOrder == 1).Select(x => new ClearListSection()
-            {
-                CourierNumber = x.CourierCode,
-                CourierData = new CourierData()
-                {
-                    Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
-                              activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
-                    Location = "Penrose 373 Neilson St",
-                    Pu = "Central 1",
-                    Del = "Shallow Shore 3 | Deep Shore 2",
-                    Lrm = "36 Min",
-                    Eta2lrm = "25 Min",
-                    CourierID = x.CourierID
-                },
-                Destinations = x.Deliver.Split(",").Select(d => new Destination()
-                {
-                    Id = 1,
-                    Label = d.Trim()
-                }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
-            }).ToList(),
-            Middle = result.Where(c => c.DisplayOrder == 3).Select(x => new ClearListSection()
-            {
-                CourierNumber = x.CourierCode,
-                CourierData = new CourierData()
-                {
-                    Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
-                              activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
-                    Location = "Penrose 373 Neilson St",
-                    Pu = "Central 1",
-                    Del = "Shallow Shore 3 | Deep Shore 2",
-                    Lrm = "36 Min",
-                    Eta2lrm = "25 Min",
-                    CourierID = x.CourierID
-                },
-                Destinations = x.Deliver.Split(",").Select(d => new Destination()
-                {
-                    Id = 1,
-                    Label = d.Trim()
-                }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
-            }).ToList(),
-            Bottom = result.Where(c => c.DisplayOrder == 5).Select(x => new ClearListSection()
-            {
-                CourierNumber = x.CourierCode,
-                CourierData = new CourierData()
-                {
-                    Courier = activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Code + " " +
-                              activeCouriers.FirstOrDefault(c => c.CourierID == x.CourierID)?.Name,
-                    Location = "Penrose 373 Neilson St",
-                    Pu = "Central 1",
-                    Del = "Shallow Shore 3 | Deep Shore 2",
-                    Lrm = "36 Min",
-                    Eta2lrm = "25 Min",
-                    CourierID = x.CourierID
-                },
-                Destinations = x.Deliver.Split(",").Select(d => new Destination()
-                {
-                    Id = 1,
-                    Label = d.Trim()
-                }).Where(y => !string.IsNullOrWhiteSpace(y.Label)).ToList()
-            }).ToList()
+            Id = clearList.ClearListAreaId,
+            Name = clearList.Name,
+            Order = clearList.Order,
+            PercentHeight = percentHeight
         };
+
+        var sections = new Dictionary<string, int>
+        {
+            { "Top", 1 },
+            { "Middle", 3 },
+            { "Bottom", 5 }
+        };
+
+        foreach (var section in sections)
+        {
+            var sectionData = BuildClearListSection(result, activeCouriers, section.Value);
+            if (section.Key != null) typeof(AreaClearList).GetProperty(section.Key)?.SetValue(acl, sectionData);
+        }
+
         return acl;
+    }
+
+    private static List<ClearListSection> BuildClearListSection(IEnumerable<DES_qdfCourier_ClearListsResult> result,
+        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers, int displayOrder)
+    {
+        if (result == null)
+            return new List<ClearListSection>();
+
+        return result.Where(c => c.DisplayOrder == displayOrder)
+            .Select(x => new ClearListSection
+            {
+                CourierNumber = x.Hash,
+                CourierData = BuildCourierData(x, activeCouriers),
+                Destinations = BuildDestinations(x.Deliver)
+            }).ToList();
+    }
+
+    private static CourierData BuildCourierData(DES_qdfCourier_ClearListsResult x,
+        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers)
+    {
+        if (activeCouriers == null) return new CourierData();
+        var activeCourier = activeCouriers.FirstOrDefault(c => c?.CourierID == x?.CourierID);
+
+        return new CourierData
+        {
+            Courier = $"{activeCourier?.Code}   {activeCourier?.Name}".Trim(),
+            Location = "Unknown",
+            Pu = "Unknown",
+            Del = x?.Deliver ?? "Unknown",
+            Lrm = "Unknown",
+            Eta2Lrm = "Unknown",
+            CourierId = x?.CourierID
+        };
+    }
+
+    private static List<Destination> BuildDestinations(string deliver)
+    {
+        return deliver?.Split(',')
+            .Select((d, index) => new Destination
+            {
+                Id = index + 1,
+                Label = d.Trim()
+            })
+            .Where(y => !string.IsNullOrWhiteSpace(y.Label))
+            .ToList() ?? new List<Destination>();
     }
 }

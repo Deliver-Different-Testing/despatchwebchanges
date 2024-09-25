@@ -143,7 +143,7 @@ class CreateJobDialogController {
     }
 
     /**
-     * @param {{text: string, id: number}} item
+     * @param {Suggestion} item
      * @param {boolean} isToAddress
      */
     async addressSearchItemSelected(item, isToAddress) {
@@ -157,15 +157,29 @@ class CreateJobDialogController {
             const addressDetails = isToAddress ? this.job.deliveryAddress : this.job.pickupAddress;
 
             if (this.useUsFormat) {
-                addressDetails.addressLine4 = returnedLocation.Address.City;
-                addressDetails.addressLine5 = returnedLocation.Address.State;
-                addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
+                addressDetails.addressLine1 = returnedLocation.Address.Place;
+                addressDetails.addressLine2 = returnedLocation.Address.Subunit;
+                addressDetails.addressLine3 = returnedLocation.Address.HouseNumber;
+                addressDetails.addressLine4 = returnedLocation.Address.Street;
+                addressDetails.addressLine5 = returnedLocation.Address.City;
+                addressDetails.addressLine6 = returnedLocation.Address.State;
+                addressDetails.addressLine7 = returnedLocation.Address.PostalCode;
 
-                const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.addressLine5);
+                const stateObj = this.UsStatesService.getStateByAbbreviation(returnedLocation.Address.State);
                 if (stateObj) {
                     addressDetails.stateName = stateObj.name;
                 }
             } else {
+                // NZ address format
+                addressDetails.addressLine1 = returnedLocation.Address.Place || ''; // Business name or building name
+                addressDetails.addressLine2 = returnedLocation.Address.Subunit || ''; // Apartment or unit number
+                addressDetails.addressLine3 = returnedLocation.Address.HouseNumber || '';
+                addressDetails.addressLine4 = returnedLocation.Address.Street || '';
+                addressDetails.addressLine5 = returnedLocation.Address.District || ''; // Suburb
+                addressDetails.addressLine6 = returnedLocation.Address.City || '';
+                addressDetails.addressLine7 = returnedLocation.Address.County || ''; // Region
+                addressDetails.addressLine8 = returnedLocation.Address.PostalCode || '';
+
                 const mappedSub = await this.findSuburbByDistrict(returnedLocation.Address.District);
                 if (mappedSub) {
                     addressDetails.our_suburb = mappedSub.id;
@@ -173,15 +187,11 @@ class CreateJobDialogController {
                     addressDetails.our_suburb = null;
                     this.toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
                 }
-                addressDetails.addressLine4 = returnedLocation.Address.District;
-                addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
             }
 
-            addressDetails.addressLine1 = returnedLocation.Address.Street;
-            addressDetails.addressLine2 = returnedLocation.Address.HouseNumber;
+            // Coordinates
             addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
             addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
-            addressDetails.fullAddress = returnedLocation.Address.Label;
 
             this.$scope.$apply();
         } catch (error) {

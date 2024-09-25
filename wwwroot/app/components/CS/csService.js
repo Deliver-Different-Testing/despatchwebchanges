@@ -11,8 +11,7 @@ class CsService {
      * @param {number[]} jobIds
      */
     async allocateJobs(courierId, dispatcherId, jobIds) {
-        const response = await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-        return await response;
+        return this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
@@ -27,7 +26,7 @@ class CsService {
      */
     async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
         const response = await this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -42,7 +41,7 @@ class CsService {
      */
     async getPodJobs(courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize) {
         const response = await this._$http.get('/Job/PODSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -55,7 +54,7 @@ class CsService {
      */
     async searchBulkJobs(courierId, clientId, job, wild, fromDate, toDate, pageIndex, pageSize) {
         const response = await this._$http.get('/Job/BulkSearch?courierId=' + courierId + '&clientId=' + clientId + '&job=' + job + '&wild=' + wild + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -70,7 +69,7 @@ class CsService {
      */
     async searchPreBookJobs(courierId, clientId, wild, job, fromDate, toDate, pageIndex, pageSize) {
         const response = await this._$http.get('/Job/PreBookSearch?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString() + '&pageIndex=' + pageIndex + "&pageSize=" + pageSize);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -80,7 +79,7 @@ class CsService {
      */
     async getCourierRoute(code, start, end) {
         const response = await this._$http.get('/courier/route?code=' + code + '&start=' + start.format("YYYY-MM-DDTHH:mm:ss") + '&end=' + end.format("YYYY-MM-DDTHH:mm:ss"));
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -88,7 +87,7 @@ class CsService {
      */
     async getJobDetail(jobId) {
         const response = await this._$http.get('/Job/Detail?jobId=' + jobId);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -97,7 +96,7 @@ class CsService {
      */
     async getRelatedJobs(parentId, clientId) {
         const response = await this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -106,7 +105,7 @@ class CsService {
      */
     async getScanDetail(runDate, scan) {
         const response = await this._$http.get('/Job/ScanJobDetail?runDate=' + runDate.toISOString() + '&scan=' + scan);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -114,17 +113,20 @@ class CsService {
      */
     async getPreBookDetail(preBookJobId) {
         const response = await this._$http.get('/Job/PreBookDetail?preBookJobId=' + preBookJobId);
-        return await response.data;
+        return response.data;
     }
 
+    /**
+     * @param {number} bulkJobId
+     */
     async getBulkJobDetail(bulkJobId) {
         const response = await this._$http.get('/Job/BulkDetail?bulkJobId=' + bulkJobId);
-        return await response.data;
+        return response.data;
     }
 
     async getActiveCouriers() {
         const response = await this._$http.get("courier/active");
-        return await response.data;
+        return response.data;
     }
 
     getAllCouriers() {
@@ -137,7 +139,7 @@ class CsService {
      */
     async addEventNote(eventId, note) {
         const response = await this._$http.post('CS/AddEventNote?eventId=' + eventId + '&note=' + note + '&userName=' + ClientName);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -145,7 +147,7 @@ class CsService {
      */
     async validateSwapPOD(jobNumber) {
         const response = await this._$http.post('Job/ValidateSwapPOD?job=' + jobNumber);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -155,7 +157,7 @@ class CsService {
      */
     async restoreJobs(courierId, dispatcherId, jobIds) {
         const response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -165,7 +167,7 @@ class CsService {
      */
     async restoreSplitJobs(courierId, dispatcherId, jobIds) {
         const response = await this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -174,7 +176,7 @@ class CsService {
      */
     async swapPOD(jobNumber1, jobNumber2) {
         const response = await this._$http.post('Job/SwapPOD?job1=' + jobNumber1 + '&job2=' + jobNumber2);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -183,7 +185,7 @@ class CsService {
      */
     async closeEvent(eventId, userName) {
         const response = await this._$http.post('CS/CloseEvent?eventId=' + eventId + '&userName=' + `${ClientName}-${userName}`);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -191,7 +193,7 @@ class CsService {
      */
     async reSendJobs(jobIds) {
         const response = await this._$http.post("job/ReSendSelected?jobIds=" + jobIds);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -199,7 +201,7 @@ class CsService {
      */
     async reAssignJobs(jobIds) {
         const response = await this._$http.post("job/ReAssignSelected?jobIds=" + jobIds);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -208,7 +210,7 @@ class CsService {
      */
     async sendPOD(jobId, email) {
         const response = await this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -216,7 +218,7 @@ class CsService {
      */
     async unSplitJob(jobId) {
         const response = await this._$http.post('job/UnSplitJob?jobId=' + jobId);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -225,7 +227,7 @@ class CsService {
      */
     async generateDirectLink(eventId, clientId) {
         const response = await this._$http.get('/CS/GenerateDirectLink?eventId=' + eventId + '&clientId=' + clientId);
-        return await response.data;
+        return response.data;
     }
 
     async createEvent(data, notify) {
@@ -235,7 +237,7 @@ class CsService {
                 method: "POST",
                 data: data
             });
-            return await response1.data;
+            return response1.data;
         } catch (response2) {
             console.error('Book/CreateEvent error', response2.status, response2.data);
         }
@@ -246,7 +248,7 @@ class CsService {
      */
     async getActiveClients(searchTerm) {
         const response = await this._$http.get('/home/ActiveClients?searchTerm=' + searchTerm);
-        return await response.data;
+        return response.data;
     }
 
     /**
@@ -254,12 +256,24 @@ class CsService {
      */
     async getActiveCouriersSearch(searchTerm) {
         const response = await this._$http.get('/courier/AllActiveSearch?searchTerm=' + searchTerm);
-        return await response.data;
+        return response.data;
     }
 
     async doAPI(path, data) {
         const response = await this._$http.post(path, data);
-        return await response.data;
+        return response.data;
+    }
+
+    async snapToRoads(path) {
+        const response = await this._$http.get('https://roads.googleapis.com/v1/snapToRoads', {
+            params: {
+                interpolate: true,
+                key: googleMapsApiKey,
+                path: path.join('|')
+            }
+        });
+
+        return response.data;
     }
 }
 

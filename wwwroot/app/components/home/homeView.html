@@ -1,105 +1,55 @@
-<div class="top-bar">
-    <img src="/images/DFRNT-logo.png" class="logo" />
+<div>
+    <div>
+        <md-toolbar class="md-hue-2">
+            <div class="md-toolbar-tools">
+                <img alt="logo" class="logo" src="/images/DFRNT-logo.png"/>
 
-        <div class="btn-group" id="status-group" role="group">
-            <button class="btn new btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'new'})"
-                    type="button">
-                New
-            </button>
-            <button class="btn nda btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'nda'})"
-                    type="button">
-                NDA
-            </button>
-            <button class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})"
-                    type="button">Active
-            </button>
-            <button class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})"
-                    type="button">
-                Done
-            </button>
-            <button class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})"
-                    type="button">
-                All
-            </button>
-        </div>
+                <span flex></span>
 
-        <div aria-label="Basic example" class="btn-group" id="area-group" ng-if="isInternal" role="group">
-            <button class="btn city btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'city'})"
-                    type="button">
-                City
-            </button>
-            <button class="btn truck btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'truck'})"
-                    type="button">
-                Truck
-            </button>
-            <button class="btn main1 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main1'})"
-                    type="button">
-                Main1
-            </button>
-            <button class="btn main2 btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'main2'})"
-                    type="button">
-                Main2
-            </button>
-            <button class="btn central btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'central'})"
-                    type="button">Central
-            </button>
-            <button class="btn shore btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'shore'})"
-                    type="button">
-                Shore
-            </button>
-            <button class="btn west btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'west'})"
-                    type="button">
-                West
-            </button>
-            <button class="btn remoteouter btn-sm btn-secondary"
-                    ng-click="setFiltersFromTopBar({'area':'remote outer'})"
-                    type="button">Remote Outer
-            </button>
-            <button class="btn remotecity btn-sm btn-secondary"
-                    ng-click="setFiltersFromTopBar({'area':'remote city'})"
-                    type="button">Remote City
-            </button>
-            <button class="btn remotecentral btn-sm btn-secondary"
-                    ng-click="setFiltersFromTopBar({'area':'remote central'})"
-                    type="button">Remote Central
-            </button>
-            <button class="btn regional btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'regional'})"
-                    type="button">Regional
-            </button>
+                <md-menu>
+                    <md-button aria-label="Open status menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
+                        <md-tooltip md-direction="bottom">Filters</md-tooltip>
+                    </md-button>
+                    <md-menu-content>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.new">New</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.nda">NDA</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.active">Active</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.done">Done</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.all">All</md-checkbox>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
 
-        </div>
+                <md-menu ng-if="isInternal">
+                    <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">location_on</md-icon>
+                        <md-tooltip md-direction="bottom">Areas</md-tooltip>
+                        <md-progress-circular md-diameter="18" md-mode="indeterminate"
+                                              ng-if="!areas"></md-progress-circular>
+                    </md-button>
+                    <md-menu-content>
+                        <md-menu-item ng-if="areas && areas.length === 0">
+                            <p>No areas available.</p>
+                        </md-menu-item>
+                        <md-menu-item ng-if="areas && areas.length > 0" ng-repeat="area in areas">
+                            <md-checkbox ng-change="updateFilters()" ng-model="selectedAreas[area.id]">{{area.name}}
+                            </md-checkbox>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
 
-        <div class="topbar-NavButtons" role="navigation">
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
-            <a class="btn btn-sm topbar-button" href="#/NW" target="_blank" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</a>
-            <a class="btn btn-sm topbar-button" href="#/CS" target="_blank" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</a>
-            <a class="btn btn-sm topbar-button" href="#/prebooks" target="_blank" ui-sref="prebooks"
-               ui-sref-active="topbar-active">PreBooks</a>
-
-        </div>
-
-        <div class="btn-group box-search chat" ng-if="showChat">
-            <i class="material-symbols-outlined small-icon" ng-click="openChat()">search</i>
-            <i class="material-symbols-outlined small-icon" ng-click="chatBox = ''" title="Clear"></i>
-            <input ng-model="chatBox" ng-model-options="{debounce: 300}" placeholder="Chat to..." type="text">
-        </div>
-
-        <div class="topbar-buttons">
-            <span ng-if="!isInternal" style="color:white;">Clients:</span>
-            <div class="multi-element btn-sm topbar-active" disabled="false"
-                 extra-settings="pickService.settings"
-                 ng-dropdown-multiselect=""
-                 ng-if="!isInternal" option="pickClients" selected-model="pickService.clients"
-                 style="display: inline-block; margin-top: -5px; padding-left: 0; padding-right: 50px;">
-            </div>
-
-            <div style="display: flex; align-items: center;">
-                <div class="btn topbar-button" style="color: white;">
-                    <span>{{greetUser()}}</span>
-                </div>
-                <md-menu md-position-mode="target-right target">
-                    <md-button aria-label="Open layout options menu"
-                               class="md-fab md-mini md-primary"
+                <md-menu>
+                    <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
                         <md-tooltip md-direction="bottom">Layouts</md-tooltip>
@@ -111,12 +61,16 @@
                                 Save Layout
                             </md-button>
                         </md-menu-item>
-                        <md-menu-divider></md-menu-divider>
+                        <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
-                                <md-icon md-font-set="material-symbols-outlined"
-                                         ng-click="deleteLayout($index)">
+                                <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($index)"
+                                         ng-if="lo.name != 'Default'">
                                     delete
+                                </md-icon>
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-if="lo.name == 'Default'">
+                                    tune
                                 </md-icon>
                                 <span ng-click="loadLayout($index)"
                                       ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
@@ -124,9 +78,21 @@
                         </md-menu-item>
                     </md-menu-content>
                 </md-menu>
+
+                <md-divider class="vertical-divider"></md-divider>
+
+                <span style="font-size: medium;">{{greetUser()}}</span>
+
+                <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleSidenav()"
+                           ng-mouseover="toggleSidenav()">
+                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
+                </md-button>
             </div>
-        </div>
+        </md-toolbar>
+
+        <material-sidenav></material-sidenav>
     </div>
+
 
     <div class="">
         <div class="columns">
@@ -297,7 +263,7 @@
                                     </md-autocomplete>
                                 </div>
 
-                                <div class="row-overflow" ng-if="box.name === 'clearLists'">
+                                <div class="row-overflow" ng-if="box.name === 'driverLocations'">
                                     <md-menu>
                                         <md-button aria-label="truck mode" class="md-raised md-accent"
                                                    ng-click="$mdMenu.open($event)">
@@ -326,7 +292,7 @@
                                 <div class="row-overflow" layout="row" ng-if="box.name === 'map'">
                                     <div class="switch-container">
                                         <md-switch class="md-primary" ng-model="areaListCity"
-                                                   ng-if="box.name === 'clearLists'">
+                                                   ng-if="box.name === 'driverLocations'">
                                             City
                                         </md-switch>
                                         <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
@@ -389,7 +355,8 @@
 
                         <div class="box-content"
                              ng-class="{'related-content':box.name == 'jobDetail' && currentJob.relatedJobs.length > 4}"
-                             ng-include="boxes[box.name].tpl"></div>
+                             ng-include="boxes[box.name].templateUrl">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -422,207 +389,177 @@
 </div>
 
 <script>
-    document.onkeydown = overrideKeyboardEvent;
-    document.onkeyup = overrideKeyboardEvent;
-    var keyIsDown = {};
+    (function () {
+        var keyIsDown = {};
 
-    function overrideKeyboardEvent(e) {
-        switch (e.type) {
-            case "keydown":
+        function overrideKeyboardEvent(e) {
+            if (e.type === "keydown") {
                 if (!keyIsDown[e.keyCode]) {
                     keyIsDown[e.keyCode] = true;
                 }
-                break;
-            case "keyup":
-                delete (keyIsDown[e.keyCode]);
-                // do key up stuff here
-                break;
-        }
-        disabledEventPropagation(e);
-        if (e.keyCode === 68 && e.ctrlKey) {
-            e.preventDefault();
-            return false;
-        }
-    }
+            } else if (e.type === "keyup") {
+                delete keyIsDown[e.keyCode];
+            }
 
-    function disabledEventPropagation(e) {
-        if (e.keyCode === 68 && e.ctrlKey) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            } else if (window.event) {
-                window.event.cancelBubble = true;
+            disabledEventPropagation(e);
+            if (e.keyCode === 68 && e.ctrlKey) {
+                e.preventDefault();
+                return false;
             }
         }
-    }
 
-
-    angular.element(document).on('keydown', '.dispatchField, .lateCallField', function (event) {
-        if (event.keyCode === 13) {
-            angular.element(this).parents(".clickable-row").addClass("doing");
-        }
-    });
-
-    angular.element(document).on('click', '.top-bar .btn-group .btn', function (event) {
-        if (!event.ctrlKey && !event.metaKey) {
-            angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
+        function disabledEventPropagation(e) {
+            if (e.keyCode === 68 && e.ctrlKey) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                } else if (window.event) {
+                    window.event.cancelBubble = true;
+                }
+            }
         }
 
-        angular.element(this).addClass('topBarActive');
-    });
+        document.onkeydown = overrideKeyboardEvent;
+        document.onkeyup = overrideKeyboardEvent;
 
-    angular.element(document).on('click', '.clearLists-list-title', function (event) {
-        if (!event.ctrlKey && !event.metaKey) {
-            angular.element("#clearLists").find('.listActive').removeClass('listActive');
-        }
+        var $document = angular.element(document);
 
-        angular.element(this).addClass('listActive');
-    });
+        $document.on('keydown', '.dispatchField, .lateCallField', function (event) {
+            if (event.keyCode === 13) {
+                angular.element(this).parents(".clickable-row").addClass("doing");
+            }
+        });
 
+        $document.on('click', '.top-bar .btn-group .btn', function (event) {
+            var $this = angular.element(this);
+            if (!event.ctrlKey && !event.metaKey) {
+                $this.parent().find('.topBarActive').removeClass('topBarActive');
+            }
+            $this.addClass('topBarActive');
+        });
 
-    angular.element(document).ready(function () {
+        $document.on('click', '.driverLocations-list-title', function (event) {
+            var $this = angular.element(this);
+            if (!event.ctrlKey && !event.metaKey) {
+                angular.element("#driverLocations").find('.listActive').removeClass('listActive');
+            }
+            $this.addClass('listActive');
+        });
 
-        var isDown = false;   // Tracks status of mouse button
+        var isDown = false;
+        var mouseDown = 0;
 
-        angular.element(document).mousedown(function () {
-            isDown = true;      // When mouse goes down, set isDown to true
-        })
-            .mouseup(function () {
-                isDown = false;    // When mouse goes up, set isDown to false
+        $document.ready(function () {
+            $document.mousedown(function () {
+                isDown = true;
+            }).mouseup(function () {
+                isDown = false;
             });
 
-        angular.element(document).on("mouseenter", ".activeTable .clickable-row", function (event) {
+            $document.on("mouseenter", ".activeTable .clickable-row", function (event) {
+                if (event.ctrlKey && isDown) {
+                    var $this = angular.element(this);
+                    $this.addClass("active");
+                    $this.siblings(".test").click();
+                }
+            });
+        });
 
-            if (event.ctrlKey) {
-                if (isDown) {        // Only change css if mouse is down
-                    angular.element(this).addClass("active");
-                    angular.element(this).siblings(".test").click();
+        $document.on('mousedown', '.clickable-row', function (event) {
+            var $this = angular.element(this);
+            var $activeRows = angular.element(".activeTable .clickable-row.active");
+            var jobNo = $activeRows.length > 1 ? $activeRows.length + " Jobs" : $this.attr("data-jobno");
+
+            if (mouseDown === 0) {
+                mouseDown = 1;
+                if (event.which === 1) {
+                    handleLeftClick($this, event);
+                }
+                if (!event.ctrlKey && $this.hasClass("draggable-row")) {
+                    handleDraggableRow($this, event, jobNo);
                 }
             }
         });
 
-
-    });
-
-
-    var mouseDown = 0;
-
-    angular.element(document).on('mousedown', '.clickable-row', function (event) {
-
-        if (angular.element(".activeTable .clickable-row.active").length > 1) {
-            var jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
-        } else {
-            var jobNo = angular.element(this).attr("data-jobno");
-        }
-
-
-        if (mouseDown === 0) {
-            mouseDown = 1;
-
-            if (event.which === 1) {
-                if (event.ctrlKey) {
-                    if (angular.element(this).hasClass("active")) {
-                        angular.element(this).removeClass('active');
-                    } else {
-                        angular.element(this).addClass('active');
-                    }
-                } else {
-                    if (!angular.element(this).hasClass("active")) {
-
-                        var group = angular.element(this).parents(".table-rows").attr("data-group");
-                        angular.element('*[data-group="' + group + '"]').each(function () {
-                            angular.element(this).find('.active').removeClass('active');
-                        });
-
-                        angular.element(this).addClass('active');
-                    }
-                }
-
-                angular.element(".activeTable").removeClass("activeTable");
-                angular.element(this).parents(".table").addClass("activeTable");
-            }
-
-            if (!event.ctrlKey) {
-                if (angular.element(this).hasClass("draggable-row")) {
-
-                    if (!angular.element(this).hasClass("active")) {
-
-                        var group = angular.element(this).parents(".table-rows").attr("data-group");
-                        angular.element('*[data-group="' + group + '"]').each(function () {
-                            angular.element(this).find('.active').removeClass('active');
-                        });
-                        angular.element(this).addClass('active');
-
-                    }
-                    setTimeout(function () {
-                        if (mouseDown === 1) {
-                            angular.element("#draggingItems").show();
-                            angular.element("#draggingItems").html(jobNo);
-
-                            angular.element("#draggingItems").css({"top": event.pageY - 25, "left": event.pageX - 50});
-                            angular.element("#draggingItems").draggable();
-                            angular.element("#draggingItems").trigger(event);
-                        }
-                    }, 200);
-                }
-            }
-
-        }
-
-    });
-
-    angular.element(document).on('mouseup', '.clickable-row', function (event) {
-        if (event.which === 3) {
-
-            angular.element(".rightActiveTable").removeClass("rightActiveTable");
-            angular.element(this).parents(".table").addClass("rightActiveTable");
-        }
-        if (!event.ctrlKey) {
-
-            if (angular.element(this).hasClass("active")) {
-            } else {
-                var group = angular.element(this).parents(".table-rows").attr("data-group");
-
+        function handleLeftClick($element, event) {
+            if (event.ctrlKey) {
+                $element.toggleClass('active');
+            } else if (!$element.hasClass("active")) {
+                var group = $element.parents(".table-rows").attr("data-group");
                 angular.element('*[data-group="' + group + '"]').each(function () {
                     angular.element(this).find('.active').removeClass('active');
                 });
-                angular.element(this).addClass('active');
+                $element.addClass('active');
             }
-
+            angular.element(".activeTable").removeClass("activeTable");
+            $element.parents(".table").addClass("activeTable");
         }
 
-    });
-
-
-    angular.element(document).on("mouseup", function (ev) {
-        angular.element("#draggingItems").hide();
-        mouseDown = 0;
-    });
-
-    angular.element(document).on("keydown", function (e) {
-        var code = (e.keyCode ? e.keyCode : e.which);
-        if (code === 40) {
-            angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
-        } else if (code === 38) {
-            angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
+        function handleDraggableRow($element, event, jobNo) {
+            if (!$element.hasClass("active")) {
+                var group = $element.parents(".table-rows").attr("data-group");
+                angular.element('*[data-group="' + group + '"]').each(function () {
+                    angular.element(this).find('.active').removeClass('active');
+                });
+                $element.addClass('active');
+            }
+            setTimeout(function () {
+                if (mouseDown === 1) {
+                    var $draggingItems = angular.element("#draggingItems");
+                    $draggingItems.show().html(jobNo)
+                        .css({"top": event.pageY - 25, "left": event.pageX - 50})
+                        .draggable().trigger(event);
+                }
+            }, 200);
         }
-    });
 
-    function sizeHeadings(ele) {
+        $document.on('mouseup', '.clickable-row', function (event) {
+            var $this = angular.element(this);
+            if (event.which === 3) {
+                angular.element(".rightActiveTable").removeClass("rightActiveTable");
+                $this.parents(".table").addClass("rightActiveTable");
+            }
+            if (!event.ctrlKey && !$this.hasClass("active")) {
+                var group = $this.parents(".table-rows").attr("data-group");
+                angular.element('*[data-group="' + group + '"]').each(function () {
+                    angular.element(this).find('.active').removeClass('active');
+                });
+                $this.addClass('active');
+            }
+        });
 
-        angular.element("body").find(".box").each(function () {
-            var box = angular.element(this);
-            box.find(".table-headings thead tr th").each(function (index) {
-                var newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
-                angular.element(this).outerWidth(newWidth);
+        $document.on("mouseup", function () {
+            angular.element("#draggingItems").hide();
+            mouseDown = 0;
+        });
+
+        $document.on("keydown", function (e) {
+            var code = e.keyCode || e.which;
+            var $activeTable = angular.element(".activeTable");
+            var $active = $activeTable.find(".active");
+            if (code === 40) {
+                $active.removeClass("active").next().addClass("active").mouseup().click();
+            } else if (code === 38) {
+                $active.removeClass("active").prev().addClass("active").mouseup().click();
+            }
+        });
+
+        window.sizeHeadings = function () {
+            var $body = angular.element("body");
+            $body.find(".box").each(function () {
+                var $box = angular.element(this);
+                $box.find(".table-headings thead tr th").each(function (index) {
+                    var newWidth = $box.find(".table tbody tr td").eq(index).outerWidth();
+                    angular.element(this).outerWidth(newWidth);
+                });
+                $box.find(".table-headings table").width($box.find(".table").width());
             });
-            box.find(".table-headings table").width(box.find(".table").width());
-        });
 
-        var height = angular.element("#box-clearLists").find(".box-content").height() - 30;
-
-        angular.element(".clearLists-list").each(function () {
-            var newHeight = angular.element(this).data("height") * height / 100;
-            angular.element(this).height(newHeight);
-        });
-    }
+            var height = angular.element("#box-driverLocations").find(".box-content").height() - 30;
+            angular.element(".driverLocations-list").each(function () {
+                var $this = angular.element(this);
+                var newHeight = $this.data("height") * height / 100;
+                $this.height(newHeight);
+            });
+        };
+    })();
 </script>

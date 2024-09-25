@@ -15,7 +15,15 @@
    "T4TemplatePath": null,
    "Tables": [
       {
+         "Name": "[dbo].[ClearListAreaZipPolygon]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[DeliveryPhoto]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DespatchViewZoneGroup]",
          "ObjectType": 0
       },
       {
@@ -35,6 +43,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblClearListArea]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblClearListAreaPolygon]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblClientAvailableSpeed]",
          "ObjectType": 0
       },
@@ -51,6 +67,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblCourierGPS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblCourierLogInOut]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblDespatchView]",
          "ObjectType": 0
       },
@@ -64,6 +88,18 @@
       },
       {
          "Name": "[dbo].[tblJobLeaveNotHome]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygon]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygonGPS]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPolygonSuburb]",
          "ObjectType": 0
       },
       {
@@ -139,7 +175,27 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[UserDespatchViewPreferences]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[UserWidgetPreferences]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ZipPolygon]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ZoneGroup]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ZoneName]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ZoneZip]",
          "ObjectType": 0
       },
       {
@@ -171,12 +227,20 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[tblJob_Today]",
+         "ObjectType": 3
+      },
+      {
          "Name": "[dbo].[UTL_qryContact_Lookup]",
          "ObjectType": 3
       },
       {
          "Name": "[dbo].[uvwBookingToday]",
          "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[DES_qdfCourier_ClearLists]",
+         "ObjectType": 1
       },
       {
          "Name": "[dbo].[DES_qdfEvent_Insert]",
@@ -211,6 +275,14 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DES_stpJobBooking_InsertJobAndChildren]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DES_stpSettings]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DESWEB_qryClientsActive]",
          "ObjectType": 1
       },
@@ -239,6 +311,18 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DESWEB_stpJobItems_Delete]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpJobItems_Insert]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpJobItems_Update]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DESWEB_stpMapEnvelope]",
          "ObjectType": 1
       },
@@ -251,6 +335,14 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DESWEB_stpUpdateBulkJobDeliveryAddress]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpUpdateBulkJobPickupAddress]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DESWEB_stpUpdateJob]",
          "ObjectType": 1
       },
@@ -259,11 +351,47 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DESWEB_stpUpdateJobBookingDeliveryAddress]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpUpdateJobBookingPickupAddress]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpUpdateJobDeliveryAddress]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpUpdateJobPickupAddress]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[DESWEB_stpUpdateJobType]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DESWEB_stpUpdateSplitJobMeetingAddress]",
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DESWEB_stpVoidPrebookJob]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[INT_stpIsValidLogin_Despatch]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[MAP_stpClearListArea_Envelope]",
+         "ObjectType": 1
+      },
+      {
+        "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
+        "ObjectType": 1
+      },
+     {
+         "Name": "[dbo].[qry_tucJobItems]",
          "ObjectType": 1
       },
       {
