@@ -27,7 +27,7 @@ public interface IJobRepository
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
     Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
-        bool isInternal, string clientIds);
+        bool isInternal, string clientIds, List<int> despatchViewIds);
 
     /// <summary>
     /// Main query for Nationwide job window panes. New =1, POD=2, BookDel=3, Reprice=4
@@ -112,32 +112,32 @@ public interface IJobRepository
 
     Task<DirectToASAPViewModel> DirectToAsap(int jobId);
     Task<UpdateFirstAvailableSpeedResult> UpdateFirstAvailableSpeed(int jobId);
-    Task<SettingsViewModel> Settings();
-    Task AddPalletInfo(PalletInfo p, bool preBook, string despatcher);
-    Task EditPalletInfo(PalletInfo p, bool preBook, string despatcher);
-    Task DeletePalletInfo(PalletInfo p, bool preBook, string despatcher);
-    Task SendPrebookJob(int jobId);
-    Task VoidPrebookJob(int jobId, string despatcher, int staffId);
-    Task<TruckItemsSummary> TruckJobItems(int jobId, int truckWeightLimit);
+    Task<SettingsViewModel> SettingsAsync();
+    Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
+    Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
+    Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher);
+    Task SendPrebookJobAsync(int jobId);
+    Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId);
+    Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit);
 
-    Task UpdateDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
+    Task UpdateDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
         decimal deliveryLng, bool cbd, decimal rate, string despatcher);
 
-    Task UpdateBulkDeliveryAddress(int bulkJobId, string toSuburb, int toPostCode, string address,
+    Task UpdateBulkDeliveryAddressAsync(int bulkJobId, string toSuburb, int toPostCode, string address,
         decimal deliveryLat, decimal deliveryLng, string despatcher);
 
-    Task UpdatePickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat,
+    Task UpdatePickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
         decimal pickupLng, bool cbd, decimal rate, string despatcher);
 
-    Task UpdateJobType(int jobId, int jobType, string despatcher);
+    Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher);
 
-    Task UpdateBulkPickupAddress(int bulkJobId, string fromSuburb, int fromPostCode, string address,
+    Task UpdateBulkPickupAddressAsync(int bulkJobId, string fromSuburb, int fromPostCode, string address,
         decimal pickupLat, decimal pickupLng, string despatcher);
 
-    Task UpdateBookingDeliveryAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
+    Task UpdateBookingDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
         decimal deliveryLng, bool cbd, decimal rate, string despatcher);
 
-    Task UpdateBookingPickupAddress(int jobId, int fromSuburbId, string address, decimal pickupLat,
+    Task UpdateBookingPickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
         decimal pickupLng, bool cbd, decimal rate, string despatcher);
 
     Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate);

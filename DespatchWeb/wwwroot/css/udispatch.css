@@ -1,5 +1,6 @@
 body {
   overflow: hidden;
+  font-family: 'Roboto', sans-serif;
 }
 md-dialog {
   min-width: 400px;
@@ -38,6 +39,13 @@ md-dialog {
 .box-handle {
   padding: 8px;
   height: 48px;
+}
+.vertical-divider {
+  width: 1px;
+  height: 32px;
+  background-color: black;
+  margin: 0 15px;
+  align-self: center;
 }
 /* Autocomplete Animations */
 md-autocomplete.ng-enter {
@@ -197,46 +205,48 @@ a.pickadate-prev:active {
 md-divider {
   margin: 15px 0;
 }
-#box-clearLists .box-content {
+#box-driverLocations .box-content {
   overflow: hidden !important;
 }
-#clearLists .col-xs-3 {
+#driverLocations .col-xs-3 {
   padding: 4px;
 }
-#clearLists .clearLists-list {
+#driverLocations .driverLocations-list {
   margin-bottom: 10px;
   background: #bfbfbf;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 }
-#clearLists .clearLists-list .clearLists-list-title {
+#driverLocations .driverLocations-list .driverLocations-list-title {
   background: #5d5d5d;
   color: #FFF;
-  padding: 5px;
+  padding: 8px 16px;
   position: relative;
   cursor: pointer;
   min-height: 48px;
-  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
-  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-#clearLists .clearLists-list .clearLists-list-title:hover {
+#driverLocations .driverLocations-list .driverLocations-list-title:hover {
   background-color: #707070;
-  box-shadow: 0 8px 10px -5px rgba(0, 0, 0, 0.2), 0px 16px 20px 0px rgba(0, 0, 0, 0.14), 0px 6px 30px 5px rgba(0, 0, 0, 0.12);
 }
-#clearLists .clearLists-list .listActive {
+#driverLocations .driverLocations-list .listActive {
   background-color: #fddd00;
   color: #000;
 }
-#clearLists .clearLists-list .listActive:hover {
-  background-color: #fddd00;
-  color: #000;
+#driverLocations .driverLocations-list .listActive:hover {
+  background-color: #e4c700;
 }
-#clearLists .clearLists-list .listActive:active {
-  box-shadow: none;
-  outline: none;
+#driverLocations .driverLocations-list .listActive:active {
+  background-color: #cab000;
 }
-#clearLists .clearLists-list table {
+#driverLocations .driverLocations-list table {
   width: 100%;
 }
-#clearLists .clearLists-list .clearLists-list-items {
+#driverLocations .driverLocations-list .driverLocations-list-items {
   position: relative;
   overflow: auto;
   height: 100%;
@@ -247,64 +257,66 @@ md-divider {
   display: flex;
   flex-direction: column;
 }
-#clearLists .clearLists-list .clearLists-list-items::-webkit-scrollbar {
+#driverLocations .driverLocations-list .driverLocations-list-items::-webkit-scrollbar {
   display: none;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item {
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-item {
   display: flex;
   align-items: center;
   background-color: #bae1ff;
   border-bottom: 1px solid #a4d2f5;
+  transition: background-color 0.15s ease-in-out;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item.active {
-  background-color: #edf7ff;
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-item:hover {
+  background-color: #a1d6ff;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item .clearLists-list-items-item-number {
-  padding: 2px;
-  width: 33px;
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-item.active {
+  background-color: #87cbff;
+}
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-item .driverLocations-list-items-item-number {
+  padding: 4px 8px;
+  min-width: 33px;
   background: #94c5ea;
   text-align: center;
   font-weight: 700;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item .clearLists-list-items-item-number.active {
-  background-color: #bfdcf2;
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-item .driverLocations-list-items-item-number.active {
+  background-color: #7fb9e6;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-item .clearLists-list-items-item-dest {
-  padding: 1px;
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-item .driverLocations-list-items-item-dest {
+  padding: 2px 4px;
   display: inline-block;
   background: #efefef;
   border: 1px solid #CCC;
-  margin-top: 1px;
-  margin-bottom: 1px;
-  margin-left: 1px;
-  border-radius: 1px;
+  margin: 2px 0 2px 4px;
+  border-radius: 2px;
   flex-grow: 1;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-middle {
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-middle {
   background-color: #d4c7ff;
   border-bottom: 1px solid #c6b6fd;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-middle .clearLists-list-items-item-number {
-  padding: 2px;
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-middle:hover {
+  background-color: #c0adff;
+}
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-middle .driverLocations-list-items-item-number {
   background: #bdaeef;
-  text-align: center;
-  font-weight: 700;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-middle .clearLists-list-items-item-number.active {
-  background-color: #fbfaff;
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-middle .driverLocations-list-items-item-number.active {
+  background-color: #ac99eb;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-bottom {
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-bottom {
   background-color: #ffdfba;
   border-bottom: 1px solid #efcea9;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-bottom .clearLists-list-items-item-number {
-  padding: 2px;
-  background: #ffc888;
-  text-align: center;
-  font-weight: 700;
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-bottom:hover {
+  background-color: #ffd3a1;
 }
-#clearLists .clearLists-list .clearLists-list-items .clearLists-list-items-bottom .clearLists-list-items-item-number.active {
-  background-color: #ffe0bb;
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-bottom .driverLocations-list-items-item-number {
+  background: #ffc888;
+}
+#driverLocations .driverLocations-list .driverLocations-list-items .driverLocations-list-items-bottom .driverLocations-list-items-item-number.active {
+  background-color: #ffbc6e;
 }
 .pickadate-controls {
   display: flex;
@@ -1404,56 +1416,42 @@ md-table-container {
 }
 md-table-container .md-table {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
+  font-size: 10px;
 }
-md-table-container .md-table thead tr,
-md-table-container .md-table tbody tr {
-  display: flex;
-  width: 100%;
-}
-md-table-container .md-table th.md-column,
-md-table-container .md-table td.md-cell {
-  display: flex;
-  flex: 1 1 0;
-  min-width: 80px;
-  padding: 0 8px !important;
-  align-items: center;
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
-  overflow-x: auto;
-  overflow-y: hidden;
+md-table-container .md-table th,
+md-table-container .md-table td {
   white-space: nowrap;
+  min-width: 30px;
+  padding: 4px 8px !important;
 }
-md-table-container .md-table th.md-column::-webkit-scrollbar,
-md-table-container .md-table td.md-cell::-webkit-scrollbar {
-  height: 4px;
+md-table-container .md-table th::-webkit-scrollbar,
+md-table-container .md-table td::-webkit-scrollbar {
+  height: 3px;
   background-color: transparent;
 }
-md-table-container .md-table th.md-column::-webkit-scrollbar-thumb,
-md-table-container .md-table td.md-cell::-webkit-scrollbar-thumb {
+md-table-container .md-table th::-webkit-scrollbar-thumb,
+md-table-container .md-table td::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.26);
   border-radius: 2px;
 }
-md-table-container .md-table th.md-column:hover::-webkit-scrollbar-thumb,
-md-table-container .md-table td.md-cell:hover::-webkit-scrollbar-thumb {
+md-table-container .md-table th:hover::-webkit-scrollbar-thumb,
+md-table-container .md-table td:hover::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.4);
-}
-md-table-container .md-table th.md-column:last-child,
-md-table-container .md-table td.md-cell:last-child {
-  border-right: none;
 }
 md-table-container .md-table thead tr {
   background-color: #e6f2ff;
 }
 md-table-container .md-table thead tr th {
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.87);
 }
 md-table-container .md-table tbody tr {
-  height: 36px;
+  height: 30px;
 }
 md-table-container .md-table tbody tr td {
-  font-size: 13px;
+  font-size: 10px;
   color: rgba(0, 0, 0, 0.87);
 }
 md-table-container .md-table .md-row:nth-child(even) {
@@ -1465,65 +1463,40 @@ md-table-container .md-table .md-row:nth-child(odd) {
 md-table-container .md-table .md-row {
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
-md-table-container .md-table .md-column.md-date-cell,
-md-table-container .md-table .md-cell.md-date-cell {
-  flex: 0 0 120px;
-}
-md-table-container .md-table .md-column.md-speed-cell,
-md-table-container .md-table .md-cell.md-speed-cell {
-  flex: 0 0 90px;
-}
-md-table-container .md-table .md-column.md-job-cell,
-md-table-container .md-table .md-cell.md-job-cell {
-  flex: 2;
-}
-md-table-container .md-table .md-column.md-client-cell,
-md-table-container .md-table .md-cell.md-client-cell {
-  flex: 1;
-}
-md-table-container .md-table .md-column.md-address-cell,
-md-table-container .md-table .md-cell.md-address-cell {
-  flex: 3;
-}
-md-table-container .md-table .md-column.md-code-cell,
-md-table-container .md-table .md-cell.md-code-cell {
-  flex: 1;
-}
-md-table-container .md-table .md-column.md-status-cell,
-md-table-container .md-table .md-cell.md-status-cell {
-  flex: 1;
-}
 md-table-container .md-table .client-box {
   display: inline-block;
-  padding: 2px 4px;
+  padding: 1px 3px;
   color: white;
   font-weight: bold;
   border-radius: 2px;
+  font-size: 11px;
 }
 md-table-container .md-table .md-cell.highlight {
   color: #ff0000;
 }
 md-table-container .md-table .md-button.md-icon-button {
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
-  line-height: 24px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  line-height: 18px;
   padding: 0;
-  margin: 0 2px;
+  margin: 0 1px;
 }
 md-table-container .md-table .md-icon {
-  font-size: 18px;
+  font-size: 14px;
 }
 @media screen and (max-width: 1200px) {
   md-table-container .md-table {
-    font-size: 12px;
+    font-size: 11px;
   }
 }
 @media screen and (max-width: 600px) {
-  md-table-container .md-table th.md-column,
-  md-table-container .md-table td.md-cell {
-    padding: 0 4px !important;
-    font-size: 11px;
+  md-table-container .md-table {
+    font-size: 10px;
+  }
+  md-table-container .md-table th,
+  md-table-container .md-table td {
+    padding: 0 3px !important;
   }
 }
 md-table-pagination .md-text {
@@ -1568,5 +1541,25 @@ md-table-pagination .md-select-value {
 .gm-style img[src^="data:image/svg+xml"]:hover {
   transform: scale(1.1);
   transform-origin: bottom left;
+}
+md-list-item.selected {
+  background-color: rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+md-list-item.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #fddd00;
+}
+md-list-item.selected md-icon,
+md-list-item.selected p {
+  color: #fddd00;
+}
+md-list-item:not(.selected):hover {
+  background-color: rgba(0, 0, 0, 0.03);
 }
 /*# sourceMappingURL=udispatch.css.map */

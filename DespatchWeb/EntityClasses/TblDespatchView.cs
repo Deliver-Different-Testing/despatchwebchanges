@@ -7,6 +7,12 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TblDespatchView
     {
+        public TblDespatchView()
+        {
+            DespatchViewZoneGroups = new HashSet<DespatchViewZoneGroup>();
+            UserDespatchViewPreferences = new HashSet<UserDespatchViewPreference>();
+        }
+
         public int DespatchViewId { get; set; }
         public string Name { get; set; }
         public string WhereCondition { get; set; }
@@ -19,5 +25,11 @@ namespace DespatchWeb.EntityClasses
         public bool? ShowOnAssistDespatch { get; set; }
         public bool? ShowOnJobFollowup { get; set; }
         public int? ZoneGroupId { get; set; }
+        public string AreaGroupIds { get; set; }
+        public string ClearListAreaIds { get; set; }
+
+        public virtual ZoneGroup ZoneGroup { get; set; }
+        public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
+        public virtual ICollection<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; }
     }
 }

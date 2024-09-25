@@ -1,6 +1,6 @@
 class JobTableService {
     constructor($mdEditDialog) {
-        this.$mdEditDialog = $mdEditDialog;
+        this._$mdEditDialog = $mdEditDialog;
     }
 
     createQuery() {
@@ -9,10 +9,16 @@ class JobTableService {
         };
     }
 
+    /**
+     * @param {Job} job
+     */
     attention(job) {
         return job.attention || '';
     }
 
+    /**
+     * @param {Job} job
+     */
     getClientBoxStyle(job) {
         return {
             'background-color': job.clientColor || '#4CAF50'
@@ -20,7 +26,7 @@ class JobTableService {
     }
 
     /**
-     * @param event
+     * @param {Object} event
      * @param {Job} job
      * @param {string|number} field
      * @param {string} placeholder
@@ -28,7 +34,7 @@ class JobTableService {
      */
     editField(event, job, field, placeholder, type = 'text') {
         event.stopPropagation();
-        return this.$mdEditDialog.small({
+        return this._$mdEditDialog.small({
             modelValue: job[field], placeholder, type, save: (input) => {
                 job[field] = input.$modelValue;
             }, targetEvent: event
@@ -36,12 +42,12 @@ class JobTableService {
     }
 
     /**
-     * @param event
+     * @param {Object} event
      * @param {Job} job
      */
     editTo(event, job) {
         event.stopPropagation();
-        return this.$mdEditDialog.small({
+        return this._$mdEditDialog.small({
             modelValue: `${job.to} ${job.toAddress || ''}`, placeholder: 'Set to', save: (input) => {
                 const parts = input.$modelValue.split(' ');
                 job.to = parts[0];
@@ -51,4 +57,5 @@ class JobTableService {
     }
 }
 
-angular.module('uDispatch').service('JobTableService', ['$mdEditDialog', ($mdEditDialog) => new JobTableService($mdEditDialog)]);
+angular.module('uDispatch').service('JobTableService',
+    ['$mdEditDialog', ($mdEditDialog) => new JobTableService($mdEditDialog)]);

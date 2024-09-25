@@ -92,7 +92,7 @@ public class JobViewModelMapperProfile : Profile
             .ForMember(dest => dest.CourierData, opt => opt.MapFrom(src => new CourierData
             {
                 Courier = src.CourierCode + " " + src.CourierName,
-                CourierID = src.UcjbCourierId
+                CourierId = src.UcjbCourierId
             }))
             .ForMember(dest => dest.AllowDispatch, opt => opt.MapFrom(src => src.AllowDespatch))
             .ForMember(dest => dest.AllowSplit, opt => opt.MapFrom(src => src.AllowSplit))

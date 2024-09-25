@@ -3,22 +3,25 @@
  * @class
  */
 class EditAddressDialogController {
-    static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'addressDetails', 'suburbOptions', 'title', 'submitLabel', 'UsStatesService'];
+    static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'UsStatesService',
+        'addressDetails', 'suburbOptions', 'title', 'submitLabel'];
 
     /**
-     * @param $scope - The active AngularJS scope.
-     * @param $timeout - The AngularJS wrapper for window.setTimeout.
-     * @param $mdDialog - The AngularJS Material service for showing dialogs.
-     * @param DispatchData - The service used for data dispatching.
-     * @param toastrService - The service used for toast notifications.
-     * @param NgMap - Wrapper for Google Maps provided by 'ngMap' library.
+     * @param $scope
+     * @param $timeout
+     * @param $mdDialog
+     * @param DispatchData
+     * @param toastrService
+     * @param NgMap
      * @param APP_CONFIG
-     * @param {AddressViewModel} addressDetails - Details related to the address in use.
+     * @param UsStatesService
+     * @param {AddressDetails} addressDetails - Details related to the address in use.
      * @param {SuburbOption[]} suburbOptions - Options for suburbs.
      * @param {string} title - The title to display.
      * @param {string} submitLabel - The label to display on the submit button.
      */
-    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, addressDetails, suburbOptions, title, submitLabel, UsStatesService) {
+    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, UsStatesService,
+                addressDetails, suburbOptions, title, submitLabel) {
         this._$scope = $scope;
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
@@ -29,18 +32,24 @@ class EditAddressDialogController {
         this.title = title;
         this.addressDetails = addressDetails;
         this.suburbOptions = suburbOptions;
-        this.submitLabel = submitLabel;
+        this.submitLabel = submitLabel
         this.useUsFormat = APP_CONFIG.US_Customer;
         this.ourSuburbSearchText = "";
         this.addressSearchText = "";
-        this.ourSuburbSelectedItem = this._findSuburbByDistrict(addressDetails.addressLine4); // Assuming suburb is in addressLine4
+
+        if (!this.useUsFormat) {
+            this.ourSuburbSelectedItem = this._findSuburbByDistrict(addressDetails.suburb);
+        }
 
         // Initialize US-specific fields if using US format
         if (this.useUsFormat) {
-            this.addressDetails.city = this.addressDetails.addressLine4; // Assuming city is in addressLine4
-            this.addressDetails.state = this.addressDetails.addressLine5; // Assuming state is in addressLine5
-            this.addressDetails.zipCode = this.addressDetails.addressLine6; // Assuming ZIP is in addressLine6
-            this.states = this.UsStatesService.getStates();
+            this.addressDetails.city = addressDetails.addressLine5;
+            this.addressDetails.state = UsStatesService.getStateByName(addressDetails.addressLine6);
+            this.addressDetails.zipCode = addressDetails.addressLine7;
+            this.UsStates = UsStatesService.getStates();
+            this.addressDetails.lat = addressDetails.latitude;
+            this.addressDetails.long = addressDetails.longitude;
+            this.addressDetails.address = addressDetails.fullAddress;
         }
 
         $timeout(() => {
@@ -48,14 +57,14 @@ class EditAddressDialogController {
         }, 500);
 
         NgMap.getMap().then(map => {
-            console.log("Loading Map!");
+            console.log("Loading Map!")
             this.map = map;
             console.log("Map markers:", map.markers);
 
             if (!map.markers || map.markers.length === 0) {
                 console.log("No markers found. Creating a new one.");
                 this.marker = new google.maps.Marker({
-                    position: new google.maps.LatLng(this.addressDetails.latitude, this.addressDetails.longitude),
+                    position: new google.maps.LatLng(this.addressDetails.lat, this.addressDetails.long),
                     map: this.map,
                     visible: true
                 });
@@ -65,7 +74,7 @@ class EditAddressDialogController {
 
             console.log("Marker initialized:", this.marker);
 
-            this.addressSearchAutocomplete(this.addressDetails.fullAddress).then(_ => console.log("Address Search Complete!"));
+            this.addressSearchAutocomplete(addressDetails.address).then(_ => console.log("Address Search Complete!"));
         });
     }
 
@@ -124,13 +133,18 @@ class EditAddressDialogController {
             console.log("PostCode/ZIP = " + returnedLocation.Address.PostalCode);
 
             if (this.useUsFormat) {
-                this.addressDetails.addressLine4 = returnedLocation.Address.City;
-                this.addressDetails.addressLine5 = returnedLocation.Address.State;
-                this.addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
-                // Use the UsStatesService to get the full state name if needed
-                const stateObj = this.UsStatesService.getStateByAbbreviation(this.addressDetails.addressLine5);
-                if (stateObj) {
-                    this.addressDetails.stateName = stateObj.name;
+                this.addressDetails.addressLine1 = returnedLocation.Address.Place;
+                this.addressDetails.addressLine2 = returnedLocation.Address.Subunit;
+                this.addressDetails.addressLine3 = returnedLocation.Address.HouseNumber;
+                this.addressDetails.addressLine4 = returnedLocation.Address.Street;
+                this.addressDetails.addressLine5 = returnedLocation.Address.City;
+                this.addressDetails.addressLine6 = returnedLocation.Address.State;
+                this.addressDetails.addressLine7 = returnedLocation.Address.PostalCode;
+
+                const selectedState = this.UsStatesService.getStateByAbbreviation(returnedLocation.Address.State);
+                if (selectedState) {
+                    this.addressDetails.stateName = selectedState.name;
+                    this.addressDetails.state = selectedState;
                 }
             } else {
                 const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
@@ -141,15 +155,14 @@ class EditAddressDialogController {
                     this.ourSuburbSelectedItem = null;
                     this._toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
                 }
-                this.addressDetails.addressLine4 = returnedLocation.Address.District;
-                this.addressDetails.addressLine6 = returnedLocation.Address.PostalCode;
+                this.addressDetails.suburb = returnedLocation.Address.District;
+                this.addressDetails.postCode = returnedLocation.Address.PostalCode;
             }
 
-            this.addressDetails.addressLine1 = returnedLocation.Address.Street;
-            this.addressDetails.addressLine2 = returnedLocation.Address.HouseNumber;
-            this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
-            this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
-            this.addressDetails.fullAddress = returnedLocation.Address.Label;
+            this.addressDetails.filledAddress = returnedLocation.Address.Label;
+            this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
+            this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+            this.addressDetails.address = returnedLocation.Address.Label;
 
             const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
 
@@ -168,7 +181,7 @@ class EditAddressDialogController {
 
     /**
      * Submits provided address details.
-     * @param {AddressViewModel} addressDetails - Details related to the address to submit.
+     * @param {AddressDetails} addressDetails - Details related to the address to submit.
      */
     async submit(addressDetails) {
         this.isLoading = true;
@@ -190,6 +203,7 @@ class EditAddressDialogController {
                 this.isLoading = false;
                 return;
             }
+
             // Use the UsStatesService to validate the state if needed
             const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.addressLine5);
             if (!stateObj) {
@@ -197,10 +211,11 @@ class EditAddressDialogController {
                 this.isLoading = false;
                 return;
             }
+
+            addressDetails.fullAddress = [addressDetails.addressLine1, addressDetails.addressLine2, addressDetails.addressLine3, addressDetails.addressLine4, addressDetails.addressLine5, addressDetails.addressLine6, addressDetails.addressLine7, addressDetails.addressLine8].filter(line => line && line.trim() !== '').join(', ');
         }
 
         // Ensure fullAddress is up-to-date
-        addressDetails.fullAddress = [addressDetails.addressLine1, addressDetails.addressLine2, addressDetails.addressLine3, addressDetails.addressLine4, addressDetails.addressLine5, addressDetails.addressLine6, addressDetails.addressLine7, addressDetails.addressLine8].filter(line => line && line.trim() !== '').join(', ');
 
         // Pass back to function that called dialog for processing
         this.isLoading = false;
@@ -221,8 +236,8 @@ class EditAddressDialogController {
      * @param {google.maps.MouseEvent} event - A Google Maps mouse event.
      */
     moveMarker(event) {
-        this.addressDetails.latitude = event.latLng.lat();
-        this.addressDetails.longitude = event.latLng.lng();
+        this.addressDetails.lat = event.latLng.lat();
+        this.addressDetails.long = event.latLng.lng();
         this._$scope.$apply();
     };
 
@@ -235,14 +250,16 @@ class EditAddressDialogController {
         const location = event.latLng;
 
         try {
+            // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
+            // that return the latitude and longitude values of your location
             this._dispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
                 const returnedLocation = data.Response.View[0].Result[0].Location;
 
                 // Updating scope variables with new data
-                this.addressDetails.fullAddress = returnedLocation.Address.Label;
-                this.addressDetails.addressLine4 = returnedLocation.Address.District;
-                this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
-                this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
+                this.addressDetails.address = returnedLocation.Address.Label;
+                this.addressDetails.suburb = returnedLocation.Address.District;
+                this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
+                this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
 
                 // Log output
                 console.log("Suburb = " + returnedLocation.Address.District);
@@ -264,17 +281,16 @@ class EditAddressDialogController {
         }
     }
 
-
     /**
      * Update location values in addressDetails when place gets changed on the map.
      * @param {google.maps.places.PlaceResult} place - A result from the Google Places service.
      */
     placeChanged(place) {
         try {
-            this.addressDetails.latitude = place.geometry.location.lat();
-            this.addressDetails.longitude = place.geometry.location.lng();
+            this.addressDetails.lat = place.geometry.location.lat();
+            this.addressDetails.long = place.geometry.location.lng();
             if (place.address_components.find(x => x.types[0] === "postal_code")) {
-                this.addressDetails.addressLine6 = place.address_components
+                this.addressDetails.postCode = place.address_components
                     .find(x => x.types[0] === "postal_code").long_name;
             }
 

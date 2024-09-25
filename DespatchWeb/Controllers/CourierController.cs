@@ -1,29 +1,45 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Controllers;
 
 public class CourierController : Controller
 {
-    private ICourierRepository _courierRepo;
+    private readonly ICourierRepository _courierRepo;
 
     public CourierController(ICourierRepository courierRepository)
     {
         _courierRepo = courierRepository;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(List<int> despatchViewIds)
     {
-        var result = await _courierRepo.ClearLists();
+        if (despatchViewIds is { Count: 0 })
+            return Json(new ClearListViewModel());
+
+        var result = await _courierRepo.GetClearListsAsync(despatchViewIds);
         return Json(result);
     }
 
-    public IActionResult ClearListEnvelope(int clearListId)
+    [HttpGet]
+    public async Task<IActionResult> ClearListEnvelope(int clearListId, int countryId)
     {
-        var result = _courierRepo.ClearListEnvelope(clearListId);
-        return Json(result);
+        try
+        {
+            var country = (Country)countryId;
+            var result = await _courierRepo.GetClearListAreaEnvelopeAsync(clearListId, country);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<IActionResult> Active()
@@ -31,7 +47,6 @@ public class CourierController : Controller
         var result = await _courierRepo.ActiveCouriersAsync();
         return Json(result);
     }
-
 
     [HttpGet]
     public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
@@ -43,16 +58,8 @@ public class CourierController : Controller
     [HttpGet]
     public async Task<IActionResult> PotentialCouriers(int jobId)
     {
-        try
-        {
-            var result = await _courierRepo.GetPotentialCouriersAsync(jobId);
-            return Json(result);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        var result = await _courierRepo.GetPotentialCouriersAsync(jobId);
+        return Json(result);
     }
 
     public async Task<IActionResult> AllActiveSearch(string searchTerm)
@@ -77,13 +84,13 @@ public class CourierController : Controller
     [HttpGet]
     public async Task<IActionResult> Route(string code, DateTime? start, DateTime? end)
     {
-        var result = await _courierRepo.GetCourierRoute(code, start, end);
+        var result = await _courierRepo.GetCourierRouteAsync(code, start, end);
         return Json(result);
     }
 
     public async Task<IActionResult> TruckCourierStatus(string courierId)
     {
-        var result = await _courierRepo.TruckCourierStatus(courierId);
+        var result = await _courierRepo.TruckCourierStatusAsync(courierId);
         return Json(result);
     }
 
