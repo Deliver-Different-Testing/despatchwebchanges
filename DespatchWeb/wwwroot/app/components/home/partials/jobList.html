@@ -1,6 +1,6 @@
 <md-table-container>
-    <table auto-resize-table md-progress="getData" md-row-select md-table multiple ng-model="selected">
-        <thead md-head md-on-reorder="ctrl.onReorder" md-order="ctrl.query.order">
+    <table md-progress="getData" md-row-select md-table multiple ng-model="selected">
+        <thead class="sticky-header" md-head md-on-reorder="ctrl.onReorder" md-order="ctrl.query.order">
         <tr md-row>
             <th md-column md-order-by="time"><span>T</span></th>
             <th md-column md-order-by="speed"><span>Speed</span></th>
@@ -32,19 +32,21 @@
                 <span ng-click="setEventsMenu($event)">{{job.jobNo}}</span>
             </td>
             <td md-cell>
-                <span class="client-box" ng-click="clientColumnClick($event, job)"
-                      ng-style="jobTableService.getClientBoxStyle(job)">{{job.client}}</span>
+            <span class="client-box" ng-click="clientColumnClick($event, job)"
+                  ng-style="jobTableService.getClientBoxStyle(job)">{{job.client}}</span>
             </td>
             <td md-cell>
                 {{job.pickupAddress.addressLine5}}
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickupAddress.longitude">warning</md-icon>
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickupAddress.longitude">warning
+                </md-icon>
             </td>
-            <td md-cell>
+            <td colspan="2" md-cell>
                 {{job.deliveryAddress.fullAddress}}
                 <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryAddress.longitude">warning
                 </md-icon>
             </td>
-            <td md-cell ng-click="jobTableService.editField($event, job, 'courier', 'Courier Code')">
+            <td md-cell
+                ng-click="jobTableService.editField($event, job, 'courier', 'Courier Code')">
                 {{job.courier}}
             </td>
             <td md-cell ng-class="{'highlight': job.remain < 0}">
@@ -74,6 +76,30 @@
     </table>
 </md-table-container>
 
-<md-table-pagination md-limit="query.limit" md-limit-options="[5, 10, 15]"
-                     md-on-paginate="onPaginate" md-page="query.page"
-                     md-page-select md-total="{{jobList.length}}"></md-table-pagination>
+<div class="sticky-footer">
+    <md-table-pagination md-limit="query.limit" md-limit-options="[5, 10, 15]"
+                         md-on-paginate="onPaginate" md-page="query.page"
+                         md-page-select md-total="{{jobList.length}}"></md-table-pagination>
+</div>
+
+<style>
+    .md-table-container {
+        position: relative;
+        overflow-y: auto;
+        height: calc(100vh - 64px); /* Adjust based on your layout */
+    }
+
+    .sticky-header {
+        position: sticky;
+        top: 0;
+        background-color: white;
+        z-index: 10;
+    }
+
+    .sticky-footer {
+        position: sticky;
+        bottom: 0;
+        background-color: white;
+        z-index: 10;
+    }
+</style>

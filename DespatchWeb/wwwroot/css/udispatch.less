@@ -1482,104 +1482,106 @@ md-table-pagination {
 }
 
 md-table-container {
+  @font-size: 12px;
+
   overflow-x: auto;
 
   .md-table {
-    width: 100%;
-    table-layout: auto;
-    font-size: 10px;
+    width: 100% !important;
+    table-layout: auto !important;
+    font-size: @font-size !important;
 
     th, td {
-      white-space: nowrap;
-      min-width: 30px;
+      white-space: nowrap !important;
+      min-width: 30px !important;
       padding: 4px 8px !important;
     }
 
     // Scrollbar styles
     th::-webkit-scrollbar, td::-webkit-scrollbar {
-      height: 3px;
-      background-color: transparent;
+      height: 3px !important;
+      background-color: transparent !important;
     }
 
     th::-webkit-scrollbar-thumb, td::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.26);
-      border-radius: 2px;
+      background-color: rgba(0, 0, 0, 0.26) !important;
+      border-radius: 2px !important;
     }
 
     th:hover::-webkit-scrollbar-thumb, td:hover::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.4);
+      background-color: rgba(0, 0, 0, 0.4) !important;
     }
 
     thead {
       tr {
-        background-color: #e6f2ff;
+        background-color: #e6f2ff !important;
         th {
-          font-size: 10px;
-          font-weight: 500;
-          color: rgba(0, 0, 0, 0.87);
+          font-size: @font-size !important;
+          font-weight: 500 !important;
+          color: rgba(0, 0, 0, 0.87) !important;
         }
       }
     }
 
     tbody {
       tr {
-        height: 30px;
+        height: 30px !important;
 
         td {
-          font-size: 10px;
-          color: rgba(0, 0, 0, 0.87);
+          font-size: @font-size !important;
+          color: rgba(0, 0, 0, 0.87) !important;
         }
       }
     }
 
     .md-row:nth-child(even) {
-      background-color: #f8f8f8;
+      background-color: #f8f8f8 !important;
     }
 
     .md-row:nth-child(odd) {
-      background-color: #ffffff;
+      background-color: #ffffff !important;
     }
 
     .md-row {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12) !important;
     }
 
     // Styles for client box
     .client-box {
-      display: inline-block;
-      padding: 1px 3px;
-      color: white;
-      font-weight: bold;
-      border-radius: 2px;
-      font-size: 11px; // Reduced font size for client box
+      display: inline-block !important;
+      padding: 1px 3px !important;
+      color: white !important;
+      font-weight: bold !important;
+      border-radius: 2px !important;
+      font-size: 11px !important;
     }
 
     // Styles for 'Remain' column
     .md-cell.highlight {
-      color: #ff0000;
+      color: #ff0000 !important;
     }
 
     // Styles for action buttons
     .md-button.md-icon-button {
-      width: 18px; // Further reduced size
-      height: 18px;
-      min-height: 18px;
-      line-height: 18px;
-      padding: 0;
-      margin: 0 1px;
+      width: 18px !important;
+      height: 18px !important;
+      min-height: 18px !important;
+      line-height: 18px !important;
+      padding: 0 !important;
+      margin: 0 1px !important;
     }
 
     .md-icon {
-      font-size: 14px; // Reduced icon size
+      font-size: 14px !important;
     }
 
     // Responsive styles
     @media screen and (max-width: 1200px) {
-      font-size: 11px; // Reduced font size for medium screens
+      font-size: 11px !important;
     }
 
     @media screen and (max-width: 600px) {
-      font-size: 10px; // Reduced font size for small screens
+      font-size: @font-size !important;
 
       th, td {
         padding: 0 3px !important;

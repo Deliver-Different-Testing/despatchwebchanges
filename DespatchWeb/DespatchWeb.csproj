@@ -196,6 +196,10 @@
       <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialog.html"/>
       <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialogController.js"/>
       <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialogController.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map"/>
   </ItemGroup>
 
   <ItemGroup>
