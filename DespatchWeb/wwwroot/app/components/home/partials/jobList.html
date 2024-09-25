@@ -1,18 +1,18 @@
 <md-table-container>
-    <table md-progress="getData" md-row-select md-table multiple ng-model="selected">
-        <thead class="sticky-header" md-head md-on-reorder="ctrl.onReorder" md-order="ctrl.query.order">
+    <table md-progress="promise" md-row-select md-table multiple ng-model="selected">
+        <thead class="sticky-header" md-head md-on-reorder="onReorder" md-order="query.order">
         <tr md-row>
-            <th md-column md-order-by="time"><span>T</span></th>
-            <th md-column md-order-by="speed"><span>Speed</span></th>
-            <th md-column md-order-by="notify"><span>N</span></th>
-            <th md-column md-order-by="vehicle"><span>V</span></th>
-            <th md-column md-order-by="jobNo"><span>Job</span></th>
-            <th md-column md-order-by="client"><span>Client</span></th>
-            <th md-column md-order-by="from"><span>From</span></th>
-            <th md-column md-order-by="to"><span>To</span></th>
+            <th md-column><span>T</span></th>
+            <th md-column><span>Speed</span></th>
+            <th md-column><span>N</span></th>
+            <th md-column><span>V</span></th>
+            <th md-column><span>Job</span></th>
+            <th md-column><span>Client</span></th>
+            <th md-column><span>From</span></th>
+            <th md-column><span>To</span></th>
             <th md-column><span>Code</span></th>
-            <th md-column md-order-by="remain"><span>Remain</span></th>
-            <th md-column md-order-by="status"><span>S</span></th>
+            <th md-column><span>Remain</span></th>
+            <th md-column><span>S</span></th>
             <th md-column><span>LP</span></th>
             <th md-column><span>LD</span></th>
             <th md-column><span>R</span></th>
@@ -20,10 +20,10 @@
         </tr>
         </thead>
         <tbody md-body>
-        <tr data-courier="{{job.courier}}" data-index="{{$index}}" data-jobid="{{job.id}}" data-jobno="{{job.jobNo}}"
-            md-row md-select="job" md-select-id="id"
-            ng-click="handleRowClick($event, job)"
-            ng-repeat="job in jobList | filter: query.filter">
+        <tr
+                md-row md-select="job" md-select-id="id"
+                ng-click="handleRowClick($event, job)"
+                ng-repeat="job in jobList | filter: query.filter">
             <td md-cell>{{job.time | date: 'HH:mm'}}</td>
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.notify}}</td>
@@ -36,12 +36,12 @@
                   ng-style="jobTableService.getClientBoxStyle(job)">{{job.client}}</span>
             </td>
             <td md-cell>
-                {{job.pickupAddress.addressLine5}}
+                {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from }}
                 <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickupAddress.longitude">warning
                 </md-icon>
             </td>
             <td colspan="2" md-cell>
-                {{job.deliveryAddress.fullAddress}}
+                {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress }}
                 <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryAddress.longitude">warning
                 </md-icon>
             </td>
@@ -83,12 +83,6 @@
 </div>
 
 <style>
-    .md-table-container {
-        position: relative;
-        overflow-y: auto;
-        height: calc(100vh - 64px); /* Adjust based on your layout */
-    }
-
     .sticky-header {
         position: sticky;
         top: 0;
