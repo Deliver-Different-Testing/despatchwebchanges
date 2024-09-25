@@ -1487,15 +1487,17 @@ md-table-container {
   .md-table {
     width: 100%;
     table-layout: auto;
+    font-size: 12px; // Reduced base font size
 
     th, td {
       white-space: nowrap;
       min-width: 30px;
+      padding: 4px 8px;
     }
 
     // Scrollbar styles
     th::-webkit-scrollbar, td::-webkit-scrollbar {
-      height: 4px;
+      height: 3px; // Reduced scrollbar height
       background-color: transparent;
     }
 
@@ -1510,75 +1512,77 @@ md-table-container {
 
     thead {
       tr {
-        background-color: #e6f2ff; // Header background color
+        background-color: #e6f2ff;
         th {
-          font-size: 13px;
+          font-size: 12px; // Reduced header font size
           font-weight: 500;
-          color: rgba(0, 0, 0, 0.87); // Darker color for better contrast
+          color: rgba(0, 0, 0, 0.87);
         }
       }
     }
 
     tbody {
       tr {
-        height: 36px;
+        height: 30px; // Further reduced row height
 
         td {
-          font-size: 13px;
+          font-size: 12px; // Reduced cell font size
           color: rgba(0, 0, 0, 0.87);
         }
       }
     }
 
     .md-row:nth-child(even) {
-      background-color: #f8f8f8; // Lighter background for even rows
+      background-color: #f8f8f8;
     }
 
     .md-row:nth-child(odd) {
-      background-color: #ffffff; // White background for odd rows
+      background-color: #ffffff;
     }
 
     .md-row {
       border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     }
 
-    // New styles for client box
+    // Styles for client box
     .client-box {
       display: inline-block;
-      padding: 2px 4px;
+      padding: 1px 3px;
       color: white;
       font-weight: bold;
       border-radius: 2px;
+      font-size: 11px; // Reduced font size for client box
     }
 
-    // New styles for 'Remain' column
+    // Styles for 'Remain' column
     .md-cell.highlight {
-      color: #ff0000; // Red color for negative values
+      color: #ff0000;
     }
 
-    // New styles for action buttons
+    // Styles for action buttons
     .md-button.md-icon-button {
-      width: 24px;
-      height: 24px;
-      min-height: 24px;
-      line-height: 24px;
+      width: 18px; // Further reduced size
+      height: 18px;
+      min-height: 18px;
+      line-height: 18px;
       padding: 0;
-      margin: 0 2px;
+      margin: 0 1px;
     }
 
     .md-icon {
-      font-size: 18px;
+      font-size: 14px; // Reduced icon size
     }
 
     // Responsive styles
     @media screen and (max-width: 1200px) {
-      font-size: 12px;
+      font-size: 11px; // Reduced font size for medium screens
     }
 
     @media screen and (max-width: 600px) {
+      font-size: 10px; // Reduced font size for small screens
+
       th, td {
-        padding: 0 4px !important;
-        font-size: 11px;
+        padding: 0 3px !important;
       }
     }
   }

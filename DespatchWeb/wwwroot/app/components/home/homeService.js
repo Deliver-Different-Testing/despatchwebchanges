@@ -312,7 +312,6 @@ class DispatchData {
     async getSupports(channel) {
         const response = await this._$http.get('job/supports?channel=' + channel);
         return response.data;
-
     }
 
     /**
@@ -714,7 +713,7 @@ class DispatchData {
      * @param {string} despatcherName
      * @param {boolean} prebook
      */
-    updateDeliveryAddress = async (jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) => {
+    async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? 'job/UpdateBookingDeliveryAddress' : 'job/UpdateDeliveryAddress';
         return this._$http.post(method + '?jobId=' + jobId + '&toSuburbId=' + toSuburbId + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
     }

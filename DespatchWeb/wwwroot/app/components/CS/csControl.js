@@ -206,39 +206,6 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
-        /*     $scope.gather = {
-                 submit() {
-                     angular.element(".gatherForm").css("display", "none");
-                     $scope.gather.form.onSubmit().then(() => {
-                         if ($scope.currentJob) {
-                             $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
-                         }
-                     });
-                 }, cancel: () => angular.element(".gatherForm").css("display", "none"), showForm: () => {
-                     angular.element(".gatherForm").css("display", "block");
-                     $timeout(() => angular.element(".gatherForm .focusMe").focus(), 100);
-                 }, submitValue: "Save"
-             };
-
-             $scope.gather = {
-                 submit: () => {
-                     angular.element(".gatherForm").hide();
-                     $scope.gather.form.onSubmit().then(response => {
-                         if ($scope.currentJob) {
-                             $scope.currentJob.bulkJob ? $scope.selectBulkJobDetail($scope.currentJob.id) : $scope.currentJob.preBook ? $scope.selectPreBookDetail($scope.currentJob.id) : $scope.selectJobDetail($scope.currentJob.id);
-                         }
-                     });
-                 }, cancel: () => {
-                     angular.element(".gatherForm").hide();
-                 }, showForm: () => {
-                     angular.element(".gatherForm").show(0, () => {
-                         $timeout(() => {
-                             angular.element(".gatherForm .focusMe").focus();
-                         }, 100);
-                     });
-                 }, submitValue: "Save"
-             };*/
-
         jdSvc.setGather($scope.gather);
 
         $scope.options = {
