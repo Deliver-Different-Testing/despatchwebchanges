@@ -1417,16 +1417,17 @@ md-table-container {
 md-table-container .md-table {
   width: 100%;
   table-layout: auto;
+  font-size: 10px;
 }
 md-table-container .md-table th,
 md-table-container .md-table td {
   white-space: nowrap;
   min-width: 30px;
-    padding: 4px 8px;
+  padding: 4px 8px !important;
 }
 md-table-container .md-table th::-webkit-scrollbar,
 md-table-container .md-table td::-webkit-scrollbar {
-  height: 4px;
+  height: 3px;
   background-color: transparent;
 }
 md-table-container .md-table th::-webkit-scrollbar-thumb,
@@ -1442,15 +1443,15 @@ md-table-container .md-table thead tr {
   background-color: #e6f2ff;
 }
 md-table-container .md-table thead tr th {
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.87);
 }
 md-table-container .md-table tbody tr {
-    height: 32px;
+  height: 30px;
 }
 md-table-container .md-table tbody tr td {
-  font-size: 13px;
+  font-size: 10px;
   color: rgba(0, 0, 0, 0.87);
 }
 md-table-container .md-table .md-row:nth-child(even) {
@@ -1464,35 +1465,38 @@ md-table-container .md-table .md-row {
 }
 md-table-container .md-table .client-box {
   display: inline-block;
-    padding: 1px 3px;
+  padding: 1px 3px;
   color: white;
   font-weight: bold;
   border-radius: 2px;
+  font-size: 11px;
 }
 md-table-container .md-table .md-cell.highlight {
   color: #ff0000;
 }
 md-table-container .md-table .md-button.md-icon-button {
-    width: 20px;
-    height: 20px;
-    min-height: 20px;
-    line-height: 20px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  line-height: 18px;
   padding: 0;
-    margin: 0 1px;
+  margin: 0 1px;
 }
 md-table-container .md-table .md-icon {
-    font-size: 16px;
+  font-size: 14px;
 }
 @media screen and (max-width: 1200px) {
   md-table-container .md-table {
-    font-size: 12px;
+    font-size: 11px;
   }
 }
 @media screen and (max-width: 600px) {
+  md-table-container .md-table {
+    font-size: 10px;
+  }
   md-table-container .md-table th,
   md-table-container .md-table td {
-      padding: 0 3px !important;
-    font-size: 11px;
+    padding: 0 3px !important;
   }
 }
 md-table-pagination .md-text {

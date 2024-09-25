@@ -1487,17 +1487,17 @@ md-table-container {
   .md-table {
     width: 100%;
     table-layout: auto;
-    font-size: 12px; // Reduced base font size
+    font-size: 10px;
 
     th, td {
       white-space: nowrap;
       min-width: 30px;
-      padding: 4px 8px;
+      padding: 4px 8px !important;
     }
 
     // Scrollbar styles
     th::-webkit-scrollbar, td::-webkit-scrollbar {
-      height: 3px; // Reduced scrollbar height
+      height: 3px;
       background-color: transparent;
     }
 
@@ -1514,7 +1514,7 @@ md-table-container {
       tr {
         background-color: #e6f2ff;
         th {
-          font-size: 12px; // Reduced header font size
+          font-size: 10px;
           font-weight: 500;
           color: rgba(0, 0, 0, 0.87);
         }
@@ -1523,10 +1523,10 @@ md-table-container {
 
     tbody {
       tr {
-        height: 30px; // Further reduced row height
+        height: 30px;
 
         td {
-          font-size: 12px; // Reduced cell font size
+          font-size: 10px;
           color: rgba(0, 0, 0, 0.87);
         }
       }

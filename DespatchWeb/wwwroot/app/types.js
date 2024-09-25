@@ -139,20 +139,26 @@
  */
 
 /**
- * Represents an address view model.
+ * Represents a comprehensive address details object.
  * @typedef {Object} AddressDetails
  *
- * @property {string} addressLine1
- * @property {string} addressLine2
- * @property {string} addressLine3
- * @property {string} addressLine4
- * @property {string} addressLine5
- * @property {string} addressLine6
- * @property {string} addressLine7
- * @property {string} addressLine8
- * @property {number|null} latitude
- * @property {number|null} longitude
- * @property {string} fullAddress
+ * @property {string} addressLine1 - The first line of the address.
+ * @property {string} addressLine2 - The second line of the address.
+ * @property {string} addressLine3 - The third line of the address.
+ * @property {string} addressLine4 - The fourth line of the address.
+ * @property {string} addressLine5 - The fifth line of the address.
+ * @property {string} addressLine6 - The sixth line of the address.
+ * @property {string} addressLine7 - The seventh line of the address.
+ * @property {string} addressLine8 - The eighth line of the address.
+ * @property {number|null} latitude - The latitude of the address.
+ * @property {number|null} longitude - The longitude of the address.
+ * @property {string} fullAddress - The fully formed address.
+ * @property {string} filledAddress - The fully formed address (alternative representation).
+ * @property {string} address - The main address line.
+ * @property {string} extras - Additional address information.
+ * @property {string} suburb - The suburb of the address.
+ * @property {string} postCode - The postal code of the address.
+ * @property {number} our_suburb - The id of the suburb in urgents db.
  */
 
 /**
@@ -190,19 +196,6 @@
  * @property {string} order
  * @property {number} limit
  * @property {number} page
- */
-
-/**
- * @typedef {Object} AddressDetails_Old - Details related to the address in use.
- *
- * @property {string} filledAddress - The fully formed address.
- * @property {number} lat - The latitude of the address.
- * @property {number} long - The longitude of the address.
- * @property {string} address - The address.
- * @property {string} extras - The extras.
- * @property {string} suburb - The suburb of the address.
- * @property {string} postCode - The postal code of the address.
- * @property {number} our_suburb - The id of the suburb in urgents db
  */
 
 /**
