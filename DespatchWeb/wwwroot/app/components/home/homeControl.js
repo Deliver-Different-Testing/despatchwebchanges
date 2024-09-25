@@ -2598,8 +2598,6 @@ angular.module("uDispatch")
                     await fetchAreaList();
                     await fetchLateCalls();
                     await $scope.getJobList();
-
-                    $scope.$broadcast('autoResizeTable');
                 } catch (error) {
                     console.error('Error in getData:', error);
                 }

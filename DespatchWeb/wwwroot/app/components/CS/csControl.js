@@ -802,7 +802,6 @@ angular.module('uDispatch').controller('CSControl', [
             }
 
             await Promise.all([$scope.refreshData(), $scope.refreshBulkData(), $scope.refreshPreBookData()]);
-            $scope.$broadcast('autoResizeTable');
         };
 
         $scope.refreshData = async () => {
