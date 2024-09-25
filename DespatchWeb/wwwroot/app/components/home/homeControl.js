@@ -65,17 +65,13 @@ angular.module("uDispatch")
             };
 
             $scope.updateFilters = async () => {
-                // Handle status filters
-                const activeStatuses = Object.keys($scope.filters).filter(key => $scope.filters[key]);
-                let statusFilter = activeStatuses.length > 0 ? activeStatuses.join(',') : 'all';
-
                 // Handle area filters
                 const activeAreas = Object.keys($scope.selectedAreas).filter(key => $scope.selectedAreas[key]);
                 const areaFilter = activeAreas.join(',');
 
-                // Combine filters and call setFiltersFromTopBar
-                await $scope.setFiltersFromTopBar({
-                    'status': statusFilter, 'area': areaFilter
+                // Call setFilters with area filter
+                await $scope.setFilters({
+                    'area': areaFilter
                 });
             };
 
@@ -700,7 +696,7 @@ angular.module("uDispatch")
             $scope.selectClearList = async (driverDestination) => {
                 try {
                     const clearListId = driverDestination.id;
-                    const area = driverDestination.area;
+                    const view = driverDestination.area;
 
                     let areaGroupButtons = angular.element("#area-group .btn");
                     areaGroupButtons.removeClass("topBarActive");
@@ -710,7 +706,7 @@ angular.module("uDispatch")
                         await $scope.getClearListEnvelope(clearListId);
                     }
 
-                    await $scope.setFilters({'clearList': area});
+                    await $scope.setFilters({'clearList': view});
                 } catch (error) {
                     console.log('Error in selectClearList:', error);
                 }
@@ -1506,45 +1502,50 @@ angular.module("uDispatch")
 
 
 //ACTIVATE DROP
-            $scope.activateDrop = () => {
-                $timeout(() => {
-                    $document.ready(() => {
-                        angular.element(".droppable-row").droppable({
-                            classes: {
-                                "ui-droppable-hover": "active"
-                            }, drop: function () {
-                                const $this = angular.element(this);
-                                const $parent = $this.parents(".box");
-                                const parentOffset = $parent.offset();
-                                const parentTop = parentOffset.top;
-                                const parentBottom = parentTop + $parent.outerHeight();
+            $scope.activateDrop = async () => {
+                await new Promise(resolve => $timeout(resolve, 0));
 
-                                const rowOffset = $this.offset();
-                                const rowTop = rowOffset.top;
-                                const rowBottom = rowTop + $this.outerHeight();
+                await new Promise(resolve => {
+                    $document.ready(resolve);
+                });
 
-                                if (rowTop < parentBottom && rowBottom > parentTop) {
-                                    $this.css({"background-color": "#c6dfad"});
+                angular.element(".droppable-row").droppable({
+                    classes: {
+                        "ui-droppable-hover": "active"
+                    },
+                    drop: async function () {
+                        const $this = angular.element(this);
+                        const $parent = $this.parents(".box");
+                        const parentOffset = $parent.offset();
+                        const parentTop = parentOffset.top;
+                        const parentBottom = parentTop + $parent.outerHeight();
 
-                                    $this.animate({backgroundColor: "inherit"}, 300, () => {
-                                        $this.removeAttr("style");
+                        const rowOffset = $this.offset();
+                        const rowTop = rowOffset.top;
+                        const rowBottom = rowTop + $this.outerHeight();
 
-                                        const courierId = $this.attr("data-courier").replace(/[^\d.-]/g, '');
+                        if (rowTop < parentBottom && rowBottom > parentTop) {
+                            $this.css({"background-color": "#c6dfad"});
 
-                                        $scope.dispatchJobs(courierId)
-                                            .then(() => {
-                                                console.log('Dispatch complete');
-                                                return $scope.getDriverLocationsData();
-                                            })
-                                            .catch(error => {
-                                                console.log('Error in drop handler:', error);
-                                            });
-                                    });
-                                }
+                            await new Promise(resolve => {
+                                $this.animate({backgroundColor: "inherit"}, 300, () => {
+                                    $this.removeAttr("style");
+                                    resolve();
+                                });
+                            });
+
+                            const courierId = $this.attr("data-courier").replace(/[^\d.-]/g, '');
+
+                            try {
+                                await $scope.dispatchJobs(courierId);
+                                console.log('Dispatch complete');
+                                await $scope.getDriverLocationsData();
+                            } catch (error) {
+                                console.log('Error in drop handler:', error);
                             }
-                        });
-                    });
-                }, 0);
+                        }
+                    }
+                });
             };
 
 ////////////////////////////
@@ -1569,7 +1570,7 @@ angular.module("uDispatch")
 
                     angular.element('#box-potentialCouriers .loading').css('display', 'none');
 
-                    $scope.activateDrop();
+                    await $scope.activateDrop();
                 } catch (error) {
                     console.log('Error getting potential couriers:', error);
                     angular.element('#box-potentialCouriers .loading').css('display', 'none');
@@ -1747,7 +1748,7 @@ angular.module("uDispatch")
                     if (data.length > 0) {
                         displayRoutePointsOnly(data, false);
                     }
-                    $scope.activateDrop();
+                    await $scope.activateDrop();
 
                     $timeout(() => {
                         sizeHeadings();
@@ -1811,7 +1812,7 @@ angular.module("uDispatch")
                         const posData = await DispatchData.getCourierPosition(code);
                         displayCourierPositionOnly(posData.latitude, posData.longitude);
                     }
-                    $scope.activateDrop();
+                    await $scope.activateDrop();
 
                     $timeout(() => {
                         sizeHeadings();
@@ -1885,7 +1886,7 @@ angular.module("uDispatch")
                         const posData = await DispatchData.getCourierPosition(code);
                         displayCourierPositionOnly(posData.latitude, posData.longitude);
                     }
-                    $scope.activateDrop();
+                    await $scope.activateDrop();
 
                     $timeout(() => {
                         sizeHeadings();
@@ -1899,36 +1900,27 @@ angular.module("uDispatch")
                 }
             };
 
-            let filtersObject = null;
-            if (Modernizr.localstorage) {
-                filtersObject = JSON.parse(localStorage.getItem("disp-filters-" + ContactID));
-            }
-
-            $scope.jobFilters = filtersObject || {
-                "status": "nda", "area": "main1", "order": "remain", "asc": "asc"
-            };
-            let f = ".top-bar .btn-group .btn." + $scope.jobFilters.status;
-            angular.element(f).addClass("topBarActive");
-            const areas = $scope.jobFilters.area.split(',');
-
-            for (let i = 0; i < areas.length; i++) {
-                f = ".top-bar .btn-group .btn." + areas[i];
-                angular.element(f).addClass("topBarActive");
-            }
-
             $scope.sort["jobList"] = "remain";
 
-            $scope.setFiltersFromTopBar = async data => {
-                angular.element('.driverLocations-list-title').removeClass('listActive');
-                await $scope.setFilters(data);
-            };
-
-            $scope.setFilters = async data => {
-                $timeout(async () => {
+            $scope.setFilters = async (data) => {
+                await $timeout(async () => {
                     if (data.status) {
                         $scope.jobFilters.status = data.status;
-                    }
+                    } else {
+                        // Add the selected filter as status
+                        const selectedStatus = Object.entries($scope.filters)
+                            .filter(([key, value]) => value && key !== 'all')
+                            .map(([key]) => key);
 
+                        if (selectedStatus.length > 0) {
+                            $scope.jobFilters.status = selectedStatus.join(',');
+                        } else if ($scope.filters.all) {
+                            $scope.jobFilters.status = 'all';
+                        } else {
+                            // If no status is selected, remove the status filter
+                            delete $scope.jobFilters.status;
+                        }
+                    }
 
                     if (data.area) {
                         let selected = angular.element("#area-group > .btn.topBarActive").length;
@@ -2023,7 +2015,7 @@ angular.module("uDispatch")
 
 // Select Job
             $scope.selectJob = async (job) => {
-                $timeout(async () => {
+                await $timeout(async () => {
                     let jobRow = null;
                     $scope.selectedJobs = [];
                     $scope.currentSupport = null;
@@ -2482,7 +2474,7 @@ angular.module("uDispatch")
                     $scope.jobList = data;
                     angular.element("#box-jobsList .loading").fadeOut();
 
-                    $timeout(async () => {
+                    await $timeout(async () => {
                         sizeHeadings();
                         if (data.length > 0) {
                             const unDispatchedData = data.filter(x => x.courierData.courierID === null);
@@ -2634,7 +2626,7 @@ angular.module("uDispatch")
                             angular.element("#driverLocations .loading").fadeOut();
                         }, 0);
                         console.log($scope.driverLocations);
-                        $scope.activateDrop();
+                        await $scope.activateDrop();
                     } catch (error) {
                         console.error('Error getting clear lists data:', error);
                     }
@@ -2644,7 +2636,7 @@ angular.module("uDispatch")
             }
 
             /**
-             * @param {ClearListEnvelope} clearListId
+             * @param {ClearListEnvelope} data
              */
             function updateMapBounds(data) {
                 const swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
@@ -2677,7 +2669,7 @@ angular.module("uDispatch")
                     text: "Delete",
                     click: () => angular.element(".rightActiveTable .active").fadeOut()
                 }];
-                $scope.activateDrop();
+                await $scope.activateDrop();
                 $timeout(() => {
                     angular.element("#box-couriersMoveThrough").find(".loading").fadeOut();
                 }, 100);
