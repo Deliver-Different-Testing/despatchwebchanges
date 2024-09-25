@@ -96,14 +96,14 @@ md-autocomplete.ng-leave {
   border-radius: 4px;
 }
 .autocomplete-style {
-  width: 250px !important;
+  width: 250px;
 }
 .autocomplete-style md-autocomplete-wrap {
-  height: 40px !important;
+  height: 40px;
 }
 .autocomplete-style input {
-  height: 100% !important;
-  line-height: 40px !important;
+  height: 100%;
+  line-height: 40px;
 }
 .switch-container {
   display: flex;
@@ -206,7 +206,7 @@ md-divider {
   margin: 15px 0;
 }
 #box-driverLocations .box-content {
-  overflow: hidden !important;
+  overflow: hidden;
 }
 #driverLocations .col-xs-3 {
   padding: 4px;
@@ -474,7 +474,7 @@ md-divider {
   display: inline-block;
 }
 .md-select-menu-container .md-option {
-  color: white !important;
+  color: white;
 }
 #draggingItems {
   border: 3px dotted #CCC;
@@ -768,7 +768,7 @@ md-divider {
   font-size: 11px;
 }
 .columns .column .column-sortable .box .related-content {
-  top: 15px !important;
+  top: 15px;
 }
 .columns .placeholder {
   height: 200px;
@@ -776,7 +776,7 @@ md-divider {
   margin-bottom: 15px;
 }
 .rg-bottom {
-  background: #FFF !important;
+  background: #FFF;
   height: 16px;
   margin-bottom: -16px;
   border-top: 1px solid #5d5d5d;
@@ -889,19 +889,19 @@ input.pod-DispatchField {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #currentWork tr.O {
-  background-color: #ffdfba !important;
+  background-color: #ffdfba;
 }
 #currentWork tr.B {
-  background-color: #bae1ff !important;
+  background-color: #bae1ff;
 }
 #currentWork tr.G {
-  background-color: #b0f57b !important;
+  background-color: #b0f57b;
 }
 #currentWork td {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #currentWork .doing {
-  background-color: #d7f3ce !important;
+  background-color: #d7f3ce;
 }
 #currentWork input.dispatchField {
   width: 29px;
@@ -921,19 +921,19 @@ input.pod-DispatchField {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobList tr.O {
-  background-color: #ffdfba !important;
+  background-color: #ffdfba;
 }
 #jobList tr.B {
-  background-color: #bae1ff !important;
+  background-color: #bae1ff;
 }
 #jobList tr.G {
-  background-color: #b0f57b !important;
+  background-color: #b0f57b;
 }
 #jobList td {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobList .doing {
-  background-color: #d7f3ce !important;
+  background-color: #d7f3ce;
 }
 #jobList input.dispatchField {
   width: 29px;
@@ -953,19 +953,19 @@ input.pod-DispatchField {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #pbList tr.O {
-  background-color: #ffdfba !important;
+  background-color: #ffdfba;
 }
 #pbList tr.B {
-  background-color: #bae1ff !important;
+  background-color: #bae1ff;
 }
 #pbList tr.G {
-  background-color: #b0f57b !important;
+  background-color: #b0f57b;
 }
 #pbList td {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #pbList .doing {
-  background-color: #d7f3ce !important;
+  background-color: #d7f3ce;
 }
 #pbList input.dispatchField {
   width: 29px;
@@ -985,19 +985,19 @@ input.pod-DispatchField {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobListPOD tr.O {
-  background-color: #ffdfba !important;
+  background-color: #ffdfba;
 }
 #jobListPOD tr.B {
-  background-color: #bae1ff !important;
+  background-color: #bae1ff;
 }
 #jobListPOD tr.G {
-  background-color: #b0f57b !important;
+  background-color: #b0f57b;
 }
 #jobListPOD td {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobListPOD .doing {
-  background-color: #d7f3ce !important;
+  background-color: #d7f3ce;
 }
 #jobListPOD input.dispatchField {
   width: 29px;
@@ -1017,19 +1017,19 @@ input.pod-DispatchField {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobListDelivery tr.O {
-  background-color: #ffdfba !important;
+  background-color: #ffdfba;
 }
 #jobListDelivery tr.B {
-  background-color: #bae1ff !important;
+  background-color: #bae1ff;
 }
 #jobListDelivery tr.G {
-  background-color: #b0f57b !important;
+  background-color: #b0f57b;
 }
 #jobListDelivery td {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobListDelivery .doing {
-  background-color: #d7f3ce !important;
+  background-color: #d7f3ce;
 }
 #jobListDelivery input.dispatchField {
   width: 29px;
@@ -1049,19 +1049,19 @@ input.pod-DispatchField {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobListReprice tr.O {
-  background-color: #ffdfba !important;
+  background-color: #ffdfba;
 }
 #jobListReprice tr.B {
-  background-color: #bae1ff !important;
+  background-color: #bae1ff;
 }
 #jobListReprice tr.G {
-  background-color: #b0f57b !important;
+  background-color: #b0f57b;
 }
 #jobListReprice td {
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
 #jobListReprice .doing {
-  background-color: #d7f3ce !important;
+  background-color: #d7f3ce;
 }
 #jobListReprice input.dispatchField {
   width: 29px;
@@ -1259,8 +1259,8 @@ a.uline.disabled {
   margin-right: 0;
 }
 .row-no-padding [class*="col-"] {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
 }
 span.courier {
   font-size: 10px;
@@ -1344,22 +1344,22 @@ span.courierRed {
   margin: 5px 0;
 }
 md-table-container table.md-table tbody.md-body > tr.md-row:not([disabled]):hover {
-  background-color: rgba(0, 0, 0, 0.05) !important;
+  background-color: rgba(0, 0, 0, 0.05);
 }
 md-table-container table.md-table tbody.md-body > tr.md-row:not([disabled]).md-selected:hover {
-  background-color: rgba(0, 0, 0, 0.12) !important;
+  background-color: rgba(0, 0, 0, 0.12);
 }
 md-table-pagination {
-  color: rgba(0, 0, 0, 0.87) !important;
+  color: rgba(0, 0, 0, 0.87);
 }
 md-table-pagination .label,
 md-table-pagination md-select .md-select-value,
 md-table-pagination md-select .md-select-value.md-select-placeholder,
 md-table-pagination .md-button {
-  color: rgba(0, 0, 0, 0.87) !important;
+  color: rgba(0, 0, 0, 0.87);
 }
 md-table-pagination .md-button[disabled] {
-  color: rgba(0, 0, 0, 0.38) !important;
+  color: rgba(0, 0, 0, 0.38);
 }
 .search-input-container {
   margin: 0;
@@ -1416,14 +1416,13 @@ md-table-container {
 }
 md-table-container .md-table {
   width: 100%;
-  table-layout: auto;
-  font-size: 10px;
+  table-layout: fixed;
+  font-size: 12px;
 }
 md-table-container .md-table th,
 md-table-container .md-table td {
-  white-space: nowrap;
   min-width: 30px;
-  padding: 4px 8px !important;
+  padding: 4px;
 }
 md-table-container .md-table th::-webkit-scrollbar,
 md-table-container .md-table td::-webkit-scrollbar {
@@ -1443,7 +1442,7 @@ md-table-container .md-table thead tr {
   background-color: #e6f2ff;
 }
 md-table-container .md-table thead tr th {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.87);
 }
@@ -1451,7 +1450,7 @@ md-table-container .md-table tbody tr {
   height: 30px;
 }
 md-table-container .md-table tbody tr td {
-  font-size: 10px;
+  font-size: 12px;
   color: rgba(0, 0, 0, 0.87);
 }
 md-table-container .md-table .md-row:nth-child(even) {
@@ -1483,20 +1482,20 @@ md-table-container .md-table .md-button.md-icon-button {
   margin: 0 1px;
 }
 md-table-container .md-table .md-icon {
-  font-size: 14px;
+  font-size: 12px;
 }
 @media screen and (max-width: 1200px) {
   md-table-container .md-table {
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 @media screen and (max-width: 600px) {
   md-table-container .md-table {
-    font-size: 10px;
+    font-size: 12px;
   }
   md-table-container .md-table th,
   md-table-container .md-table td {
-    padding: 0 3px !important;
+    padding: 0 3px;
   }
 }
 md-table-pagination .md-text {
@@ -1511,7 +1510,7 @@ md-table-pagination .md-select-value {
   }
   md-table-pagination .md-text,
   md-table-pagination .md-select-value {
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 .full-card-map {

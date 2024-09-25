@@ -200,6 +200,30 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js.map"/>
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js"/>
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.directive.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.directive.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.directive.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.directive.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.service.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.service.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.service.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.service.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\services\job-table.service.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\services\job-table.service.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\services\job-table.service.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\services\job-table.service.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\materialTheme.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\materialTheme.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\materialTheme.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\materialTheme.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\routes.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\routes.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\routes.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\routes.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.min.js.map"/>
   </ItemGroup>
 
   <ItemGroup>

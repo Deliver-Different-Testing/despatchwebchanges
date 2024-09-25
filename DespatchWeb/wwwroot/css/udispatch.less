@@ -126,15 +126,15 @@ md-autocomplete.ng-leave {
 @inputHeight: 40px;
 
 .autocomplete-style {
-  width: 250px !important;
+  width: 250px;
 
   & md-autocomplete-wrap {
-    height: @inputHeight !important;
+    height: @inputHeight;
   }
 
   & input {
-    height: 100% !important;
-    line-height: @inputHeight !important;
+    height: 100%;
+    line-height: @inputHeight;
   }
 }
 
@@ -210,7 +210,7 @@ md-divider {
 
 #box-driverLocations {
   .box-content {
-    overflow: hidden !important;
+    overflow: hidden;
   }
 }
 
@@ -536,7 +536,7 @@ md-divider {
 }
 
 .md-select-menu-container .md-option {
-  color: white !important;
+  color: white;
 }
 
 #draggingItems {
@@ -819,7 +819,7 @@ md-divider {
         }
 
         .related-content {
-          top: 15px !important;
+          top: 15px;
         }
       }
     }
@@ -833,7 +833,7 @@ md-divider {
 }
 
 .rg-bottom {
-  background: #FFF !important;
+  background: #FFF;
   height: 16px;
   margin-bottom: -16px;
   border-top: 1px solid #5d5d5d;
@@ -991,15 +991,15 @@ input.pod-DispatchField {
 
 
     &.O {
-      background-color: @s-orange !important;
+      background-color: @s-orange;
     }
 
     &.B {
-      background-color: @s-blue !important;
+      background-color: @s-blue;
     }
 
     &.G {
-      background-color: @s-green !important;
+      background-color: @s-green;
     }
   }
 
@@ -1008,7 +1008,7 @@ input.pod-DispatchField {
   }
 
   .doing {
-    background-color: #d7f3ce !important;
+    background-color: #d7f3ce;
   }
 
   input.dispatchField {
@@ -1270,8 +1270,8 @@ a.uline {
   margin-right: 0;
 
   [class*="col-"] {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 
@@ -1386,26 +1386,26 @@ span.courierRed {
 
 md-table-container table.md-table tbody.md-body > tr.md-row:not([disabled]) {
   &:hover {
-    background-color: @hoverColor !important;
+    background-color: @hoverColor;
   }
 
   &.md-selected:hover {
-    background-color: @selectedHoverColor !important;
+    background-color: @selectedHoverColor;
   }
 }
 
 md-table-pagination {
-  color: @textColor !important;
+  color: @textColor;
 
   .label,
   md-select .md-select-value,
   md-select .md-select-value.md-select-placeholder,
   .md-button {
-    color: @textColor !important;
+    color: @textColor;
   }
 
   .md-button[disabled] {
-    color: @disabledColor !important;
+    color: @disabledColor;
   }
 }
 
@@ -1481,110 +1481,109 @@ md-table-pagination {
   }
 }
 
-md-table-container {
-  @font-size: 12px;
+@table-font-size: 12px;
 
+md-table-container {
   overflow-x: auto;
 
   .md-table {
-    width: 100% !important;
-    table-layout: auto !important;
-    font-size: @font-size !important;
+    width: 100%;
+    table-layout: fixed;
+    font-size: @table-font-size;
 
     th, td {
-      white-space: nowrap !important;
-      min-width: 30px !important;
-      padding: 4px 8px !important;
+      min-width: 30px;
+      padding: 4px;
     }
 
     // Scrollbar styles
     th::-webkit-scrollbar, td::-webkit-scrollbar {
-      height: 3px !important;
-      background-color: transparent !important;
+      height: 3px;
+      background-color: transparent;
     }
 
     th::-webkit-scrollbar-thumb, td::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.26) !important;
-      border-radius: 2px !important;
+      background-color: rgba(0, 0, 0, 0.26);
+      border-radius: 2px;
     }
 
     th:hover::-webkit-scrollbar-thumb, td:hover::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.4) !important;
+      background-color: rgba(0, 0, 0, 0.4);
     }
 
     thead {
       tr {
-        background-color: #e6f2ff !important;
+        background-color: #e6f2ff;
         th {
-          font-size: @font-size !important;
-          font-weight: 500 !important;
-          color: rgba(0, 0, 0, 0.87) !important;
+          font-size: @table-font-size;
+          font-weight: 500;
+          color: rgba(0, 0, 0, 0.87);
         }
       }
     }
 
     tbody {
       tr {
-        height: 30px !important;
+        height: 30px;
 
         td {
-          font-size: @font-size !important;
-          color: rgba(0, 0, 0, 0.87) !important;
+          font-size: @table-font-size;
+          color: rgba(0, 0, 0, 0.87);
         }
       }
     }
 
     .md-row:nth-child(even) {
-      background-color: #f8f8f8 !important;
+      background-color: #f8f8f8;
     }
 
     .md-row:nth-child(odd) {
-      background-color: #ffffff !important;
+      background-color: #ffffff;
     }
 
     .md-row {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.12) !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     }
 
     // Styles for client box
     .client-box {
-      display: inline-block !important;
-      padding: 1px 3px !important;
-      color: white !important;
-      font-weight: bold !important;
-      border-radius: 2px !important;
-      font-size: 11px !important;
+      display: inline-block;
+      padding: 1px 3px;
+      color: white;
+      font-weight: bold;
+      border-radius: 2px;
+      font-size: 11px;
     }
 
     // Styles for 'Remain' column
     .md-cell.highlight {
-      color: #ff0000 !important;
+      color: #ff0000;
     }
 
     // Styles for action buttons
     .md-button.md-icon-button {
-      width: 18px !important;
-      height: 18px !important;
-      min-height: 18px !important;
-      line-height: 18px !important;
-      padding: 0 !important;
-      margin: 0 1px !important;
+      width: 18px;
+      height: 18px;
+      min-height: 18px;
+      line-height: 18px;
+      padding: 0;
+      margin: 0 1px;
     }
 
     .md-icon {
-      font-size: 14px !important;
+      font-size: @table-font-size;
     }
 
     // Responsive styles
     @media screen and (max-width: 1200px) {
-      font-size: 11px !important;
+      font-size: @table-font-size ;
     }
 
     @media screen and (max-width: 600px) {
-      font-size: @font-size !important;
+      font-size: @table-font-size ;
 
       th, td {
-        padding: 0 3px !important;
+        padding: 0 3px;
       }
     }
   }
@@ -1593,7 +1592,7 @@ md-table-container {
 // Adjust pagination styles
 md-table-pagination {
   .md-text {
-    font-size: 12px;
+    font-size: @table-font-size;
   }
 
   .md-select-value {
@@ -1606,7 +1605,7 @@ md-table-pagination {
     }
 
     .md-text, .md-select-value {
-      font-size: 10px;
+      font-size: @table-font-size;
     }
   }
 }

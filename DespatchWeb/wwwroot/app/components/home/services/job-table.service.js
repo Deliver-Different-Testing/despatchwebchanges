@@ -26,33 +26,33 @@ class JobTableService {
     }
 
     /**
-     * @param {Object} event
+     * @param {Object} $event
      * @param {Job} job
      * @param {string|number} field
      * @param {string} placeholder
      * @param {string} type
      */
-    editField(event, job, field, placeholder, type = 'text') {
-        event.stopPropagation();
+    editField($event, job, field, placeholder, type = 'text') {
+        $event.stopPropagation();
         return this._$mdEditDialog.small({
             modelValue: job[field], placeholder, type, save: (input) => {
                 job[field] = input.$modelValue;
-            }, targetEvent: event
+            }, targetEvent: $event
         });
     }
 
     /**
-     * @param {Object} event
+     * @param {Object} $event
      * @param {Job} job
      */
-    editTo(event, job) {
-        event.stopPropagation();
+    editTo($event, job) {
+        $event.stopPropagation();
         return this._$mdEditDialog.small({
             modelValue: `${job.to} ${job.toAddress || ''}`, placeholder: 'Set to', save: (input) => {
                 const parts = input.$modelValue.split(' ');
                 job.to = parts[0];
                 job.toAddress = parts.slice(1).join(' ');
-            }, targetEvent: event
+            }, targetEvent: $event
         });
     }
 }

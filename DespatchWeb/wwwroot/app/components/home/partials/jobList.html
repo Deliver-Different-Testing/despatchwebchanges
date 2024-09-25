@@ -1,6 +1,6 @@
 <md-table-container>
     <table md-progress="promise" md-row-select md-table multiple ng-model="selected">
-        <thead class="sticky-header" md-head md-on-reorder="onReorder" md-order="query.order">
+        <thead md-head md-on-reorder="onReorder" md-order="query.order">
         <tr md-row>
             <th md-column><span>T</span></th>
             <th md-column><span>Speed</span></th>
@@ -83,13 +83,6 @@
 </div>
 
 <style>
-    .sticky-header {
-        position: sticky;
-        top: 0;
-        background-color: white;
-        z-index: 10;
-    }
-
     .sticky-footer {
         position: sticky;
         bottom: 0;
