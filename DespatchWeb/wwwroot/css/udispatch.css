@@ -850,32 +850,6 @@ table.table tr .status.IT {
 table.table tr .status.ASC {
   background-color: #DDD;
 }
-table-headings {
-  top: 0;
-  z-index: 15;
-}
-table-headings thead {
-  display: block;
-  background: #FFF;
-  border-bottom: 1px solid #CCC;
-}
-table-headings tr th {
-  padding: 2px;
-  white-space: nowrap;
-  cursor: pointer;
-  position: relative;
-}
-table-headings tr th .fa {
-  position: absolute;
-  left: -2px;
-}
-.table > tbody > tr > td,
-.table > tbody > tr > th,
-.table > thead > tr > td,
-.table > thead > tr > th {
-  padding: 1px;
-  min-width: 15px;
-}
 input.pod-DispatchField {
   color: black;
   width: 60px;
@@ -1088,8 +1062,6 @@ input.pod-DispatchField {
   /* iOS Safari */
   -webkit-user-select: none;
   /* Safari */
-  -khtml-user-select: none;
-  /* Konqueror HTML */
   -moz-user-select: none;
   /* Firefox */
   -ms-user-select: none;

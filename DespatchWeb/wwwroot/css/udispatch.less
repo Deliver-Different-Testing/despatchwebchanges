@@ -943,37 +943,6 @@ table.table {
     }
   }
 }
-
-table-headings {
-  top: 0;
-  z-index: 15;
-
-  thead {
-    display: block;
-    background: #FFF;
-    border-bottom: 1px solid #CCC;
-  }
-
-  tr {
-    th {
-      padding: 2px;
-      white-space: nowrap;
-      cursor: pointer;
-      position: relative;
-
-      .fa {
-        position: absolute;
-        left: -2px;
-      }
-    }
-  }
-}
-
-.table > tbody > tr > td, .table > tbody > tr > th, .table > thead > tr > td, .table > thead > tr > th {
-  padding: 1px;
-  min-width: 15px;
-}
-
 input.pod-DispatchField {
   color: black;
   width: 60px;
@@ -1063,7 +1032,6 @@ input.pod-DispatchField {
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
   -webkit-user-select: none; /* Safari */
-  -khtml-user-select: none; /* Konqueror HTML */
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* Internet Explorer/Edge */
   user-select: none;
@@ -1081,19 +1049,7 @@ input.pod-DispatchField {
   display: none;
 }
 
-
-#lateCalls {
-  //  table-layout: fixed;
-  //   tbody {
-  //min-width:500px;
-  //   }
-}
-
 #supports {
-  //   table-layout: fixed;
-  //  tbody {
-  //min-width:500px;
-  //   }
   tr {
     &.Yel {
       background-color: yellow;
