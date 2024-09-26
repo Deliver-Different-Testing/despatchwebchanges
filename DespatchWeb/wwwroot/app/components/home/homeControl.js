@@ -2037,7 +2037,7 @@ angular.module("uDispatch")
 
                     console.log(job);
 
-                    jdSvc.setJob($scope.currentJob);
+                    await jdSvc.setJob($scope.currentJob);
 
                     // Check for attachments
                     await $scope.checkForAttachments(job.id);
