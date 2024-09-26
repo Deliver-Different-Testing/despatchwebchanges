@@ -10,6 +10,7 @@ COPY *.csproj ./
 RUN dotnet restore
 
 COPY . ./
+RUN npm install
 RUN dotnet build -c Release --property:OutputPath=/app
 RUN dotnet publish -c Release --property:PublishDir=/publish
 
