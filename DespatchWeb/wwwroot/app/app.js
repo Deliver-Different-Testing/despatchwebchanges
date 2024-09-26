@@ -1,5 +1,10 @@
 angular
-    .module('uDispatch', ['ui.router', 'ct.ui.router.extras', 'angularResizable', 'ui.sortable', 'ui.bootstrap', 'ui.bootstrap.pagination', 'ui.bootstrap.contextMenu', 'cfp.hotkeys', 'ui.timepicker', 'pickadate', 'ngMap', 'ngMapAutocomplete', 'angularjs-dropdown-multiselect', 'heremaps', 'ngAnimate', 'ngMessages', 'ngSanitize', 'ngMaterial', 'angularPromiseButtons', 'ng-mfb', 'md.time.picker', 'angularMoment', 'md.data.table', 'ngFileUpload'])
+    .module('uDispatch', ['ui.router', 'ct.ui.router.extras',
+        'angularResizable', 'ui.sortable', 'ui.bootstrap', 'ui.bootstrap.pagination',
+        'ui.bootstrap.contextMenu', 'cfp.hotkeys', 'ui.timepicker', 'pickadate', 'ngMap',
+        'ngMapAutocomplete', 'angularjs-dropdown-multiselect', 'heremaps', 'ngAnimate',
+        'ngMessages', 'ngSanitize', 'ngMaterial', 'angularPromiseButtons', 'ng-mfb',
+        'md.time.picker', 'angularMoment', 'md.data.table', 'mdDataTable', 'ngFileUpload', 'ngMdIcons'])
     .constant('APP_CONFIG', {
         US_Customer: true
     })

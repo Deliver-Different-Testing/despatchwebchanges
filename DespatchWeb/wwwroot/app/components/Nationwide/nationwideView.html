@@ -125,8 +125,8 @@
                                 </md-button>
 
                                 <!-- Courier Card Buttons-->
-                                <div class="row-overflow" layout="row" ng-if="currentCourier"
-                                     ng-if="box.name === 'currentWork'">
+                                <div class="row-overflow" layout="row"
+                                     ng-if="currentCourier && box.name === 'currentWork'">
                                     <md-fab-speed-dial class="md-scale" md-direction="left"
                                                        md-open="courierListFabIsOpen"
                                                        ng-class="{ 'md-hover-full': true }"
@@ -172,8 +172,8 @@
                                 </div>
 
                                 <!-- Detail Buttons-->
-                                <div class="row-overflow" layout="row" ng-if="currentJob"
-                                     ng-if="boxes[box.name].showDetailButtons">
+                                <div class="row-overflow" layout="row"
+                                     ng-if="currentJob && boxes[box.name].showDetailButtons">
                                     <md-fab-speed-dial class="md-scale" md-direction="left"
                                                        md-open="jobDetailFabIsOpen"
                                                        ng-class="{ 'md-hover-full': true }"
