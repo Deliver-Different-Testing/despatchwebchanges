@@ -7,9 +7,10 @@ class DispatchData {
 
     /**
      * @param {number} userId
+     * @param {number} pageId
      */
-    async getDespatchViews(userId) {
-        const response = await this._$http.get('clearListZones/GetDespatchViews?userid=' + userId);
+    async getDespatchViews(userId, pageId) {
+        const response = await this._$http.get('DfrntViews/GetPageViews?userid=' + userId + '&pageid=' + pageId);
         return response.data;
     }
 
@@ -350,10 +351,10 @@ class DispatchData {
     }
 
     /**
-     * @param {Object} despatchViewIds
+     * @param {Object} selectedViewIds
      */
-    async getDriverLocations(despatchViewIds) {
-        const query = this._prepareDespatchViewIds(despatchViewIds);
+    async getDriverLocations(selectedViewIds) {
+        const query = this._prepareViewIdsForRequest(selectedViewIds);
 
         const response = await this._$http.get('courier?' + query);
         return response.data;
@@ -845,7 +846,7 @@ class DispatchData {
      * @param {Object} despatchViewIds Object containing dispatch view IDs
      */
     async getJobsWithFilters(queryParams, selectedClients, internal, despatchViewIds) {
-        const query = this._prepareDespatchViewIds(despatchViewIds);
+        const query = this._prepareViewIdsForRequest(despatchViewIds);
 
         const params = new URLSearchParams({
             status: queryParams.status || 'all',
@@ -937,12 +938,12 @@ class DispatchData {
     }
 
     /**
-     * @param {Object} despatchViewIds
+     * @param {Object} viewIds
      * @returns {Object}
      * @private
      */
-    _prepareDespatchViewIds(despatchViewIds) {
-        const activeIds = Object.entries(despatchViewIds)
+    _prepareViewIdsForRequest(viewIds) {
+        const activeIds = Object.entries(viewIds)
             .filter(([, value]) => value)
             .map(([key]) => key);
 
