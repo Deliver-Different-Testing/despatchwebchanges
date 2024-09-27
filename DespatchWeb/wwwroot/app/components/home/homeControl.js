@@ -43,7 +43,7 @@ angular.module("uDispatch")
 
             $scope.loadDespatchViews = async () => {
                 try {
-                    $scope.areas = await DispatchData.getDespatchViews(ContactID);
+                    $scope.areas = await DispatchData.getDespatchViews(ContactID, 1); // Page is currently hardcoded id
                     $scope.initializeAreas();
                     await $scope.updateFilters();
                     await $scope.getData();
