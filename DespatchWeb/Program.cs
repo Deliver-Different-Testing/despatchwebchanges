@@ -51,7 +51,7 @@ builder.Services.Configure<KestrelServerOptions>(options =>
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<IClearListZonesRepository, ClearListZonesRepository>();
+builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
 
 
 // Automapper

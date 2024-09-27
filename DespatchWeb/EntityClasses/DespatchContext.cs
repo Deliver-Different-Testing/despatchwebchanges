@@ -26,6 +26,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
         public virtual DbSet<Dfrntapp> Dfrntapps { get; set; }
         public virtual DbSet<DfrntappPage> DfrntappPages { get; set; }
+        public virtual DbSet<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
         public virtual DbSet<DfrntappView> DfrntappViews { get; set; }
         public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
         public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
@@ -68,7 +69,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucSource> TucSources { get; set; }
         public virtual DbSet<TucStaff> TucStaffs { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
-        public virtual DbSet<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; }
         public virtual DbSet<UserWidgetPreference> UserWidgetPreferences { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
@@ -672,6 +672,32 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.AppId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK__DFRNTAppP__AppID__38FA28BF");
+            });
+
+            modelBuilder.Entity<DfrntappUserViewPermission>(entity =>
+            {
+                entity.HasKey(e => e.UserViewPermissionId)
+                    .HasName("PK__UserDesp__B13A9F177A08D20D");
+
+                entity.ToTable("DFRNTAppUserViewPermissions");
+
+                entity.Property(e => e.UserViewPermissionId)
+                    .ValueGeneratedNever()
+                    .HasColumnName("UserViewPermissionID");
+
+                entity.Property(e => e.UserId).HasColumnName("UserID");
+
+                entity.Property(e => e.ViewId).HasColumnName("ViewID");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.DfrntappUserViewPermissions)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK__UserDespa__UserI__7BF11A7F");
+
+                entity.HasOne(d => d.View)
+                    .WithMany(p => p.DfrntappUserViewPermissions)
+                    .HasForeignKey(d => d.ViewId)
+                    .HasConstraintName("FK__UserDespa__Despa__7CE53EB8");
             });
 
             modelBuilder.Entity<DfrntappView>(entity =>
@@ -5999,30 +6025,6 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("ucsuName");
 
                 entity.Property(e => e.UcsuRegion).HasColumnName("ucsuRegion");
-            });
-
-            modelBuilder.Entity<UserDespatchViewPreference>(entity =>
-            {
-                entity.HasKey(e => e.UserDespatchViewPrefId)
-                    .HasName("PK__UserDesp__B13A9F177A08D20D");
-
-                entity.Property(e => e.UserDespatchViewPrefId)
-                    .ValueGeneratedNever()
-                    .HasColumnName("UserDespatchViewPrefID");
-
-                entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
-
-                entity.Property(e => e.UserId).HasColumnName("UserID");
-
-                entity.HasOne(d => d.DespatchView)
-                    .WithMany(p => p.UserDespatchViewPreferences)
-                    .HasForeignKey(d => d.DespatchViewId)
-                    .HasConstraintName("FK__UserDespa__Despa__7CE53EB8");
-
-                entity.HasOne(d => d.User)
-                    .WithMany(p => p.UserDespatchViewPreferences)
-                    .HasForeignKey(d => d.UserId)
-                    .HasConstraintName("FK__UserDespa__UserI__7BF11A7F");
             });
 
             modelBuilder.Entity<UserWidgetPreference>(entity =>
