@@ -25,7 +25,7 @@ public class ClearListZonesRepository : IClearListZonesRepository
             .Select(udvp => udvp.DespatchView)
             .Select(dv => new SelectItem
             {
-                Id = dv.DespatchViewId,
+                Id = dv.ViewId,
                 Name = dv.Name
             })
             .ToListAsync();
@@ -35,8 +35,8 @@ public class ClearListZonesRepository : IClearListZonesRepository
 
     public async Task<string> GetWhereClauseByDispatchView(int despatchViewId)
     {
-        return await _context.TblDespatchViews
-            .Where(dv => dv.DespatchViewId == despatchViewId)
+        return await _context.DfrntappViews
+            .Where(dv => dv.ViewId == despatchViewId)
             .Select(dv => dv.WhereCondition)
             .FirstOrDefaultAsync();
     }

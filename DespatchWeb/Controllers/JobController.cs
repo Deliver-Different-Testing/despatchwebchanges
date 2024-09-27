@@ -34,24 +34,59 @@ public class JobController : Controller
         _configuration = configuration;
     }
 
-    public async Task<IActionResult> Index(string status, string area, string order, string asc, bool isInternal,
-        int cid, string clientIds, List<int> despatchViewIds)
+    [HttpGet]
+    public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
+        try
         {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (clientContacts != null && !clientContacts
-                    .Select(c => c.ID).Any(x => clientIds.Split(',')
-                        .Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
+            if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.JobListAsync(status, area, order, asc, isInternal, clientIds, despatchViewIds);
-        return Json(result);
+            var (jobs, totalCount) = await _jobRepo.JobListAsync(
+                queryParams?.Status,
+                queryParams?.Area,
+                queryParams?.Order,
+                queryParams?.Asc,
+                isInternal,
+                clientIds,
+                despatchViewIds,
+                queryParams.Page,
+                queryParams.Limit
+            );
+
+            var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
+
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized("You don't have permission to access these clients.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, "An error occurred while processing your request.");
+        }
+    }
+
+    private async Task ValidateClientAccess(int contactId, string clientIds)
+    {
+        if (string.IsNullOrEmpty(clientIds)) return;
+
+        var clientContacts = await _clientRepo.ClientContactsAsync(contactId);
+        var requestedClientIds = clientIds.Split(',').Select(int.Parse).ToHashSet();
+
+        var hasAccess = clientContacts?
+            .Select(c => c.ID)
+            .Any(x => requestedClientIds.Contains(x)) ?? false;
+
+        if (!hasAccess) throw new UnauthorizedAccessException();
+    }
+
+    private static object CreatePaginatedResult<T>(IEnumerable<T> items, int totalCount, int page, int pageSize)
+    {
+        return (Items: items, TotalCount: totalCount, CurrentPage: page, PageSize: pageSize,
+            TotalPages: (int)Math.Ceiling((double)totalCount / pageSize));
     }
 
     public async Task<IActionResult> NationwideJobListNew(string status, string area, string order, string asc,

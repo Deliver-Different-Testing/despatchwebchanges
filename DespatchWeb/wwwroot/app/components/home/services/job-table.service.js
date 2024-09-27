@@ -5,7 +5,13 @@ class JobTableService {
 
     createQuery() {
         return {
-            order: 'time', limit: 10, page: 1, filter: ''
+            order: 'time',
+            limit: 50,
+            page: 1,
+            filter: '',
+            status: 'all',
+            area: '',
+            asc: 'asc'
         };
     }
 

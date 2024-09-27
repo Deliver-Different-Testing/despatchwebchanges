@@ -24,6 +24,10 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
         public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
+        public virtual DbSet<Dfrntapp> Dfrntapps { get; set; }
+        public virtual DbSet<DfrntappPage> DfrntappPages { get; set; }
+        public virtual DbSet<DfrntappView> DfrntappViews { get; set; }
+        public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
         public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
         public virtual DbSet<TblAppWidget> TblAppWidgets { get; set; }
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
@@ -39,8 +43,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblCourier> TblCouriers { get; set; }
         public virtual DbSet<TblCourierGp> TblCourierGps { get; set; }
         public virtual DbSet<TblCourierLogInOut> TblCourierLogInOuts { get; set; }
-        public virtual DbSet<TblDespatchView> TblDespatchViews { get; set; }
-        public virtual DbSet<TblDfrntapp> TblDfrntapps { get; set; }
         public virtual DbSet<TblInternetPermission> TblInternetPermissions { get; set; }
         public virtual DbSet<TblJob> TblJobs { get; set; }
         public virtual DbSet<TblJobLeaveNotHome> TblJobLeaveNotHomes { get; set; }
@@ -624,6 +626,125 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("UDStatus");
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
+            });
+
+            modelBuilder.Entity<Dfrntapp>(entity =>
+            {
+                entity.HasKey(e => e.AppId)
+                    .HasName("PK__tblDFRNT__8E2CF7D929ECEF59");
+
+                entity.ToTable("DFRNTApps");
+
+                entity.Property(e => e.AppId).HasColumnName("AppID");
+
+                entity.Property(e => e.AppName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<DfrntappPage>(entity =>
+            {
+                entity.HasKey(e => e.PageId)
+                    .HasName("PK__DFRNTApp__C565B124361DBC14");
+
+                entity.ToTable("DFRNTAppPages");
+
+                entity.Property(e => e.PageId).HasColumnName("PageID");
+
+                entity.Property(e => e.AppId).HasColumnName("AppID");
+
+                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.PageName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.HasOne(d => d.App)
+                    .WithMany(p => p.DfrntappPages)
+                    .HasForeignKey(d => d.AppId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__DFRNTAppP__AppID__38FA28BF");
+            });
+
+            modelBuilder.Entity<DfrntappView>(entity =>
+            {
+                entity.HasKey(e => e.ViewId)
+                    .HasName("PK_tblDespatchView")
+                    .IsClustered(false);
+
+                entity.ToTable("DFRNTAppViews");
+
+                entity.HasIndex(e => e.Name, "IX_tblDespatchView_Name")
+                    .IsUnique();
+
+                entity.Property(e => e.ViewId).HasColumnName("ViewID");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
+                entity.Property(e => e.ShowOnAssistDespatch).HasDefaultValueSql("((0))");
+
+                entity.Property(e => e.ShowOnDespatch).HasDefaultValueSql("((0))");
+
+                entity.Property(e => e.WhereCondition)
+                    .HasMaxLength(1000)
+                    .IsUnicode(false);
+            });
+
+            modelBuilder.Entity<DfrntpageView>(entity =>
+            {
+                entity.HasKey(e => new { e.PageId, e.ViewId })
+                    .HasName("PK__DFRNTPag__B486C0E53BD6956A");
+
+                entity.ToTable("DFRNTPageViews");
+
+                entity.Property(e => e.PageId).HasColumnName("PageID");
+
+                entity.Property(e => e.ViewId).HasColumnName("ViewID");
+
+                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasDefaultValueSql("('System')");
+
+                entity.Property(e => e.ModifiedBy).HasMaxLength(50);
+
+                entity.HasOne(d => d.Page)
+                    .WithMany(p => p.DfrntpageViews)
+                    .HasForeignKey(d => d.PageId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__DFRNTPage__PageI__3DBEDDDC");
+
+                entity.HasOne(d => d.View)
+                    .WithMany(p => p.DfrntpageViews)
+                    .HasForeignKey(d => d.ViewId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__DFRNTPage__ViewI__3EB30215");
             });
 
             modelBuilder.Entity<GlobalAddressMapping>(entity =>
@@ -2460,72 +2581,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.LogOutTime).HasColumnType("datetime");
 
                 entity.Property(e => e.Notes).HasColumnType("ntext");
-            });
-
-            modelBuilder.Entity<TblDespatchView>(entity =>
-            {
-                entity.HasKey(e => e.DespatchViewId)
-                    .IsClustered(false);
-
-                entity.ToTable("tblDespatchView");
-
-                entity.HasIndex(e => e.Name, "IX_tblDespatchView_Name")
-                    .IsUnique();
-
-                entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
-
-                entity.Property(e => e.AreaGroupIds).HasColumnName("AreaGroupIDs");
-
-                entity.Property(e => e.ClearListAreaIds).HasColumnName("ClearListAreaIDs");
-
-                entity.Property(e => e.Created).HasColumnType("datetime");
-
-                entity.Property(e => e.CreatedBy)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.LastModified).HasColumnType("datetime");
-
-                entity.Property(e => e.LastModifiedBy)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.Name)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.Notes).HasColumnType("ntext");
-
-                entity.Property(e => e.ShowOnAssistDespatch).HasDefaultValueSql("((0))");
-
-                entity.Property(e => e.ShowOnDespatch).HasDefaultValueSql("((0))");
-
-                entity.Property(e => e.WhereCondition)
-                    .HasMaxLength(1000)
-                    .IsUnicode(false);
-
-                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
-
-                entity.HasOne(d => d.ZoneGroup)
-                    .WithMany(p => p.TblDespatchViews)
-                    .HasForeignKey(d => d.ZoneGroupId)
-                    .HasConstraintName("FK__tblDespat__ZoneG__12B48446");
-            });
-
-            modelBuilder.Entity<TblDfrntapp>(entity =>
-            {
-                entity.HasKey(e => e.AppId)
-                    .HasName("PK__tblDFRNT__8E2CF7D929ECEF59");
-
-                entity.ToTable("tblDFRNTApps");
-
-                entity.Property(e => e.AppId).HasColumnName("AppID");
-
-                entity.Property(e => e.AppName)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
             });
 
             modelBuilder.Entity<TblInternetPermission>(entity =>

@@ -1436,8 +1436,12 @@ md-table-pagination {
     }
   }
 }
-
 @table-font-size: 12px;
+
+.table-container {
+  height: 400px; /* Adjust this value based on your needs */
+  overflow-y: auto;
+}
 
 md-table-container {
   overflow-x: auto;
@@ -1452,23 +1456,11 @@ md-table-container {
       padding: 4px;
     }
 
-    // Scrollbar styles
-    th::-webkit-scrollbar, td::-webkit-scrollbar {
-      height: 3px;
-      background-color: transparent;
-    }
-
-    th::-webkit-scrollbar-thumb, td::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.26);
-      border-radius: 2px;
-    }
-
-    th:hover::-webkit-scrollbar-thumb, td:hover::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.4);
-    }
-
     thead {
       tr {
+        position: sticky;
+        top: 0;
+        z-index: 1;
         background-color: #e6f2ff;
         th {
           font-size: @table-font-size;
@@ -1501,7 +1493,6 @@ md-table-container {
       border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     }
 
-    // Styles for client box
     .client-box {
       display: inline-block;
       padding: 1px 3px;
@@ -1511,12 +1502,10 @@ md-table-container {
       font-size: 11px;
     }
 
-    // Styles for 'Remain' column
     .md-cell.highlight {
       color: #ff0000;
     }
 
-    // Styles for action buttons
     .md-button.md-icon-button {
       width: 18px;
       height: 18px;
@@ -1530,13 +1519,12 @@ md-table-container {
       font-size: @table-font-size;
     }
 
-    // Responsive styles
     @media screen and (max-width: 1200px) {
-      font-size: @table-font-size ;
+      font-size: @table-font-size;
     }
 
     @media screen and (max-width: 600px) {
-      font-size: @table-font-size ;
+      font-size: @table-font-size;
 
       th, td {
         padding: 0 3px;
@@ -1545,7 +1533,13 @@ md-table-container {
   }
 }
 
-// Adjust pagination styles
+.sticky-footer {
+  position: sticky;
+  bottom: 0;
+  background-color: white;
+  z-index: 10;
+}
+
 md-table-pagination {
   .md-text {
     font-size: @table-font-size;

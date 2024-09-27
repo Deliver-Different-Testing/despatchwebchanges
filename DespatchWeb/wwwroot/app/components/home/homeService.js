@@ -785,8 +785,8 @@ class DispatchData {
      * @param {Date} bookDate
      */
     async releaseBulkJob(jobNumber, bookDate) {
-        const dt = this._moment(bookDate).format('YYYY-MM-DD');
-        return this._$http.post('job/ReleaseBulkJob?jobNumber=' + jobNumber + '&bookDate=' + dt);
+        const formattedBookDate = this._moment(bookDate).format('YYYY-MM-DD');
+        return this._$http.post('job/ReleaseBulkJob?jobNumber=' + jobNumber + '&bookDate=' + formattedBookDate);
     }
 
     /**
@@ -839,15 +839,28 @@ class DispatchData {
     }
 
     /**
-     * @param {*|{area: string, asc: string, status: string, order: string}} data
-     * @param {*[]|string} selectedClients
-     * @param {boolean} internal
-     * @param {Object} despatchViewIds
+     * @param {Object} queryParams Combined query parameters and filters
+     * @param {string[]} selectedClients Array of selected client IDs
+     * @param {boolean} internal Whether the user is internal or not
+     * @param {Object} despatchViewIds Object containing dispatch view IDs
      */
-    async getJobsFilter(data, selectedClients, internal, despatchViewIds) {
+    async getJobsWithFilters(queryParams, selectedClients, internal, despatchViewIds) {
         const query = this._prepareDespatchViewIds(despatchViewIds);
 
-        const response = await this._$http.get('job?status=' + data.status + '&area=' + data.area + '&order=' + data.order + '&asc=' + data.asc + '&isInternal=' + internal + '&cid=' + ContactID + '&clientIds=' + selectedClients + '&' + query);
+        const params = new URLSearchParams({
+            status: queryParams.status || 'all',
+            area: queryParams.area || '',
+            order: queryParams.order || 'time',
+            asc: queryParams.asc || 'asc',
+            isInternal: internal.toString(),
+            cid: ContactID,
+            clientIds: selectedClients.join(','),
+            page: queryParams.page.toString(),
+            pageSize: queryParams.limit.toString(),
+            ...query
+        });
+
+        const response = await this._$http.get(`job?${params.toString()}`);
         return response.data;
     }
 
@@ -925,14 +938,15 @@ class DispatchData {
 
     /**
      * @param {Object} despatchViewIds
-     * @returns {string}
+     * @returns {Object}
+     * @private
      */
     _prepareDespatchViewIds(despatchViewIds) {
-        // Extract the IDs that are set to true
-        const selectedIds = Object.keys(despatchViewIds).filter(key => despatchViewIds[key] === true && !isNaN(parseInt(key)));
+        const activeIds = Object.entries(despatchViewIds)
+            .filter(([, value]) => value)
+            .map(([key]) => key);
 
-        // Create the query string
-        return selectedIds.map(id => 'despatchViewIds=' + id).join('&');
+        return {despatchViewIds: activeIds.join(',')};
     }
 }
 

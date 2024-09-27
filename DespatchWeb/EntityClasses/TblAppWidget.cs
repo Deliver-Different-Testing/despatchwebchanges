@@ -18,7 +18,7 @@ namespace DespatchWeb.EntityClasses
         public bool IsRequired { get; set; }
         public int DefaultOrder { get; set; }
 
-        public virtual TblDfrntapp App { get; set; }
+        public virtual Dfrntapp App { get; set; }
         public virtual TblWidget Widget { get; set; }
         public virtual ICollection<UserWidgetPreference> UserWidgetPreferences { get; set; }
     }

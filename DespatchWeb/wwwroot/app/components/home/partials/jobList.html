@@ -1,4 +1,4 @@
-<md-table-container>
+<md-table-container class="table-container">
     <table md-progress="promise" md-row-select md-table multiple ng-model="selected">
         <thead md-head md-on-reorder="onReorder" md-order="query.order">
         <tr md-row>
@@ -23,7 +23,7 @@
         <tr
                 md-row md-select="job" md-select-id="id"
                 ng-click="handleRowClick($event, job)"
-                ng-repeat="job in jobList | filter: query.filter">
+                ng-repeat="job in jobList">
             <td md-cell>{{job.time | date: 'HH:mm'}}</td>
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.notify}}</td>
@@ -77,16 +77,12 @@
 </md-table-container>
 
 <div class="sticky-footer">
-    <md-table-pagination md-limit="query.limit" md-limit-options="[5, 10, 15]"
-                         md-on-paginate="onPaginate" md-page="query.page"
-                         md-page-select md-total="{{jobList.length}}"></md-table-pagination>
+    <md-table-pagination
+            md-limit="queryParams.limit"
+            md-limit-options="[50, 100, 200]"
+            md-on-paginate="onPaginate"
+            md-page="queryParams.page"
+            md-page-select
+            md-total="{{totalItems}}">
+    </md-table-pagination>
 </div>
-
-<style>
-    .sticky-footer {
-        position: sticky;
-        bottom: 0;
-        background-color: white;
-        z-index: 10;
-    }
-</style>

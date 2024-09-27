@@ -5,15 +5,16 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class TblDespatchView
+    public partial class DfrntappView
     {
-        public TblDespatchView()
+        public DfrntappView()
         {
             DespatchViewZoneGroups = new HashSet<DespatchViewZoneGroup>();
+            DfrntpageViews = new HashSet<DfrntpageView>();
             UserDespatchViewPreferences = new HashSet<UserDespatchViewPreference>();
         }
 
-        public int DespatchViewId { get; set; }
+        public int ViewId { get; set; }
         public string Name { get; set; }
         public string WhereCondition { get; set; }
         public DateTime Created { get; set; }
@@ -24,12 +25,9 @@ namespace DespatchWeb.EntityClasses
         public bool? ShowOnDespatch { get; set; }
         public bool? ShowOnAssistDespatch { get; set; }
         public bool? ShowOnJobFollowup { get; set; }
-        public int? ZoneGroupId { get; set; }
-        public string AreaGroupIds { get; set; }
-        public string ClearListAreaIds { get; set; }
 
-        public virtual ZoneGroup ZoneGroup { get; set; }
         public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
+        public virtual ICollection<DfrntpageView> DfrntpageViews { get; set; }
         public virtual ICollection<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; }
     }
 }

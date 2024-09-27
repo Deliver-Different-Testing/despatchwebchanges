@@ -13,7 +13,7 @@ namespace DespatchWeb.EntityClasses
         public bool? IsVisible { get; set; }
         public int? Order { get; set; }
 
-        public virtual TblDespatchView DespatchView { get; set; }
+        public virtual DfrntappView DespatchView { get; set; }
         public virtual TucStaff User { get; set; }
     }
 }

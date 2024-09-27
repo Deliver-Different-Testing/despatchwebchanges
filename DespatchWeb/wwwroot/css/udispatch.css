@@ -1383,6 +1383,12 @@ md-table-pagination .md-button[disabled] {
 .search-input-container:hover input {
   background-color: rgba(255, 255, 255, 0.25);
 }
+
+.table-container {
+    height: 400px;
+    /* Adjust this value based on your needs */
+    overflow-y: auto;
+}
 md-table-container {
   overflow-x: auto;
 }
@@ -1396,21 +1402,10 @@ md-table-container .md-table td {
   min-width: 30px;
   padding: 4px;
 }
-md-table-container .md-table th::-webkit-scrollbar,
-md-table-container .md-table td::-webkit-scrollbar {
-  height: 3px;
-  background-color: transparent;
-}
-md-table-container .md-table th::-webkit-scrollbar-thumb,
-md-table-container .md-table td::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.26);
-  border-radius: 2px;
-}
-md-table-container .md-table th:hover::-webkit-scrollbar-thumb,
-md-table-container .md-table td:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.4);
-}
 md-table-container .md-table thead tr {
+    position: sticky;
+    top: 0;
+    z-index: 1;
   background-color: #e6f2ff;
 }
 md-table-container .md-table thead tr th {
@@ -1469,6 +1464,13 @@ md-table-container .md-table .md-icon {
   md-table-container .md-table td {
     padding: 0 3px;
   }
+}
+
+.sticky-footer {
+    position: sticky;
+    bottom: 0;
+    background-color: white;
+    z-index: 10;
 }
 md-table-pagination .md-text {
   font-size: 12px;

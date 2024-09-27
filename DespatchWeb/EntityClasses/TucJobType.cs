@@ -56,6 +56,7 @@ namespace DespatchWeb.EntityClasses
         public bool? Mfv { get; set; }
         public bool? Faf { get; set; }
         public int? UcjtClientId { get; set; }
+        public int? GroupingId { get; set; }
 
         public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; }

@@ -10,6 +10,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWebContextExtensions;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
@@ -811,83 +812,45 @@ public class JobRepository : IJobRepository
         }
     }
 
-    public async Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
-        bool isInternal, string clientIds, List<int> despatchViewIds)
+    public async Task<(List<JobViewModel> Jobs, int TotalCount)> JobListAsync(string status, string area, string order,
+        string ascending,
+        bool isInternal, string clientIds, List<int> selectedViewIds, int page, int pageSize)
     {
         if (isInternal == false && string.IsNullOrEmpty(value: clientIds))
-            return new List<JobViewModel>();
+            return (new List<JobViewModel>(), 0);
 
-        var orderToUse = order switch
-        {
-            "remain" => $"ucjbDispTime {ascending}, Remaintime {ascending}, ucjbtime {ascending}",
-            "to" => $"SuburbTo {ascending}, ucjbTime {ascending}, SuburbFrom {ascending}, CourierCode {ascending}",
-            "from" => $"SuburbFrom {ascending}, SuburbTo {ascending}, ucjbTime {ascending}, CourierCode {ascending}",
-            "client" => $"ucclCode {ascending}, ucjbTime {ascending}, CourierCode {ascending}",
-            "jobNo" => $"ucjbNumber {ascending}, ucjbTime {ascending}, CourierCode {ascending}",
-            "status" => $"ucjbStatus {ascending}",
-            "speed" => $"SpeedShortName {ascending}",
-            "notify" => $"NotifiedSpeed {ascending}",
-            "lp" => $"ucjbLatePick {ascending}",
-            "ld" => $"ucjbLateDel {ascending}",
-            "time" => $"ucjbTime {ascending}",
-            _ => $"RemainTime {ascending}"
-        };
+        var orderToUse = GetOrderByClause(order, ascending);
 
-        var views = await _context.TblDespatchViews
-            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
+        var views = await _context.DfrntappViews
+            .Where(dv => selectedViewIds.Contains(dv.ViewId))
             .ToListAsync();
 
-        var whereToUse = string.Empty;
-        if (isInternal)
-        {
-            var filters = views.Select(v => v.WhereCondition).ToList();
-            foreach (var filter in filters)
-            {
-                if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " OR ";
-                whereToUse += $" ({filter}) ";
-            }
+        var whereToUse = BuildWhereClause(isInternal, views, status, clientIds);
 
-            whereToUse = $"({whereToUse})";
-        }
+        var sql = $@"
+        WITH NumberedJobs AS (
+            SELECT *, 
+                   ROW_NUMBER() OVER (ORDER BY {orderToUse}) AS RowNum,
+                   NULL AS CourierLatitude,
+                   NULL AS CourierLongitude
+            FROM DESWEB_qryDespatch
+            WHERE {whereToUse}
+        )
+        SELECT *
+        FROM NumberedJobs
+        WHERE RowNum BETWEEN @Skip + 1 AND @Skip + @Take";
 
+        var skip = (page - 1) * pageSize;
 
-        if (!string.IsNullOrEmpty(value: whereToUse) && !string.IsNullOrEmpty(value: status) && status != "all")
-            whereToUse += " AND";
+        var jobs = await _context.DeswebQryDespatches
+            .FromSqlRaw(sql,
+                new SqlParameter("@Skip", skip),
+                new SqlParameter("@Take", pageSize))
+            .AsNoTracking()
+            .ToListAsync();
 
-        switch (status)
-        {
-            case "new":
-                whereToUse += " (ucjbCourierID is null OR ucjsCode = 'D' OR ucjsCode = 'N')";
-                break;
-            case "nda":
-                whereToUse +=
-                    " (ucjbCourierID is null OR ucjsCode = 'N' OR ucjsCode = 'D' OR ucjsCode = 'A' OR ucjsCode = 'LP' )";
-                break;
-            case "active":
-                whereToUse += " ucjbJobDone = 0";
-                break;
-            case "done":
-                whereToUse += " ucjbJobDone = 1";
-                break;
-            case "all":
-                break;
-            case "default":
-                break;
-        }
-
-        if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " AND ";
-        whereToUse += " ucjbStatus <> 9";
-
-        if (isInternal == false && !string.IsNullOrEmpty(value: clientIds))
-        {
-            if (!string.IsNullOrEmpty(value: whereToUse)) whereToUse += " AND ";
-            whereToUse += $" ucjbClientID in ({clientIds})";
-        }
-
-        var s =
-            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereToUse} order by {orderToUse}";
-
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql: s).ToListAsync();
+        var countSql = $"SELECT COUNT(*) FROM DESWEB_qryDespatch WHERE {whereToUse}";
+        var totalCount = await _context.Database.ExecuteSqlRawAsync(countSql);
 
         var list = (from j in jobs
             select new JobViewModel
@@ -1056,7 +1019,7 @@ public class JobRepository : IJobRepository
                 StatusName = j.StatusName
             }).ToList();
 
-        return list;
+        return (list, totalCount);
     }
 
     /// <summary>
@@ -1139,9 +1102,9 @@ public class JobRepository : IJobRepository
         if (isInternal)
         {
             var filter = await
-                _context.TblDespatchViews.Where(predicate: v =>
+                _context.DfrntappViews.Where(predicate: v =>
                         (v.ShowOnJobFollowup ?? false) == true &&
-                        selectedViews.Contains(v.DespatchViewId))
+                        selectedViews.Contains(v.ViewId))
                     .ToListAsync();
 
             foreach (var w in filter)
@@ -2380,6 +2343,67 @@ public class JobRepository : IJobRepository
         _context.Entry(entity: job).Property(propertyExpression: x => x.ClientItemIds).IsModified = true;
         _context.Entry(entity: job).Property(propertyExpression: x => x.UcjbAmount).IsModified = true;
         await _context.SaveChangesAsync();
+    }
+
+    private static string GetOrderByClause(string order, string ascending)
+    {
+        var ascDesc = ascending != null && ascending.Equals("asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+
+        return order?.ToLowerInvariant() switch
+        {
+            "remain" => $"ucjbDispTime {ascDesc}, RemainTime {ascDesc}, ucjbTime {ascDesc}",
+            "to" => $"SuburbTo {ascDesc}, ucjbTime {ascDesc}, SuburbFrom {ascDesc}, CourierCode {ascDesc}",
+            "from" => $"SuburbFrom {ascDesc}, SuburbTo {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
+            "client" => $"ucclCode {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
+            "jobno" => $"ucjbNumber {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
+            "status" => $"ucjbStatus {ascDesc}",
+            "speed" => $"SpeedShortName {ascDesc}",
+            "notify" => $"NotifiedSpeed {ascDesc}",
+            "lp" => $"ucjbLatePick {ascDesc}",
+            "ld" => $"ucjbLateDel {ascDesc}",
+            "time" => $"ucjbTime {ascDesc}",
+            _ => $"RemainTime {ascDesc}"
+        };
+    }
+
+    private static string BuildWhereClause(bool isInternal, List<DfrntappView> views, string status, string clientIds)
+    {
+        var whereClauses = new List<string>();
+
+        // Handle internal/external logic
+        if (isInternal)
+        {
+            var viewFilters = views.Select(v => v.WhereCondition).Where(c => !string.IsNullOrEmpty(c)).ToList();
+            if (viewFilters.Any()) whereClauses.Add($"({string.Join(" OR ", viewFilters)})");
+        }
+        else if (!string.IsNullOrEmpty(clientIds)) whereClauses.Add($"ucjbClientID IN ({clientIds})");
+
+        // Handle status
+        switch (status?.ToLower())
+        {
+            case "new":
+                whereClauses.Add("(ucjbCourierID IS NULL OR ucjsCode = 'D' OR ucjsCode = 'N')");
+                break;
+            case "nda":
+                whereClauses.Add(
+                    "(ucjbCourierID IS NULL OR ucjsCode = 'N' OR ucjsCode = 'D' OR ucjsCode = 'A' OR ucjsCode = 'LP')");
+                break;
+            case "active":
+                whereClauses.Add("ucjbJobDone = 0");
+                break;
+            case "done":
+                whereClauses.Add("ucjbJobDone = 1");
+                break;
+            case "all":
+                // No additional filter for "all"
+                break;
+        }
+
+        // Always exclude status 9
+        whereClauses.Add("ucjbStatus <> 9");
+
+        // Combine all where clauses
+        return string.Join(" AND ", whereClauses);
     }
 
     private async Task<List<Size>> GetRelatedJobsAsync(int? rootParentId, int clientId)

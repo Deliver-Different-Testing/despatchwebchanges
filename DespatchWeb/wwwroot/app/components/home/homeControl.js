@@ -8,13 +8,12 @@ angular.module("uDispatch")
                 $scope.isInternal = (ClientInternal === "True");
                 $scope.name = "Home";
                 $scope.jdSvc = jdSvc;
+                $scope.jobTableService = JobTableService;
 
                 // Job Table
                 $scope.jobList = [];
-                $scope.query = JobTableService.createQuery();
+                $scope.queryParams = JobTableService.createQuery();
                 $scope.selected = [];
-
-                $scope.jobTableService = JobTableService;
 
                 $scope.isUsCustomer = APP_CONFIG.US_Customer;
                 $scope.courierSearchText = "";
@@ -30,6 +29,10 @@ angular.module("uDispatch")
                 $scope.filters = {
                     new: false, nda: true, active: false, done: false, all: false
                 };
+
+                $scope.currentPage = 1;
+                $scope.pageSize = 50; // Number of items per page
+                $scope.totalItems = 0; // Total number of items
             };
 
             $scope.toggleSidenav = () => {
@@ -38,7 +41,6 @@ angular.module("uDispatch")
 
             $scope.greetUser = () => greetingService.greetUser(FirstName);
 
-            // Load DespatchViews and initialize areas
             $scope.loadDespatchViews = async () => {
                 try {
                     $scope.areas = await DispatchData.getDespatchViews(ContactID);
@@ -47,21 +49,27 @@ angular.module("uDispatch")
                     await $scope.getData();
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
+                    // Initialize areas with an empty array if fetch fails
+                    $scope.areas = [];
+                    $scope.initializeAreas();
+                    // Optionally, show an error message to the user
+                    toastrService.showErrorToast("Failed to load dispatch views. Please try refreshing the page.");
                 }
             };
 
-            // Initialize areas
             $scope.initializeAreas = () => {
-                $scope.selectedAreas = [];
-                if ($scope.areas.length > 0) {
+                $scope.selectedAreas = {};
+                if ($scope.areas && $scope.areas.length > 0) {
                     const firstArea = $scope.areas[0];
                     $scope.selectedAreas[firstArea.id] = true;
                 }
-                $scope.areas.forEach(area => {
-                    if (!$scope.selectedAreas.hasOwnProperty(area.id)) {
-                        $scope.selectedAreas[area.id] = false;
-                    }
-                });
+                if ($scope.areas) {
+                    $scope.areas.forEach(area => {
+                        if (!$scope.selectedAreas.hasOwnProperty(area.id)) {
+                            $scope.selectedAreas[area.id] = false;
+                        }
+                    });
+                }
             };
 
             $scope.updateFilters = async () => {
@@ -70,9 +78,15 @@ angular.module("uDispatch")
                 const areaFilter = activeAreas.join(',');
 
                 // Call setFilters with area filter
-                await $scope.setFilters({
-                    'area': areaFilter
-                });
+                try {
+                    await $scope.setFilters({
+                        'area': areaFilter
+                    });
+                } catch (error) {
+                    console.error('Error updating filters:', error);
+                    // Optionally, show an error message to the user
+                    toastrService.showErrorToast("Failed to update filters. Please try again.");
+                }
             };
 
             $scope.setActiveArea = selectedArea => {
@@ -106,30 +120,36 @@ angular.module("uDispatch")
 
             $scope.$on('$destroy', cleanup);
 
-            $scope.onReorder = order => {
-                // Implement reordering logic
+            $scope.pageChanged = async () => {
+                await $scope.getJobList();
             };
 
             $scope.onPaginate = (page, limit) => {
-                // Implement pagination logic
+                $scope.queryParams.page = page;
+                $scope.queryParams.limit = limit;
+                return $scope.pageChanged();
             };
 
-            $scope.setEventsMenu = event => {
-                // Implement events menu logic
-            };
+            $scope.orderList = async (list, prop) => {
+                const serverOrder = list === "jobList";
+                if ($scope.sort[list] !== prop) {
+                    $scope.sort[list] = prop;
+                    $scope.queryParams.asc = "asc";
+                    if (!serverOrder) {
+                        $scope[list] = $filter("orderBy")($scope[list], prop);
+                    }
+                } else {
+                    $scope.sort[list] = "d-" + prop;
+                    $scope.queryParams.asc = "desc";
+                    if (!serverOrder) {
+                        $scope[list] = $filter("orderBy")($scope[list], "-" + prop);
+                    }
+                }
 
-            $scope.clientColumnClick = (event, job) => {
-                // Implement client column click logic
+                if (serverOrder) {
+                    await $scope.setFilters({"order": prop});
+                }
             };
-
-            $scope.restoreJobs = () => {
-                // Implement job restoration logic
-            };
-
-            $scope.reAllocateJobs = () => {
-                // Implement job reallocation logic
-            };
-
 
             jdSvc.setSelectJobDetail(async () => {
                 const currentJob = $scope.currentJob;
@@ -518,8 +538,8 @@ angular.module("uDispatch")
                         if (codeCell) {
                             const ctrl = await $scope.jobTableService.editField({target: codeCell}, job, 'courier', 'Set code');
                             if (ctrl) {
-                                    ctrl.getInput().$element.focus();
-                                }
+                                ctrl.getInput().$element.focus();
+                            }
                         }
                     } catch (error) {
                         console.log('Error in handleRowClick:', error);
@@ -638,29 +658,6 @@ angular.module("uDispatch")
             };
 
             $scope.allCouriers.display = true;
-//Column Sorting
-            $scope.sort = [];
-            $scope.orderList = async (list, prop) => {
-                const serverOrder = list === "jobList";
-                if ($scope.sort[list] !== prop) {
-                    $scope.sort[list] = prop;
-                    $scope.jobFilters.asc = "asc";
-                    if (!serverOrder) {
-                        $scope[list] = $filter("orderBy")($scope[list], prop);
-                    }
-
-                } else {
-                    $scope.sort[list] = "d-" + prop;
-                    $scope.jobFilters.asc = "desc";
-                    if (!serverOrder) {
-                        $scope[list] = $filter("orderBy")($scope[list], "-" + prop);
-                    }
-                }
-
-                if (serverOrder) {
-                    await $scope.setFilters({"order": prop});
-                }
-            };
 
             ///////////////////////////
             // HOTKEYS
@@ -1900,48 +1897,44 @@ angular.module("uDispatch")
                 }
             };
 
-            $scope.sort["jobList"] = "remain";
-
             $scope.setFilters = async (data) => {
                 await $timeout(async () => {
                     if (data.status) {
-                        $scope.jobFilters.status = data.status;
+                        $scope.queryParams.status = data.status;
                     } else {
-                        // Add the selected filter as status
                         const selectedStatus = Object.entries($scope.filters)
                             .filter(([key, value]) => value && key !== 'all')
                             .map(([key]) => key);
 
                         if (selectedStatus.length > 0) {
-                            $scope.jobFilters.status = selectedStatus.join(',');
+                            $scope.queryParams.status = selectedStatus.join(',');
                         } else if ($scope.filters.all) {
-                            $scope.jobFilters.status = 'all';
+                            $scope.queryParams.status = 'all';
                         } else {
-                            // If no status is selected, remove the status filter
-                            delete $scope.jobFilters.status;
+                            delete $scope.queryParams.status;
                         }
                     }
 
                     if (data.area) {
                         let selected = angular.element("#area-group > .btn.topBarActive").length;
                         if (selected > 1) {
-                            $scope.jobFilters.area += "," + data.area;
+                            $scope.queryParams.area += "," + data.area;
                         } else {
-                            $scope.jobFilters.area = data.area;
+                            $scope.queryParams.area = data.area;
                         }
                     }
 
                     if (data.clearList) {
                         let clSelected = angular.element("#driverLocations").find('.listActive').length;
                         if (clSelected > 1) {
-                            $scope.jobFilters.area += "," + data.clearList;
+                            $scope.queryParams.area += "," + data.clearList;
                         } else {
-                            $scope.jobFilters.area = data.clearList;
+                            $scope.queryParams.area = data.clearList;
                         }
                     }
 
                     if (data.order) {
-                        $scope.jobFilters.order = data.order;
+                        $scope.queryParams.order = data.order;
                     }
 
                     await $scope.getData();
@@ -2464,20 +2457,30 @@ angular.module("uDispatch")
 
             $scope.getJobList = async () => {
                 if (Modernizr.localstorage) {
-                    localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.jobFilters));
+                    localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.queryParams));
                 }
 
                 const selectedClients = $scope.pickService.clients.map(a => a.id);
 
                 try {
-                    const data = await DispatchData.getJobsFilter($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas);
-                    $scope.jobList = data;
+                    angular.element("#box-jobsList .loading").show();
+
+                    const data = await DispatchData.getJobsWithFilters(
+                        $scope.queryParams,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedAreas
+                    );
+
+                    $scope.jobList = data.jobs;
+                    $scope.totalItems = data.totalCount;
+
                     angular.element("#box-jobsList .loading").fadeOut();
 
                     await $timeout(async () => {
                         sizeHeadings();
-                        if (data.length > 0) {
-                            const unDispatchedData = data.filter(x => x.courierData.courierID === null);
+                        if ($scope.jobList.length > 0) {
+                            const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                             displayPickupPoints(unDispatchedData, true, null);
                         }
 
@@ -2486,6 +2489,7 @@ angular.module("uDispatch")
 
                 } catch (error) {
                     console.log('Error getting job list:', error);
+                    toastrService.showErrorToast("Failed to get job list. Please try again.");
                     angular.element("#box-jobsList .loading").fadeOut();
                 }
             };
@@ -2592,6 +2596,7 @@ angular.module("uDispatch")
                     await $scope.getJobList();
                 } catch (error) {
                     console.error('Error in getData:', error);
+                    toastrService.showErrorToast("An error occurred while loading data. Please refresh the page.");
                 }
             }
 

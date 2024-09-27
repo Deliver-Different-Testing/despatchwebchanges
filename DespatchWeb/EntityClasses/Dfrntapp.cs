@@ -5,18 +5,20 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class TblDfrntapp
+    public partial class Dfrntapp
     {
-        public TblDfrntapp()
+        public Dfrntapp()
         {
+            DfrntappPages = new HashSet<DfrntappPage>();
             TblAppWidgets = new HashSet<TblAppWidget>();
         }
 
         public int AppId { get; set; }
         public string AppName { get; set; }
-        public int CreatedBy { get; set; }
+        public string CreatedBy { get; set; }
         public DateTime Created { get; set; }
 
+        public virtual ICollection<DfrntappPage> DfrntappPages { get; set; }
         public virtual ICollection<TblAppWidget> TblAppWidgets { get; set; }
     }
 }
