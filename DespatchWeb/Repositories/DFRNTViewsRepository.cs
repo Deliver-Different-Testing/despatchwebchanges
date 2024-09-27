@@ -30,7 +30,15 @@ public class DfrntViewsRepository : IDfrntViewsRepository
                 av => av.ViewId,
                 pv => pv.ViewId,
                 (av, pv) => new { av, pv })
-            .Where(x => x.pv.PageId == pageId)
+            .Join(_context.DfrntappPages,
+                x => x.pv.PageId,
+                ap => ap.PageId,
+                (x, ap) => new { x.av, x.pv, ap })
+            .Join(_context.Dfrntapps,
+                x => x.ap.AppId,
+                app => app.AppId,
+                (x, app) => new { x.av, x.pv, x.ap, app })
+            .Where(x => x.pv.PageId == pageId && x.app.AppName == "DespatchWeb")
             .Select(x => new SelectItem
             {
                 Id = x.av.ViewId,
