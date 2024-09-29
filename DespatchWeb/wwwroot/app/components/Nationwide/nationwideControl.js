@@ -2867,6 +2867,10 @@ angular.module("uDispatch").controller("NationwideControl", [
                     }
                 }
             }
+
+            $scope.loadPageViews().then(() => {
+                console.log('Complete!');
+            });
         };
 
         // Call the init function when the controller loads
