@@ -21,34 +21,31 @@ public class DfrntViewsRepository : IDfrntViewsRepository
     // Get the views available to populate the top-bar
     public async Task<List<SelectItem>> GetViewsByUserAndPageAsync(int userId, AppPage page)
     {
-        var pageViews = await _context.DfrntappUserViewPermissions
-            .Where(aup => aup.UserId == userId && aup.IsVisible.Value)
+        return await _context.DfrntappUserViewPermissions
+            .Where(aup => aup.UserId == userId && aup.IsVisible == true)
             .Join(_context.DfrntappViews,
                 aup => aup.ViewId,
                 av => av.ViewId,
                 (aup, av) => av)
-            .Join(_context.DfrntpageViews,
+            .Join(_context.DfrntpageViews.Where(pv => pv.PageId == (int)page),
                 av => av.ViewId,
                 pv => pv.ViewId,
                 (av, pv) => new { av, pv })
             .Join(_context.DfrntappPages,
                 x => x.pv.PageId,
                 ap => ap.PageId,
-                (x, ap) => new { x.av, x.pv, ap })
-            .Join(_context.Dfrntapps,
+                (x, ap) => new { x.av, ap })
+            .Join(_context.Dfrntapps.Where(app => app.AppName == "DespatchWeb"),
                 x => x.ap.AppId,
                 app => app.AppId,
-                (x, app) => new { x.av, x.pv, x.ap, app })
-            .Where(x => x.pv.PageId == (int)page && x.app.AppName == "DespatchWeb")
-            .Select(x => new SelectItem
+                (x, app) => x.av)
+            .Select(av => new SelectItem
             {
-                Id = x.av.ViewId,
-                Name = x.av.Name
+                Id = av.ViewId,
+                Name = av.Name
             })
             .OrderBy(x => x.Name)
             .ToListAsync();
-
-        return pageViews;
     }
 
     public async Task<string> GetWhereClauseByDispatchView(int viewId)
