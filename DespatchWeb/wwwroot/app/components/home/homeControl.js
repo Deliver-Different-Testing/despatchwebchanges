@@ -41,7 +41,7 @@ angular.module("uDispatch")
 
             $scope.greetUser = () => greetingService.greetUser(FirstName);
 
-            $scope.loadDespatchViews = async () => {
+            $scope.loadPageViews = async () => {
                 try {
                     $scope.areas = await DispatchData.getDespatchViews(ContactID, 1); // Page is currently hardcoded id
                     $scope.initializeAreas();
@@ -444,7 +444,7 @@ angular.module("uDispatch")
             }
 
             /**
-             * @param {string} layoutName
+             * @param {String} layoutName
              */
             $scope.setLastActiveLayoutName = layoutName => {
                 if (Modernizr.localstorage) {
@@ -453,7 +453,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {number} index
+             * @param {Number} index
              */
             $scope.loadLayout = (index) => {
                 try {
@@ -628,8 +628,8 @@ angular.module("uDispatch")
             $scope.inputWidth = {};
 
             /**
-             * @param {string} boxName
-             * @param {number} index
+             * @param {String} boxName
+             * @param {Number} index
              */
             $scope.openSearch = (boxName, index) => {
                 const boxID = boxName + '-' + index;
@@ -768,8 +768,8 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {string} jobNumber
-             * @param {number} jobId
+             * @param {String} jobNumber
+             * @param {Number} jobId
              */
             $scope.voidJobForm = (jobNumber, jobId) => $mdDialog.show($mdDialog.prompt()
                 .title("Void Job")
@@ -847,11 +847,11 @@ angular.module("uDispatch")
 
 
             /**
-             * @param {number} lat
-             * @param {number} lng
+             * @param {Number} lat
+             * @param {Number} lng
              * @param {Object} flags
-             * @param {string} carMarker
-             * @param {number} jobNumber
+             * @param {String} carMarker
+             * @param {Number} jobNumber
              */
             $scope.dispatchDroppedMarkerToClosestCourier = async (lat, lng, flags, carMarker, jobNumber) => {
                 try {
@@ -961,7 +961,7 @@ angular.module("uDispatch")
 /////////////////////////////////////
             /**
              * @param {Date} lateTime
-             * @param {number} lateType
+             * @param {Number} lateType
              * @param {Job} job
              * @param {boolean} calc
              */
@@ -1450,8 +1450,8 @@ angular.module("uDispatch")
 
             /**
              * @param {Object} $event
-             * @param {string} title
-             * @param {string} content
+             * @param {String} title
+             * @param {String} content
              */
             function showAlert($event, title, content) {
                 return $mdDialog.show($mdDialog.alert()
@@ -1466,8 +1466,8 @@ angular.module("uDispatch")
 
             /**
              * @param {Object} $event
-             * @param {string} title
-             * @param {string} content
+             * @param {String} title
+             * @param {String} content
              */
             function showConfirm($event, title, content) {
                 const confirm = $mdDialog.confirm()
@@ -1550,7 +1550,7 @@ angular.module("uDispatch")
 ////////////////////////////
 
             /**
-             * @param {number} jobId
+             * @param {Number} jobId
              */
             $scope.getPotentialCouriers = async (jobId) => {
                 try {
@@ -1575,7 +1575,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {string} searchText
+             * @param {String} searchText
              */
             $scope.courierSearch = async (searchText) => {
                 const url = "/courier/AllActiveSearch";
@@ -1590,7 +1590,7 @@ angular.module("uDispatch")
             $scope.jobRecordSearchText = "";
 
             /**
-             * @param {string} searchText
+             * @param {String} searchText
              */
             $scope.jobRecordSearch = searchText => {
                 return $scope.jobList
@@ -1599,7 +1599,7 @@ angular.module("uDispatch")
             }
 
             /**
-             * @param {number} selectedJobId
+             * @param {Number} selectedJobId
              */
             $scope.JobRecordSelected = async (selectedJobId) => {
                 try {
@@ -1612,8 +1612,8 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {number} courierID
-             * @param {string} courierName
+             * @param {Number} courierID
+             * @param {String} courierName
              */
             $scope.updateCourierData = async (courierID, courierName) => {
                 $scope.currentWorkSelection = ` for Courier  ${courierID}  ${courierName}`;
@@ -1865,7 +1865,7 @@ angular.module("uDispatch")
 ////////////////////////////
 
             /**
-             * @param {number} courierId
+             * @param {Number} courierId
              */
             $scope.getCurrentJobs = async (courierId) => {
                 try {
@@ -1961,8 +1961,8 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {number} jobId
-             * @param {string} jobNumber
+             * @param {Number} jobId
+             * @param {String} jobNumber
              */
             $scope.loadRelatedJobDetail = async (jobId, jobNumber) => {
                 try {
@@ -2366,7 +2366,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {string} mode
+             * @param {String} mode
              */
             $scope.setTruckMode = async (mode) => {
                 $scope.truckMode = mode;
@@ -2374,7 +2374,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {string} channel
+             * @param {String} channel
              */
             $scope.setSupportChannel = async (channel) => {
                 $scope.supportChannel = channel;
@@ -2519,7 +2519,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {string} item
+             * @param {String} item
              */
             function SetSelectedChannels(item) {
                 const sr = $scope.pickChannels.find(obj => obj.label === item);
@@ -3109,7 +3109,7 @@ angular.module("uDispatch")
 
                 // Init functions
                 $scope.initializeVariables();
-                $scope.loadDespatchViews().then(() => {
+                $scope.loadPageViews().then(() => {
                     console.log('Complete!');
                 });
             };
