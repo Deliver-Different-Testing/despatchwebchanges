@@ -56,7 +56,7 @@ public class JobController : Controller
 
             var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
 
-            return Ok(result);
+            return Json(result);
         }
         catch (UnauthorizedAccessException)
         {
@@ -85,8 +85,14 @@ public class JobController : Controller
 
     private static object CreatePaginatedResult<T>(IEnumerable<T> items, int totalCount, int page, int pageSize)
     {
-        return (Items: items, TotalCount: totalCount, CurrentPage: page, PageSize: pageSize,
-            TotalPages: (int)Math.Ceiling((double)totalCount / pageSize));
+        return new
+        {
+            Jobs = items,
+            TotalCount = totalCount,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+        };
     }
 
     public async Task<IActionResult> NationwideJobListNew(string status, string area, string order, string asc,

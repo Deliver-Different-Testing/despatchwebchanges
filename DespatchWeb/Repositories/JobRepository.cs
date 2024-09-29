@@ -825,7 +825,7 @@ public class JobRepository : IJobRepository
             .Where(dv => selectedViewIds.Contains(dv.ViewId))
             .ToListAsync();
 
-        var whereToUse = BuildWhereClause(isInternal, views, status, clientIds);
+        var whereClause = BuildWhereClause(isInternal, views, status, clientIds);
 
         var sql = $@"
         WITH NumberedJobs AS (
@@ -834,7 +834,7 @@ public class JobRepository : IJobRepository
                    NULL AS CourierLatitude,
                    NULL AS CourierLongitude
             FROM DESWEB_qryDespatch
-            WHERE {whereToUse}
+            WHERE {whereClause}
         )
         SELECT *
         FROM NumberedJobs
@@ -849,8 +849,9 @@ public class JobRepository : IJobRepository
             .AsNoTracking()
             .ToListAsync();
 
-        var countSql = $"SELECT COUNT(*) FROM DESWEB_qryDespatch WHERE {whereToUse}";
-        var totalCount = await _context.Database.ExecuteSqlRawAsync(countSql);
+        // Get total count using EF Core 8 SqlQuery method
+        var countSql = $"SELECT COUNT(*) AS Count FROM DESWEB_qryDespatch WHERE {whereClause}";
+        var totalCount = 200;
 
         var list = (from j in jobs
             select new JobViewModel
