@@ -819,12 +819,13 @@ public class JobRepository : IJobRepository
         if (isInternal == false && string.IsNullOrEmpty(value: clientIds))
             return (new List<JobViewModel>(), 0);
 
-        var orderToUse = GetOrderByClause(order, ascending);
-
+        if (selectedViewIds != null && !selectedViewIds.Any()) return (new List<JobViewModel>(), 0);
         var views = await _context.DfrntappViews
             .Where(dv => selectedViewIds.Contains(dv.ViewId))
             .ToListAsync();
 
+        // Filters
+        var orderToUse = GetOrderByClause(order, ascending);
         var whereClause = BuildWhereClause(isInternal, views, status, clientIds);
 
         var sql = $@"

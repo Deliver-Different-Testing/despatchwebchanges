@@ -53,7 +53,7 @@ angular.module("uDispatch")
                     $scope.areas = [];
                     $scope.initializeAreas();
                     // Optionally, show an error message to the user
-                    toastrService.showErrorToast("Failed to load dispatch views. Please try refreshing the page.");
+                    console.log("Failed to load dispatch views. Please try refreshing the page.");
                 }
             };
 
@@ -85,7 +85,7 @@ angular.module("uDispatch")
                 } catch (error) {
                     console.error('Error updating filters:', error);
                     // Optionally, show an error message to the user
-                    toastrService.showErrorToast("Failed to update filters. Please try again.");
+                    console.log("Failed to update filters. Please try again.");
                 }
             };
 
@@ -2489,7 +2489,7 @@ angular.module("uDispatch")
 
                 } catch (error) {
                     console.log('Error getting job list:', error);
-                    toastrService.showErrorToast("Failed to get job list. Please try again.");
+                    console.log("Failed to get job list. Please try again.");
                     angular.element("#box-jobsList .loading").fadeOut();
                 }
             };
@@ -2596,7 +2596,7 @@ angular.module("uDispatch")
                     await $scope.getJobList();
                 } catch (error) {
                     console.error('Error in getData:', error);
-                    toastrService.showErrorToast("An error occurred while loading data. Please refresh the page.");
+                    console.log("An error occurred while loading data. Please refresh the page.");
                 }
             }
 
