@@ -1,9 +1,9 @@
 angular.module("uDispatch")
     .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state",
         "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter",
-        "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService",
+        "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages",
         ($document, $filter, greetingService, jdSvc, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData,
-         dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService) => {
+         dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages) => {
             $scope.initializeVariables = () => {
                 $scope.isInternal = (ClientInternal === "True");
                 $scope.name = "Home";
@@ -43,7 +43,7 @@ angular.module("uDispatch")
 
             $scope.loadPageViews = async () => {
                 try {
-                    $scope.areas = await DispatchData.getDespatchViews(ContactID, 1); // Page is currently hardcoded id
+                    $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
                     $scope.initializeAreas();
                     await $scope.updateFilters();
                     await $scope.getData();

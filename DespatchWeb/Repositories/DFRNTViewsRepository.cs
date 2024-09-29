@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +19,7 @@ public class DfrntViewsRepository : IDfrntViewsRepository
     }
 
     // Get the views available to populate the top-bar
-    public async Task<List<SelectItem>> GetViewsByUserAndPageAsync(int userId, int pageId)
+    public async Task<List<SelectItem>> GetViewsByUserAndPageAsync(int userId, AppPage page)
     {
         var pageViews = await _context.DfrntappUserViewPermissions
             .Where(aup => aup.UserId == userId && aup.IsVisible.Value)
@@ -38,7 +39,7 @@ public class DfrntViewsRepository : IDfrntViewsRepository
                 x => x.ap.AppId,
                 app => app.AppId,
                 (x, app) => new { x.av, x.pv, x.ap, app })
-            .Where(x => x.pv.PageId == pageId && x.app.AppName == "DespatchWeb")
+            .Where(x => x.pv.PageId == (int)page && x.app.AppName == "DespatchWeb")
             .Select(x => new SelectItem
             {
                 Id = x.av.ViewId,

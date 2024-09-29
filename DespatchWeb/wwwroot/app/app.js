@@ -8,6 +8,12 @@ angular
     .constant('APP_CONFIG', {
         US_Customer: true
     })
+    .constant('AppPages', {
+        Dispatch: 1,
+        Domestic: 2,
+        JobSearch: 3,
+        Prebooks: 4
+    })
     .factory('versionUrl', ['APP_VERSION', APP_VERSION => url => url + (url.indexOf('?') === -1 ? '?' : '&') + 'v=' + APP_VERSION])
     .directive('rightClick', ['$document', $document => {
         $document.oncontextmenu = event => {

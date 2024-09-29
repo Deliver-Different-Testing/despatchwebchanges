@@ -18,9 +18,10 @@ angular.module("uDispatch").controller("NationwideControl", [
     "moment",
     "versionUrl",
     "materialSidenavService",
+    "AppPages",
     ($scope, jdSvc, NWData, $state,
      $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService,
-     $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService) => {
+     $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages) => {
         $scope.isInternal = (ClientInternal === "True");
         $scope.jdSvc = jdSvc;
         $scope.name = "Nationwide";
@@ -40,7 +41,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         $scope.loadPageViews = async () => {
             try {
-                $scope.areas = await DispatchData.getDespatchViews(ContactID, 2); // Page is currently hardcoded id
+                $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
                 $scope.initializeAreas();
                 await $scope.updateFilters();
                 await $scope.getData();
@@ -49,7 +50,6 @@ angular.module("uDispatch").controller("NationwideControl", [
                 // Initialize areas with an empty array if fetch fails
                 $scope.areas = [];
                 $scope.initializeAreas();
-                // Optionally, show an error message to the user
                 toastrService.showErrorToast("Failed to load dispatch views. Please try refreshing the page.");
             }
         };
@@ -3124,7 +3124,7 @@ function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
 
-function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
+function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     lat1 = Deg2Rad(lat1);
     lat2 = Deg2Rad(lat2);
     lon1 = Deg2Rad(lon1);
@@ -3140,7 +3140,7 @@ function closestLocation(latitude, longitude, locations) {
     let closest;
 
     for (let index = 0; index < locations.length; ++index) {
-        const dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
+        const dif = PythagorasEquirectAngular(latitude, longitude, locations[index][1], locations[index][2]);
         if (dif < minDifference) {
             closest = index;
             minDifference = dif;

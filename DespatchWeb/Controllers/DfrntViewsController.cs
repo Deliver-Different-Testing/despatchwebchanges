@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,7 +16,10 @@ public class DfrntViewsController : Controller
 
     public async Task<IActionResult> GetPageViews(int userId, int pageId)
     {
-        var viewOptions = await _repository.GetViewsByUserAndPageAsync(userId, pageId);
+        var page = (AppPage)pageId;
+
+
+        var viewOptions = await _repository.GetViewsByUserAndPageAsync(userId, page);
         return Json(viewOptions);
     }
 }
