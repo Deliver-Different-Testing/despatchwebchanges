@@ -29,7 +29,7 @@ angular.module("uDispatch").controller("NationwideControl", [
         $scope.courierListFabIsOpen = false;
 
         $scope.filters = {
-            new: false, nda: true, active: false, done: false, all: false
+            active: false, done: false, all: true
         };
 
         $scope.toggleSidenav = () => {
