@@ -41,8 +41,9 @@ public interface IJobRepository
     /// <param name="clientIds"></param>
     /// <param name="windowPane"></param>
     /// <returns></returns>
-    Task<List<JobViewModel>> NationwideJobListAsync(string status, string area, string order,
-        string ascending, bool isInternal, string clientIds, int windowPane);
+    Task<(List<JobViewModel> Jobs, int TotalCount)> NationwideJobListAsync(string status, string area, string order,
+        string ascending, bool isInternal, string clientIds, int windowPane, List<int> selectedViewIds, int page,
+        int pageSize);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int id);
