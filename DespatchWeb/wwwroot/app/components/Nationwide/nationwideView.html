@@ -345,3 +345,134 @@
     </div>
     <div id='draggingItems'></div>
 </div>
+
+<script>
+    // Keyboard event handling
+    (function () {
+        var keyIsDown = {};
+
+        function overrideKeyboardEvent(e) {
+            if (e.type === "keydown" && !keyIsDown[e.keyCode]) {
+                keyIsDown[e.keyCode] = true;
+                handleKeyDown(e);
+            } else if (e.type === "keyup") {
+                delete keyIsDown[e.keyCode];
+            }
+
+            if (e.keyCode === 68 && e.ctrlKey) {
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        function handleKeyDown(e) {
+            if (e.keyCode === 113) {
+                showSMSForm();
+            }
+        }
+
+        document.addEventListener('keydown', overrideKeyboardEvent);
+        document.addEventListener('keyup', overrideKeyboardEvent);
+    })();
+
+    // Click and drag functionality
+    (function () {
+        var isMouseDown = false;
+
+        function handleMouseDown(event) {
+            isMouseDown = true;
+            var $row = angular.element(event.currentTarget);
+
+            if (event.ctrlKey) {
+                $row.toggleClass("active");
+            } else {
+                setActiveRow($row);
+            }
+
+            angular.element(".activeTable").removeClass("activeTable");
+            $row.closest(".table").addClass("activeTable");
+
+            if (!event.ctrlKey && $row.hasClass("draggable-row")) {
+                handleDraggableRow($row, event);
+            }
+        }
+
+        function setActiveRow($row) {
+            if (!$row.hasClass("active")) {
+                var group = $row.parents(".table-rows").attr("data-group");
+                angular.element('*[data-group="' + group + '"]').find('.active').removeClass('active');
+                $row.addClass('active');
+            }
+        }
+
+        function handleDraggableRow($row, event) {
+            setTimeout(function () {
+                if (isMouseDown) {
+                    var jobNo = angular.element(".activeTable .clickable-row.active").length > 1
+                        ? angular.element(".activeTable .clickable-row.active").length + " Jobs"
+                        : $row.attr("data-jobno");
+
+                    angular.element("#draggingItems")
+                        .show()
+                        .html(jobNo)
+                        .css({top: event.pageY - 25, left: event.pageX - 50})
+                        .draggable()
+                        .trigger(event);
+                }
+            }, 200);
+        }
+
+        function handleMouseUp(event) {
+            isMouseDown = false;
+            if (event.which === 3) {
+                angular.element(".rightActiveTable").removeClass("rightActiveTable");
+                angular.element(event.currentTarget).closest(".table").addClass("rightActiveTable");
+            }
+            if (!event.ctrlKey) {
+                setActiveRow(angular.element(event.currentTarget));
+            }
+        }
+
+        angular.element(document).on('mousedown', '.clickable-row', handleMouseDown);
+        angular.element(document).on('mouseup', '.clickable-row', handleMouseUp);
+        angular.element(document).on("mouseup", function () {
+            angular.element("#draggingItems").hide();
+            isMouseDown = false;
+        });
+    })();
+
+    // Keyboard navigation
+    angular.element(document).on("keydown", function (e) {
+        var code = e.keyCode || e.which;
+        var $active = angular.element(".activeTable").find(".active");
+        if (code === 40) {
+            $active.removeClass("active").next().addClass("active").mouseup().click();
+        } else if (code === 38) {
+            $active.removeClass("active").prev().addClass("active").mouseup().click();
+        }
+    });
+
+    // Resize table headers
+    function sizeHeadings() {
+        angular.element("body").find(".box").each(function () {
+            var $box = angular.element(this);
+            $box.find(".table-headings thead tr th").each(function (index) {
+                var newWidth = $box.find(".table tbody tr td").eq(index).outerWidth();
+                angular.element(this).outerWidth(newWidth);
+            });
+            $box.find(".table-headings table").width($box.find(".table").width());
+        });
+
+        var height = angular.element("#box-clearLists").find(".box-content").height() - 30;
+        angular.element(".clearLists-list").each(function () {
+            var newHeight = angular.element(this).data("height") * height / 100;
+            angular.element(this).height(newHeight);
+        });
+    }
+
+    // Initialize
+    angular.element(document).ready(function () {
+        document.getElementById("favicon").setAttribute("href", "/Nationwide.ico");
+        sizeHeadings();
+    });
+</script>

@@ -38,7 +38,6 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         $scope.greetUser = () => greetingService.greetUser($scope.userName)
 
-
         $scope.loadPageViews = async () => {
             try {
                 $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
@@ -504,9 +503,12 @@ angular.module("uDispatch").controller("NationwideControl", [
             }
         };
 
-        $scope.loadLayout = i => {
-            $scope.currentLayoutName = $scope.layouts[i].name;
-            $scope.layout = angular.copy($scope.layouts[i].layout);
+        /**
+         * @param {Number} index
+         */
+        $scope.loadLayout = (index) => {
+            $scope.currentLayoutName = $scope.layouts[index].name;
+            $scope.layout = angular.copy($scope.layouts[index].layout);
 
             // save layout as last active
             $scope.setLastActiveLayoutName($scope.currentLayoutName);
@@ -514,7 +516,7 @@ angular.module("uDispatch").controller("NationwideControl", [
             $timeout($scope.getData, 1000);
         };
 
-        $scope.saveLayout = () => {
+        $scope.saveLayout = async () => {
             angular.forEach($scope.layout.columns,
                 (column, colKey) => {
                     column.width = angular.element("#co-" + column.id).css("flex-basis");
@@ -532,7 +534,9 @@ angular.module("uDispatch").controller("NationwideControl", [
                 .ok('Save')
                 .cancel('Cancel');
 
-            $mdDialog.show(saveLayoutPrompt).then(layoutName => {
+            try {
+                const layoutName = await $mdDialog.show(saveLayoutPrompt);
+
                 if (Modernizr.localstorage) {
                     $scope.layouts = $scope.layouts.concat(
                         {
@@ -545,14 +549,12 @@ angular.module("uDispatch").controller("NationwideControl", [
                     $scope.setLastActiveLayoutName(layoutName);
                 }
 
-                const deferred = $q.defer();
-                deferred.resolve({
-                    data: "OK"
-                });
-                return deferred.promise;
-            }, () => {
-                console.log("Save Layout Cancelled!")
-            });
+                return {data: "OK"};
+            } catch (error) {
+                console.log("Save Layout Cancelled!");
+                // Re-throw the error if you want calling code to be able to catch it
+                // throw error;
+            }
         };
 
         $scope.attention = job => {
@@ -812,11 +814,9 @@ angular.module("uDispatch").controller("NationwideControl", [
             const n = new Date();
             if (!job.done && Date.parse(job.followupTime) < n && (job.speedID === 6 || job.speedID === 7 || job.speedID === 21)) {
                 return "O";
-            }
-            else if (!job.done && Date.parse(job.followupTime) < n && (job.speedID === 11 || job.speedID === 23)) {
+            } else if (!job.done && Date.parse(job.followupTime) < n && (job.speedID === 11 || job.speedID === 23)) {
                 return "B";
-            }
-            else if (!job.done && Date.parse(job.followupTime) < n) {
+            } else if (!job.done && Date.parse(job.followupTime) < n) {
                 return "G";
             } else return "";
         }
@@ -1989,12 +1989,13 @@ angular.module("uDispatch").controller("NationwideControl", [
             }
         };
 
-        $scope.setFilters = data => {
-            $timeout(() => {
+        $scope.setFilters = async (data) => {
+            try {
+                await new Promise(resolve => $timeout(resolve, 300));
+
                 if (data.status) {
                     $scope.jobFilters.status = data.status;
                 }
-
 
                 if (data.area) {
                     const selected = angular.element("#area-group > .btn.topBarActive").length;
@@ -2003,15 +2004,17 @@ angular.module("uDispatch").controller("NationwideControl", [
                     } else {
                         $scope.jobFilters.area = data.area;
                     }
-
                 }
 
                 if (data.order) {
                     $scope.jobFilters.order = data.order;
                 }
 
-                $scope.getData();
-            }, 300);
+                await $scope.getData();
+            } catch (error) {
+                console.error("Error in setFilters:", error);
+                // Handle error appropriately
+            }
         };
 
         $scope.selectJobDetail = job => {
@@ -2066,7 +2069,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
                 processActiveTable();
                 initializeJob(job);
-                updateData(job, clear);
+                await updateData(job, clear);
                 angular.element("#box-jobDetail .loading").css('display', 'none');
             } catch (error) {
                 console.error("Error in selectJob:", error);
@@ -2078,7 +2081,6 @@ angular.module("uDispatch").controller("NationwideControl", [
             $scope.selectedJobs = [];
             $scope.currentSupport = null;
             angular.element(".activeTable .active").each(function () {
-                //angular.element(this).hide();
                 angular.element(this).find(".selectjob").click();
                 $scope.selectedJobs.push($scope.jobForDispatch.ID);
             });
@@ -2369,7 +2371,6 @@ angular.module("uDispatch").controller("NationwideControl", [
                     break;
                 default:
                     console.log("you have a strange mouse!");
-                    u
                     break;
 
             }
@@ -2501,14 +2502,14 @@ angular.module("uDispatch").controller("NationwideControl", [
             return multiple ? multipleMenu : fullMenu;
         };
 
-        $scope.setTruckMode = mode => {
+        $scope.setTruckMode = async mode => {
             $scope.truckMode = mode;
-            $scope.getData();
+            await $scope.getData();
         };
 
-        $scope.setSupportChannel = channel => {
+        $scope.setSupportChannel = async channel => {
             $scope.supportChannel = channel;
-            $scope.getSupports();
+            await $scope.getSupports();
         };
 
         $scope.getAvailableCourierLocation = () => {
@@ -2517,6 +2518,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 map.clearFlags();
                 return;
             }
+
             const areas = $scope.jobFilters.area.split(",");
             const channels = [];
             let trucks = false;
@@ -2571,145 +2573,143 @@ angular.module("uDispatch").controller("NationwideControl", [
             }
         ];
 
-        $scope.getJobList = () => {
+        $scope.getJobList = async () => {
             if (Modernizr.localstorage) {
                 localStorage.setItem("dispNW-filters-" + ContactID, JSON.stringify($scope.jobFilters));
             }
             const selectedClients = $scope.pickService.clients.map(a => a.id);
 
-            NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
-                $scope.jobListPOD = data;
+            try {
+                const [podData, newData, repriceData, deliveryData] = await Promise.all([
+                    NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal),
+                    NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal),
+                    NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal),
+                    NWData.getNationwideJobsBookDelivery($scope.jobFilters, selectedClients, $scope.isInternal)
+                ]);
 
-                $timeout(() => {
-                    angular.element("#box-jobsListPOD .loading").fadeOut();
-                    sizeHeadings(angular.element("#jobListPOD").parents(".column"));
+                $scope.jobListPOD = podData;
+                $scope.jobList = newData;
+                $scope.jobListReprice = repriceData;
+                $scope.jobListDelivery = deliveryData;
 
-                }, 200);
-
-            });
-
-            NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
-                $scope.jobList = data;
-
-                $timeout(() => {
-                    angular.element("#box-jobsList .loading").fadeOut();
-                    sizeHeadings(angular.element("#jobList").parents(".column"));
-
-                }, 200);
-
-            });
-
-            NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
-                $scope.jobListReprice = data;
-
-                $timeout(() => {
-                    angular.element("#box-jobsListReprice .loading").fadeOut();
-                    sizeHeadings(angular.element("#jobListReprice").parents(".column"));
-
-                }, 200);
-
-            });
-
-            return NWData.getNationwideJobsBookDelivery($scope.jobFilters, selectedClients, $scope.isInternal).then(data => {
-                $scope.jobListDelivery = data;
-
-                $timeout(() => {
-                    angular.element("#box-jobsListDelivery .loading").fadeOut();
-                    sizeHeadings(angular.element("#jobListDelivery").parents(".column"));
-
-                    $scope.getAvailableCourierLocation();
-                }, 200);
-
-            });
+                await Promise.all([
+                    $timeout(() => {
+                        angular.element("#box-jobsListPOD .loading").fadeOut();
+                        sizeHeadings(angular.element("#jobListPOD").parents(".column"));
+                    }, 200),
+                    $timeout(() => {
+                        angular.element("#box-jobsList .loading").fadeOut();
+                        sizeHeadings(angular.element("#jobList").parents(".column"));
+                    }, 200),
+                    $timeout(() => {
+                        angular.element("#box-jobsListReprice .loading").fadeOut();
+                        sizeHeadings(angular.element("#jobListReprice").parents(".column"));
+                    }, 200),
+                    $timeout(() => {
+                        angular.element("#box-jobsListDelivery .loading").fadeOut();
+                        sizeHeadings(angular.element("#jobListDelivery").parents(".column"));
+                        $scope.getAvailableCourierLocation();
+                    }, 200)
+                ]);
+            } catch (error) {
+                console.error("Error fetching job data:", error);
+                // Handle error appropriately
+            }
         };
 
-        $scope.closeSupport = support => {
-            NWData.closeSupport(support.eventId, ContactID).then(data => {
-                $scope.getSupports();
+        $scope.closeSupport = async (support) => {
+            try {
+                await NWData.closeSupport(support.eventId, ContactID);
+                await $scope.getSupports();
                 $scope.currentSupport = null;
-            });
-        }
-
-        $scope.lockSupport = support => {
-            console.log(support);
-            if (support.lockedBy === Dispatcher) {
-                NWData.unLockSupport(support.eventId, Dispatcher).then(data => {
-                    $scope.getSupports();
-                });
-            } else {
-                NWData.lockSupport(support.eventId, Dispatcher).then(data => {
-                    $scope.getSupports();
-                });
+            } catch (error) {
+                console.error("Error closing support:", error);
+                // Handle error appropriately
             }
-        }
+        };
 
-        $scope.getSupports = () => {
+        $scope.lockSupport = async (support) => {
+            console.log(support);
+            try {
+                if (support.lockedBy === Dispatcher) {
+                    await NWData.unLockSupport(support.eventId, Dispatcher);
+                } else {
+                    await NWData.lockSupport(support.eventId, Dispatcher);
+                }
+                await $scope.getSupports();
+            } catch (error) {
+                console.error("Error locking/unlocking support:", error);
+                // Handle error appropriately
+            }
+        };
+
+        $scope.getSupports = async () => {
             ////////////////////////////
             // SUPPORTS
             ////////////////////////////
             angular.element("#box-supports").find(".loading").show();
-            return NWData.getSupports($scope.supportChannel).then(data => {
-                $scope.supports = data;
 
+            try {
+                $scope.supports = await NWData.getSupports($scope.supportChannel);
 
                 $scope.supportMenu = [
                     // NEW IMPLEMENTATION
                     {
                         text: "Complete",
                         click: ($itemScope, $event, modelValue, text, $li) => {
-
                             $scope.closeSupport($itemScope.support);
-
                         }
                     },
                     {
                         text: "Toggle Lock",
                         click: ($itemScope, $event, modelValue, text, $li) => {
-
                             $scope.lockSupport($itemScope.support);
-
-
                         }
                     }
                 ];
 
+                await $timeout(() => {
+                    $document.on('ready', event => {
+                        angular.element("#box-supports").find(".loading").fadeOut();
+                        if ($scope.currentSupport) {
+                            angular.element("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
+                        }
+                    });
+                }, 100);
 
-                $timeout(() => {
-                        $document.on('ready', event => {
-                            angular.element("#box-supports").find(".loading").fadeOut();
-                            if ($scope.currentSupport) {
-                                angular.element("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
-                            }
-                        });
-
-                    },
-                    100);
-
-
-                $timeout(() => {
+                await $timeout(() => {
                     sizeHeadings(angular.element("#supports").parents(".column"));
                 }, 1000);
-                $timeout(() => {
+
+                await $timeout(() => {
                     sizeHeadings(angular.element("#supports").parents(".column"));
                 }, 2000);
-            });
-        }
 
-        $scope.getClientContacts = () => {
-            NWData.getClientContacts(ContactID).then(data => {
-                $scope.pickClients = data;
-            });
+            } catch (error) {
+                console.error("Error fetching supports:", error);
+                // Handle error appropriately
+            }
         };
 
-        $scope.getEventTypes = () => {
-            NWData.getEventTypes().then(data => {
-                $scope.pickEventTypes = data;
-            });
+        $scope.getClientContacts = async () => {
+            try {
+                $scope.pickClients = await NWData.getClientContacts(ContactID);
+            } catch (error) {
+                console.error("Error fetching client contacts:", error);
+                // Handle error appropriately
+            }
         };
 
+        $scope.getEventTypes = async () => {
+            try {
+                $scope.pickEventTypes = await NWData.getEventTypes();
+            } catch (error) {
+                console.error("Error fetching event types:", error);
+                // Handle error appropriately
+            }
+        };
 
-        $scope.getData = () => {
-
+        $scope.getData = async () => {
             ///////////////////////////////
             // JOB LIST
             ///////////////////////////////
@@ -2725,24 +2725,27 @@ angular.module("uDispatch").controller("NationwideControl", [
             $scope.jobsCurrentList = false;
             $scope.currentCourier = false;
 
+            try {
+                // Fetch active couriers
+                $scope.pickCouriers = await NWData.getActiveCouriers();
 
-            NWData.getActiveCouriers().then(data => {
-                $scope.pickCouriers = data;
-            });
-
-            ///////////////////////////
-            // JOB DETAIL
-            //////////////////////////
-            return $scope.getJobList();
+                ///////////////////////////
+                // JOB DETAIL
+                //////////////////////////
+                await $scope.getJobList();
+            } catch (error) {
+                console.error("Error in getData:", error);
+                // Handle error appropriately
+            }
         };
 
         if (!$scope.isInternal) {
-            $scope.getClientContacts();
+            $scope.getClientContacts().then(r => console.log('complete'));
         }
 
-        $scope.getEventTypes();
+        $scope.getEventTypes().then(r => console.log('complete'));
 
-        $scope.getData();
+        $scope.getData().then(r => console.log('complete'));
 
         /////////////////////////
         // JOB DETAILS
@@ -2754,12 +2757,8 @@ angular.module("uDispatch").controller("NationwideControl", [
             {
                 text: "Update GPS",
                 click: ($itemScope, $event, modelValue, text, $li) => {
-                    //$scope.selected = $itemScope.item.name;
-
                     console.log($event.currentTarget.attributes["data-field"].nodeValue);
-
                     $scope.jdSvc.updateGPS($scope.currentJob, $event.currentTarget.attributes["data-field"].nodeValue);
-
                 }
             }
         ];
@@ -2875,251 +2874,6 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         // Call the init function when the controller loads
         $scope.init();
-
-        let keyIsDown = {};
-        let mouseDown = 0;
-
-        function disabledEventPropagation(e) {
-            if (e.keyCode === 68 && e.ctrlKey) {
-                if (e.stopPropagation) {
-                    e.stopPropagation();
-                } else if ($window.event) {
-                    $window.event.cancelBubble = true;
-                }
-            }
-        }
-
-        function sizeHeadings(ele) {
-            angular.element("body").find(".box").each(function () {
-                const box = angular.element(this);
-                box.find(".table-headings thead tr th").each(function (index) {
-                    const newWidth = box.find(".table tbody tr td").eq(index).outerWidth();
-                    angular.element(this).outerWidth(newWidth);
-                });
-                box.find(".table-headings table").width(box.find(".table").width());
-            });
-
-            const height = angular.element("#box-clearLists").find(".box-content").height() - 30;
-
-            angular.element(".clearLists-list").each(function () {
-                const newHeight = angular.element(this).data("height") * height / 100;
-                angular.element(this).height(newHeight);
-            });
-        }
-
-        function overrideKeyboardEvent(e) {
-            switch (e.type) {
-                case "keydown":
-                    if (!keyIsDown[e.keyCode]) {
-                        keyIsDown[e.keyCode] = true;
-                        // do key down stuff here
-                        if (e.keyCode === 82 && e.ctrlKey) {
-                            //location.reload();
-                        }
-                        if (e.keyCode === 113) {
-                            let sc = angular.element('box-jobDetail').scope();
-
-                            sc.gather.form = {
-                                id: "smsCustomer",
-                                title: "Enter your Message (160 chars)",
-                                fields: [
-                                    {
-                                        "name": "editMessage",
-                                        "label": "Message",
-                                        "type": "sms",
-                                        "value": ""
-                                    },
-                                    {
-                                        "name": "courier",
-                                        "label": "Courier",
-                                        "type": "select2"
-                                    }
-                                ],
-                                onSubmit: () => {
-                                    console.log(sc.gather.form.fields[1]);
-                                    const foundCourier = sc.pickCouriers.find(c => c.id === sc.gather.form.fields[1].value);
-                                    return sc.sendSMS(foundCourier.courierID, sc.gather.form.fields[0].value).then(data => {
-                                        sc.gather.cancel();
-                                        alert("Message Sent");
-                                    });
-
-
-                                },
-                                submitValue: "Send Message"
-                            };
-
-                            sc.gather.showForm();
-
-
-                            $timeout(() => {
-                                sc.$apply();
-
-                                const statusOptions = {
-                                    minimumInputLength: 0,
-                                    data: sc.pickCouriers,
-                                    placeholder: "Start typing to choose courier..."
-                                };
-
-                                angular.element(".gatherForm #gather-courier").select2(statusOptions);
-                                angular.element(".gatherForm #gather-courier").select2('open');
-
-
-                            }, 200);
-                        }
-                    }
-                    break;
-                case "keyup":
-                    delete (keyIsDown[e.keyCode]);
-                    // do key up stuff here
-                    break;
-                default:
-                    break;
-            }
-            disabledEventPropagation(e);
-            if (e.keyCode === 68 && e.ctrlKey) {
-                e.preventDefault();
-                return false;
-            }
-        }
-
-        $document.on('keydown', '.dispatchField, .lateCallField', function (event) {
-            if (event.keyCode === 13) {
-                angular.element(this).parents(".clickable-row").addClass("doing");
-            }
-        });
-
-        $document.on('click', '.top-bar .btn-group .btn', function (event) {
-            if (!event.ctrlKey) {
-                angular.element(this).parent().find('.topBarActive').removeClass('topBarActive');
-            }
-
-            angular.element(this).addClass('topBarActive');
-        });
-
-
-        $document.on('ready', () => {
-            const favicon = document.getElementById("favicon");
-            favicon.setAttribute("href", "/Nationwide.ico");
-            let isDown = false;   // Tracks status of mouse button
-
-            $document.on('mousedown', () => {
-                isDown = true;      // When mouse goes down, set isDown to true
-            })
-                .on('mouseup', () => {
-                    isDown = false;    // When mouse goes up, set isDown to false
-                });
-
-            $document.on("mouseenter", ".activeTable .clickable-row", function (event) {
-                if (event.ctrlKey) {
-                    if (isDown) {        // Only change css if mouse is down
-                        angular.element(this).addClass("active");
-                        angular.element(this).siblings(".test").click();
-                    }
-                }
-            });
-        });
-
-        $document.on('mousedown', '.clickable-row', function (event) {
-            let jobNo;
-            let group;
-            if (angular.element(".activeTable .clickable-row.active").length > 1) {
-                jobNo = angular.element(".activeTable .clickable-row.active").length + " Jobs";
-            } else {
-                jobNo = angular.element(this).attr("data-jobno");
-            }
-
-
-            if (mouseDown === 0) {
-                mouseDown = 1;
-
-                if (event.which === 1) {
-                    if (event.ctrlKey) {
-                        if (angular.element(this).hasClass("active")) {
-                            angular.element(this).removeClass('active');
-                        } else {
-                            angular.element(this).addClass('active');
-                        }
-                    } else {
-                        if (!angular.element(this).hasClass("active")) {
-
-                            group = angular.element(this).parents(".table-rows").attr("data-group");
-                            angular.element('*[data-group="' + group + '"]').each(function () {
-                                angular.element(this).find('.active').removeClass('active');
-                            });
-
-                            angular.element(this).addClass('active');
-                        }
-                    }
-
-                    angular.element(".activeTable").removeClass("activeTable");
-                    angular.element(this).parents(".table").addClass("activeTable");
-                }
-
-                if (!event.ctrlKey) {
-                    if (angular.element(this).hasClass("draggable-row")) {
-
-                        if (!angular.element(this).hasClass("active")) {
-
-                            group = angular.element(this).parents(".table-rows").attr("data-group");
-                            angular.element('*[data-group="' + group + '"]').each(function () {
-                                angular.element(this).find('.active').removeClass('active');
-                            });
-                            angular.element(this).addClass('active');
-                        }
-
-                        $timeout(() => {
-                            if (mouseDown === 1) {
-                                angular.element("#draggingItems").show();
-                                angular.element("#draggingItems").html(jobNo);
-
-                                angular.element("#draggingItems").css({
-                                    "top": event.pageY - 25,
-                                    "left": event.pageX - 50
-                                });
-                                angular.element("#draggingItems").draggable();
-                                angular.element("#draggingItems").trigger(event);
-                            }
-                        }, 200);
-                    }
-                }
-            }
-        });
-
-        $document.on('mouseup', '.clickable-row', function (event) {
-            if (event.which === 3) {
-                angular.element(".rightActiveTable").removeClass("rightActiveTable");
-                angular.element(this).parents(".table").addClass("rightActiveTable");
-            }
-            if (!event.ctrlKey) {
-                if (angular.element(this).hasClass("active")) {
-                } else {
-                    const group = angular.element(this).parents(".table-rows").attr("data-group");
-
-                    angular.element('*[data-group="' + group + '"]').each(function () {
-                        angular.element(this).find('.active').removeClass('active');
-                    });
-                    angular.element(this).addClass('active');
-                }
-            }
-        });
-
-        $document.on("mouseup", ev => {
-            angular.element("#draggingItems").hide();
-            mouseDown = 0;
-        });
-
-        $document.on("keydown", e => {
-            const code = (e.keyCode ? e.keyCode : e.which);
-            if (code === 40) {
-                angular.element(".activeTable").find(".active").removeClass("active").next().addClass("active").mouseup().click();
-            } else if (code === 38) {
-                angular.element(".activeTable").find(".active").removeClass("active").prev().addClass("active").mouseup().click();
-            }
-        });
-
-
-        $document.onkeydown = overrideKeyboardEvent;
-        $document.onkeyup = overrideKeyboardEvent;
     }
 ]);
 
