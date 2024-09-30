@@ -69,105 +69,93 @@ public class JobController : Controller
         }
     }
 
-    private async Task ValidateClientAccess(int contactId, string clientIds)
+    public async Task<IActionResult> NationwideJobListNew([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        if (string.IsNullOrEmpty(clientIds)) return;
+        if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var clientContacts = await _clientRepo.ClientContactsAsync(contactId);
-        var requestedClientIds = clientIds.Split(',').Select(int.Parse).ToHashSet();
+        var (jobs, totalCount) = await _jobRepo.NationwideJobListAsync(
+            queryParams?.Status,
+            queryParams?.Area,
+            queryParams?.Order,
+            queryParams?.Asc,
+            isInternal,
+            clientIds,
+            1,
+            despatchViewIds,
+            queryParams.Page,
+            queryParams.Limit
+        );
 
-        var hasAccess = clientContacts?
-            .Select(c => c.ID)
-            .Any(x => requestedClientIds.Contains(x)) ?? false;
+        var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
 
-        if (!hasAccess) throw new UnauthorizedAccessException();
-    }
-
-    private static object CreatePaginatedResult<T>(IEnumerable<T> items, int totalCount, int page, int pageSize)
-    {
-        return new
-        {
-            Jobs = items,
-            TotalCount = totalCount,
-            CurrentPage = page,
-            PageSize = pageSize,
-            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
-        };
-    }
-
-    public async Task<IActionResult> NationwideJobListNew(string status, string area, string order, string asc,
-        bool isInternal,
-        int cid, string clientIds)
-    {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
-        {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
-
-        var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 1);
         return Json(result);
     }
 
-    public async Task<IActionResult> NationwideJobListPod(string status, string area, string order, string asc,
-        bool isInternal,
-        int cid, string clientIds)
+    public async Task<IActionResult> NationwideJobListPod([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
-        {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
+        if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 2);
+        var (jobs, totalCount) = await _jobRepo.NationwideJobListAsync(
+            queryParams?.Status,
+            queryParams?.Area,
+            queryParams?.Order,
+            queryParams?.Asc,
+            isInternal,
+            clientIds,
+            2,
+            despatchViewIds,
+            queryParams.Page,
+            queryParams.Limit
+        );
+
+        var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
         return Json(result);
     }
 
-    public async Task<IActionResult> NationwideJobListBookDelivery(string status, string area, string order,
-        string asc, bool isInternal,
-        int cid, string clientIds)
+    public async Task<IActionResult> NationwideJobListBookDelivery([FromQuery] JobQueryParams queryParams,
+        bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
-        {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
+        if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 3);
+        var (jobs, totalCount) = await _jobRepo.NationwideJobListAsync(
+            queryParams?.Status,
+            queryParams?.Area,
+            queryParams?.Order,
+            queryParams?.Asc,
+            isInternal,
+            clientIds,
+            3,
+            despatchViewIds,
+            queryParams.Page,
+            queryParams.Limit
+        );
+
+        var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
         return Json(result);
     }
 
-    public async Task<IActionResult> NationwideJobListReprice(string status, string area, string order, string asc,
-        bool isInternal,
-        int cid, string clientIds)
+    public async Task<IActionResult> NationwideJobListReprice([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
-        {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
+        if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 4);
+        var (jobs, totalCount) = await _jobRepo.NationwideJobListAsync(
+            queryParams?.Status,
+            queryParams?.Area,
+            queryParams?.Order,
+            queryParams?.Asc,
+            isInternal,
+            clientIds,
+            4,
+            despatchViewIds,
+            queryParams.Page,
+            queryParams.Limit
+        );
+
+        var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
         return Json(result);
     }
 
@@ -1139,6 +1127,31 @@ public class JobController : Controller
         return Json("OK");
     }
 
+    private async Task ValidateClientAccess(int contactId, string clientIds)
+    {
+        if (string.IsNullOrEmpty(clientIds)) return;
+
+        var clientContacts = await _clientRepo.ClientContactsAsync(contactId);
+        var requestedClientIds = clientIds.Split(',').Select(int.Parse).ToHashSet();
+
+        var hasAccess = clientContacts?
+            .Select(c => c.ID)
+            .Any(x => requestedClientIds.Contains(x)) ?? false;
+
+        if (!hasAccess) throw new UnauthorizedAccessException();
+    }
+
+    private static object CreatePaginatedResult<T>(IEnumerable<T> items, int totalCount, int page, int pageSize)
+    {
+        return new
+        {
+            Jobs = items,
+            TotalCount = totalCount,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+        };
+    }
 
     public class ClientItemsModel
     {
