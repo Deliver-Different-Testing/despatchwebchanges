@@ -17,7 +17,7 @@ public class CourierController : Controller
         _courierRepo = courierRepository;
     }
 
-    public async Task<IActionResult> Index(List<int> despatchViewIds)
+    public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds)
     {
         if (despatchViewIds is { Count: 0 })
             return Json(new ClearListViewModel());

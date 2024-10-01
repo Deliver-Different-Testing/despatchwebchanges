@@ -352,11 +352,16 @@ class DispatchData {
 
     /**
      * @param {Object} selectedViewIds
+     * @returns {Promise<Object>}
      */
     async getDriverLocations(selectedViewIds) {
-        const query = this._prepareViewIdsForRequest(selectedViewIds);
+        const params = this._prepareViewIdsForRequest(selectedViewIds);
 
-        const response = await this._$http.get('courier?' + query);
+        const response = await this._$http.get('courier', {
+            params: params,
+            paramSerializer: '$httpParamSerializerJQLike'
+        });
+
         return response.data;
     }
 
@@ -945,9 +950,13 @@ class DispatchData {
     _prepareViewIdsForRequest(viewIds) {
         const activeIds = Object.entries(viewIds)
             .filter(([, value]) => value)
-            .map(([key]) => key);
+            .map(([key]) => parseInt(key, 10)); // Convert keys to integers
 
-        return {despatchViewIds: activeIds.join(',')};
+        return activeIds.reduce((acc, id) => {
+            acc[`despatchViewIds[]`] = acc[`despatchViewIds[]`] || [];
+            acc[`despatchViewIds[]`].push(id);
+            return acc;
+        }, {});
     }
 }
 

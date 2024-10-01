@@ -2637,6 +2637,8 @@ angular.module("uDispatch")
                         console.error('Error getting clear lists data:', error);
                     }
                 };
+
+                await $scope.getDriverLocationsData();
             }
 
             /**
