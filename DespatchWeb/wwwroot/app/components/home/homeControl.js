@@ -47,6 +47,7 @@ angular.module("uDispatch")
                     $scope.initializeAreas();
                     await $scope.updateFilters();
                     await $scope.getData();
+
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
                     // Initialize areas with an empty array if fetch fails
@@ -2392,7 +2393,7 @@ angular.module("uDispatch")
                     return;
                 }
 
-                const areas = $scope.jobFilters.area.split(",");
+                const areas = $scope.areas;
                 const channels = [];
                 let trucks = false;
 
@@ -2636,8 +2637,6 @@ angular.module("uDispatch")
                         console.error('Error getting clear lists data:', error);
                     }
                 };
-
-                await $scope.getDriverLocationsData();
             }
 
             /**
@@ -2961,7 +2960,6 @@ angular.module("uDispatch")
                     }
                 } catch (error) {
                     console.log('Error in createNewJob:', error);
-                    console.log(error.message || "An error occurred while creating the job");
                 }
             };
 

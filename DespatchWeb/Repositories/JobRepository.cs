@@ -826,9 +826,10 @@ public class JobRepository : IJobRepository
         var orderToUse = GetOrderByClause(order, ascending);
         var whereClause = BuildWhereClause(isInternal, views, status, clientIds);
 
-        // Get total count
+        // Total Records
         var countSql = $"SELECT COUNT(*) AS Count FROM DESWEB_qryDespatch WHERE {whereClause}";
-        const int totalCount = 200;
+        var totalCount = await _context.Database.ExecuteSqlRawAsync(countSql);
+
 
         var sql = $@"
     WITH NumberedJobs AS (
@@ -883,6 +884,32 @@ public class JobRepository : IJobRepository
             ClientId = j.UcjbClientId,
             ClientName = j.ClientName,
             JobType = (int)(j.UcjbType ?? 0),
+            PickupAddress = new AddressViewModel
+            {
+                AddressLine1 = j.PickupAddressLine1,
+                AddressLine2 = j.PickupAddressLine2,
+                AddressLine3 = j.PickupAddressLine3,
+                AddressLine4 = j.PickupAddressLine4,
+                AddressLine5 = j.PickupAddressLine5,
+                AddressLine6 = j.PickupAddressLine6,
+                AddressLine7 = j.PickupAddressLine7,
+                AddressLine8 = j.PickupAddressLine8,
+                Latitude = j.PickUpLatitude,
+                Longitude = j.PickUpLongitude,
+            },
+            DeliveryAddress = new AddressViewModel
+            {
+                AddressLine1 = j.DeliveryAddressLine1,
+                AddressLine2 = j.DeliveryAddressLine2,
+                AddressLine3 = j.DeliveryAddressLine3,
+                AddressLine4 = j.DeliveryAddressLine4,
+                AddressLine5 = j.DeliveryAddressLine5,
+                AddressLine6 = j.DeliveryAddressLine6,
+                AddressLine7 = j.DeliveryAddressLine7,
+                AddressLine8 = j.DeliveryAddressLine8,
+                Latitude = j.DeliveryLatitude,
+                Longitude = j.DeliveryLongitude,
+            },
             From = j.SuburbFrom,
             FromContactName = j.PickupFromContact,
             FromContactNumber = j.PickupFromPhone,
@@ -961,7 +988,7 @@ public class JobRepository : IJobRepository
             TruckWeightLimit = j.TruckWeightLimit,
             TruckStartTime = j.TruckStartTime,
             TruckHours = j.TruckHours,
-            PrivateRes = ((j.DeliverToPrivateBusiness ?? 0) == 1),
+            PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
             PickupTime = j.PickupTime,
             DeliveryTime = j.DeliveryTime,
             AlertLatePickup = j.AlertLatePickUp,
@@ -971,8 +998,8 @@ public class JobRepository : IJobRepository
             PodPhoto = j.DeliveryPhoto,
             PodName = j.UcjbPodname,
             CompletedTime = j.UcjbComplTime.HasValue
-                ? DateTime.Parse(j.UcjbComplTime.Value.ToString("yyyy-MM-dd") + " " +
-                                 j.UcjbComplTime.Value.ToString("HH:mm"))
+                ? DateTime.Parse(j.UcjbComplTime?.ToString("yyyy-MM-dd") + " " +
+                                 j.UcjbComplTime?.ToString("HH:mm"))
                 : j.UcjbComplTime,
             Done = j.UcjbJobDone,
             TrackingMethod = j.TrackingMethod,
