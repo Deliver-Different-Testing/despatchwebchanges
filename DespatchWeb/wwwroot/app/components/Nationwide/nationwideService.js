@@ -412,10 +412,10 @@ class NationwideService {
      * @param {String} lateType
      * @param {String} lateTime
      * @param {String} minutes
-     * @param {number|string} pickupTime
-     * @param {number|string} alertLatePickup
-     * @param {number|string} deliveryTime
-     * @param {number|string} alertLateDelivery
+     * @param {Number|String} pickupTime
+     * @param {Number|String} alertLatePickup
+     * @param {Number|String} deliveryTime
+     * @param {Number|String} alertLateDelivery
      * @param {String} jobNo
      * @param {Number} clientId
      * @param {String} contact
@@ -582,7 +582,7 @@ class NationwideService {
      * @param {string} endpoint
      * @param {JobQueryParams} queryParams
      * @param {string[]} selectedClients
-     * @param {boolean} internal
+     * @param {Boolean} internal
      * @param {Array} selectedAreas
      */
     async getNationwideJobs(endpoint, queryParams, selectedClients, internal, selectedAreas) {
@@ -601,25 +601,25 @@ class NationwideService {
             params.append('despatchViewIds', id.toString());
         });
 
-        const response = await this._$http.get(`job/${endpoint}?${params.toString()}`);
+        const url = `job/${endpoint}?${params.toString()}`;
+        const response = await this._$http.get(url);
         return response.data;
     }
 
     /**
      * @param {JobQueryParams} queryParams
      * @param {string[]} selectedClients
-     * @param {boolean} internal
+     * @param {Boolean} internal
      * @param {Array} selectedAreas
      */
     getNationwideJobsNew(queryParams, selectedClients, internal, selectedAreas) {
         return this.getNationwideJobs('nationwideJobListPOD', queryParams, selectedClients, internal, selectedAreas);
-
     }
 
     /**
      * @param {JobQueryParams} queryParams
      * @param {string[]} selectedClients
-     * @param {boolean} internal
+     * @param {Boolean} internal
      * @param {Array} selectedAreas
      */
     getNationwideJobsPOD(queryParams, selectedClients, internal, selectedAreas) {
@@ -629,7 +629,7 @@ class NationwideService {
     /**
      * @param {JobQueryParams} queryParams
      * @param {string[]} selectedClients
-     * @param {boolean} internal
+     * @param {Boolean} internal
      * @param {Array} selectedAreas
      */
     getNationwideJobsBookDelivery(queryParams, selectedClients, internal, selectedAreas) {
@@ -639,7 +639,7 @@ class NationwideService {
     /**
      * @param {JobQueryParams} queryParams
      * @param {string[]} selectedClients
-     * @param {boolean} internal
+     * @param {Boolean} internal
      * @param {Array} selectedAreas
      */
     getNationwideJobsReprice(queryParams, selectedClients, internal, selectedAreas) {

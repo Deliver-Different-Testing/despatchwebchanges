@@ -19,22 +19,28 @@ angular.module("uDispatch").controller("NationwideControl", [
     "versionUrl",
     "materialSidenavService",
     "AppPages",
+    "APP_CONFIG",
     ($scope, jdSvc, NWData, $state,
      $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService,
-     $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages) => {
+     $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG) => {
         $scope.jdSvc = jdSvc;
 
         $scope.initializeVariables = () => {
             $scope.name = "Nationwide";
             $scope.isInternal = (ClientInternal === "True");
+
+            $scope.isUsCustomer = APP_CONFIG.US_Customer;
             $scope.jobDetailFabIsOpen = false;
             $scope.courierListFabIsOpen = false;
             $scope.areas = [];
+            $scope.selectedAreas = [];
 
             $scope.filters = {
                 active: false, done: false, all: true
             };
 
+            $scope.jobList = [];
+            $scope.selected = [];
             $scope.jobFilters = {
                 order: 'time',
                 filter: '',
@@ -2498,23 +2504,20 @@ angular.module("uDispatch").controller("NationwideControl", [
             await $scope.getSupports();
         };
 
-        $scope.getAvailableCourierLocation = () => {
+        $scope.getAvailableCourierLocation = async () => {
             if (!$scope.allCouriers.display) {
                 map.clearLabels();
                 map.clearFlags();
                 return;
             }
 
-            const areas = $scope.jobFilters.area.split(",");
+            const areas = $scope.areas;
             const channels = [];
             let trucks = false;
-            for (let i = 0; i < areas.length; i++) {
-                switch (areas[i]) {
+
+            areas.forEach(area => {
+                switch (area) {
                     case "main1":
-                        if (!channels.includes(1)) {
-                            channels.push(1);
-                        }
-                        break;
                     case "main2":
                         if (!channels.includes(1)) {
                             channels.push(1);
@@ -2531,11 +2534,35 @@ angular.module("uDispatch").controller("NationwideControl", [
                     default:
                     // code block
                 }
+            });
+
+            try {
+                const bounds = map.getBounds();
+                const sw = bounds.getSouthWest();
+                const ne = bounds.getNorthEast();
+
+                const returnData = await NWData.getAvailableCourierLocation(
+                    sw.lng(),
+                    sw.lat(),
+                    ne.lng(),
+                    ne.lat()
+                );
+
+                const currentCourierNum = $scope.currentCourier === false || $scope.currentCourier === null
+                    ? 0
+                    : $scope.currentCourier.courier.split(" ")[0].trim();
+
+                displayAvailableCouriers(
+                    returnData,
+                    currentCourierNum,
+                    channels,
+                    trucks,
+                    $scope.truckMode,
+                    $scope.allCouriers.includeUA
+                );
+            } catch (error) {
+                console.error("Error fetching available courier locations:", error);
             }
-            NWData.getAvailableCourierLocation(map.getBounds().getSouthWest().lng(), map.getBounds().getSouthWest().lat(), map.getBounds().getNorthEast().lng(), map.getBounds().getNorthEast().lat())
-                .then(returnData => {
-                    displayAvailableCouriers(returnData, $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim(), channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
-                });
         };
 
         $scope.courierMenu = [
@@ -2599,7 +2626,6 @@ angular.module("uDispatch").controller("NationwideControl", [
                 ]);
             } catch (error) {
                 console.error("Error fetching job data:", error);
-                // Handle error appropriately
             }
         };
 
