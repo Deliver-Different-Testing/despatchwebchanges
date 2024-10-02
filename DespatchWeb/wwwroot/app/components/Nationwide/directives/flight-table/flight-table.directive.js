@@ -1,6 +1,6 @@
-angular.module('uDispatch').directive('flightDataTable', ['FlightStatusService', 'versionUrl', (FlightStatusService, versionUrl) => ({
+angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl', (NWData, versionUrl) => ({
     restrict: 'E',
-    templateUrl: versionUrl("app/components/Nationwide/directives/flight-table/flight-table.html"),
+    templateUrl: versionUrl("app/components/Nationwide/directives/flightDataTable.html"),
     scope: {
         // You can add isolated scope properties here if needed
     },
@@ -14,7 +14,7 @@ angular.module('uDispatch').directive('flightDataTable', ['FlightStatusService',
             $scope.error = null;
 
             try {
-                $scope.flights = await FlightStatusService.getFlightOptions(departureDate, departureAirportId);
+                $scope.flights = await NWData.getFlightOptions(departureDate, departureAirportId);
             } catch (error) {
                 console.error("Error fetching flight options:", error);
                 $scope.error = "Failed to fetch flight options. Please try again.";
