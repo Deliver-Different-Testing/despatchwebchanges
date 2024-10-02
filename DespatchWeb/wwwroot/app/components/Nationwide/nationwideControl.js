@@ -317,12 +317,11 @@ angular.module("uDispatch").controller("NationwideControl", [
             },
             "flightDataTable": {
                 "title": "Flight Options",
-                "templateUrl": versionUrl("app/components/Nationwide/directives/flight-table/flight-table.html"),
+                "templateUrl": versionUrl("app/components/Nationwide/partials/flightDataTableBox.html"),
                 "showSearch": 0,
                 "showRefresh": 1
             }
         };
-
         $scope.pickService = {
             "clients": [],
             "settings": {
@@ -351,41 +350,47 @@ angular.module("uDispatch").controller("NationwideControl", [
                     "columns": [
                         {
                             "id": "col1",
-                            "width": "800px",
+                            "width": "35%",
                             "boxes": [
                                 {
                                     "name": "jobsList",
-                                    "height": "500px"
+                                    "height": "60%"
                                 },
                                 {
-                                    "name": "jobsListPOD"
+                                    "name": "jobsListPOD",
+                                    "height": "40%"
                                 }
-
                             ]
                         },
                         {
                             "id": "col2",
-                            "width": "800px",
+                            "width": "35%",
                             "boxes": [
                                 {
                                     "name": "jobsListDelivery",
-                                    "height": "500px"
+                                    "height": "40%"
                                 },
                                 {
-                                    "name": "jobsListReprice"
+                                    "name": "jobsListReprice",
+                                    "height": "30%"
+                                },
+                                {
+                                    "name": "flightDataTable",
+                                    "height": "30%"
                                 }
                             ]
                         },
                         {
                             "id": "col3",
-                            "width": "600px",
+                            "width": "30%",
                             "boxes": [
                                 {
                                     "name": "jobDetail",
-                                    "height": "500px"
+                                    "height": "50%"
                                 },
                                 {
-                                    "name": "map"
+                                    "name": "map",
+                                    "height": "50%"
                                 }
                             ]
                         }
@@ -393,7 +398,6 @@ angular.module("uDispatch").controller("NationwideControl", [
                 }
             }
         ];
-
 
         if (layoutsObject !== null) {
             layoutsObject[0] = defaultLayout[0];
