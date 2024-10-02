@@ -22,8 +22,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRaygun(builder.Configuration);
 builder.Services.AddControllersWithViews();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-//builder.Services.AddEndpointsApiExplorer();
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     // This lambda determines whether user consent for non-essential cookies is needed for a given request.
@@ -60,7 +58,6 @@ builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile),
 
 
 var connectionString = builder.Configuration.GetConnectionString("Connection");
-//var connectionTimeout = builder.Configuration.GetValue<int>("ConnectionTimeout");
 builder.Services.AddDbContext<DespatchContext>(x =>
 {
     if (connectionString != null) x.UseSqlServer(connectionString, oa => oa.UseRowNumberForPaging());

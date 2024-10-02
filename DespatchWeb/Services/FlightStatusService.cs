@@ -32,12 +32,21 @@ public class FlightStatusService
         string codeType = null,
         string[] extendedOptions = null)
     {
+        if (string.IsNullOrEmpty(departureAirportCode))
+        {
+            throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
+                nameof(departureAirportCode));
+        }
+
         // If date/time parameters are not provided, use current date and time
-        var now = DateTime.Now;
-        if (year == 0) year = now.Year;
-        if (month == 0) month = now.Month;
-        if (day == 0) day = now.Day;
-        if (hourOfDay == -1) hourOfDay = now.Hour;
+        if (year == 0 && month == 0 && day == 0 && hourOfDay == -1)
+        {
+            var tomorrow = DateTime.Now.AddDays(1);
+            year = tomorrow.Year;
+            month = tomorrow.Month;
+            day = tomorrow.Day;
+            hourOfDay = tomorrow.Hour;
+        }
 
         var client = new RestClient(BaseUrl);
         var request = new RestRequest($"json/from/{departureAirportCode}/departing/{year}/{month}/{day}/{hourOfDay}");

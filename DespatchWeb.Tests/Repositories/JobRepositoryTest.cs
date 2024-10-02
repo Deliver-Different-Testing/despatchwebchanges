@@ -16,7 +16,7 @@ namespace DespatchWeb.Tests.Repositories;
 
 [TestFixture]
 [TestOf(typeof(JobRepository))]
-public class JobRepositoryvTest
+public class JobRepositoryTest
 {
     [SetUp]
     public void SetUp()
