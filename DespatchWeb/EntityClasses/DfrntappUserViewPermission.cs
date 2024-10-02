@@ -14,6 +14,6 @@ namespace DespatchWeb.EntityClasses
         public int? SortOrder { get; set; }
 
         public virtual TucStaff User { get; set; }
-        public virtual DfrntappView View { get; set; }
+        public virtual TblDespatchView View { get; set; }
     }
 }

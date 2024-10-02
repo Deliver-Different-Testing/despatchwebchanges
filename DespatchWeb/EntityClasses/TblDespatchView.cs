@@ -5,16 +5,16 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class DfrntappView
+    public partial class TblDespatchView
     {
-        public DfrntappView()
+        public TblDespatchView()
         {
             DespatchViewZoneGroups = new HashSet<DespatchViewZoneGroup>();
             DfrntappUserViewPermissions = new HashSet<DfrntappUserViewPermission>();
             DfrntpageViews = new HashSet<DfrntpageView>();
         }
 
-        public int ViewId { get; set; }
+        public int DespatchViewId { get; set; }
         public string Name { get; set; }
         public string WhereCondition { get; set; }
         public DateTime Created { get; set; }

@@ -39,10 +39,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[DFRNTAppViews]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[DFRNTPageViews]",
          "ObjectType": 0
       },
@@ -51,6 +47,10 @@
          "ObjectType": 0
       },
       {
+        "Name": "[dbo].[tblAirport]",
+        "ObjectType": 0
+      },
+     {
          "Name": "[dbo].[tblAppWidgets]",
          "ObjectType": 0
       },
@@ -93,6 +93,10 @@
       {
          "Name": "[dbo].[tblCourierLogInOut]",
          "ObjectType": 0
+      },
+     {
+       "Name": "[dbo].[tblDespatchView]",
+       "ObjectType": 0
       },
       {
          "Name": "[dbo].[tblInternetPermission]",

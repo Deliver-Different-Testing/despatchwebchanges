@@ -3,6 +3,7 @@ using DespatchWeb.Automapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
+using DespatchWeb.Services;
 using EntityFrameworkCore.UseRowNumberForPaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -26,7 +27,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     // This lambda determines whether user consent for non-essential cookies is needed for a given request.
     if (options == null) return;
-    options.CheckConsentNeeded = context => true;
+    options.CheckConsentNeeded = _ => true;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
 builder.Services.Configure<FormOptions>(x =>
@@ -45,11 +46,12 @@ builder.Services.Configure<KestrelServerOptions>(options =>
     if (options != null) options.Limits.MaxRequestBodySize = int.MaxValue;
 });
 
-
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
+
+builder.Services.AddScoped<IFlightStatusService, FlightStatusService>();
 
 
 // Automapper
@@ -93,6 +95,5 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
 
 app.Run();

@@ -44,4 +44,6 @@ public interface ICourierRepository
 
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
         Country country, bool includeCouriers = false);
+
+    Task<string> GetAirportCodeByIdAsync(int airportId);
 }

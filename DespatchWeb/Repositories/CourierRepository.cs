@@ -143,7 +143,7 @@ public class CourierRepository : ICourierRepository
     public async Task<int> ClearListTotalRemainingAsync(string area)
     {
         var filter =
-            _context.DfrntappViews.FirstOrDefault(predicate: v =>
+            _context.TblDespatchViews.FirstOrDefault(predicate: v =>
                 (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
 
         if (string.IsNullOrEmpty(value: filter))
@@ -171,8 +171,8 @@ public class CourierRepository : ICourierRepository
     {
         var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
 
-        var clearLists = await _context.DfrntappViews
-            .Where(dv => despatchViewIds.Contains(dv.ViewId))
+        var clearLists = await _context.TblDespatchViews
+            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
             .SelectMany(dv => dv.DespatchViewZoneGroups)
             .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
             .Distinct()
@@ -189,6 +189,14 @@ public class CourierRepository : ICourierRepository
         }
 
         return viewModel;
+    }
+
+    public async Task<string> GetAirportCodeByIdAsync(int airportId)
+    {
+        return await _context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .Select(a => a.AirportCode)
+            .FirstOrDefaultAsync();
     }
 
     private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeUsAsync(int clearListAreaId,

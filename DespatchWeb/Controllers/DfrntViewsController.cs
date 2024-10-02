@@ -17,8 +17,6 @@ public class DfrntViewsController : Controller
     public async Task<IActionResult> GetPageViews(int userId, int pageId)
     {
         var page = (AppPage)pageId;
-
-
         var viewOptions = await _repository.GetViewsByUserAndPageAsync(userId, page);
         return Json(viewOptions);
     }

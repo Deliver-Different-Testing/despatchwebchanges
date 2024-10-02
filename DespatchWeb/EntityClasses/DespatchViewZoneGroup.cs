@@ -15,7 +15,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime LastModifiedDate { get; set; }
         public string LastModifiedBy { get; set; }
 
-        public virtual DfrntappView DespatchView { get; set; }
+        public virtual TblDespatchView DespatchView { get; set; }
         public virtual ZoneGroup ZoneGroup { get; set; }
     }
 }

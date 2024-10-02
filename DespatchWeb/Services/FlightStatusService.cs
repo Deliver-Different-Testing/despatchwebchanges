@@ -2,33 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.Extensions.Configuration;
 using RestSharp;
 
 namespace DespatchWeb.Services;
 
-public class FlightStatusService
+public class FlightStatusService : IFlightStatusService
 {
     private const string BaseUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
     private readonly string _appId;
     private readonly string _appKey;
+    private readonly RestClient _client;
 
     public FlightStatusService(IConfiguration configuration)
     {
         _appId = configuration?["FlightStatusApiKeys:AppId"];
         _appKey = configuration?["FlightStatusApiKeys:AppKey"];
+        _client = new RestClient(BaseUrl);
 
         if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey))
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
     }
 
-    public async Task<List<ScheduledFlight>> GetDepartingFlightsAsync(
+    public async Task<List<FlightOptionsViewModel>> GetDepartingFlightsAsync(
         string departureAirportCode,
-        int? year = null,
-        int? month = null,
-        int? day = null,
-        int? hourOfDay = null,
+        DateTime? departureDateTime = null,
         string codeType = null,
         string[] extendedOptions = null)
     {
@@ -38,17 +38,14 @@ public class FlightStatusService
                 nameof(departureAirportCode));
         }
 
-        // If date/time parameters are not provided, use current date and time
-        if (year == 0 && month == 0 && day == 0 && hourOfDay == -1)
-        {
-            var tomorrow = DateTime.Now.AddDays(1);
-            year = tomorrow.Year;
-            month = tomorrow.Month;
-            day = tomorrow.Day;
-            hourOfDay = tomorrow.Hour;
-        }
+        // If departureDateTime is not provided, use tomorrow's date and time
+        var effectiveDateTime = departureDateTime ?? DateTime.Now.AddDays(1);
 
-        var client = new RestClient(BaseUrl);
+        var year = effectiveDateTime.Year;
+        var month = effectiveDateTime.Month;
+        var day = effectiveDateTime.Day;
+        var hourOfDay = effectiveDateTime.Hour;
+
         var request = new RestRequest($"json/from/{departureAirportCode}/departing/{year}/{month}/{day}/{hourOfDay}");
 
         // Add query parameters
@@ -66,12 +63,25 @@ public class FlightStatusService
         request.AddHeader("appKey", _appKey);
 
         // Execute the request
-        var response = await client.ExecuteGetAsync<FlightStatusResponse>(request);
+        var response = await _client.ExecuteGetAsync<FlightStatusResponse>(request);
 
-        var flightList = GetFlightList(response.Data);
-        return flightList;
+        var flightOptions = response.Data.ScheduledFlights.Select(flight => new FlightOptionsViewModel()
+        {
+            Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
+            FlightNumber = flight.FlightNumber,
+            DepartureTime = flight.DepartureTime,
+            ArrivalTime = flight.ArrivalTime,
+            DepartureAirport = flight.DepartureAirportFsCode,
+            ArrivalAirport = flight.ArrivalAirportFsCode,
+            Duration = flight.ArrivalTime - flight.DepartureTime,
+            Stops = flight.Stops,
+            Aircraft = response.Data.Appendix.Equipments.FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode)
+                ?.Name,
+            ServiceClasses = flight.ServiceClasses,
+            IsCodeShare = flight.IsCodeShare,
+            CodeShareAirline = flight.IsCodeShare ? flight.Operator?.CarrierFsCode : null
+        }).OrderBy(f => f.DepartureTime).ToList();
+
+        return flightOptions;
     }
-
-    private static List<ScheduledFlight> GetFlightList(FlightStatusResponse response) =>
-        (response?.ScheduledFlights ?? new List<ScheduledFlight>()).OrderByDescending(sf => sf.DepartureTime).ToList();
 }
