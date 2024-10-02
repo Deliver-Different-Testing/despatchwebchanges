@@ -810,8 +810,8 @@ public class JobRepository : IJobRepository
             return new List<JobViewModel>();
 
         if (selectedViewIds != null && !selectedViewIds.Any()) return new List<JobViewModel>();
-        var viewFilters = await _context.DfrntappViews
-            .Where(dv => selectedViewIds.Contains(dv.ViewId))
+        var viewFilters = await _context.TblDespatchViews
+            .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
             .Select(dv => dv.WhereCondition)
             .ToListAsync();
 
@@ -1005,8 +1005,8 @@ public class JobRepository : IJobRepository
 
         if (selectedViewIds != null && !selectedViewIds.Any()) return new List<JobViewModel>();
 
-        var viewFilters = await _context.DfrntappViews
-            .Where(dv => selectedViewIds.Contains(dv.ViewId))
+        var viewFilters = await _context.TblDespatchViews
+            .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
             .Select(dv => dv.WhereCondition)
             .ToListAsync();
 

@@ -23,12 +23,12 @@ public class DfrntViewsRepository : IDfrntViewsRepository
     {
         return await _context.DfrntappUserViewPermissions
             .Where(aup => aup.UserId == userId && aup.IsVisible == true)
-            .Join(_context.DfrntappViews,
+            .Join(_context.TblDespatchViews,
                 aup => aup.ViewId,
-                av => av.ViewId,
+                av => av.DespatchViewId,
                 (aup, av) => av)
             .Join(_context.DfrntpageViews.Where(pv => pv.PageId == (int)page),
-                av => av.ViewId,
+                av => av.DespatchViewId,
                 pv => pv.ViewId,
                 (av, pv) => new { av, pv })
             .Join(_context.DfrntappPages,
@@ -41,7 +41,7 @@ public class DfrntViewsRepository : IDfrntViewsRepository
                 (x, app) => x.av)
             .Select(av => new SelectItem
             {
-                Id = av.ViewId,
+                Id = av.DespatchViewId,
                 Name = av.Name
             })
             .OrderBy(x => x.Name)
@@ -50,8 +50,8 @@ public class DfrntViewsRepository : IDfrntViewsRepository
 
     public async Task<string> GetWhereClauseByDispatchView(int viewId)
     {
-        return await _context.DfrntappViews
-            .Where(dv => dv.ViewId == viewId)
+        return await _context.TblDespatchViews
+            .Where(dv => dv.DespatchViewId == viewId)
             .Select(dv => dv.WhereCondition)
             .FirstOrDefaultAsync();
     }

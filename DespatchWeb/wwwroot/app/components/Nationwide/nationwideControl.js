@@ -29,6 +29,7 @@ angular.module("uDispatch").controller("NationwideControl", [
             $scope.isInternal = (ClientInternal === "True");
             $scope.jobDetailFabIsOpen = false;
             $scope.courierListFabIsOpen = false;
+            $scope.areas = [];
 
             $scope.filters = {
                 active: false, done: false, all: true
@@ -62,25 +63,15 @@ angular.module("uDispatch").controller("NationwideControl", [
                 await $scope.getData();
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
-                // Initialize areas with an empty array if fetch fails
-                $scope.areas = [];
                 $scope.initializeAreas();
                 console.log("Failed to load dispatch views. Please try refreshing the page.");
             }
         };
 
         $scope.initializeAreas = () => {
-            $scope.selectedAreas = {};
             if ($scope.areas && $scope.areas.length > 0) {
-                const firstArea = $scope.areas[0];
-                $scope.selectedAreas[firstArea.id] = true;
-            }
-            if ($scope.areas) {
-                $scope.areas.forEach(area => {
-                    if (!$scope.selectedAreas.hasOwnProperty(area.id)) {
-                        $scope.selectedAreas[area.id] = false;
-                    }
-                });
+                const defaultArea = $scope.areas[0];
+                $scope.selectedAreas.push(defaultArea);
             }
         };
 
@@ -322,6 +313,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 "showRefresh": 1
             }
         };
+
         $scope.pickService = {
             "clients": [],
             "settings": {
