@@ -22,24 +22,24 @@ angular.module("uDispatch").controller("NationwideControl", [
     ($scope, jdSvc, NWData, $state,
      $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService,
      $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages) => {
-        $scope.isInternal = (ClientInternal === "True");
         $scope.jdSvc = jdSvc;
-        $scope.name = "Nationwide";
-        $scope.jobDetailFabIsOpen = false;
-        $scope.courierListFabIsOpen = false;
 
-        $scope.filters = {
-            active: false, done: false, all: true
-        };
+        $scope.initializeVariables = () => {
+            $scope.name = "Nationwide";
+            $scope.isInternal = (ClientInternal === "True");
+            $scope.jobDetailFabIsOpen = false;
+            $scope.courierListFabIsOpen = false;
 
-        $scope.jobFilters = {
-            order: 'time',
-            limit: 50,
-            page: 1,
-            filter: '',
-            status: 'all',
-            area: '',
-            asc: 'asc'
+            $scope.filters = {
+                active: false, done: false, all: true
+            };
+
+            $scope.jobFilters = {
+                order: 'time',
+                filter: '',
+                status: 'all',
+                asc: 'asc'
+            };
         };
 
         $scope.toggleSidenav = () => {
@@ -53,6 +53,12 @@ angular.module("uDispatch").controller("NationwideControl", [
                 $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
                 $scope.initializeAreas();
                 await $scope.updateFilters();
+
+                if (!$scope.isInternal) {
+                    await $scope.getClientContacts();
+                }
+
+                await $scope.getEventTypes();
                 await $scope.getData();
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
@@ -79,18 +85,25 @@ angular.module("uDispatch").controller("NationwideControl", [
         };
 
         $scope.updateFilters = async () => {
-            // Handle area filters
-            const activeAreas = Object.keys($scope.selectedAreas).filter(key => $scope.selectedAreas[key]);
-            const areaFilter = activeAreas.join(',');
-
-            // Call setFilters with area filter
             try {
+                // Handle status filters
+                const activeFilter = Object.keys($scope.filters).find(key => $scope.filters[key] && key !== 'all');
+                const statusFilter = activeFilter || (($scope.filters.all) ? 'all' : '');
+
+                // Call setFilters with area and status filters
                 await $scope.setFilters({
-                    'area': areaFilter
+                    'status': statusFilter
                 });
             } catch (error) {
                 console.error('Error updating filters:', error);
+                console.log("Failed to update filters. Please try again.");
             }
+        };
+
+        $scope.setActiveArea = selectedArea => {
+            angular.forEach($scope.driverLocations.areas, area => {
+                area.isActive = (area === selectedArea);
+            });
         };
 
         $scope.updateGPS = (currentJob, field, fromRightClick) => {
@@ -157,31 +170,6 @@ angular.module("uDispatch").controller("NationwideControl", [
             return $scope.selectJob(selectedJob);
         }
 
-
-        $scope.gather = {
-            submit: () => $scope.gather.form.onSubmit().then(() => {
-                angular.element('.gatherForm').css('display', 'none');
-                $scope.getData().then(() => {
-                    console.log('Get Data Complete');
-                });
-
-            }),
-            cancel: () => {
-                angular.element('.gatherForm').css('display', 'none');
-            },
-            showForm: () => {
-                angular.element(".gatherForm").show(0,
-                    () => {
-                        $timeout(() => {
-                            angular.element(".gatherForm .focusMe").focus();
-                        }, 100);
-                    });
-            },
-            submitValue: "Save",
-            cancelValue: "Cancel"
-        };
-
-        $scope.jdSvc.setGather($scope.gather);
         $scope.allCouriers = {display: false, includeUA: false};
         $scope.mapZoom = {display: true};
 
@@ -267,6 +255,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 ]
             }
         };
+
         $scope.markers = [];
         $scope.truckCourierStatus = [];
         $scope.getJobStyle = assigned => {
@@ -550,6 +539,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                             name: layoutName,
                             layout: angular.copy($scope.layout)
                         });
+
                     localStorage.setItem("layoutsNW-" + ContactID, JSON.stringify($scope.layouts));
 
                     // save last active layout
@@ -559,8 +549,6 @@ angular.module("uDispatch").controller("NationwideControl", [
                 return {data: "OK"};
             } catch (error) {
                 console.log("Save Layout Cancelled!");
-                // Re-throw the error if you want calling code to be able to catch it
-                // throw error;
             }
         };
 
@@ -721,24 +709,28 @@ angular.module("uDispatch").controller("NationwideControl", [
             combo: "enter",
             description: "Submit gather form",
             allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-            callback: (event, hk) => {
-                if (angular.element(".gatherForm").is(":visible") === true) {
-                    $timeout($scope.gather.submit(), 0);
-                }
-                if (event.srcElement.id === "gps") {
-                    $scope.searchCourier(event.srcElement.value);
+            callback: async (event, hk) => {
+                try {
+                    if (angular.element(".gatherForm").is(":visible") === true) {
+                        await $timeout(async () => {
+                            await $scope.gather.submit();
+                        }, 0);
+                    }
+                    if (event.srcElement.id === "gps") {
+                        await $scope.searchCourier(event.srcElement.value);
+                    }
+                } catch (error) {
+                    console.error("Error in hotkey callback:", error);
                 }
             }
         });
 
         $scope.unlockJob = () => {
-            return $scope.jdSvc
-                .unlockJob($scope.currentJob);
+            return $scope.jdSvc.unlockJob($scope.currentJob);
         };
 
         $scope.lockJob = () => {
-            return $scope.jdSvc
-                .lockJob($scope.currentJob);
+            return $scope.jdSvc.lockJob($scope.currentJob);
         };
 
         $scope.selectClearList = async (id, event, area) => {
@@ -754,55 +746,44 @@ angular.module("uDispatch").controller("NationwideControl", [
             $scope.jobForDispatch = job;
         };
 
-
-        $scope.voidJobForm = (jobNumber, jobId) => {
-            $scope.gather.form = {
-                id: "voidJob",
-                title: `Void Job ${jobNumber}?`,
-                fields: [
-                    {
-                        "name": "notes",
-                        "label": "Add Note...",
-                        "type": "textarea",
-                        "value": ""
-                    }
-                ],
-                onSubmit: () => NWData.addNote(jobId, $scope.gather.form.fields[0].value, FirstName, false).then(() => NWData.voidJob(jobId)),
-                submitValue: "Confirm"
-            };
-            $scope.gather.showForm();
-
-        };
+        /**
+         * @param {String} jobNumber
+         * @param {Number} jobId
+         */
+        $scope.voidJobForm = (jobNumber, jobId) => $mdDialog.show($mdDialog.prompt()
+            .title("Void Job")
+            .textContent("Add Note")
+            .placeholder('Note')
+            .ariaLabel('Void job')
+            .required(true)
+            .ok('Void')
+            .cancel('Cancel')).then(note => DispatchData.addNote(jobId, note, FirstName, false)).then(() => DispatchData.voidJob(jobId)).then(() => $scope.getData()).catch(error => {
+            console.log("Job void canceled or error occurred", error);
+        });
 
         $scope.sendSMS = (courierId, message) => NWData.sendSMS(courierId, ContactID, FirstName, message);
 
-        $scope.otherEventForm = () => {
-
-            const time = new Date();
-            time.setSeconds(0);
-            time.setMilliseconds(0);
-
-            $scope.eventForm = {
-                "data": {
-                    "jobNum": $scope.currentJob.jobNo,
-                    "client": $scope.currentJob.client,
-                    "event": "Other",
-                    "date": new Date(),
-                    "time": time
+        /**
+         * @param {Object} $event
+         * @param {Job} job
+         */
+        $scope.otherEventForm = ($event, job) => {
+            $mdDialog.show({
+                controller: 'AddEventDialogController',
+                controllerAs: "ctrl",
+                templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
+                parent: angular.element($document.body),
+                targetEvent: $event,
+                clickOutsideToClose: true,
+                fullscreen: true,
+                locals: {
+                    job: job, dispatcherName: FirstName, contactId: ContactID
                 },
-                submit: () => NWData.addOtherEvent($scope.currentJob.jobNo, $scope.currentJob.clientId, $scope.currentJob.contactName, ContactID, $scope.currentJob.courierData.courierID, $scope.currentJob.id, $scope.currentJob.jobType, FirstName, $scope.eventForm.data.notes).then(() => {
-                    angular.element(".eventForm").hide();
-                }),
-                cancel: () => {
-                    angular.element(".eventForm").hide(0);
-                }
-            };
-
-            angular.element(".eventForm").show(0);
-
-
+                bindToController: true
+            }).then(() => {
+                console.log('Pallet Dialog closed!');
+            });
         };
-
 
         $scope.getSupportColorClass = support => {
             switch (support.eventType) {
@@ -2627,9 +2608,9 @@ angular.module("uDispatch").controller("NationwideControl", [
         $scope.potentialCourierMenu = [
             {
                 text: "Dispatch Selected",
-                click: ($itemScope, $event, modelValue, text, $li) => {
+                click: async ($itemScope, $event, modelValue, text, $li) => {
                     //$scope.selected = $itemScope.item.name;
-                    $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
+                    await $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
                 }
             }
         ];
@@ -2642,10 +2623,10 @@ angular.module("uDispatch").controller("NationwideControl", [
 
             try {
                 const [podData, newData, repriceData, deliveryData] = await Promise.all([
-                    NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal),
-                    NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal),
-                    NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal),
-                    NWData.getNationwideJobsBookDelivery($scope.jobFilters, selectedClients, $scope.isInternal)
+                    NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsBookDelivery($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)
                 ]);
 
                 $scope.jobListPOD = podData;
@@ -2774,10 +2755,8 @@ angular.module("uDispatch").controller("NationwideControl", [
             ///////////////////////////////
             // JOB LIST
             ///////////////////////////////
-
-            //Get Job Data
-
             angular.element("#box-jobsList").find(".loading").show();
+
             $scope.jobList = [];
             $scope.jobListPOD = [];
             $scope.currentJob = false;
@@ -2799,14 +2778,6 @@ angular.module("uDispatch").controller("NationwideControl", [
                 // Handle error appropriately
             }
         };
-
-        if (!$scope.isInternal) {
-            $scope.getClientContacts().then(() => console.log('complete'));
-        }
-
-        $scope.getEventTypes().then(() => console.log('complete'));
-
-        $scope.getData().then(() => console.log('complete'));
 
         /////////////////////////
         // JOB DETAILS
@@ -2841,6 +2812,10 @@ angular.module("uDispatch").controller("NationwideControl", [
             }
         };
 
+        /**
+         * @param  {Object}  $event
+         * @param  {Job}  job
+         */
         $scope.createEvent = async ($event, job) => {
             try {
                 await $mdDialog.show({
@@ -2867,6 +2842,9 @@ angular.module("uDispatch").controller("NationwideControl", [
             }
         };
 
+        /**
+         * @param  {Object}  $event
+         */
         $scope.truckLoadingStatus = async ($event) => {
             try {
                 await $mdDialog.show({
@@ -2928,8 +2906,10 @@ angular.module("uDispatch").controller("NationwideControl", [
                 }
             }
 
+            // Init functions
+            $scope.initializeVariables();
             $scope.loadPageViews().then(() => {
-                console.log('Complete!');
+                console.log('Loaded Page Views!');
             });
         };
 

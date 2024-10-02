@@ -579,48 +579,88 @@ class NationwideService {
     }
 
     /**
-     * @param {*} data
-     * @param {*[]|string} selectedClients
-     * @param {Boolean} internal
+     * @param {string} endpoint
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
      */
-    async getNationwideJobsNew(data, selectedClients, internal) {
-        const response = await this._$http.get("job/nationwideJobListNew?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
-        return await response.data;
+    async getNationwideJobs(endpoint, queryParams, selectedClients, internal, selectedAreas) {
+        const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
+
+        const params = new URLSearchParams({
+            status: queryParams.status || 'all',
+            order: queryParams.order || 'time',
+            asc: queryParams.asc || 'asc',
+            isInternal: internal.toString(),
+            cid: ContactID,
+            clientIds: selectedClients.join(',')
+        });
+
+        despatchViewIds.forEach(id => {
+            params.append('despatchViewIds', id.toString());
+        });
+
+        const response = await this._$http.get(`job/${endpoint}?${params.toString()}`);
+        return response.data;
     }
 
     /**
-     * @param {*} data
-     * @param {*[]|string} selectedClients
-     * @param {Boolean} internal
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
      */
-    async getNationwideJobsPOD(data, selectedClients, internal) {
-        const response = await this._$http.get("job/nationwideJobListPOD?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
-        return await response.data;
+    getNationwideJobsNew(queryParams, selectedClients, internal, selectedAreas) {
+        return this.getNationwideJobs('nationwideJobListPOD', queryParams, selectedClients, internal, selectedAreas);
+
     }
 
     /**
-     * @param {*} data
-     * @param {*[]|string} selectedClients
-     * @param {Boolean} internal
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
      */
-    async getNationwideJobsBookDelivery(data, selectedClients, internal) {
-        const response = await this._$http.get("job/nationwideJobListBookDelivery?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
-        return await response.data;
+    getNationwideJobsPOD(queryParams, selectedClients, internal, selectedAreas) {
+        return this.getNationwideJobs('nationwideJobListPOD', queryParams, selectedClients, internal, selectedAreas);
     }
 
     /**
-     * @param {*} data
-     * @param {*[]|string} selectedClients
-     * @param {Boolean} internal
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
      */
-    async getNationwideJobsReprice(data, selectedClients, internal) {
-        const response = await this._$http.get("job/nationwideJobListReprice?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
-        return await response.data;
+    getNationwideJobsBookDelivery(queryParams, selectedClients, internal, selectedAreas) {
+        return this.getNationwideJobs('nationwideJobListBookDelivery', queryParams, selectedClients, internal, selectedAreas);
+    }
+
+    /**
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
+     */
+    getNationwideJobsReprice(queryParams, selectedClients, internal, selectedAreas) {
+        return this.getNationwideJobs('nationwideJobListReprice', queryParams, selectedClients, internal, selectedAreas);
     }
 
     async getEventTypes() {
         const response = await this._$http.get("job/EventTypeList");
         return await response.data;
+    }
+
+    /**
+     * @param {Array} selectedAreas
+     * @returns {Array}
+     * @private
+     */
+    _prepareViewIdsForRequest(selectedAreas) {
+        return selectedAreas.map(area => {
+            const id = typeof area === 'object' && area.id ? area.id : area;
+            return parseInt(id, 10); // Convert to integer
+        });
     }
 }
 

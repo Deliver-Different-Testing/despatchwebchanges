@@ -5,8 +5,8 @@ angular.module("uDispatch")
         ($document, $filter, greetingService, jdSvc, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData,
          dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages) => {
             $scope.initializeVariables = () => {
-                $scope.isInternal = (ClientInternal === "True");
                 $scope.name = "Home";
+                $scope.isInternal = (ClientInternal === "True");
                 $scope.jdSvc = jdSvc;
                 $scope.jobTableService = JobTableService;
 
@@ -63,7 +63,6 @@ angular.module("uDispatch")
 
             $scope.updateFilters = async () => {
                 try {
-
                     // Handle status filters
                     const activeFilter = Object.keys($scope.filters).find(key => $scope.filters[key] && key !== 'all');
                     const statusFilter = activeFilter || (($scope.filters.all) ? 'all' : '');
@@ -982,6 +981,9 @@ angular.module("uDispatch")
                 return $scope.jobList.filter(jo => activeJobs.some(aJob => jo.id === angular.element(aJob).data("jobid")));
             }
 
+            /**
+             * @param {TemplateStringsArray} courierNumber
+             */
             $scope.dispatchJobs = async courierNumber => {
                 const jobsToDispatch = $scope.getJobsToDispatch();
 
@@ -3096,7 +3098,7 @@ angular.module("uDispatch")
                 // Init functions
                 $scope.initializeVariables();
                 $scope.loadPageViews().then(() => {
-                    console.log('Complete!');
+                    console.log('Loaded Page Views!');
                 });
             };
 
