@@ -309,72 +309,20 @@ angular.module("uDispatch").controller("NationwideControl", [
                 "showRefresh": 0,
                 "showDetailButtons": 1
             },
-            "potentialCouriers": {
-                "title": "Potential Couriers",
-                "templateUrl": versionUrl("app/components/home/partials/potentialCouriers.html"),
-                "showSearch": 1
-            },
-            "currentWork": {
-                "title": "Current Work",
-                "templateUrl": versionUrl("app/components/home/partials/currentWork.html"),
-                "showSearch": 1,
-                "showRefresh": 0
-            },
-            "couriersMoveThrough": {
-                "title": "Couriers Movement Through List",
-                "templateUrl": versionUrl("app/components/home/partials/couriersMovementThroughList.html"),
-                "showSearch": 1,
-                "showRefresh": 0
-            },
-            "courierMovePickedUp": {
-                "title": "Couriers Movement Picked Up Run",
-                "templateUrl": versionUrl("app/components/home/partials/couriersMovementPickedUp.html"),
-                "showSearch": 1,
-                "showRefresh": 0
-            },
-            "courierMoveClear": {
-                "title": "Couriers Movement Clear List",
-                "templateUrl": versionUrl("app/components/home/partials/couriersMovementClearList.html"),
-                "showSearch": 1,
-                "showRefresh": 0
-            },
-            "areaList": {
-                "title": "Area List",
-                "templateUrl": versionUrl("app/components/home/partials/areaList.html"),
-                "showSearch": 0,
-                "showRefresh": 0
-            },
-            "jobUpdates": {
-                "title": "Job Updates",
-                "templateUrl": versionUrl("app/components/home/partials/jobUpdates.html"),
-                "showSearch": 0,
-                "showRefresh": 0
-            },
-            "supports": {
-                "title": "Supports",
-                "templateUrl": versionUrl("app/components/home/partials/supports.html"),
-                "showSearch": 0,
-                "showRefresh": 0
-            },
-            "lateCalls": {
-                "title": "Late Calls",
-                "templateUrl": versionUrl("app/components/home/partials/lateCalls.html"),
-                "showSearch": 0,
-                "showRefresh": 0
-            },
             "map": {
                 "title": "Google Map",
                 "templateUrl": versionUrl("app/components/Nationwide/partials/map.html"),
                 "showSearch": 0,
                 "showRefresh": 1
             },
-            "clearLists": {
-                "title": "Clear Lists",
-                "templateUrl": versionUrl("app/components/home/partials/clearLists.html"),
+            "flightDataTable": {
+                "title": "Flight Options",
+                "templateUrl": versionUrl("app/components/Nationwide/directives/flight-table/flight-table.html"),
                 "showSearch": 0,
-                "showRefresh": 0
+                "showRefresh": 1
             }
         };
+
         $scope.pickService = {
             "clients": [],
             "settings": {

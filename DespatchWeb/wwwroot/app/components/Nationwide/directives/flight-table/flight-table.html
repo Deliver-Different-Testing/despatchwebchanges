@@ -1,0 +1,26 @@
+<div>
+    <div class="loading" ng-if="loading">Loading flight data...</div>
+    <div class="error" ng-if="error">{{ error }}</div>
+    <table ng-if="!loading && !error">
+        <thead>
+        <tr>
+            <th>Airline</th>
+            <th>Flight Number</th>
+            <th>Departure Time</th>
+            <th>Arrival Time</th>
+            <th>Duration</th>
+            <th>Aircraft</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="flight in flights">
+            <td>{{ flight.airline }}</td>
+            <td>{{ flight.flightNumber }}</td>
+            <td>{{ flight.departureTime | date:'short' }}</td>
+            <td>{{ flight.arrivalTime | date:'short' }}</td>
+            <td>{{ flight.duration | date:'H:mm' }}</td>
+            <td>{{ flight.aircraft }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
