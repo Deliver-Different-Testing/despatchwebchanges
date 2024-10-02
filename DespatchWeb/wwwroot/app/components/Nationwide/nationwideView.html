@@ -1,5 +1,4 @@
 <div>
-
     <div>
         <md-toolbar class="md-hue-2">
             <div class="md-toolbar-tools">
@@ -8,8 +7,7 @@
                 <span flex></span>
 
                 <md-menu>
-                    <md-button aria-label="Open status menu" class="md-icon-button" ng-click="$mdMenu.open($event)"
-                               ng-mouseover="$mdMenu.open($event)">
+                    <md-button aria-label="Open status menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
                         <md-tooltip md-direction="bottom">Filters</md-tooltip>
                     </md-button>
@@ -27,8 +25,7 @@
                 </md-menu>
 
                 <md-menu ng-if="isInternal">
-                    <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)"
-                               ng-mouseover="$mdMenu.open($event)">
+                    <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined" ng-if="areas">location_on</md-icon>
                         <md-tooltip md-direction="bottom">Areas</md-tooltip>
                         <md-progress-circular class="md-accent" md-diameter="18" md-mode="indeterminate"
@@ -47,7 +44,7 @@
 
                 <md-menu>
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
-                               ng-click="$mdMenu.open($event)" ng-mouseover="$mdMenu.open($event)">
+                               ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
                         <md-tooltip md-direction="bottom">Layouts</md-tooltip>
                     </md-button>

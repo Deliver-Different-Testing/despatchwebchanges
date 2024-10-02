@@ -32,6 +32,16 @@ angular.module("uDispatch").controller("NationwideControl", [
             active: false, done: false, all: true
         };
 
+        $scope.jobFilters = {
+            order: 'time',
+            limit: 50,
+            page: 1,
+            filter: '',
+            status: 'all',
+            area: '',
+            asc: 'asc'
+        };
+
         $scope.toggleSidenav = () => {
             materialSidenavService.toggle();
         };
@@ -149,8 +159,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
 
         $scope.gather = {
-            submit: () => $scope.gather.form.onSubmit().then(response => {
-
+            submit: () => $scope.gather.form.onSubmit().then(() => {
                 angular.element('.gatherForm').css('display', 'none');
                 $scope.getData().then(() => {
                     console.log('Get Data Complete');
@@ -767,7 +776,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         $scope.sendSMS = (courierId, message) => NWData.sendSMS(courierId, ContactID, FirstName, message);
 
-        $scope.otherEventForm = jobNumber => {
+        $scope.otherEventForm = () => {
 
             const time = new Date();
             time.setSeconds(0);
@@ -842,7 +851,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         /**
          * @param {Number} lat
-         * @param {} lng
+         * @param {Number} lng
          * @param {Object} flags
          * @param {*} carMarker
          * @param {String} jobNumber
@@ -1696,7 +1705,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 return;
             }
 
-            NWData.splitJob(j.id, FirstName).then(response => {
+            NWData.splitJob(j.id, FirstName).then(() => {
                 $scope.getData().then(() => {
                     const refreshedJob = $scope.jobList.find(jo => jo.id === j.id);
                     $scope.selectJob(refreshedJob);
@@ -1746,7 +1755,7 @@ angular.module("uDispatch").controller("NationwideControl", [
         $scope.activateDrop = () => {
             $timeout(() => {
 
-                    $document.on('ready', event => {
+                    $document.on('ready', () => {
                         angular.element(".droppable-row").droppable({
                             classes: {
                                 "ui-droppable-hover": "active"
@@ -1914,8 +1923,7 @@ angular.module("uDispatch").controller("NationwideControl", [
             });
 
             try {
-                const data = await NWData.truckCourierStatus(courier.courierID);
-                $scope.truckCourierStatus = data;
+                $scope.truckCourierStatus = await NWData.truckCourierStatus(courier.courierID);
             } catch (error) {
                 console.error("Error fetching truck courier status:", error);
                 // Handle the error appropriately
@@ -1991,8 +1999,8 @@ angular.module("uDispatch").controller("NationwideControl", [
                     sizeHeadings(angular.element("#jobGroups").parents(".column"));
                 };
 
-                await new Promise(resolve => $timeout(sizeHeadingsColumn, 1000));
-                await new Promise(resolve => $timeout(sizeHeadingsColumn, 2000));
+                await new Promise(() => $timeout(sizeHeadingsColumn, 1000));
+                await new Promise(() => $timeout(sizeHeadingsColumn, 2000));
 
             } catch (error) {
                 console.error("Error in getGroupedJobs:", error);
@@ -2031,8 +2039,8 @@ angular.module("uDispatch").controller("NationwideControl", [
                     sizeHeadings(angular.element("#currentWork").parents(".column"));
                 };
 
-                await new Promise(resolve => $timeout(sizeHeadingsColumn, 1000));
-                await new Promise(resolve => $timeout(sizeHeadingsColumn, 2000));
+                await new Promise(() => $timeout(sizeHeadingsColumn, 1000));
+                await new Promise(() => $timeout(sizeHeadingsColumn, 2000));
 
             } catch (error) {
                 console.error("Error in getCurrentJobs:", error);
@@ -2722,7 +2730,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 ];
 
                 await $timeout(() => {
-                    $document.on('ready', event => {
+                    $document.on('ready', () => {
                         angular.element("#box-supports").find(".loading").fadeOut();
                         if ($scope.currentSupport) {
                             angular.element("#supports tr[data-id='" + $scope.currentSupport.eventId + "']").addClass("active");
@@ -2793,12 +2801,12 @@ angular.module("uDispatch").controller("NationwideControl", [
         };
 
         if (!$scope.isInternal) {
-            $scope.getClientContacts().then(r => console.log('complete'));
+            $scope.getClientContacts().then(() => console.log('complete'));
         }
 
-        $scope.getEventTypes().then(r => console.log('complete'));
+        $scope.getEventTypes().then(() => console.log('complete'));
 
-        $scope.getData().then(r => console.log('complete'));
+        $scope.getData().then(() => console.log('complete'));
 
         /////////////////////////
         // JOB DETAILS

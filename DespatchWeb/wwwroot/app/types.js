@@ -323,3 +323,12 @@
  * @property {number} maximumLatitude - The northernmost latitude of the envelope.
  * @property {number} maximumLongitude - The easternmost longitude of the envelope.
  */
+
+/**
+ * Represents the query parameters for job filtering and sorting.
+ * @typedef {Object} JobQueryParams
+ *
+ * @property {string} [status='all'] - The status filter for jobs.
+ * @property {string} [order='time'] - The ordering criteria for jobs.
+ * @property {string} [asc='asc'] - The sort direction ('asc' for ascending, 'desc' for descending).
+ */

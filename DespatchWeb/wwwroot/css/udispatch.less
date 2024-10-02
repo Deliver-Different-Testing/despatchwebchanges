@@ -1436,127 +1436,50 @@ md-table-pagination {
     }
   }
 }
-@table-font-size: 12px;
 
-.table-container {
-  height: 400px; /* Adjust this value based on your needs */
-  overflow-y: auto;
-}
+.responsive-datatable {
+  .md-table-container {
+    overflow-x: auto;
+    max-width: 100%;
+  }
 
-md-table-container {
-  overflow-x: auto;
-
-  .md-table {
-    width: 100%;
+  table.md-table {
+    min-width: 100%;
     table-layout: fixed;
-    font-size: @table-font-size;
 
-    th, td {
-      min-width: 30px;
-      padding: 4px;
+    th.md-column, td.md-cell {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    thead {
-      tr {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        background-color: #e6f2ff;
-        th {
-          font-size: @table-font-size;
-          font-weight: 500;
-          color: rgba(0, 0, 0, 0.87);
-        }
-      }
+    // Add these new styles for column widths
+    .col-xs {
+      width: 40px;
     }
 
-    tbody {
-      tr {
-        height: 30px;
-
-        td {
-          font-size: @table-font-size;
-          color: rgba(0, 0, 0, 0.87);
-        }
-      }
+    .col-sm {
+      width: 60px;
     }
 
-    .md-row:nth-child(even) {
-      background-color: #f8f8f8;
+    .col-md {
+      width: 80px;
     }
 
-    .md-row:nth-child(odd) {
-      background-color: #ffffff;
+    .col-lg {
+      width: 100px;
     }
 
-    .md-row {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-    }
-
-    .client-box {
-      display: inline-block;
-      padding: 1px 3px;
-      color: white;
-      font-weight: bold;
-      border-radius: 2px;
-      font-size: 11px;
-    }
-
-    .md-cell.highlight {
-      color: #ff0000;
-    }
-
-    .md-button.md-icon-button {
-      width: 18px;
-      height: 18px;
-      min-height: 18px;
-      line-height: 18px;
-      padding: 0;
-      margin: 0 1px;
-    }
-
-    .md-icon {
-      font-size: @table-font-size;
-    }
-
-    @media screen and (max-width: 1200px) {
-      font-size: @table-font-size;
-    }
-
-    @media screen and (max-width: 600px) {
-      font-size: @table-font-size;
-
-      th, td {
-        padding: 0 3px;
-      }
+    .col-xl {
+      width: 150px;
     }
   }
-}
 
-.sticky-footer {
-  position: sticky;
-  bottom: 0;
-  background-color: white;
-  z-index: 10;
-}
-
-md-table-pagination {
-  .md-text {
-    font-size: @table-font-size;
-  }
-
-  .md-select-value {
-    font-size: 12px;
-  }
-
-  @media screen and (max-width: 600px) {
-    md-select {
-      margin: 0;
-    }
-
-    .md-text, .md-select-value {
-      font-size: @table-font-size;
-    }
+  .md-table-pagination {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
   }
 }
 

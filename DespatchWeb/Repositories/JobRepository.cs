@@ -10,7 +10,6 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWebContextExtensions;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
@@ -758,13 +757,9 @@ public class JobRepository : IJobRepository
 
     public async Task<List<JobViewModel>> CurrentJobList(int courierId, bool done)
     {
-        // 2. Execute the compiled query
         var jobs = await GetJobsQuery(_context, courierId, done).ToListAsync();
-
-        // 3. Use AutoMapper for mapping
         var jobViewModels = _mapper.Map<List<JobViewModel>>(jobs);
 
-        // 4. Load related data separately to avoid N+1 query problem
         var jobIds = jobViewModels.Select(j => j.Id).ToList();
         var palletInfoItems = await _context.TucJobItems
             .Where(p => jobIds.Contains(p.JobId))
@@ -788,13 +783,11 @@ public class JobRepository : IJobRepository
             })
             .ToListAsync();
 
-        // 5. Group PalletInfo by JobId
         var palletInfoDict = palletInfoItems
             .GroupBy(p => p.JobId)
             .ToDictionary(g => g.Key,
                 g => g.Select(p => p.PalletInfo).ToList());
 
-        // 6. Assign PalletInfo to each JobViewModel
         foreach (var job in jobViewModels)
         {
             job.PalletInfo = palletInfoDict.TryGetValue(job.Id, out var palletInfo)
@@ -804,53 +797,33 @@ public class JobRepository : IJobRepository
 
         return jobViewModels;
 
-        // 1. Use a compiled query for better performance
         static IQueryable<DeswebQryDespatch> GetJobsQuery(DespatchContext context, int cId, bool isDone)
         {
             return context.DeswebQryDespatches.FromSqlRaw($"exec [DESWeb_qryCourierJobs] {cId}, {isDone}");
         }
     }
 
-    public async Task<(List<JobViewModel> Jobs, int TotalCount)> JobListAsync(string status, string area, string order,
-        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds, int page, int pageSize)
+    public async Task<List<JobViewModel>> JobListAsync(string status, string order,
+        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
-            return (new List<JobViewModel>(), 0);
+            return new List<JobViewModel>();
 
-        if (selectedViewIds != null && !selectedViewIds.Any()) return (new List<JobViewModel>(), 0);
+        if (selectedViewIds != null && !selectedViewIds.Any()) return new List<JobViewModel>();
         var viewFilters = await _context.DfrntappViews
             .Where(dv => selectedViewIds.Contains(dv.ViewId))
             .Select(dv => dv.WhereCondition)
             .ToListAsync();
 
         // Filters
-        var orderToUse = GetOrderByClause(order, ascending);
+        var orderByClause = GetOrderByClause(order, ascending);
         var whereClause = BuildWhereClause(isInternal, viewFilters, status, clientIds);
 
-        // Total Records
-        var countSql = $"SELECT COUNT(*) AS Count FROM DESWEB_qryDespatch WHERE {whereClause}";
-        var totalCount = await _context.Database.ExecuteSqlRawAsync(countSql);
-
-
-        var sql = $@"
-    WITH NumberedJobs AS (
-        SELECT *, 
-               ROW_NUMBER() OVER (ORDER BY {orderToUse}) AS RowNum,
-               NULL AS CourierLatitude,
-               NULL AS CourierLongitude
-        FROM DESWEB_qryDespatch
-        WHERE {whereClause}
-    )
-    SELECT *
-    FROM NumberedJobs
-    WHERE RowNum BETWEEN @Skip + 1 AND @Skip + @Take";
-
-        var skip = (page - 1) * pageSize;
+        var sql =
+            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
 
         var jobs = await _context.DeswebQryDespatches
-            .FromSqlRaw(sql,
-                new SqlParameter("@Skip", skip),
-                new SqlParameter("@Take", pageSize))
+            .FromSqlRaw(sql)
             .AsNoTracking()
             .ToListAsync();
 
@@ -1021,30 +994,16 @@ public class JobRepository : IJobRepository
             StatusName = j.StatusName
         }).ToList();
 
-        return (list, totalCount);
+        return list;
     }
 
-    /// <summary>
-    /// Main query for Nationwide job window panes. New =1, POD=2, BookDel=3, Reprice=4
-    /// </summary>
-    /// <param name="status"></param>
-    /// <param name="area"></param>
-    /// <param name="order"></param>
-    /// <param name="ascending"></param>
-    /// <param name="isInternal"></param>
-    /// <param name="clientIds"></param>
-    /// <param name="windowPane"></param>
-    /// <param name="selectedViewIds"></param>
-    /// <returns></returns>
-    public async Task<(List<JobViewModel> Jobs, int TotalCount)> NationwideJobListAsync(string status, string area,
-        string order,
-        string ascending, bool isInternal, string clientIds, int windowPane, List<int> selectedViewIds, int page,
-        int pageSize)
+    public async Task<List<JobViewModel>> NationwideJobListAsync(string status,
+        string order, string ascending, bool isInternal, string clientIds, int windowPane, List<int> selectedViewIds)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
-            return (new List<JobViewModel>(), 0);
+            return new List<JobViewModel>();
 
-        if (selectedViewIds != null && !selectedViewIds.Any()) return (new List<JobViewModel>(), 0);
+        if (selectedViewIds != null && !selectedViewIds.Any()) return new List<JobViewModel>();
 
         var viewFilters = await _context.DfrntappViews
             .Where(dv => selectedViewIds.Contains(dv.ViewId))
@@ -1052,24 +1011,12 @@ public class JobRepository : IJobRepository
             .ToListAsync();
 
         // Filters
-        var orderToUse = GetOrderByClause(order, ascending);
+        var orderByClause = GetOrderByClause(order, ascending);
         var whereClause = BuildWhereClause(isInternal, viewFilters, status, clientIds);
-
-        var countSql = $"SELECT COUNT(*) AS Count FROM DESWEB_qryDespatch WHERE {whereClause}";
-        var totalCount = await _context.Database.ExecuteSqlRawAsync(countSql);
-
         var sql =
-            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderToUse}";
-        var skip = (page - 1) * pageSize;
+            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
 
-        var jobs = await _context.DeswebQryDespatches
-            .FromSqlRaw(sql,
-                new SqlParameter("@Skip", skip),
-                new SqlParameter("@Take", pageSize))
-            .Where(j => j.UcjbTime != null)
-            .AsNoTracking()
-            .ToListAsync();
-
+        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql).ToListWithNoLockAsync();
         var list = jobs.Select(j => new JobViewModel
         {
             Id = j.UcjbId,
@@ -1238,7 +1185,7 @@ public class JobRepository : IJobRepository
         }).ToList();
 
 
-        return (list, totalCount);
+        return list;
     }
 
 

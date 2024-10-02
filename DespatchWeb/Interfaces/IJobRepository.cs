@@ -26,24 +26,11 @@ public interface IJobRepository
     Task<List<JobViewModel>> PreBookJobList();
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
-    Task<(List<JobViewModel> Jobs, int TotalCount)> JobListAsync(string status, string area, string order,
-        string ascending,
-        bool isInternal, string clientIds, List<int> selectedViewIds, int page, int pageSize);
+    Task<List<JobViewModel>> JobListAsync(string status, string order,
+        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds);
 
-    /// <summary>
-    /// Main query for Nationwide job window panes. New =1, POD=2, BookDel=3, Reprice=4
-    /// </summary>
-    /// <param name="status"></param>
-    /// <param name="area"></param>
-    /// <param name="order"></param>
-    /// <param name="ascending"></param>
-    /// <param name="isInternal"></param>
-    /// <param name="clientIds"></param>
-    /// <param name="windowPane"></param>
-    /// <returns></returns>
-    Task<(List<JobViewModel> Jobs, int TotalCount)> NationwideJobListAsync(string status, string area, string order,
-        string ascending, bool isInternal, string clientIds, int windowPane, List<int> selectedViewIds, int page,
-        int pageSize);
+    Task<List<JobViewModel>> NationwideJobListAsync(string status,
+        string order, string ascending, bool isInternal, string clientIds, int windowPane, List<int> selectedViewIds);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int id);

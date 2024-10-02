@@ -1,88 +1,79 @@
-<md-table-container class="table-container">
-    <table md-progress="promise" md-row-select md-table multiple ng-model="selected">
-        <thead md-head md-on-reorder="onReorder" md-order="query.order">
-        <tr md-row>
-            <th md-column><span>T</span></th>
-            <th md-column><span>Speed</span></th>
-            <th md-column><span>N</span></th>
-            <th md-column><span>V</span></th>
-            <th md-column><span>Job</span></th>
-            <th md-column><span>Client</span></th>
-            <th md-column><span>From</span></th>
-            <th md-column><span>To</span></th>
-            <th md-column><span>Code</span></th>
-            <th md-column><span>Remain</span></th>
-            <th md-column><span>S</span></th>
-            <th md-column><span>LP</span></th>
-            <th md-column><span>LD</span></th>
-            <th md-column><span>R</span></th>
-            <th md-column><span>RD</span></th>
-        </tr>
-        </thead>
-        <tbody md-body>
-        <tr
-                md-row md-select="job" md-select-id="id"
-                ng-click="handleRowClick($event, job)"
-                ng-repeat="job in jobList">
-            <td md-cell>{{job.time | date: 'HH:mm'}}</td>
-            <td md-cell>{{job.speed}}</td>
-            <td md-cell>{{job.notify}}</td>
-            <td md-cell>{{jobTableService.attention(job)}}</td>
-            <td md-cell>
-                <span ng-click="setEventsMenu($event)">{{job.jobNo}}</span>
-            </td>
-            <td md-cell>
+<div class="responsive-datatable">
+    <md-table-container>
+        <table md-progress="promise" md-row-select md-table multiple ng-model="selected">
+            <thead md-head md-on-reorder="onReorder" md-order="query.order">
+            <tr md-row>
+                <th class="col-sm" md-column><span>T</span></th>
+                <th class="col-md" md-column><span>Speed</span></th>
+                <th class="col-xs" md-column><span>N</span></th>
+                <th class="col-xs" md-column><span>V</span></th>
+                <th class="col-lg" md-column><span>Job</span></th>
+                <th class="col-lg" md-column><span>Client</span></th>
+                <th class="col-xl" md-column><span>From</span></th>
+                <th class="col-xl" md-column><span>To</span></th>
+                <th class="col-md" md-column><span>Code</span></th>
+                <th class="col-md" md-column><span>Remain</span></th>
+                <th class="col-xs" md-column><span>S</span></th>
+                <th class="col-sm" md-column><span>LP</span></th>
+                <th class="col-sm" md-column><span>LD</span></th>
+                <th class="col-sm" md-column><span>R</span></th>
+                <th class="col-sm" md-column><span>RD</span></th>
+            </tr>
+            </thead>
+            <tbody md-body>
+            <tr
+                    md-row md-select="job" md-select-id="id"
+                    ng-click="handleRowClick($event, job)"
+                    ng-repeat="job in jobList">
+                <td md-cell>{{job.time | date: 'HH:mm'}}</td>
+                <td md-cell>{{job.speed}}</td>
+                <td md-cell>{{job.notify}}</td>
+                <td md-cell>{{jobTableService.attention(job)}}</td>
+                <td md-cell>
+                    <span ng-click="setEventsMenu($event)">{{job.jobNo}}</span>
+                </td>
+                <td md-cell>
             <span class="client-box" ng-click="clientColumnClick($event, job)"
                   ng-style="jobTableService.getClientBoxStyle(job)">{{job.client}}</span>
-            </td>
-            <td md-cell>
-                {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from }}
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickupAddress.longitude">warning
-                </md-icon>
-            </td>
-            <td colspan="2" md-cell>
-                {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress }}
-                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryAddress.longitude">warning
-                </md-icon>
-            </td>
-            <td md-cell
-                ng-click="jobTableService.editField($event, job, 'courier', 'Courier Code')">
-                {{job.courier}}
-            </td>
-            <td md-cell ng-class="{'highlight': job.remain < 0}">
-                {{job.remain}}
-            </td>
-            <td md-cell>
-                <span ng-class="job.status">{{job.status}}</span>
-            </td>
-            <td md-cell ng-click="jobTableService.editField($event, job, 'lp', 'LP', 'number')">
-                <span ng-class="{'md-placeholder': !job.lp}">{{job.lp || 'LP'}}</span>
-            </td>
-            <td md-cell ng-click="jobTableService.editField($event, job, 'ld', 'LD', 'number')">
-                <span ng-class="{'md-placeholder': !job.ld}">{{job.ld || 'LD'}}</span>
-            </td>
-            <td md-cell>
-                <md-button class="md-icon-button" ng-click="restoreJobs()" ng-if="job.courier !== null">
-                    <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
-                </md-button>
-            </td>
-            <td md-cell>
-                <md-button class="md-icon-button" ng-click="reAllocateJobs()" ng-if="job.courier !== null">
-                    <md-icon md-font-set="material-symbols-outlined">repeat</md-icon>
-                </md-button>
-            </td>
-        </tr>
-        </tbody>
-    </table>
-</md-table-container>
-
-<div class="sticky-footer">
-    <md-table-pagination
-            md-limit="queryParams.limit"
-            md-limit-options="[50, 100, 200]"
-            md-on-paginate="onPaginate"
-            md-page="queryParams.page"
-            md-page-select
-            md-total="{{totalItems}}">
-    </md-table-pagination>
+                </td>
+                <td md-cell>
+                    {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from }}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickupAddress.longitude">warning
+                    </md-icon>
+                </td>
+                <td colspan="2" md-cell>
+                    {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress }}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryAddress.longitude">warning
+                    </md-icon>
+                </td>
+                <td md-cell
+                    ng-click="jobTableService.editField($event, job, 'courier', 'Courier Code')">
+                    {{job.courier}}
+                </td>
+                <td md-cell ng-class="{'highlight': job.remain < 0}">
+                    {{job.remain}}
+                </td>
+                <td md-cell>
+                    <span ng-class="job.status">{{job.status}}</span>
+                </td>
+                <td md-cell ng-click="jobTableService.editField($event, job, 'lp', 'LP', 'number')">
+                    <span ng-class="{'md-placeholder': !job.lp}">{{job.lp || 'LP'}}</span>
+                </td>
+                <td md-cell ng-click="jobTableService.editField($event, job, 'ld', 'LD', 'number')">
+                    <span ng-class="{'md-placeholder': !job.ld}">{{job.ld || 'LD'}}</span>
+                </td>
+                <td md-cell>
+                    <md-button class="md-icon-button" ng-click="restoreJobs()" ng-if="job.courier !== null">
+                        <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
+                    </md-button>
+                </td>
+                <td md-cell>
+                    <md-button class="md-icon-button" ng-click="reAllocateJobs()" ng-if="job.courier !== null">
+                        <md-icon md-font-set="material-symbols-outlined">repeat</md-icon>
+                    </md-button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </md-table-container>
 </div>

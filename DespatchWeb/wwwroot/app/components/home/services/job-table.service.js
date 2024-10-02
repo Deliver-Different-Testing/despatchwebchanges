@@ -3,14 +3,15 @@ class JobTableService {
         this._$mdEditDialog = $mdEditDialog;
     }
 
+    /**
+     * Creates a new JobQueryParams object with default values.
+     * @returns {JobQueryParams} A new JobQueryParams object.
+     */
     createQuery() {
         return {
             order: 'time',
-            limit: 50,
-            page: 1,
             filter: '',
             status: 'all',
-            area: '',
             asc: 'asc'
         };
     }

@@ -29,10 +29,6 @@ angular.module("uDispatch")
                 $scope.filters = {
                     new: false, nda: true, active: false, done: false, all: false
                 };
-
-                $scope.currentPage = 1;
-                $scope.pageSize = 50; // Number of items per page
-                $scope.totalItems = 0; // Total number of items
             };
 
             $scope.toggleSidenav = () => {
@@ -59,33 +55,25 @@ angular.module("uDispatch")
             };
 
             $scope.initializeAreas = () => {
-                $scope.selectedAreas = {};
                 if ($scope.areas && $scope.areas.length > 0) {
-                    const firstArea = $scope.areas[0];
-                    $scope.selectedAreas[firstArea.id] = true;
-                }
-                if ($scope.areas) {
-                    $scope.areas.forEach(area => {
-                        if (!$scope.selectedAreas.hasOwnProperty(area.id)) {
-                            $scope.selectedAreas[area.id] = false;
-                        }
-                    });
+                    const defaultArea = $scope.areas[0];
+                    $scope.selectedAreas.push(defaultArea);
                 }
             };
 
             $scope.updateFilters = async () => {
-                // Handle area filters
-                const activeAreas = Object.keys($scope.selectedAreas).filter(key => $scope.selectedAreas[key]);
-                const areaFilter = activeAreas.join(',');
-
-                // Call setFilters with area filter
                 try {
+
+                    // Handle status filters
+                    const activeFilter = Object.keys($scope.filters).find(key => $scope.filters[key] && key !== 'all');
+                    const statusFilter = activeFilter || (($scope.filters.all) ? 'all' : '');
+
+                    // Call setFilters with area and status filters
                     await $scope.setFilters({
-                        'area': areaFilter
+                        'status': statusFilter
                     });
                 } catch (error) {
                     console.error('Error updating filters:', error);
-                    // Optionally, show an error message to the user
                     console.log("Failed to update filters. Please try again.");
                 }
             };
@@ -356,7 +344,7 @@ angular.module("uDispatch")
                 layout: {
                     "columns": [{
                         "id": "col1",
-                        "width": "1100px",
+                        "width": "65%",
                         "boxes": [
                             {
                                 "name": "jobsList",
@@ -369,7 +357,7 @@ angular.module("uDispatch")
                         ]
                     }, {
                         "id": "col2",
-                        "width": "300px",
+                        "width": "17.5%",
                         "boxes": [
                             {
                                 "name": "currentWork",
@@ -386,7 +374,7 @@ angular.module("uDispatch")
                         ]
                     }, {
                         "id": "col3",
-                        "width": "300px",
+                        "width": "17.5%",
                         "boxes": [
                             {
                                 "name": "driverLocations",
@@ -2146,6 +2134,7 @@ angular.module("uDispatch")
 // this is left click
                         break;
                     case 2:
+                        3
 // in case you need some middle click things
                         break;
                     case 3:
@@ -2466,15 +2455,12 @@ angular.module("uDispatch")
                 try {
                     angular.element("#box-jobsList .loading").show();
 
-                    const data = await DispatchData.getJobsWithFilters(
+                    $scope.jobList = await DispatchData.getJobsWithFilters(
                         $scope.queryParams,
                         selectedClients,
                         $scope.isInternal,
                         $scope.selectedAreas
                     );
-
-                    $scope.jobList = data.jobs;
-                    $scope.totalItems = data.totalCount;
 
                     angular.element("#box-jobsList .loading").fadeOut();
 

@@ -42,20 +42,9 @@ public class JobController : Controller
         {
             if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-            var (jobs, totalCount) = await _jobRepo.JobListAsync(
-                queryParams?.Status,
-                queryParams?.Area,
-                queryParams?.Order,
-                queryParams?.Asc,
-                isInternal,
-                clientIds,
-                despatchViewIds,
-                queryParams.Page,
-                queryParams.Limit
-            );
-
-            var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
-
+            if (despatchViewIds != null && !despatchViewIds.Any()) return Json(new List<JobViewModel>());
+            var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, despatchViewIds);
             return Json(result);
         }
         catch (UnauthorizedAccessException)
@@ -74,21 +63,8 @@ public class JobController : Controller
     {
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var (jobs, totalCount) = await _jobRepo.NationwideJobListAsync(
-            queryParams?.Status,
-            queryParams?.Area,
-            queryParams?.Order,
-            queryParams?.Asc,
-            isInternal,
-            clientIds,
-            1,
-            despatchViewIds,
-            queryParams.Page,
-            queryParams.Limit
-        );
-
-        var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
-
+        var result = await _jobRepo.NationwideJobListAsync(queryParams.Status, queryParams.Order,
+            queryParams.Asc, isInternal, clientIds, 1, despatchViewIds);
         return Json(result);
     }
 
@@ -97,20 +73,8 @@ public class JobController : Controller
     {
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var (jobs, totalCount) = await _jobRepo.NationwideJobListAsync(
-            queryParams?.Status,
-            queryParams?.Area,
-            queryParams?.Order,
-            queryParams?.Asc,
-            isInternal,
-            clientIds,
-            2,
-            despatchViewIds,
-            queryParams.Page,
-            queryParams.Limit
-        );
-
-        var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams.Status, queryParams.Order,
+            queryParams.Asc, isInternal, clientIds, 2, despatchViewIds);
         return Json(result);
     }
 
@@ -120,20 +84,8 @@ public class JobController : Controller
     {
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var (jobs, totalCount) = await _jobRepo.NationwideJobListAsync(
-            queryParams?.Status,
-            queryParams?.Area,
-            queryParams?.Order,
-            queryParams?.Asc,
-            isInternal,
-            clientIds,
-            3,
-            despatchViewIds,
-            queryParams.Page,
-            queryParams.Limit
-        );
-
-        var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams.Status, queryParams.Order,
+            queryParams.Asc, isInternal, clientIds, 3, despatchViewIds);
         return Json(result);
     }
 
@@ -142,20 +94,8 @@ public class JobController : Controller
     {
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var (jobs, totalCount) = await _jobRepo.NationwideJobListAsync(
-            queryParams?.Status,
-            queryParams?.Area,
-            queryParams?.Order,
-            queryParams?.Asc,
-            isInternal,
-            clientIds,
-            4,
-            despatchViewIds,
-            queryParams.Page,
-            queryParams.Limit
-        );
-
-        var result = CreatePaginatedResult(jobs, totalCount, queryParams.Page, queryParams.Limit);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams.Status, queryParams.Order,
+            queryParams.Asc, isInternal, clientIds, 4, despatchViewIds);
         return Json(result);
     }
 
@@ -1139,18 +1079,6 @@ public class JobController : Controller
             .Any(x => requestedClientIds.Contains(x)) ?? false;
 
         if (!hasAccess) throw new UnauthorizedAccessException();
-    }
-
-    private static object CreatePaginatedResult<T>(IEnumerable<T> items, int totalCount, int page, int pageSize)
-    {
-        return new
-        {
-            Jobs = items,
-            TotalCount = totalCount,
-            CurrentPage = page,
-            PageSize = pageSize,
-            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
-        };
     }
 
     public class ClientItemsModel
