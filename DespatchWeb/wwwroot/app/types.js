@@ -332,3 +332,21 @@
  * @property {string} [order='time'] - The ordering criteria for jobs.
  * @property {string} [asc='asc'] - The sort direction ('asc' for ascending, 'desc' for descending).
  */
+
+/**
+ * Represents a flight option with detailed information.
+ * @typedef {Object} FlightOptions
+ *
+ * @property {string} airline - The name of the airline operating the flight.
+ * @property {string} flightNumber - The flight number.
+ * @property {string} departureTime - The departure time of the flight (ISO 8601 format).
+ * @property {string} arrivalTime - The arrival time of the flight (ISO 8601 format).
+ * @property {string} departureAirport - The code of the departure airport.
+ * @property {string} arrivalAirport - The code of the arrival airport.
+ * @property {number} duration - The duration of the flight in milliseconds.
+ * @property {number} stops - The number of stops on the flight.
+ * @property {string} aircraft - The type of aircraft used for the flight.
+ * @property {string[]} serviceClasses - An array of service classes available on the flight.
+ * @property {boolean} isCodeShare - Indicates whether the flight is a codeshare flight.
+ * @property {string|null} codeShareAirline - The airline code of the operating carrier if it's a codeshare flight, null otherwise.
+ */

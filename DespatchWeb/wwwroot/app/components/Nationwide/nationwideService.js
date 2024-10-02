@@ -652,6 +652,16 @@ class NationwideService {
     }
 
     /**
+     * @param {Date} departureDate
+     * @param {Number} departureAirportId
+     * @returns {Promise<FlightOptions[]>}
+     */
+    async getFlightOptions(departureDate, departureAirportId) {
+        const response = await this._$http.get("nationwideJob/GetScheduledFlightOptions?departureDate=" + departureDate + "&departureAirportId=" + departureAirportId);
+        return await response;
+    }
+
+    /**
      * @param {Array} selectedAreas
      * @returns {Array}
      * @private
