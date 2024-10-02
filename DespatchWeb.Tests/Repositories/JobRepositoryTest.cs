@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoMapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -15,12 +16,14 @@ namespace DespatchWeb.Tests.Repositories;
 
 [TestFixture]
 [TestOf(typeof(JobRepository))]
-public class JobRepositoryTest
+public class JobRepositoryvTest
 {
     [SetUp]
     public void SetUp()
     {
         _mockContext = new Mock<DespatchContext>();
+        _mockMapper = new Mock<IMapper>();
+
         _mockContext.Setup(c => c.TucClientItems).Returns(CreateClientItems()?.Object);
         _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(CreateAvailableSpeedItems()?.Object);
         _mockContext.Setup(c => c.TblClientAvailableSpeeds).Returns(CreateAvailableClientSpeeds()?.Object);
@@ -36,8 +39,13 @@ public class JobRepositoryTest
                 It.IsAny<OutputParameter<int>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
-        _repository = new JobRepository(_mockContext.Object);
+
+        _repository = new JobRepository(_mockContext.Object, _mockMapper.Object);
     }
+
+    private Mock<DespatchContext> _mockContext;
+    private Mock<IMapper> _mockMapper;
+    private IJobRepository _repository;
 
     // Set Up Data
     private static Mock<DbSet<TucClientItem>> CreateClientItems()
@@ -89,9 +97,6 @@ public class JobRepositoryTest
 
         return jobs;
     }
-
-    private Mock<DespatchContext> _mockContext;
-    private IJobRepository _repository;
 
     [Test]
     public async Task Test_AddInterCourierCharge_Calls_Procedures_DSEWEB_Correctly()
