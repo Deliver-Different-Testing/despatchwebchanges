@@ -228,17 +228,16 @@
 /**
  * @typedef {Object} Pallet
  *
- * @property {number} id
- * @property {number} quantity
- * @property {number} weight
- * @property {number} length
- * @property {number} depth
- * @property {number} height
- * @property {boolean|null} pu
- * @property {boolean|null} do
- * @property {number|null} dgClass
- * @property {string} notes
- * @property {number} itemId
+ * @property {number} id - The ID of the pallet.
+ * @property {number} quantity - The quantity of pallets.
+ * @property {number} weight - The weight of the pallet in KG.
+ * @property {number} length - The length of the pallet in meters.
+ * @property {number} depth - The depth of the pallet in meters.
+ * @property {number} height - The height of the pallet in meters.
+ * @property {boolean} pu - Indicates if it's a pickup.
+ * @property {boolean} do - Indicates if it's a delivery.
+ * @property {string} dgClass - The dangerous goods class.
+ * @property {string} notes - Additional notes for the pallet.
  */
 
 /**
@@ -375,4 +374,17 @@
  * @property {string} name - The name of the layout.
  * @property {Object} layout - The layout configuration.
  * @property {Column[]} layout.columns - The columns in the layout.
+ */
+
+/**
+ * @typedef {Object} Service
+ *
+ * @property {number} itemId - The ID of the service item.
+ * @property {number} clientId - The ID of the client.
+ * @property {string} name - The name of the service.
+ * @property {string} description - The description of the service.
+ * @property {boolean} perItem - Indicates if the service is charged per item.
+ * @property {number} rate - The rate of the service.
+ * @property {boolean} onlyVan - Indicates if the service is only for vans.
+ * @property {boolean} selected - Indicates if the service is selected.
  */

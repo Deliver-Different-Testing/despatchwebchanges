@@ -1,6 +1,25 @@
+/**
+ * @fileoverview Controller for the Add Event Dialog in the uDispatch application.
+ * @module AddEventDialogController
+ */
+
+/**
+ * Controller for the Add Event Dialog
+ * @class
+ */
 class AddEventDialogController {
     static $inject = ['$scope', '$mdDialog', 'NWData', 'toastrService', 'job', 'dispatcherName', 'contactId'];
 
+    /**
+     * Create an AddEventDialogController.
+     * @param {Object} $scope - Angular scope object.
+     * @param {Object} $mdDialog - Angular Material dialog service.
+     * @param {Object} NWData - Service for fetching and manipulating data.
+     * @param {Object} toastrService - Service for displaying toast notifications.
+     * @param {Object} job - The job object.
+     * @param {string} dispatcherName - Name of the dispatcher.
+     * @param {string} contactId - ID of the contact.
+     */
     constructor($scope, $mdDialog, NWData, toastrService, job, dispatcherName, contactId) {
         this._$mdDialog = $mdDialog;
         this._NWData = NWData;
@@ -9,9 +28,13 @@ class AddEventDialogController {
         this._contactId = contactId;
         this._job = job;
 
+        /** @type {boolean} */
         this.isLoading = false;
+        /** @type {Array} */
         this.eventTypes = [];
+        /** @type {Object|null} */
         this.selectedEvent = null;
+        /** @type {Object} */
         this.eventForm = $scope.eventForm;
 
         let time = new Date();
@@ -33,6 +56,10 @@ class AddEventDialogController {
         this._initialiseData();
     }
 
+    /**
+     * Initialize the controller data.
+     * @private
+     */
     _initialiseData() {
         this._NWData.getEventTypes().then(data => {
             this.eventTypes = data;
@@ -46,7 +73,9 @@ class AddEventDialogController {
     }
 
     /**
-     * @param {Event} event
+     * Submit the event form.
+     * @param {Event} event - The event object to submit.
+     * @returns {Promise<void>}
      */
     async submit(event) {
         try {
@@ -86,6 +115,9 @@ class AddEventDialogController {
         this._$mdDialog.hide();
     }
 
+    /**
+     * Cancel the dialog.
+     */
     cancel() {
         this._$mdDialog.cancel();
     }
