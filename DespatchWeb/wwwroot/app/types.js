@@ -350,3 +350,29 @@
  * @property {boolean} isCodeShare - Indicates whether the flight is a codeshare flight.
  * @property {string|null} codeShareAirline - The airline code of the operating carrier if it's a codeshare flight, null otherwise.
  */
+
+/**
+ * Box for displaying widgets in layouts
+ * @typedef {Object} Box
+ *
+ * @property {string} name - The name of the box.
+ * @property {string} height - The height of the box.
+ */
+
+/**
+ * Column layout settings
+ * @typedef {Object} Column
+ *
+ * @property {string} id - The ID of the column.
+ * @property {string} width - The width of the column.
+ * @property {Box[]} boxes - The boxes contained in the column.
+ */
+
+/**
+ * Complete layout for a page
+ * @typedef {Object} Layout
+ *
+ * @property {string} name - The name of the layout.
+ * @property {Object} layout - The layout configuration.
+ * @property {Column[]} layout.columns - The columns in the layout.
+ */
