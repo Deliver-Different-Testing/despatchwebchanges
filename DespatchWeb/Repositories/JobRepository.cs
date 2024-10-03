@@ -2151,7 +2151,7 @@ public class JobRepository : IJobRepository
         return count > 0;
     }
 
-    public async Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeedAsync(int clientId, int speedId,
+    public async Task<PagedList<ClientItemsViewModel>> GetClientItemsBySpeedAsync(int clientId, int speedId,
         int jobId)
     {
         var job = await GetJobInfo(jobId);

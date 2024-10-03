@@ -140,7 +140,7 @@ public class JobRepositoryTest
     [Test]
     public async Task GetAllClientItemsBySpeed_Should_Return_List_When_Items_Are_Available()
     {
-        var result = await _repository.GetAllClientItemsBySpeedAsync(1, 1, 1);
+        var result = await _repository.GetClientItemsBySpeedAsync(1, 1, 1);
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(2));
         Assert.That(result.Items.Count, Is.EqualTo(2));
@@ -159,7 +159,7 @@ public class JobRepositoryTest
     [Test]
     public async Task GetAllClientItemsBySpeed_Should_Return_Empty_List_When_No_Items_Are_Available()
     {
-        var result = await _repository.GetAllClientItemsBySpeedAsync(2, 2, 2);
+        var result = await _repository.GetClientItemsBySpeedAsync(2, 2, 2);
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(0));
         Assert.That(result.Items.Count, Is.EqualTo(0));

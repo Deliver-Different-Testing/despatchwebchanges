@@ -919,7 +919,7 @@ public class JobController : Controller
     [HttpGet]
     public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId)
     {
-        var clientItems = await _jobRepo.GetAllClientItemsBySpeedAsync(clientId, speedId, jobId);
+        var clientItems = await _jobRepo.GetClientItemsBySpeedAsync(clientId, speedId, jobId);
         return Json(clientItems);
     }
 

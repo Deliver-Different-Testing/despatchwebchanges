@@ -26,19 +26,18 @@ public class FlightStatusServiceTest
 
     [Test]
     [Category("Integration")]
-    public async Task GetDepartingFlightsAsync_WithRealApiCall_ReturnsFlightList()
+    public async Task GetFlightsAsync_WithRealApiCall_ReturnsFlightList()
     {
         // Arrange
         const string departureAirportCode = "LAX"; // Los Angeles International Airport
-        var now = DateTime.Now.AddDays(1); // Use tomorrows date
+        const string destinationAirportCode = "JFK"; // John F. Kennedy International Airport
+        var now = DateTime.Now.AddDays(1); // Use tomorrow's date
 
         // Act
         var result = await _service.GetFlightsAsync(
             departureAirportCode,
-            now.Year,
-            now.Month,
-            now.Day,
-            now.Hour
+            destinationAirportCode,
+            now
         );
 
         // Assert
@@ -49,11 +48,14 @@ public class FlightStatusServiceTest
         {
             Assert.That(flight.FlightNumber, Is.Not.Null.And.Not.Empty, "Flight number should not be empty");
             Assert.That(flight.DepartureTime, Is.GreaterThanOrEqualTo(now), "Departure time should be in the future");
-            // Add more assertions as needed based on the expected structure of ScheduledFlight
+            Assert.That(flight.DepartureAirport, Is.EqualTo(departureAirportCode), "Departure airport should match");
+            Assert.That(flight.ArrivalAirport, Is.EqualTo(destinationAirportCode), "Arrival airport should match");
+            Assert.That(flight.Duration, Is.GreaterThan(TimeSpan.Zero), "Duration should be positive");
+            // Add more assertions as needed based on the expected structure of FlightOptionsViewModel
         }
 
-        // Check if the list is ordered by descending departure time
-        Assert.That(result, Is.Ordered.By("DepartureTime").Descending);
+        // Check if the list is ordered by ascending departure time
+        Assert.That(result, Is.Ordered.By("DepartureTime").Ascending);
     }
 
     [Test]

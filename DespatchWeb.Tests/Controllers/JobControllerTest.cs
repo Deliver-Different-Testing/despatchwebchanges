@@ -194,7 +194,7 @@ public class JobControllerTest
         };
 
         _mockJobRepo
-            .Setup(x => x.GetAllClientItemsBySpeedAsync(clientId, speedId, jobId))
+            .Setup(x => x.GetClientItemsBySpeedAsync(clientId, speedId, jobId))
             .ReturnsAsync(pagedExpectedClientItems);
 
         // Act
