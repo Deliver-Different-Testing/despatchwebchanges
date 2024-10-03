@@ -33,7 +33,7 @@ public class FlightStatusServiceTest
         var now = DateTime.Now.AddDays(1); // Use tomorrows date
 
         // Act
-        var result = await _service.GetDepartingFlightsAsync(
+        var result = await _service.GetFlightsAsync(
             departureAirportCode,
             now.Year,
             now.Month,

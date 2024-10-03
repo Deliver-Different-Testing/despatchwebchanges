@@ -1818,7 +1818,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getData();
             } catch (error) {
                 console.error("Error in setFilters:", error);
-                // Handle error appropriately
             }
         };
 
@@ -1864,7 +1863,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             } catch (error) {
                 console.error("Error in loadRelatedJobDetail:", error);
                 angular.element("#box-jobDetail").find(".loading").hide();
-                // Handle the error appropriately
             }
         };
 
@@ -1878,7 +1876,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 angular.element("#box-jobDetail .loading").css('display', 'none');
             } catch (error) {
                 console.error("Error in selectJob:", error);
-                // Handle the error appropriately
             }
         };
 
@@ -1899,14 +1896,22 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             return jdSvc.setJob($scope.currentJob);
         }
 
+        /**
+         * @async
+         * @function updateData
+         * @param {Object} job - The job object to update
+         * @param {boolean} clear - Flag to determine if settings should be cleared
+         */
         async function updateData(job, clear) {
             try {
-                const [activeCouriers, relatedJobs] = await Promise.all([NWData.getActiveCouriers(), job.rootParentID ? NWData.getRelatedJobs(job.rootParentID, job.clientId) : Promise.resolve([])]);
+                const [activeCouriers, relatedJobs] = await Promise.all([
+                    NWData.getActiveCouriers(),
+                    job.rootParentID ? NWData.getRelatedJobs(job.rootParentID, job.clientId) : Promise.resolve([])
+                ]);
 
                 $scope.pickCouriers = activeCouriers;
 
                 if (job.rootParentID) {
-                    //relatedJobs = relatedJobs.filter(item => item.id !== job.id);
                     $scope.currentJob.relatedJobs = relatedJobs;
                 }
 
@@ -1923,13 +1928,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                 displayPickupPoints(unDispatchedData, true, job);
 
-                $scope.$apply();
             } catch (error) {
                 console.error("Error in updateData:", error);
-                // Handle the error appropriately
             }
         }
 
+        /**
+         * @param {Job} job
+         */
         async function processClearSettings(job) {
             clearSettings(job);
             await $scope.getGroupedJobs();
@@ -1938,6 +1944,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.currentWorkSelection = "";
         }
 
+        /**
+         * @param {Job} job
+         */
         function clearSettings(job) {
             $scope.getPotentialCouriers(job.id);
             $scope.jobGroups = false;
@@ -2377,7 +2386,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.currentSupport = null;
             } catch (error) {
                 console.error("Error closing support:", error);
-                // Handle error appropriately
             }
         };
 
@@ -2392,7 +2400,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getSupports();
             } catch (error) {
                 console.error("Error locking/unlocking support:", error);
-                // Handle error appropriately
             }
         };
 
@@ -2435,7 +2442,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             } catch (error) {
                 console.error("Error fetching supports:", error);
-                // Handle error appropriately
             }
         };
 
@@ -2444,7 +2450,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.pickClients = await NWData.getClientContacts(ContactID);
             } catch (error) {
                 console.error("Error fetching client contacts:", error);
-                // Handle error appropriately
             }
         };
 
@@ -2453,7 +2458,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.pickEventTypes = await NWData.getEventTypes();
             } catch (error) {
                 console.error("Error fetching event types:", error);
-                // Handle error appropriately
             }
         };
 
@@ -2481,15 +2485,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getJobList();
             } catch (error) {
                 console.error("Error in getData:", error);
-                // Handle error appropriately
             }
         };
 
         /////////////////////////
         // JOB DETAILS
         /////////////////////////
-
-
         $scope.detailAddressMenu = [// NEW IMPLEMENTATION
             {
                 text: "Update GPS", click: ($itemScope, $event, modelValue, text, $li) => {
@@ -2511,7 +2512,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.currentSupport = null;
             } catch (error) {
                 console.error("Error in closeSupport:", error);
-                // Handle the error as needed
             }
         };
 
@@ -2539,7 +2539,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 console.log('Pallet Dialog closed!');
             } catch (error) {
                 console.error("Error in createEvent:", error);
-                // Handle the error as needed
             }
         };
 

@@ -26,31 +26,37 @@ public class FlightStatusService : IFlightStatusService
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
     }
 
-    public async Task<List<FlightOptionsViewModel>> GetDepartingFlightsAsync(
+    public async Task<List<FlightOptionsViewModel>> GetFlightsAsync(
         string departureAirportCode,
+        string destinationAirportCode,
         DateTime? departureDateTime = null,
         string codeType = null,
         string[] extendedOptions = null)
     {
         if (string.IsNullOrEmpty(departureAirportCode))
-        {
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
-        }
 
-        // If departureDateTime is not provided, use tomorrow's date and time
-        var effectiveDateTime = departureDateTime ?? DateTime.Now.AddDays(1);
+        if (string.IsNullOrEmpty(destinationAirportCode))
+            throw new ArgumentException("Arrival airport code is required and cannot be null or empty.",
+                nameof(destinationAirportCode));
+
+        // If departureDateTime is not provided, use current date and time
+        var effectiveDateTime = departureDateTime ?? DateTime.Now;
 
         var year = effectiveDateTime.Year;
         var month = effectiveDateTime.Month;
         var day = effectiveDateTime.Day;
         var hourOfDay = effectiveDateTime.Hour;
 
-        var request = new RestRequest($"json/from/{departureAirportCode}/departing/{year}/{month}/{day}/{hourOfDay}");
+        var request =
+            new RestRequest(
+                $"json/from/{departureAirportCode}/to/{destinationAirportCode}/departing/{year}/{month}/{day}/{hourOfDay}");
 
         // Add query parameters
         request.AddQueryParameter("appId", _appId);
         request.AddQueryParameter("appKey", _appKey);
+        request.AddQueryParameter("numHours", "24"); // Request 24 hours of flight data
 
         if (!string.IsNullOrEmpty(codeType)) request.AddQueryParameter("codeType", codeType);
 
@@ -65,6 +71,9 @@ public class FlightStatusService : IFlightStatusService
         // Execute the request
         var response = await _client.ExecuteGetAsync<FlightStatusResponse>(request);
 
+        if (response.Data?.ScheduledFlights == null)
+            return new List<FlightOptionsViewModel>();
+
         var flightOptions = response.Data.ScheduledFlights.Select(flight => new FlightOptionsViewModel()
         {
             Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
@@ -75,7 +84,7 @@ public class FlightStatusService : IFlightStatusService
             ArrivalAirport = flight.ArrivalAirportFsCode,
             Duration = flight.ArrivalTime - flight.DepartureTime,
             Stops = flight.Stops,
-            Aircraft = response.Data.Appendix.Equipments.FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode)
+            Aircraft = response.Data.Appendix?.Equipments.FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode)
                 ?.Name,
             ServiceClasses = flight.ServiceClasses,
             IsCodeShare = flight.IsCodeShare,

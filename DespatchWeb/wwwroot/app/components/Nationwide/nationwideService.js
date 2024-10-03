@@ -652,13 +652,41 @@ class NationwideService {
     }
 
     /**
-     * @param {Date} departureDate
-     * @param {Number} departureAirportId
-     * @returns {Promise<FlightOptions[]>}
+     * Fetches flight options for a given departure date and airport pair.
+     *
+     * @param {Date} departureDate - The date of departure.
+     * @param {Number} departureAirportId - The ID of the departure airport.
+     * @param {Number} destinationAirportId - The ID of the destination airport.
+     * @returns {Promise<FlightOptions[]>} A promise that resolves to an array of flight options.
+     * @throws {Error} If the API request fails or returns an unexpected response.
      */
-    async getFlightOptions(departureDate, departureAirportId) {
-        const response = await this._$http.get("nationwideJob/GetScheduledFlightOptions?departureDate=" + departureDate + "&departureAirportId=" + departureAirportId);
-        return await response;
+    async getFlightOptions(departureDate, departureAirportId, destinationAirportId) {
+        if (!(departureDate instanceof Date)) {
+            throw new Error('Invalid departureDate. Expected a Date object.');
+        }
+
+        if (!Number.isInteger(departureAirportId) || !Number.isInteger(destinationAirportId)) {
+            throw new Error('Invalid airport ID. Expected integer values for departureAirportId and destinationAirportId.');
+        }
+
+        const formattedDate = departureDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+        try {
+            const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
+                params: {
+                    departureDate: formattedDate,
+                    departureAirportId: departureAirportId,
+                    destinationAirportId: destinationAirportId
+                }
+            });
+
+            if (!response.data || !Array.isArray(response.data)) {
+                console.error('Unexpected API response format');
+            }
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching flight options:', error);
+        }
     }
 
     /**

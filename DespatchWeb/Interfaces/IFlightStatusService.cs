@@ -7,8 +7,9 @@ namespace DespatchWeb.Interfaces;
 
 public interface IFlightStatusService
 {
-    Task<List<FlightOptionsViewModel>> GetDepartingFlightsAsync(
+    Task<List<FlightOptionsViewModel>> GetFlightsAsync(
         string departureAirportCode,
+        string destinationAirportCode,
         DateTime? departureDateTime = null,
         string codeType = null,
         string[] extendedOptions = null);
