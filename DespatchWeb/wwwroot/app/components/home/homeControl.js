@@ -982,7 +982,7 @@ angular.module("uDispatch")
             }
 
             /**
-             * @param {TemplateStringsArray} courierNumber
+             * @param {String} courierNumber
              */
             $scope.dispatchJobs = async courierNumber => {
                 const jobsToDispatch = $scope.getJobsToDispatch();

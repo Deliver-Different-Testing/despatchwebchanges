@@ -14,8 +14,8 @@
                 <th class="col-sm" md-column md-order-by="remain"><span>Remain</span></th>
                 <th class="col-sm" md-column md-order-by="status"><span>S</span></th>
                 <th md-column><span>Actions</span></th>
-        </tr>
-        </thead>
+            </tr>
+            </thead>
             <tbody md-body>
             <tr md-row md-select="job" md-select-id="id"
                 ng-repeat="job in jobList | filter: box.searchBox | orderBy: jobQuery.order">
@@ -25,19 +25,9 @@
                 <td md-cell>{{job.client}}</td>
                 <td md-cell>{{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}</td>
                 <td md-cell>{{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}</td>
-
-                <td md-cell
-                    ng-click="editTableField($event, job, 'courier', 'Courier Code')">
+                <td md-cell ng-click="editCourierNew($event, job)">
                     {{job.courier}}
                 </td>
-
-                <td md-cell>
-                    <md-input-container>
-                        <input ng-keydown="$event.keyCode === 13 && dispatchJobsFromNew(job.courier)" ng-model="job.courier"
-                               ng-readonly="job.courierData.courierID !== null"
-                               placeholder="">
-                    </md-input-container>
-            </td>
                 <td md-cell>{{job.pod}}</td>
                 <td md-cell><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
                 <td md-cell ng-class="job.status">{{job.status}}</td>
@@ -48,7 +38,9 @@
                     </md-button>
                     <md-button aria-label="Restore"
                                class="md-icon-button"
-                               ng-click="job.courier == null || restoreJobsFromNew(); $event.stopPropagation();" ng-if="job.courier !== null">
+                               ng-click="job.courier == null || restoreJobsFromNew(); $event.stopPropagation();"
+                               ng-disabled="!job.courier"
+                               ng-if="job.courier !== null">
                         <md-icon md-font-set="material-symbols-outlined">undo</md-icon>
                     </md-button>
                 </td>
