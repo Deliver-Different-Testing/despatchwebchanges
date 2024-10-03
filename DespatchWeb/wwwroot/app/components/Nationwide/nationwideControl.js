@@ -20,9 +20,11 @@ angular.module("uDispatch").controller("NationwideControl", [
     "materialSidenavService",
     "AppPages",
     "APP_CONFIG",
+    "$mdEditDialog",
     ($scope, jdSvc, NWData, $state,
      $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService,
-     $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG) => {
+     $mdDialog, $document, $window, toastrService, DispatchData, moment,
+     versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog) => {
         $scope.jdSvc = jdSvc;
 
         $scope.initializeVariables = () => {
@@ -165,6 +167,28 @@ angular.module("uDispatch").controller("NationwideControl", [
         $scope.JobRecordSelected = selectedJobId => {
             const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
             return $scope.selectJob(selectedJob);
+        }
+
+        /**
+         * @param {Object} $event
+         * @param {Job} job
+         * @param {String|Number} field
+         * @param {String} placeholder
+         * @param {String} type
+         */
+        $scope.editTableField = ($event, job, field, placeholder, type = 'text') => {
+            $event.stopPropagation();
+            return $mdEditDialog.small({
+                modelValue: job[field], placeholder, type,
+                save: async (input) => {
+                    job[field] = input.$modelValue;
+
+                    if (field === 'courier') {
+                        await $scope.dispatchJobsFromNew(job.courier)
+                    }
+                },
+                targetEvent: $event
+            });
         }
 
         $scope.allCouriers = {display: false, includeUA: false};
@@ -413,7 +437,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         $scope.storeMapZoomDisplay = () => {
             if (Modernizr.localstorage) {
-                localStorage.setItem("mapZoomNW-" + ContactID, JSON.stringify($scope.mapZoom));
+                localStorage.setItem("mapZoomNW-" + ContactID, JSON.Stringify($scope.mapZoom));
             }
         }
 
@@ -435,7 +459,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
                 $scope.layouts.splice(index, 1);
                 if (Modernizr.localstorage) {
-                    localStorage.setItem("layoutsNW-" + ContactID, JSON.stringify($scope.layouts));
+                    localStorage.setItem("layoutsNW-" + ContactID, JSON.Stringify($scope.layouts));
                 }
             } catch (error) {
                 console.log("Delete layout canceled!");
@@ -490,7 +514,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                             layout: angular.copy($scope.layout)
                         });
 
-                    localStorage.setItem("layoutsNW-" + ContactID, JSON.stringify($scope.layouts));
+                    localStorage.setItem("layoutsNW-" + ContactID, JSON.Stringify($scope.layouts));
 
                     // save last active layout
                     $scope.setLastActiveLayoutName(layoutName);
@@ -769,7 +793,7 @@ angular.module("uDispatch").controller("NationwideControl", [
                 fields: [
                     {
                         "name": "courierNumber",
-                        "label": "Courier number...",
+                        "label": "Courier Number...",
                         "value": ""
                     }
                 ],
@@ -2588,7 +2612,7 @@ angular.module("uDispatch").controller("NationwideControl", [
 
         $scope.getJobList = async () => {
             if (Modernizr.localstorage) {
-                localStorage.setItem("dispNW-filters-" + ContactID, JSON.stringify($scope.jobFilters));
+                localStorage.setItem("dispNW-filters-" + ContactID, JSON.Stringify($scope.jobFilters));
             }
             const selectedClients = $scope.pickService.clients.map(a => a.id);
 

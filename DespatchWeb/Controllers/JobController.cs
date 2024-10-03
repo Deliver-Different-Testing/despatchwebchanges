@@ -63,8 +63,8 @@ public class JobController : Controller
     {
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(queryParams.Status, queryParams.Order,
-            queryParams.Asc, isInternal, clientIds, 1, despatchViewIds);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            queryParams?.Asc, isInternal, clientIds, 1, despatchViewIds);
         return Json(result);
     }
 
@@ -73,8 +73,8 @@ public class JobController : Controller
     {
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(queryParams.Status, queryParams.Order,
-            queryParams.Asc, isInternal, clientIds, 2, despatchViewIds);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            queryParams?.Asc, isInternal, clientIds, 2, despatchViewIds);
         return Json(result);
     }
 
@@ -84,8 +84,8 @@ public class JobController : Controller
     {
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(queryParams.Status, queryParams.Order,
-            queryParams.Asc, isInternal, clientIds, 3, despatchViewIds);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            queryParams?.Asc, isInternal, clientIds, 3, despatchViewIds);
         return Json(result);
     }
 
@@ -94,8 +94,8 @@ public class JobController : Controller
     {
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(queryParams.Status, queryParams.Order,
-            queryParams.Asc, isInternal, clientIds, 4, despatchViewIds);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            queryParams?.Asc, isInternal, clientIds, 4, despatchViewIds);
         return Json(result);
     }
 
@@ -181,16 +181,8 @@ public class JobController : Controller
 
     public async Task<IActionResult> Detail(int jobId)
     {
-        try
-        {
-            var result = await _jobRepo.JobDetailAsync(jobId);
-            return Json(result);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        var result = await _jobRepo.JobDetailAsync(jobId);
+        return Json(result);
     }
 
     [HttpGet]

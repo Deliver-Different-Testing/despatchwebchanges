@@ -2413,13 +2413,23 @@ angular.module("uDispatch")
                     const bounds = map.getBounds();
                     const southWestLng = bounds.getSouthWest().lng();
                     const southWestLat = bounds.getSouthWest().lat();
+
                     const northEastLng = bounds.getNorthEast().lng();
                     const northEastLat = bounds.getNorthEast().lat();
 
                     try {
                         const returnData = await DispatchData.getAvailableCourierLocation(southWestLng, southWestLat, northEastLng, northEastLat);
-                        const courierId = $scope.currentCourier === false || $scope.currentCourier === null ? 0 : $scope.currentCourier.courier.split(" ")[0].trim();
-                        displayAvailableCouriers(returnData, courierId, channels, trucks, $scope.truckMode, $scope.allCouriers.includeUA);
+                        const courierId = $scope.currentCourier === false || $scope.currentCourier === null ? 0 :
+                            $scope.currentCourier.courier.split(" ")[0].trim();
+
+                        displayAvailableCouriers(
+                            returnData,
+                            courierId,
+                            channels,
+                            trucks,
+                            $scope.truckMode,
+                            $scope.allCouriers.includeUA
+                        );
                     } catch (error) {
                         console.log('Error getting available courier location:', error);
                     }

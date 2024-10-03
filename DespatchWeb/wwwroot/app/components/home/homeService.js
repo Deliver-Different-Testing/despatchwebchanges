@@ -89,7 +89,7 @@ class DispatchData {
     /**
      * Sends a request to add a restore event for a specific job.
      *
-     * @param {String} jobNo - The number identifier of the job.
+     * @param {String} jobNo - The Number identifier of the job.
      * @param {Number} clientId - The identifier of the client.
      * @param {String} contact - Contact related to the event.
      * @param {Number} staffId - The identifier of the staff member involved.
@@ -351,8 +351,7 @@ class DispatchData {
     }
 
     /**
-     * @param {Object} selectedViewIds
-     * @returns {Promise<Object>}
+     * @param {Array} selectedViewIds
      */
     async getDriverLocations(selectedViewIds) {
         const params = this._prepareViewIdsForRequest(selectedViewIds);
@@ -727,7 +726,7 @@ class DispatchData {
     /**
      * @param {Number} bulkJobId
      * @param {Number} toSuburb
-     * @param {string|number} toPostCode
+     * @param {String|Number} toPostCode
      * @param {String} address
      * @param {Number} lat
      * @param {Number} lng
@@ -824,7 +823,7 @@ class DispatchData {
     /**
      * @param {Number} bulkJobId
      * @param {String} field
-     * @param {string|number|Date} value
+     * @param {String|Number|Date} value
      * @param {Number} rate
      * @param {String} despatcherName
      * @param {Number} staffId
@@ -889,7 +888,7 @@ class DispatchData {
     }
 
     /**
-     * @param {{text: string, id: number}} item
+     * @param {{text: String, id: Number}} item
      */
     async getGeoCodeInformation(item) {
         const response = await this._$http.get('https://geocoder.cit.api.here.com/6.2/geocode.json', {
