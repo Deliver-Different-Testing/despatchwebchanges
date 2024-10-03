@@ -4,6 +4,11 @@
  * This controller handles the logic for editing date and time fields in job details.
  */
 class EditDateTimeDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = [
         '$mdDialog',
         'toastrService',

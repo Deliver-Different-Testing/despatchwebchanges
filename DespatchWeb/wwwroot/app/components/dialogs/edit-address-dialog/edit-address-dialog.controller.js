@@ -8,6 +8,11 @@
  * @class
  */
 class EditAddressDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'UsStatesService',
         'addressDetails', 'suburbOptions', 'title', 'submitLabel'];
 

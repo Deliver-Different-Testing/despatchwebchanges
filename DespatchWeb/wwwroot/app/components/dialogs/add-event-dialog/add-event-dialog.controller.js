@@ -8,6 +8,11 @@
  * @class
  */
 class AddEventDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$scope', '$mdDialog', 'NWData', 'toastrService', 'job', 'dispatcherName', 'contactId'];
 
     /**

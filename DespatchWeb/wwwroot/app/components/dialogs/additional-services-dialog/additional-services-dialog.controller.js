@@ -8,6 +8,11 @@
  * @class
  */
 class AdditionalServicesDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$mdDialog', 'DispatchData', 'toastrService', 'job'];
 
     /**

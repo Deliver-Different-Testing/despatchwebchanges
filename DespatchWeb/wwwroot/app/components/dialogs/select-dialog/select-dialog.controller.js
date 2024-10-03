@@ -3,22 +3,28 @@
  * @class
  */
 class SelectDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$mdDialog', 'DispatchData', 'toastrService', 'rateJobService', 'id', 'fieldName', 'title', 'job', 'options', 'initialValue', 'showCheckbox', 'checkboxLabel'];
 
     /**
      * Create a SelectDialogController
-     * @param $mdDialog - The AngularJS Material service for showing dialogs.
-     * @param DispatchData - The service used for data dispatching.
-     * @param toastrService - The service to display toast messages
-     * @param rateJobService
+     * @constructor
+     * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param {Object} DispatchData - The service used for data dispatching.
+     * @param {Object} toastrService - The service to display toast messages.
+     * @param {Object} rateJobService - The service for rating jobs.
      * @param {number} id - The ID related to the selection.
      * @param {string} fieldName - The name of the field for which the selection is being made.
      * @param {string} title - The title of the dialog.
-     * @param {Job} job - The job for which the selection is being made.
-     * @param {SelectOption[]} options - The array of selectable options.
-     * @param {string|null} initialValue - The currently selected option if there is one
-     * @param {boolean} showCheckbox - Determines if the checkbox option should be shown on the view
-     * @param {string} checkboxLabel - Label to display for the checkbox if shown to view
+     * @param {Object} job - The job for which the selection is being made.
+     * @param {Object} options - The array of selectable options.
+     * @param {string|null} initialValue - The currently selected option if there is one.
+     * @param {boolean} showCheckbox - Determines if the checkbox option should be shown on the view.
+     * @param {string} checkboxLabel - Label to display for the checkbox if shown to view.
      */
     constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, initialValue, showCheckbox, checkboxLabel) {
         this._$mdDialog = $mdDialog;
@@ -36,7 +42,8 @@ class SelectDialogController {
         this.options = options;
         this.selectedOption = null;
 
-        // New checkboxValue property initialized with false
+
+        /** @type {boolean} */
         this.checkboxValue = false;
 
         if (initialValue) {
@@ -44,13 +51,22 @@ class SelectDialogController {
         }
     }
 
+    /**
+     * Finds the initial value in the options array.
+     * @private
+     * @param {Object} options - The array of selectable options.
+     * @param {string} initialValue - The value to find in the options.
+     * @returns {Object|null} The found option or null if not found.
+     */
     _findInitialValue(options, initialValue) {
         return options.items.find(option => option.text === initialValue) ?? null;
     }
 
     /**
      * Submits the selected value, updates the job detail, and closes the dialog.
-     * @param {SelectOption} selectedOption - The selected value from the options.
+     * @async
+     * @param {Object} selectedOption - The selected value from the options.
+     * @returns {Promise<void>}
      */
     async submit(selectedOption) {
         try {
@@ -60,33 +76,8 @@ class SelectDialogController {
                 await this._updateDgClass(selectedOption);
                 this._job.dgClass = selectedOption.id;
             } else {
-                if (this._fieldName === "Size") {
-                    this._job.size.label = selectedOption.text;
-                    this._job.size.id = selectedOption.id;
-                    this._job.van = true;
-                }
-
-                if (this._fieldName === "SpeedID") {
-                    this._job.speedName = selectedOption.text;
-                    this._job.speedId = selectedOption.id;
-                }
-
-                if (this._fieldName === "AcceptedJobTypeID") {
-                    this._job.acceptedName = selectedOption.text;
-                    this._job.acceptedJobTypeID = selectedOption.id;
-                }
-
-                if (this._fieldName === "NotifiedJobTypeID") {
-                    this._job.notifiedName = selectedOption.text;
-                    this._job.notifiedId = selectedOption.id;
-                }
-
-                // Rate job
-                this._job.charge = await this.rateJobService.rateJob(this._job);
-
-                this._job.bulkJob ?
-                    await this._dispatchData.updateBulkJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID) :
-                    await this._dispatchData.updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID);
+                this._updateJobFields(selectedOption);
+                await this._updateJobDetails(selectedOption);
             }
 
             this._$mdDialog.hide();
@@ -98,22 +89,67 @@ class SelectDialogController {
     }
 
     /**
-     * @param {SelectOption} selectedOption
+     * Updates various job fields based on the selected option.
+     * @private
+     * @param {Object} selectedOption - The selected option.
      */
-    async _updateDgClass(selectedOption) {
-        // Update Dg Class
-        await this._dispatchData
-            .updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID, this._job.preBook);
-
-        if (this._job.dgDocumentation !== this.checkboxValue) {
-            this._job.dgDocumentation = this.checkboxValue;
-            await this._dispatchData
-                .updateJobDetail(this._job.id, "DGDocumentation", this._job.dgDocumentation, this._job.charge, FirstName, ContactID, this._job.preBook);
+    _updateJobFields(selectedOption) {
+        switch (this._fieldName) {
+            case "Size":
+                this._job.size.label = selectedOption.text;
+                this._job.size.id = selectedOption.id;
+                this._job.van = true;
+                break;
+            case "SpeedID":
+                this._job.speedName = selectedOption.text;
+                this._job.speedId = selectedOption.id;
+                break;
+            case "AcceptedJobTypeID":
+                this._job.acceptedName = selectedOption.text;
+                this._job.acceptedJobTypeID = selectedOption.id;
+                break;
+            case "NotifiedJobTypeID":
+                this._job.notifiedName = selectedOption.text;
+                this._job.notifiedId = selectedOption.id;
+                break;
         }
     }
 
     /**
-     * Cancels the Angular Material Dialog
+     * Updates the job details including rating the job.
+     * @private
+     * @async
+     * @param {Object} selectedOption - The selected option.
+     * @returns {Promise<void>}
+     */
+    async _updateJobDetails(selectedOption) {
+        this._job.charge = await this.rateJobService.rateJob(this._job);
+
+        if (this._job.bulkJob) {
+            await this._dispatchData.updateBulkJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID);
+        } else {
+            await this._dispatchData.updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID);
+        }
+    }
+
+    /**
+     * Updates the DG Class and DG Documentation if necessary.
+     * @private
+     * @async
+     * @param {Object} selectedOption - The selected option for DG Class.
+     * @returns {Promise<void>}
+     */
+    async _updateDgClass(selectedOption) {
+        await this._dispatchData.updateJobDetail(this._job.id, this._fieldName, selectedOption.id, this._job.charge, FirstName, ContactID, this._job.preBook);
+
+        if (this._job.dgDocumentation !== this.checkboxValue) {
+            this._job.dgDocumentation = this.checkboxValue;
+            await this._dispatchData.updateJobDetail(this._job.id, "DGDocumentation", this._job.dgDocumentation, this._job.charge, FirstName, ContactID, this._job.preBook);
+        }
+    }
+
+    /**
+     * Cancels the Angular Material Dialog.
      */
     cancel() {
         this._$mdDialog.cancel();

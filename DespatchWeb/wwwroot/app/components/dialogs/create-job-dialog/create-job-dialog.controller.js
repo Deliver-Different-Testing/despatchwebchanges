@@ -8,6 +8,11 @@
  * @class
  */
 class CreateJobDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = [
         '$scope',
         '$mdDialog',

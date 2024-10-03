@@ -8,6 +8,11 @@
  * @class
  */
 class AddNotesDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$mdDialog', 'toastrService', 'DispatchData', 'id', 'fieldName', 'title', 'job'];
 
     /**
