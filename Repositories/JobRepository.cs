@@ -19,7 +19,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
     public async Task<JobViewModel> PreBookDetailAsync(int prebookId)
     {
-        var pallets = await TucJobBookingItems.Where(predicate: x => x.BookingId == prebookId).ToListAsync();
+        var pallets = await Context.TucJobBookingItems.Where(predicate: x => x.BookingId == prebookId).ToListAsync();
         var jobQuery = from jobBooking in Context.TucJobBookings
                        join c in Context.TblCouriers on jobBooking.CourierId equals c.CourierId into courierJoin
                        from courier in courierJoin.DefaultIfEmpty()
@@ -751,10 +751,10 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     public async Task<List<JobViewModel>> CurrentJobList(int courierId, bool done)
     {
         // 2. Execute the compiled query
-        var jobs = await GetJobsQuery(context: _context, cId: courierId, isDone: done).ToListAsync();
+        var jobs = await GetJobsQuery(context: Context, cId: courierId, isDone: done).ToListAsync();
 
         // 3. Use AutoMapper for mapping
-        var jobViewModels = _mapper.Map<List<JobViewModel>>(source: jobs);
+        var jobViewModels = mapper.Map<List<JobViewModel>>(source: jobs);
 
         // 4. Load related data separately to avoid N+1 query problem
         var jobIds = jobViewModels.Select(selector: j => j.Id).ToList();
@@ -2106,7 +2106,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
         return settingsResult == null
             ? new SettingsViewModel()
-            : _mapper.Map<SettingsViewModel>(source: settingsResult);
+            : mapper.Map<SettingsViewModel>(source: settingsResult);
     }
 
     public async Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)

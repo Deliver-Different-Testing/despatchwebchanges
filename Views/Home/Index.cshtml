@@ -19,6 +19,11 @@
 
      
 </script>
+<script>
+    var serverConfig = {
+        isUSCustomer: @Json.Serialize(ViewBag.IsUsTenant)
+        };
+</script>
 <div class="ui-viewer" ui-view>
 
 

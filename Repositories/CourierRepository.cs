@@ -161,9 +161,9 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
-        var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+        var activeCouriers = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
 
-        var clearLists = await _context.TblDespatchViews
+        var clearLists = await Context.TblDespatchViews
             .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
             .SelectMany(dv => dv.DespatchViewZoneGroups)
             .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
@@ -217,9 +217,9 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId)
     {
-        return from cla in _context.TblClearListAreas
-            join clazp in _context.ClearListAreaZipPolygons on cla.ClearListAreaId equals clazp.ClearListAreaId
-            join zp in _context.ZipPolygons on clazp.ZipPolygonId equals zp.ZipPolygonId
+        return from cla in Context.TblClearListAreas
+            join clazp in Context.ClearListAreaZipPolygons on cla.ClearListAreaId equals clazp.ClearListAreaId
+            join zp in Context.ZipPolygons on clazp.ZipPolygonId equals zp.ZipPolygonId
             where cla.ClearListAreaId == clearListAreaId
             select new EnvelopeCoordinate { Longitude = (decimal)zp.Longitude, Latitude = (decimal)zp.Latitude };
     }
@@ -227,14 +227,14 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)
     {
         var today = DateTime.Today;
-        return from c in _context.TblCouriers
-            join jt in _context.TblJobTodays on c.CourierId equals jt.CourierId
-            join zp in _context.ZipPolygons on new { Lat = jt.PickUpLatitude, Lon = jt.PickUpLongitude }
+        return from c in Context.TblCouriers
+            join jt in Context.TblJobTodays on c.CourierId equals jt.CourierId
+            join zp in Context.ZipPolygons on new { Lat = jt.PickUpLatitude, Lon = jt.PickUpLongitude }
                 equals new { Lat = zp.Latitude, Lon = zp.Longitude }
-            join clazp in _context.ClearListAreaZipPolygons on zp.ZipPolygonId equals clazp.ZipPolygonId
-            join cla in _context.TblClearListAreas on clazp.ClearListAreaId equals cla.ClearListAreaId
-            join clio in _context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
-            join cg in _context.TblCourierGps on c.CourierGpsid equals cg.CourierGpsid
+            join clazp in Context.ClearListAreaZipPolygons on zp.ZipPolygonId equals clazp.ZipPolygonId
+            join cla in Context.TblClearListAreas on clazp.ClearListAreaId equals cla.ClearListAreaId
+            join clio in Context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
+            join cg in Context.TblCourierGps on c.CourierGpsid equals cg.CourierGpsid
             where cla.ClearListAreaId == clearListAreaId
                   && clio.LogInTime.Date == today
                   && clio.LogOutTime == null
@@ -246,10 +246,10 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryUs(int clearListAreaId)
     {
-        return from jt in _context.TblJobTodays
-            join zp in _context.ZipPolygons on new { Lat = jt.PickUpLatitude, Lon = jt.PickUpLongitude }
+        return from jt in Context.TblJobTodays
+            join zp in Context.ZipPolygons on new { Lat = jt.PickUpLatitude, Lon = jt.PickUpLongitude }
                 equals new { Lat = zp.Latitude, Lon = zp.Longitude }
-            join clazp in _context.ClearListAreaZipPolygons on zp.ZipPolygonId equals clazp.ZipPolygonId
+            join clazp in Context.ClearListAreaZipPolygons on zp.ZipPolygonId equals clazp.ZipPolygonId
             where clazp.ClearListAreaId == clearListAreaId
                   && jt.JobDone == false
                   && jt.Void == false
@@ -260,9 +260,9 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     private IQueryable<EnvelopeCoordinate> GetAreaPolygonsQueryNz(int clearListAreaId)
     {
-        return from cla in _context.TblClearListAreas
-            join clap in _context.TblClearListAreaPolygons on cla.ClearListAreaId equals clap.ClearListAreaId
-            join pgps in _context.TblPolygonGps on clap.PolygonId equals pgps.PolygonId
+        return from cla in Context.TblClearListAreas
+            join clap in Context.TblClearListAreaPolygons on cla.ClearListAreaId equals clap.ClearListAreaId
+            join pgps in Context.TblPolygonGps on clap.PolygonId equals pgps.PolygonId
             where cla.ClearListAreaId == clearListAreaId
             select new EnvelopeCoordinate { Longitude = pgps.Longitude, Latitude = pgps.Latitude };
     }
@@ -270,14 +270,14 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
     {
         var today = DateTime.Today;
-        return from c in _context.TblCouriers
-            join jt in _context.TblJobTodays on c.CourierId equals jt.CourierId
-            join dps in _context.TblPolygonSuburbs on jt.ToSuburbId equals dps.SuburbId
-            join dp in _context.TblPolygons on dps.PolygonId equals dp.PolygonId
-            join dclap in _context.TblClearListAreaPolygons on dp.PolygonId equals dclap.PolygonId
-            join dcla in _context.TblClearListAreas on dclap.ClearListAreaId equals dcla.ClearListAreaId
-            join clio in _context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
-            join cgps in _context.TblCourierGps on c.CourierGpsid equals cgps.CourierGpsid
+        return from c in Context.TblCouriers
+            join jt in Context.TblJobTodays on c.CourierId equals jt.CourierId
+            join dps in Context.TblPolygonSuburbs on jt.ToSuburbId equals dps.SuburbId
+            join dp in Context.TblPolygons on dps.PolygonId equals dp.PolygonId
+            join dclap in Context.TblClearListAreaPolygons on dp.PolygonId equals dclap.PolygonId
+            join dcla in Context.TblClearListAreas on dclap.ClearListAreaId equals dcla.ClearListAreaId
+            join clio in Context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
+            join cgps in Context.TblCourierGps on c.CourierGpsid equals cgps.CourierGpsid
             where dcla.ClearListAreaId == clearListAreaId
                   && clio.LogInTime.Date == today
                   && clio.LogOutTime == null
@@ -289,9 +289,9 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryNz(int clearListAreaId)
     {
-        return from jt in _context.TblJobTodays
-            join ps in _context.TblPolygonSuburbs on jt.ToSuburbId equals ps.SuburbId
-            join clap in _context.TblClearListAreaPolygons on ps.PolygonId equals clap.PolygonId
+        return from jt in Context.TblJobTodays
+            join ps in Context.TblPolygonSuburbs on jt.ToSuburbId equals ps.SuburbId
+            join clap in Context.TblClearListAreaPolygons on ps.PolygonId equals clap.PolygonId
             where clap.ClearListAreaId == clearListAreaId
                   && jt.JobDone == false
                   && jt.Void == false
@@ -319,7 +319,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         int percentHeight)
     {
         var result =
-            await _context.Procedures.DES_qdfCourier_ClearListsAsync(ClearListAreaID: clearList?.ClearListAreaId);
+            await Context.Procedures.DES_qdfCourier_ClearListsAsync(ClearListAreaID: clearList?.ClearListAreaId);
 
         var acl = new AreaClearList
         {

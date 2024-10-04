@@ -65,6 +65,10 @@ public partial class TucSuburb
 
     public string Gsscity { get; set; }
 
+    public virtual ICollection<TblPolygonGp> TblPolygonGps { get; set; } = new List<TblPolygonGp>();
+
+    public virtual ICollection<TblPolygonSuburb> TblPolygonSuburbs { get; set; } = new List<TblPolygonSuburb>();
+
     public virtual ICollection<TucClient> TucClients { get; set; } = new List<TucClient>();
 
     public virtual ICollection<TucStaff> TucStaffs { get; set; } = new List<TucStaff>();

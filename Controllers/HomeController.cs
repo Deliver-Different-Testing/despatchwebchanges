@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 
 namespace DespatchWeb.Controllers
@@ -23,8 +24,10 @@ namespace DespatchWeb.Controllers
                 var contactId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "ContactID")?.Value;
                 var connectionString = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
                 var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
-                var isUsTenant =HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "IsUsTenant")?.Value;
-                var isUsTenantFlag = bool.TryParse(isUsTenant, out bool result) && result;
+                var countryCode =HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
+                var usa = Country.Us.GetDescription();
+                
+                var isUsTenantFlag = countryCode?.ToUpper().Equals(usa);
 
                 if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(tenantId))
                 {
@@ -50,7 +53,7 @@ namespace DespatchWeb.Controllers
                 ViewBag.Email = clientDetail.Email;
                 ViewBag.ClientInternal = clientDetail.Internal;
                 ViewBag.ContactID = clientDetail.StaffID ?? int.Parse(contactId);
-                ViewBag.IsUsTenant= isUsTenantFlag;
+                ViewBag.IsUsTenant= isUsTenantFlag??false;
 
                 return View();
             }

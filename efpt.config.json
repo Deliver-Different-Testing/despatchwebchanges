@@ -387,10 +387,10 @@
          "ObjectType": 1
       },
       {
-        "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
-        "ObjectType": 1
+         "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
+         "ObjectType": 1
       },
-     {
+      {
          "Name": "[dbo].[qry_tucJobItems]",
          "ObjectType": 1
       },

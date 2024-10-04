@@ -8,19 +8,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
-public class ClearListZonesRepository : IClearListZonesRepository
+public class ClearListZonesRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), IClearListZonesRepository
 {
-    private readonly DespatchContext _context;
-
-    public ClearListZonesRepository(DespatchContext context)
-    {
-        _context = context;
-    }
-
     // Get the views available to populate the top-bar
     public async Task<List<SelectItem>> GetDispatchViewsAsync(int userId)
     {
-        var dispatchViews = await _context.UserDespatchViewPreferences
+        var dispatchViews = await Context.UserDespatchViewPreferences
             .Where(udvp => udvp.UserId == userId)
             .Select(udvp => udvp.DespatchView)
             .Select(dv => new SelectItem
@@ -35,7 +28,7 @@ public class ClearListZonesRepository : IClearListZonesRepository
 
     public async Task<string> GetWhereClauseByDispatchView(int despatchViewId)
     {
-        return await _context.TblDespatchViews
+        return await Context.TblDespatchViews
             .Where(dv => dv.DespatchViewId == despatchViewId)
             .Select(dv => dv.WhereCondition)
             .FirstOrDefaultAsync();
@@ -43,7 +36,7 @@ public class ClearListZonesRepository : IClearListZonesRepository
 
     public async Task<List<ZoneGroup>> GetZoneGroupsAsync()
     {
-        var zoneGroups = await _context.ZoneGroups.ToListAsync();
+        var zoneGroups = await Context.ZoneGroups.ToListAsync();
         return zoneGroups;
     }
 }

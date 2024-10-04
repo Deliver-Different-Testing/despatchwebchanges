@@ -55,9 +55,15 @@ builder.Services.Configure<FormOptions>(x =>
     x.MultipartBodyLengthLimit = int.MaxValue;
     x.MultipartHeadersLengthLimit = int.MaxValue;
 });
-builder.Services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = int.MaxValue; });
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    if (options != null) options.MaxRequestBodySize = int.MaxValue;
+});
 
-builder.Services.Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = int.MaxValue; });
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    if (options != null) options.Limits.MaxRequestBodySize = int.MaxValue;
+});
 
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
@@ -65,11 +71,13 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IClearListZonesRepository, ClearListZonesRepository>();
+
 
 
 // Automapper
-builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile), typeof(PotentialCouriersViewModelMapperProfile),
-    typeof(GenericMapperProfiles), typeof(ActiveCouriersMapperProfile));
+builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile),
+    typeof(GenericMapperProfiles));
 
 
 // Register DespatchContext with a dummy connection string
@@ -137,6 +145,7 @@ app.UseStaticFiles(new StaticFileOptions
 
     ContentTypeProvider = provider
 });
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(

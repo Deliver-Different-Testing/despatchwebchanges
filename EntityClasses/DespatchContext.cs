@@ -13,11 +13,15 @@ public partial class DespatchContext : DbContext
     {
     }
 
+    public virtual DbSet<ClearListAreaZipPolygon> ClearListAreaZipPolygons { get; set; }
+
     public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
 
     public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
 
     public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
+
+    public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
 
     public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
 
@@ -28,6 +32,10 @@ public partial class DespatchContext : DbContext
     public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
 
     public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
+
+    public virtual DbSet<TblClearListArea> TblClearListAreas { get; set; }
+
+    public virtual DbSet<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; }
 
     public virtual DbSet<TblClient> TblClients { get; set; }
 
@@ -43,6 +51,10 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblCourier> TblCouriers { get; set; }
 
+    public virtual DbSet<TblCourierGp> TblCourierGps { get; set; }
+
+    public virtual DbSet<TblCourierLogInOut> TblCourierLogInOuts { get; set; }
+
     public virtual DbSet<TblDespatchView> TblDespatchViews { get; set; }
 
     public virtual DbSet<TblDfrntapp> TblDfrntapps { get; set; }
@@ -52,6 +64,14 @@ public partial class DespatchContext : DbContext
     public virtual DbSet<TblJob> TblJobs { get; set; }
 
     public virtual DbSet<TblJobLeaveNotHome> TblJobLeaveNotHomes { get; set; }
+
+    public virtual DbSet<TblJobToday> TblJobTodays { get; set; }
+
+    public virtual DbSet<TblPolygon> TblPolygons { get; set; }
+
+    public virtual DbSet<TblPolygonGp> TblPolygonGps { get; set; }
+
+    public virtual DbSet<TblPolygonSuburb> TblPolygonSuburbs { get; set; }
 
     public virtual DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
 
@@ -89,14 +109,45 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
 
+    public virtual DbSet<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; }
+
     public virtual DbSet<UserWidgetPreference> UserWidgetPreferences { get; set; }
 
     public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
 
     public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
 
+    public virtual DbSet<ZipPolygon> ZipPolygons { get; set; }
+
+    public virtual DbSet<ZoneGroup> ZoneGroups { get; set; }
+
+    public virtual DbSet<ZoneName> ZoneNames { get; set; }
+
+    public virtual DbSet<ZoneZip> ZoneZips { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ClearListAreaZipPolygon>(entity =>
+        {
+            entity.HasKey(e => e.ClearListAreaZipPolygonId).HasName("PK__ClearLis__92471BFE10EC3765");
+
+            entity.ToTable("ClearListAreaZipPolygon");
+
+            entity.HasIndex(e => new { e.ClearListAreaId, e.ZipPolygonId }, "UC_ClearListArea_ZipPolygon").IsUnique();
+
+            entity.Property(e => e.ClearListAreaZipPolygonId).HasColumnName("ClearListAreaZipPolygonID");
+            entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+        });
+
         modelBuilder.Entity<DeliveryPhoto>(entity =>
         {
             entity.ToTable("DeliveryPhoto");
@@ -205,6 +256,39 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50)
                 .HasColumnName("ucstWindowsLogonName");
             entity.Property(e => e.VanOk).HasColumnName("VanOK");
+        });
+
+        modelBuilder.Entity<DespatchViewZoneGroup>(entity =>
+        {
+            entity.ToTable("DespatchViewZoneGroup");
+
+            entity.HasIndex(e => new { e.DespatchViewId, e.ZoneGroupId }, "UQ_DespatchViewZoneGroup_DespatchView_ZoneGroup").IsUnique();
+
+            entity.Property(e => e.DespatchViewZoneGroupId).HasColumnName("DespatchViewZoneGroupID");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.CreatedDate)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LastModifiedDate)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+
+            entity.HasOne(d => d.DespatchView).WithMany(p => p.DespatchViewZoneGroups)
+                .HasForeignKey(d => d.DespatchViewId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DespatchViewZoneGroup_DespatchView");
+
+            entity.HasOne(d => d.ZoneGroup).WithMany(p => p.DespatchViewZoneGroups)
+                .HasForeignKey(d => d.ZoneGroupId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DespatchViewZoneGroup_ZoneGroup");
         });
 
         modelBuilder.Entity<DeswebQryDespatch>(entity =>
@@ -602,6 +686,86 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Speed).WithMany(p => p.TblBulkRunScheduleSpeeds)
                 .HasForeignKey(d => d.SpeedId)
                 .HasConstraintName("FK_tblBulkRunSchedule_tucJobType");
+        });
+
+        modelBuilder.Entity<TblClearListArea>(entity =>
+        {
+            entity.HasKey(e => e.ClearListAreaId);
+
+            entity.ToTable("tblClearListArea");
+
+            entity.HasIndex(e => e.ChannelId, "ChannelID");
+
+            entity.HasIndex(e => new { e.Name, e.ChannelId }, "UC_NameChannelID").IsUnique();
+
+            entity.HasIndex(e => new { e.Name, e.Code }, "UC_NameCode").IsUnique();
+
+            entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+            entity.Property(e => e.ChannelId).HasColumnName("ChannelID");
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.Order).HasDefaultValue(1);
+        });
+
+        modelBuilder.Entity<TblClearListAreaPolygon>(entity =>
+        {
+            entity.HasKey(e => e.ClearListAreaPolygonId);
+
+            entity.ToTable("tblClearListAreaPolygon");
+
+            entity.HasIndex(e => e.ClearListAreaId, "ClearListAreaID");
+
+            entity.HasIndex(e => e.ZipPolygonId, "IX_ClearListAreaPolygon_ZipPolygonID");
+
+            entity.HasIndex(e => e.PolygonId, "PolygonID");
+
+            entity.HasIndex(e => new { e.ClearListAreaId, e.PolygonId }, "UC_ClearListArea_Polygon").IsUnique();
+
+            entity.Property(e => e.ClearListAreaPolygonId).HasColumnName("ClearListAreaPolygonID");
+            entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
+            entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+
+            entity.HasOne(d => d.ClearListArea).WithMany(p => p.TblClearListAreaPolygons)
+                .HasForeignKey(d => d.ClearListAreaId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblClearListAreaPolygon_tblClearListArea");
+
+            entity.HasOne(d => d.Polygon).WithMany(p => p.TblClearListAreaPolygons)
+                .HasForeignKey(d => d.PolygonId)
+                .HasConstraintName("FK_TblClearListAreaPolygon_tblPolygon");
+
+            entity.HasOne(d => d.ZipPolygon).WithMany(p => p.TblClearListAreaPolygons)
+                .HasForeignKey(d => d.ZipPolygonId)
+                .HasConstraintName("FK_ClearListAreaPolygon_ZipPolygon");
         });
 
         modelBuilder.Entity<TblClient>(entity =>
@@ -1465,6 +1629,76 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("WOFExpiry");
         });
 
+        modelBuilder.Entity<TblCourierGp>(entity =>
+        {
+            entity.HasKey(e => e.CourierGpsid);
+
+            entity.ToTable("tblCourierGPS", tb =>
+                {
+                    tb.HasTrigger("tblCourierGPS_Insert_CourierStats");
+                    tb.HasTrigger("tblCourierGPS_Insert_MACourierStats");
+                });
+
+            entity.HasIndex(e => e.CourierId, "CourierID");
+
+            entity.HasIndex(e => new { e.CourierId, e.Created }, "Courier_Created");
+
+            entity.HasIndex(e => e.Created, "Created");
+
+            entity.HasIndex(e => e.JobId, "JobID");
+
+            entity.HasIndex(e => e.PolygonId, "PolygonID");
+
+            entity.Property(e => e.CourierGpsid).HasColumnName("CourierGPSID");
+            entity.Property(e => e.Action).HasMaxLength(50);
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.GpswasEstimated).HasColumnName("GPSWasEstimated");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.Latitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.Longitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
+            entity.Property(e => e.RawData)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.HasOne(d => d.Polygon).WithMany(p => p.TblCourierGps)
+                .HasForeignKey(d => d.PolygonId)
+                .HasConstraintName("FK_tblCourierGPS_tblPolygon");
+        });
+
+        modelBuilder.Entity<TblCourierLogInOut>(entity =>
+        {
+            entity.HasKey(e => e.CourierLogInOutId);
+
+            entity.ToTable("tblCourierLogInOut");
+
+            entity.HasIndex(e => e.CourierId, "CourierID");
+
+            entity.HasIndex(e => e.Duration, "Duration");
+
+            entity.HasIndex(e => e.LogInTime, "LogInTime");
+
+            entity.HasIndex(e => e.LogOutTime, "LogOutTime");
+
+            entity.Property(e => e.CourierLogInOutId).HasColumnName("CourierLogInOutID");
+            entity.Property(e => e.AppVersion).HasMaxLength(10);
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.Created).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LastModified).HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LogInTime).HasColumnType("datetime");
+            entity.Property(e => e.LogOutTime).HasColumnType("datetime");
+            entity.Property(e => e.Notes).HasColumnType("ntext");
+        });
+
         modelBuilder.Entity<TblDespatchView>(entity =>
         {
             entity.HasKey(e => e.DespatchViewId).IsClustered(false);
@@ -1494,6 +1728,10 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(1000)
                 .IsUnicode(false);
             entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+
+            entity.HasOne(d => d.ZoneGroup).WithMany(p => p.TblDespatchViews)
+                .HasForeignKey(d => d.ZoneGroupId)
+                .HasConstraintName("FK__tblDespat__ZoneG__12B48446");
         });
 
         modelBuilder.Entity<TblDfrntapp>(entity =>
@@ -1736,6 +1974,420 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100)
                 .HasColumnName("SMSName");
+        });
+
+        modelBuilder.Entity<TblJobToday>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("tblJob_Today");
+
+            entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
+            entity.Property(e => e.Amount).HasColumnType("money");
+            entity.Property(e => e.Barcode).HasMaxLength(300);
+            entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
+            entity.Property(e => e.Cbd).HasColumnName("CBD");
+            entity.Property(e => e.ClientCode)
+                .HasMaxLength(5)
+                .IsUnicode(false);
+            entity.Property(e => e.ClientId).HasColumnName("ClientID");
+            entity.Property(e => e.ClientItemIds).HasMaxLength(100);
+            entity.Property(e => e.ClientNotes).HasMaxLength(4000);
+            entity.Property(e => e.ClientReferenceA)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.ClientReferenceB)
+                .HasMaxLength(15)
+                .IsUnicode(false);
+            entity.Property(e => e.ClosestCourierId).HasColumnName("ClosestCourierID");
+            entity.Property(e => e.CompletedTime).HasColumnType("datetime");
+            entity.Property(e => e.Contact).HasMaxLength(30);
+            entity.Property(e => e.ContactId).HasColumnName("ContactID");
+            entity.Property(e => e.ContactPhone)
+                .HasMaxLength(15)
+                .IsUnicode(false);
+            entity.Property(e => e.CourierBonus).HasColumnType("money");
+            entity.Property(e => e.CourierFuel).HasColumnType("money");
+            entity.Property(e => e.CourierId).HasColumnName("CourierID");
+            entity.Property(e => e.CourierPayment).HasColumnType("money");
+            entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
+            entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
+            entity.Property(e => e.Date).HasColumnType("datetime");
+            entity.Property(e => e.DeliverToContact).HasMaxLength(100);
+            entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
+            entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
+            entity.Property(e => e.DeliveryAddressLine1).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine2).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine3).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine4).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine5).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine6).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine7).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine8).HasMaxLength(255);
+            entity.Property(e => e.DeliveryGps).HasMaxLength(50);
+            entity.Property(e => e.DeliveryLatitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.DeliveryPhoto).HasColumnType("image");
+            entity.Property(e => e.DeliverySignature).HasColumnType("image");
+            entity.Property(e => e.DesiredJobTypeId).HasColumnName("DesiredJobTypeID");
+            entity.Property(e => e.Dgclass).HasColumnName("DGClass");
+            entity.Property(e => e.Dgdocument).HasColumnName("DGDocument");
+            entity.Property(e => e.DispatchDate).HasColumnType("datetime");
+            entity.Property(e => e.DispatchTime).HasColumnType("datetime");
+            entity.Property(e => e.DispatcherId).HasColumnName("DispatcherID");
+            entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
+            entity.Property(e => e.DropoffAmount).HasColumnType("money");
+            entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
+            entity.Property(e => e.EmailForJobFu).HasColumnName("EmailForJobFU");
+            entity.Property(e => e.FdcourierId).HasColumnName("FDCourierID");
+            entity.Property(e => e.FlightDetails)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.FollowupTime).HasColumnType("datetime");
+            entity.Property(e => e.FromAddress)
+                .HasMaxLength(150)
+                .IsUnicode(false);
+            entity.Property(e => e.FromAddressExtras)
+                .HasMaxLength(200)
+                .HasColumnName("fromAddressExtras");
+            entity.Property(e => e.FromAddressExtras2)
+                .HasMaxLength(200)
+                .HasColumnName("fromAddressExtras2");
+            entity.Property(e => e.FromAddressStreetName)
+                .HasMaxLength(200)
+                .HasColumnName("fromAddressStreetName");
+            entity.Property(e => e.FromSuburbId).HasColumnName("FromSuburbID");
+            entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
+            entity.Property(e => e.GssTrackingUrl)
+                .HasMaxLength(400)
+                .HasColumnName("GssTrackingURL");
+            entity.Property(e => e.Gssamount)
+                .HasColumnType("money")
+                .HasColumnName("GSSAmount");
+            entity.Property(e => e.Gssconnote)
+                .HasMaxLength(50)
+                .HasColumnName("GSSConnote");
+            entity.Property(e => e.Gstrate)
+                .HasColumnType("decimal(18, 3)")
+                .HasColumnName("GSTRate");
+            entity.Property(e => e.InformationParentId).HasColumnName("InformationParentID");
+            entity.Property(e => e.InternalNotes).HasMaxLength(4000);
+            entity.Property(e => e.ItemNotReadyNotificationNotes).HasMaxLength(4000);
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
+            entity.Property(e => e.JobTypeId).HasColumnName("JobTypeID");
+            entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
+            entity.Property(e => e.Notes).HasMaxLength(4000);
+            entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
+            entity.Property(e => e.Number)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Nwamount)
+                .HasColumnType("money")
+                .HasColumnName("NWAmount");
+            entity.Property(e => e.NwrawAmount)
+                .HasColumnType("money")
+                .HasColumnName("NWRawAmount");
+            entity.Property(e => e.OperatorId).HasColumnName("OperatorID");
+            entity.Property(e => e.OriginalSpeedId).HasColumnName("OriginalSpeedID");
+            entity.Property(e => e.OurRef)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.OutForDelivery).HasColumnType("datetime");
+            entity.Property(e => e.ParentId).HasColumnName("ParentID");
+            entity.Property(e => e.PickUpLatitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.PickUpLongitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.PickUpName).HasMaxLength(100);
+            entity.Property(e => e.PickUpSignature).HasColumnType("image");
+            entity.Property(e => e.PickUpTime).HasColumnType("datetime");
+            entity.Property(e => e.PickupAddressLine1).HasMaxLength(255);
+            entity.Property(e => e.PickupAddressLine2).HasMaxLength(255);
+            entity.Property(e => e.PickupAddressLine3).HasMaxLength(255);
+            entity.Property(e => e.PickupAddressLine4).HasMaxLength(255);
+            entity.Property(e => e.PickupAddressLine5).HasMaxLength(255);
+            entity.Property(e => e.PickupAddressLine6).HasMaxLength(255);
+            entity.Property(e => e.PickupAddressLine7).HasMaxLength(255);
+            entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
+            entity.Property(e => e.PickupAmount).HasColumnType("money");
+            entity.Property(e => e.PickupFromContact).HasMaxLength(100);
+            entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
+            entity.Property(e => e.PickupRawAmount).HasColumnType("money");
+            entity.Property(e => e.Podname)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("PODName");
+            entity.Property(e => e.PodnotificationHasBeenSent).HasColumnName("PODNotificationHasBeenSent");
+            entity.Property(e => e.Ppdamount)
+                .HasColumnType("money")
+                .HasColumnName("PPDAmount");
+            entity.Property(e => e.PpdexclusiveAmount)
+                .HasColumnType("money")
+                .HasColumnName("PPDExclusiveAmount");
+            entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
+            entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
+            entity.Property(e => e.RawAmount).HasColumnType("money");
+            entity.Property(e => e.RawBaseAmount).HasColumnType("money");
+            entity.Property(e => e.RebateAmt).HasColumnType("money");
+            entity.Property(e => e.Recipient).HasMaxLength(30);
+            entity.Property(e => e.RefJobId).HasColumnName("RefJobID");
+            entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
+            entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
+            entity.Property(e => e.RunName).HasMaxLength(50);
+            entity.Property(e => e.ScheduleName).HasMaxLength(200);
+            entity.Property(e => e.ShopRef1).HasMaxLength(50);
+            entity.Property(e => e.ShopRef2).HasMaxLength(50);
+            entity.Property(e => e.ShopRef3).HasMaxLength(50);
+            entity.Property(e => e.ShopRef4).HasMaxLength(50);
+            entity.Property(e => e.ShopRef5).HasMaxLength(50);
+            entity.Property(e => e.SourceId).HasColumnName("SourceID");
+            entity.Property(e => e.StripeChargeId)
+                .HasMaxLength(50)
+                .HasColumnName("StripeChargeID");
+            entity.Property(e => e.TextRef1)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.TextRef2)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.TextRef3)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.TextRef4)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Time).HasColumnType("datetime");
+            entity.Property(e => e.ToAddress)
+                .HasMaxLength(150)
+                .IsUnicode(false);
+            entity.Property(e => e.ToAddressExtras)
+                .HasMaxLength(200)
+                .HasColumnName("toAddressExtras");
+            entity.Property(e => e.ToAddressExtras2)
+                .HasMaxLength(200)
+                .HasColumnName("toAddressExtras2");
+            entity.Property(e => e.ToAddressStreetName)
+                .HasMaxLength(200)
+                .HasColumnName("toAddressStreetName");
+            entity.Property(e => e.ToSpecial)
+                .HasMaxLength(120)
+                .IsUnicode(false);
+            entity.Property(e => e.ToSuburbId).HasColumnName("ToSuburbID");
+            entity.Property(e => e.TrackingEmail).HasMaxLength(500);
+            entity.Property(e => e.TrackingMobile).HasMaxLength(500);
+            entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
+            entity.Property(e => e.UcjbAmount)
+                .HasColumnType("money")
+                .HasColumnName("ucjbAmount");
+            entity.Property(e => e.UcjbAttention).HasColumnName("ucjbAttention");
+            entity.Property(e => e.UcjbCbd).HasColumnName("ucjbCBD");
+            entity.Property(e => e.UcjbChargeType).HasColumnName("ucjbChargeType");
+            entity.Property(e => e.UcjbClientCode)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("ucjbClientCode");
+            entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
+            entity.Property(e => e.UcjbClientRefa)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("ucjbClientRefa");
+            entity.Property(e => e.UcjbClientRefb)
+                .HasMaxLength(15)
+                .IsUnicode(false)
+                .HasColumnName("ucjbClientRefb");
+            entity.Property(e => e.UcjbClientRefc)
+                .HasMaxLength(50)
+                .HasColumnName("ucjbClientRefc");
+            entity.Property(e => e.UcjbComplTime)
+                .HasColumnType("datetime")
+                .HasColumnName("ucjbComplTime");
+            entity.Property(e => e.UcjbContact)
+                .HasMaxLength(30)
+                .HasColumnName("ucjbContact");
+            entity.Property(e => e.UcjbContactPhone)
+                .HasMaxLength(15)
+                .IsUnicode(false)
+                .HasColumnName("ucjbContactPhone");
+            entity.Property(e => e.UcjbCourierId).HasColumnName("ucjbCourierID");
+            entity.Property(e => e.UcjbDate)
+                .HasColumnType("datetime")
+                .HasColumnName("ucjbDate");
+            entity.Property(e => e.UcjbDispDate)
+                .HasColumnType("datetime")
+                .HasColumnName("ucjbDispDate");
+            entity.Property(e => e.UcjbDispId).HasColumnName("ucjbDispID");
+            entity.Property(e => e.UcjbDispTime)
+                .HasColumnType("datetime")
+                .HasColumnName("ucjbDispTime");
+            entity.Property(e => e.UcjbFlightDetails)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("ucjbFlightDetails");
+            entity.Property(e => e.UcjbFrom).HasColumnName("ucjbFrom");
+            entity.Property(e => e.UcjbFromAddr)
+                .HasMaxLength(150)
+                .IsUnicode(false)
+                .HasColumnName("ucjbFromAddr");
+            entity.Property(e => e.UcjbId).HasColumnName("ucjbID");
+            entity.Property(e => e.UcjbJobDone).HasColumnName("ucjbJobDone");
+            entity.Property(e => e.UcjbKm).HasColumnName("ucjbKm");
+            entity.Property(e => e.UcjbLateDel).HasColumnName("ucjbLateDel");
+            entity.Property(e => e.UcjbLatePick).HasColumnName("ucjbLatePick");
+            entity.Property(e => e.UcjbLocked).HasColumnName("ucjbLocked");
+            entity.Property(e => e.UcjbMobileSend).HasColumnName("ucjbMobileSend");
+            entity.Property(e => e.UcjbNotes)
+                .HasMaxLength(4000)
+                .HasColumnName("ucjbNotes");
+            entity.Property(e => e.UcjbNumber)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("ucjbNumber");
+            entity.Property(e => e.UcjbOpId).HasColumnName("ucjbOpID");
+            entity.Property(e => e.UcjbOurRef)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("ucjbOurRef");
+            entity.Property(e => e.UcjbPaged).HasColumnName("ucjbPaged");
+            entity.Property(e => e.UcjbPagedTime)
+                .HasColumnType("datetime")
+                .HasColumnName("ucjbPagedTime");
+            entity.Property(e => e.UcjbPickUpFrom).HasColumnName("ucjbPickUpFrom");
+            entity.Property(e => e.UcjbPodname)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("ucjbPODName");
+            entity.Property(e => e.UcjbQty).HasColumnName("ucjbQty");
+            entity.Property(e => e.UcjbRefJobId).HasColumnName("ucjbRefJobID");
+            entity.Property(e => e.UcjbReturn).HasColumnName("ucjbReturn");
+            entity.Property(e => e.UcjbSendTime)
+                .HasColumnType("datetime")
+                .HasColumnName("ucjbSendTime");
+            entity.Property(e => e.UcjbSize).HasColumnName("ucjbSize");
+            entity.Property(e => e.UcjbSpeed).HasColumnName("ucjbSpeed");
+            entity.Property(e => e.UcjbStatus).HasColumnName("ucjbStatus");
+            entity.Property(e => e.UcjbTime)
+                .HasColumnType("datetime")
+                .HasColumnName("ucjbTime");
+            entity.Property(e => e.UcjbTo).HasColumnName("ucjbTo");
+            entity.Property(e => e.UcjbToAddr)
+                .HasMaxLength(150)
+                .IsUnicode(false)
+                .HasColumnName("ucjbToAddr");
+            entity.Property(e => e.UcjbToSpecial)
+                .HasMaxLength(120)
+                .IsUnicode(false)
+                .HasColumnName("ucjbToSpecial");
+            entity.Property(e => e.UcjbType).HasColumnName("ucjbType");
+            entity.Property(e => e.UcjbVan).HasColumnName("ucjbVan");
+            entity.Property(e => e.UcjbVoid).HasColumnName("ucjbVoid");
+            entity.Property(e => e.UcjbWeight).HasColumnName("ucjbWeight");
+            entity.Property(e => e.UndeliverableLocationId).HasColumnName("UndeliverableLocationID");
+            entity.Property(e => e.VanOk).HasColumnName("VanOK");
+            entity.Property(e => e.WhenColsolidateMarsInformation).HasColumnType("datetime");
+            entity.Property(e => e.WhenItemNotReadyNotificationSent).HasColumnType("datetime");
+            entity.Property(e => e.WhenJobTrackingNotificationSent).HasColumnType("datetime");
+            entity.Property(e => e.WhenLateDeliveryNotificationSent).HasColumnType("datetime");
+            entity.Property(e => e.WhenLatePickupNotificationSent).HasColumnType("datetime");
+            entity.Property(e => e.WhenPodnotificationSent)
+                .HasColumnType("datetime")
+                .HasColumnName("WhenPODNotificationSent");
+            entity.Property(e => e.WhenSpeedChangeNotificationSent).HasColumnType("datetime");
+        });
+
+        modelBuilder.Entity<TblPolygon>(entity =>
+        {
+            entity.HasKey(e => e.PolygonId);
+
+            entity.ToTable("tblPolygon");
+
+            entity.HasIndex(e => e.ExternalId, "ExternalID");
+
+            entity.HasIndex(e => e.ExternalId, "UC_ExternalID").IsUnique();
+
+            entity.HasIndex(e => e.Name, "UC_Name").IsUnique();
+
+            entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
+            entity.Property(e => e.AreaId).HasColumnName("AreaID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.ExternalId).HasColumnName("ExternalID");
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Notes).HasColumnType("ntext");
+        });
+
+        modelBuilder.Entity<TblPolygonGp>(entity =>
+        {
+            entity.HasKey(e => e.PolygonGpsid).HasName("PK_tblSuburbGPS");
+
+            entity.ToTable("tblPolygonGPS");
+
+            entity.HasIndex(e => e.PolygonId, "PolygonID");
+
+            entity.Property(e => e.PolygonGpsid).HasColumnName("PolygonGPSID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Latitude).HasColumnType("decimal(18, 8)");
+            entity.Property(e => e.Longitude).HasColumnType("decimal(18, 8)");
+            entity.Property(e => e.Notes).HasColumnType("ntext");
+            entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
+
+            entity.HasOne(d => d.Polygon).WithMany(p => p.TblPolygonGps)
+                .HasForeignKey(d => d.PolygonId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblPolygonGPS_tblPolygon");
+
+            entity.HasOne(d => d.PolygonNavigation).WithMany(p => p.TblPolygonGps)
+                .HasForeignKey(d => d.PolygonId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblSuburbGPS_tucSuburb");
+        });
+
+        modelBuilder.Entity<TblPolygonSuburb>(entity =>
+        {
+            entity.HasKey(e => e.PolygonSuburbId);
+
+            entity.ToTable("tblPolygonSuburb");
+
+            entity.HasIndex(e => e.PolygonId, "PolygonID");
+
+            entity.HasIndex(e => e.SuburbId, "SuburbID");
+
+            entity.HasIndex(e => new { e.PolygonId, e.SuburbId }, "UC_PolygonSuburb").IsUnique();
+
+            entity.Property(e => e.PolygonSuburbId).HasColumnName("PolygonSuburbID");
+            entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
+            entity.Property(e => e.SuburbId).HasColumnName("SuburbID");
+
+            entity.HasOne(d => d.Polygon).WithMany(p => p.TblPolygonSuburbs)
+                .HasForeignKey(d => d.PolygonId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblPolygonSuburb_tblPolygon");
+
+            entity.HasOne(d => d.Suburb).WithMany(p => p.TblPolygonSuburbs)
+                .HasForeignKey(d => d.SuburbId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblPolygonSuburb_tucSuburb");
         });
 
         modelBuilder.Entity<TblUndeliverableLocation>(entity =>
@@ -3412,6 +4064,25 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcsuRegion).HasColumnName("ucsuRegion");
         });
 
+        modelBuilder.Entity<UserDespatchViewPreference>(entity =>
+        {
+            entity.HasKey(e => e.UserDespatchViewPrefId).HasName("PK__UserDesp__B13A9F177A08D20D");
+
+            entity.Property(e => e.UserDespatchViewPrefId)
+                .ValueGeneratedNever()
+                .HasColumnName("UserDespatchViewPrefID");
+            entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+
+            entity.HasOne(d => d.DespatchView).WithMany(p => p.UserDespatchViewPreferences)
+                .HasForeignKey(d => d.DespatchViewId)
+                .HasConstraintName("FK__UserDespa__Despa__7CE53EB8");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserDespatchViewPreferences)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK__UserDespa__UserI__7BF11A7F");
+        });
+
         modelBuilder.Entity<UserWidgetPreference>(entity =>
         {
             entity.HasKey(e => e.UserWidgetPrefId).HasName("PK__UserWidg__17BB109C4A59BEEB");
@@ -3543,6 +4214,97 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("ucjtName");
+        });
+
+        modelBuilder.Entity<ZipPolygon>(entity =>
+        {
+            entity.HasKey(e => e.ZipPolygonId).HasName("PK__ZipPolyg__6A8AEEE3127F7A1C");
+
+            entity.ToTable("ZipPolygon");
+
+            entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+            entity.Property(e => e.FixedWkt).HasColumnName("FixedWKT");
+            entity.Property(e => e.Latitude).HasColumnType("decimal(18, 8)");
+            entity.Property(e => e.Longitude).HasColumnType("decimal(18, 8)");
+            entity.Property(e => e.Wkt).HasColumnName("WKT");
+            entity.Property(e => e.Zip)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<ZoneGroup>(entity =>
+        {
+            entity.HasKey(e => e.ZoneGroupId).HasName("PK__ZoneGrou__958F80BF0189F844");
+
+            entity.ToTable("ZoneGroup");
+
+            entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+            entity.Property(e => e.Name).HasMaxLength(255);
+
+            entity.HasOne(d => d.ClearListArea).WithMany(p => p.ZoneGroups)
+                .HasForeignKey(d => d.ClearListAreaId)
+                .HasConstraintName("FK_ZoneGroup_ClearListArea");
+        });
+
+        modelBuilder.Entity<ZoneName>(entity =>
+        {
+            entity.HasKey(e => e.ZoneNameId).HasName("PK__ZoneName__86588D1C0742D19A");
+
+            entity.ToTable("ZoneName");
+
+            entity.Property(e => e.ZoneNameId).HasColumnName("ZoneNameID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.GeoPolygonId).HasColumnName("GeoPolygonID");
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+            entity.Property(e => e.LocationId).HasColumnName("LocationID");
+            entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+            entity.Property(e => e.ZoneName1)
+                .HasMaxLength(255)
+                .HasColumnName("ZoneName");
+
+            entity.HasOne(d => d.ZoneGroup).WithMany(p => p.ZoneNames)
+                .HasForeignKey(d => d.ZoneGroupId)
+                .HasConstraintName("FK__ZoneName__LastMo__0B13627E");
+        });
+
+        modelBuilder.Entity<ZoneZip>(entity =>
+        {
+            entity.HasKey(e => e.ZoneZipId).HasName("PK__ZoneZip__76E657120DEFCF29");
+
+            entity.ToTable("ZoneZip");
+
+            entity.Property(e => e.ZoneZipId).HasColumnName("ZoneZipID");
+            entity.Property(e => e.ClientId).HasColumnName("ClientID");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+            entity.Property(e => e.Zip)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.ZoneNameId).HasColumnName("ZoneNameID");
+
+            entity.HasOne(d => d.ZoneName).WithMany(p => p.ZoneZips)
+                .HasForeignKey(d => d.ZoneNameId)
+                .HasConstraintName("FK__ZoneZip__LastMod__11C0600D");
         });
 
         OnModelCreatingGeneratedFunctions(modelBuilder);

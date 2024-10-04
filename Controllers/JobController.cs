@@ -23,7 +23,7 @@ namespace DespatchWeb.Controllers
     {
 
         public async Task<IActionResult> Index(string status, string area, string order, string asc, bool isInternal,
-            int cid, string clientIds)
+            int cid, string clientIds, List<int> despatchViewIds)
         {
             //Security check to confirm these clients belong to this contact and have permissions set
             if (!isInternal && !string.IsNullOrEmpty(clientIds))
@@ -36,7 +36,7 @@ namespace DespatchWeb.Controllers
                 }
             }
 
-            var result = await jobRepository.JobListAsync(status, area, order, asc, isInternal, clientIds);
+            var result = await jobRepository.JobListAsync(status, area, order, asc, isInternal, clientIds, despatchViewIds);
             return Json(result);
         }
 
@@ -115,34 +115,34 @@ namespace DespatchWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddPallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
         {
-            await jobRepository.AddPalletInfo(palletInfo, preBook, despatcher);
+            await jobRepository.AddPalletInfoAsync(palletInfo, preBook, despatcher);
             return Ok("OK");
         }
 
         [HttpPost]
         public async Task<IActionResult> EditPallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
         {
-            await jobRepository.EditPalletInfo(palletInfo, preBook, despatcher);
+            await jobRepository.EditPalletInfoAsync(palletInfo, preBook, despatcher);
             return Ok("OK");
         }
 
         [HttpPost]
         public async Task<IActionResult> DeletePallet([FromBody] PalletInfo palletInfo, bool preBook, string despatcher)
         {
-            await jobRepository.DeletePalletInfo(palletInfo, preBook, despatcher);
+            await jobRepository.DeletePalletInfoAsync(palletInfo, preBook, despatcher);
             return Ok("OK");
         }
 
 
         public async Task<IActionResult> SendPrebookJob(int jobId)
         {
-            await jobRepository.SendPrebookJob(jobId);
+            await jobRepository.SendPrebookJobAsync(jobId);
             return Ok("OK");
         }
 
         public async Task<IActionResult> VoidPrebookJob(int jobId, string despatcher, int staffId)
         {
-            await jobRepository.VoidPrebookJob(jobId, despatcher, staffId);
+            await jobRepository.VoidPrebookJobAsync(jobId, despatcher, staffId);
             return Ok("OK");
         }
 
@@ -787,14 +787,14 @@ namespace DespatchWeb.Controllers
 
         public async Task<IActionResult> TruckItemsSummary(int jobId, int truckWeightLimit)
         {
-            var summary = await jobRepository.TruckJobItems(jobId, truckWeightLimit);
+            var summary = await jobRepository.TruckJobItemsAsync(jobId, truckWeightLimit);
             return Json(summary);
         }
 
         public async Task<IActionResult> UpdateDeliveryAddress(int jobId, int toSuburbId, string address,
             decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcherName)
         {
-            await jobRepository.UpdateDeliveryAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
+            await jobRepository.UpdateDeliveryAddressAsync(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
                 despatcherName);
             return Json("OK");
         }
@@ -802,14 +802,17 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> UpdateBulkDeliveryAddress(int bulkJobId, string toSuburb, int toPostCode, string address,
             decimal deliveryLat, decimal deliveryLng, string despatcherName)
         {
-            await jobRepository.UpdateBulkDeliveryAddress(bulkJobId, toSuburb, toPostCode, address, deliveryLat, deliveryLng, despatcherName);
+            await jobRepository.UpdateBulkDeliveryAddressAsync(bulkJobId, toSuburb, toPostCode, address, deliveryLat,
+                deliveryLng,
+                despatcherName);
             return Json("OK");
         }
 
         public async Task<IActionResult> UpdateBookingDeliveryAddress(int jobId, int toSuburbId, string address,
             decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcherName)
         {
-            await jobRepository.UpdateBookingDeliveryAddress(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
+            await jobRepository.UpdateBookingDeliveryAddressAsync(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd,
+                rate,
                 despatcherName);
             return Json("OK");
         }
@@ -817,14 +820,14 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> UpdatePickupAddress(int jobId, int fromSuburbId, string address,
             decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
         {
-            await jobRepository.UpdatePickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
+            await jobRepository.UpdatePickupAddressAsync(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
                 despatcherName);
             return Json("OK");
         }
 
         public async Task<IActionResult> UpdateJobType(int jobId, int jobType, string despatcherName)
         {
-            await jobRepository.UpdateJobType(jobId, jobType, despatcherName);
+            await jobRepository.UpdateJobTypeAsync(jobId, jobType, despatcherName);
             return Json("OK");
         }
 
@@ -832,7 +835,8 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> UpdateBulkPickupAddress(int bulkJobId, string fromSuburb, int fromPostCode, string address,
             decimal pickupLat, decimal pickupLng, string despatcherName)
         {
-            await jobRepository.UpdateBulkPickupAddress(bulkJobId, fromSuburb, fromPostCode, address, pickupLat, pickupLng, despatcherName);
+            await jobRepository.UpdateBulkPickupAddressAsync(bulkJobId, fromSuburb, fromPostCode, address, pickupLat, pickupLng,
+                despatcherName);
             return Json("OK");
         }
 
@@ -840,9 +844,7 @@ namespace DespatchWeb.Controllers
         public async Task<IActionResult> UpdateBookingPickupAddress(int jobId, int fromSuburbId, string address,
             decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
         {
-            await jobRepository.UpdateBookingPickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
-                despatcherName);
-            await jobRepository.UpdateBookingPickupAddress(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
+            await jobRepository.UpdateBookingPickupAddressAsync(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
                 despatcherName);
             return Json("OK");
         }
@@ -963,7 +965,7 @@ namespace DespatchWeb.Controllers
             string currentSpeed)
         {
             var jobData = await jobRepository.DirectToAsap(jobId);
-            var settingData = await jobRepository.Settings();
+            var settingData = await jobRepository.SettingsAsync();
             var emailMessage = FormatDelimMessage(settingData.UncheckDirectEmailMessage, "[", "]", jobData);
             await courierRepo.AddEventAsync(jobData.Number, jobData.ClientID ?? 0, jobData.Recipient, staffId, null,
                 jobId, jobData.JobTypeID ?? 0, despatcher, "Direct job changed to ASAP", 42, null, null,

@@ -34,4 +34,10 @@ public partial class TblDespatchView
     public string AreaGroupIds { get; set; }
 
     public string ClearListAreaIds { get; set; }
+
+    public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; } = new List<DespatchViewZoneGroup>();
+
+    public virtual ICollection<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; } = new List<UserDespatchViewPreference>();
+
+    public virtual ZoneGroup ZoneGroup { get; set; }
 }
