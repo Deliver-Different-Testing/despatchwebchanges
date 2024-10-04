@@ -15,15 +15,7 @@
    "T4TemplatePath": null,
    "Tables": [
       {
-         "Name": "[dbo].[ClearListAreaZipPolygon]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[DeliveryPhoto]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[DespatchViewZoneGroup]",
          "ObjectType": 0
       },
       {
@@ -49,10 +41,6 @@
       {
         "Name": "[dbo].[tblAirport]",
         "ObjectType": 0
-      },
-     {
-         "Name": "[dbo].[tblAppWidgets]",
-         "ObjectType": 0
       },
       {
          "Name": "[dbo].[tblBulkJob]",
@@ -123,10 +111,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[tblWidget]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[tucClient]",
          "ObjectType": 0
       },
@@ -188,10 +172,6 @@
       },
       {
          "Name": "[dbo].[tucSuburb]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[UserWidgetPreferences]",
          "ObjectType": 0
       },
       {

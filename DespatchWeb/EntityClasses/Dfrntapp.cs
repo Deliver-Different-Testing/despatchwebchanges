@@ -10,7 +10,6 @@ namespace DespatchWeb.EntityClasses
         public Dfrntapp()
         {
             DfrntappPages = new HashSet<DfrntappPage>();
-            TblAppWidgets = new HashSet<TblAppWidget>();
         }
 
         public int AppId { get; set; }
@@ -19,6 +18,5 @@ namespace DespatchWeb.EntityClasses
         public DateTime Created { get; set; }
 
         public virtual ICollection<DfrntappPage> DfrntappPages { get; set; }
-        public virtual ICollection<TblAppWidget> TblAppWidgets { get; set; }
     }
 }

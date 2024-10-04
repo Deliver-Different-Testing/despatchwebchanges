@@ -1002,7 +1002,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string PickupAddressLine1, string PickupAddressLine2, string PickupAddressLine3, string PickupAddressLine4, string PickupAddressLine5, string PickupAddressLine6, string PickupAddressLine7, string PickupAddressLine8, decimal? PickupLat, decimal? PickupLong, string DeliveryAddressLine1, string DeliveryAddressLine2, string DeliveryAddressLine3, string DeliveryAddressLine4, string DeliveryAddressLine5, string DeliveryAddressLine6, string DeliveryAddressLine7, string DeliveryAddressLine8, decimal? DeliveryLat, decimal? DeliveryLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, string PodName, bool? Truck, bool? VanOk, bool? Reprice, decimal? Amount, int? SpeedId, int? StaffId, string RefA, string RefB, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpQuickCreateJobAsync(int? ClientId, string FromAddress, decimal? FromLat, decimal? FromLong, string ToAddress, decimal? ToLat, decimal? ToLong, string PickupFromContact, DateTime? JobDate, bool? Void, bool? Van, bool? Attention, string DeliverToContact, string PodName, bool? Truck, bool? VanOk, bool? Reprice, decimal? Amount, int? SpeedId, int? ToSuburbId, int? FromSuburbId, int? StaffId, string RefA, string RefB, OutputParameter<int?> JobId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobId = new SqlParameter
             {
@@ -1028,146 +1028,44 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
-                    ParameterName = "PickupAddressLine1",
+                    ParameterName = "FromAddress",
                     Size = 300,
-                    Value = PickupAddressLine1 ?? Convert.DBNull,
+                    Value = FromAddress ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "PickupAddressLine2",
-                    Size = 300,
-                    Value = PickupAddressLine2 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PickupAddressLine3",
-                    Size = 300,
-                    Value = PickupAddressLine3 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PickupAddressLine4",
-                    Size = 300,
-                    Value = PickupAddressLine4 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PickupAddressLine5",
-                    Size = 300,
-                    Value = PickupAddressLine5 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PickupAddressLine6",
-                    Size = 300,
-                    Value = PickupAddressLine6 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PickupAddressLine7",
-                    Size = 300,
-                    Value = PickupAddressLine7 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PickupAddressLine8",
-                    Size = 300,
-                    Value = PickupAddressLine8 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "PickupLat",
-                    Precision = 10,
-                    Scale = 8,
-                    Value = PickupLat ?? Convert.DBNull,
+                    ParameterName = "FromLat",
+                    Precision = 18,
+                    Value = FromLat ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Decimal,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "PickupLong",
-                    Precision = 11,
-                    Scale = 8,
-                    Value = PickupLong ?? Convert.DBNull,
+                    ParameterName = "FromLong",
+                    Precision = 18,
+                    Value = FromLong ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Decimal,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "DeliveryAddressLine1",
+                    ParameterName = "ToAddress",
                     Size = 300,
-                    Value = DeliveryAddressLine1 ?? Convert.DBNull,
+                    Value = ToAddress ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "DeliveryAddressLine2",
-                    Size = 300,
-                    Value = DeliveryAddressLine2 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "DeliveryAddressLine3",
-                    Size = 300,
-                    Value = DeliveryAddressLine3 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "DeliveryAddressLine4",
-                    Size = 300,
-                    Value = DeliveryAddressLine4 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "DeliveryAddressLine5",
-                    Size = 300,
-                    Value = DeliveryAddressLine5 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "DeliveryAddressLine6",
-                    Size = 300,
-                    Value = DeliveryAddressLine6 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "DeliveryAddressLine7",
-                    Size = 300,
-                    Value = DeliveryAddressLine7 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "DeliveryAddressLine8",
-                    Size = 300,
-                    Value = DeliveryAddressLine8 ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "DeliveryLat",
-                    Precision = 10,
-                    Scale = 8,
-                    Value = DeliveryLat ?? Convert.DBNull,
+                    ParameterName = "ToLat",
+                    Precision = 18,
+                    Value = ToLat ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Decimal,
                 },
                 new SqlParameter
                 {
-                    ParameterName = "DeliveryLong",
-                    Precision = 11,
-                    Scale = 8,
-                    Value = DeliveryLong ?? Convert.DBNull,
+                    ParameterName = "ToLong",
+                    Precision = 18,
+                    Value = ToLong ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Decimal,
                 },
                 new SqlParameter
@@ -1249,6 +1147,18 @@ namespace DespatchWeb.EntityClasses
                 },
                 new SqlParameter
                 {
+                    ParameterName = "ToSuburbId",
+                    Value = ToSuburbId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromSuburbId",
+                    Value = FromSuburbId ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
                     ParameterName = "StaffId",
                     Value = StaffId ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
@@ -1270,7 +1180,7 @@ namespace DespatchWeb.EntityClasses
                 parameterJobId,
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @PickupAddressLine1 = @PickupAddressLine1, @PickupAddressLine2 = @PickupAddressLine2, @PickupAddressLine3 = @PickupAddressLine3, @PickupAddressLine4 = @PickupAddressLine4, @PickupAddressLine5 = @PickupAddressLine5, @PickupAddressLine6 = @PickupAddressLine6, @PickupAddressLine7 = @PickupAddressLine7, @PickupAddressLine8 = @PickupAddressLine8, @PickupLat = @PickupLat, @PickupLong = @PickupLong, @DeliveryAddressLine1 = @DeliveryAddressLine1, @DeliveryAddressLine2 = @DeliveryAddressLine2, @DeliveryAddressLine3 = @DeliveryAddressLine3, @DeliveryAddressLine4 = @DeliveryAddressLine4, @DeliveryAddressLine5 = @DeliveryAddressLine5, @DeliveryAddressLine6 = @DeliveryAddressLine6, @DeliveryAddressLine7 = @DeliveryAddressLine7, @DeliveryAddressLine8 = @DeliveryAddressLine8, @DeliveryLat = @DeliveryLat, @DeliveryLong = @DeliveryLong, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @PodName = @PodName, @Truck = @Truck, @VanOk = @VanOk, @Reprice = @Reprice, @Amount = @Amount, @SpeedId = @SpeedId, @StaffId = @StaffId, @RefA = @RefA, @RefB = @RefB, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpQuickCreateJob] @ClientId = @ClientId, @FromAddress = @FromAddress, @FromLat = @FromLat, @FromLong = @FromLong, @ToAddress = @ToAddress, @ToLat = @ToLat, @ToLong = @ToLong, @PickupFromContact = @PickupFromContact, @JobDate = @JobDate, @Void = @Void, @Van = @Van, @Attention = @Attention, @DeliverToContact = @DeliverToContact, @PodName = @PodName, @Truck = @Truck, @VanOk = @VanOk, @Reprice = @Reprice, @Amount = @Amount, @SpeedId = @SpeedId, @ToSuburbId = @ToSuburbId, @FromSuburbId = @FromSuburbId, @StaffId = @StaffId, @RefA = @RefA, @RefB = @RefB, @JobId = @JobId OUTPUT", sqlParameters, cancellationToken);
 
             JobId.SetValue(parameterJobId.Value);
             returnValue?.SetValue(parameterreturnValue.Value);

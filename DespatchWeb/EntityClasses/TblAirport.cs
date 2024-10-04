@@ -7,6 +7,12 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TblAirport
     {
+        public TblAirport()
+        {
+            TucJobFromAirports = new HashSet<TucJob>();
+            TucJobToAirports = new HashSet<TucJob>();
+        }
+
         public int AirportId { get; set; }
         public string Name { get; set; }
         public int? SiteId { get; set; }
@@ -35,5 +41,8 @@ namespace DespatchWeb.EntityClasses
         public string AddressLine7 { get; set; }
         public string AddressLine8 { get; set; }
         public string AirportCode { get; set; }
+
+        public virtual ICollection<TucJob> TucJobFromAirports { get; set; }
+        public virtual ICollection<TucJob> TucJobToAirports { get; set; }
     }
 }

@@ -9,7 +9,6 @@ namespace DespatchWeb.EntityClasses
     {
         public TblDespatchView()
         {
-            DespatchViewZoneGroups = new HashSet<DespatchViewZoneGroup>();
             DfrntappUserViewPermissions = new HashSet<DfrntappUserViewPermission>();
             DfrntpageViews = new HashSet<DfrntpageView>();
         }
@@ -25,8 +24,9 @@ namespace DespatchWeb.EntityClasses
         public bool? ShowOnDespatch { get; set; }
         public bool? ShowOnAssistDespatch { get; set; }
         public bool? ShowOnJobFollowup { get; set; }
+        public int? ZoneGroupId { get; set; }
 
-        public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
+        public virtual ZoneGroup ZoneGroup { get; set; }
         public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
         public virtual ICollection<DfrntpageView> DfrntpageViews { get; set; }
     }

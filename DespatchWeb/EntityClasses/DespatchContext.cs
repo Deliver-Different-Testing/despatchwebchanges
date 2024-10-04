@@ -18,11 +18,9 @@ namespace DespatchWeb.EntityClasses
         {
         }
 
-        public virtual DbSet<ClearListAreaZipPolygon> ClearListAreaZipPolygons { get; set; }
         public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
         public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
-        public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
         public virtual DbSet<Dfrntapp> Dfrntapps { get; set; }
         public virtual DbSet<DfrntappPage> DfrntappPages { get; set; }
@@ -30,7 +28,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
         public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
         public virtual DbSet<TblAirport> TblAirports { get; set; }
-        public virtual DbSet<TblAppWidget> TblAppWidgets { get; set; }
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
         public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual DbSet<TblClearListArea> TblClearListAreas { get; set; }
@@ -53,7 +50,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblPolygonGp> TblPolygonGps { get; set; }
         public virtual DbSet<TblPolygonSuburb> TblPolygonSuburbs { get; set; }
         public virtual DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
-        public virtual DbSet<TblWidget> TblWidgets { get; set; }
         public virtual DbSet<TucClient> TucClients { get; set; }
         public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
         public virtual DbSet<TucClientItem> TucClientItems { get; set; }
@@ -70,7 +66,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucSource> TucSources { get; set; }
         public virtual DbSet<TucStaff> TucStaffs { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
-        public virtual DbSet<UserWidgetPreference> UserWidgetPreferences { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
         public virtual DbSet<ZipPolygon> ZipPolygons { get; set; }
@@ -80,32 +75,6 @@ namespace DespatchWeb.EntityClasses
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<ClearListAreaZipPolygon>(entity =>
-            {
-                entity.ToTable("ClearListAreaZipPolygon");
-
-                entity.HasIndex(e => new { e.ClearListAreaId, e.ZipPolygonId }, "UC_ClearListArea_ZipPolygon")
-                    .IsUnique();
-
-                entity.Property(e => e.ClearListAreaZipPolygonId).HasColumnName("ClearListAreaZipPolygonID");
-
-                entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
-
-                entity.Property(e => e.Created).HasColumnType("datetime");
-
-                entity.Property(e => e.CreatedBy)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.LastModified).HasColumnType("datetime");
-
-                entity.Property(e => e.LastModifiedBy)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
-            });
-
             modelBuilder.Entity<DeliveryPhoto>(entity =>
             {
                 entity.ToTable("DeliveryPhoto");
@@ -258,48 +227,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
             });
 
-            modelBuilder.Entity<DespatchViewZoneGroup>(entity =>
-            {
-                entity.ToTable("DespatchViewZoneGroup");
-
-                entity.HasIndex(e => new { e.DespatchViewId, e.ZoneGroupId }, "UQ_DespatchViewZoneGroup_DespatchView_ZoneGroup")
-                    .IsUnique();
-
-                entity.Property(e => e.DespatchViewZoneGroupId).HasColumnName("DespatchViewZoneGroupID");
-
-                entity.Property(e => e.CreatedBy)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.CreatedDate)
-                    .HasPrecision(0)
-                    .HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
-
-                entity.Property(e => e.LastModifiedBy)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.LastModifiedDate)
-                    .HasPrecision(0)
-                    .HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
-
-                entity.HasOne(d => d.DespatchView)
-                    .WithMany(p => p.DespatchViewZoneGroups)
-                    .HasForeignKey(d => d.DespatchViewId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_DespatchViewZoneGroup_DespatchView");
-
-                entity.HasOne(d => d.ZoneGroup)
-                    .WithMany(p => p.DespatchViewZoneGroups)
-                    .HasForeignKey(d => d.ZoneGroupId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_DespatchViewZoneGroup_ZoneGroup");
-            });
-
             modelBuilder.Entity<DeswebQryDespatch>(entity =>
             {
                 entity.HasNoKey();
@@ -335,22 +262,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.DeliverToContact).HasMaxLength(100);
 
                 entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
-
-                entity.Property(e => e.DeliveryAddressLine1).HasMaxLength(255);
-
-                entity.Property(e => e.DeliveryAddressLine2).HasMaxLength(255);
-
-                entity.Property(e => e.DeliveryAddressLine3).HasMaxLength(255);
-
-                entity.Property(e => e.DeliveryAddressLine4).HasMaxLength(255);
-
-                entity.Property(e => e.DeliveryAddressLine5).HasMaxLength(255);
-
-                entity.Property(e => e.DeliveryAddressLine6).HasMaxLength(255);
-
-                entity.Property(e => e.DeliveryAddressLine7).HasMaxLength(255);
-
-                entity.Property(e => e.DeliveryAddressLine8).HasMaxLength(255);
 
                 entity.Property(e => e.DeliveryLatitude).HasColumnType("decimal(18, 9)");
 
@@ -407,22 +318,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.PickUpLatitude).HasColumnType("decimal(18, 9)");
 
                 entity.Property(e => e.PickUpLongitude).HasColumnType("decimal(18, 9)");
-
-                entity.Property(e => e.PickupAddressLine1).HasMaxLength(255);
-
-                entity.Property(e => e.PickupAddressLine2).HasMaxLength(255);
-
-                entity.Property(e => e.PickupAddressLine3).HasMaxLength(255);
-
-                entity.Property(e => e.PickupAddressLine4).HasMaxLength(255);
-
-                entity.Property(e => e.PickupAddressLine5).HasMaxLength(255);
-
-                entity.Property(e => e.PickupAddressLine6).HasMaxLength(255);
-
-                entity.Property(e => e.PickupAddressLine7).HasMaxLength(255);
-
-                entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
 
                 entity.Property(e => e.PickupAmount).HasColumnType("money");
 
@@ -739,7 +634,7 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.DfrntpageViews)
                     .HasForeignKey(d => d.ViewId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_DFRNTPageViews_tblDespatchView");
+                    .HasConstraintName("FK__DFRNTPage__ViewI__3EB30215");
             });
 
             modelBuilder.Entity<GlobalAddressMapping>(entity =>
@@ -840,32 +735,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.Type).HasMaxLength(200);
 
                 entity.Property(e => e.UnitFlatFloorBuilding).HasMaxLength(100);
-            });
-
-            modelBuilder.Entity<TblAppWidget>(entity =>
-            {
-                entity.HasKey(e => e.AppWidgetId)
-                    .HasName("PK__tblAppWi__9EE8159A3C0B9F94");
-
-                entity.ToTable("tblAppWidgets");
-
-                entity.Property(e => e.AppWidgetId).HasColumnName("AppWidgetID");
-
-                entity.Property(e => e.AppId).HasColumnName("AppID");
-
-                entity.Property(e => e.WidgetId).HasColumnName("WidgetID");
-
-                entity.HasOne(d => d.App)
-                    .WithMany(p => p.TblAppWidgets)
-                    .HasForeignKey(d => d.AppId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_AppWidgets_DFRNTApps");
-
-                entity.HasOne(d => d.Widget)
-                    .WithMany(p => p.TblAppWidgets)
-                    .HasForeignKey(d => d.WidgetId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_AppWidgets_Widgets");
             });
 
             modelBuilder.Entity<TblBulkJob>(entity =>
@@ -1136,6 +1005,8 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(100);
 
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
                 entity.Property(e => e.Order).HasDefaultValueSql("((1))");
             });
 
@@ -1146,8 +1017,6 @@ namespace DespatchWeb.EntityClasses
                 entity.ToTable("tblClearListAreaPolygon");
 
                 entity.HasIndex(e => e.ClearListAreaId, "ClearListAreaID");
-
-                entity.HasIndex(e => e.ZipPolygonId, "IX_ClearListAreaPolygon_ZipPolygonID");
 
                 entity.HasIndex(e => e.PolygonId, "PolygonID");
 
@@ -1174,6 +1043,8 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(50);
 
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
                 entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
 
                 entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
@@ -1187,7 +1058,8 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.Polygon)
                     .WithMany(p => p.TblClearListAreaPolygons)
                     .HasForeignKey(d => d.PolygonId)
-                    .HasConstraintName("FK_TblClearListAreaPolygon_tblPolygon");
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClearListAreaPolygon_tblPolygon");
 
                 entity.HasOne(d => d.ZipPolygon)
                     .WithMany(p => p.TblClearListAreaPolygons)
@@ -2687,6 +2559,13 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.WhereCondition)
                     .HasMaxLength(1000)
                     .IsUnicode(false);
+
+                entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
+
+                entity.HasOne(d => d.ZoneGroup)
+                    .WithMany(p => p.TblDespatchViews)
+                    .HasForeignKey(d => d.ZoneGroupId)
+                    .HasConstraintName("FK__tblDespat__ZoneG__12B48446");
             });
 
             modelBuilder.Entity<TblInternetPermission>(entity =>
@@ -3746,32 +3625,6 @@ namespace DespatchWeb.EntityClasses
                     .HasConstraintName("FK_tblUndeliverableLocation_tucJobType");
             });
 
-            modelBuilder.Entity<TblWidget>(entity =>
-            {
-                entity.HasKey(e => e.WidgetId)
-                    .HasName("PK__tblWidge__ADFD307225283A3C");
-
-                entity.ToTable("tblWidget");
-
-                entity.Property(e => e.WidgetId).HasColumnName("WidgetID");
-
-                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.CreatedBy)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.LastModifiedBy).HasMaxLength(50);
-
-                entity.Property(e => e.WidgetName)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.WidgetType)
-                    .IsRequired()
-                    .HasMaxLength(50);
-            });
-
             modelBuilder.Entity<TucClient>(entity =>
             {
                 entity.HasKey(e => e.UcclId)
@@ -3781,6 +3634,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.HasIndex(e => e.UcclCode, "IDX_tucClient_ucclCode")
                     .IsUnique();
+
+                entity.HasIndex(e => e.InvoiceTemplateId, "IX_InvoiceTemplateId");
 
                 entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
@@ -5157,9 +5012,19 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobDesiredJobTypes)
                     .HasForeignKey(d => d.DesiredJobTypeId);
 
+                entity.HasOne(d => d.FromAirport)
+                    .WithMany(p => p.TucJobFromAirports)
+                    .HasForeignKey(d => d.FromAirportId)
+                    .HasConstraintName("FK_tucJob_FromAirport");
+
                 entity.HasOne(d => d.NotifiedJobType)
                     .WithMany(p => p.TucJobNotifiedJobTypes)
                     .HasForeignKey(d => d.NotifiedJobTypeId);
+
+                entity.HasOne(d => d.ToAirport)
+                    .WithMany(p => p.TucJobToAirports)
+                    .HasForeignKey(d => d.ToAirportId)
+                    .HasConstraintName("FK_tucJob_ToAirport");
 
                 entity.HasOne(d => d.UcjbSpeedNavigation)
                     .WithMany(p => p.TucJobUcjbSpeedNavigations)
@@ -6107,30 +5972,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcsuRegion).HasColumnName("ucsuRegion");
             });
 
-            modelBuilder.Entity<UserWidgetPreference>(entity =>
-            {
-                entity.HasKey(e => e.UserWidgetPrefId)
-                    .HasName("PK__UserWidg__17BB109C4A59BEEB");
-
-                entity.Property(e => e.UserWidgetPrefId).HasColumnName("UserWidgetPrefID");
-
-                entity.Property(e => e.AppWidgetId).HasColumnName("AppWidgetID");
-
-                entity.Property(e => e.IsVisible)
-                    .IsRequired()
-                    .HasDefaultValueSql("((1))");
-
-                entity.Property(e => e.UserName)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.HasOne(d => d.AppWidget)
-                    .WithMany(p => p.UserWidgetPreferences)
-                    .HasForeignKey(d => d.AppWidgetId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_UserWidgetPreferences_AppWidgets");
-            });
-
             modelBuilder.Entity<UtlQryContactLookup>(entity =>
             {
                 entity.HasNoKey();
@@ -6336,11 +6177,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
 
                 entity.Property(e => e.Name).HasMaxLength(255);
-
-                entity.HasOne(d => d.ClearListArea)
-                    .WithMany(p => p.ZoneGroups)
-                    .HasForeignKey(d => d.ClearListAreaId)
-                    .HasConstraintName("FK_ZoneGroup_ClearListArea");
             });
 
             modelBuilder.Entity<ZoneName>(entity =>

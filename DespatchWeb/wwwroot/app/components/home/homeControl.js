@@ -29,6 +29,9 @@ angular.module("uDispatch")
                 $scope.filters = {
                     new: false, nda: true, active: false, done: false, all: false
                 };
+
+                // Job list flag
+                $scope.jobListLoaded = false;
             };
 
             $scope.toggleSidenav = () => {
@@ -2458,6 +2461,8 @@ angular.module("uDispatch")
             }];
 
             $scope.getJobList = async () => {
+                if ($scope.jobListLoaded) return;
+
                 if (Modernizr.localstorage) {
                     localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.queryParams));
                 }
