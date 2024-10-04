@@ -18,11 +18,10 @@ public class NationwideJobController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int departureAirportId,
-        int destinationAirportId)
+    public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId)
     {
         var (departureAirportCode, destinationAirportCode) =
-            await GetAirportCodes(departureAirportId, destinationAirportId);
+            await GetAirportCode;
 
         if (string.IsNullOrEmpty(departureAirportCode) || string.IsNullOrEmpty(destinationAirportCode))
             return BadRequest("Invalid airport ID(s) provided.");
@@ -34,16 +33,5 @@ public class NationwideJobController : Controller
             return NotFound("No flight options found for the specified criteria.");
 
         return Json(flightOptions);
-    }
-
-    private async Task<(string departureCode, string destinationCode)> GetAirportCodes(int departureAirportId,
-        int destinationAirportId)
-    {
-        var departureTask = _courierRepo.GetAirportCodeByIdAsync(departureAirportId);
-        var destinationTask = _courierRepo.GetAirportCodeByIdAsync(destinationAirportId);
-
-        await Task.WhenAll(departureTask, destinationTask);
-
-        return (departureTask.Result, destinationTask.Result);
     }
 }

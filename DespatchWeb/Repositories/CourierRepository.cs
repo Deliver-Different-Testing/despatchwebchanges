@@ -25,7 +25,7 @@ public class CourierRepository : ICourierRepository
 
     public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatusAsync(string courierId)
     {
-        var result = await _context.Procedures.DES_qryTruckCourierStatusAsync(CourierID: courierId);
+        var result = await _context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
         return result;
     }
 
@@ -42,26 +42,26 @@ public class CourierRepository : ICourierRepository
         var time = DateTime.Now;
 
         await _context.Procedures.DES_qdfEvent_InsertAsync(
-            JobNo: jobNo,
-            ClientID: clientId,
-            Contact: contact,
-            Date: date.Date,
-            Time: time,
-            Type: eventType,
-            LateTime: lateTime,
-            ETATime: etaTime,
-            StaffIDIn: staffId,
-            StaffIDOut: staffOut,
-            ResponseTime: responseTime,
-            Notes: notes,
-            PageCourier: pageCourier,
-            Closed: close,
-            Originator: staffId,
-            Description: description,
-            CourierID: courierId,
-            JobID: jobId,
-            Despatcher: despatcherName,
-            JobType: jobType
+            jobNo,
+            clientId,
+            contact,
+            date.Date,
+            time,
+            eventType,
+            lateTime,
+            etaTime,
+            staffId,
+            staffOut,
+            responseTime,
+            notes,
+            pageCourier,
+            close,
+            staffId,
+            description,
+            courierId,
+            jobId,
+            despatcherName,
+            jobType
         );
     }
 
@@ -69,22 +69,19 @@ public class CourierRepository : ICourierRepository
         decimal maxLat)
     {
         var result = new List<AvailableCourierPosition>();
-        _context.LoadStoredProc(storedProcName: "DESWEB_stpMapEnvelope")
-            .WithSqlParam(paramName: "@MinimumLongitude", paramValue: minLng)
-            .WithSqlParam(paramName: "@MinimumLatitude", paramValue: minLat)
-            .WithSqlParam(paramName: "@MaximumLongitude", paramValue: maxLng)
-            .WithSqlParam(paramName: "@MaximumLatitude", paramValue: maxLat)
-            .ExecuteStoredProc(handleResults: handle =>
-            {
-                result = handle.ReadToList<AvailableCourierPosition>().ToList();
-            });
+        _context.LoadStoredProc("DESWEB_stpMapEnvelope")
+            .WithSqlParam("@MinimumLongitude", minLng)
+            .WithSqlParam("@MinimumLatitude", minLat)
+            .WithSqlParam("@MaximumLongitude", maxLng)
+            .WithSqlParam("@MaximumLatitude", maxLat)
+            .ExecuteStoredProc(handle => { result = handle.ReadToList<AvailableCourierPosition>().ToList(); });
         return result;
     }
 
     public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
-        var results = await _context.Procedures.DESWEB_qryPotentialCouriersAsync(JobID: jobId);
-        return _mapper.Map<List<PotentialCouriersViewModel>>(source: results);
+        var results = await _context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
+        return _mapper.Map<List<PotentialCouriersViewModel>>(results);
     }
 
     /// <summary>
@@ -94,7 +91,7 @@ public class CourierRepository : ICourierRepository
     public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
     {
         var results = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
-        return _mapper.Map<List<ActiveCouriersViewModel>>(source: results);
+        return _mapper.Map<List<ActiveCouriersViewModel>>(results);
     }
 
     /// <summary>
@@ -103,9 +100,9 @@ public class CourierRepository : ICourierRepository
     /// <returns></returns>
     public async Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm)
     {
-        var results = await _context.Procedures.DESWeb_qryCourierComboAsync(SearchTerm: searchTerm);
+        var results = await _context.Procedures.DESWeb_qryCourierComboAsync(searchTerm);
 
-        return results.Select(selector: r => new AllCourierActiveViewModel
+        return results.Select(r => new AllCourierActiveViewModel
         {
             ID = r.ID,
             Text = r.Text
@@ -114,7 +111,7 @@ public class CourierRepository : ICourierRepository
 
     public async Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end)
     {
-        var results = await _context.Procedures.MAP_stpCourierGPS_LastPositionTodayAsync(CourierCode: code);
+        var results = await _context.Procedures.MAP_stpCourierGPS_LastPositionTodayAsync(code);
         return _mapper.Map<List<CourierPosition>>(results);
     }
 
@@ -125,34 +122,31 @@ public class CourierRepository : ICourierRepository
     public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
     {
         var results = await _context.Procedures.DESWEB_qryCourierActiveAsync();
-        return _mapper.Map<List<ActiveCouriersViewModel>>(source: results);
+        return _mapper.Map<List<ActiveCouriersViewModel>>(results);
     }
 
     public CourierLocation Location(string code)
     {
         var currentLocation = new CourierLocation();
-        _context.LoadStoredProc(storedProcName: "MAP_stpCourierGPS_LastPositionToday")
-            .WithSqlParam(paramName: "@CourierCode", paramValue: code)
-            .ExecuteStoredProc(handleResults: handle =>
-            {
-                currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault();
-            });
+        _context.LoadStoredProc("MAP_stpCourierGPS_LastPositionToday")
+            .WithSqlParam("@CourierCode", code)
+            .ExecuteStoredProc(handle => { currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault(); });
         return currentLocation;
     }
 
     public async Task<int> ClearListTotalRemainingAsync(string area)
     {
         var filter =
-            _context.TblDespatchViews.FirstOrDefault(predicate: v =>
+            _context.TblDespatchViews.FirstOrDefault(v =>
                 (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
 
-        if (string.IsNullOrEmpty(value: filter))
+        if (string.IsNullOrEmpty(filter))
             return 0;
 
         filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
         var query =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql: query).ToListAsync();
+        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(query).ToListAsync();
         return jobs.Count;
     }
 
@@ -335,7 +329,7 @@ public class CourierRepository : ICourierRepository
         int percentHeight)
     {
         var result =
-            await _context.Procedures.DES_qdfCourier_ClearListsAsync(ClearListAreaID: clearList?.ClearListAreaId);
+            await _context.Procedures.DES_qdfCourier_ClearListsAsync(clearList?.ClearListAreaId);
 
         var acl = new AreaClearList
         {

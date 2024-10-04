@@ -15,8 +15,16 @@
    "T4TemplatePath": null,
    "Tables": [
       {
+        "Name": "[dbo].[ClearListAreaZipPolygon]",
+        "ObjectType": 0
+      },
+     {
          "Name": "[dbo].[DeliveryPhoto]",
          "ObjectType": 0
+     },
+     {
+       "Name": "[dbo].[DespatchViewZoneGroup]",
+       "ObjectType": 0
       },
       {
          "Name": "[dbo].[DFRNTAppPages]",
