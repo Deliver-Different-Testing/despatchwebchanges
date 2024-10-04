@@ -16,7 +16,7 @@ angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl'
         departureAirportId: '=',
         destinationAirportId: '='
     },
-    controller: ['$scope', '$timeout', function ($scope, $timeout) {
+    controller: ['$scope', '$timeout', ($scope, $timeout) => {
         /** @type {Object[]} */
         $scope.flights = [];
         /** @type {Object[]} */
@@ -38,7 +38,7 @@ angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl'
          * @param {Array} oldValues - Old values of watched variables
          * @returns {Promise<void>}
          */
-        $scope.$watchGroup(['flightOptions', 'departureDate', 'departureAirportId', 'destinationAirportId'], async function (newValues, oldValues) {
+        $scope.$watchGroup(['flightOptions', 'departureDate', 'departureAirportId', 'destinationAirportId'], async (newValues, oldValues) => {
             if (newValues !== oldValues) {
                 if ($scope.flightOptions) {
                     $scope.flights = $scope.flightOptions;
