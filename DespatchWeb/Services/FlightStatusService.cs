@@ -47,11 +47,10 @@ public class FlightStatusService : IFlightStatusService
         var year = effectiveDateTime.Year;
         var month = effectiveDateTime.Month;
         var day = effectiveDateTime.Day;
-        var hourOfDay = effectiveDateTime.Hour;
 
         var request =
             new RestRequest(
-                $"json/from/{departureAirportCode}/to/{destinationAirportCode}/departing/{year}/{month}/{day}/{hourOfDay}");
+                $"json/from/{departureAirportCode}/to/{destinationAirportCode}/departing/{year}/{month}/{day}");
 
         // Add query parameters
         request.AddQueryParameter("appId", _appId);
@@ -64,32 +63,31 @@ public class FlightStatusService : IFlightStatusService
             foreach (var option in extendedOptions)
                 request.AddQueryParameter("extendedOptions", option);
 
-        // Add header parameters
-        request.AddHeader("appId", _appId);
-        request.AddHeader("appKey", _appKey);
-
         // Execute the request
         var response = await _client.ExecuteGetAsync<FlightStatusResponse>(request);
 
         if (response.Data?.ScheduledFlights == null)
             return new List<FlightOptionsViewModel>();
 
-        var flightOptions = response.Data.ScheduledFlights.Select(flight => new FlightOptionsViewModel()
-        {
-            Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
-            FlightNumber = flight.FlightNumber,
-            DepartureTime = flight.DepartureTime,
-            ArrivalTime = flight.ArrivalTime,
-            DepartureAirport = flight.DepartureAirportFsCode,
-            ArrivalAirport = flight.ArrivalAirportFsCode,
-            Duration = flight.ArrivalTime - flight.DepartureTime,
-            Stops = flight.Stops,
-            Aircraft = response.Data.Appendix?.Equipments.FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode)
-                ?.Name,
-            ServiceClasses = flight.ServiceClasses,
-            IsCodeShare = flight.IsCodeShare,
-            CodeShareAirline = flight.IsCodeShare ? flight.Operator?.CarrierFsCode : null
-        }).OrderBy(f => f.DepartureTime).ToList();
+        var flightOptions = response.Data.ScheduledFlights
+            .Where(flight => flight.DepartureTime > DateTime.Now)
+            .Select(flight => new FlightOptionsViewModel
+            {
+                Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
+                FlightNumber = flight.FlightNumber,
+                DepartureTime = flight.DepartureTime,
+                ArrivalTime = flight.ArrivalTime,
+                DepartureAirport = flight.DepartureAirportFsCode,
+                ArrivalAirport = flight.ArrivalAirportFsCode,
+                Duration = flight.ArrivalTime - flight.DepartureTime,
+                Stops = flight.Stops,
+                Aircraft = response.Data.Appendix?.Equipments
+                    .FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode)
+                    ?.Name,
+                ServiceClasses = flight.ServiceClasses,
+                IsCodeShare = flight.IsCodeShare,
+                CodeShareAirline = flight.IsCodeShare ? flight.Operator?.CarrierFsCode : null
+            }).OrderBy(f => f.DepartureTime).ToList();
 
         return flightOptions;
     }
