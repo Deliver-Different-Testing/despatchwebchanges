@@ -2,9 +2,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
     ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog, LayoutService) => {
         $scope.jdSvc = jdSvc;
 
-        $scope.initializeVariables = () => {
+        function initializeVariables() {
             $scope.name = "Nationwide";
             $scope.isInternal = (ClientInternal === "True");
+
+            $scope.allCouriers.display = true;
+            $scope.sort = [];
 
             $scope.isUsCustomer = APP_CONFIG.US_Customer;
             $scope.jobDetailFabIsOpen = false;
@@ -33,7 +36,123 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.jobRepriceFilters = {
                 order: 'time', filter: '', status: 'all', asc: 'asc'
             };
-        };
+
+            $scope.allCouriers = {display: false, includeUA: false};
+            $scope.mapZoom = {display: true};
+
+            $scope.options = {
+                "detail": {
+                    "size": [{
+                        "id": 1, "label": "Bike"
+                    }, {
+                        "id": 2, "label": "Car"
+                    }, {
+                        "id": 3, "label": "Van"
+                    }, {
+                        "id": 4, "label": "Truck"
+                    }, {
+                        "id": 5, "label": "Scooter"
+                    }], "tracking": [{
+                        "id": 1, "label": "Email"
+                    }, {
+                        "id": 2, "label": "Mobile"
+                    }, {
+                        "id": 3, "label": "Email & Mobile"
+                    }], "DGClass": [{
+                        "id": 0, "label": "0"
+                    }, {
+                        "id": 1, "label": "1"
+                    }, {
+                        "id": 2, "label": "2"
+                    }, {
+                        "id": 3, "label": "3"
+                    }, {
+                        "id": 4, "label": "4"
+                    }, {
+                        "id": 5, "label": "5"
+                    }, {
+                        "id": 6, "label": "6"
+                    }, {
+                        "id": 7, "label": "7"
+                    }, {
+                        "id": 8, "label": "8"
+                    }, {
+                        "id": 9, "label": "9"
+                    }]
+                }
+            };
+
+            $scope.markers = [];
+            $scope.truckCourierStatus = [];
+            $scope.getJobStyle = assigned => {
+                const normal = {
+                    "font-weight": "normal"
+
+                }, bold = {
+                    "font-weight": "bold"
+
+                };
+                if (assigned) {
+                    return bold;
+                } else {
+                    return normal;
+                }
+            };
+            $scope.normalStyle = "{'font-weight:normal'}";
+            $scope.showChat = false;
+            $scope.chatBox = "";
+            $scope.boxes = {
+                "jobsList": {
+                    "title": "New Jobs",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/jobList.html"),
+                    "showSearch": 1,
+                    "showRefresh": 1
+                }, "jobsListPOD": {
+                    "title": "Awaiting POD",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/jobListPOD.html"),
+                    "showSearch": 1,
+                    "showRefresh": 1
+                }, "jobsListDelivery": {
+                    "title": "Action Required",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/jobListDelivery.html"),
+                    "showSearch": 1,
+                    "showRefresh": 1
+                }, "jobsListReprice": {
+                    "title": "Reprice",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/jobListReprice.html"),
+                    "showSearch": 1,
+                    "showRefresh": 1
+                }, "jobDetail": {
+                    "title": "Detail",
+                    "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
+                    "showSearch": 0,
+                    "showRefresh": 0,
+                    "showDetailButtons": 1
+                }, "map": {
+                    "title": "Google Map",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/map.html"),
+                    "showSearch": 0,
+                    "showRefresh": 1
+                }, "flightDataTable": {
+                    "title": "Flight Options",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/flightDataTableBox.html"),
+                    "showSearch": 0,
+                    "showRefresh": 1
+                }
+            };
+
+            $scope.pickService = {
+                "clients": [], "settings": {
+                    "enableSearch": true,
+                    "selectedToTop": true,
+                    "closeOnBlur": true,
+                    "closeOnSelect": true,
+                    "buttonClasses": "topBarActive btn-sm btn-clients"
+                }
+            };
+            $scope.pickClients = [];
+            $scope.pickEventTypes = [];
+        }
 
         $scope.toggleSidenav = () => {
             materialSidenavService.toggle();
@@ -41,10 +160,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.greetUser = () => greetingService.greetUser($scope.userName)
 
-        $scope.loadPageViews = async () => {
+        async function loadPageViews() {
             try {
                 $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
-                $scope.initializeAreas();
+                await initializeAreas();
                 await $scope.updateFilters();
 
                 if (!$scope.isInternal) {
@@ -55,17 +174,35 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getData();
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
-                $scope.initializeAreas();
+                await initializeAreas();
                 console.log("Failed to load dispatch views. Please try refreshing the page.");
             }
         };
 
-        $scope.initializeAreas = () => {
+        // Initialize areas
+        async function initializeAreas() {
             if ($scope.areas && $scope.areas.length > 0) {
-                const defaultArea = $scope.areas[0];
-                $scope.selectedAreas.push(defaultArea);
+                $scope.selectedAreas.push($scope.areas[0]);
+            } else {
+                try {
+                    await $mdDialog.show(
+                        $mdDialog.alert()
+                            .clickOutsideToClose(true)
+                            .title('No Views Available')
+                            .textContent(
+                                'There are no dispatch views set up for your user account.\n\n' +
+                                'Please contact your system administrator to add views in the Admin Manager.\n\n' +
+                                'Views are necessary to filter and organize dispatch information effectively.'
+                            )
+                            .ariaLabel('No Views Available Alert')
+                            .ok('Understood')
+                    );
+                } catch (error) {
+                    console.error('Error showing dialog:', error);
+                }
             }
-        };
+        }
+
 
         $scope.updateFilters = async () => {
             try {
@@ -211,122 +348,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.editCourierPOD = async ($event, job) => {
             await $scope.editCourier($event, job, $scope.dispatchJobsFromPOD);
         };
-
-        $scope.allCouriers = {display: false, includeUA: false};
-        $scope.mapZoom = {display: true};
-
-        $scope.options = {
-            "detail": {
-                "size": [{
-                    "id": 1, "label": "Bike"
-                }, {
-                    "id": 2, "label": "Car"
-                }, {
-                    "id": 3, "label": "Van"
-                }, {
-                    "id": 4, "label": "Truck"
-                }, {
-                    "id": 5, "label": "Scooter"
-                }], "tracking": [{
-                    "id": 1, "label": "Email"
-                }, {
-                    "id": 2, "label": "Mobile"
-                }, {
-                    "id": 3, "label": "Email & Mobile"
-                }], "DGClass": [{
-                    "id": 0, "label": "0"
-                }, {
-                    "id": 1, "label": "1"
-                }, {
-                    "id": 2, "label": "2"
-                }, {
-                    "id": 3, "label": "3"
-                }, {
-                    "id": 4, "label": "4"
-                }, {
-                    "id": 5, "label": "5"
-                }, {
-                    "id": 6, "label": "6"
-                }, {
-                    "id": 7, "label": "7"
-                }, {
-                    "id": 8, "label": "8"
-                }, {
-                    "id": 9, "label": "9"
-                }]
-            }
-        };
-
-        $scope.markers = [];
-        $scope.truckCourierStatus = [];
-        $scope.getJobStyle = assigned => {
-            const normal = {
-                "font-weight": "normal"
-
-            }, bold = {
-                "font-weight": "bold"
-
-            };
-            if (assigned) {
-                return bold;
-            } else {
-                return normal;
-            }
-        };
-        $scope.normalStyle = "{'font-weight:normal'}";
-        $scope.showChat = false;
-        $scope.chatBox = "";
-        $scope.boxes = {
-            "jobsList": {
-                "title": "New Jobs",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/jobList.html"),
-                "showSearch": 1,
-                "showRefresh": 1
-            }, "jobsListPOD": {
-                "title": "Awaiting POD",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/jobListPOD.html"),
-                "showSearch": 1,
-                "showRefresh": 1
-            }, "jobsListDelivery": {
-                "title": "Action Required",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/jobListDelivery.html"),
-                "showSearch": 1,
-                "showRefresh": 1
-            }, "jobsListReprice": {
-                "title": "Reprice",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/jobListReprice.html"),
-                "showSearch": 1,
-                "showRefresh": 1
-            }, "jobDetail": {
-                "title": "Detail",
-                "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
-                "showSearch": 0,
-                "showRefresh": 0,
-                "showDetailButtons": 1
-            }, "map": {
-                "title": "Google Map",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/map.html"),
-                "showSearch": 0,
-                "showRefresh": 1
-            }, "flightDataTable": {
-                "title": "Flight Options",
-                "templateUrl": versionUrl("app/components/Nationwide/partials/flightDataTableBox.html"),
-                "showSearch": 0,
-                "showRefresh": 1
-            }
-        };
-
-        $scope.pickService = {
-            "clients": [], "settings": {
-                "enableSearch": true,
-                "selectedToTop": true,
-                "closeOnBlur": true,
-                "closeOnSelect": true,
-                "buttonClasses": "topBarActive btn-sm btn-clients"
-            }
-        };
-        $scope.pickClients = [];
-        $scope.pickEventTypes = [];
 
         ///////////////////////////////
         // LAYOUT
@@ -499,9 +520,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        $scope.allCouriers.display = true;
-        //Column Sorting
-        $scope.sort = [];
         $scope.orderList = async (list, prop) => {
             const serverOrder = list === "jobList";
             if ($scope.sort[list] !== prop) {
@@ -2599,7 +2617,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         // Load custom layout
-        $scope.init = () => {
+        function init() {
             if (Modernizr.localstorage) {
                 const storedLayouts = localStorage.getItem("layoutsNW-" + ContactID);
                 const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutNW-" + ContactID);
@@ -2618,14 +2636,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
 
             // Init functions
-            $scope.initializeVariables();
-            $scope.loadPageViews().then(() => {
+            initializeVariables();
+            loadPageViews().then(() => {
                 console.log('Loaded Page Views!');
             });
         };
 
         // Call the init function when the controller loads
-        $scope.init();
+        init();
     }]);
 
 
