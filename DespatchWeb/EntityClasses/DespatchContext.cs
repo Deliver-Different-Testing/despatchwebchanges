@@ -338,6 +338,22 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
 
+                entity.Property(e => e.DeliveryAddressLine1).HasMaxLength(255);
+
+                entity.Property(e => e.DeliveryAddressLine2).HasMaxLength(255);
+
+                entity.Property(e => e.DeliveryAddressLine3).HasMaxLength(255);
+
+                entity.Property(e => e.DeliveryAddressLine4).HasMaxLength(255);
+
+                entity.Property(e => e.DeliveryAddressLine5).HasMaxLength(255);
+
+                entity.Property(e => e.DeliveryAddressLine6).HasMaxLength(255);
+
+                entity.Property(e => e.DeliveryAddressLine7).HasMaxLength(255);
+
+                entity.Property(e => e.DeliveryAddressLine8).HasMaxLength(255);
+
                 entity.Property(e => e.DeliveryLatitude).HasColumnType("decimal(18, 9)");
 
                 entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
@@ -393,6 +409,22 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.PickUpLatitude).HasColumnType("decimal(18, 9)");
 
                 entity.Property(e => e.PickUpLongitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.PickupAddressLine1).HasMaxLength(255);
+
+                entity.Property(e => e.PickupAddressLine2).HasMaxLength(255);
+
+                entity.Property(e => e.PickupAddressLine3).HasMaxLength(255);
+
+                entity.Property(e => e.PickupAddressLine4).HasMaxLength(255);
+
+                entity.Property(e => e.PickupAddressLine5).HasMaxLength(255);
+
+                entity.Property(e => e.PickupAddressLine6).HasMaxLength(255);
+
+                entity.Property(e => e.PickupAddressLine7).HasMaxLength(255);
+
+                entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
 
                 entity.Property(e => e.PickupAmount).HasColumnType("money");
 
