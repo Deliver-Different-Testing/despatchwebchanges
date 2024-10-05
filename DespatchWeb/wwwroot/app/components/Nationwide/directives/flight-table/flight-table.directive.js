@@ -16,7 +16,7 @@ angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl'
         /** @type {String|null} */
         $scope.error = null;
 
-        /** @type {{limit: Number, page: Number}} */
+        /** @type {{limit: number, page: number}} */
         $scope.query = {
             limit: 10,
             page: 1

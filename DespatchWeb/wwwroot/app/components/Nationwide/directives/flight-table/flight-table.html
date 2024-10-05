@@ -1,4 +1,4 @@
-<div class="responsive-datatable">
+<div class="responsive-datatable" ng-if="currentJob">
     <md-progress-circular md-mode="indeterminate" ng-if="loading"></md-progress-circular>
     <md-content class="md-warn" ng-if="error">{{ error }}</md-content>
     <div ng-if="!loading && !error">
@@ -37,6 +37,6 @@
     </div>
 </div>
 
-<div class="no-data" ng-if="!jdSvc.currentJob && !currentCourier">
+<div class="no-data" ng-if="!currentJob">
     <div class="text">Please select a job to view available flights</div>
 </div>
