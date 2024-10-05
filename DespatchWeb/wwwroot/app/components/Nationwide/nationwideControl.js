@@ -1852,20 +1852,28 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        $scope.loadRelatedJobDetail = async (id, jn) => {
+        /**
+         * @param {number} jobId
+         * @param {string} jobNumber
+         */
+        $scope.loadRelatedJobDetail = async (jobId, jobNumber) => {
             try {
                 const $boxJobDetail = angular.element("#box-jobDetail");
                 $boxJobDetail.find(".loading").show();
 
-                $scope.currentJob = await NWData.getJobDetail(id);
+                $scope.currentJob = await NWData.getJobDetail(jobId);
                 $boxJobDetail.find(".loading").hide();
-                $scope.currentSelection = " for Job " + jn;
+                $scope.currentSelection = " for Job " + jobNumber;
             } catch (error) {
                 console.error("Error in loadRelatedJobDetail:", error);
                 angular.element("#box-jobDetail").find(".loading").hide();
             }
         };
 
+        /**
+         * @param {Job} job
+         * @param {boolean} clear
+         */
         $scope.selectJob = async (job, clear) => {
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
@@ -1889,6 +1897,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             console.log("selectJob");
         }
 
+        /**
+         * @param {Job} job
+         */
         function initializeJob(job) {
             $scope.currentJob = job;
             $scope.$apply();

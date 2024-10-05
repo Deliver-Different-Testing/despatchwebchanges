@@ -579,21 +579,21 @@ class NationwideService {
     }
 
     /**
-     * @param {Number} clientId
-     * @param {Number} fromId
-     * @param {Number} toId
-     * @param {Number} speed
-     * @param {Boolean} pedal
-     * @param {Boolean} van
-     * @param {Boolean} returnJob
-     * @param {Number} weight
-     * @param {Number} size
-     * @param {Boolean} includeFuelSurcharge
-     * @param {Boolean} direct
-     * @param {Number} acceptedJobTypeId
-     * @param {String} ourRef
-     * @param {String} refA
-     * @param {String} refB
+     * @param {number} clientId
+     * @param {number} fromId
+     * @param {number} toId
+     * @param {number} speed
+     * @param {boolean} pedal
+     * @param {boolean} van
+     * @param {boolean} returnJob
+     * @param {number} weight
+     * @param {number} size
+     * @param {boolean} includeFuelSurcharge
+     * @param {boolean} direct
+     * @param {number} acceptedJobTypeId
+     * @param {string} ourRef
+     * @param {string} refA
+     * @param {string} refB
      * @param {Array|String} quantity
      * @param {Date} booked
      */
@@ -603,8 +603,8 @@ class NationwideService {
     }
 
     /**
-     * @param {Number} clientId
-     * @param {Number} amount
+     * @param {number} clientId
+     * @param {number} amount
      */
     async ppdExclusiveAmount(clientId, amount) {
         const response = await this._$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
@@ -612,30 +612,30 @@ class NationwideService {
     }
 
     /**
-     * @param {Number} jobId
-     * @param {String} despatcherName
+     * @param {number} jobId
+     * @param {string} despatcherName
      */
     async splitJob(jobId, despatcherName) {
         return this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
     /**
-     * @param {Number} jobId
+     * @param {number} jobId
      */
     async reRateSplitJob(jobId) {
         return this._$http.post("job/ReRateSplitJob?jobId=" + jobId);
     }
 
     /**
-     * @param {Number} jobId
-     * @param {Number} toSuburbId
-     * @param {String} address
-     * @param {Number} lat
-     * @param {Number} lng
-     * @param {Boolean} cbd
-     * @param {Number} rate
-     * @param {String} despatcherName
-     * @param {Boolean} prebook
+     * @param {number} jobId
+     * @param {number} toSuburbId
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     * @param {boolean} cbd
+     * @param {number} rate
+     * @param {string} despatcherName
+     * @param {boolean} prebook
      */
     async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
@@ -643,15 +643,15 @@ class NationwideService {
     }
 
     /**
-     * @param {Number} jobId
-     * @param {Number} fromSuburbId
-     * @param {String} address
-     * @param {Number} lat
-     * @param {Number} lng
-     * @param {Boolean} cbd
-     * @param {Number} rate
-     * @param {String} despatcherName
-     * @param {Boolean} prebook
+     * @param {number} jobId
+     * @param {number} fromSuburbId
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
+     * @param {boolean} cbd
+     * @param {number} rate
+     * @param {string} despatcherName
+     * @param {boolean} prebook
      */
     async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
@@ -659,24 +659,24 @@ class NationwideService {
     }
 
     /**
-     * @param {String} jobId
-     * @param {String} toSuburbId
-     * @param {String} address
-     * @param {Number} lat
-     * @param {Number} lng
+     * @param {string} jobId
+     * @param {string} toSuburbId
+     * @param {string} address
+     * @param {number} lat
+     * @param {number} lng
      */
     async updateSplitJobAddress(jobId, toSuburbId, address, lat, lng) {
         return this._$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng);
     }
 
     /**
-     * @param {Number} jobId
-     * @param {String} field
-     * @param {String} value
-     * @param {String} rate
-     * @param {String} despatcherName
-     * @param {Number} staffId
-     * @param {Boolean} preBook
+     * @param {number} jobId
+     * @param {string} field
+     * @param {string} value
+     * @param {string} rate
+     * @param {string} despatcherName
+     * @param {number} staffId
+     * @param {boolean} preBook
      */
     async updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
         if (field === "Time" || field === "CompletedTime") {
@@ -726,8 +726,8 @@ class NationwideService {
 
     /**
      * @param {JobQueryParams} queryParams
-     * @param {String[]} selectedClients
-     * @param {Boolean} internal
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
      * @param {Array} selectedAreas
      */
     getNationwideJobsNew(queryParams, selectedClients, internal, selectedAreas) {
@@ -736,8 +736,8 @@ class NationwideService {
 
     /**
      * @param {JobQueryParams} queryParams
-     * @param {String[]} selectedClients
-     * @param {Boolean} internal
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
      * @param {Array} selectedAreas
      */
     getNationwideJobsPOD(queryParams, selectedClients, internal, selectedAreas) {
@@ -746,8 +746,8 @@ class NationwideService {
 
     /**
      * @param {JobQueryParams} queryParams
-     * @param {String[]} selectedClients
-     * @param {Boolean} internal
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
      * @param {Array} selectedAreas
      */
     getNationwideJobsBookDelivery(queryParams, selectedClients, internal, selectedAreas) {
@@ -756,8 +756,8 @@ class NationwideService {
 
     /**
      * @param {JobQueryParams} queryParams
-     * @param {String[]} selectedClients
-     * @param {Boolean} internal
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
      * @param {Array} selectedAreas
      */
     getNationwideJobsReprice(queryParams, selectedClients, internal, selectedAreas) {
@@ -770,30 +770,29 @@ class NationwideService {
     }
 
     /**
-     * Fetches flight options for a given departure date and airport pair.
-     * @param {Date} departureDate - The date of departure.
-     * @param {number} departureAirportId - The ID of the departure airport.
-     * @param {number} destinationAirportId - The ID of the destination airport.
+     * Fetches flight options for a specific job. Optinally can specify departure date
+     * @param {number} jobId - The Id of the job
+     * @param {Date|Null} departureDate - The date of departure.
      * @returns {Promise<Array>} A promise that resolves to an array of flight options.
      * @throws {Error} If the API request fails or returns an unexpected response.
      */
-    async getFlightOptions(departureDate, departureAirportId, destinationAirportId) {
-        if (!(departureDate instanceof Date)) {
-            throw new Error('Invalid departureDate. Expected a Date object.');
+    async getFlightOptions(jobId, departureDate) {
+        if (!Number.isInteger(jobId)) {
+            console.error('Invalid job ID. Expected integer values.')
         }
 
-        if (!Number.isInteger(departureAirportId) || !Number.isInteger(destinationAirportId)) {
-            throw new Error('Invalid airport ID. Expected integer values for departureAirportId and destinationAirportId.');
+        // Set date to today if either null or not a date
+        if (!departureDate || !Number.isDate(departureDate)) {
+            departureDate = new Date();
         }
 
-        const formattedDate = departureDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        const formattedDate = departureDate.toISOString().split('T')[0];
 
         try {
             const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
                 params: {
                     departureDate: formattedDate,
-                    departureAirportId: departureAirportId,
-                    destinationAirportId: destinationAirportId
+                    jobId: jobId,
                 }
             });
 

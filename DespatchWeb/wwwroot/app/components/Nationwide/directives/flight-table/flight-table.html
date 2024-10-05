@@ -36,3 +36,7 @@
         </md-table-pagination>
     </div>
 </div>
+
+<div class="no-data" ng-if="!jdSvc.currentJob && !currentCourier">
+    <div class="text">Please select a job to view available flights</div>
+</div>
