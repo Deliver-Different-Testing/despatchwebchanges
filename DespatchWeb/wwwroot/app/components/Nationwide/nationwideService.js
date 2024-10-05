@@ -770,10 +770,10 @@ class NationwideService {
     }
 
     /**
-     * Fetches flight options for a specific job. Optinally can specify departure date
-     * @param {number} jobId - The Id of the job
+     * Fetches flight options for a specific job. Optionally can specify departure date
+     * @param {number} jobId - The ID of the job
      * @param {Date|Null} departureDate - The date of departure.
-     * @returns {Promise<Array>} A promise that resolves to an array of flight options.
+     * @returns {Promise<FlightOptions[]>} A promise that resolves to an array of flight options.
      * @throws {Error} If the API request fails or returns an unexpected response.
      */
     async getFlightOptions(jobId, departureDate) {

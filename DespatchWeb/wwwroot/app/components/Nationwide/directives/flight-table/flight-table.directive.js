@@ -7,13 +7,13 @@ angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl'
         currentJob: [],
     },
     controller: ['$scope', '$timeout', ($scope, $timeout) => {
-        /** @type {Object[]} */
+        /** @type {FlightOptions[]} */
         $scope.flights = [];
-        /** @type {Object[]} */
+        /** @type {FlightOptions[]} */
         $scope.pagedFlights = [];
-        /** @type {Boolean} */
+        /** @type {boolean} */
         $scope.loading = false;
-        /** @type {String|null} */
+        /** @type {string|null} */
         $scope.error = null;
 
         /** @type {{limit: number, page: number}} */
@@ -31,7 +31,7 @@ angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl'
                     try {
                         $scope.loading = true;
                         $scope.error = null;
-                        $scope.flights = await $scope.getFlightOptions($scope.currentJob, $scope.departureDate);
+                        $scope.flights = await NWData.getFlightOptions($scope.currentJob, $scope.departureDate);
                         $scope.updatePagedFlights();
                     } catch (error) {
                         console.error("Error fetching flight options:", error);
@@ -50,6 +50,10 @@ angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl'
             $scope.pagedFlights = $scope.flights.slice(start, end);
         };
 
+        /**
+         * @param {number} page
+         * @param {number} limit
+         */
         $scope.onPaginate = (page, limit) => {
             $scope.query.page = page;
             $scope.query.limit = limit;
