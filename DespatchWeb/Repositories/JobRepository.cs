@@ -2135,18 +2135,15 @@ public class JobRepository : IJobRepository
 
     public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
     {
-        var count = await _context.TblClientAvailableSpeeds
-            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
-            .Join(_context.TblClientAvailableSpeedItems,
-                cas => cas.Id,
-                casi => casi.ClientAvailableSpeedId,
-                (cas, casi) => new { cas, casi })
-            .Where(x => x.casi.Active)
-            .Join(_context.TucClientItems,
-                x => x.casi.ClientItemId,
-                ci => ci.ItemId,
-                (x, ci) => ci)
-            .CountAsync();
+        var query =
+            from cas in _context.TblClientAvailableSpeeds
+            where cas.ClientId == clientId && cas.SpeedId == speedId
+            join casi in _context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
+            where casi.Active
+            join ci in _context.TucClientItems on casi.ClientItemId equals ci.ItemId
+            select ci;
+
+        var count = await query.CountAsync();
 
         return count > 0;
     }
@@ -2174,6 +2171,22 @@ public class JobRepository : IJobRepository
         _context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
         await _context.SaveChangesAsync();
     }
+
+
+    public async Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId)
+    {
+        var airportCodes = await _context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new
+            {
+                ToAirport = j.ToAirport.AirportCode,
+                FromAirport = j.FromAirport.AirportCode
+            })
+            .FirstOrDefaultAsync();
+
+        return (airportCodes?.ToAirport, airportCodes?.FromAirport);
+    }
+
 
     private static string GetOrderByClause(string order, string ascending)
     {
@@ -2298,20 +2311,15 @@ public class JobRepository : IJobRepository
     private IQueryable<ClientItemsViewModel> BuildClientItemsQuery(int clientId, int speedId,
         IEnumerable<int> clientItemIds)
     {
-        return _context.TblClientAvailableSpeeds
-            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
-            .Join(_context.TblClientAvailableSpeedItems,
-                cas => cas.Id,
-                casi => casi.ClientAvailableSpeedId,
-                (cas, casi) => new { cas, casi })
-            .Where(x => x.casi.Active)
-            .Join(_context.TucClientItems,
-                x => x.casi.ClientItemId,
-                ci => ci.ItemId,
-                (x, ci) => ci)
-            .Where(ci => ci.ClientId == clientId)
-            .OrderBy(ci => ci.Name)
-            .Select(ci => new ClientItemsViewModel
+        var query =
+            from cas in _context.TblClientAvailableSpeeds
+            where cas.ClientId == clientId && cas.SpeedId == speedId
+            join casi in _context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
+            where casi.Active
+            join ci in _context.TucClientItems on casi.ClientItemId equals ci.ItemId
+            where ci.ClientId == clientId
+            orderby ci.Name
+            select new ClientItemsViewModel
             {
                 ItemId = ci.ItemId,
                 ClientId = ci.ClientId,
@@ -2321,7 +2329,9 @@ public class JobRepository : IJobRepository
                 Rate = ci.Rate,
                 OnlyVan = ci.OnlyVan,
                 Selected = clientItemIds.Contains(ci.ItemId)
-            });
+            };
+
+        return query;
     }
 
     private static async Task<PagedList<ClientItemsViewModel>> CreatePagedList(IQueryable<ClientItemsViewModel> query)

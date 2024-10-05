@@ -8,20 +8,19 @@ namespace DespatchWeb.Controllers;
 
 public class NationwideJobController : Controller
 {
-    private readonly ICourierRepository _courierRepo;
     private readonly IFlightStatusService _flightStatusService;
+    private readonly IJobRepository _jobRepository;
 
-    public NationwideJobController(ICourierRepository courierRepo, IFlightStatusService flightStatusService)
+    public NationwideJobController(IJobRepository jobRepository, IFlightStatusService flightStatusService)
     {
-        _courierRepo = courierRepo;
+        _jobRepository = jobRepository;
         _flightStatusService = flightStatusService;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId)
     {
-        var (departureAirportCode, destinationAirportCode) =
-            await GetAirportCode;
+        var (departureAirportCode, destinationAirportCode) = await _jobRepository.GetAirportCodesByJobIdAsync(jobId);
 
         if (string.IsNullOrEmpty(departureAirportCode) || string.IsNullOrEmpty(destinationAirportCode))
             return BadRequest("Invalid airport ID(s) provided.");
