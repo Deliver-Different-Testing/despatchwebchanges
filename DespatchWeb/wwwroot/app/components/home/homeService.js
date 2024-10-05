@@ -726,7 +726,7 @@ class DispatchData {
     /**
      * @param {number} bulkJobId
      * @param {number} toSuburb
-     * @param {String|Number} toPostCode
+     * @param {string|Number} toPostCode
      * @param {string} address
      * @param {number} lat
      * @param {number} lng
@@ -797,7 +797,7 @@ class DispatchData {
     /**
      * @param {number} jobId
      * @param {string} field
-     * @param {String|Date|Number} value
+     * @param {string|Date|Number} value
      * @param {number} rate
      * @param {string} despatcherName
      * @param {number} staffId
@@ -823,7 +823,7 @@ class DispatchData {
     /**
      * @param {number} bulkJobId
      * @param {string} field
-     * @param {String|Number|Date} value
+     * @param {string|Number|Date} value
      * @param {number} rate
      * @param {string} despatcherName
      * @param {number} staffId
@@ -888,7 +888,7 @@ class DispatchData {
     }
 
     /**
-     * @param {{text: String, id: Number}} item
+     * @param {Suggestion} item
      */
     async getGeoCodeInformation(item) {
         const response = await this._$http.get('https://geocoder.cit.api.here.com/6.2/geocode.json', {
