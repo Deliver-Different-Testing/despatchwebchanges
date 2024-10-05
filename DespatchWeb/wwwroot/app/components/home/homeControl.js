@@ -45,15 +45,14 @@ angular.module("uDispatch")
                     $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
                     $scope.initializeAreas();
                     await $scope.updateFilters();
-                    await $scope.getData();
 
+                    await $scope.getData();
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
+
                     // Initialize areas with an empty array if fetch fails
                     $scope.areas = [];
                     $scope.initializeAreas();
-                    // Optionally, show an error message to the user
-                    console.log("Failed to load dispatch views. Please try refreshing the page.");
                 }
             };
 
@@ -1171,7 +1170,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {$event}  $event
+             * @param {Object}  $event
              */
             $scope.redispatchAll = async $event => {
                 const confirm = $mdDialog.confirm()
@@ -2907,7 +2906,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {$event}  $event
+             * @param {Object}  $event
              */
             $scope.truckLoadingStatus = ($event) => {
                 return $mdDialog.show({
@@ -2969,7 +2968,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {$event}  $event
+             * @param {Object}  $event
              */
             $scope.interCourierCharge = $event => {
                 return $mdDialog.show({
@@ -2990,7 +2989,7 @@ angular.module("uDispatch")
             }
 
             /**
-             * @param {$event}  $event
+             * @param {Object}  $event
              * @param {Job}  job
              */
             $scope.createEvent = ($event, job) => {
@@ -3029,7 +3028,7 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {$event}  event
+             * @param {Object}  event
              * @param {Job} job
              */
             $scope.openFileAttachmentDialog = (event, job) => {
@@ -3089,7 +3088,6 @@ angular.module("uDispatch")
                 }
             };
 
-// Load custom layout
             $scope.init = () => {
                 if (Modernizr.localstorage) {
                     const storedLayouts = localStorage.getItem("layouts-" + ContactID);
@@ -3112,12 +3110,12 @@ angular.module("uDispatch")
 
                 // Init functions
                 $scope.initializeVariables();
+                // Only call loadPageViews, which will in turn call getData
                 $scope.loadPageViews().then(() => {
-                    console.log('Loaded Page Views!');
+                    console.log('Loaded Page Views and Data!');
                 });
             };
 
-// Call the init function when the controller loads
             $scope.init();
         }]);
 
