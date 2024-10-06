@@ -23,11 +23,12 @@ angular.module("uDispatch")
                 new: false, nda: true, active: false, done: false, all: false
             };
 
+            $scope.selectedFilter = 'nda';
+
             $scope.pickAllCouriers = [];
             $scope.selected = [];
             $scope.jobList = [];
             $scope.driverLocations = [];
-            $scope.cleanupFunctions = [];
             $scope.markers = [];
             $scope.truckCourierStatus = [];
 
@@ -200,7 +201,8 @@ angular.module("uDispatch")
 
                 // Run functions
                 await initializeAreas();
-                await $scope.updateFilters();
+                await $scope.updateFilters("nda");
+                await fetchDriverLocations();
                 await $scope.getData();
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
@@ -1597,7 +1599,7 @@ angular.module("uDispatch")
             try {
                 await $scope.dispatchJobs(courierId);
                 console.log('Dispatch complete');
-                await $scope.getDriverLocationsData();
+                await fetchDriverLocations();
             } catch (error) {
                 console.error('Error in drop handler:', error);
             }
@@ -2642,7 +2644,6 @@ angular.module("uDispatch")
         $scope.getData = async () => {
             try {
                 await initializeJobList();
-                await fetchDriverLocations();
                 await fetchCouriers();
                 await fetchCourierMovements();
                 await fetchAreaList();

@@ -351,16 +351,18 @@ class DispatchData {
     }
 
     /**
-     * @param {Array} selectedViewIds
+     * @param {Suggestion[]} selectedViews
      */
-    async getDriverLocations(selectedViewIds) {
-        const params = this._prepareViewIdsForRequest(selectedViewIds);
+    async getDriverLocations(selectedViews) {
+        const despatchViewIds = this._prepareViewIdsForRequest(selectedViews);
+        const params = new URLSearchParams();
 
-        const response = await this._$http.get('courier', {
-            params: params,
-            paramSerializer: '$httpParamSerializerJQLike'
+        // Append each despatchViewId as a separate query parameter
+        despatchViewIds.forEach(id => {
+            params.append('despatchViewIds', id.toString());
         });
 
+        const response = await this._$http.get(`courier?${params.toString()}`);
         return response.data;
     }
 
@@ -847,7 +849,7 @@ class DispatchData {
      * @param {JobQueryParams} queryParams
      * @param {String[]} selectedClients
      * @param {boolean} internal
-     * @param {Array} selectedAreas
+     * @param {Suggestion[]} selectedAreas
      */
     async getJobsWithFilters(queryParams, selectedClients, internal, selectedAreas) {
         const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
@@ -943,7 +945,7 @@ class DispatchData {
     }
 
     /**
-     * @param {Array} selectedAreas
+     * @param {Suggestion[]} selectedAreas
      * @returns {Array}
      * @private
      */
