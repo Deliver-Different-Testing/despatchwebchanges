@@ -1404,13 +1404,13 @@ md-table-pagination .md-button[disabled] {
   width: 60px;
 }
 .responsive-datatable table.md-table .col-md {
-  width: 80px;
+    width: 100px;
 }
 .responsive-datatable table.md-table .col-lg {
   width: 100px;
 }
 .responsive-datatable table.md-table .col-xl {
-  width: 150px;
+    width: 200px;
 }
 .responsive-datatable .md-table-pagination {
   min-height: 56px;

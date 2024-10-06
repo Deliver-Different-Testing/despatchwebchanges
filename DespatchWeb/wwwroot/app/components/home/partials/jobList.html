@@ -9,7 +9,7 @@
                 <th class="col-xs" md-column><span>V</span></th>
                 <th class="col-lg" md-column><span>Job</span></th>
                 <th class="col-lg" md-column><span>Client</span></th>
-                <th class="col-xl" md-column><span>From</span></th>
+                <th class="col-md" md-column><span>From</span></th>
                 <th class="col-xl" md-column><span>To</span></th>
                 <th class="col-md" md-column><span>Code</span></th>
                 <th class="col-md" md-column><span>Remain</span></th>
@@ -49,6 +49,7 @@
                 <td md-cell
                     ng-click="jobTableService.editField($event, job, 'courier', 'Courier Code')">
                     {{job.courier}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.courier">edit</md-icon>
                 </td>
                 <td md-cell ng-class="{'highlight': job.remain < 0}">
                     {{job.remain}}
@@ -57,10 +58,12 @@
                     <span ng-class="job.status">{{job.status}}</span>
                 </td>
                 <td md-cell ng-click="jobTableService.editField($event, job, 'lp', 'LP', 'number')">
-                    <span ng-class="{'md-placeholder': !job.lp}">{{job.lp || 'LP'}}</span>
+                    {{job.lp}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.ld">edit</md-icon>
                 </td>
                 <td md-cell ng-click="jobTableService.editField($event, job, 'ld', 'LD', 'number')">
-                    <span ng-class="{'md-placeholder': !job.ld}">{{job.ld || 'LD'}}</span>
+                    {{job.ld}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.ld">edit</md-icon>
                 </td>
                 <td md-cell>
                     <md-button class="md-icon-button" ng-click="restoreJobs()" ng-if="job.courier !== null">

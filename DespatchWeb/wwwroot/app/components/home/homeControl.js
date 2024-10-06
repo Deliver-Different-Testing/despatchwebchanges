@@ -249,7 +249,6 @@ angular.module("uDispatch")
             } catch (error) {
                 console.error('Error updating filters:', error);
             }
-            b
         }
 
         /**

@@ -12,7 +12,7 @@
                         <md-tooltip md-direction="bottom">Filters</md-tooltip>
                     </md-button>
                     <md-menu-content>
-                        <md-radio-group ng-change="updateFilters(selectedFilter)">
+                        <md-radio-group ng-change="updateFilters(selectedFilter)" ng-model="selectedFilter">
                             <md-menu-item>
                                 <md-radio-button value="new">New</md-radio-button>
                             </md-menu-item>
@@ -44,7 +44,7 @@
                             <p>No areas available.</p>
                         </md-menu-item>
                         <md-menu-item ng-if="areas && areas.length > 0" ng-repeat="area in areas">
-                            <md-checkbox ng-change="updateFilters()" ng-model="selectedAreas[area.id]">{{area.name}}
+                            <md-checkbox ng-change="getData()" ng-model="selectedAreas[area.id]">{{area.name}}
                             </md-checkbox>
                         </md-menu-item>
                     </md-menu-content>
