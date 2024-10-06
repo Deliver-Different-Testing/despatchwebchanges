@@ -12,21 +12,23 @@
                         <md-tooltip md-direction="bottom">Filters</md-tooltip>
                     </md-button>
                     <md-menu-content>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.new">New</md-checkbox>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.nda">NDA</md-checkbox>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.active">Active</md-checkbox>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.done">Done</md-checkbox>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.all">All</md-checkbox>
-                        </md-menu-item>
+                        <md-radio-group ng-change="updateFilters(selectedFilter)">
+                            <md-menu-item>
+                                <md-radio-button value="new">New</md-radio-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-radio-button value="nda">NDA</md-radio-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-radio-button value="active">Active</md-radio-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-radio-button value="done">Done</md-radio-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-radio-button value="all">All</md-radio-button>
+                            </md-menu-item>
+                        </md-radio-group>
                     </md-menu-content>
                 </md-menu>
 
