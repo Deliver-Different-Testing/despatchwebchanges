@@ -7,6 +7,8 @@ angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl'
         currentJob: [],
     },
     controller: ['$scope', '$timeout', ($scope, $timeout) => {
+        console.log('Flight directive open!');
+
         /** @type {FlightOptions[]} */
         $scope.flights = [];
         /** @type {FlightOptions[]} */
@@ -23,6 +25,8 @@ angular.module('uDispatch').directive('flightDataTable', ['NWData', 'versionUrl'
         };
 
         $scope.$watchGroup(['flightOptions', 'currentJob'], async (newValues, oldValues) => {
+            console.log('WatchGroup Hit: ' + newValues + ' & ' + oldValues);
+
             if (newValues !== oldValues) {
                 if ($scope.flightOptions) {
                     $scope.flights = $scope.flightOptions;

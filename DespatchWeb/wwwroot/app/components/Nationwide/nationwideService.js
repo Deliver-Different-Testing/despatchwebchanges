@@ -777,10 +777,6 @@ class NationwideService {
      * @throws {Error} If the API request fails or returns an unexpected response.
      */
     async getFlightOptions(jobId, departureDate) {
-        if (!Number.isInteger(jobId)) {
-            console.error('Invalid job ID. Expected integer values.')
-        }
-
         // Set date to today if either null or not a date
         if (!departureDate || !Number.isDate(departureDate)) {
             departureDate = new Date();

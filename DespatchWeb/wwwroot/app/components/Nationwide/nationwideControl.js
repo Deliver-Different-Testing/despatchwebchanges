@@ -6,8 +6,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.name = "Nationwide";
             $scope.isInternal = (ClientInternal === "True");
 
-            $scope.allCouriers.display = true;
             $scope.sort = [];
+            $scope.flightOptions = [];
+            $scope.currentJob = {};
+
 
             $scope.isUsCustomer = APP_CONFIG.US_Customer;
             $scope.jobDetailFabIsOpen = false;
@@ -37,7 +39,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 order: 'time', filter: '', status: 'all', asc: 'asc'
             };
 
-            $scope.allCouriers = {display: false, includeUA: false};
+            $scope.flightTableQuery = {
+                limit: 10,
+                page: 1
+            };
+
+            $scope.allCouriers = {display: true, includeUA: false};
             $scope.mapZoom = {display: true};
 
             $scope.options = {
@@ -232,12 +239,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         jdSvc.setSelectJobDetail(async () => {
             const currentJob = $scope.currentJob;
-            await jdSvc.setJob($scope.currentJob);
-            await $scope.getData();
-
             if (!currentJob) {
                 return;
             }
+
+            await jdSvc.setJob(currentJob);
+            await $scope.getData();
 
             const jobLists = [{list: $scope.jobList, elementId: 'jobList'}, {
                 list: $scope.jobListDelivery,
@@ -250,7 +257,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             for (const {list, elementId} of jobLists) {
                 const refreshedJob = list.find(jo => jo.id === currentJob.id);
                 if (refreshedJob) {
-                    await $scope.selectJob(refreshedJob);
+                    await $scope.selectJob(refreshedJob, true);
                     await new Promise(resolve => $timeout(async () => {
                         const element = angular.element(`#${elementId} tr[data-jobid='${currentJob.id}']`);
                         element.addClass("active");
@@ -597,14 +604,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.lockJob = () => {
             return $scope.jdSvc.lockJob($scope.currentJob);
-        };
-
-        $scope.selectClearList = async (id, event, area) => {
-            angular.element("#area-group .btn").removeClass("topBarActive");
-            angular.element(".clearLists-list-title").removeClass("listActive");
-            angular.element(event.currentTarget).addClass("listActive");
-            $scope.getClearListEnvelope(id);
-            await $scope.setFilters({'area': area});
         };
 
         $scope.selectForDispatch = job => {
@@ -1487,7 +1486,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getData();
 
                 const refreshedJob = $scope.jobList.find(jo => jo.id === firstJob.id);
-                await $scope.selectJob(refreshedJob);
+                await $scope.selectJob(refreshedJob, false);
 
                 await new Promise(resolve => $timeout(() => {
                     angular.element(`#jobList tr[data-jobid='${firstJob.id}']`).addClass("active");
@@ -1530,10 +1529,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                         classes: {
                             "ui-droppable-hover": "active"
                         }, drop: function (event, ui) {
-                            //angular.element(this).addClass("active");
-
-
-                            //STOP DROPPABLE FIRING OUTSIDE ITS CONTAINER & HIDDEN
                             const parent = angular.element(this).parents(".box");
                             const parentOffset = parent.offset();
                             const parentTop = parentOffset.top;
@@ -1545,18 +1540,13 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                             const rowBottom = rowTop + row.outerHeight();
 
                             if (rowTop < parentBottom && rowBottom > parentTop) {
-
-                                //YAY ITS VISABLE
                                 angular.element(this).css({"background-color": "#c6dfad"});
                                 angular.element(this).animate({backgroundColor: "inherit"}, 300, function () {
                                     angular.element(this).removeAttr("style");
                                 });
+
                                 $scope.dispatchJobs(angular.element(this).attr("data-courier").replace(/[^\d.-]/g, ''));
-                                $scope.getClearListsData();
-
                             }
-
-
                         }
                     });
                 });
@@ -1889,12 +1879,35 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
+         * @param {FlightOptions[]} flights
+         */
+        function updatePagedFlights(flights) {
+            const start = ($scope.query.page - 1) * $scope.query.limit;
+            const end = start + $scope.query.limit;
+            $scope.pagedFlights = flights.slice(start, end);
+        }
+
+        /**
+         * @param {number} page
+         * @param {number} limit
+         */
+        $scope.onPaginate = (page, limit) => {
+            $scope.flightTableQuery.page = page;
+            $scope.flightTableQuery.limit = limit;
+            updatePagedFlights($scope.flights);
+        };
+
+        /**
          * @param {Job} job
          * @param {boolean} clear
          */
         $scope.selectJob = async (job, clear) => {
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
+
+                // Get flights for jobs
+                $scope.flights = await NWData.getFlightOptions(job.id, job.Date);
+                updatePagedFlights($scope.flights);
 
                 processActiveTable();
                 initializeJob(job);
@@ -2091,7 +2104,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                                 "client": $scope.currentJob.client,
                                 "dueMins": dueTime,
                                 "choose": ""
-                            }, submit: () => {
+                            }, submit: async () => {
                                 const pickupETAValue = parseInt($scope.lateForm.choose.value);
                                 const dueMins = moment($scope.currentJob.booked).add($scope.currentJob.lp || $scope.currentJob.pickupTime, "minutes").diff(moment(), 'minutes');
 
@@ -2100,7 +2113,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                                     const lateMins = pickupETAValue - dueMins + window;
                                     $scope.currentJob.lp = lateMins;
                                     console.log(lateMins);
-                                    $scope.lateCall(lateMins, 1, $scope.currentJob, false);
+                                    await $scope.lateCall(lateMins, 1, $scope.currentJob, false);
                                     $scope.lateForm.data = null;
                                     angular.element("#AwayMins").select2().empty();
                                     angular.element("#AwayMins").select2('destroy');

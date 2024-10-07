@@ -2074,6 +2074,7 @@ angular.module("uDispatch")
                 $scope.currentJob = job;
                 $scope.$apply();
 
+
                 console.log(job);
 
                 await JobDetailService.setJob($scope.currentJob);

@@ -20,13 +20,13 @@ public class NationwideJobController : Controller
     [HttpGet]
     public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId)
     {
-        var (departureAirportCode, destinationAirportCode) = await _jobRepository.GetAirportCodesByJobIdAsync(jobId);
+        var (toAirport, fromAirport) = await _jobRepository.GetAirportCodesByJobIdAsync(jobId);
 
-        if (string.IsNullOrEmpty(departureAirportCode) || string.IsNullOrEmpty(destinationAirportCode))
+        if (string.IsNullOrEmpty(toAirport) || string.IsNullOrEmpty(fromAirport))
             return BadRequest("Invalid airport ID(s) provided.");
 
         var flightOptions =
-            await _flightStatusService.GetFlightsAsync(departureAirportCode, destinationAirportCode, departureDate);
+            await _flightStatusService.GetFlightsAsync(fromAirport, toAirport, departureDate);
 
         if (flightOptions == null || !flightOptions.Any())
             return NotFound("No flight options found for the specified criteria.");
