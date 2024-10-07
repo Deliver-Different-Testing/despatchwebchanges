@@ -20,9 +20,9 @@ public class ClearListZonesRepository : IClearListZonesRepository
     // Get the views available to populate the top-bar
     public async Task<List<SelectItem>> GetDispatchViewsAsync(int userId)
     {
-        var dispatchViews = await _context.UserDespatchViewPreferences
+        var dispatchViews = await _context.DfrntappUserViewPermissions
             .Where(udvp => udvp.UserId == userId)
-            .Select(udvp => udvp.DespatchView)
+            .Select(udvp => udvp.View)
             .Select(dv => new SelectItem
             {
                 Id = dv.DespatchViewId,
