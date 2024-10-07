@@ -277,15 +277,18 @@
                                                ng-if="box.name === 'clearLists'">
                                         City
                                     </md-switch>
-                                    <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                    <md-switch class="md-primary material-toolbar-switch"
+                                               ng-change="getAvailableCourierLocation()"
                                                ng-if="box.name === 'map'" ng-model="allCouriers.display">
                                         All
                                     </md-switch>
-                                    <md-switch class="md-primary" ng-change="storeMapZoomDisplay()"
+                                    <md-switch class="md-primary material-toolbar-switch"
+                                               ng-change="storeMapZoomDisplay()"
                                                ng-if="box.name === 'map'" ng-model="mapZoom.display">
                                         Auto Zoom
                                     </md-switch>
-                                    <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                    <md-switch class="md-primary material-toolbar-switch"
+                                               ng-change="getAvailableCourierLocation()"
                                                ng-if="box.name === 'map'" ng-model="allCouriers.includeUA">
                                         Include UA
                                     </md-switch>

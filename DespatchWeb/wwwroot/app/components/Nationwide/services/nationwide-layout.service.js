@@ -38,9 +38,11 @@ class NationwideLayoutService {
         /** @type {Box} */
         this.jobsListRepriceBox = {name: "jobsListReprice", height: this.BOX_HEIGHT_MEDIUM};
         /** @type {Box} */
-        this.flightDataTableBox = {name: "flightDataTable", height: this.BOX_HEIGHT_MEDIUM};
+        this.flightDataTableBox = {name: "flightDataTable", height: this.BOX_HEIGHT_XSMALL};
         /** @type {Box} */
-        this.jobDetailBox = {name: "jobDetail", height: this.BOX_HEIGHT_MEDIUM};
+        this.mapTableBox = {name: "map", height: this.BOX_HEIGHT_XSMALL};
+        /** @type {Box} */
+        this.jobDetailBox = {name: "jobDetail", height: this.BOX_HEIGHT_SMALL};
 
         // Define columns
         /** @type {Column} */
@@ -53,7 +55,9 @@ class NationwideLayoutService {
         };
         /** @type {Column} */
         this.column3 = {
-            id: "col3", width: this.COL_WIDTH_MEDIUM, boxes: [this.jobDetailBox, this.flightDataTableBox]
+            id: "col3",
+            width: this.COL_WIDTH_MEDIUM,
+            boxes: [this.jobDetailBox, this.flightDataTableBox, this.mapTableBox]
         };
 
         // Construct the layout

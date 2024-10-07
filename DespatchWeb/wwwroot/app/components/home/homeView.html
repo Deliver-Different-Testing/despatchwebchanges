@@ -293,19 +293,22 @@
 
                                 <div class="row-overflow" layout="row" ng-if="box.name === 'map'">
                                     <div class="switch-container">
-                                        <md-switch class="md-primary" ng-model="areaListCity"
+                                        <md-switch class="md-primary material-toolbar-switch" ng-model="areaListCity"
                                                    ng-if="box.name === 'driverLocations'">
                                             City
                                         </md-switch>
-                                        <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                        <md-switch class="md-primary material-toolbar-switch"
+                                                   ng-change="getAvailableCourierLocation()"
                                                    ng-if="box.name === 'map'" ng-model="allCouriers.display">
                                             All
                                         </md-switch>
-                                        <md-switch class="md-primary" ng-change="storeMapZoomDisplay()"
+                                        <md-switch class="md-primary material-toolbar-switch"
+                                                   ng-change="storeMapZoomDisplay()"
                                                    ng-model="mapZoom.display" ng-show="box.name === 'map'">
                                             Auto Zoom
                                         </md-switch>
-                                        <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                        <md-switch class="md-primary material-toolbar-switch"
+                                                   ng-change="getAvailableCourierLocation()"
                                                    ng-if="box.name === 'map'" ng-model="allCouriers.includeUA">
                                             Include UA
                                         </md-switch>
