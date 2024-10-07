@@ -694,6 +694,10 @@ namespace DespatchWeb.EntityClasses
                     .ValueGeneratedNever()
                     .HasColumnName("UserViewPermissionID");
 
+                entity.Property(e => e.Id)
+                    .ValueGeneratedOnAdd()
+                    .HasColumnName("ID");
+
                 entity.Property(e => e.UserId).HasColumnName("UserID");
 
                 entity.Property(e => e.ViewId).HasColumnName("ViewID");
@@ -1154,8 +1158,6 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
 
-                entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
-
                 entity.HasOne(d => d.ClearListArea)
                     .WithMany(p => p.TblClearListAreaPolygons)
                     .HasForeignKey(d => d.ClearListAreaId)
@@ -1167,11 +1169,6 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.PolygonId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_tblClearListAreaPolygon_tblPolygon");
-
-                entity.HasOne(d => d.ZipPolygon)
-                    .WithMany(p => p.TblClearListAreaPolygons)
-                    .HasForeignKey(d => d.ZipPolygonId)
-                    .HasConstraintName("FK_ClearListAreaPolygon_ZipPolygon");
             });
 
             modelBuilder.Entity<TblClient>(entity =>

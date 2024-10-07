@@ -224,6 +224,8 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.js.map"/>
     <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.min.js"/>
     <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\directives\flight-table\flight-table.directive.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\directives\flight-table\flight-table.html"/>
   </ItemGroup>
 
   <ItemGroup>

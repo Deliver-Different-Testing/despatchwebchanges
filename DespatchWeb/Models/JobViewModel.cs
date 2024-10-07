@@ -182,6 +182,9 @@ public class JobViewModel
 
     public AddressViewModel PickupAddress { get; set; }
     public AddressViewModel DeliveryAddress { get; set; }
+
+    public int? ToAirportId { get; set; }
+    public int? FromAirportId { get; set; }
 }
 
 public class Vehicle

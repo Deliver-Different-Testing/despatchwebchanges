@@ -12,6 +12,7 @@ namespace DespatchWeb.EntityClasses
         public int? ViewId { get; set; }
         public bool? IsVisible { get; set; }
         public int? SortOrder { get; set; }
+        public int Id { get; set; }
 
         public virtual TucStaff User { get; set; }
         public virtual TblDespatchView View { get; set; }

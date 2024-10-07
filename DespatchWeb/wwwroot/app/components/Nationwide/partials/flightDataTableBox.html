@@ -1,5 +1,5 @@
 <div class="box-content">
-    <div class="responsive-datatable" ng-if="currentJob">
+    <div class="responsive-datatable" ng-if="currentJob && currentJob.toAirportId && currentJob.fromAirportId">
         <md-table-container>
             <table md-table>
                 <thead md-head>
@@ -38,4 +38,10 @@
         <div class="text">Please select a job to view available flights</div>
     </div>
 
+    <div class="no-data" ng-if="currentJob && !currentJob.toAirportId && !currentJob.fromAirportId">
+        <div class="text">
+            No airport information available for this job. If this seems incorrect, please update the job details with
+            the relevant airport information.
+        </div>
+    </div>
 </div>

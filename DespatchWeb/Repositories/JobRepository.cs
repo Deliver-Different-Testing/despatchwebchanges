@@ -991,7 +991,9 @@ public class JobRepository : IJobRepository
             GstRate = j.Gstrate,
             ScheduleName = j.ScheduleName,
             LoggedInContactName = j.LoggedInContactName,
-            StatusName = j.StatusName
+            StatusName = j.StatusName,
+            FromAirportId = j.FromAirportId,
+            ToAirportId = j.ToAirportId
         }).ToList();
 
         return list;

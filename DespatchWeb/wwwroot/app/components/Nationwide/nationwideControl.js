@@ -1905,9 +1905,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
 
-                // Get flights for jobs
-                $scope.flights = await NWData.getFlightOptions(job.id, job.Date);
-                updatePagedFlights($scope.flights);
+                // Get flights for jobs if airport infomation included
+                if (job.toAirportId && job.fromAirportId) {
+                    $scope.flights = await NWData.getFlightOptions(job.id, job.Date);
+                    updatePagedFlights($scope.flights);
+                }
 
                 processActiveTable();
                 initializeJob(job);
