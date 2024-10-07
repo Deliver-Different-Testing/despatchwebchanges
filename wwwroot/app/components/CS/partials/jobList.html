@@ -17,7 +17,7 @@
         <tr md-row md-select="job" md-select-id="id" ng-click="selectJobDetail(job.id)"
             ng-repeat="job in jobList | orderBy: jobQuery.order">
             <td md-cell>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
-            <td md-cell ng-class="job.status">{{job.status}}</td>
+            <td md-cell>{{job.status}}</td>
             <td md-cell>{{job.speed}}</td>
             <td md-cell>{{job.jobNo}}</td>
             <td md-cell>{{job.client}}</td>

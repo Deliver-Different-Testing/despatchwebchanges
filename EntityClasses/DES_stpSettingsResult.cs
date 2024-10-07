@@ -129,8 +129,9 @@ namespace DespatchWeb.EntityClasses
         public string PpdAppliedDescription { get; set; }
         public bool PpdGroupByLocation { get; set; }
         public int? AccountsClientDefaultId { get; set; }
+        public int? InvoiceTemplateId { get; set; }
         public string StatementBccEmailAddress { get; set; }
         public string StatementDirectory { get; set; }
-        public bool StatementMessageIsHtml { get; set; }
+        public bool? StatementMessageIsHtml { get; set; }
     }
 }

@@ -1,16 +1,18 @@
 /**
- * @class
+ * @class JobFileUploadController
+ * @description Controller for handling file uploads related to a specific job.
  */
 class JobFileUploadController {
     /**
-     * @param $http
-     * @param $mdDialog
-     * @param $document
-     * @param $window
-     * @param toastrService
-     * @param Upload
-     * @param bytesFilter
-     * @param {number} jobId
+     * @constructor
+     * @param {object} $http - Angular's $http service for making HTTP requests.
+     * @param {object} $mdDialog - Angular Material's $mdDialog service for creating dialogs.
+     * @param {object} $document - Angular's wrapper for the window.document object.
+     * @param {object} $window - Angular's wrapper for the window object.
+     * @param {object} toastrService - Service for displaying toast notifications.
+     * @param {object} Upload - Service for handling file uploads (likely ng-file-upload).
+     * @param {function} bytesFilter - Filter function for formatting bytes.
+     * @param {number} jobId - The ID of the job associated with the file uploads.
      */
     constructor($http, $mdDialog, $document, $window, toastrService, Upload, bytesFilter, jobId) {
         this._$http = $http;
@@ -20,12 +22,19 @@ class JobFileUploadController {
         this._toastrService = toastrService;
         this._jobId = jobId;
 
+        /** @type {Array} List of files already attached to the job */
         this.files = [];
+        /** @type {Array} List of files currently being uploaded */
         this.uploadingFiles = [];
+
 
         this.loadFiles();
     }
 
+    /**
+     * @method loadFiles
+     * @description Loads the list of files attached to the job from the server.
+     */
     loadFiles() {
         this._$http.get('/job/getAttachedFiles/' + this._jobId)
             .then(
@@ -39,6 +48,11 @@ class JobFileUploadController {
             );
     }
 
+    /**
+     * @method uploadFiles
+     * @description Initiates the upload process for multiple files.
+     * @param {File[]} files - Array of File objects to be uploaded.
+     */
     uploadFiles(files) {
         if (files && files.length) {
             for (let i = 0; i < files.length; i++) {
@@ -47,6 +61,11 @@ class JobFileUploadController {
         }
     }
 
+    /**
+     * @method upload
+     * @description Uploads a single file to the server.
+     * @param {File} file - The File object to be uploaded.
+     */
     upload(file) {
         const formData = new FormData();
         formData.append('jobId', this._jobId.toString());
@@ -77,6 +96,12 @@ class JobFileUploadController {
         );
     }
 
+    /**
+     * @method updateFileProgress
+     * @description Updates the progress of a file being uploaded.
+     * @param {File} file - The file being uploaded.
+     * @param {number} progress - The current progress percentage.
+     */
     updateFileProgress(file, progress) {
         let index = this.uploadingFiles.findIndex((f) => f.name === file.name && f.size === file.size);
         if (index === -1) {
@@ -86,6 +111,11 @@ class JobFileUploadController {
         }
     }
 
+    /**
+     * @method downloadFile
+     * @description Initiates the download of a file.
+     * @param {object} file - The file object to be downloaded.
+     */
     downloadFile(file) {
         this._$http.get('/job/downloadFile/' + this._jobId + '/' + file.Name, {responseType: 'blob'})
             .then(
@@ -103,6 +133,11 @@ class JobFileUploadController {
             );
     }
 
+    /**
+     * @method deleteFile
+     * @description Deletes a file from the server.
+     * @param {object} file - The file object to be deleted.
+     */
     deleteFile(file) {
         this._$http.delete('/job/deleteFile/' + this._jobId + '/' + file.Name)
             .then(
@@ -117,6 +152,10 @@ class JobFileUploadController {
             );
     }
 
+    /**
+     * @method cancel
+     * @description Cancels the current dialog operation.
+     */
     cancel() {
         this._$mdDialog.cancel();
     }

@@ -1,20 +1,38 @@
 /**
+ * @fileoverview Service for managing job dispatching operations.
+ * @module DispatchJobService
+ */
+
+/**
  * A service for dispatching jobs
  * @class
  */
 class DispatchJobService {
+    /**
+     * Create a DispatchJobService.
+     * @param {Object} $mdDialog - Angular Material's dialog service.
+     * @param {Object} $document - Angular's wrapper for the browser's window.document object.
+     * @param {Object} DispatchData - Service for fetching dispatch-related data.
+     * @param {Object} moment - Moment.js library for date manipulation.
+     */
     constructor($mdDialog, $document, DispatchData, moment) {
         this.$mdDialog = $mdDialog;
         this.$document = $document;
         this.dispatchData = DispatchData;
         this.moment = moment;
 
+        /** @type {Array} List of active couriers */
         this.pickCouriers = [];
+        /** @type {Array} List of all couriers */
         this.pickAllCouriers = [];
 
         this.fetchCouriersData();
     }
 
+    /**
+     * Fetch couriers data from the server.
+     * @returns {Promise} A promise that resolves when the data is fetched.
+     */
     fetchCouriersData() {
         Promise.all([
             this.dispatchData.getActiveCouriers(),
@@ -26,8 +44,10 @@ class DispatchJobService {
     }
 
     /**
-     * @param {number} courierNumber
-     * @param {number} jobId
+     * Dispatch a job by its ID to a specific courier.
+     * @param {number} courierNumber - The ID of the courier.
+     * @param {number} jobId - The ID of the job to dispatch.
+     * @returns {Promise} A promise that resolves when the job is dispatched.
      */
     async dispatchJobByJobId(courierNumber, jobId) {
         const job = await this.dispatchData.getJobDetail(jobId);
@@ -36,8 +56,10 @@ class DispatchJobService {
     }
 
     /**
-     * @param {number} courierNumber
-     * @param {Job[]} jobs
+     * Dispatch multiple jobs to a specific courier.
+     * @param {number} courierNumber - The ID of the courier.
+     * @param {Array<Object>} jobs - An array of job objects to dispatch.
+     * @returns {Promise} A promise that resolves when all jobs are dispatched.
      */
     async dispatchJobs(courierNumber, jobs) {
         const foundCourier = await this.findCourier(courierNumber);
@@ -47,8 +69,10 @@ class DispatchJobService {
     }
 
     /**
-     * @param {number} courierNumber
-     * @param {Job} job
+     * Dispatch a single job to a specific courier.
+     * @param {number} courierNumber - The ID of the courier.
+     * @param {Object} job - The job object to dispatch.
+     * @returns {Promise} A promise that resolves when the job is dispatched.
      */
     async dispatchJob(courierNumber, job) {
         const foundCourier = await this.findCourier(courierNumber);
@@ -58,7 +82,9 @@ class DispatchJobService {
     }
 
     /**
-     * @param {number} courierNumber
+     * Find a courier by their ID.
+     * @param {number} courierNumber - The ID of the courier to find.
+     * @returns {Promise<Object|null>} A promise that resolves with the found courier object or null.
      */
     async findCourier(courierNumber) {
         await this.fetchCouriersData();
@@ -73,6 +99,10 @@ class DispatchJobService {
         return foundCourier;
     }
 
+    /**
+     * Show a dialog to confirm dispatching to an offline courier.
+     * @returns {Promise<boolean>} A promise that resolves with the user's decision.
+     */
     showOfflineCourierDialog() {
         return this.$mdDialog.show(
             this.$mdDialog.confirm()
@@ -84,9 +114,11 @@ class DispatchJobService {
     }
 
     /**
-     * @param {number} courierNumber
-     * @param {*} foundCourier
-     * @param {Job[]} jobs
+     * Continue the process of dispatching jobs after finding the courier.
+     * @param {number} courierNumber - The ID of the courier.
+     * @param {Object} foundCourier - The found courier object.
+     * @param {Array<Object>} jobs - An array of job objects to dispatch.
+     * @returns {Promise} A promise that resolves when all jobs are processed.
      */
     async dispatchJobsContinue(courierNumber, foundCourier, jobs) {
         const jobIds = [];
@@ -111,8 +143,10 @@ class DispatchJobService {
     }
 
     /**
-     * @param {Job} job
-     * @param {Courier} courier
+     * Validate a job before dispatching.
+     * @param {Object} job - The job object to validate.
+     * @param {Object} courier - The courier object to validate against.
+     * @returns {boolean} True if the job is valid for dispatching, false otherwise.
      */
     validateJob(job, courier) {
         if (job.courierData && job.courierData.courierID !== null) {
@@ -135,6 +169,10 @@ class DispatchJobService {
         return true;
     }
 
+    /**
+     * Show an alert message dialog.
+     * @param {string} textContent - The message to display in the alert.
+     */
     showAlertMessage(textContent) {
         const alert = this.$mdDialog.alert()
             .parent(angular.element(this.$document.body))

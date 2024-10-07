@@ -7,9 +7,10 @@ class DispatchData {
 
     /**
      * @param {number} userId
+     * @param {number} pageId
      */
-    async getDespatchViews(userId) {
-        const response = await this._$http.get('clearListZones/GetDespatchViews?userid=' + userId);
+    async getSelectedViews(userId, pageId) {
+        const response = await this._$http.get('DfrntViews/GetPageViews?userid=' + userId + '&pageid=' + pageId);
         return response.data;
     }
 
@@ -88,7 +89,7 @@ class DispatchData {
     /**
      * Sends a request to add a restore event for a specific job.
      *
-     * @param {string} jobNo - The number identifier of the job.
+     * @param {string} jobNo - The Number identifier of the job.
      * @param {number} clientId - The identifier of the client.
      * @param {string} contact - Contact related to the event.
      * @param {number} staffId - The identifier of the staff member involved.
@@ -121,7 +122,7 @@ class DispatchData {
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
-     * @param {number[]} jobIds
+     * @param {Number[]} jobIds
      */
     async allocateJobs(courierId, dispatcherId, jobIds) {
         return this._$http.post('job/Allocate?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
@@ -130,7 +131,7 @@ class DispatchData {
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
-     * @param {number[]} jobIds
+     * @param {Number[]} jobIds
      */
     async reAllocateJobs(courierId, dispatcherId, jobIds) {
         return this._$http.post('job/ReAllocate?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
@@ -189,7 +190,7 @@ class DispatchData {
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
-     * @param {number[]} jobIds
+     * @param {Number[]} jobIds
      */
     async restoreJobs(courierId, dispatcherId, jobIds) {
         const response = await this._$http.post('job/RestoreJobs?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
@@ -199,7 +200,7 @@ class DispatchData {
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
-     * @param {number[]} jobIds
+     * @param {Number[]} jobIds
      */
     async restoreSplitJobs(courierId, dispatcherId, jobIds) {
         const response = await this._$http.post('job/RestoreSplitJobs?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
@@ -207,7 +208,7 @@ class DispatchData {
     }
 
     /**
-     * @param {number[]} jobIds
+     * @param {Number[]} jobIds
      */
     async resendJobs(jobIds) {
         const response = await this._$http.post('job/ResendSelected?jobIds=' + jobIds);
@@ -223,7 +224,7 @@ class DispatchData {
     }
 
     /**
-     * @param {number[]} jobIds
+     * @param {Number[]} jobIds
      */
     async reAssignJobs(jobIds) {
         const response = await this._$http.post('job/ReAssignSelected?jobIds=' + jobIds);
@@ -350,12 +351,18 @@ class DispatchData {
     }
 
     /**
-     * @param {Object} despatchViewIds
+     * @param {Suggestion[]} selectedViews
      */
-    async getDriverLocations(despatchViewIds) {
-        const query = this._prepareDespatchViewIds(despatchViewIds);
+    async getDriverLocations(selectedViews) {
+        const despatchViewIds = this._prepareViewIdsForRequest(selectedViews);
+        const params = new URLSearchParams();
 
-        const response = await this._$http.get('courier?' + query);
+        // Append each despatchViewId as a separate query parameter
+        despatchViewIds.forEach(id => {
+            params.append('despatchViewIds', id.toString());
+        });
+
+        const response = await this._$http.get(`courier?${params.toString()}`);
         return response.data;
     }
 
@@ -647,7 +654,7 @@ class DispatchData {
 
     /**
      * @param {number} jobId
-     * @param {number[]} serviceIds
+     * @param {Number[]} serviceIds
      * @param {number} totalCost
      */
     async addServicesToJob(jobId, serviceIds, totalCost) {
@@ -721,7 +728,7 @@ class DispatchData {
     /**
      * @param {number} bulkJobId
      * @param {number} toSuburb
-     * @param {string|number} toPostCode
+     * @param {string|Number} toPostCode
      * @param {string} address
      * @param {number} lat
      * @param {number} lng
@@ -785,14 +792,14 @@ class DispatchData {
      * @param {Date} bookDate
      */
     async releaseBulkJob(jobNumber, bookDate) {
-        const dt = this._moment(bookDate).format('YYYY-MM-DD');
-        return this._$http.post('job/ReleaseBulkJob?jobNumber=' + jobNumber + '&bookDate=' + dt);
+        const formattedBookDate = this._moment(bookDate).format('YYYY-MM-DD');
+        return this._$http.post('job/ReleaseBulkJob?jobNumber=' + jobNumber + '&bookDate=' + formattedBookDate);
     }
 
     /**
      * @param {number} jobId
      * @param {string} field
-     * @param {string|Date|number} value
+     * @param {string|Date|Number} value
      * @param {number} rate
      * @param {string} despatcherName
      * @param {number} staffId
@@ -818,7 +825,7 @@ class DispatchData {
     /**
      * @param {number} bulkJobId
      * @param {string} field
-     * @param {string|number|Date} value
+     * @param {string|Number|Date} value
      * @param {number} rate
      * @param {string} despatcherName
      * @param {number} staffId
@@ -839,15 +846,29 @@ class DispatchData {
     }
 
     /**
-     * @param {*|{area: string, asc: string, status: string, order: string}} data
-     * @param {*[]|string} selectedClients
+     * @param {JobQueryParams} queryParams
+     * @param {String[]} selectedClients
      * @param {boolean} internal
-     * @param {Object} despatchViewIds
+     * @param {Suggestion[]} selectedAreas
      */
-    async getJobsFilter(data, selectedClients, internal, despatchViewIds) {
-        const query = this._prepareDespatchViewIds(despatchViewIds);
+    async getJobsWithFilters(queryParams, selectedClients, internal, selectedAreas) {
+        const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
 
-        const response = await this._$http.get('job?status=' + data.status + '&area=' + data.area + '&order=' + data.order + '&asc=' + data.asc + '&isInternal=' + internal + '&cid=' + ContactID + '&clientIds=' + selectedClients + '&' + query);
+        const params = new URLSearchParams({
+            status: queryParams.status || 'all',
+            order: queryParams.order || 'time',
+            asc: queryParams.asc || 'asc',
+            isInternal: internal.toString(),
+            cid: ContactID,
+            clientIds: selectedClients.join(',')
+        });
+
+        // Append each despatchViewId as a separate query parameter
+        despatchViewIds.forEach(id => {
+            params.append('despatchViewIds', id.toString());
+        });
+
+        const response = await this._$http.get(`job?${params.toString()}`);
         return response.data;
     }
 
@@ -869,7 +890,7 @@ class DispatchData {
     }
 
     /**
-     * @param {{text: string, id: number}} item
+     * @param {Suggestion} item
      */
     async getGeoCodeInformation(item) {
         const response = await this._$http.get('https://geocoder.cit.api.here.com/6.2/geocode.json', {
@@ -924,15 +945,15 @@ class DispatchData {
     }
 
     /**
-     * @param {Object} despatchViewIds
-     * @returns {string}
+     * @param {Suggestion[]} selectedAreas
+     * @returns {Array}
+     * @private
      */
-    _prepareDespatchViewIds(despatchViewIds) {
-        // Extract the IDs that are set to true
-        const selectedIds = Object.keys(despatchViewIds).filter(key => despatchViewIds[key] === true && !isNaN(parseInt(key)));
-
-        // Create the query string
-        return selectedIds.map(id => 'despatchViewIds=' + id).join('&');
+    _prepareViewIdsForRequest(selectedAreas) {
+        return selectedAreas.map(area => {
+            const id = typeof area === 'object' && area.id ? area.id : area;
+            return parseInt(id, 10); // Convert to integer
+        });
     }
 }
 

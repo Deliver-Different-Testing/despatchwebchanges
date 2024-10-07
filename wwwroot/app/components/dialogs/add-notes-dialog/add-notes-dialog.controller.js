@@ -1,13 +1,25 @@
 /**
+ * @fileoverview Controller for the Add Notes Dialog in the uDispatch application.
+ * @module AddNotesDialogController
+ */
+
+/**
+ * Controller for the Add Notes Dialog
  * @class
  */
 class AddNotesDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$mdDialog', 'toastrService', 'DispatchData', 'id', 'fieldName', 'title', 'job'];
 
     /**
-     * @param $mdDialog - The AngularJS Material service for showing dialogs.
-     * @param toastrService - The service to display toasters
-     * @param DispatchData - The service used for data dispatching.
+     * Create an AddNotesDialogController.
+     * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param {Object} toastrService - The service to display toasters.
+     * @param {Object} DispatchData - The service used for data dispatching.
      * @param {string} id - The ID related to the selection.
      * @param {string} fieldName - The name of the field for which the selection is being made.
      * @param {string} title - The title of the dialog.
@@ -18,16 +30,24 @@ class AddNotesDialogController {
         this._dispatchData = DispatchData;
         this._toastrService = toastrService;
 
+        /** @type {boolean} */
         this.isLoading = false;
+        /** @type {string} */
         this.id = id;
+        /** @type {string} */
         this.title = title;
+        /** @type {Job} */
         this._job = job;
+        /** @type {string} */
         this._fieldName = fieldName;
+        /** @type {string} */
         this.note = "";
     }
 
     /**
-     * @param {string} note
+     * Submit the note.
+     * @param {string} note - The note to be submitted.
+     * @returns {Promise<void>}
      */
     async submit(note) {
         try {
@@ -56,11 +76,13 @@ class AddNotesDialogController {
     }
 
     /**
-     * @param {number} id
-     * @param {string} note
-     * @param {string} firstName
-     * @param {boolean} preBook
-     * @param {boolean} bulkJob
+     * Add a note to the job.
+     * @param {number} id - The ID of the job.
+     * @param {string} note - The note to be added.
+     * @param {string} firstName - The first name of the user adding the note.
+     * @param {boolean} preBook - Indicates if the job is pre-booked.
+     * @param {boolean} bulkJob - Indicates if it's a bulk job.
+     * @returns {Promise<void>}
      */
     async addJobNote(id, note, firstName, preBook, bulkJob) {
         if (bulkJob) {
@@ -71,14 +93,16 @@ class AddNotesDialogController {
     }
 
     /**
-     * @param {string} firstName
-     * @param {number} jobID
-     * @param {string} field
-     * @param {string} value
-     * @param {number} charge
-     * @param {string} contactID
-     * @param {boolean} preBook
-     * @param {boolean} bulkJob
+     * Update job details.
+     * @param {boolean} bulkJob - Indicates if it's a bulk job.
+     * @param {number} jobID - The ID of the job.
+     * @param {string} field - The field to be updated.
+     * @param {string} value - The new value for the field.
+     * @param {number} charge - The charge associated with the job.
+     * @param {string} firstName - The first name of the user updating the job.
+     * @param {string} contactID - The contact ID.
+     * @param {boolean} preBook - Indicates if the job is pre-booked.
+     * @returns {Promise<void>}
      */
     async updateJobDetail(bulkJob, jobID, field, value, charge, firstName, contactID, preBook) {
         if (bulkJob) {
@@ -90,7 +114,7 @@ class AddNotesDialogController {
 
 
     /**
-     * Cancels the Angular Material Dialog
+     * Cancels the Angular Material Dialog.
      */
     cancel() {
         this._$mdDialog.cancel();

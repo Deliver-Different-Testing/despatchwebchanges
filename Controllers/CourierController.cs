@@ -11,7 +11,7 @@ namespace DespatchWeb.Controllers
 {
  public class CourierController(ICourierRepository courierRepository) : Controller
  {
-     public async Task<IActionResult> Index(List<int> despatchViewIds)
+     public async Task<IActionResult> Index([FromQuery]List<int> despatchViewIds)
     {
         if (despatchViewIds is { Count: 0 })
             return Json(new ClearListViewModel());

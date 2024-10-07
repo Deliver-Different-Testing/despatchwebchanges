@@ -1,4 +1,14 @@
+/**
+ * @class EditDateTimeDialogController
+ * @description Controller for the Edit Date/Time dialog in the uDispatch Angular module.
+ * This controller handles the logic for editing date and time fields in job details.
+ */
 class EditDateTimeDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = [
         '$mdDialog',
         'toastrService',
@@ -14,17 +24,18 @@ class EditDateTimeDialogController {
     ];
 
     /**
-     * @param $mdDialog - The AngularJS Material service for showing dialogs.
-     * @param toastrService - The service to display toast messages
-     * @param DispatchData - The Home Service
-     * @param moment - The AngularJS directive to interact with moment.js
-     * @param {Job} job
-     * @param {string} id - The ID related to the selection.
-     * @param {string} fieldName - The name of the field for which the selection is being made.
+     * @constructor
+     * @param {object} $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param {object} toastrService - The service to display toast messages.
+     * @param {object} DispatchData - The Home Service for dispatch-related data operations.
+     * @param {object} moment - The AngularJS directive to interact with moment.js.
+     * @param {object} job - The job object being edited.
      * @param {string} title - The title of the dialog.
-     * @param {Date} dateTime - The date and/or time to edit
-     * @param {boolean} showDate - Whether to show the date picker
-     * @param {boolean} showTime - Whether to show the time picker
+     * @param {string} fieldName - The name of the field being edited.
+     * @param {Date} dateTime - The initial date and/or time to edit.
+     * @param {string} id - The ID related to the selection.
+     * @param {boolean} showDate - Whether to show the date picker.
+     * @param {boolean} showTime - Whether to show the time picker.
      */
     constructor($mdDialog, toastrService, DispatchData, moment, job, title, fieldName, dateTime, id, showDate, showTime) {
         this._$mdDialog = $mdDialog;
@@ -40,7 +51,7 @@ class EditDateTimeDialogController {
         this.showDate = showDate;
         this.showTime = showTime;
 
-        this.initializeDateTime(dateTime);
+        this._initializeDateTime(dateTime);
 
         this.isLoading = false;
         this.message = {
@@ -49,7 +60,13 @@ class EditDateTimeDialogController {
         };
     }
 
-    initializeDateTime(dateTime) {
+    /**
+     * @method _initializeDateTime
+     * @description Initializes the date and time fields based on the provided dateTime.
+     * @param {Date} dateTime - The date and time to initialize.
+     * @private
+     */
+    _initializeDateTime(dateTime) {
         let parsedDate;
 
         if (dateTime === null || dateTime === undefined || isNaN(new Date(dateTime).getTime())) {
@@ -67,17 +84,29 @@ class EditDateTimeDialogController {
         }
     }
 
+    /**
+     * @method isValid
+     * @description Checks if the current date/time selection is valid based on the dialog configuration.
+     * @returns {boolean} True if the selection is valid (not null) according to the shown fields, false otherwise.
+     */
     isValid() {
         if (this.showDate && this.showTime) {
-            return this.date && this.time;
+            return this.date !== null && this.time !== null;
         } else if (this.showDate) {
-            return this.date;
+            return this.date !== null;
         } else if (this.showTime) {
-            return this.time;
+            return this.time !== null;
         }
+
+        // If made it this far, something went wrong
         return false;
     }
 
+    /**
+     * @method submit
+     * @description Submits the updated date/time, updates the job details, and closes the dialog.
+     * @returns {Promise<void>}
+     */
     async submit() {
         try {
             this.isLoading = true;
@@ -92,6 +121,12 @@ class EditDateTimeDialogController {
         }
     }
 
+    /**
+     * @method _combineDateTime
+     * @description Combines the selected date and time into a single Date object.
+     * @returns {Date|null} The combined date and time, or null if neither is selected.
+     * @private
+     */
     _combineDateTime() {
         if (this.showDate && this.showTime) {
             const combinedDate = new Date(this.date);
@@ -105,6 +140,13 @@ class EditDateTimeDialogController {
         return null;
     }
 
+    /**
+     * @method _updateJobDetail
+     * @description Updates the job detail with the new date/time.
+     * @param {Date} newDateTime - The new date and time to update.
+     * @returns {Promise<void>}
+     * @private
+     */
     async _updateJobDetail(newDateTime) {
         const formattedDateTime = this._formatDateTime(newDateTime);
         const callData = {
@@ -136,6 +178,12 @@ class EditDateTimeDialogController {
         }
     }
 
+    /**
+     * @method _updateJobField
+     * @description Updates the corresponding field in the job object with the new date/time.
+     * @param {Date} newDateTime - The new date and time to update.
+     * @private
+     */
     _updateJobField(newDateTime) {
         let fieldName = this.fieldName.toLowerCase();
         let matchingField = Object.keys(this._job).find(key => key.toLowerCase() === fieldName);
@@ -147,15 +195,31 @@ class EditDateTimeDialogController {
         }
     }
 
+    /**
+     * @method _showMessageAndCloseDialog
+     * @description Displays a success message and closes the dialog.
+     * @private
+     */
     _showMessageAndCloseDialog() {
         this._toastrService.showSuccessToast("Updated " + this.title);
         this._$mdDialog.hide(this._job);
     }
 
+    /**
+     * @method _formatDateTime
+     * @description Formats the date/time to the required string format.
+     * @param {Date} dateTime - The date and time to format.
+     * @returns {Date} The formatted date.
+     * @private
+     */
     _formatDateTime(dateTime) {
         return new Date(this._moment(dateTime).format("YYYY-MM-DDTHH:mm"));
     }
 
+    /**
+     * @method cancel
+     * @description Cancels the dialog operation.
+     */
     cancel() {
         this._$mdDialog.cancel();
     }

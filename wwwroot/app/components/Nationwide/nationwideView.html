@@ -1,79 +1,49 @@
-<div class="top-bar">
-    <img src="/images/DFRNT-logo.png" class="logo" />
+<div>
+    <div>
+        <md-toolbar class="md-hue-2">
+            <div class="md-toolbar-tools">
+                <img alt="logo" class="logo" src="/images/DFRNT-logo.png"/>
 
-        <div class="btn-group" id="status-group" role="group">
-            <button class="btn all btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'all'})"
-                    type="button">All
-            </button>
-            <button class="btn active btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'active'})"
-                    type="button">Active
-            </button>
-            <button class="btn done btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'status':'done'})"
-                    type="button">Done
-            </button>
-        </div>
+                <span flex></span>
 
-        <div aria-label="Basic example" class="btn-group" id="area-group" ng-if="isInternal" role="group">
-            <button class="btn mainfu btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'mainfu'})"
-                    type="button">Main-FU
-            </button>
-            <button class="btn nwakl btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwakl'})"
-                    type="button">NW-AKL
-            </button>
-            <button class="btn baggage btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'baggage'})"
-                    type="button">Baggage
-            </button>
-            <button class="btn chch btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'chch'})"
-                    type="button">ChCh
-            </button>
-            <button class="btn int btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'int'})"
-                    type="button">
-                International
-            </button>
-            <button class="btn nwother btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'nwother'})"
-                    type="button">NW-Other
-            </button>
-            <button class="btn sameday btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'sameday'})"
-                    type="button">SameDay
-            </button>
-            <button class="btn wlg btn-sm btn-secondary" ng-click="setFiltersFromTopBar({'area':'wlg'})"
-                    type="button">
-                WLG
-            </button>
+                <md-menu>
+                    <md-button aria-label="Open status menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
+                        <md-tooltip md-direction="bottom">Filters</md-tooltip>
+                    </md-button>
+                    <md-menu-content>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.all">All</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.active">Active</md-checkbox>
+                        </md-menu-item>
+                        <md-menu-item>
+                            <md-checkbox ng-change="updateFilters()" ng-model="filters.done">Done</md-checkbox>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
 
-        </div>
-        <div class="topbar-NavButtons" role="navigation">
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="home" ui-sref-active="topbar-active">Dispatch</div>
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="nw" ui-sref-active="topbar-active">Nationwide</div>
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="cs" ui-sref-active="topbar-active">POD/Search</div>
-            <div class="btn btn-sm btn-nav topbar-button" ui-sref="prebooks" ui-sref-active="topbar-active">PreBooks
-            </div>
+                <md-menu ng-if="isInternal">
+                    <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">location_on</md-icon>
+                        <md-tooltip md-direction="bottom">Areas</md-tooltip>
+                        <md-progress-circular class="md-accent" md-diameter="18" md-mode="indeterminate"
+                                              ng-if="!areas"></md-progress-circular>
+                    </md-button>
+                    <md-menu-content>
+                        <md-menu-item ng-if="areas && areas.length === 0">
+                            <p>No areas available.</p>
+                        </md-menu-item>
+                        <md-menu-item ng-if="areas && areas.length > 0" ng-repeat="area in areas">
+                            <md-checkbox ng-change="updateFilters()" ng-model="selectedAreas[area.id]">{{area.name}}
+                            </md-checkbox>
+                        </md-menu-item>
+                    </md-menu-content>
+                </md-menu>
 
-        </div>
-
-        <div class="btn-group box-search chat" ng-if="showChat">
-            <i class="material-symbols-outlined small-icon" ng-click="openChat()">search</i>
-            <i class="material-symbols-outlined small-icon" ng-click="chatBox = ''" title="Clear"></i>
-            <input ng-model="chatBox" ng-model-options="{debounce: 300}" placeholder="Chat to..." type="text">
-        </div>
-
-        <div class="topbar-buttons">
-            <span ng-if="!isInternal" style="color:white;">Clients:</span>
-            <div class="multi-element btn-sm topbar-active" disabled="false"
-                 extra-settings="pickService.settings"
-                 ng-dropdown-multiselect="" ng-if="!isInternal" options="pickClients"
-                 selected-model="pickService.clients"
-                 style="display: inline-block; margin-top: -5px; padding-left: 0px; padding-right: 50px;">
-
-            </div>
-
-            <div style="display: flex; align-items: center;">
-                <div class="btn topbar-button" style="color: white;">
-                    <span>{{greetUser()}}</span>
-                </div>
-                <md-menu md-position-mode="target-right target">
-                    <md-button aria-label="Open layout options menu"
-                               class="md-fab md-mini md-primary"
+                <md-menu>
+                    <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
                         <md-tooltip md-direction="bottom">Layouts</md-tooltip>
@@ -85,11 +55,16 @@
                                 Save Layout
                             </md-button>
                         </md-menu-item>
+                        <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
-                                <md-icon md-font-set="material-symbols-outlined"
-                                         ng-click="deleteLayout($index)">
+                                <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($index)"
+                                         ng-if="lo.name != 'Default'">
                                     delete
+                                </md-icon>
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-if="lo.name == 'Default'">
+                                    tune
                                 </md-icon>
                                 <span ng-click="loadLayout($index)"
                                       ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
@@ -97,13 +72,22 @@
                         </md-menu-item>
                     </md-menu-content>
                 </md-menu>
-            </div>
 
-        </div>
+                <md-divider class="vertical-divider"></md-divider>
+
+                <span style="font-size: medium;">{{greetUser()}}</span>
+
+                <md-button aria-label="Menu" class="md-icon-button" ng-click="toggleSidenav()"
+                           ng-mouseover="toggleSidenav()">
+                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <material-sidenav></material-sidenav>
     </div>
 
-    <div class="">
-
+    <div>
         <div class="columns">
 
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in layout.columns"
@@ -140,8 +124,8 @@
                                 </md-button>
 
                                 <!-- Courier Card Buttons-->
-                                <div class="row-overflow" layout="row" ng-if="currentCourier"
-                                     ng-if="box.name === 'currentWork'">
+                                <div class="row-overflow" layout="row"
+                                     ng-if="currentCourier && box.name === 'currentWork'">
                                     <md-fab-speed-dial class="md-scale" md-direction="left"
                                                        md-open="courierListFabIsOpen"
                                                        ng-class="{ 'md-hover-full': true }"
@@ -187,8 +171,8 @@
                                 </div>
 
                                 <!-- Detail Buttons-->
-                                <div class="row-overflow" layout="row" ng-if="currentJob"
-                                     ng-if="boxes[box.name].showDetailButtons">
+                                <div class="row-overflow" layout="row"
+                                     ng-if="currentJob && boxes[box.name].showDetailButtons">
                                     <md-fab-speed-dial class="md-scale" md-direction="left"
                                                        md-open="jobDetailFabIsOpen"
                                                        ng-class="{ 'md-hover-full': true }"
@@ -293,15 +277,18 @@
                                                ng-if="box.name === 'clearLists'">
                                         City
                                     </md-switch>
-                                    <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                    <md-switch class="md-primary material-toolbar-switch"
+                                               ng-change="getAvailableCourierLocation()"
                                                ng-if="box.name === 'map'" ng-model="allCouriers.display">
                                         All
                                     </md-switch>
-                                    <md-switch class="md-primary" ng-change="storeMapZoomDisplay()"
+                                    <md-switch class="md-primary material-toolbar-switch"
+                                               ng-change="storeMapZoomDisplay()"
                                                ng-if="box.name === 'map'" ng-model="mapZoom.display">
                                         Auto Zoom
                                     </md-switch>
-                                    <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                    <md-switch class="md-primary material-toolbar-switch"
+                                               ng-change="getAvailableCourierLocation()"
                                                ng-if="box.name === 'map'" ng-model="allCouriers.includeUA">
                                         Include UA
                                     </md-switch>
@@ -350,7 +337,7 @@
                             </div>
                         </md-toolbar>
 
-                        <div class="box-content" ng-include="boxes[box.name].tpl"></div>
+                        <div class="box-content" ng-include="boxes[box.name].templateUrl"></div>
                     </div>
 
                 </div>
@@ -360,3 +347,134 @@
     </div>
     <div id='draggingItems'></div>
 </div>
+
+<script>
+    // Keyboard event handling
+    (function () {
+        var keyIsDown = {};
+
+        function overrideKeyboardEvent(e) {
+            if (e.type === "keydown" && !keyIsDown[e.keyCode]) {
+                keyIsDown[e.keyCode] = true;
+                handleKeyDown(e);
+            } else if (e.type === "keyup") {
+                delete keyIsDown[e.keyCode];
+            }
+
+            if (e.keyCode === 68 && e.ctrlKey) {
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        function handleKeyDown(e) {
+            if (e.keyCode === 113) {
+                showSMSForm();
+            }
+        }
+
+        document.addEventListener('keydown', overrideKeyboardEvent);
+        document.addEventListener('keyup', overrideKeyboardEvent);
+    })();
+
+    // Click and drag functionality
+    (function () {
+        var isMouseDown = false;
+
+        function handleMouseDown(event) {
+            isMouseDown = true;
+            var $row = angular.element(event.currentTarget);
+
+            if (event.ctrlKey) {
+                $row.toggleClass("active");
+            } else {
+                setActiveRow($row);
+            }
+
+            angular.element(".activeTable").removeClass("activeTable");
+            $row.closest(".table").addClass("activeTable");
+
+            if (!event.ctrlKey && $row.hasClass("draggable-row")) {
+                handleDraggableRow($row, event);
+            }
+        }
+
+        function setActiveRow($row) {
+            if (!$row.hasClass("active")) {
+                var group = $row.parents(".table-rows").attr("data-group");
+                angular.element('*[data-group="' + group + '"]').find('.active').removeClass('active');
+                $row.addClass('active');
+            }
+        }
+
+        function handleDraggableRow($row, event) {
+            setTimeout(function () {
+                if (isMouseDown) {
+                    var jobNo = angular.element(".activeTable .clickable-row.active").length > 1
+                        ? angular.element(".activeTable .clickable-row.active").length + " Jobs"
+                        : $row.attr("data-jobno");
+
+                    angular.element("#draggingItems")
+                        .show()
+                        .html(jobNo)
+                        .css({top: event.pageY - 25, left: event.pageX - 50})
+                        .draggable()
+                        .trigger(event);
+                }
+            }, 200);
+        }
+
+        function handleMouseUp(event) {
+            isMouseDown = false;
+            if (event.which === 3) {
+                angular.element(".rightActiveTable").removeClass("rightActiveTable");
+                angular.element(event.currentTarget).closest(".table").addClass("rightActiveTable");
+            }
+            if (!event.ctrlKey) {
+                setActiveRow(angular.element(event.currentTarget));
+            }
+        }
+
+        angular.element(document).on('mousedown', '.clickable-row', handleMouseDown);
+        angular.element(document).on('mouseup', '.clickable-row', handleMouseUp);
+        angular.element(document).on("mouseup", function () {
+            angular.element("#draggingItems").hide();
+            isMouseDown = false;
+        });
+    })();
+
+    // Keyboard navigation
+    angular.element(document).on("keydown", function (e) {
+        var code = e.keyCode || e.which;
+        var $active = angular.element(".activeTable").find(".active");
+        if (code === 40) {
+            $active.removeClass("active").next().addClass("active").mouseup().click();
+        } else if (code === 38) {
+            $active.removeClass("active").prev().addClass("active").mouseup().click();
+        }
+    });
+
+    // Resize table headers
+    function sizeHeadings() {
+        angular.element("body").find(".box").each(function () {
+            var $box = angular.element(this);
+            $box.find(".table-headings thead tr th").each(function (index) {
+                var newWidth = $box.find(".table tbody tr td").eq(index).outerWidth();
+                angular.element(this).outerWidth(newWidth);
+            });
+            $box.find(".table-headings table").width($box.find(".table").width());
+        });
+
+        var height = angular.element("#box-clearLists").find(".box-content").height() - 30;
+        angular.element(".clearLists-list").each(function () {
+            var newHeight = angular.element(this).data("height") * height / 100;
+            angular.element(this).height(newHeight);
+        });
+    }
+
+    // Initialize
+    angular.element(document).ready(function () {
+        document.getElementById("favicon").setAttribute("href", "/Nationwide.ico");
+        sizeHeadings();
+    });
+</script>

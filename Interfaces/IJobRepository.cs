@@ -26,22 +26,11 @@ public interface IJobRepository
     Task<List<JobViewModel>> PreBookJobList();
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
-    Task<List<JobViewModel>> JobListAsync(string status, string area, string order, string ascending,
-        bool isInternal, string clientIds, List<int> despatchViewIds);
+    Task<List<JobViewModel>> JobListAsync(string status, string order,
+        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds);
 
-    /// <summary>
-    /// Main query for Nationwide job window panes. New =1, POD=2, BookDel=3, Reprice=4
-    /// </summary>
-    /// <param name="status"></param>
-    /// <param name="area"></param>
-    /// <param name="order"></param>
-    /// <param name="ascending"></param>
-    /// <param name="isInternal"></param>
-    /// <param name="clientIds"></param>
-    /// <param name="windowPane"></param>
-    /// <returns></returns>
-    Task<List<JobViewModel>> NationwideJobListAsync(string status, string area, string order,
-        string ascending, bool isInternal, string clientIds, int windowPane);
+    Task<List<JobViewModel>> NationwideJobListAsync(string status,
+        string order, string ascending, bool isInternal, string clientIds, int windowPane, List<int> selectedViewIds);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int id);
@@ -156,7 +145,9 @@ public interface IJobRepository
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 
-    Task<PagedList<ClientItemsViewModel>> GetAllClientItemsBySpeedAsync(int clientId, int speedId, int jobId);
+    Task<PagedList<ClientItemsViewModel>> GetClientItemsBySpeedAsync(int clientId, int speedId, int jobId);
 
     Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
+
+    Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 }

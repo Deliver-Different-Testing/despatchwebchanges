@@ -12,21 +12,23 @@
                         <md-tooltip md-direction="bottom">Filters</md-tooltip>
                     </md-button>
                     <md-menu-content>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.new">New</md-checkbox>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.nda">NDA</md-checkbox>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.active">Active</md-checkbox>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.done">Done</md-checkbox>
-                        </md-menu-item>
-                        <md-menu-item>
-                            <md-checkbox ng-change="updateFilters()" ng-model="filters.all">All</md-checkbox>
-                        </md-menu-item>
+                        <md-radio-group ng-change="updateFilters(selectedFilter)" ng-model="selectedFilter">
+                            <md-menu-item>
+                                <md-radio-button value="new">New</md-radio-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-radio-button value="nda">NDA</md-radio-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-radio-button value="active">Active</md-radio-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-radio-button value="done">Done</md-radio-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                                <md-radio-button value="all">All</md-radio-button>
+                            </md-menu-item>
+                        </md-radio-group>
                     </md-menu-content>
                 </md-menu>
 
@@ -42,7 +44,7 @@
                             <p>No areas available.</p>
                         </md-menu-item>
                         <md-menu-item ng-if="areas && areas.length > 0" ng-repeat="area in areas">
-                            <md-checkbox ng-change="updateFilters()" ng-model="selectedAreas[area.id]">{{area.name}}
+                            <md-checkbox ng-change="getData()" ng-model="selectedAreas[area.id]">{{area.name}}
                             </md-checkbox>
                         </md-menu-item>
                     </md-menu-content>
@@ -94,7 +96,7 @@
     </div>
 
 
-    <div class="">
+    <div>
         <div class="columns">
 
             <div class="column" id="co-{{column.id}}" ng-repeat="(colKey,column) in layout.columns"
@@ -291,19 +293,22 @@
 
                                 <div class="row-overflow" layout="row" ng-if="box.name === 'map'">
                                     <div class="switch-container">
-                                        <md-switch class="md-primary" ng-model="areaListCity"
+                                        <md-switch class="md-primary material-toolbar-switch" ng-model="areaListCity"
                                                    ng-if="box.name === 'driverLocations'">
                                             City
                                         </md-switch>
-                                        <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                        <md-switch class="md-primary material-toolbar-switch"
+                                                   ng-change="getAvailableCourierLocation()"
                                                    ng-if="box.name === 'map'" ng-model="allCouriers.display">
                                             All
                                         </md-switch>
-                                        <md-switch class="md-primary" ng-change="storeMapZoomDisplay()"
+                                        <md-switch class="md-primary material-toolbar-switch"
+                                                   ng-change="storeMapZoomDisplay()"
                                                    ng-model="mapZoom.display" ng-show="box.name === 'map'">
                                             Auto Zoom
                                         </md-switch>
-                                        <md-switch class="md-primary" ng-change="getAvailableCourierLocation()"
+                                        <md-switch class="md-primary material-toolbar-switch"
+                                                   ng-change="getAvailableCourierLocation()"
                                                    ng-if="box.name === 'map'" ng-model="allCouriers.includeUA">
                                             Include UA
                                         </md-switch>

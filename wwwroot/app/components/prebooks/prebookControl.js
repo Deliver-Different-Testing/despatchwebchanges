@@ -112,26 +112,54 @@ angular.module('uDispatch')
          * @param {number} selectedJobId
          */
         $scope.JobRecordSelected = selectedJobId => {
-            $scope.selectJobDetail(selectedJobId);
+            return $scope.selectJobDetail(selectedJobId);
         }
 
         $scope.gather = {
-            submit: () => {
-                angular.element(".gatherForm").hide();
-                $scope.gather.form.onSubmit().then(response => {
+            submit: async () => {
+                try {
+                    angular.element(".gatherForm").hide();
+                    const response = await $scope.gather.form.onSubmit();
+                    await $scope.selectJobDetail($scope.currentJob.id);
+                } catch (error) {
+                    console.error('Error submitting gather form:', error);
+                    // Show an error message to the user
+                    $mdDialog.show(
+                        $mdDialog.alert()
+                            .title('Error')
+                            .textContent('An error occurred while submitting the form. Please try again.')
+                            .ok('OK')
+                    );
+                }
+            },
 
-                    $scope.selectJobDetail($scope.currentJob.id);
-                });
-            }, cancel: () => {
-                angular.element(".gatherForm").hide();
-            }, showForm: () => {
+            cancel: () => {
+                try {
+                    angular.element(".gatherForm").hide();
+                } catch (error) {
+                    console.error('Error cancelling gather form:', error);
+                }
+            },
+
+            showForm: () => {
                 console.log("Prebook gather form showForm");
-                angular.element(".gatherForm").show(0, () => {
-                    $timeout(() => {
-                        angular.element(".gatherForm .focusMe").focus();
-                    }, 100);
-                });
-            }, submitValue: "Save"
+                try {
+                    angular.element(".gatherForm").show(0, () => {
+                        $timeout(() => {
+                            const focusElement = angular.element(".gatherForm .focusMe");
+                            if (focusElement.length) {
+                                focusElement.focus();
+                            } else {
+                                console.warn('Focus element not found in gather form');
+                            }
+                        }, 100);
+                    });
+                } catch (error) {
+                    console.error('Error showing gather form:', error);
+                }
+            },
+
+            submitValue: "Save"
         };
 
         jdSvc.setGather($scope.gather);
@@ -204,8 +232,6 @@ angular.module('uDispatch')
                 }, {
                     "label": "Void", "name": "void"
                 }
-
-
                 ]
             }, "jobDetail": {
                 "title": "Detail",
@@ -250,7 +276,6 @@ angular.module('uDispatch')
         $scope.loadLayout = (index) => {
             $scope.layout = angular.copy($scope.layouts[index].layout, () => {
                 $timeout(sizeHeadings(), 1000);
-
             });
         };
 
@@ -363,44 +388,49 @@ angular.module('uDispatch')
         };
 
         //Select Job
-        $scope.selectJobDetail = id => {
-            console.log("select Job  " + id);
+        $scope.selectJobDetail = async (id) => {
+            console.log(`Selecting Job ${id}`);
 
             clearTimeout($scope.myTimer);
 
-            angular.element("#box-jobDetail").find(".loading").show();
+            try {
+                const loadingElement = angular.element("#box-jobDetail").find(".loading");
+                loadingElement.show();
 
-            uPBData.getJobDetail(id).then(data => {
+                const data = await uPBData.getJobDetail(id);
                 $scope.currentJob = data;
-                jdSvc.setJob($scope.currentJob);
-                angular.element("#box-jobDetail").find(".loading").hide();
-                $scope.currentSelection = " for Job " + data.jobNo;
+                await jdSvc.setJob($scope.currentJob);
+
+                $scope.currentSelection = ` for Job ${data.jobNo}`;
                 console.log($scope.currentJob.days);
-                const freq = $scope.currentJob.days.slice(8, 9).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(8, 9);
-                console.log(freq);
+
+                const days = $scope.currentJob.days;
+                const freq = days.slice(8, 9).trim() || "0";
+                const hol = days.slice(9, 10).trim() || "0";
+
                 jdSvc.combos.frequency = [jdSvc.pickFrequency[freq]];
-                console.log(jdSvc.combos.frequency);
-                const hol = $scope.currentJob.days.slice(9, 10).trimEnd() === "" ? "0" : $scope.currentJob.days.slice(9, 10);
-                console.log(hol);
                 jdSvc.combos.holidays = [jdSvc.pickHolidays[hol]];
-                console.log(jdSvc.combos.holidays);
-                const selectedDays = [];
-                const days = $scope.currentJob.days.slice(0, 7);
-                for (let i = 0; i < days.length; i++) {
-                    if (days[i] === '1') {
-                        selectedDays.push(jdSvc.pickDays[i]);
-                    }
-                }
-                console.log(selectedDays);
+
+                const selectedDays = days.slice(0, 7)
+                    .split('')
+                    .reduce((acc, day, index) => day === '1' ? [...acc, jdSvc.pickDays[index]] : acc, []);
+
                 jdSvc.combos.days = selectedDays;
-                const jobs = [];
-                jobs.push($scope.currentJob);
-                displayRoutePointsOnly(jobs, true);
+
+                console.log('Frequency:', jdSvc.combos.frequency);
+                console.log('Holidays:', jdSvc.combos.holidays);
+                console.log('Selected Days:', selectedDays);
+
+                displayRoutePointsOnly([$scope.currentJob], true);
                 setMapBounds();
                 map.setZoom(14);
-            });
 
-
+            } catch (error) {
+                console.log('Error selecting job detail:', error);
+                // Handle the error appropriately, e.g., show an error message to the user
+            } finally {
+                angular.element("#box-jobDetail").find(".loading").hide();
+            }
         };
 
         $scope.pageChanged = i => {
@@ -418,101 +448,206 @@ angular.module('uDispatch')
         jdSvc.setSelectJobDetail($scope.selectJobDetail);
 
         /**
-         * @param {number[]} jobIds
+         * Voids all selected prebook jobs
+         * @param {number[]} jobIds - Array of job IDs to void
          */
-        $scope.voidAllSelectPrebookJobs = jobIds => {
+        $scope.voidAllSelectPrebookJobs = async (jobIds) => {
             const selectedPrebookCount = jobIds.length;
+
+            const confirmMessage =
+                `This will void TODAY's copy of all ${selectedPrebookCount} selected prebooks, ` +
+                `but not cancel them for good. Please confirm that you wish to do this?`;
 
             const confirm = $mdDialog.confirm()
                 .title('Accelerate Prebooks')
-                .textContent(`This will void TODAY's copy of all ${selectedPrebookCount} selected prebooks, but not cancel it for good ` + `Please confirm that you wish to do this?`)
+                .textContent(confirmMessage)
                 .ok('Yes')
                 .cancel('No');
 
-            $mdDialog.show(confirm).then(() => {
-                const voidJobs = jobIds.map(jobId => uPBData.voidPrebookJob(jobId, FirstName, ContactID));
+            try {
+                await $mdDialog.show(confirm);
 
-                $scope.promise = Promise.all(voidJobs)
-                    .then(() => {
-                        $scope.currentJob = null;
-                        return $scope.refreshData();
-                    })
-                    .catch(error => {
-                        console.log('Error voiding prebook jobs:', error);
-                    });
-            }, () => {
-                // User clicked 'No'
-            });
-        }
+                // User clicked 'Yes'
+                const voidJobs = jobIds.map(jobId =>
+                    uPBData.voidPrebookJob(jobId, FirstName, ContactID)
+                );
+
+                await Promise.all(voidJobs);
+
+                $scope.currentJob = null;
+                await $scope.refreshData();
+
+                // Optionally, show a success message
+                $mdDialog.show(
+                    $mdDialog.alert()
+                        .title('Success')
+                        .textContent(`Successfully voided ${selectedPrebookCount} prebook(s).`)
+                        .ok('OK')
+                );
+            } catch (error) {
+                if (error) {
+                    // An actual error occurred (not just user cancellation)
+                    console.log('Error voiding prebook jobs:', error);
+
+                    // Show an error dialog to the user
+                    $mdDialog.show(
+                        $mdDialog.alert()
+                            .title('Error')
+                            .textContent('An error occurred while voiding the prebook jobs. Please try again.')
+                            .ok('OK')
+                    );
+                }
+                // If error is falsy, it means the user clicked 'No', so we do nothing
+            }
+        };
 
 
         /**
-         * @param {number} jobId
+         * Voids a single prebook job
+         * @param {number} jobId - ID of the job to void
          */
-        $scope.voidPrebookJob = (jobId) => {
+        $scope.voidPrebookJob = async (jobId) => {
+            const confirmMessage =
+                "This will void TODAY'S copy of this prebook but not cancel it for good. " +
+                "Please confirm that you wish to do this?";
+
             const confirm = $mdDialog.confirm()
                 .title('Void Prebook')
-                .textContent("This will void TODAY'S copy of this prebook but not cancel it for good. Please confirm that you wish to do this?")
+                .textContent(confirmMessage)
                 .ok('Yes')
                 .cancel('No');
 
-            $mdDialog.show(confirm).then(() => {
-                $scope.promise = uPBData.voidPrebookJob(jobId, FirstName, ContactID).then(response => {
-                    $scope.currentJob = null;
-                    return $scope.refreshData();
-                });
-            }, () => {
-                // User clicked 'No'
-            });
-        }
+            try {
+                await $mdDialog.show(confirm);
+
+                // User clicked 'Yes'
+                await uPBData.voidPrebookJob(jobId, FirstName, ContactID);
+
+                $scope.currentJob = null;
+                await $scope.refreshData();
+
+                // Show a success message
+                await $mdDialog.show(
+                    $mdDialog.alert()
+                        .title('Success')
+                        .textContent('The prebook job has been successfully voided for today.')
+                        .ok('OK')
+                );
+            } catch (error) {
+                if (error) {
+                    // An actual error occurred (not just user cancellation)
+                    console.log('Error voiding prebook job:', error);
+
+                    // Show an error dialog to the user
+                    await $mdDialog.show(
+                        $mdDialog.alert()
+                            .title('Error')
+                            .textContent('An error occurred while voiding the prebook job. Please try again.')
+                            .ok('OK')
+                    );
+                }
+                // If error is falsy, it means the user clicked 'No', so we do nothing
+            }
+        };
 
         /**
-         * @param {number[]} jobIds
+         * Sends all selected prebook jobs to the live dispatch screen
+         * @param {number[]} jobIds - Array of job IDs to send
          */
-        $scope.sendAllSelectPrebookJobs = jobIds => {
+        $scope.sendAllSelectPrebookJobs = async (jobIds) => {
             const selectedPrebookCount = jobIds.length;
+
+            const confirmMessage =
+                `This will send all ${selectedPrebookCount} selected prebooks to the live dispatch screen now. ` +
+                `Please confirm that you wish to do this?`;
 
             const confirm = $mdDialog.confirm()
                 .title('Accelerate Prebooks')
-                .textContent(`This will send all ${selectedPrebookCount} selected prebooks to the live dispatch screen now. ` + `Please confirm that you wish to do this?`)
+                .textContent(confirmMessage)
                 .ok('Yes')
                 .cancel('No');
 
-            $mdDialog.show(confirm).then(() => {
-                const sendJobs = jobIds.map(jobId => uPBData.sendPrebookJob(jobId));
+            try {
+                await $mdDialog.show(confirm);
 
-                $scope.promise = Promise.all(sendJobs)
-                    .then(() => {
-                        $scope.currentJob = null;
-                        return $scope.refreshData();
-                    })
-                    .catch(error => {
-                        console.log('Error sending prebook jobs:', error);
-                    });
-            }, () => {
-                // User clicked 'No'
-            });
-        }
+                // User clicked 'Yes'
+                const sendJobs = jobIds.map(jobId => uPBData.sendPrebookJob(jobId));
+                await Promise.all(sendJobs);
+
+                $scope.currentJob = null;
+                await $scope.refreshData();
+
+                // Show a success message
+                await $mdDialog.show(
+                    $mdDialog.alert()
+                        .title('Success')
+                        .textContent(`Successfully sent ${selectedPrebookCount} prebook(s) to the live dispatch screen.`)
+                        .ok('OK')
+                );
+            } catch (error) {
+                if (error) {
+                    // An actual error occurred (not just user cancellation)
+                    console.log('Error sending prebook jobs:', error);
+
+                    // Show an error dialog to the user
+                    await $mdDialog.show(
+                        $mdDialog.alert()
+                            .title('Error')
+                            .textContent('An error occurred while sending the prebook jobs. Please try again.')
+                            .ok('OK')
+                    );
+                }
+                // If error is falsy, it means the user clicked 'No', so we do nothing
+            }
+        };
 
         /**
-         * @param {number} jobId
+         * Sends a single prebook job to the live dispatch screen
+         * @param {number} jobId - ID of the job to send
          */
-        $scope.sendPrebookJob = (jobId) => {
+        $scope.sendPrebookJob = async (jobId) => {
+            const confirmMessage =
+                "This will send this prebook to the live dispatch screen now. " +
+                "Please confirm that you wish to do this?";
+
             const confirm = $mdDialog.confirm()
                 .title('Accelerate Prebook')
-                .textContent("This will send this prebook to the live dispatch screen now. Please confirm that you wish to do this?")
+                .textContent(confirmMessage)
                 .ok('Yes')
                 .cancel('No');
 
-            $mdDialog.show(confirm).then(() => {
-                $scope.promise = uPBData.sendPrebookJob(jobId).then(() => {
-                    $scope.currentJob = null;
-                    return $scope.refreshData();
-                });
-            }, () => {
-                // User clicked 'No'
-            });
-        }
+            try {
+                await $mdDialog.show(confirm);
+
+                // User clicked 'Yes'
+                await uPBData.sendPrebookJob(jobId);
+
+                $scope.currentJob = null;
+                await $scope.refreshData();
+
+                // Show a success message
+                await $mdDialog.show(
+                    $mdDialog.alert()
+                        .title('Success')
+                        .textContent('The prebook job has been successfully sent to the live dispatch screen.')
+                        .ok('OK')
+                );
+            } catch (error) {
+                if (error) {
+                    // An actual error occurred (not just user cancellation)
+                    console.log('Error sending prebook job:', error);
+
+                    // Show an error dialog to the user
+                    await $mdDialog.show(
+                        $mdDialog.alert()
+                            .title('Error')
+                            .textContent('An error occurred while sending the prebook job. Please try again.')
+                            .ok('OK')
+                    );
+                }
+                // If error is falsy, it means the user clicked 'No', so we do nothing
+            }
+        };
 
         NgMap.getMap().then(map => {
             $scope.map = map;
@@ -599,7 +734,7 @@ function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
 
-function PythagorasEquirectangular(lat1, lon1, lat2, lon2) {
+function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     lat1 = Deg2Rad(lat1);
     lat2 = Deg2Rad(lat2);
     lon1 = Deg2Rad(lon1);
@@ -615,7 +750,7 @@ function closestLocation(latitude, longitude, locations) {
     let closest;
 
     for (let index = 0; index < locations.length; ++index) {
-        const dif = PythagorasEquirectangular(latitude, longitude, locations[index][1], locations[index][2]);
+        const dif = PythagorasEquirectAngular(latitude, longitude, locations[index][1], locations[index][2]);
         if (dif < minDifference) {
             closest = index;
             minDifference = dif;

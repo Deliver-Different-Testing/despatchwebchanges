@@ -1,15 +1,26 @@
 /**
- * A service for managing additional services for jobs
+ * @fileoverview Controller for managing additional services for jobs in the uDispatch application.
+ * @module AdditionalServicesDialogController
+ */
+
+/**
+ * Controller for managing additional services for jobs
  * @class
  */
 class AdditionalServicesDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$mdDialog', 'DispatchData', 'toastrService', 'job'];
 
     /**
-     * @param {Object} $mdDialog - AngularJS material dialog service
-     * @param {Object} DispatchData - Service for dispatch operations
-     * @param {Object} toastrService - Service for displaying toast notifications
-     * @param {Job} job - The job object
+     * Create an AdditionalServicesDialogController.
+     * @param {Object} $mdDialog - AngularJS material dialog service.
+     * @param {Object} DispatchData - Service for dispatch operations.
+     * @param {Object} toastrService - Service for displaying toast notifications.
+     * @param {Job} job - The job object.
      */
     constructor($mdDialog, DispatchData, toastrService, job) {
         this.$mdDialog = $mdDialog;
@@ -17,14 +28,18 @@ class AdditionalServicesDialogController {
         this.toastrService = toastrService;
         this.job = job;
 
-        this.initializeState();
-        this.bindMethods();
+        this._initializeState();
+        this._bindMethods();
         this.refreshServices().catch(error => {
             this.toastrService.showErrorToast("Error initializing services: " + error.message);
         });
     }
 
-    initializeState() {
+    /**
+     * Initialize the state of the controller.
+     * @private
+     */
+    _initializeState() {
         this.jobId = this.job.id;
         this.clientId = this.job.clientId;
         this.speedId = this.job.speedId;
@@ -40,16 +55,27 @@ class AdditionalServicesDialogController {
         this.addJobSpeedToSelected();
     }
 
-    bindMethods() {
+    /**
+     * Bind methods to ensure correct 'this' context.
+     * @private
+     */
+    _bindMethods() {
         this.addToSelectList = this.addToSelectList.bind(this);
         this.getTotal = this.getTotal.bind(this);
     }
 
+    /**
+     * Set the total cost based on the job charge.
+     * @param {Number} charge - The job charge.
+     */
     setTotalCost(charge) {
         const cleanedCharge = charge.replace(/\$/g, "");
         this.totalCost = parseFloat(cleanedCharge) || 0.0;
     }
 
+    /**
+     * Add the job speed to the selected services.
+     */
     addJobSpeedToSelected() {
         const jobSpeed = {
             itemId: -1,
@@ -65,6 +91,10 @@ class AdditionalServicesDialogController {
         this.selected.push(jobSpeed);
     }
 
+    /**
+     * Refresh the list of available services.
+     * @returns {Promise<void>}
+     */
     async refreshServices() {
         this.isLoading = true;
         try {
@@ -80,6 +110,10 @@ class AdditionalServicesDialogController {
         }
     }
 
+    /**
+     * Add selected services to the list and recalculate total cost.
+     * @returns {Promise<void>}
+     */
     async addToSelectList() {
         this.isTotalCostCalculating = true;
         try {
@@ -91,6 +125,10 @@ class AdditionalServicesDialogController {
         }
     }
 
+    /**
+     * Calculate the total cost of selected services.
+     * @returns {Promise<number>} The total cost.
+     */
     async getTotal() {
         const totalAmount = this.selected.reduce((total, item) => {
             const itemCharge = item.perItem ? (item.rate * this.quantity) : item.rate;
@@ -99,6 +137,10 @@ class AdditionalServicesDialogController {
         return this.dispatchData.ppdExclusiveAmount(this.clientId, totalAmount);
     }
 
+    /**
+     * Book the selected services for the job.
+     * @returns {Promise<void>}
+     */
     async bookServices() {
         try {
             const serviceIds = this.selected
@@ -116,6 +158,9 @@ class AdditionalServicesDialogController {
         }
     }
 
+    /**
+     * Cancel the dialog.
+     */
     cancel() {
         this.$mdDialog.cancel();
     }

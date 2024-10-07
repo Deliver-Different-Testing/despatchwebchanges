@@ -27,11 +27,27 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[DFRNTAppPages]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DFRNTApps]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DFRNTAppUserViewPermissions]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DFRNTPageViews]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[GlobalAddressMapping]",
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[tblAppWidgets]",
+         "Name": "[dbo].[tblAirport]",
          "ObjectType": 0
       },
       {
@@ -79,10 +95,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[tblDFRNTApps]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[tblInternetPermission]",
          "ObjectType": 0
       },
@@ -104,10 +116,6 @@
       },
       {
          "Name": "[dbo].[tblUndeliverableLocation]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[tblWidget]",
          "ObjectType": 0
       },
       {
@@ -172,14 +180,6 @@
       },
       {
          "Name": "[dbo].[tucSuburb]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[UserDespatchViewPreferences]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[UserWidgetPreferences]",
          "ObjectType": 0
       },
       {

@@ -228,17 +228,16 @@
 /**
  * @typedef {Object} Pallet
  *
- * @property {number} id
- * @property {number} quantity
- * @property {number} weight
- * @property {number} length
- * @property {number} depth
- * @property {number} height
- * @property {boolean|null} pu
- * @property {boolean|null} do
- * @property {number|null} dgClass
- * @property {string} notes
- * @property {number} itemId
+ * @property {number} id - The ID of the pallet.
+ * @property {number} quantity - The quantity of pallets.
+ * @property {number} weight - The weight of the pallet in KG.
+ * @property {number} length - The length of the pallet in meters.
+ * @property {number} depth - The depth of the pallet in meters.
+ * @property {number} height - The height of the pallet in meters.
+ * @property {boolean} pu - Indicates if it's a pickup.
+ * @property {boolean} do - Indicates if it's a delivery.
+ * @property {string} dgClass - The dangerous goods class.
+ * @property {string} notes - Additional notes for the pallet.
  */
 
 /**
@@ -322,4 +321,70 @@
  * @property {number} minimumLongitude - The westernmost longitude of the envelope.
  * @property {number} maximumLatitude - The northernmost latitude of the envelope.
  * @property {number} maximumLongitude - The easternmost longitude of the envelope.
+ */
+
+/**
+ * Represents the query parameters for job filtering and sorting.
+ * @typedef {Object} JobQueryParams
+ *
+ * @property {string} [status='all'] - The status filter for jobs.
+ * @property {string} [order='time'] - The ordering criteria for jobs.
+ * @property {string} [asc='asc'] - The sort direction ('asc' for ascending, 'desc' for descending).
+ */
+
+/**
+ * Represents a flight option with detailed information.
+ * @typedef {Object} FlightOptions
+ *
+ * @property {string} airline - The name of the airline operating the flight.
+ * @property {string} flightNumber - The flight number.
+ * @property {string} departureTime - The departure time of the flight (ISO 8601 format).
+ * @property {string} arrivalTime - The arrival time of the flight (ISO 8601 format).
+ * @property {string} departureAirport - The code of the departure airport.
+ * @property {string} arrivalAirport - The code of the arrival airport.
+ * @property {number} duration - The duration of the flight in milliseconds.
+ * @property {number} stops - The number of stops on the flight.
+ * @property {string} aircraft - The type of aircraft used for the flight.
+ * @property {string[]} serviceClasses - An array of service classes available on the flight.
+ * @property {boolean} isCodeShare - Indicates whether the flight is a codeshare flight.
+ * @property {string|null} codeShareAirline - The airline code of the operating carrier if it's a codeshare flight, null otherwise.
+ */
+
+/**
+ * Box for displaying widgets in layouts
+ * @typedef {Object} Box
+ *
+ * @property {string} name - The name of the box.
+ * @property {string} height - The height of the box.
+ */
+
+/**
+ * Column layout settings
+ * @typedef {Object} Column
+ *
+ * @property {string} id - The ID of the column.
+ * @property {string} width - The width of the column.
+ * @property {Box[]} boxes - The boxes contained in the column.
+ */
+
+/**
+ * Complete layout for a page
+ * @typedef {Object} Layout
+ *
+ * @property {string} name - The name of the layout.
+ * @property {Object} layout - The layout configuration.
+ * @property {Column[]} layout.columns - The columns in the layout.
+ */
+
+/**
+ * @typedef {Object} Service
+ *
+ * @property {number} itemId - The ID of the service item.
+ * @property {number} clientId - The ID of the client.
+ * @property {string} name - The name of the service.
+ * @property {string} description - The description of the service.
+ * @property {boolean} perItem - Indicates if the service is charged per item.
+ * @property {number} rate - The rate of the service.
+ * @property {boolean} onlyVan - Indicates if the service is only for vans.
+ * @property {boolean} selected - Indicates if the service is selected.
  */
