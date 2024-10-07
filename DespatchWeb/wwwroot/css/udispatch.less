@@ -126,15 +126,15 @@ md-autocomplete.ng-leave {
 @inputHeight: 40px;
 
 .autocomplete-style {
-  width: 250px !important;
+  width: 250px;
 
   & md-autocomplete-wrap {
-    height: @inputHeight !important;
+    height: @inputHeight;
   }
 
   & input {
-    height: 100% !important;
-    line-height: @inputHeight !important;
+    height: 100%;
+    line-height: @inputHeight;
   }
 }
 
@@ -210,7 +210,7 @@ md-divider {
 
 #box-driverLocations {
   .box-content {
-    overflow: hidden !important;
+    overflow: hidden;
   }
 }
 
@@ -536,7 +536,7 @@ md-divider {
 }
 
 .md-select-menu-container .md-option {
-  color: white !important;
+  color: white;
 }
 
 #draggingItems {
@@ -819,7 +819,7 @@ md-divider {
         }
 
         .related-content {
-          top: 15px !important;
+          top: 15px;
         }
       }
     }
@@ -833,7 +833,7 @@ md-divider {
 }
 
 .rg-bottom {
-  background: #FFF !important;
+  background: #FFF;
   height: 16px;
   margin-bottom: -16px;
   border-top: 1px solid #5d5d5d;
@@ -943,37 +943,6 @@ table.table {
     }
   }
 }
-
-table-headings {
-  top: 0;
-  z-index: 15;
-
-  thead {
-    display: block;
-    background: #FFF;
-    border-bottom: 1px solid #CCC;
-  }
-
-  tr {
-    th {
-      padding: 2px;
-      white-space: nowrap;
-      cursor: pointer;
-      position: relative;
-
-      .fa {
-        position: absolute;
-        left: -2px;
-      }
-    }
-  }
-}
-
-.table > tbody > tr > td, .table > tbody > tr > th, .table > thead > tr > td, .table > thead > tr > th {
-  padding: 1px;
-  min-width: 15px;
-}
-
 input.pod-DispatchField {
   color: black;
   width: 60px;
@@ -991,15 +960,15 @@ input.pod-DispatchField {
 
 
     &.O {
-      background-color: @s-orange !important;
+      background-color: @s-orange;
     }
 
     &.B {
-      background-color: @s-blue !important;
+      background-color: @s-blue;
     }
 
     &.G {
-      background-color: @s-green !important;
+      background-color: @s-green;
     }
   }
 
@@ -1008,7 +977,7 @@ input.pod-DispatchField {
   }
 
   .doing {
-    background-color: #d7f3ce !important;
+    background-color: #d7f3ce;
   }
 
   input.dispatchField {
@@ -1063,7 +1032,6 @@ input.pod-DispatchField {
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
   -webkit-user-select: none; /* Safari */
-  -khtml-user-select: none; /* Konqueror HTML */
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* Internet Explorer/Edge */
   user-select: none;
@@ -1081,19 +1049,7 @@ input.pod-DispatchField {
   display: none;
 }
 
-
-#lateCalls {
-  //  table-layout: fixed;
-  //   tbody {
-  //min-width:500px;
-  //   }
-}
-
 #supports {
-  //   table-layout: fixed;
-  //  tbody {
-  //min-width:500px;
-  //   }
   tr {
     &.Yel {
       background-color: yellow;
@@ -1270,8 +1226,8 @@ a.uline {
   margin-right: 0;
 
   [class*="col-"] {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 
@@ -1386,26 +1342,26 @@ span.courierRed {
 
 md-table-container table.md-table tbody.md-body > tr.md-row:not([disabled]) {
   &:hover {
-    background-color: @hoverColor !important;
+    background-color: @hoverColor;
   }
 
   &.md-selected:hover {
-    background-color: @selectedHoverColor !important;
+    background-color: @selectedHoverColor;
   }
 }
 
 md-table-pagination {
-  color: @textColor !important;
+  color: @textColor;
 
   .label,
   md-select .md-select-value,
   md-select .md-select-value.md-select-placeholder,
   .md-button {
-    color: @textColor !important;
+    color: @textColor;
   }
 
   .md-button[disabled] {
-    color: @disabledColor !important;
+    color: @disabledColor;
   }
 }
 
@@ -1481,133 +1437,50 @@ md-table-pagination {
   }
 }
 
-md-table-container {
-  @font-size: 12px;
-
-  overflow-x: auto;
-
-  .md-table {
-    width: 100% !important;
-    table-layout: auto !important;
-    font-size: @font-size !important;
-
-    th, td {
-      white-space: nowrap !important;
-      min-width: 30px !important;
-      padding: 4px 8px !important;
-    }
-
-    // Scrollbar styles
-    th::-webkit-scrollbar, td::-webkit-scrollbar {
-      height: 3px !important;
-      background-color: transparent !important;
-    }
-
-    th::-webkit-scrollbar-thumb, td::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.26) !important;
-      border-radius: 2px !important;
-    }
-
-    th:hover::-webkit-scrollbar-thumb, td:hover::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.4) !important;
-    }
-
-    thead {
-      tr {
-        background-color: #e6f2ff !important;
-        th {
-          font-size: @font-size !important;
-          font-weight: 500 !important;
-          color: rgba(0, 0, 0, 0.87) !important;
-        }
-      }
-    }
-
-    tbody {
-      tr {
-        height: 30px !important;
-
-        td {
-          font-size: @font-size !important;
-          color: rgba(0, 0, 0, 0.87) !important;
-        }
-      }
-    }
-
-    .md-row:nth-child(even) {
-      background-color: #f8f8f8 !important;
-    }
-
-    .md-row:nth-child(odd) {
-      background-color: #ffffff !important;
-    }
-
-    .md-row {
-      border-bottom: 1px solid rgba(0, 0, 0, 0.12) !important;
-    }
-
-    // Styles for client box
-    .client-box {
-      display: inline-block !important;
-      padding: 1px 3px !important;
-      color: white !important;
-      font-weight: bold !important;
-      border-radius: 2px !important;
-      font-size: 11px !important;
-    }
-
-    // Styles for 'Remain' column
-    .md-cell.highlight {
-      color: #ff0000 !important;
-    }
-
-    // Styles for action buttons
-    .md-button.md-icon-button {
-      width: 18px !important;
-      height: 18px !important;
-      min-height: 18px !important;
-      line-height: 18px !important;
-      padding: 0 !important;
-      margin: 0 1px !important;
-    }
-
-    .md-icon {
-      font-size: 14px !important;
-    }
-
-    // Responsive styles
-    @media screen and (max-width: 1200px) {
-      font-size: 11px !important;
-    }
-
-    @media screen and (max-width: 600px) {
-      font-size: @font-size !important;
-
-      th, td {
-        padding: 0 3px !important;
-      }
-    }
-  }
-}
-
-// Adjust pagination styles
-md-table-pagination {
-  .md-text {
-    font-size: 12px;
+.responsive-datatable {
+  .md-table-container {
+    overflow-x: auto;
+    max-width: 100%;
   }
 
-  .md-select-value {
-    font-size: 12px;
+  table.md-table {
+    min-width: 100%;
+    table-layout: fixed;
+
+    th.md-column, td.md-cell {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 20px 0 0;
+    }
+
+    // Column widths
+    .col-xs {
+      width: 40px;
+    }
+
+    .col-sm {
+      width: 60px;
+    }
+
+    .col-md {
+      width: 100px;
+    }
+
+    .col-lg {
+      width: 120px;
+    }
+
+    .col-xl {
+      width: 200px;
+    }
   }
 
-  @media screen and (max-width: 600px) {
-    md-select {
-      margin: 0;
-    }
-
-    .md-text, .md-select-value {
-      font-size: 10px;
-    }
+  .md-table-pagination {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
   }
 }
 
@@ -1669,4 +1542,25 @@ md-list-item.selected p {
 
 md-list-item:not(.selected):hover {
   background-color: rgba(0, 0, 0, 0.03);
+}
+
+.account-header {
+  pointer-events: none;
+}
+
+.account-header * {
+  user-select: none;
+}
+
+.material-toolbar-switch {
+  transform: scale(0.8);
+  margin: -4px 0;
+
+  .md-container {
+    margin-right: 0;
+  }
+
+  .md-label {
+    margin-left: 6px;
+  }
 }

@@ -1,4 +1,18 @@
+/**
+ * @fileoverview Controller for the Auto Complete Dialog in the uDispatch application.
+ * @module AutoCompleteDialogController
+ */
+
+/**
+ * Controller for the Auto Complete Dialog
+ * @class
+ */
 class AutoCompleteDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = [
         '$mdDialog',
         'DispatchData',
@@ -14,18 +28,18 @@ class AutoCompleteDialogController {
     ];
 
     /**
-     * Create a SelectDialogController
-     * @param $mdDialog - The AngularJS Material service for showing dialogs.
-     * @param DispatchData - The service used for data dispatching.
-     * @param toastrService - The service to display toast messages
-     * @param rateJobService
+     * Create an AutoCompleteDialogController.
+     * @param {Object} $mdDialog - The AngularJS Material service for showing dialogs.
+     * @param {Object} DispatchData - The service used for data dispatching.
+     * @param {Object} toastrService - The service to display toast messages.
+     * @param {Object} rateJobService - The service for rating jobs.
      * @param {number} id - The ID related to the selection.
      * @param {string} fieldName - The name of the field for which the selection is being made.
      * @param {string} title - The title of the dialog.
      * @param {Job} job - The job for which the selection is being made.
-     * @param {SelectOption[]} options - The array of selectable options.
-     * @param existingItem
-     * @param {boolean} showRerateOption
+     * @param {Object} options - The options for autocomplete, including search URL.
+     * @param {SelectOption} existingItem - The existing selected item, if any.
+     * @param {boolean} showRerateOption - Whether to show the rerate option.
      */
     constructor($mdDialog, DispatchData, toastrService, rateJobService, id, fieldName, title, job, options, existingItem, showRerateOption) {
         this._$mdDialog = $mdDialog;
@@ -34,21 +48,31 @@ class AutoCompleteDialogController {
         this._rateJobService = rateJobService;
         this._job = job;
 
+        /** @type {number} */
         this.id = id;
+        /** @type {string} */
         this.fieldName = fieldName;
+        /** @type {string} */
         this.title = title;
+        /** @type {Object} */
         this.options = options;
 
+        /** @type {boolean} */
         this.isLoading = false;
+        /** @type {string} */
         this.searchText = "";
+        /** @type {SelectOption|null} */
         this.selectedItem = existingItem;
+        /** @type {boolean} */
         this.showRerateOption = showRerateOption;
+        /** @type {boolean} */
         this.shouldRerateJob = false;
     }
 
     /**
-     * Method to search query
-     * @param {string} searchTerm
+     * Method to search query.
+     * @param {string} searchTerm - The search term to query.
+     * @returns {Promise<SelectOption[]>} A promise that resolves to an array of matching options.
      */
     async querySearch(searchTerm) {
         try {
@@ -61,8 +85,9 @@ class AutoCompleteDialogController {
 
 
     /**
-     * Method to submit selected item
-     * @param {SelectOption} selectedOption
+     * Method to submit selected item.
+     * @param {SelectOption} selectedOption - The selected option to submit.
+     * @returns {Promise<void>}
      */
     async submit(selectedOption) {
         this.isLoading = true;
@@ -115,6 +140,9 @@ class AutoCompleteDialogController {
         }
     }
 
+    /**
+     * Cancel the dialog.
+     */
     cancel() {
         this._$mdDialog.cancel();
     }

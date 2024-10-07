@@ -34,99 +34,68 @@ public class JobController : Controller
         _configuration = configuration;
     }
 
-    public async Task<IActionResult> Index(string status, string area, string order, string asc, bool isInternal,
-        int cid, string clientIds, List<int> despatchViewIds)
+    [HttpGet]
+    public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
+        try
         {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (clientContacts != null && !clientContacts
-                    .Select(c => c.ID).Any(x => clientIds.Split(',')
-                        .Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
+            if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.JobListAsync(status, area, order, asc, isInternal, clientIds, despatchViewIds);
+            if (despatchViewIds != null && !despatchViewIds.Any()) return Json(new List<JobViewModel>());
+            var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, despatchViewIds);
+            return Json(result);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized("You don't have permission to access these clients.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, "An error occurred while processing your request.");
+        }
+    }
+
+    public async Task<IActionResult> NationwideJobListNew([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
+    {
+        if (!isInternal) await ValidateClientAccess(cid, clientIds);
+
+        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            queryParams?.Asc, isInternal, clientIds, 1, despatchViewIds);
         return Json(result);
     }
 
-    public async Task<IActionResult> NationwideJobListNew(string status, string area, string order, string asc,
+    public async Task<IActionResult> NationwideJobListPod([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
+    {
+        if (!isInternal) await ValidateClientAccess(cid, clientIds);
+
+        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            queryParams?.Asc, isInternal, clientIds, 2, despatchViewIds);
+        return Json(result);
+    }
+
+    public async Task<IActionResult> NationwideJobListBookDelivery([FromQuery] JobQueryParams queryParams,
         bool isInternal,
-        int cid, string clientIds)
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
-        {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
+        if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 1);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            queryParams?.Asc, isInternal, clientIds, 3, despatchViewIds);
         return Json(result);
     }
 
-    public async Task<IActionResult> NationwideJobListPod(string status, string area, string order, string asc,
-        bool isInternal,
-        int cid, string clientIds)
+    public async Task<IActionResult> NationwideJobListReprice([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
-        {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
+        if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-        var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 2);
-        return Json(result);
-    }
-
-    public async Task<IActionResult> NationwideJobListBookDelivery(string status, string area, string order,
-        string asc, bool isInternal,
-        int cid, string clientIds)
-    {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
-        {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
-
-        var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 3);
-        return Json(result);
-    }
-
-    public async Task<IActionResult> NationwideJobListReprice(string status, string area, string order, string asc,
-        bool isInternal,
-        int cid, string clientIds)
-    {
-        //Security check to confirm these clients belong to this contact and have permissions set
-        if (!isInternal && !string.IsNullOrEmpty(clientIds))
-        {
-            var clientContacts = await _clientRepo.ClientContactsAsync(cid);
-            if (!clientContacts.Select(c => c.ID).Any(x => clientIds.Split(',').Any(y => y == x.ToString())))
-            {
-                var empty = new List<JobViewModel>();
-                return Json(empty);
-            }
-        }
-
-        var result = await _jobRepo.NationwideJobListAsync(status, area, order, asc, isInternal, clientIds, 4);
+        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            queryParams?.Asc, isInternal, clientIds, 4, despatchViewIds);
         return Json(result);
     }
 
@@ -212,16 +181,8 @@ public class JobController : Controller
 
     public async Task<IActionResult> Detail(int jobId)
     {
-        try
-        {
-            var result = await _jobRepo.JobDetailAsync(jobId);
-            return Json(result);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        var result = await _jobRepo.JobDetailAsync(jobId);
+        return Json(result);
     }
 
     [HttpGet]
@@ -958,7 +919,7 @@ public class JobController : Controller
     [HttpGet]
     public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId)
     {
-        var clientItems = await _jobRepo.GetAllClientItemsBySpeedAsync(clientId, speedId, jobId);
+        var clientItems = await _jobRepo.GetClientItemsBySpeedAsync(clientId, speedId, jobId);
         return Json(clientItems);
     }
 
@@ -1098,6 +1059,19 @@ public class JobController : Controller
         return Json("OK");
     }
 
+    private async Task ValidateClientAccess(int contactId, string clientIds)
+    {
+        if (string.IsNullOrEmpty(clientIds)) return;
+
+        var clientContacts = await _clientRepo.ClientContactsAsync(contactId);
+        var requestedClientIds = clientIds.Split(',').Select(int.Parse).ToHashSet();
+
+        var hasAccess = clientContacts?
+            .Select(c => c.ID)
+            .Any(x => requestedClientIds.Contains(x)) ?? false;
+
+        if (!hasAccess) throw new UnauthorizedAccessException();
+    }
 
     public class ClientItemsModel
     {

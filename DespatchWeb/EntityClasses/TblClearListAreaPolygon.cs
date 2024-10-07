@@ -9,16 +9,14 @@ namespace DespatchWeb.EntityClasses
     {
         public int ClearListAreaPolygonId { get; set; }
         public int ClearListAreaId { get; set; }
-        public int? PolygonId { get; set; }
+        public int PolygonId { get; set; }
         public DateTime Created { get; set; }
         public string CreatedBy { get; set; }
         public DateTime LastModified { get; set; }
         public string LastModifiedBy { get; set; }
         public string Notes { get; set; }
-        public int? ZipPolygonId { get; set; }
 
         public virtual TblClearListArea ClearListArea { get; set; }
         public virtual TblPolygon Polygon { get; set; }
-        public virtual ZipPolygon ZipPolygon { get; set; }
     }
 }

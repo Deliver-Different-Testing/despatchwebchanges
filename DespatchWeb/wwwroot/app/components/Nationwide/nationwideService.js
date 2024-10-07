@@ -1,461 +1,581 @@
+/**
+ * @class NationwideService
+ * @description A service for managing nationwide job-related operations, including job creation, updates, queries, and various API interactions.
+ */
 class NationwideService {
-    static $inject = ["$http", "moment"];
-
+    /**
+     * @constructor
+     * @param {Object} $http - Angular's $http service for making HTTP requests.
+     * @param {Object} moment - Moment.js library for date and time manipulation.
+     */
     constructor($http, moment) {
         this._$http = $http;
         this._moment = moment;
     }
 
     /**
-     * @param {number} jobId
-     * @param {string} note
-     * @param {string} despatcherName
-     * @param {boolean} preBook
+     * Adds a note to a job.
+     * @param {number} jobId - The ID of the job.
+     * @param {string} note - The note content.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @param {boolean} preBook - Indicates if this is a pre-booked job.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addNote(jobId, note, despatcherName, preBook) {
         const method = preBook ? "job/AddJobBookingNote" : "job/AddNote";
-        let response = await this._$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
-        return await response;
+        return this._$http.post(method + "?jobId=" + jobId + "&note=" + note + "&despatcher=" + despatcherName);
     }
 
     /**
-     * @param {Pallet} pallet
-     * @param {boolean} preBook
-     * @param {string} despatcherName
+     * Adds a pallet to a job.
+     * @param {Object} pallet - The pallet object to add.
+     * @param {boolean} preBook - Indicates if this is a pre-booked job.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addPallet(pallet, preBook, despatcherName) {
-        let response = await this._$http({
+        const response = await this._$http({
             url: "job/AddPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
-        return await response.data;
+        return response.data;
     }
 
     /**
-     * @param {Pallet} pallet
-     * @param {boolean} preBook
-     * @param {string} despatcherName
+     * Edits an existing pallet for a job.
+     * @param {Object} pallet - The pallet object to edit.
+     * @param {boolean} preBook - Indicates if this is a pre-booked job.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async editPallet(pallet, preBook, despatcherName) {
-        let response = await this._$http({
+        const response = await this._$http({
             url: "job/EditPallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
-        return await response.data;
+        return response.data;
     }
 
     /**
-     * @param {Pallet} pallet
-     * @param {boolean} preBook
-     * @param {string} despatcherName
+     * Deletes a pallet from a job.
+     * @param {Object} pallet - The pallet object to delete.
+     * @param {boolean} preBook - Indicates if this is a pre-booked job.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async deletePallet(pallet, preBook, despatcherName) {
-        let response = await this._$http({
+        const response = await this._$http({
             url: "job/DeletePallet?preBook=" + preBook + "&despatcher=" + despatcherName, method: "POST", data: pallet
         });
-        return await response.data;
+        return response.data;
     }
 
     /**
-     * @param {string} jobNo
-     * @param {number} clientId
-     * @param {string} contact
-     * @param {number} staffId
-     * @param {number} courierId
-     * @param {number} jobId
-     * @param {number} jobType
-     * @param {string} despatcherName
+     * Adds a follow-up event for a job.
+     * @param {string} jobNo - The job number.
+     * @param {number} clientId - The client ID.
+     * @param {string} contact - The contact information.
+     * @param {number} staffId - The staff ID.
+     * @param {number} courierId - The courier ID.
+     * @param {number} jobId - The job ID.
+     * @param {number} jobType - The job type.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        let response = await this._$http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
-        return await response.data;
+        const response = await this._$http.post("courier/AddFollowupEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        return response.data;
     }
 
     /**
-     * @param {string} jobNo
-     * @param {number} clientId
-     * @param {string} contact
-     * @param {number} staffId
-     * @param {number} courierId
-     * @param {number} jobId
-     * @param {number} jobType
-     * @param {string} despatcherName
+     * Adds a restore event for a job.
+     * @param {string} jobNo - The job number.
+     * @param {number} clientId - The client ID.
+     * @param {string} contact - The contact information.
+     * @param {number} staffId - The staff ID.
+     * @param {number} courierId - The courier ID.
+     * @param {number} jobId - The job ID.
+     * @param {number} jobType - The job type.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        let response = await this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
-        return await response.data;
+        const response = await this._$http.post("job/AddRestoreEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName);
+        return response.data;
     }
 
     /**
-     * @param {string} jobNo
-     * @param {number} clientId
-     * @param {string} contact
-     * @param {number} staffId
-     * @param {number} courierId
-     * @param {number} jobId
-     * @param {number} jobType
-     * @param {string} despatcherName
-     * @param {string} notes
+     * Adds an 'other' event for a job.
+     * @param {string} jobNo - The job number.
+     * @param {number} clientId - The client ID.
+     * @param {string} contact - The contact information.
+     * @param {number} staffId - The staff ID.
+     * @param {number} courierId - The courier ID.
+     * @param {number} jobId - The job ID.
+     * @param {number} jobType - The job type.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @param {string} notes - Additional notes for the event.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addOtherEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
-        let response = await this._$http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes);
-        return await response.data;
+        const response = await this._$http.post("job/addOtherEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes);
+        return response.data;
     }
 
     /**
-     * @param {string} jobNo
-     * @param {number} clientId
-     * @param {string} contact
-     * @param {number} staffId
-     * @param {number} courierId
-     * @param {number} jobId
-     * @param {number} jobType
-     * @param {string} despatcherName
-     * @param {string} notes
-     * @param {number} eventType
+     * Adds a generic event for a job.
+     * @param {string} jobNo - The job number.
+     * @param {number} clientId - The client ID.
+     * @param {string} contact - The contact information.
+     * @param {number} staffId - The staff ID.
+     * @param {number} courierId - The courier ID.
+     * @param {number} jobId - The job ID.
+     * @param {number} jobType - The job type.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @param {string} notes - Additional notes for the event.
+     * @param {number} eventType - The type of event.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async addEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes, eventType) {
-        let response = await this._$http.post("job/addEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes + "&eventType=" + eventType);
-        return await response.data;
+        const response = await this._$http.post("job/addEvent?jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&courierId=" + courierId + "&jobId=" + jobId + "&jobType=" + jobType + "&despatcherName=" + despatcherName + "&notes=" + notes + "&eventType=" + eventType);
+        return response.data;
     }
 
     /**
-     * @param {string} eventName
-     * @param {string} notes
-     * @param {number} clientId
-     * @param {string} jobNumber
-     * @param {string} despatcherName
+     * Records an Exsalerate activity.
+     * @param {string} eventName - The name of the event.
+     * @param {string} notes - Additional notes for the activity.
+     * @param {number} clientId - The client ID.
+     * @param {string} jobNumber - The job number.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async exsalerateActivity(eventName, notes, clientId, jobNumber, despatcherName) {
-        let response = await this._$http.post("job/ExsalerateActivity?eventName=" + eventName + "&notes=" + notes + "&clientId=" + clientId + "&jobNumber=" + jobNumber + "&despatcherName=" + despatcherName);
-        return await response.data;
+        const response = await this._$http.post("job/ExsalerateActivity?eventName=" + eventName + "&notes=" + notes + "&clientId=" + clientId + "&jobNumber=" + jobNumber + "&despatcherName=" + despatcherName);
+        return response.data;
     }
 
     /**
-     * @param {number} courierId
-     * @param {number} dispatcherId
-     * @param {number[]} jobIds
+     * Allocates jobs to a courier.
+     * @param {number} courierId - The ID of the courier.
+     * @param {number} dispatcherId - The ID of the dispatcher.
+     * @param {number[]} jobIds - An array of job IDs to allocate.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async allocateJobs(courierId, dispatcherId, jobIds) {
-        let response = await this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-        return await response;
+        return this._$http.post("job/Allocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
-     * @param {number} courierId
-     * @param {number} dispatcherId
-     * @param {number[]} jobIds
+     * Reallocates jobs to a different courier.
+     * @param {number} courierId - The ID of the new courier.
+     * @param {number} dispatcherId - The ID of the dispatcher.
+     * @param {number[]} jobIds - An array of job IDs to reallocate.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async reAllocateJobs(courierId, dispatcherId, jobIds) {
-        let response = await this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-        return await response;
+        return this._$http.post("job/ReAllocate?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
     }
 
     /**
-     * @param {number} courierId
+     * Fetches the status of a truck courier.
+     * @param {number} courierId - The ID of the courier.
+     * @returns {Promise<Object>} A promise that resolves with the courier status data.
      */
     async truckCourierStatus(courierId) {
-        let response = await this._$http.post("courier/TruckCourierStatus?courierId=" + courierId);
-        return await response;
+        return this._$http.post("courier/TruckCourierStatus?courierId=" + courierId);
     }
 
     /**
-     * @param {number} jobId
+     * Voids a job.
+     * @param {number} jobId - The ID of the job to void.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async voidJob(jobId) {
-        let response = await this._$http.post("job/Void?jobId=" + jobId);
-        return await response;
+        return this._$http.post("job/Void?jobId=" + jobId);
     }
 
     /**
-     * @param {number} jobId
-     * @param {string} despatcherName
-     * @param {number} staffId
-     * @param {number} currentSpeed
+     * Processes an uncheck direct operation for a job.
+     * @param {number} jobId - The ID of the job.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @param {number} staffId - The ID of the staff member.
+     * @param {number} currentSpeed - The current speed of the job.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async processUncheckDirect(jobId, despatcherName, staffId, currentSpeed) {
-        let response = await this._$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
-        return await response.data;
+        const response = await this._$http.post("job/ProcessUncheckDirect?jobId=" + jobId + "&despatcher=" + despatcherName + "&staffId=" + staffId + "&currentSpeed=" + currentSpeed);
+        return response.data;
     }
 
     /**
-     * @param {number} courierId
-     * @param {number} dispatcherId
-     * @param {number[]} jobIds
+     * Restores jobs to a courier.
+     * @param {number} courierId - The ID of the courier.
+     * @param {number} dispatcherId - The ID of the dispatcher.
+     * @param {number[]} jobIds - An array of job IDs to restore.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async restoreJobs(courierId, dispatcherId, jobIds) {
-        let response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-        return await response.data;
+        const response = await this._$http.post("job/RestoreJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return response.data;
     }
 
     /**
-     * @param {number} courierId
-     * @param {number} dispatcherId
-     * @param {number[]} jobIds
+     * Restores split jobs to a courier.
+     * @param {number} courierId - The ID of the courier.
+     * @param {number} dispatcherId - The ID of the dispatcher.
+     * @param {number[]} jobIds - An array of job IDs to restore.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async restoreSplitJobs(courierId, dispatcherId, jobIds) {
-        let response = await this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
-        return await response.data;
+        const response = await this._$http.post("job/RestoreSplitJobs?courierId=" + courierId + "&dispId=" + dispatcherId + "&jobIds=" + jobIds);
+        return response.data;
     }
 
     /**
-     * @param {number[]} jobIds
+     * Resends selected jobs.
+     * @param {number[]} jobIds - An array of job IDs to resend.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async resendJobs(jobIds) {
-        let response = await this._$http.post("job/ResendSelected?jobIds=" + jobIds);
-        return await response.data;
+        const response = await this._$http.post("job/ResendSelected?jobIds=" + jobIds);
+        return response.data;
     }
 
     /**
-     * @param {number} courierId
+     * Resends all jobs for a courier.
+     * @param {number} courierId - The ID of the courier.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async resendAllJobs(courierId) {
-        let response = await this._$http.post("job/ResendAll?courierId=" + courierId);
-        return await response.data;
+        const response = await this._$http.post("job/ResendAll?courierId=" + courierId);
+        return response.data;
     }
 
     /**
-     * @param {number} jobId
-     * @param {string} email
+     * Sends a POD (Proof of Delivery) for a job.
+     * @param {number} jobId - The ID of the job.
+     * @param {string} email - The email address to send the POD to.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async sendPOD(jobId, email) {
-        let response = await this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
-        return await response.data;
+        const response = await this._$http.get('job/SendPOD?jobId=' + jobId + '&toEmail=' + email);
+        return response.data;
     }
 
     /**
-     * @param {number} courierId
-     * @param {number} staffId
-     * @param {string} despatcherName
-     * @param {string} message
+     * Sends an SMS to a courier.
+     * @param {number} courierId - The ID of the courier.
+     * @param {number} staffId - The ID of the staff member sending the SMS.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @param {string} message - The SMS message content.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async sendSMS(courierId, staffId, despatcherName, message) {
-        let response = await this._$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message);
-        return await response.data;
+        const response = await this._$http.post("job/SendSMS?courierId=" + courierId + "&dispId=" + staffId + "&despatcherName=" + despatcherName + "&message=" + message);
+        return response.data;
     }
 
     /**
-     * @param {number} jobId
+     * Retrieves details of a specific job.
+     * @param {number} jobId - The ID of the job.
+     * @returns {Promise<Object>} A promise that resolves with the job details.
      */
     async getJobDetail(jobId) {
-        let response = await this._$http.get('/Job/Detail?jobId=' + jobId);
-        return await response.data;
+        const response = await this._$http.get('/Job/Detail?jobId=' + jobId);
+        return response.data;
     }
 
     /**
-     * @param {number} parentId
-     * @param {number} clientId
+     * Retrieves related jobs for a given parent job and client.
+     * @param {number} parentId - The ID of the parent job.
+     * @param {number} clientId - The ID of the client.
+     * @returns {Promise<Object>} A promise that resolves with the related jobs data.
      */
     async getRelatedJobs(parentId, clientId) {
-        let response = await this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
-        return await response.data;
+        const response = await this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
+        return response.data;
     }
 
+    /**
+     * Retrieves grouped jobs data.
+     * @returns {Promise<Object>} A promise that resolves with the grouped jobs data.
+     */
     getJobsGrouped() {
         return this._$http.get("app/components/home/api/jobsGroupedList.json").then(response => response.data);
     }
 
     /**
-     * @param {string} courierId
-     * @param {boolean} done
+     * Retrieves current jobs for a specific courier.
+     * @param {string} courierId - The ID of the courier.
+     * @param {boolean} done - Indicates whether to retrieve completed jobs.
+     * @returns {Promise<Object>} A promise that resolves with the current jobs data.
      */
     async getJobsCurrent(courierId, done) {
-        let response = await this._$http.get("job/current?courierId=" + courierId + "&done=" + done);
-        return await response.data;
-    }
-
-    async getCouriersPicked() {
-        let response = await this._$http.get("app/components/home/api/couriersPicked.json");
-        return await response.data;
-    }
-
-    async getCouriersThrough() {
-        let response = await this._$http.get("app/components/home/api/couriersThrough.json");
-        return await response.data;
-    }
-
-    async getCouriersClear() {
-        let response = await this._$http.get("app/components/home/api/couriersClear.json");
-        return await response.data;
-    }
-
-    async getAreaList() {
-        let response = await this._$http.get("app/components/home/api/areaList.json");
-        return await response.data;
-
+        const response = await this._$http.get("job/current?courierId=" + courierId + "&done=" + done);
+        return response.data;
     }
 
     /**
-     * @param {string} channel
+     * Retrieves picked couriers data.
+     * @returns {Promise<Object>} A promise that resolves with the picked couriers data.
+     */
+    async getCouriersPicked() {
+        const response = await this._$http.get("app/components/home/api/couriersPicked.json");
+        return response.data;
+    }
+
+    /**
+     * Retrieves through couriers data.
+     * @returns {Promise<Object>} A promise that resolves with the through couriers data.
+     */
+    async getCouriersThrough() {
+        const response = await this._$http.get("app/components/home/api/couriersThrough.json");
+        return response.data;
+    }
+
+    /**
+     * Retrieves clear couriers data.
+     * @returns {Promise<Object>} A promise that resolves with the clear couriers data.
+     */
+    async getCouriersClear() {
+        const response = await this._$http.get("app/components/home/api/couriersClear.json");
+        return response.data;
+    }
+
+    /**
+     * Retrieves the area list.
+     * @returns {Promise<Object>} A promise that resolves with the area list data.
+     */
+    async getAreaList() {
+        const response = await this._$http.get("app/components/home/api/areaList.json");
+        return response.data;
+    }
+
+    /**
+     * Retrieves support data for a specific channel.
+     * @param {string} channel - The channel to retrieve support data for.
+     * @returns {Promise<Object>} A promise that resolves with the support data.
      */
     async getSupports(channel) {
-        let response = await this._$http.get("job/supports?channel=" + channel);
-        return await response.data;
+        const response = await this._$http.get("job/supports?channel=" + channel);
+        return response.data;
     }
 
     /**
-     * @param {number} supportId
-     * @param {number} staffId
+     * Closes a support ticket.
+     * @param {number} supportId - The ID of the support ticket.
+     * @param {number} staffId - The ID of the staff member closing the ticket.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async closeSupport(supportId, staffId) {
-        let response = await this._$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
-        return await response;
+        return this._$http.post("job/CloseSupport?supportId=" + supportId + "&staffId=" + staffId);
     }
 
     /**
-     * @param {number} supportId
-     * @param {string} dispatcher
+     * Locks a support ticket.
+     * @param {number} supportId - The ID of the support ticket.
+     * @param {string} dispatcher - The name of the dispatcher locking the ticket.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async lockSupport(supportId, dispatcher) {
-        let response = await this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
-        return await response;
+        return this._$http.post("job/LockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
     }
 
     /**
-     * @param {number} supportId
-     * @param {string} dispatcher
+     * Unlocks a support ticket.
+     * @param {number} supportId - The ID of the support ticket.
+     * @param {string} dispatcher - The name of the dispatcher unlocking the ticket.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async unLockSupport(supportId, dispatcher) {
-        let response = await this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
-        return await response;
-    }
-
-    async getLateCalls() {
-        let response = await this._$http.get("app/components/home/api/lateCalls.json");
-        return await response.data;
-    }
-
-    async getClearLists() {
-        let response = await this._$http.get("courier");
-        return await response.data;
+        return this._$http.post("job/UnLockSupport?id=" + supportId + "&dispatcher=" + dispatcher);
     }
 
     /**
-     * @param {number} clearListId
+     * Retrieves late calls data.
+     * @returns {Promise<Object>} A promise that resolves with the late calls data.
+     */
+    async getLateCalls() {
+        const response = await this._$http.get("app/components/home/api/lateCalls.json");
+        return response.data;
+    }
+
+    /**
+     * Retrieves clear lists data.
+     * @returns {Promise<Object>} A promise that resolves with the clear lists data.
+     */
+    async getClearLists() {
+        const response = await this._$http.get("courier");
+        return response.data;
+    }
+
+    /**
+     * Retrieves clear list envelope data for a specific clear list.
+     * @param {number} clearListId - The ID of the clear list.
+     * @returns {Promise<Object>} A promise that resolves with the clear list envelope data.
      */
     async getClearListEnvelope(clearListId) {
-        let response = await this._$http.get("courier/ClearListEnvelope?clearListId=" + clearListId);
-        return await response.data;
-    }
-
-    async getActiveCouriers() {
-        let response = await this._$http.get("courier/active");
-        return await response.data;
-    }
-
-    async getActiveClients() {
-        let response = await this._$http.get("home/ActiveClients");
-        return await response.data;
+        const response = await this._$http.get("courier/ClearListEnvelope?clearListId=" + clearListId);
+        return response.data;
     }
 
     /**
-     * @param {number} contactId
+     * Retrieves active couriers data.
+     * @returns {Promise<Object>} A promise that resolves with the active couriers data.
+     */
+    async getActiveCouriers() {
+        const response = await this._$http.get("courier/active");
+        return response.data;
+    }
+
+    /**
+     * Retrieves active clients data.
+     * @returns {Promise<Object>} A promise that resolves with the active clients data.
+     */
+    async getActiveClients() {
+        const response = await this._$http.get("home/ActiveClients");
+        return response.data;
+    }
+
+    /**
+     * Retrieves client contacts for a specific contact.
+     * @param {number} contactId - The ID of the contact.
+     * @returns {Promise<Object>} A promise that resolves with the client contacts data.
      */
     async getClientContacts(contactId) {
-        let response = await this._$http.get("home/ClientContacts?contactId=" + contactId);
-        return await response.data;
+        const response = await this._$http.get("home/ClientContacts?contactId=" + contactId);
+        return response.data;
     }
 
     /**
-     * @param {number} jobId
+     * Retrieves potential couriers for a specific job.
+     * @param {number} jobId - The ID of the job.
+     * @returns {Promise<Object>} A promise that resolves with the potential couriers data.
      */
     async getPotentialCouriers(jobId) {
-        let response = await this._$http.get("courier/PotentialCouriers?jobId=" + jobId);
-        return await response.data;
+        const response = await this._$http.get("courier/PotentialCouriers?jobId=" + jobId);
+        return response.data;
     }
 
     /**
-     * @param {string} code
+     * Retrieves the position of a courier.
+     * @param {string} code - The courier's code.
+     * @returns {Promise<Object>} A promise that resolves with the courier's position data.
      */
     async getCourierPosition(code) {
-        let response = await this._$http.get("courier/location?code=" + code);
-        return await response.data;
+        const response = await this._$http.get("courier/location?code=" + code);
+        return response.data;
     }
 
     /**
-     * @param {number} minLng
-     * @param {number} minLat
-     * @param {number} maxLng
-     * @param {number} maxLat
+     * Retrieves available courier locations within a specified area.
+     * @param {number} minLng - The minimum longitude of the area.
+     * @param {number} minLat - The minimum latitude of the area.
+     * @param {number} maxLng - The maximum longitude of the area.
+     * @param {number} maxLat - The maximum latitude of the area.
+     * @returns {Promise<Object>} A promise that resolves with the available courier locations data.
      */
     async getAvailableCourierLocation(minLng, minLat, maxLng, maxLat) {
-        let response = await this._$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat);
-        return await response.data;
-    }
-
-    async getSuburbList() {
-        let response = await this._$http.get("job/SuburbList");
-        return await response.data;
-    }
-
-    async getSpeedList() {
-        let response = await this._$http.get("job/SpeedList");
-        return await response.data;
-    }
-
-    async getLeaveList() {
-        let response = await this._$http.get("job/LeaveList");
-        return await response.data;
-    }
-
-    async getUndeliverableList() {
-        let response = await this._$http.get("job/UndeliverableList");
-        return await response.data;
+        const response = await this._$http.get("courier/AvailableCourierLocation?minLng=" + minLng + "&minLat=" + minLat + "&maxLng=" + maxLng + "&maxLat=" + maxLat);
+        return response.data;
     }
 
     /**
-     * @param {number} jobId
-     * @param {number} truckWeightLimit
+     * Retrieves the suburb list.
+     * @returns {Promise<Object>} A promise that resolves with the suburb list data.
+     */
+    async getSuburbList() {
+        const response = await this._$http.get("job/SuburbList");
+        return response.data;
+    }
+
+    /**
+     * Retrieves the speed list.
+     * @returns {Promise<Object>} A promise that resolves with the speed list data.
+     */
+    async getSpeedList() {
+        const response = await this._$http.get("job/SpeedList");
+        return response.data;
+    }
+
+    /**
+     * Retrieves the leave list.
+     * @returns {Promise<Object>} A promise that resolves with the leave list data.
+     */
+    async getLeaveList() {
+        const response = await this._$http.get("job/LeaveList");
+        return response.data;
+    }
+
+    /**
+     * Retrieves the undeliverable list.
+     * @returns {Promise<Object>} A promise that resolves with the undeliverable list data.
+     */
+    async getUndeliverableList() {
+        const response = await this._$http.get("job/UndeliverableList");
+        return response.data;
+    }
+
+    /**
+     * Retrieves a summary of truck items for a specific job.
+     * @param {number} jobId - The ID of the job.
+     * @param {number} truckWeightLimit - The weight limit of the truck.
+     * @returns {Promise<Object>} A promise that resolves with the truck items summary data.
      */
     async getTruckItemsSummary(jobId, truckWeightLimit) {
-        let response = await this._$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
-        return await response.data;
+        const response = await this._$http.get("job/TruckItemsSummary?jobId=" + jobId + "&truckWeightLimit=" + truckWeightLimit);
+        return response.data;
     }
 
     /**
-     * @param {string} lateType
-     * @param {string} lateTime
-     * @param {string} minutes
-     * @param {number|string} pickupTime
-     * @param {number|string} alertLatePickup
-     * @param {number|string} deliveryTime
-     * @param {number|string} alertLateDelivery
-     * @param {string} jobNo
-     * @param {number} clientId
-     * @param {string} contact
-     * @param {number} staffId
-     * @param {string} jobTime
-     * @param {string} jobId
-     * @param {number} jobType
-     * @param {*} bookedSpeed
-     * @param {*} notifiedSpeed
-     * @param {string} despatcherName
-     * @param {string} calc
+     * Records a late call for a job.
+     * @param {string} lateType - The type of late call.
+     * @param {string} lateTime - The time of the late call.
+     * @param {string} minutes - The number of minutes late.
+     * @param {number|string} pickupTime - The pickup time.
+     * @param {number|string} alertLatePickup - The alert time for late pickup.
+     * @param {number|string} deliveryTime - The delivery time.
+     * @param {number|string} alertLateDelivery - The alert time for late delivery.
+     * @param {string} jobNo - The job number.
+     * @param {number} clientId - The client ID.
+     * @param {string} contact - The contact information.
+     * @param {number} staffId - The staff ID.
+     * @param {string} jobTime - The job time.
+     * @param {string} jobId - The job ID.
+     * @param {number} jobType - The job type.
+     * @param {*} bookedSpeed - The booked speed.
+     * @param {*} notifiedSpeed - The notified speed.
+     * @param {string} despatcherName - The name of the dispatcher.
+     * @param {string} calc - Calculation required flag.
+     * @returns {Promise<Object>} A promise that resolves with the response data.
      */
     async lateCall(lateType, lateTime, minutes, pickupTime, alertLatePickup, deliveryTime, alertLateDelivery, jobNo, clientId, contact, staffId, jobTime, jobId, jobType, bookedSpeed, notifiedSpeed, despatcherName, calc) {
-        let response = await this._$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup + "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed + "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc);
-        return await response.data;
+        const response = await this._$http.post("job/LateCall?lateType=" + lateType + "&lateTime=" + lateTime + "&minutes=" + minutes + "&pickupTime=" + pickupTime + "&alertLatePickup=" + alertLatePickup + "&deliveryTime=" + deliveryTime + "&alertLateDelivery=" + alertLateDelivery + "&jobNo=" + jobNo + "&clientId=" + clientId + "&contact=" + contact + "&staffId=" + staffId + "&jobTime=" + jobTime + "&jobId=" + jobId + "&jobType=" + jobType + "&bookedSpeed=" + bookedSpeed + "&notifiedSpeed=" + notifiedSpeed + "&despatcherName=" + despatcherName + '&calculationRequired=' + calc);
+        return response.data;
     }
 
     /**
-     * @param {number} clientId
-     * @param {number} fromId
-     * @param {number} toId
-     * @param {number} weight
-     * @param {number} size
-     * @param {number} speed
-     * @param {number} qty
-     * @param {Date} bookedDate
-     * @param {*} pickUp
-     * @param {*} dropOff
-     * @param {*} privateRes
-     * @param {*} oversizeItems
-     * @param {*} overWeightItems
-     * @param {number} dGClass
-     * @param {*} truckStartTime
-     * @param {*} truckHours
+     * Rates a truck job.
+     * @param {number} clientId - The client ID.
+     * @param {number} fromId - The origin ID.
+     * @param {number} toId - The destination ID.
+     * @param {number} weight - The weight of the items.
+     * @param {number} size - The size of the items.
+     * @param {number} speed - The speed of delivery.
+     * @param {number} qty - The quantity of items.
+     * @param {Date} bookedDate - The booked date.
+     * @param {*} pickUp - Pickup details.
+     * @param {*} dropOff - Drop-off details.
+     * @param {*} privateRes - Private residence flag.
+     * @param {*} oversizeItems - Oversize items flag.
+     * @param {*} overWeightItems - Overweight items flag.
+     * @param {number} dGClass - Dangerous goods class.
+     * @param {*} truckStartTime - Truck start time.
+     * @param {*} truckHours - Truck hours.
+     * @returns {Promise<Object>} A promise that resolves with the rating data.
      */
     async rateTruckJob(clientId, fromId, toId, weight, size, speed, qty, bookedDate, pickUp, dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours) {
-        let response = await this._$http.get("job/RateTruckJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours);
-        return await response.data;
+        const response = await this._$http.get("job/RateTruckJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&weight=" + weight + "&size=" + size + "&speed=" + speed + "&qty=" + qty + "&bookedDate=" + bookedDate + "&pickup=" + pickUp + "&dropOff=" + dropOff + "&privateRes=" + privateRes + "&oversizeItems=" + oversizeItems + "&overWeightItems=" + overWeightItems + "&dgClass=" + dGClass + "&truckStartTime=" + truckStartTime + "&truckHours=" + truckHours);
+        return response.data;
     }
 
     /**
@@ -474,12 +594,12 @@ class NationwideService {
      * @param {string} ourRef
      * @param {string} refA
      * @param {string} refB
-     * @param {Array|string} quantity
+     * @param {Array|String} quantity
      * @param {Date} booked
      */
     async rateJob(clientId, fromId, toId, speed, pedal, van, returnJob, weight, size, includeFuelSurcharge, direct, acceptedJobTypeId, ourRef, refA, refB, quantity, booked) {
-        let response = await this._$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
-        return await response.data;
+        const response = await this._$http.get("job/RateJob?clientId=" + clientId + "&fromId=" + fromId + "&toId=" + toId + "&speed=" + speed + "&pedal=" + pedal + "&van=" + van + "&returnJob=" + returnJob + "&weight=" + weight + "&size=" + size + "&includeFuelSurcharge=" + includeFuelSurcharge + "&direct=" + direct + "&acceptedJobTypeId=" + acceptedJobTypeId + "&ourRef=" + ourRef + "&refA=" + refA + "&refB=" + refB + "&quantity=" + quantity + "&booked=" + booked);
+        return response.data;
     }
 
     /**
@@ -487,8 +607,8 @@ class NationwideService {
      * @param {number} amount
      */
     async ppdExclusiveAmount(clientId, amount) {
-        let response = await this._$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
-        return await response.data;
+        const response = await this._$http.get("job/PPDExclusiveAmount?clientId=" + clientId + "&amount=" + amount);
+        return response.data;
     }
 
     /**
@@ -496,16 +616,14 @@ class NationwideService {
      * @param {string} despatcherName
      */
     async splitJob(jobId, despatcherName) {
-        let response = await this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
-        return await response;
+        return this._$http.post("job/splitJob?jobId=" + jobId + "&despatcherName=" + despatcherName);
     }
 
     /**
      * @param {number} jobId
      */
     async reRateSplitJob(jobId) {
-        let response = await this._$http.post("job/ReRateSplitJob?jobId=" + jobId);
-        return await response;
+        return this._$http.post("job/ReRateSplitJob?jobId=" + jobId);
     }
 
     /**
@@ -521,8 +639,7 @@ class NationwideService {
      */
     async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingDeliveryAddress" : "job/UpdateDeliveryAddress";
-        let response = await this._$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
-        return await response;
+        return this._$http.post(method + "?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -538,8 +655,7 @@ class NationwideService {
      */
     async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? "job/UpdateBookingPickupAddress" : "job/UpdatePickupAddress";
-        let response = await this._$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
-        return await response;
+        return this._$http.post(method + "?jobId=" + jobId + "&fromSuburbId=" + fromSuburbId + "&address=" + address + "&pickupLat=" + lat + "&pickupLng=" + lng + "&cbd=" + cbd + "&rate=" + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -550,8 +666,7 @@ class NationwideService {
      * @param {number} lng
      */
     async updateSplitJobAddress(jobId, toSuburbId, address, lat, lng) {
-        let response = await this._$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng);
-        return await response;
+        return this._$http.post("job/UpdateSplitJobAddress?jobId=" + jobId + "&toSuburbId=" + toSuburbId + "&address=" + address + "&deliveryLat=" + lat + "&deliveryLng=" + lng);
     }
 
     /**
@@ -571,38 +686,131 @@ class NationwideService {
             value = this._moment(value).format("YYYY-MM-DD");
         }
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
-        let response = await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
-        return await response;
+        return this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
 
     async doAPI(data) {
-        let response = await this._$http.post("app/components/home/api/api.php", data);
-        return await response.data;
+        const response = await this._$http.post("app/components/home/api/api.php", data);
+        return response.data;
     }
 
-    async getNationwideJobsNew(data, selectedClients, internal) {
-        let response = await this._$http.get("job/nationwideJobListNew?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
-        return await response.data;
+    /**
+     * Fetches nationwide jobs based on specified criteria.
+     * @param {string} endpoint - The API endpoint to use.
+     * @param {Object} queryParams - Query parameters for filtering jobs.
+     * @param {string[]} selectedClients - Array of selected client IDs.
+     * @param {boolean} internal - Indicates if this is an internal query.
+     * @param {Array} selectedAreas - Array of selected area objects or IDs.
+     * @returns {Promise<Object>} A promise that resolves with the job data.
+     */
+    async getNationwideJobs(endpoint, queryParams, selectedClients, internal, selectedAreas) {
+        const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
+
+        const params = new URLSearchParams({
+            status: queryParams.status || 'all',
+            order: queryParams.order || 'time',
+            asc: queryParams.asc || 'asc',
+            isInternal: internal.toString(),
+            cid: ContactID,
+            clientIds: selectedClients.join(',')
+        });
+
+        despatchViewIds.forEach(id => {
+            params.append('despatchViewIds', id.toString());
+        });
+
+        const url = `job/${endpoint}?${params.toString()}`;
+        const response = await this._$http.get(url);
+        return response.data;
     }
 
-    async getNationwideJobsPOD(data, selectedClients, internal) {
-        let response = await this._$http.get("job/nationwideJobListPOD?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
-        return await response.data;
+    /**
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
+     */
+    getNationwideJobsNew(queryParams, selectedClients, internal, selectedAreas) {
+        return this.getNationwideJobs('nationwideJobListPOD', queryParams, selectedClients, internal, selectedAreas);
     }
 
-    async getNationwideJobsBookDelivery(data, selectedClients, internal) {
-        let response = await this._$http.get("job/nationwideJobListBookDelivery?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
-        return await response.data;
+    /**
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
+     */
+    getNationwideJobsPOD(queryParams, selectedClients, internal, selectedAreas) {
+        return this.getNationwideJobs('nationwideJobListPOD', queryParams, selectedClients, internal, selectedAreas);
     }
 
-    async getNationwideJobsReprice(data, selectedClients, internal) {
-        let response = await this._$http.get("job/nationwideJobListReprice?status=" + data.status + "&area=" + data.area + "&order=" + data.order + "&asc=" + data.asc + "&isInternal=" + internal + "&cid=" + ContactID + "&clientIds=" + selectedClients);
-        return await response.data;
+    /**
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
+     */
+    getNationwideJobsBookDelivery(queryParams, selectedClients, internal, selectedAreas) {
+        return this.getNationwideJobs('nationwideJobListBookDelivery', queryParams, selectedClients, internal, selectedAreas);
+    }
+
+    /**
+     * @param {JobQueryParams} queryParams
+     * @param {string[]} selectedClients
+     * @param {boolean} internal
+     * @param {Array} selectedAreas
+     */
+    getNationwideJobsReprice(queryParams, selectedClients, internal, selectedAreas) {
+        return this.getNationwideJobs('nationwideJobListReprice', queryParams, selectedClients, internal, selectedAreas);
     }
 
     async getEventTypes() {
-        let response = await this._$http.get("job/EventTypeList");
-        return await response.data;
+        const response = await this._$http.get("job/EventTypeList");
+        return response.data;
+    }
+
+    /**
+     * Fetches flight options for a specific job. Optionally can specify departure date
+     * @param {number} jobId - The ID of the job
+     * @param {Date|Null} departureDate - The date of departure.
+     * @returns {Promise<FlightOptions[]>} A promise that resolves to an array of flight options.
+     * @throws {Error} If the API request fails or returns an unexpected response.
+     */
+    async getFlightOptions(jobId, departureDate) {
+        // Set date to today if either null or not a date
+        if (!departureDate || !Number.isDate(departureDate)) {
+            departureDate = new Date();
+        }
+
+        const formattedDate = departureDate.toISOString().split('T')[0];
+
+        try {
+            const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
+                params: {
+                    departureDate: formattedDate,
+                    jobId: jobId,
+                }
+            });
+
+            if (!response.data || !Array.isArray(response.data)) {
+                console.error('Unexpected API response format');
+            }
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching flight options:', error);
+        }
+    }
+
+    /**
+     * @param {Array} selectedAreas
+     * @returns {Array}
+     * @private
+     */
+    _prepareViewIdsForRequest(selectedAreas) {
+        return selectedAreas.map(area => {
+            const id = typeof area === 'object' && area.id ? area.id : area;
+            return parseInt(id, 10); // Convert to integer
+        });
     }
 }
 

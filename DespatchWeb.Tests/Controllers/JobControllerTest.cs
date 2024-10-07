@@ -58,8 +58,29 @@ public class JobControllerTest
                 ClientId = 1,
                 DeliverToContact = "John Doe",
                 PodName = "PodName1",
-                FromAddress = "123 Test Street",
-                ToAddress = "456 Test Avenue",
+                PickUpAddress = new AddressViewModel
+                {
+                    AddressLine1 = "123 Main Street",
+                    AddressLine2 = "Apt 4B",
+                    AddressLine3 = "Cityville",
+                    AddressLine4 = "CA 90210",
+                    AddressLine5 = "United States",
+                    Latitude = 34.0522m,
+                    Longitude = -118.2437m
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = "Acme Corporation",
+                    AddressLine2 = "456 Business Avenue",
+                    AddressLine3 = "Suite 789",
+                    AddressLine4 = "Floor 42",
+                    AddressLine5 = "Metropolis",
+                    AddressLine6 = "NY 10001",
+                    AddressLine7 = "United States of America",
+                    AddressLine8 = "North America",
+                    Latitude = 40.7128m,
+                    Longitude = -74.0060m
+                },
                 Date = DateTime.Now,
                 FromContactName = "Jane Doe",
                 RefA = "RefA1",
@@ -76,10 +97,8 @@ public class JobControllerTest
                 Void = false,
                 Done = false,
                 Charge = 25.00m,
-                FromSuburb = 10,
                 FromLat = 35.6895m,
                 FromLong = 139.6917m,
-                ToSuburb = 20,
                 ToLat = 34.0522m,
                 ToLong = 118.2437m,
                 SpeedId = 5
@@ -175,7 +194,7 @@ public class JobControllerTest
         };
 
         _mockJobRepo
-            .Setup(x => x.GetAllClientItemsBySpeedAsync(clientId, speedId, jobId))
+            .Setup(x => x.GetClientItemsBySpeedAsync(clientId, speedId, jobId))
             .ReturnsAsync(pagedExpectedClientItems);
 
         // Act

@@ -293,6 +293,7 @@ namespace DespatchWeb.EntityClasses
         public string AddressLine8 { get; set; }
         public bool? IsTenantClient { get; set; }
         public int? PreferRatingMethod { get; set; }
+        public int? InvoiceTemplateId { get; set; }
 
         public virtual TucSuburb UcclSuburb { get; set; }
         public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }

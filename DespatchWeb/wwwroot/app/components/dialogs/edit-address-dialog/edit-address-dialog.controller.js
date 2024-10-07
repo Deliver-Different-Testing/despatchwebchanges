@@ -1,20 +1,31 @@
 /**
+ * @fileoverview Controller for the Edit Address Dialog in the uDispatch application.
+ * @module EditAddressDialogController
+ */
+
+/**
  * A controller which handles the GPS Form popup
  * @class
  */
 class EditAddressDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'UsStatesService',
         'addressDetails', 'suburbOptions', 'title', 'submitLabel'];
 
     /**
-     * @param $scope
-     * @param $timeout
-     * @param $mdDialog
-     * @param DispatchData
-     * @param toastrService
-     * @param NgMap
-     * @param APP_CONFIG
-     * @param UsStatesService
+     * Create an EditAddressDialogController.
+     * @param {Object} $scope - Angular scope object.
+     * @param {Object} $timeout - Angular's wrapper for window.setTimeout.
+     * @param {Object} $mdDialog - Angular Material dialog service.
+     * @param {Object} DispatchData - Service for dispatch data operations.
+     * @param {Object} toastrService - Service for displaying toast notifications.
+     * @param {Object} NgMap - Angular Google Maps wrapper service.
+     * @param {Object} APP_CONFIG - Application configuration object.
+     * @param {Object} UsStatesService - Service for US states data.
      * @param {AddressDetails} addressDetails - Details related to the address in use.
      * @param {SuburbOption[]} suburbOptions - Options for suburbs.
      * @param {string} title - The title to display.
@@ -28,13 +39,21 @@ class EditAddressDialogController {
         this._toastrService = toastrService;
         this.UsStatesService = UsStatesService;
 
+        /** @type {boolean} */
         this.isLoading = false;
+        /** @type {string} */
         this.title = title;
+        /** @type {AddressDetails} */
         this.addressDetails = addressDetails;
+        /** @type {SuburbOption[]} */
         this.suburbOptions = suburbOptions;
-        this.submitLabel = submitLabel
+        /** @type {string} */
+        this.submitLabel = submitLabel;
+        /** @type {boolean} */
         this.useUsFormat = APP_CONFIG.US_Customer;
+        /** @type {string} */
         this.ourSuburbSearchText = "";
+        /** @type {string} */
         this.addressSearchText = "";
 
         if (!this.useUsFormat) {
@@ -52,12 +71,22 @@ class EditAddressDialogController {
             this.addressDetails.address = addressDetails.fullAddress;
         }
 
+        this._initializeMap($timeout, NgMap);
+    }
+
+    /**
+     * Initialize the map.
+     * @param {Object} $timeout - Angular's wrapper for window.setTimeout.
+     * @param {Object} NgMap - Angular Google Maps wrapper service.
+     * @private
+     */
+    _initializeMap($timeout, NgMap) {
         $timeout(() => {
             this.mapDisplay = true;
         }, 500);
 
         NgMap.getMap().then(map => {
-            console.log("Loading Map!")
+            console.log("Loading Map!");
             this.map = map;
             console.log("Map markers:", map.markers);
 
@@ -74,14 +103,15 @@ class EditAddressDialogController {
 
             console.log("Marker initialized:", this.marker);
 
-            this.addressSearchAutocomplete(addressDetails.address).then(_ => console.log("Address Search Complete!"));
+            this.addressSearchAutocomplete(this.addressDetails.address).then(_ => console.log("Address Search Complete!"));
         });
     }
 
     /**
      * This function finds a suburb by its district.
      * @param {string} district - The district of the suburb.
-     * @returns {SuburbOption|null} - The matched suburb or null.
+     * @returns {SuburbOption|undefined} - The matched suburb or undefined.
+     * @private
      */
     _findSuburbByDistrict(district) {
         let lowerCaseDistrict = district.toLowerCase();
@@ -91,6 +121,8 @@ class EditAddressDialogController {
     /**
      * Transforms API suggestion data format into application-specific format.
      * @param {Object} data - Suggestion data from the DispatchData service.
+     * @returns {Array<{id: string, text: string}>} Transformed suggestions.
+     * @private
      */
     _transformSuggestions(data) {
         return data.suggestions.map(obj => ({
@@ -101,6 +133,7 @@ class EditAddressDialogController {
     /**
      * Searches amongst suburb options matching provided query.
      * @param {string} query - Query for searching amongst suburb options.
+     * @returns {SuburbOption[]} Filtered suburb options.
      */
     ourSuburbSearch(query) {
         return query ? this.suburbOptions.filter(suburb => (suburb.text.toLowerCase()
@@ -110,6 +143,7 @@ class EditAddressDialogController {
     /**
      * Autocomplete the given address searchText
      * @param {string} searchText - Search text of the address to autocomplete.
+     * @returns {Promise<Array<{id: string, text: string}>>} A promise that resolves to the autocomplete suggestions.
      */
     async addressSearchAutocomplete(searchText) {
         try {
@@ -123,6 +157,7 @@ class EditAddressDialogController {
     /**
      * Handles the selection of items from the address search.
      * @param {Object} item - A selected item from the address search.
+     * @returns {Promise<void>}
      */
     async addressSearchItemSelected(item) {
         try {
@@ -133,55 +168,91 @@ class EditAddressDialogController {
             console.log("PostCode/ZIP = " + returnedLocation.Address.PostalCode);
 
             if (this.useUsFormat) {
-                this.addressDetails.addressLine1 = returnedLocation.Address.Place;
-                this.addressDetails.addressLine2 = returnedLocation.Address.Subunit;
-                this.addressDetails.addressLine3 = returnedLocation.Address.HouseNumber;
-                this.addressDetails.addressLine4 = returnedLocation.Address.Street;
-                this.addressDetails.addressLine5 = returnedLocation.Address.City;
-                this.addressDetails.addressLine6 = returnedLocation.Address.State;
-                this.addressDetails.addressLine7 = returnedLocation.Address.PostalCode;
-
-                const selectedState = this.UsStatesService.getStateByAbbreviation(returnedLocation.Address.State);
-                if (selectedState) {
-                    this.addressDetails.stateName = selectedState.name;
-                    this.addressDetails.state = selectedState;
-                }
+                this._handleUsFormatAddress(returnedLocation);
             } else {
-                const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
-                if (mappedSub !== undefined) {
-                    console.log(mappedSub);
-                    this.ourSuburbSelectedItem = mappedSub;
-                } else {
-                    this.ourSuburbSelectedItem = null;
-                    this._toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
-                }
-                this.addressDetails.suburb = returnedLocation.Address.District;
-                this.addressDetails.postCode = returnedLocation.Address.PostalCode;
+                this._handleNonUsFormatAddress(returnedLocation);
             }
 
-            this.addressDetails.filledAddress = returnedLocation.Address.Label;
-            this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-            this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
-            this.addressDetails.address = returnedLocation.Address.Label;
-
-            const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
-
-            console.log("Setting map center to:", latLng.toString());
-            this.map.setCenter(latLng);
-
-            console.log("Marker before setPosition:", this.marker);
-            this.marker.setPosition(latLng);
-            console.log("Marker after setPosition:", this.marker);
-
-            this.marker.setVisible(true);
+            this._updateAddressDetails(returnedLocation);
+            this.updateMapMarker(returnedLocation);
         } catch (error) {
             console.log("Error: ", error);
         }
     }
 
     /**
+     * Handle US format address update.
+     * @param {Object} returnedLocation - The location data returned from geocoding.
+     * @private
+     */
+    _handleUsFormatAddress(returnedLocation) {
+        this.addressDetails.addressLine1 = returnedLocation.Address.Place;
+        this.addressDetails.addressLine2 = returnedLocation.Address.Subunit;
+        this.addressDetails.addressLine3 = returnedLocation.Address.HouseNumber;
+        this.addressDetails.addressLine4 = returnedLocation.Address.Street;
+        this.addressDetails.addressLine5 = returnedLocation.Address.City;
+        this.addressDetails.addressLine6 = returnedLocation.Address.State;
+        this.addressDetails.addressLine7 = returnedLocation.Address.PostalCode;
+
+        const selectedState = this.UsStatesService.getStateByAbbreviation(returnedLocation.Address.State);
+        if (selectedState) {
+            this.addressDetails.stateName = selectedState.name;
+            this.addressDetails.state = selectedState;
+        }
+    }
+
+    /**
+     * Handle non-US format address update.
+     * @param {Object} returnedLocation - The location data returned from geocoding.
+     * @private
+     */
+    _handleNonUsFormatAddress(returnedLocation) {
+        const mappedSub = this._findSuburbByDistrict(returnedLocation.Address.District);
+        if (mappedSub !== undefined) {
+            console.log(mappedSub);
+            this.ourSuburbSelectedItem = mappedSub;
+        } else {
+            this.ourSuburbSelectedItem = null;
+            this._toastrService.showWarningToast("Matching suburb could not be found from this address. Please select manually.");
+        }
+        this.addressDetails.suburb = returnedLocation.Address.District;
+        this.addressDetails.postCode = returnedLocation.Address.PostalCode;
+    }
+
+    /**
+     * Update address details with new location data.
+     * @param {Object} returnedLocation - The location data returned from geocoding.
+     * @private
+     */
+    _updateAddressDetails(returnedLocation) {
+        this.addressDetails.filledAddress = returnedLocation.Address.Label;
+        this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
+        this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+        this.addressDetails.address = returnedLocation.Address.Label;
+    }
+
+    /**
+     * Update map marker with new location data.
+     * @param {Object} returnedLocation - The location data returned from geocoding.
+     * @private
+     */
+    updateMapMarker(returnedLocation) {
+        const latLng = new google.maps.LatLng(returnedLocation.DisplayPosition.Latitude, returnedLocation.DisplayPosition.Longitude);
+
+        console.log("Setting map center to:", latLng.toString());
+        this.map.setCenter(latLng);
+
+        console.log("Marker before setPosition:", this.marker);
+        this.marker.setPosition(latLng);
+        console.log("Marker after setPosition:", this.marker);
+
+        this.marker.setVisible(true);
+    }
+
+    /**
      * Submits provided address details.
      * @param {AddressDetails} addressDetails - Details related to the address to submit.
+     * @returns {Promise<void>}
      */
     async submit(addressDetails) {
         this.isLoading = true;
@@ -197,29 +268,56 @@ class EditAddressDialogController {
                 return;
             }
         } else {
-            // Validation for US format
-            if (!addressDetails.addressLine4 || !addressDetails.addressLine5 || !addressDetails.addressLine6) {
-                alert("Please fill in all required fields (City, State, and ZIP Code)");
+            if (!this.validateUsAddress(addressDetails)) {
                 this.isLoading = false;
                 return;
             }
-
-            // Use the UsStatesService to validate the state if needed
-            const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.addressLine5);
-            if (!stateObj) {
-                alert("Please enter a valid US state abbreviation");
-                this.isLoading = false;
-                return;
-            }
-
-            addressDetails.fullAddress = [addressDetails.addressLine1, addressDetails.addressLine2, addressDetails.addressLine3, addressDetails.addressLine4, addressDetails.addressLine5, addressDetails.addressLine6, addressDetails.addressLine7, addressDetails.addressLine8].filter(line => line && line.trim() !== '').join(', ');
         }
 
         // Ensure fullAddress is up-to-date
+        addressDetails.fullAddress = this.constructFullAddress(addressDetails);
 
         // Pass back to function that called dialog for processing
         this.isLoading = false;
         this._$mdDialog.hide(addressDetails);
+    }
+
+    /**
+     * Validate US format address.
+     * @param {AddressDetails} addressDetails - The address details to validate.
+     * @returns {boolean} True if the address is valid, false otherwise.
+     */
+    validateUsAddress(addressDetails) {
+        if (!addressDetails.addressLine4 || !addressDetails.addressLine5 || !addressDetails.addressLine6) {
+            alert("Please fill in all required fields (City, State, and ZIP Code)");
+            return false;
+        }
+
+        const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.addressLine5);
+        if (!stateObj) {
+            alert("Please enter a valid US state abbreviation");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Construct full address from address details.
+     * @param {AddressDetails} addressDetails - The address details.
+     * @returns {string} The constructed full address.
+     */
+    constructFullAddress(addressDetails) {
+        return [
+            addressDetails.addressLine1,
+            addressDetails.addressLine2,
+            addressDetails.addressLine3,
+            addressDetails.addressLine4,
+            addressDetails.addressLine5,
+            addressDetails.addressLine6,
+            addressDetails.addressLine7,
+            addressDetails.addressLine8
+        ].filter(line => line && line.trim() !== '').join(', ');
     }
 
     /**
@@ -250,8 +348,6 @@ class EditAddressDialogController {
         const location = event.latLng;
 
         try {
-            // To use retrieveAddresses, you must ensure location.lat() and location.lng() are functions
-            // that return the latitude and longitude values of your location
             this._dispatchData.retrieveAddresses(location.lat(), location.lng()).then(data => {
                 const returnedLocation = data.Response.View[0].Result[0].Location;
 

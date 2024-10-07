@@ -283,6 +283,7 @@ namespace DespatchWeb.EntityClasses
         public string AddressLine8 { get; set; }
         public bool? IsTenantClient { get; set; }
         public int? PreferRatingMethod { get; set; }
+        public int? InvoiceTemplateId { get; set; }
         public int ClientId { get; set; }
         public string Name { get; set; }
         public string LegalName { get; set; }

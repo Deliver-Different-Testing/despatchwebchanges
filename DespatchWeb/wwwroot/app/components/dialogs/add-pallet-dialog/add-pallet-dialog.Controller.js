@@ -1,6 +1,32 @@
+/**
+ * @fileoverview Controller for the Pallet Dialog in the uDispatch application.
+ * @module PalletDialogController
+ */
+
+/**
+ * Controller for the Pallet Dialog
+ * @class
+ */
 class PalletDialogController {
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
     static $inject = ['$scope', '$mdDialog', 'DispatchData', 'toastrService', 'rateJobService', 'job', 'dispatcherName', 'contactId', 'existingPallet'];
 
+    /**
+     * Create a PalletDialogController.
+     * @param {Object} $scope - Angular scope object.
+     * @param {Object} $mdDialog - Angular Material dialog service.
+     * @param {Object} DispatchData - Service for dispatching data.
+     * @param {Object} toastrService - Service for displaying toast notifications.
+     * @param {Object} rateJobService - Service for rating jobs.
+     * @param {Job} job - The job object.
+     * @param {string} dispatcherName - Name of the dispatcher.
+     * @param {string} contactId - ID of the contact.
+     * @param {Pallet} [existingPallet] - Existing pallet object if editing.
+     */
     constructor($scope,
                 $mdDialog,
                 DispatchData,
@@ -18,10 +44,14 @@ class PalletDialogController {
         this._dispatcherName = dispatcherName;
         this._contactId = contactId;
 
+        /** @type {boolean} */
         this.isLoading = false;
+        /** @type {Object} */
         this.palletForm = $scope.palletForm;
+        /** @type {boolean} */
         this.isEditing = !!existingPallet;
 
+        /** @type {Pallet} */
         this.pallet = existingPallet || {
             id: job.id,
             quantity: 0,
@@ -35,6 +65,7 @@ class PalletDialogController {
             notes: ""
         };
 
+        /** @type {Array<Object>} */
         this.formFields = [
             {name: "quantity", label: "# of pallets", colSize: "6", value: this.pallet.quantity},
             {name: "weight", label: "Weight (KG)", colSize: "6", value: this.pallet.weight},
@@ -48,6 +79,10 @@ class PalletDialogController {
         ];
     }
 
+    /**
+     * Submit the pallet form.
+     * @returns {Promise<void>}
+     */
     async submit() {
         try {
             if (!this.palletForm.$valid) {
@@ -109,6 +144,9 @@ class PalletDialogController {
         this._$mdDialog.hide();
     }
 
+    /**
+     * Cancel the dialog.
+     */
     cancel() {
         this._$mdDialog.cancel();
     }

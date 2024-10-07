@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoMapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -21,6 +22,8 @@ public class JobRepositoryTest
     public void SetUp()
     {
         _mockContext = new Mock<DespatchContext>();
+        _mockMapper = new Mock<IMapper>();
+
         _mockContext.Setup(c => c.TucClientItems).Returns(CreateClientItems()?.Object);
         _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(CreateAvailableSpeedItems()?.Object);
         _mockContext.Setup(c => c.TblClientAvailableSpeeds).Returns(CreateAvailableClientSpeeds()?.Object);
@@ -36,8 +39,13 @@ public class JobRepositoryTest
                 It.IsAny<OutputParameter<int>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
-        _repository = new JobRepository(_mockContext.Object);
+
+        _repository = new JobRepository(_mockContext.Object, _mockMapper.Object);
     }
+
+    private Mock<DespatchContext> _mockContext;
+    private Mock<IMapper> _mockMapper;
+    private IJobRepository _repository;
 
     // Set Up Data
     private static Mock<DbSet<TucClientItem>> CreateClientItems()
@@ -90,9 +98,6 @@ public class JobRepositoryTest
         return jobs;
     }
 
-    private Mock<DespatchContext> _mockContext;
-    private IJobRepository _repository;
-
     [Test]
     public async Task Test_AddInterCourierCharge_Calls_Procedures_DSEWEB_Correctly()
     {
@@ -135,7 +140,7 @@ public class JobRepositoryTest
     [Test]
     public async Task GetAllClientItemsBySpeed_Should_Return_List_When_Items_Are_Available()
     {
-        var result = await _repository.GetAllClientItemsBySpeedAsync(1, 1, 1);
+        var result = await _repository.GetClientItemsBySpeedAsync(1, 1, 1);
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(2));
         Assert.That(result.Items.Count, Is.EqualTo(2));
@@ -154,7 +159,7 @@ public class JobRepositoryTest
     [Test]
     public async Task GetAllClientItemsBySpeed_Should_Return_Empty_List_When_No_Items_Are_Available()
     {
-        var result = await _repository.GetAllClientItemsBySpeedAsync(2, 2, 2);
+        var result = await _repository.GetClientItemsBySpeedAsync(2, 2, 2);
         Assert.That(result, Is.Not.Null);
         Assert.That(result.TotalCount, Is.EqualTo(0));
         Assert.That(result.Items.Count, Is.EqualTo(0));

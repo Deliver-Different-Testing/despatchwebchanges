@@ -3,6 +3,7 @@ using DespatchWeb.Automapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
+using DespatchWeb.Services;
 using EntityFrameworkCore.UseRowNumberForPaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -22,13 +23,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRaygun(builder.Configuration);
 builder.Services.AddControllersWithViews();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-//builder.Services.AddEndpointsApiExplorer();
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     // This lambda determines whether user consent for non-essential cookies is needed for a given request.
     if (options == null) return;
-    options.CheckConsentNeeded = context => true;
+    options.CheckConsentNeeded = _ => true;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
 builder.Services.Configure<FormOptions>(x =>
@@ -47,11 +46,12 @@ builder.Services.Configure<KestrelServerOptions>(options =>
     if (options != null) options.Limits.MaxRequestBodySize = int.MaxValue;
 });
 
-
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<IClearListZonesRepository, ClearListZonesRepository>();
+builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
+
+builder.Services.AddScoped<IFlightStatusService, FlightStatusService>();
 
 
 // Automapper
@@ -60,7 +60,6 @@ builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile),
 
 
 var connectionString = builder.Configuration.GetConnectionString("Connection");
-//var connectionTimeout = builder.Configuration.GetValue<int>("ConnectionTimeout");
 builder.Services.AddDbContext<DespatchContext>(x =>
 {
     if (connectionString != null) x.UseSqlServer(connectionString, oa => oa.UseRowNumberForPaging());
@@ -96,6 +95,5 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
 
 app.Run();

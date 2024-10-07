@@ -5,15 +5,16 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class UserDespatchViewPreference
+    public partial class DfrntappUserViewPermission
     {
-        public int UserDespatchViewPrefId { get; set; }
+        public int UserViewPermissionId { get; set; }
         public int? UserId { get; set; }
-        public int? DespatchViewId { get; set; }
+        public int? ViewId { get; set; }
         public bool? IsVisible { get; set; }
-        public int? Order { get; set; }
+        public int? SortOrder { get; set; }
+        public int Id { get; set; }
 
-        public virtual TblDespatchView DespatchView { get; set; }
         public virtual TucStaff User { get; set; }
+        public virtual TblDespatchView View { get; set; }
     }
 }

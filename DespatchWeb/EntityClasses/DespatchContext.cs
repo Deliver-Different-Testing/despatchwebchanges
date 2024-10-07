@@ -24,8 +24,12 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
         public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
+        public virtual DbSet<Dfrntapp> Dfrntapps { get; set; }
+        public virtual DbSet<DfrntappPage> DfrntappPages { get; set; }
+        public virtual DbSet<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
+        public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
         public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
-        public virtual DbSet<TblAppWidget> TblAppWidgets { get; set; }
+        public virtual DbSet<TblAirport> TblAirports { get; set; }
         public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
         public virtual DbSet<TblBulkRunSchedule> TblBulkRunSchedules { get; set; }
         public virtual DbSet<TblClearListArea> TblClearListAreas { get; set; }
@@ -40,7 +44,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblCourierGp> TblCourierGps { get; set; }
         public virtual DbSet<TblCourierLogInOut> TblCourierLogInOuts { get; set; }
         public virtual DbSet<TblDespatchView> TblDespatchViews { get; set; }
-        public virtual DbSet<TblDfrntapp> TblDfrntapps { get; set; }
         public virtual DbSet<TblInternetPermission> TblInternetPermissions { get; set; }
         public virtual DbSet<TblJob> TblJobs { get; set; }
         public virtual DbSet<TblJobLeaveNotHome> TblJobLeaveNotHomes { get; set; }
@@ -49,7 +52,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblPolygonGp> TblPolygonGps { get; set; }
         public virtual DbSet<TblPolygonSuburb> TblPolygonSuburbs { get; set; }
         public virtual DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
-        public virtual DbSet<TblWidget> TblWidgets { get; set; }
         public virtual DbSet<TucClient> TucClients { get; set; }
         public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
         public virtual DbSet<TucClientItem> TucClientItems { get; set; }
@@ -66,8 +68,6 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucSource> TucSources { get; set; }
         public virtual DbSet<TucStaff> TucStaffs { get; set; }
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
-        public virtual DbSet<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; }
-        public virtual DbSet<UserWidgetPreference> UserWidgetPreferences { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
         public virtual DbSet<ZipPolygon> ZipPolygons { get; set; }
@@ -101,6 +101,18 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(100);
 
                 entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+
+                entity.HasOne(d => d.ClearListArea)
+                    .WithMany(p => p.ClearListAreaZipPolygons)
+                    .HasForeignKey(d => d.ClearListAreaId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_ClearListAreaZipPolygon_ClearListArea");
+
+                entity.HasOne(d => d.ZipPolygon)
+                    .WithMany(p => p.ClearListAreaZipPolygons)
+                    .HasForeignKey(d => d.ZipPolygonId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_ClearListAreaZipPolygon_ZipPolygon");
             });
 
             modelBuilder.Entity<DeliveryPhoto>(entity =>
@@ -259,18 +271,13 @@ namespace DespatchWeb.EntityClasses
             {
                 entity.ToTable("DespatchViewZoneGroup");
 
-                entity.HasIndex(e => new { e.DespatchViewId, e.ZoneGroupId }, "UQ_DespatchViewZoneGroup_DespatchView_ZoneGroup")
-                    .IsUnique();
-
                 entity.Property(e => e.DespatchViewZoneGroupId).HasColumnName("DespatchViewZoneGroupID");
 
                 entity.Property(e => e.CreatedBy)
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.CreatedDate)
-                    .HasPrecision(0)
-                    .HasDefaultValueSql("(getdate())");
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
 
                 entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
 
@@ -278,9 +285,7 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.LastModifiedDate)
-                    .HasPrecision(0)
-                    .HasDefaultValueSql("(getdate())");
+                entity.Property(e => e.LastModifiedDate).HasDefaultValueSql("(getdate())");
 
                 entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
 
@@ -288,7 +293,7 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.DespatchViewZoneGroups)
                     .HasForeignKey(d => d.DespatchViewId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_DespatchViewZoneGroup_DespatchView");
+                    .HasConstraintName("FK_DespatchViewZoneGroup_tblDespatchView");
 
                 entity.HasOne(d => d.ZoneGroup)
                     .WithMany(p => p.DespatchViewZoneGroups)
@@ -626,6 +631,123 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
             });
 
+            modelBuilder.Entity<Dfrntapp>(entity =>
+            {
+                entity.HasKey(e => e.AppId)
+                    .HasName("PK__tblDFRNT__8E2CF7D929ECEF59");
+
+                entity.ToTable("DFRNTApps");
+
+                entity.HasIndex(e => new { e.AppId, e.AppName }, "IX_Dfrntapps_AppId_AppName");
+
+                entity.Property(e => e.AppId).HasColumnName("AppID");
+
+                entity.Property(e => e.AppName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<DfrntappPage>(entity =>
+            {
+                entity.HasKey(e => e.PageId)
+                    .HasName("PK__DFRNTApp__C565B124361DBC14");
+
+                entity.ToTable("DFRNTAppPages");
+
+                entity.HasIndex(e => new { e.PageId, e.AppId }, "IX_DfrntappPages_PageId_AppId");
+
+                entity.Property(e => e.PageId).HasColumnName("PageID");
+
+                entity.Property(e => e.AppId).HasColumnName("AppID");
+
+                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.PageName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.HasOne(d => d.App)
+                    .WithMany(p => p.DfrntappPages)
+                    .HasForeignKey(d => d.AppId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__DFRNTAppP__AppID__38FA28BF");
+            });
+
+            modelBuilder.Entity<DfrntappUserViewPermission>(entity =>
+            {
+                entity.HasKey(e => e.UserViewPermissionId)
+                    .HasName("PK__UserDesp__B13A9F177A08D20D");
+
+                entity.ToTable("DFRNTAppUserViewPermissions");
+
+                entity.HasIndex(e => new { e.UserId, e.ViewId, e.IsVisible }, "IX_DfrntappUserViewPermissions_UserId_ViewId_IsVisible");
+
+                entity.Property(e => e.UserViewPermissionId)
+                    .ValueGeneratedNever()
+                    .HasColumnName("UserViewPermissionID");
+
+                entity.Property(e => e.Id)
+                    .ValueGeneratedOnAdd()
+                    .HasColumnName("ID");
+
+                entity.Property(e => e.UserId).HasColumnName("UserID");
+
+                entity.Property(e => e.ViewId).HasColumnName("ViewID");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.DfrntappUserViewPermissions)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK__UserDespa__UserI__7BF11A7F");
+
+                entity.HasOne(d => d.View)
+                    .WithMany(p => p.DfrntappUserViewPermissions)
+                    .HasForeignKey(d => d.ViewId)
+                    .HasConstraintName("FK__UserDespa__Despa__7CE53EB8");
+            });
+
+            modelBuilder.Entity<DfrntpageView>(entity =>
+            {
+                entity.HasKey(e => new { e.PageId, e.ViewId })
+                    .HasName("PK__DFRNTPag__B486C0E53BD6956A");
+
+                entity.ToTable("DFRNTPageViews");
+
+                entity.HasIndex(e => new { e.ViewId, e.PageId }, "IX_DfrntpageViews_ViewId_PageId");
+
+                entity.Property(e => e.PageId).HasColumnName("PageID");
+
+                entity.Property(e => e.ViewId).HasColumnName("ViewID");
+
+                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasDefaultValueSql("('System')");
+
+                entity.Property(e => e.ModifiedBy).HasMaxLength(50);
+
+                entity.HasOne(d => d.Page)
+                    .WithMany(p => p.DfrntpageViews)
+                    .HasForeignKey(d => d.PageId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__DFRNTPage__PageI__3DBEDDDC");
+
+                entity.HasOne(d => d.View)
+                    .WithMany(p => p.DfrntpageViews)
+                    .HasForeignKey(d => d.ViewId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__DFRNTPage__ViewI__3EB30215");
+            });
+
             modelBuilder.Entity<GlobalAddressMapping>(entity =>
             {
                 entity.HasKey(e => e.GlobalAddressId)
@@ -658,30 +780,72 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             });
 
-            modelBuilder.Entity<TblAppWidget>(entity =>
+            modelBuilder.Entity<TblAirport>(entity =>
             {
-                entity.HasKey(e => e.AppWidgetId)
-                    .HasName("PK__tblAppWi__9EE8159A3C0B9F94");
+                entity.HasKey(e => e.AirportId)
+                    .HasName("PK__tblAirpo__E3DBE08A019E3B86");
 
-                entity.ToTable("tblAppWidgets");
+                entity.ToTable("tblAirport");
 
-                entity.Property(e => e.AppWidgetId).HasColumnName("AppWidgetID");
+                entity.Property(e => e.AirportId).HasColumnName("AirportID");
 
-                entity.Property(e => e.AppId).HasColumnName("AppID");
+                entity.Property(e => e.AddressLine1).HasMaxLength(255);
 
-                entity.Property(e => e.WidgetId).HasColumnName("WidgetID");
+                entity.Property(e => e.AddressLine2).HasMaxLength(255);
 
-                entity.HasOne(d => d.App)
-                    .WithMany(p => p.TblAppWidgets)
-                    .HasForeignKey(d => d.AppId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_AppWidgets_DFRNTApps");
+                entity.Property(e => e.AddressLine3).HasMaxLength(255);
 
-                entity.HasOne(d => d.Widget)
-                    .WithMany(p => p.TblAppWidgets)
-                    .HasForeignKey(d => d.WidgetId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_AppWidgets_Widgets");
+                entity.Property(e => e.AddressLine4).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine5).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine6).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine7).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine8).HasMaxLength(255);
+
+                entity.Property(e => e.AgentId).HasColumnName("AgentID");
+
+                entity.Property(e => e.AirportCode)
+                    .HasMaxLength(3)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.CargoFacilityFee).HasColumnType("money");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(50);
+
+                entity.Property(e => e.ExtraInfo).HasMaxLength(550);
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy).HasMaxLength(50);
+
+                entity.Property(e => e.Latitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.Longitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.PostCode).HasMaxLength(50);
+
+                entity.Property(e => e.SiteId).HasColumnName("SiteID");
+
+                entity.Property(e => e.StreetAddress).HasMaxLength(200);
+
+                entity.Property(e => e.SuburbId).HasColumnName("SuburbID");
+
+                entity.Property(e => e.Type).HasMaxLength(200);
+
+                entity.Property(e => e.UnitFlatFloorBuilding).HasMaxLength(100);
             });
 
             modelBuilder.Entity<TblBulkJob>(entity =>
@@ -952,6 +1116,8 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(100);
 
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
                 entity.Property(e => e.Order).HasDefaultValueSql("((1))");
             });
 
@@ -962,8 +1128,6 @@ namespace DespatchWeb.EntityClasses
                 entity.ToTable("tblClearListAreaPolygon");
 
                 entity.HasIndex(e => e.ClearListAreaId, "ClearListAreaID");
-
-                entity.HasIndex(e => e.ZipPolygonId, "IX_ClearListAreaPolygon_ZipPolygonID");
 
                 entity.HasIndex(e => e.PolygonId, "PolygonID");
 
@@ -990,9 +1154,9 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
+                entity.Property(e => e.Notes).HasColumnType("ntext");
 
-                entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+                entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
 
                 entity.HasOne(d => d.ClearListArea)
                     .WithMany(p => p.TblClearListAreaPolygons)
@@ -1003,12 +1167,8 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.Polygon)
                     .WithMany(p => p.TblClearListAreaPolygons)
                     .HasForeignKey(d => d.PolygonId)
-                    .HasConstraintName("FK_TblClearListAreaPolygon_tblPolygon");
-
-                entity.HasOne(d => d.ZipPolygon)
-                    .WithMany(p => p.TblClearListAreaPolygons)
-                    .HasForeignKey(d => d.ZipPolygonId)
-                    .HasConstraintName("FK_ClearListAreaPolygon_ZipPolygon");
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tblClearListAreaPolygon_tblPolygon");
             });
 
             modelBuilder.Entity<TblClient>(entity =>
@@ -2469,14 +2629,14 @@ namespace DespatchWeb.EntityClasses
 
                 entity.ToTable("tblDespatchView");
 
+                entity.HasIndex(e => e.DespatchViewId, "IX_DfrntappViews_ViewId");
+
+                entity.HasIndex(e => e.DespatchViewId, "IX_DfrntappViews_ViewId_Include_Name");
+
                 entity.HasIndex(e => e.Name, "IX_tblDespatchView_Name")
                     .IsUnique();
 
                 entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
-
-                entity.Property(e => e.AreaGroupIds).HasColumnName("AreaGroupIDs");
-
-                entity.Property(e => e.ClearListAreaIds).HasColumnName("ClearListAreaIDs");
 
                 entity.Property(e => e.Created).HasColumnType("datetime");
 
@@ -2510,22 +2670,6 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TblDespatchViews)
                     .HasForeignKey(d => d.ZoneGroupId)
                     .HasConstraintName("FK__tblDespat__ZoneG__12B48446");
-            });
-
-            modelBuilder.Entity<TblDfrntapp>(entity =>
-            {
-                entity.HasKey(e => e.AppId)
-                    .HasName("PK__tblDFRNT__8E2CF7D929ECEF59");
-
-                entity.ToTable("tblDFRNTApps");
-
-                entity.Property(e => e.AppId).HasColumnName("AppID");
-
-                entity.Property(e => e.AppName)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
             });
 
             modelBuilder.Entity<TblInternetPermission>(entity =>
@@ -3585,32 +3729,6 @@ namespace DespatchWeb.EntityClasses
                     .HasConstraintName("FK_tblUndeliverableLocation_tucJobType");
             });
 
-            modelBuilder.Entity<TblWidget>(entity =>
-            {
-                entity.HasKey(e => e.WidgetId)
-                    .HasName("PK__tblWidge__ADFD307225283A3C");
-
-                entity.ToTable("tblWidget");
-
-                entity.Property(e => e.WidgetId).HasColumnName("WidgetID");
-
-                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.CreatedBy)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.LastModifiedBy).HasMaxLength(50);
-
-                entity.Property(e => e.WidgetName)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.WidgetType)
-                    .IsRequired()
-                    .HasMaxLength(50);
-            });
-
             modelBuilder.Entity<TucClient>(entity =>
             {
                 entity.HasKey(e => e.UcclId)
@@ -3620,6 +3738,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.HasIndex(e => e.UcclCode, "IDX_tucClient_ucclCode")
                     .IsUnique();
+
+                entity.HasIndex(e => e.InvoiceTemplateId, "IX_InvoiceTemplateId");
 
                 entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
@@ -4996,9 +5116,19 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobDesiredJobTypes)
                     .HasForeignKey(d => d.DesiredJobTypeId);
 
+                entity.HasOne(d => d.FromAirport)
+                    .WithMany(p => p.TucJobFromAirports)
+                    .HasForeignKey(d => d.FromAirportId)
+                    .HasConstraintName("FK_tucJob_FromAirport");
+
                 entity.HasOne(d => d.NotifiedJobType)
                     .WithMany(p => p.TucJobNotifiedJobTypes)
                     .HasForeignKey(d => d.NotifiedJobTypeId);
+
+                entity.HasOne(d => d.ToAirport)
+                    .WithMany(p => p.TucJobToAirports)
+                    .HasForeignKey(d => d.ToAirportId)
+                    .HasConstraintName("FK_tucJob_ToAirport");
 
                 entity.HasOne(d => d.UcjbSpeedNavigation)
                     .WithMany(p => p.TucJobUcjbSpeedNavigations)
@@ -5946,54 +6076,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.UcsuRegion).HasColumnName("ucsuRegion");
             });
 
-            modelBuilder.Entity<UserDespatchViewPreference>(entity =>
-            {
-                entity.HasKey(e => e.UserDespatchViewPrefId)
-                    .HasName("PK__UserDesp__B13A9F177A08D20D");
-
-                entity.Property(e => e.UserDespatchViewPrefId)
-                    .ValueGeneratedNever()
-                    .HasColumnName("UserDespatchViewPrefID");
-
-                entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
-
-                entity.Property(e => e.UserId).HasColumnName("UserID");
-
-                entity.HasOne(d => d.DespatchView)
-                    .WithMany(p => p.UserDespatchViewPreferences)
-                    .HasForeignKey(d => d.DespatchViewId)
-                    .HasConstraintName("FK__UserDespa__Despa__7CE53EB8");
-
-                entity.HasOne(d => d.User)
-                    .WithMany(p => p.UserDespatchViewPreferences)
-                    .HasForeignKey(d => d.UserId)
-                    .HasConstraintName("FK__UserDespa__UserI__7BF11A7F");
-            });
-
-            modelBuilder.Entity<UserWidgetPreference>(entity =>
-            {
-                entity.HasKey(e => e.UserWidgetPrefId)
-                    .HasName("PK__UserWidg__17BB109C4A59BEEB");
-
-                entity.Property(e => e.UserWidgetPrefId).HasColumnName("UserWidgetPrefID");
-
-                entity.Property(e => e.AppWidgetId).HasColumnName("AppWidgetID");
-
-                entity.Property(e => e.IsVisible)
-                    .IsRequired()
-                    .HasDefaultValueSql("((1))");
-
-                entity.Property(e => e.UserName)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.HasOne(d => d.AppWidget)
-                    .WithMany(p => p.UserWidgetPreferences)
-                    .HasForeignKey(d => d.AppWidgetId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_UserWidgetPreferences_AppWidgets");
-            });
-
             modelBuilder.Entity<UtlQryContactLookup>(entity =>
             {
                 entity.HasNoKey();
@@ -6184,6 +6266,8 @@ namespace DespatchWeb.EntityClasses
             {
                 entity.ToTable("ZoneGroup");
 
+                entity.HasIndex(e => e.ClearListAreaId, "IX_ZoneGroup_ClearListAreaId");
+
                 entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
 
                 entity.Property(e => e.Created)
@@ -6203,7 +6287,7 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.ClearListArea)
                     .WithMany(p => p.ZoneGroups)
                     .HasForeignKey(d => d.ClearListAreaId)
-                    .HasConstraintName("FK_ZoneGroup_ClearListArea");
+                    .HasConstraintName("FK_ZoneGroup_tblClearListArea");
             });
 
             modelBuilder.Entity<ZoneName>(entity =>

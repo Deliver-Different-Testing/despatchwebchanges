@@ -10,7 +10,7 @@
   <ItemGroup>
     <Content Remove="compilerconfig.json" />
     <Content Update="appsettings.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Update="appsettings.Development.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
@@ -200,6 +200,32 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js.map"/>
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js"/>
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.directive.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.directive.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.directive.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.directive.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.service.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.service.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.service.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\common\side-nav\side-nav.service.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\services\job-table.service.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\services\job-table.service.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\services\job-table.service.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\services\job-table.service.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\materialTheme.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\materialTheme.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\materialTheme.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\materialTheme.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\routes.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\routes.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\routes.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\routes.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.min.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\directives\flight-table\flight-table.directive.js"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\directives\flight-table\flight-table.html"/>
   </ItemGroup>
 
   <ItemGroup>

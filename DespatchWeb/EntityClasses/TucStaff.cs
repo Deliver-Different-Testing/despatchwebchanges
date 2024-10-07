@@ -9,7 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public TucStaff()
         {
-            UserDespatchViewPreferences = new HashSet<UserDespatchViewPreference>();
+            DfrntappUserViewPermissions = new HashSet<DfrntappUserViewPermission>();
         }
 
         public int UcstId { get; set; }
@@ -59,6 +59,6 @@ namespace DespatchWeb.EntityClasses
         public string AddressLine8 { get; set; }
 
         public virtual TucSuburb UcstSuburb { get; set; }
-        public virtual ICollection<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; }
+        public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
     }
 }
