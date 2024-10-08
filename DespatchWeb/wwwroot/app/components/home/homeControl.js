@@ -218,17 +218,6 @@ angular.module("uDispatch")
         async function initializeAreas() {
             if ($scope.areas && $scope.areas.length > 0) {
                 $scope.selectedAreas.push($scope.areas[0]);
-            } else {
-                try {
-                    await $mdDialog.show($mdDialog.alert()
-                        .clickOutsideToClose(true)
-                        .title('No Views Available')
-                        .textContent('There are no dispatch views set up for your user account.\n\n' + 'Please contact your system administrator to add views in the Admin Manager.\n\n' + 'Views are necessary to filter and organize dispatch information effectively.')
-                        .ariaLabel('No Views Available Alert')
-                        .ok('Understood'));
-                } catch (error) {
-                    console.error('Error showing dialog:', error);
-                }
             }
         }
 
@@ -2841,6 +2830,9 @@ angular.module("uDispatch")
          * @param {Job} currentJob
          */
         $scope.setSplitJobMeetingPoint = async ($event, currentJob) => {
+            /**
+             * @param {Job} job
+             */
             const getDeliveryLocation = (job) => ({
                 lat: job.deliveryLatitude || "", long: job.deliveryLongitude || ""
             });
