@@ -415,13 +415,21 @@ public partial class TucJob
 
     public string DeliveryAddressLine8 { get; set; }
 
+    public int? FromAirportId { get; set; }
+
+    public int? ToAirportId { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucClientContact Contact { get; set; }
 
     public virtual TucJobType DesiredJobType { get; set; }
 
+    public virtual TblAirport FromAirport { get; set; }
+
     public virtual TucJobType NotifiedJobType { get; set; }
+
+    public virtual TblAirport ToAirport { get; set; }
 
     public virtual ICollection<TucJobItem> TucJobItems { get; set; } = new List<TucJobItem>();
 

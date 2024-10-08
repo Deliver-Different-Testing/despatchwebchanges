@@ -559,6 +559,8 @@ public partial class TucClient
 
     public int? PreferRatingMethod { get; set; }
 
+    public int? InvoiceTemplateId { get; set; }
+
     public virtual ICollection<TblBulkRunSchedule> TblBulkRunSchedules { get; set; } = new List<TblBulkRunSchedule>();
 
     public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; } = new List<TblClientAvailableSpeed>();

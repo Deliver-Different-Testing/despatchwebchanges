@@ -192,16 +192,16 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\version.min.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\top-bar\top-bar.controller.js" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\top-bar\top-bar.html" />
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialog.html"/>
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialogController.js"/>
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialogController.min.js"/>
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialog.html"/>
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialogController.js"/>
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialogController.min.js"/>
-    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js"/>
-    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js.map"/>
-    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js"/>
-    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialogController.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\autoCompleteDialog\autoCompleteDialogController.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialog.html" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialogController.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\selectDialog\selectDialogController.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.js.map" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js" />
+    <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map" />
   </ItemGroup>
   <ItemGroup>
     <None Include="bundleconfig.json" />

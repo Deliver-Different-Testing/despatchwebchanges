@@ -3,22 +3,21 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class DfrntappPage
 {
-    public partial class DfrntappPage
-    {
-        public DfrntappPage()
-        {
-            DfrntpageViews = new HashSet<DfrntpageView>();
-        }
+    public int PageId { get; set; }
 
-        public int PageId { get; set; }
-        public int AppId { get; set; }
-        public string PageName { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime Created { get; set; }
+    public int AppId { get; set; }
 
-        public virtual Dfrntapp App { get; set; }
-        public virtual ICollection<DfrntpageView> DfrntpageViews { get; set; }
-    }
+    public string PageName { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public virtual Dfrntapp App { get; set; }
+
+    public virtual ICollection<DfrntpageView> DfrntpageViews { get; set; } = new List<DfrntpageView>();
 }

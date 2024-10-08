@@ -3,46 +3,67 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TblAirport
 {
-    public partial class TblAirport
-    {
-        public TblAirport()
-        {
-            TucJobFromAirports = new HashSet<TucJob>();
-            TucJobToAirports = new HashSet<TucJob>();
-        }
+    public int AirportId { get; set; }
 
-        public int AirportId { get; set; }
-        public string Name { get; set; }
-        public int? SiteId { get; set; }
-        public DateTime Created { get; set; }
-        public DateTime LastModified { get; set; }
-        public string CreatedBy { get; set; }
-        public string LastModifiedBy { get; set; }
-        public bool Active { get; set; }
-        public string StreetAddress { get; set; }
-        public string UnitFlatFloorBuilding { get; set; }
-        public int? SuburbId { get; set; }
-        public string PostCode { get; set; }
-        public decimal? Latitude { get; set; }
-        public decimal? Longitude { get; set; }
-        public string ExtraInfo { get; set; }
-        public bool RatesTable { get; set; }
-        public string Type { get; set; }
-        public decimal? CargoFacilityFee { get; set; }
-        public int? AgentId { get; set; }
-        public string AddressLine1 { get; set; }
-        public string AddressLine2 { get; set; }
-        public string AddressLine3 { get; set; }
-        public string AddressLine4 { get; set; }
-        public string AddressLine5 { get; set; }
-        public string AddressLine6 { get; set; }
-        public string AddressLine7 { get; set; }
-        public string AddressLine8 { get; set; }
-        public string AirportCode { get; set; }
+    public string Name { get; set; }
 
-        public virtual ICollection<TucJob> TucJobFromAirports { get; set; }
-        public virtual ICollection<TucJob> TucJobToAirports { get; set; }
-    }
+    public int? SiteId { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public string LastModifiedBy { get; set; }
+
+    public bool Active { get; set; }
+
+    public string StreetAddress { get; set; }
+
+    public string UnitFlatFloorBuilding { get; set; }
+
+    public int? SuburbId { get; set; }
+
+    public string PostCode { get; set; }
+
+    public decimal? Latitude { get; set; }
+
+    public decimal? Longitude { get; set; }
+
+    public string ExtraInfo { get; set; }
+
+    public bool RatesTable { get; set; }
+
+    public string Type { get; set; }
+
+    public decimal? CargoFacilityFee { get; set; }
+
+    public int? AgentId { get; set; }
+
+    public string AddressLine1 { get; set; }
+
+    public string AddressLine2 { get; set; }
+
+    public string AddressLine3 { get; set; }
+
+    public string AddressLine4 { get; set; }
+
+    public string AddressLine5 { get; set; }
+
+    public string AddressLine6 { get; set; }
+
+    public string AddressLine7 { get; set; }
+
+    public string AddressLine8 { get; set; }
+
+    public string AirportCode { get; set; }
+
+    public virtual ICollection<TucJob> TucJobFromAirports { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<TucJob> TucJobToAirports { get; set; } = new List<TucJob>();
 }

@@ -97,7 +97,7 @@ public partial class TucStaff
 
     public string AddressLine8 { get; set; }
 
-    public virtual TucSuburb UcstSuburb { get; set; }
+    public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; } = new List<DfrntappUserViewPermission>();
 
-    public virtual ICollection<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; } = new List<UserDespatchViewPreference>();
+    public virtual TucSuburb UcstSuburb { get; set; }
 }

@@ -3,18 +3,23 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
-{
-    public partial class DfrntpageView
-    {
-        public int PageId { get; set; }
-        public int ViewId { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime Created { get; set; }
-        public string ModifiedBy { get; set; }
-        public DateTime? ModifiedDate { get; set; }
+namespace DespatchWeb.EntityClasses;
 
-        public virtual DfrntappPage Page { get; set; }
-        public virtual TblDespatchView View { get; set; }
-    }
+public partial class DfrntpageView
+{
+    public int PageId { get; set; }
+
+    public int ViewId { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string ModifiedBy { get; set; }
+
+    public DateTime? ModifiedDate { get; set; }
+
+    public virtual DfrntappPage Page { get; set; }
+
+    public virtual TblDespatchView View { get; set; }
 }

@@ -5,15 +5,15 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.EntityClasses;
 
-public partial class TblDfrntapp
+public partial class Dfrntapp
 {
     public int AppId { get; set; }
 
     public string AppName { get; set; }
 
-    public int CreatedBy { get; set; }
+    public string CreatedBy { get; set; }
 
     public DateTime Created { get; set; }
 
-    public virtual ICollection<TblAppWidget> TblAppWidgets { get; set; } = new List<TblAppWidget>();
+    public virtual ICollection<DfrntappPage> DfrntappPages { get; set; } = new List<DfrntappPage>();
 }

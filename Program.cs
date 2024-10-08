@@ -6,6 +6,7 @@ using DespatchWeb.Automapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
+using DespatchWeb.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
@@ -71,7 +72,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<IClearListZonesRepository, ClearListZonesRepository>();
+builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
+
+builder.Services.AddScoped<IFlightStatusService, FlightStatusService>();
 
 
 

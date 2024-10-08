@@ -514,4 +514,8 @@ public partial class TblJobToday
     public string DeliveryAddressLine7 { get; set; }
 
     public string DeliveryAddressLine8 { get; set; }
+
+    public int? FromAirportId { get; set; }
+
+    public int? ToAirportId { get; set; }
 }

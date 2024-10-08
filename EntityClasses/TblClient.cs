@@ -559,6 +559,8 @@ public partial class TblClient
 
     public int? PreferRatingMethod { get; set; }
 
+    public int? InvoiceTemplateId { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

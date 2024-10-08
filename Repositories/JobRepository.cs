@@ -14,34 +14,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
-public class JobRepository : IJobRepository
+public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory),  IJobRepository
 {
-    private readonly DespatchContext _context;
-    private readonly IMapper _mapper;
-
-    public JobRepository(DespatchContext context, IMapper mapper)
-    {
-        _context = context;
-        _mapper = mapper;
-    }
-
+    
     public async Task<JobViewModel> PreBookDetailAsync(int prebookId)
     {
-        var pallets = await _context.TucJobBookingItems.Where(x => x.BookingId == prebookId).ToListAsync();
-        var jobQuery = from jobBooking in _context.TucJobBookings
-            join c in _context.TblCouriers on jobBooking.CourierId equals c.CourierId into courierJoin
+        var pallets = await Context.TucJobBookingItems.Where(x => x.BookingId == prebookId).ToListAsync();
+        var jobQuery = from jobBooking in Context.TucJobBookings
+            join c in Context.TblCouriers on jobBooking.CourierId equals c.CourierId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
-            join y in _context.TucSuburbs on jobBooking.UcbkFrom equals y.UcsuId into fromJoin
+            join y in Context.TucSuburbs on jobBooking.UcbkFrom equals y.UcsuId into fromJoin
             from yo in fromJoin.DefaultIfEmpty()
-            join z in _context.TucSuburbs on jobBooking.UcbkTo equals z.UcsuId into toJoin
+            join z in Context.TucSuburbs on jobBooking.UcbkTo equals z.UcsuId into toJoin
             from zo in toJoin.DefaultIfEmpty()
-            join t in _context.TucJobTypes on jobBooking.UcbkSpeed.Value equals t.UcjtId into speedJoin
+            join t in Context.TucJobTypes on jobBooking.UcbkSpeed.Value equals t.UcjtId into speedJoin
             from to in speedJoin.DefaultIfEmpty()
-            join cl in _context.TblClients on jobBooking.UcbkClientId equals cl.ClientId into clientJoin
+            join cl in Context.TblClients on jobBooking.UcbkClientId equals cl.ClientId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
-            join con in _context.TblContacts on jobBooking.LoggedInContactId equals con.ContactId into contactJoin
+            join con in Context.TblContacts on jobBooking.LoggedInContactId equals con.ContactId into contactJoin
             from contact in contactJoin.DefaultIfEmpty()
-            join sou in _context.TucSources on jobBooking.SourceId equals sou.SourceId into sourceJoin
+            join sou in Context.TucSources on jobBooking.SourceId equals sou.SourceId into sourceJoin
             from source in sourceJoin.DefaultIfEmpty()
             where jobBooking.UcbkId == prebookId
             select new JobViewModel
@@ -172,41 +164,41 @@ public class JobRepository : IJobRepository
 /* Job Detail */
     public async Task<JobViewModel> JobDetailAsync(int jobId)
     {
-        var jobQuery = from tblJob in _context.TblJobs
-            join c in _context.TblCouriers on tblJob.CourierId equals c.CourierId into courierJoin
+        var jobQuery = from tblJob in Context.TblJobs
+            join c in Context.TblCouriers on tblJob.CourierId equals c.CourierId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
-            join y in _context.TucSuburbs on tblJob.FromSuburbId equals y.UcsuId into fromJoin
+            join y in Context.TucSuburbs on tblJob.FromSuburbId equals y.UcsuId into fromJoin
             from fromSuburb in fromJoin.DefaultIfEmpty()
-            join z in _context.TucSuburbs on tblJob.ToSuburbId equals z.UcsuId into toJoin
+            join z in Context.TucSuburbs on tblJob.ToSuburbId equals z.UcsuId into toJoin
             from toSuburb in toJoin.DefaultIfEmpty()
-            join t in _context.TucJobTypes on tblJob.Speed equals t.UcjtId into speedJoin
+            join t in Context.TucJobTypes on tblJob.Speed equals t.UcjtId into speedJoin
             from speed in speedJoin.DefaultIfEmpty()
-            join n in _context.TucJobTypes on tblJob.NotifiedJobTypeId equals n.UcjtId into notifiedSpeedJoin
+            join n in Context.TucJobTypes on tblJob.NotifiedJobTypeId equals n.UcjtId into notifiedSpeedJoin
             from notifiedSpeed in notifiedSpeedJoin.DefaultIfEmpty()
-            join o in _context.TucJobTypes on tblJob.AcceptedJobTypeId equals o.UcjtId into originalSpeedJoin
+            join o in Context.TucJobTypes on tblJob.AcceptedJobTypeId equals o.UcjtId into originalSpeedJoin
             from originalSpeed in originalSpeedJoin.DefaultIfEmpty()
-            join cl in _context.TblClients on tblJob.ClientId equals cl.ClientId into clientJoin
+            join cl in Context.TblClients on tblJob.ClientId equals cl.ClientId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
-            join s in _context.TucJobStatuses on tblJob.Status equals s.UcjsId into statusJoin
+            join s in Context.TucJobStatuses on tblJob.Status equals s.UcjsId into statusJoin
             from status in statusJoin.DefaultIfEmpty()
-            join l in _context.TblJobLeaveNotHomes on tblJob.LeaveNotHomeId equals l.LeaveNotHomeId into
+            join l in Context.TblJobLeaveNotHomes on tblJob.LeaveNotHomeId equals l.LeaveNotHomeId into
                 leaveNotHomeJoin
             from leave in leaveNotHomeJoin.DefaultIfEmpty()
-            join u in _context.TblUndeliverableLocations on tblJob.UndeliverableLocationId equals
+            join u in Context.TblUndeliverableLocations on tblJob.UndeliverableLocationId equals
                 u.UndeliverableLocationId into undeliverableLocationJoin
             from undeliverableLocation in undeliverableLocationJoin.DefaultIfEmpty()
-            join b in _context.TblBulkJobs on tblJob.JobId equals b.JobId into bulkJoin
+            join b in Context.TblBulkJobs on tblJob.JobId equals b.JobId into bulkJoin
             from bulkJob in bulkJoin.DefaultIfEmpty()
-            join sc in _context.TblBulkRunSchedules on bulkJob.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
+            join sc in Context.TblBulkRunSchedules on bulkJob.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
             from schedule in scheduleJoin.DefaultIfEmpty()
-            join nationwide in _context.TucJobNationwides on tblJob.JobId equals nationwide.UcnwJobId into
+            join nationwide in Context.TucJobNationwides on tblJob.JobId equals nationwide.UcnwJobId into
                 nationwideJoin
             from nationwide in nationwideJoin.DefaultIfEmpty()
-            join con in _context.TblContacts on tblJob.LoggedInContactId equals con.ContactId into contactJoin
+            join con in Context.TblContacts on tblJob.LoggedInContactId equals con.ContactId into contactJoin
             from contact in contactJoin.DefaultIfEmpty()
-            join sou in _context.TucSources on tblJob.SourceId equals sou.SourceId into sourceJoin
+            join sou in Context.TucSources on tblJob.SourceId equals sou.SourceId into sourceJoin
             from source in sourceJoin.DefaultIfEmpty()
-            join st in _context.TucStaffs on tblJob.DispatcherId equals st.UcstId into staffJoin
+            join st in Context.TucStaffs on tblJob.DispatcherId equals st.UcstId into staffJoin
             from staff in staffJoin.DefaultIfEmpty()
             where tblJob.JobId == jobId
             select new JobViewModel
@@ -365,7 +357,7 @@ public class JobRepository : IJobRepository
     public async Task<List<Size>> RelatedJobs(int parentId, int clientId)
     {
         var relatedJobs = await (
-            from j in _context.TblJobs
+            from j in Context.TblJobs
             where j.RootParentId == parentId && j.ClientId == clientId
             orderby j.Date, j.Time
             select new Size
@@ -382,22 +374,22 @@ public class JobRepository : IJobRepository
     public async Task<JobViewModel> BulkJobDetail(int bulkJobId)
     {
         var today = DateTime.Today.ResetTimeToStartOfDay();
-        var jobQuery = from j in _context.TblBulkJobs
-            join c in _context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
+        var jobQuery = from j in Context.TblBulkJobs
+            join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
             from co in courierJoin.DefaultIfEmpty()
-            join t in _context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+            join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
             from to in speedJoin.DefaultIfEmpty()
-            join cl in _context.TblClients on j.ClientId equals cl.ClientId into clientJoin
+            join cl in Context.TblClients on j.ClientId equals cl.ClientId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
-            join s in _context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
+            join s in Context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
             from status in statusJoin.DefaultIfEmpty()
-            join l in _context.TblJobLeaveNotHomes on j.DeliverToLeaveId equals l.LeaveNotHomeId into leaveNotHomeJoin
+            join l in Context.TblJobLeaveNotHomes on j.DeliverToLeaveId equals l.LeaveNotHomeId into leaveNotHomeJoin
             from leave in leaveNotHomeJoin.DefaultIfEmpty()
-            join sc in _context.TblBulkRunSchedules on j.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
+            join sc in Context.TblBulkRunSchedules on j.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
             from schedule in scheduleJoin.DefaultIfEmpty()
-            join con in _context.TblContacts on j.LoggedInContactId equals con.ContactId into contactJoin
+            join con in Context.TblContacts on j.LoggedInContactId equals con.ContactId into contactJoin
             from contact in contactJoin.DefaultIfEmpty()
-            join sou in _context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
+            join sou in Context.TucSources on j.SourceId equals sou.SourceId into sourceJoin
             from source in sourceJoin.DefaultIfEmpty()
             where j.BulkJobId == bulkJobId
             select new JobViewModel
@@ -487,12 +479,12 @@ public class JobRepository : IJobRepository
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
 
-        var jobsQuery = from x in _context.TblBulkJobs
-            join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
+        var jobsQuery = from x in Context.TblBulkJobs
+            join c in Context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
             from courier in courierJoin.DefaultIfEmpty()
-            join t in _context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
+            join t in Context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
             from speed in speedJoin.DefaultIfEmpty()
-            join s in _context.TucJobStatuses on x.JobStatus equals s.UcjsId into statusJoin
+            join s in Context.TucJobStatuses on x.JobStatus equals s.UcjsId into statusJoin
             from status in statusJoin.DefaultIfEmpty()
             where x.BookDate >= fromDate && x.BookDate <= toDate && (!clientSet || x.ClientId == clientId) &&
                   (!courierSet || x.CourierId == courierId) &&
@@ -593,18 +585,18 @@ public class JobRepository : IJobRepository
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
 
-        var jobsQuery = from x in _context.TblJobs
-            join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
+        var jobsQuery = from x in Context.TblJobs
+            join c in Context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
             from co in courierJoin.DefaultIfEmpty()
-            join y in _context.TucSuburbs on x.FromSuburbId equals y.UcsuId into fromJoin
+            join y in Context.TucSuburbs on x.FromSuburbId equals y.UcsuId into fromJoin
             from yo in fromJoin.DefaultIfEmpty()
-            join z in _context.TucSuburbs on x.ToSuburbId equals z.UcsuId into toJoin
+            join z in Context.TucSuburbs on x.ToSuburbId equals z.UcsuId into toJoin
             from zo in toJoin.DefaultIfEmpty()
-            join t in _context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
+            join t in Context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
             from to in speedJoin.DefaultIfEmpty()
-            join s in _context.TucJobStatuses on x.Status equals s.UcjsId into statusJoin
+            join s in Context.TucJobStatuses on x.Status equals s.UcjsId into statusJoin
             from status in statusJoin.DefaultIfEmpty()
-            join nw in _context.TucJobNationwides on x.JobId equals nw.UcnwJobId into nationwideJoin
+            join nw in Context.TucJobNationwides on x.JobId equals nw.UcnwJobId into nationwideJoin
             from nationwide in nationwideJoin.DefaultIfEmpty()
             where x.Date >= fromDate && x.Date <= toDate && (!clientSet || x.ClientId == clientId) &&
                   (!courierSet || x.CourierId == courierId) &&
@@ -660,14 +652,14 @@ public class JobRepository : IJobRepository
         var courierSet = courierId.HasValue;
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
-        var jobsQuery = from x in _context.TucJobBookings
-            join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
+        var jobsQuery = from x in Context.TucJobBookings
+            join c in Context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
             from co in courierJoin.DefaultIfEmpty()
-            join y in _context.TucSuburbs on x.UcbkFrom equals y.UcsuId into fromJoin
+            join y in Context.TucSuburbs on x.UcbkFrom equals y.UcsuId into fromJoin
             from yo in fromJoin.DefaultIfEmpty()
-            join z in _context.TucSuburbs on x.UcbkTo equals z.UcsuId into toJoin
+            join z in Context.TucSuburbs on x.UcbkTo equals z.UcsuId into toJoin
             from zo in toJoin.DefaultIfEmpty()
-            join t in _context.TucJobTypes on (int)x.UcbkSpeed equals t.UcjtId into speedJoin
+            join t in Context.TucJobTypes on (int)x.UcbkSpeed equals t.UcjtId into speedJoin
             from to in speedJoin.DefaultIfEmpty()
             where x.UcbkNextDue >= fromDate && x.UcbkNextDue <= toDate &&
                   (!clientSet || x.UcbkClientId == clientId) &&
@@ -734,7 +726,7 @@ public class JobRepository : IJobRepository
 
     public async Task<List<JobViewModel>> PreBookJobList()
     {
-        var jobs = await _context.UvwBookingTodays
+        var jobs = await Context.UvwBookingTodays
             .FromSqlRaw(
                 "SELECT * FROM uvwBookingToday WHERE ucbkDone=0  ORDER BY CONVERT(nvarchar(10), ucbkTime, 108), ucbkJobNumber")
             .ToListAsync();
@@ -757,11 +749,11 @@ public class JobRepository : IJobRepository
 
     public async Task<List<JobViewModel>> CurrentJobList(int courierId, bool done)
     {
-        var jobs = await GetJobsQuery(_context, courierId, done).ToListAsync();
-        var jobViewModels = _mapper.Map<List<JobViewModel>>(jobs);
+        var jobs = await GetJobsQuery(Context, courierId, done).ToListAsync();
+        var jobViewModels = mapper.Map<List<JobViewModel>>(jobs);
 
         var jobIds = jobViewModels.Select(j => j.Id).ToList();
-        var palletInfoItems = await _context.TucJobItems
+        var palletInfoItems = await Context.TucJobItems
             .Where(p => jobIds.Contains(p.JobId))
             .Select(p => new
             {
@@ -810,7 +802,7 @@ public class JobRepository : IJobRepository
             return new List<JobViewModel>();
 
         if (selectedViewIds != null && !selectedViewIds.Any()) return new List<JobViewModel>();
-        var viewFilters = await _context.TblDespatchViews
+        var viewFilters = await Context.TblDespatchViews
             .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
             .Select(dv => dv.WhereCondition)
             .ToListAsync();
@@ -822,7 +814,7 @@ public class JobRepository : IJobRepository
         var sql =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
 
-        var jobs = await _context.DeswebQryDespatches
+        var jobs = await Context.DeswebQryDespatches
             .FromSqlRaw(sql)
             .AsNoTracking()
             .ToListAsync();
@@ -933,7 +925,7 @@ public class JobRepository : IJobRepository
             DeliveryLatitude = j.DeliveryLatitude,
             DeliveryLongitude = j.DeliveryLongitude,
             PalletInfo = (
-                from pa in _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
+                from pa in Context.TucJobItems.Where(p => p.JobId == j.UcjbId)
                 select new PalletInfo
                 {
                     Id = pa.JobId,
@@ -1007,7 +999,7 @@ public class JobRepository : IJobRepository
 
         if (selectedViewIds != null && !selectedViewIds.Any()) return new List<JobViewModel>();
 
-        var viewFilters = await _context.TblDespatchViews
+        var viewFilters = await Context.TblDespatchViews
             .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
             .Select(dv => dv.WhereCondition)
             .ToListAsync();
@@ -1018,7 +1010,7 @@ public class JobRepository : IJobRepository
         var sql =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
 
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql).ToListWithNoLockAsync();
+        var jobs = await Context.DeswebQryDespatches.FromSqlRaw(sql).ToListWithNoLockAsync();
         var list = jobs.Select(j => new JobViewModel
         {
             Id = j.UcjbId,
@@ -1122,7 +1114,7 @@ public class JobRepository : IJobRepository
             InternalNotes = j.JobNotes,
             ChildNotes = j.ChildNotes,
             PalletInfo = (
-                from pa in _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
+                from pa in Context.TucJobItems.Where(p => p.JobId == j.UcjbId)
                 select new PalletInfo
                 {
                     Id = pa.JobId,
@@ -1257,7 +1249,7 @@ public class JobRepository : IJobRepository
             ? $"select * from DES_qrySupportEvents_CustomerAndCourier order by {orderToUse}"
             : $"select * from DES_qrySupportEvents_CustomerAndCourier where {whereToUse} order by {orderToUse}";
 
-        var events = await _context.DesQrySupportEventsCustomerAndCouriers.FromSqlRaw(s).ToListAsync();
+        var events = await Context.DesQrySupportEventsCustomerAndCouriers.FromSqlRaw(s).ToListAsync();
         var evm = (from e in events
             select new SupportViewModel
             {
@@ -1278,19 +1270,19 @@ public class JobRepository : IJobRepository
 
     public async Task<TucEvent> GetSupportEventAsync(int id)
     {
-        var support = await _context.TucEvents.FindAsync(id);
+        var support = await Context.TucEvents.FindAsync(id);
         return support;
     }
 
     public async Task<int> UpdateSupportEventAsync(TucEvent supportEvent)
     {
-        _context.Entry(supportEvent).State = EntityState.Modified;
-        return await _context.SaveChangesAsync();
+        Context.Entry(supportEvent).State = EntityState.Modified;
+        return await Context.SaveChangesAsync();
     }
 
     public async Task CloseSupportEvent(int supportId, int staffId)
     {
-        await _context.LoadStoredProc("uspCompleteEvent")
+        await Context.LoadStoredProc("uspCompleteEvent")
             .WithSqlParam("@intEventID", supportId)
             .WithSqlParam("@intStaffID", staffId)
             .ExecuteStoredNonQueryAsync();
@@ -1298,7 +1290,7 @@ public class JobRepository : IJobRepository
 
     public async Task DispatchSelectedJobs(int courierId, int dispId, string jobIds)
     {
-        await _context.LoadStoredProc("DESWEB_stpJob_AutoDespatchSelectedJobs")
+        await Context.LoadStoredProc("DESWEB_stpJob_AutoDespatchSelectedJobs")
             .WithSqlParam("@JobIDs", jobIds)
             .WithSqlParam("@CourierID", courierId)
             .WithSqlParam("@DispID", dispId)
@@ -1307,7 +1299,7 @@ public class JobRepository : IJobRepository
         foreach (var jid in jobIds.Split(",").ToList()
                      .Where(x => !string.IsNullOrWhiteSpace(x)))
         {
-            await _context.LoadStoredProc("DES_stpJob_AutoDespatchChildJobs")
+            await Context.LoadStoredProc("DES_stpJob_AutoDespatchChildJobs")
                 .WithSqlParam("@JobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
         }
@@ -1315,7 +1307,7 @@ public class JobRepository : IJobRepository
 
     public async Task SwapPod(string job1, string job2)
     {
-        await _context.LoadStoredProc("DESWEB_qdfSwapPOD")
+        await Context.LoadStoredProc("DESWEB_qdfSwapPOD")
             .WithSqlParam("@ucjbNumber1", job1)
             .WithSqlParam("@ucjbNumber2", job2)
             .ExecuteStoredNonQueryAsync();
@@ -1326,7 +1318,7 @@ public class JobRepository : IJobRepository
         foreach (var jid in jobIds.Split(",").ToList()
                      .Where(x => !string.IsNullOrWhiteSpace(x)))
         {
-            await _context.LoadStoredProc("uspRestoreJob")
+            await Context.LoadStoredProc("uspRestoreJob")
                 .WithSqlParam("@intJobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
         }
@@ -1339,7 +1331,7 @@ public class JobRepository : IJobRepository
         foreach (var jid in jobIds.Split(",").ToList()
                      .Where(x => !string.IsNullOrWhiteSpace(x)))
         {
-            await _context.LoadStoredProc("uspReDespatchJob")
+            await Context.LoadStoredProc("uspReDespatchJob")
                 .WithSqlParam("@intJobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
         }
@@ -1347,7 +1339,7 @@ public class JobRepository : IJobRepository
 
     public async Task<List<BulkScanDetail>> ScanList(DateTime? runDate, string scan)
     {
-        var cmd = _context.LoadStoredProc("DESWeb_stpScanDetail")
+        var cmd = Context.LoadStoredProc("DESWeb_stpScanDetail")
             .WithSqlParam("@RunDate", runDate)
             .WithSqlParam("@Scan", scan);
         var scans = new List<BulkScanDetail>();
@@ -1361,7 +1353,7 @@ public class JobRepository : IJobRepository
         foreach (var jid in jobIds.Split(",").ToList()
                      .Where(x => !string.IsNullOrWhiteSpace(x)))
         {
-            await _context.LoadStoredProc("uspReassignJob")
+            await Context.LoadStoredProc("uspReassignJob")
                 .WithSqlParam("@intJobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
         }
@@ -1369,7 +1361,7 @@ public class JobRepository : IJobRepository
 
     public async Task SetFirstJob(int jobId, int courierId)
     {
-        await _context.LoadStoredProc("DES_stpJob_AutoDespatchSelectedJobs_FSCourierID")
+        await Context.LoadStoredProc("DES_stpJob_AutoDespatchSelectedJobs_FSCourierID")
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@CourierID", courierId)
             .ExecuteStoredNonQueryAsync();
@@ -1378,7 +1370,7 @@ public class JobRepository : IJobRepository
 
     public async Task TransferJob(int jobId, int courierId, int dispId)
     {
-        await _context.LoadStoredProc("DESWEB_stpJob_TransferJob")
+        await Context.LoadStoredProc("DESWEB_stpJob_TransferJob")
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@CourierID", courierId)
             .WithSqlParam("@DispID", dispId)
@@ -1387,7 +1379,7 @@ public class JobRepository : IJobRepository
 
     public async Task UpdatePodDetails(string jobNumber, int jobStatus, string podName, DateTime podTime)
     {
-        await _context.LoadStoredProc("DESWEB_qdfJob_UpdatePODDetails")
+        await Context.LoadStoredProc("DESWEB_qdfJob_UpdatePODDetails")
             .WithSqlParam("@ucjbNumber", jobNumber)
             .WithSqlParam("@ucjbJobDone", true)
             .WithSqlParam("@ucjbStatus", jobStatus)
@@ -1398,7 +1390,7 @@ public class JobRepository : IJobRepository
 
     public async Task ReSendAllJobs(int courierId)
     {
-        await _context.LoadStoredProc("uspReDespatchJobByCourierID")
+        await Context.LoadStoredProc("uspReDespatchJobByCourierID")
             .WithSqlParam("@CourierID", courierId)
             .ExecuteStoredNonQueryAsync();
     }
@@ -1407,7 +1399,7 @@ public class JobRepository : IJobRepository
     public async Task<int> MaxAutoLatePickupAlert()
     {
         DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLatePickupAlert")
+        await Context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLatePickupAlert")
             .WithSqlParam("@MaxAutoLatePickupAlert", (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
@@ -1422,7 +1414,7 @@ public class JobRepository : IJobRepository
     public async Task<int> MaxAutoLateDeliveryAlert()
     {
         DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLateDeliveryAlert")
+        await Context.LoadStoredProc("GEN_qdfSetting_GetMaxAutoLateDeliveryAlert")
             .WithSqlParam("@MaxAutoLateDeliveryAlert", (dbParam) =>
             {
                 dbParam.Direction = System.Data.ParameterDirection.Output;
@@ -1449,7 +1441,7 @@ public class JobRepository : IJobRepository
         DateTime booked, int size)
     {
         DbParameter outputMaxParam = null;
-        await _context.LoadStoredProc("UTL_stpFuelSurcharge_InclusiveAmount")
+        await Context.LoadStoredProc("UTL_stpFuelSurcharge_InclusiveAmount")
             .WithSqlParam("@ClientID", clientId)
             .WithSqlParam("@Date", booked)
             .WithSqlParam("@Size", size)
@@ -1470,7 +1462,7 @@ public class JobRepository : IJobRepository
 
     public async Task ResetLateEvent(int jobId, int eventType)
     {
-        await _context.LoadStoredProc("DESWEB_qdfLateCall_Reset")
+        await Context.LoadStoredProc("DESWEB_qdfLateCall_Reset")
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@Type", eventType)
             .ExecuteStoredNonQueryAsync();
@@ -1479,7 +1471,7 @@ public class JobRepository : IJobRepository
     public async Task LatePickup(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher,
         bool calculationRequired)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobPickupLateCall")
+        await Context.LoadStoredProc("DESWEB_stpUpdateJobPickupLateCall")
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@BookedSpeed", bookedSpeed)
             .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
@@ -1492,7 +1484,7 @@ public class JobRepository : IJobRepository
     public async Task LateDelivery(int jobId, string bookedSpeed, string notifiedSpeed, int late, string despatcher,
         bool calculationRequired)
     {
-        await _context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryLateCall")
+        await Context.LoadStoredProc("DESWEB_stpUpdateJobDeliveryLateCall")
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@BookedSpeed", bookedSpeed)
             .WithSqlParam("@NotifiedSpeed", notifiedSpeed)
@@ -1507,7 +1499,7 @@ public class JobRepository : IJobRepository
         foreach (var jid in jobIds.Split(",").ToList()
                      .Where(x => !string.IsNullOrWhiteSpace(x)))
         {
-            await _context.LoadStoredProc("DES_stpJob_SplitJobRestore")
+            await Context.LoadStoredProc("DES_stpJob_SplitJobRestore")
                 .WithSqlParam("@JobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
         }
@@ -1518,7 +1510,7 @@ public class JobRepository : IJobRepository
         foreach (var jid in jobIds.Split(",").ToList()
                      .Where(x => !string.IsNullOrWhiteSpace(x)))
         {
-            await _context.LoadStoredProc("uspRestoreJob")
+            await Context.LoadStoredProc("uspRestoreJob")
                 .WithSqlParam("@intJobID", int.Parse(jid))
                 .ExecuteStoredNonQueryAsync();
         }
@@ -1526,7 +1518,7 @@ public class JobRepository : IJobRepository
 
     public async Task MessageCourier(int courierId, int dispId, string despatcher, string message)
     {
-        await _context.LoadStoredProc("DES_stpManualMessage_Insert")
+        await Context.LoadStoredProc("DES_stpManualMessage_Insert")
             .WithSqlParam("@SendToID", courierId)
             .WithSqlParam("@StaffID", dispId)
             .WithSqlParam("@WindowsUser", despatcher)
@@ -1536,14 +1528,14 @@ public class JobRepository : IJobRepository
 
     public async Task VoidJob(int jobId)
     {
-        await _context.LoadStoredProc("DES_stpJob_Void")
+        await Context.LoadStoredProc("DES_stpJob_Void")
             .WithSqlParam("@JobID", jobId)
             .ExecuteStoredNonQueryAsync();
     }
 
     public async Task SplitJob(int jobId, string user)
     {
-        await _context.Procedures.DES_stpJob_SplitJobAsync(
+        await Context.Procedures.DES_stpJob_SplitJobAsync(
             jobId,
             false,
             user
@@ -1553,7 +1545,7 @@ public class JobRepository : IJobRepository
     public async Task<string> UnSplitJob(int jobId)
     {
         DbParameter messageOutput = null;
-        await _context.LoadStoredProc("DES_stpJob_UnSplit")
+        await Context.LoadStoredProc("DES_stpJob_UnSplit")
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@Message", (dbParam) =>
             {
@@ -1569,7 +1561,7 @@ public class JobRepository : IJobRepository
     public async Task UpdateSplitJobAddress(int jobId, int toSuburbId, string address, decimal deliveryLat,
         decimal deliveryLng)
     {
-        await _context.Procedures.DESWEB_stpUpdateSplitJobMeetingAddressAsync(
+        await Context.Procedures.DESWEB_stpUpdateSplitJobMeetingAddressAsync(
             jobId,
             toSuburbId,
             address,
@@ -1580,7 +1572,7 @@ public class JobRepository : IJobRepository
 
     public async Task ReRateSplitJob(int jobId)
     {
-        await _context.LoadStoredProc("DES_stpJob_SplitJob_ReRate")
+        await Context.LoadStoredProc("DES_stpJob_SplitJob_ReRate")
             .WithSqlParam("@ParentJobID", jobId)
             .WithSqlParam("@PreBookJob", false)
             .ExecuteStoredNonQueryAsync();
@@ -1588,21 +1580,21 @@ public class JobRepository : IJobRepository
 
     public async Task FinishSplitJobProcess(int jobId, string despatcher)
     {
-        await _context.Procedures.DES_stpJob_ColsolidateMarsInformationAsync(
+        await Context.Procedures.DES_stpJob_ColsolidateMarsInformationAsync(
             jobId,
             false,
             despatcher,
             null
         );
 
-        await _context.Procedures.DES_stpJob_DisplayInDespatchAsync(
+        await Context.Procedures.DES_stpJob_DisplayInDespatchAsync(
             jobId
         );
     }
 
     public async Task<List<SuburbLookup>> SuburbsAsync()
     {
-        return await _context.TucSuburbs
+        return await Context.TucSuburbs
             .Select(x => new SuburbLookup
             {
                 ID = x.UcsuId,
@@ -1614,7 +1606,7 @@ public class JobRepository : IJobRepository
 
     public async Task<List<Lookup>> SpeedsAsync()
     {
-        return await _context.DesQryAllJobTypes
+        return await Context.DesQryAllJobTypes
             .Select(x => new Lookup
             {
                 ID = x.JobTypeId,
@@ -1625,8 +1617,8 @@ public class JobRepository : IJobRepository
 
     public async Task<List<Lookup>> ContactsAsync(int clientId)
     {
-        return await _context.UtlQryContactLookups
-            .Join(_context.TblClientContacts,
+        return await Context.UtlQryContactLookups
+            .Join(Context.TblClientContacts,
                 s => s.ContactId,
                 cc => cc.ContactId,
                 (s, cc) => new { s, cc })
@@ -1642,8 +1634,8 @@ public class JobRepository : IJobRepository
 
     public Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId)
     {
-        var data = (from s in _context.UtlQryContactLookups
-            join cc in _context.TblClientContacts on s.ContactId equals cc.ContactId into cjoin
+        var data = (from s in Context.UtlQryContactLookups
+            join cc in Context.TblClientContacts on s.ContactId equals cc.ContactId into cjoin
             from co in cjoin
             where co.ClientId == clientId && s.Active == true
             select new ClientContactDetailViewModel
@@ -1657,7 +1649,7 @@ public class JobRepository : IJobRepository
 
     public async Task<List<Lookup>> LeaveParcelLocationsAsync()
     {
-        return await _context.TblJobLeaveNotHomes
+        return await Context.TblJobLeaveNotHomes
             .OrderBy(l => l.Sequence)
             .Select(x => new Lookup
             {
@@ -1669,7 +1661,7 @@ public class JobRepository : IJobRepository
 
     public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync()
     {
-        return await _context.TblUndeliverableLocations
+        return await Context.TblUndeliverableLocations
             .OrderBy(u => u.Name)
             .Select(x => new UndeliverableLocation
             {
@@ -1682,7 +1674,7 @@ public class JobRepository : IJobRepository
 
     public async Task<List<InternalStatus>> InternalStatusListAsync()
     {
-        return await _context.TucJobInternalStatuses
+        return await Context.TucJobInternalStatuses
             .OrderBy(u => u.Tcis)
             .Select(x => new InternalStatus
             {
@@ -1696,7 +1688,7 @@ public class JobRepository : IJobRepository
 
     public async Task<List<Lookup>> EventTypeListAsync()
     {
-        return await _context.TucEventTypes
+        return await Context.TucEventTypes
             .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
             .OrderBy(u => u.UcetName)
             .Select(x => new Lookup
@@ -1715,7 +1707,7 @@ public class JobRepository : IJobRepository
         DbParameter outputDescriptionParam = null;
         DbParameter outputRateParam = null;
 
-        await _context.LoadStoredProc("DES_stpJob_Truck_Rate_Described")
+        await Context.LoadStoredProc("DES_stpJob_Truck_Rate_Described")
             .WithSqlParam("@ClientID", clientId)
             .WithSqlParam("@FromSuburbID", fromId)
             .WithSqlParam("@ToSuburbID", toId)
@@ -1757,7 +1749,7 @@ public class JobRepository : IJobRepository
         DbParameter outputDescriptionParam = null;
         DbParameter outputRateParam = null;
 
-        await _context.LoadStoredProc("DES_stpJob_Truck_Rate_Described")
+        await Context.LoadStoredProc("DES_stpJob_Truck_Rate_Described")
             .WithSqlParam("@ClientID", clientId)
             .WithSqlParam("@FromSuburbID", fromId)
             .WithSqlParam("@ToSuburbID", toId)
@@ -1798,7 +1790,7 @@ public class JobRepository : IJobRepository
     {
         var curAmount = new OutputParameter<decimal?>();
 
-        await _context.Procedures.sp_RateJob2Async(
+        await Context.Procedures.sp_RateJob2Async(
             clientId,
             fromId,
             toId,
@@ -1827,7 +1819,7 @@ public class JobRepository : IJobRepository
         DbParameter outputDescriptionParam = null;
         DbParameter outputCourierParam = null;
 
-        await _context.LoadStoredProc("sp_RateJob_Described")
+        await Context.LoadStoredProc("sp_RateJob_Described")
             .WithSqlParam("@intClientID", clientId)
             .WithSqlParam("@intFromID", fromId)
             .WithSqlParam("@intToID", toId)
@@ -1864,7 +1856,7 @@ public class JobRepository : IJobRepository
     public async Task<DirectToASAPViewModel> DirectToAsap(int jobId)
     {
         var result = new List<DirectToASAPViewModel>();
-        await _context.LoadStoredProc("DESWEB_stpJob_DirectToASAP")
+        await Context.LoadStoredProc("DESWEB_stpJob_DirectToASAP")
             .WithSqlParam("@JobID", jobId)
             .ExecuteStoredProcAsync(handle => { result = handle.ReadToList<DirectToASAPViewModel>().ToList(); });
         return result.FirstOrDefault();
@@ -1874,7 +1866,7 @@ public class JobRepository : IJobRepository
     {
         DbParameter outputParam = null;
         DbParameter nameOutput = null;
-        await _context.LoadStoredProc("DESWEB_stpJob_UpdateFirstAvailableSpeed")
+        await Context.LoadStoredProc("DESWEB_stpJob_UpdateFirstAvailableSpeed")
             .WithSqlParam("@JobID", jobId)
             .WithSqlParam("@JobTypeID", (dbParam) =>
             {
@@ -1900,24 +1892,24 @@ public class JobRepository : IJobRepository
 
     public async Task<SettingsViewModel> SettingsAsync()
     {
-        var result = await _context.Procedures.DES_stpSettingsAsync();
+        var result = await Context.Procedures.DES_stpSettingsAsync();
         var settingsResult = result.FirstOrDefault();
 
         return settingsResult == null
             ? new SettingsViewModel()
-            : _mapper.Map<SettingsViewModel>(settingsResult);
+            : mapper.Map<SettingsViewModel>(settingsResult);
     }
 
     public async Task AddPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpJobItems_InsertAsync(
+        await Context.Procedures.DESWEB_stpJobItems_InsertAsync(
             p.Id, p.Quantity, p.Weight, p.Length, p.Height, p.Depth,
             p.Pu, p.Do, p.DgClass, p.Notes, preBook, despatcher);
     }
 
     public async Task EditPalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpJobItems_UpdateAsync(
+        await Context.Procedures.DESWEB_stpJobItems_UpdateAsync(
             p.Id, p.ItemId, p.Quantity, p.Weight, p.Length, p.Height,
             p.Depth,
             p.Pu, p.Do, p.DgClass, p.Notes, preBook, despatcher);
@@ -1925,24 +1917,24 @@ public class JobRepository : IJobRepository
 
     public async Task DeletePalletInfoAsync(PalletInfo p, bool preBook, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpJobItems_DeleteAsync(p.Id, p.ItemId, preBook,
+        await Context.Procedures.DESWEB_stpJobItems_DeleteAsync(p.Id, p.ItemId, preBook,
             despatcher);
     }
 
     public async Task SendPrebookJobAsync(int jobId)
     {
-        await _context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(jobId);
+        await Context.Procedures.DES_stpJobBooking_InsertJobAndChildrenAsync(jobId);
     }
 
     public async Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId)
     {
-        await _context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher,
+        await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, despatcher,
             staffId);
     }
 
     public async Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit)
     {
-        var result = await _context.Procedures.qry_tucJobItemsAsync(jobId, truckWeightLimit);
+        var result = await Context.Procedures.qry_tucJobItemsAsync(jobId, truckWeightLimit);
         return result.Select(item => new TruckItemsSummary
             {
                 intQuantity = item.intQuantity,
@@ -1960,7 +1952,7 @@ public class JobRepository : IJobRepository
     public async Task UpdateDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
         decimal deliveryLng, bool cbd, decimal rate, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobDeliveryAddressAsync(jobId, toSuburbId,
+        await Context.Procedures.DESWEB_stpUpdateJobDeliveryAddressAsync(jobId, toSuburbId,
             address, deliveryLat,
             deliveryLng, cbd, rate, despatcher);
     }
@@ -1968,7 +1960,7 @@ public class JobRepository : IJobRepository
     public async Task UpdateBulkDeliveryAddressAsync(int bulkJobId, string toSuburb, int toPostCode, string address,
         decimal deliveryLat, decimal deliveryLng, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpUpdateBulkJobDeliveryAddressAsync(bulkJobId, toSuburb,
+        await Context.Procedures.DESWEB_stpUpdateBulkJobDeliveryAddressAsync(bulkJobId, toSuburb,
             toPostCode, address,
             deliveryLat, deliveryLng, despatcher);
     }
@@ -1976,20 +1968,20 @@ public class JobRepository : IJobRepository
     public async Task UpdatePickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
         decimal pickupLng, bool cbd, decimal rate, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobPickupAddressAsync(jobId, fromSuburbId,
+        await Context.Procedures.DESWEB_stpUpdateJobPickupAddressAsync(jobId, fromSuburbId,
             address, pickupLat,
             pickupLng, cbd, rate, despatcher);
     }
 
     public async Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobTypeAsync(jobId, jobType, despatcher);
+        await Context.Procedures.DESWEB_stpUpdateJobTypeAsync(jobId, jobType, despatcher);
     }
 
     public async Task UpdateBulkPickupAddressAsync(int bulkJobId, string fromSuburb, int fromPostCode, string address,
         decimal pickupLat, decimal pickupLng, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpUpdateBulkJobPickupAddressAsync(bulkJobId,
+        await Context.Procedures.DESWEB_stpUpdateBulkJobPickupAddressAsync(bulkJobId,
             fromSuburb, fromPostCode,
             address, pickupLat, pickupLng, despatcher);
     }
@@ -1997,7 +1989,7 @@ public class JobRepository : IJobRepository
     public async Task UpdateBookingDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
         decimal deliveryLng, bool cbd, decimal rate, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobBookingDeliveryAddressAsync(jobId, toSuburbId,
+        await Context.Procedures.DESWEB_stpUpdateJobBookingDeliveryAddressAsync(jobId, toSuburbId,
             address,
             deliveryLat, deliveryLng, cbd, rate, despatcher);
     }
@@ -2005,14 +1997,14 @@ public class JobRepository : IJobRepository
     public async Task UpdateBookingPickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
         decimal pickupLng, bool cbd, decimal rate, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobBookingPickupAddressAsync(jobId, fromSuburbId,
+        await Context.Procedures.DESWEB_stpUpdateJobBookingPickupAddressAsync(jobId, fromSuburbId,
             address, pickupLat, pickupLng, cbd, rate,
             despatcher);
     }
 
     public async Task ReleaseBulkJobAsync(string jobNumber, DateTime bookDate)
     {
-        await _context.Procedures.UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(
+        await Context.Procedures.UTL_stpJob_tblBulkJob_ReleaseByJobNumberAsync(
             jobNumber,
             bookDate);
     }
@@ -2020,7 +2012,7 @@ public class JobRepository : IJobRepository
     public async Task UpdateJobAsync(int jobId, string field, string value, decimal? rate, string despatcher,
         int staffId)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobAsync(
+        await Context.Procedures.DESWEB_stpUpdateJobAsync(
             jobId,
             field,
             value,
@@ -2033,7 +2025,7 @@ public class JobRepository : IJobRepository
     public async Task UpdateBulkJobAsync(int bulkJobId, string field, string value, decimal? rate, string despatcher,
         int staffId)
     {
-        await _context.Procedures.DESWEB_stpUpdateBulkJobAsync(
+        await Context.Procedures.DESWEB_stpUpdateBulkJobAsync(
             bulkJobId,
             field,
             value,
@@ -2045,7 +2037,7 @@ public class JobRepository : IJobRepository
     public async Task UpdateJobBookingAsync(int jobId, string field, string value, decimal? rate, string despatcher,
         int staffId)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobBookingAsync(
+        await Context.Procedures.DESWEB_stpUpdateJobBookingAsync(
             jobId,
             field,
             value,
@@ -2056,7 +2048,7 @@ public class JobRepository : IJobRepository
 
     public async Task AddNoteAsync(int jobId, string note, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpJob_AddNotesAsync(
+        await Context.Procedures.DESWEB_stpJob_AddNotesAsync(
             jobId,
             note,
             despatcher);
@@ -2064,7 +2056,7 @@ public class JobRepository : IJobRepository
 
     public async Task AddBulkJobNoteAsync(int bulkJobId, string note, string despatcher)
     {
-        await _context.Procedures.DESWEB_stpBulkJob_AddNotesAsync(
+        await Context.Procedures.DESWEB_stpBulkJob_AddNotesAsync(
             bulkJobId,
             note,
             despatcher);
@@ -2072,7 +2064,7 @@ public class JobRepository : IJobRepository
 
     public async Task AddJobBookingNoteAsync(int jobId, string note, string despatcher)
     {
-        await _context.Procedures.DES_stpJobBooking_AddNotesAsync(
+        await Context.Procedures.DES_stpJobBooking_AddNotesAsync(
             jobId,
             note,
             despatcher);
@@ -2082,7 +2074,7 @@ public class JobRepository : IJobRepository
     {
         var jobId = new OutputParameter<int?>();
 
-        await _context.Procedures.DESWEB_stpQuickCreateJobAsync(
+        await Context.Procedures.DESWEB_stpQuickCreateJobAsync(
             job.ClientId,
             job.PickUpAddress?.AddressLine1,
             job.PickUpAddress?.AddressLine2,
@@ -2126,7 +2118,7 @@ public class JobRepository : IJobRepository
 
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
     {
-        await _context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
+        await Context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
             viewModel?.FromCourierId,
             viewModel?.ToCourierId,
             viewModel?.Amount,
@@ -2138,11 +2130,11 @@ public class JobRepository : IJobRepository
     public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
     {
         var query =
-            from cas in _context.TblClientAvailableSpeeds
+            from cas in Context.TblClientAvailableSpeeds
             where cas.ClientId == clientId && cas.SpeedId == speedId
-            join casi in _context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
+            join casi in Context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
             where casi.Active
-            join ci in _context.TucClientItems on casi.ClientItemId equals ci.ItemId
+            join ci in Context.TucClientItems on casi.ClientItemId equals ci.ItemId
             select ci;
 
         var count = await query.CountAsync();
@@ -2168,16 +2160,16 @@ public class JobRepository : IJobRepository
 
         var job = new TucJob { UcjbId = jobId, ClientItemIds = clientItemsString, UcjbAmount = totalCost };
 
-        _context.TucJobs.Attach(job);
-        _context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
-        _context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
-        await _context.SaveChangesAsync();
+        Context.TucJobs.Attach(job);
+        Context.Entry(job).Property(x => x.ClientItemIds).IsModified = true;
+        Context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
+        await Context.SaveChangesAsync();
     }
 
 
     public async Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId)
     {
-        var airportCodes = await _context.TucJobs
+        var airportCodes = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new
             {
@@ -2262,7 +2254,7 @@ public class JobRepository : IJobRepository
     {
         if (!rootParentId.HasValue) return new List<Size>();
 
-        return await _context.TblJobs
+        return await Context.TblJobs
             .Where(r => r.ParentId == rootParentId && r.ClientId == clientId)
             .OrderBy(t => t.Date)
             .ThenBy(x => x.Time)
@@ -2280,7 +2272,7 @@ public class JobRepository : IJobRepository
         if (podPhoto != null) photos.Add(podPhoto);
         if (deliverySignature != null) photos.Add(deliverySignature);
 
-        photos.AddRange(await _context.DeliveryPhotos
+        photos.AddRange(await Context.DeliveryPhotos
             .Where(d => d.JobId == jobId)
             .Select(del => del.Photo)
             .ToListAsync());
@@ -2290,7 +2282,7 @@ public class JobRepository : IJobRepository
 
     private async Task<JobInfo> GetJobInfo(int jobId)
     {
-        return await _context.TucJobs
+        return await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new JobInfo
             {
@@ -2314,11 +2306,11 @@ public class JobRepository : IJobRepository
         IEnumerable<int> clientItemIds)
     {
         var query =
-            from cas in _context.TblClientAvailableSpeeds
+            from cas in Context.TblClientAvailableSpeeds
             where cas.ClientId == clientId && cas.SpeedId == speedId
-            join casi in _context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
+            join casi in Context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
             where casi.Active
-            join ci in _context.TucClientItems on casi.ClientItemId equals ci.ItemId
+            join ci in Context.TucClientItems on casi.ClientItemId equals ci.ItemId
             where ci.ClientId == clientId
             orderby ci.Name
             select new ClientItemsViewModel
@@ -2351,7 +2343,7 @@ public class JobRepository : IJobRepository
     private async Task<decimal> CalculateAmountAsync(int clientId, decimal amount)
     {
         var outputParam = new OutputParameter<decimal?>();
-        await _context.Procedures.UTL_stpPPD_ExclusiveAmountAsync(
+        await Context.Procedures.UTL_stpPPD_ExclusiveAmountAsync(
             clientId,
             amount,
             outputParam

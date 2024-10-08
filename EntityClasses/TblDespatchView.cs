@@ -31,13 +31,11 @@ public partial class TblDespatchView
 
     public int? ZoneGroupId { get; set; }
 
-    public string AreaGroupIds { get; set; }
-
-    public string ClearListAreaIds { get; set; }
-
     public virtual ICollection<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; } = new List<DespatchViewZoneGroup>();
 
-    public virtual ICollection<UserDespatchViewPreference> UserDespatchViewPreferences { get; set; } = new List<UserDespatchViewPreference>();
+    public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; } = new List<DfrntappUserViewPermission>();
+
+    public virtual ICollection<DfrntpageView> DfrntpageViews { get; set; } = new List<DfrntpageView>();
 
     public virtual ZoneGroup ZoneGroup { get; set; }
 }

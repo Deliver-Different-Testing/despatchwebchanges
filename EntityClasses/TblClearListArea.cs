@@ -23,9 +23,9 @@ public partial class TblClearListArea
 
     public string LastModifiedBy { get; set; }
 
-    public int Order { get; set; }
-
     public string Notes { get; set; }
+
+    public int Order { get; set; }
 
     public virtual ICollection<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; } = new List<TblClearListAreaPolygon>();
 

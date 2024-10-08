@@ -348,4 +348,8 @@ public partial class TblJob
     public string DeliveryAddressLine7 { get; set; }
 
     public string DeliveryAddressLine8 { get; set; }
+
+    public int? ToAirportId { get; set; }
+
+    public int? FromAirportId { get; set; }
 }

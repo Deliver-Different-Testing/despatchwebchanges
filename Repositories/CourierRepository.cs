@@ -72,7 +72,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
         var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
-        return _mapper.Map<List<PotentialCouriersViewModel>>(results);
+        return mapper.Map<List<PotentialCouriersViewModel>>(results);
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
     {
         var results = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
-        return _mapper.Map<List<ActiveCouriersViewModel>>(results);
+        return mapper.Map<List<ActiveCouriersViewModel>>(results);
     }
 
     /// <summary>
@@ -103,7 +103,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     public async Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end)
     {
         var results = await Context.Procedures.MAP_stpCourierGPS_LastPositionTodayAsync(code);
-        return _mapper.Map<List<CourierPosition>>(results);
+        return mapper.Map<List<CourierPosition>>(results);
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
     {
         var results = await Context.Procedures.DESWEB_qryCourierActiveAsync();
-        return _mapper.Map<List<ActiveCouriersViewModel>>(results);
+        return mapper.Map<List<ActiveCouriersViewModel>>(results);
     }
 
 
