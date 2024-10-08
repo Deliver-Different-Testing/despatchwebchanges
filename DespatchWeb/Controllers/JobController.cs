@@ -770,7 +770,10 @@ public class JobController : Controller
         string despatcherName, int staffId)
     {
         await _jobRepo.UpdateJobAsync(jobId, field, value, rate, despatcherName, staffId);
-        return Json("OK");
+
+        // Get the new job detail to update the frontend
+        var jobDetail = await _jobRepo.JobDetailAsync(jobId);
+        return Json(jobDetail);
     }
 
     public async Task<IActionResult> UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate,

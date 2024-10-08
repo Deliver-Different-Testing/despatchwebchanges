@@ -1,5 +1,5 @@
 angular.module("uDispatch")
-    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages) => {
+    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope", ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope) => {
         // Initialize variables and scope properties
         function initializeVariables() {
             $scope.name = "Home";
@@ -387,6 +387,21 @@ angular.module("uDispatch")
             }
         };
 
+        $rootScope.$on('jobUpdated', (event, updatedJob) => {
+            // Find the job in the list and update it
+            const index = $scope.jobList.findIndex(job => job.id === updatedJob.id);
+            if (index !== -1) {
+                $scope.jobList[index] = updatedJob;
+            }
+
+            // If it's the currently selected job, update that as well
+            if ($scope.currentJob && $scope.currentJob.id === updatedJob.id) {
+                $scope.currentJob = updatedJob;
+            }
+
+            // Ensure the view is updated
+            $scope.$apply();
+        });
 
 ///////////////////////////////
 // LAYOUT
@@ -689,7 +704,7 @@ angular.module("uDispatch")
         };
 
         /**
-         * @param driverDestination
+         * @param {DriverDes} driverDestination
          */
         $scope.selectClearList = async (driverDestination) => {
             try {
