@@ -2327,7 +2327,8 @@ public class JobRepository : IJobRepository
                             whereClause.Append("Reprice = 1");
                             break;
                         default:
-                            throw new ArgumentOutOfRangeException(nameof(windowPane), windowPane, null);
+                            whereClause.Append(string.Empty);
+                            break;
                     }
 
                     break;
@@ -2354,7 +2355,8 @@ public class JobRepository : IJobRepository
                 whereClause.Append("(ucjbStatus = 6)");
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(windowPane), windowPane, null);
+                whereClause.Append(string.Empty);
+                break;
         }
 
         if (!isInternal && !string.IsNullOrEmpty(clientIds)) whereClause.Append($" AND ucjbClientID in ({clientIds})");

@@ -731,7 +731,7 @@ class NationwideService {
      * @param {Array} selectedAreas
      */
     getNationwideJobsNew(queryParams, selectedClients, internal, selectedAreas) {
-        return this.getNationwideJobs('nationwideJobListPOD', queryParams, selectedClients, internal, selectedAreas);
+        return this.getNationwideJobs('nationwideJobListNew', queryParams, selectedClients, internal, selectedAreas);
     }
 
     /**
