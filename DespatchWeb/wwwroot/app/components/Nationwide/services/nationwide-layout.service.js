@@ -42,22 +42,22 @@ class NationwideLayoutService {
         /** @type {Box} */
         this.mapTableBox = {name: "map", height: this.BOX_HEIGHT_XSMALL};
         /** @type {Box} */
-        this.jobDetailBox = {name: "jobDetail", height: this.BOX_HEIGHT_SMALL};
+        this.jobDetailBox = {name: "jobDetail", height: this.BOX_HEIGHT_LARGE};
 
         // Define columns
         /** @type {Column} */
         this.column1 = {
-            id: "col1", width: this.COL_WIDTH_LARGE, boxes: [this.jobsListBox, this.jobsListPODBox]
+            id: "col1", width: this.COL_WIDTH_LARGE, boxes: [this.jobsListBox, this.flightDataTableBox]
         };
         /** @type {Column} */
         this.column2 = {
-            id: "col2", width: this.COL_WIDTH_LARGE, boxes: [this.jobsListDeliveryBox, this.jobsListRepriceBox]
+            id: "col2", width: this.COL_WIDTH_LARGE, boxes: [this.jobDetailBox, this.mapTableBox]
         };
         /** @type {Column} */
         this.column3 = {
             id: "col3",
             width: this.COL_WIDTH_MEDIUM,
-            boxes: [this.jobDetailBox, this.flightDataTableBox, this.mapTableBox]
+            boxes: [this.jobsListPODBox, this.jobsListDeliveryBox, this.jobsListRepriceBox]
         };
 
         // Construct the layout
@@ -259,8 +259,4 @@ class NationwideLayoutService {
     }
 }
 
-angular.module('uDispatch').service('NationwideLayoutService', [
-    '$window',
-    '$mdDialog',
-    ($window, $mdDialog) => new NationwideLayoutService($window, $mdDialog)
-]);
+angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', ($window, $mdDialog) => new NationwideLayoutService($window, $mdDialog)]);
