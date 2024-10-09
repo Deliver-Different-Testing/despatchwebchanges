@@ -1181,7 +1181,9 @@ public class JobRepository : IJobRepository
             AirportOnly = j.AirportOnly,
             HasNationwide = j.HasNationwide.HasValue,
             LoggedInContactName = j.LoggedInContactName,
-            StatusName = j.StatusName
+            StatusName = j.StatusName,
+            ToAirportId = j.ToAirportId,
+            FromAirportId = j.FromAirportId
         }).ToList();
 
 
