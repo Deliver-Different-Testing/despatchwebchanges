@@ -1,5 +1,5 @@
 angular.module("uDispatch")
-    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages) => {
+    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope", ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope) => {
         // Initialize variables and scope properties
         function initializeVariables() {
             $scope.name = "Home";
@@ -218,17 +218,6 @@ angular.module("uDispatch")
         async function initializeAreas() {
             if ($scope.areas && $scope.areas.length > 0) {
                 $scope.selectedAreas.push($scope.areas[0]);
-            } else {
-                try {
-                    await $mdDialog.show($mdDialog.alert()
-                        .clickOutsideToClose(true)
-                        .title('No Views Available')
-                        .textContent('There are no dispatch views set up for your user account.\n\n' + 'Please contact your system administrator to add views in the Admin Manager.\n\n' + 'Views are necessary to filter and organize dispatch information effectively.')
-                        .ariaLabel('No Views Available Alert')
-                        .ok('Understood'));
-                } catch (error) {
-                    console.error('Error showing dialog:', error);
-                }
             }
         }
 
@@ -398,6 +387,21 @@ angular.module("uDispatch")
             }
         };
 
+        $rootScope.$on('jobUpdated', (event, updatedJob) => {
+            // Find the job in the list and update it
+            const index = $scope.jobList.findIndex(job => job.id === updatedJob.id);
+            if (index !== -1) {
+                $scope.jobList[index] = updatedJob;
+            }
+
+            // If it's the currently selected job, update that as well
+            if ($scope.currentJob && $scope.currentJob.id === updatedJob.id) {
+                $scope.currentJob = updatedJob;
+            }
+
+            // Ensure the view is updated
+            $scope.$apply();
+        });
 
 ///////////////////////////////
 // LAYOUT
@@ -700,7 +704,7 @@ angular.module("uDispatch")
         };
 
         /**
-         * @param driverDestination
+         * @param {DriverDes} driverDestination
          */
         $scope.selectClearList = async (driverDestination) => {
             try {
@@ -2841,6 +2845,9 @@ angular.module("uDispatch")
          * @param {Job} currentJob
          */
         $scope.setSplitJobMeetingPoint = async ($event, currentJob) => {
+            /**
+             * @param {Job} job
+             */
             const getDeliveryLocation = (job) => ({
                 lat: job.deliveryLatitude || "", long: job.deliveryLongitude || ""
             });

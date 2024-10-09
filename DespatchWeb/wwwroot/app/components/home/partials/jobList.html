@@ -3,7 +3,7 @@
         <table md-progress="promise" md-row-select md-table multiple ng-model="selected">
             <thead md-head md-on-reorder="onReorder" md-order="query.order">
             <tr md-row>
-                <th class="col-sm" md-column><span>T</span></th>
+                <th class="col-md" md-column><span>T</span></th>
                 <th class="col-md" md-column><span>Speed</span></th>
                 <th class="col-xs" md-column><span>N</span></th>
                 <th class="col-xs" md-column><span>V</span></th>
@@ -28,7 +28,7 @@
                 <td md-cell>{{job.time | date: 'HH:mm'}}</td>
                 <td md-cell>{{job.speed}}</td>
                 <td md-cell>{{job.notify}}</td>
-                <td md-cell>{{jobTableService.attention(job)}}</td>
+                <td md-cell>{{attention(job)}}</td>
                 <td md-cell>
                     <span ng-click="setEventsMenu($event)">{{job.jobNo}}</span>
                 </td>

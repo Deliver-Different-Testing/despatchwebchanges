@@ -819,7 +819,9 @@ class DispatchData {
             field = 'ToContactName';
         }
         const method = preBook ? 'job/UpdateJobBooking' : 'job/UpdateJob';
-        return this._$http.post(method + '?jobId=' + jobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        const response = await this._$http.post(method + '?jobId=' + jobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+
+        return response.data;
     }
 
     /**

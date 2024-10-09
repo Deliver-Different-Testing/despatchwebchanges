@@ -1,7 +1,8 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Controllers;
@@ -28,9 +29,6 @@ public class NationwideJobController : Controller
         var flightOptions =
             await _flightStatusService.GetFlightsAsync(fromAirport, toAirport, departureDate);
 
-        if (flightOptions == null || !flightOptions.Any())
-            return NotFound("No flight options found for the specified criteria.");
-
-        return Json(flightOptions);
+        return Json(flightOptions ?? new List<FlightOptionsViewModel>());
     }
 }

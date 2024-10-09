@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Reflection;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Http;
@@ -40,9 +41,10 @@ public class JobController : Controller
     {
         try
         {
+            // Validate Client Access
             if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-            if (despatchViewIds != null && !despatchViewIds.Any()) return Json(new List<JobViewModel>());
+            // Get jobs
             var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
                 queryParams.Asc, isInternal, clientIds, despatchViewIds);
             return Json(result);
@@ -64,7 +66,7 @@ public class JobController : Controller
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
         var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, 1, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.JobList, despatchViewIds);
         return Json(result);
     }
 
@@ -74,7 +76,7 @@ public class JobController : Controller
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
         var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, 2, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Pod, despatchViewIds);
         return Json(result);
     }
 
@@ -85,7 +87,7 @@ public class JobController : Controller
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
         var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, 3, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.BookDelivery, despatchViewIds);
         return Json(result);
     }
 
@@ -95,7 +97,7 @@ public class JobController : Controller
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
         var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, 4, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Reprice, despatchViewIds);
         return Json(result);
     }
 
@@ -767,8 +769,19 @@ public class JobController : Controller
     public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal? rate,
         string despatcherName, int staffId)
     {
-        await _jobRepo.UpdateJobAsync(jobId, field, value, rate, despatcherName, staffId);
-        return Json("OK");
+        try
+        {
+            await _jobRepo.UpdateJobAsync(jobId, field, value, rate, despatcherName, staffId);
+
+            // Get the new job detail to update the frontend
+            var jobDetail = await _jobRepo.JobDetailAsync(jobId);
+            return Json(jobDetail);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<IActionResult> UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate,
