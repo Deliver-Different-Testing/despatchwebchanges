@@ -8,6 +8,7 @@ using System.Web;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 
 namespace DespatchWeb.Services;
 
@@ -63,10 +64,12 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
             Query = query.ToString()
         };
         var uri = uriBuilder.Uri;
-
+        Log.Debug($"FlightRequest: {uri}");
         // Execute the request
         var response = await httpClient.GetAsync(uri);
-        response.EnsureSuccessStatusCode();
+        //response.EnsureSuccessStatusCode();
+
+        Log.Debug($"FlightService StatusCode: {response.StatusCode}");
 
         var content = await response.Content.ReadAsStringAsync();
         var flightStatusResponse = JsonSerializer.Deserialize<FlightStatusResponse>(content);
