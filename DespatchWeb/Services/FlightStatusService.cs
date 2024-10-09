@@ -55,6 +55,7 @@ public class FlightStatusService : IFlightStatusService
         // Add query parameters
         request.AddQueryParameter("appId", _appId);
         request.AddQueryParameter("appKey", _appKey);
+        request.AddQueryParameter("numHours", "24"); // Request 24 hours of flight data
 
         if (!string.IsNullOrEmpty(codeType)) request.AddQueryParameter("codeType", codeType);
 

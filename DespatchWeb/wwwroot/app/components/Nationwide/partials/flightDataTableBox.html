@@ -52,8 +52,11 @@
                 </div>
             </div>
 
-            <div class="no-data" ng-if="isLoading">
-                <div class="text">Loading flight options...</div>
+            <div class="loading" ng-if="flightsLoading">
+                <div class="text">
+                    <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+                    <span class="sr-only">Loading...</span>
+                </div>
             </div>
         </div>
 

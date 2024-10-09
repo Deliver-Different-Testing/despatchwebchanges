@@ -12,6 +12,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.flightOptions = [];
             $scope.flightMessage = '';
             $scope.flightError = '';
+            $scope.flightsLoading = false;
 
             $scope.currentJob = {};
             $scope.jobDetailFabIsOpen = false;
@@ -1907,19 +1908,22 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
 
+                processActiveTable();
+                initializeJob(job);
+                await updateData(job, clear);
+                angular.element("#box-jobDetail .loading").css('display', 'none');
+
                 // Get flights for jobs if airport infomation included
                 if (job.toAirportId && job.fromAirportId) {
+                    $scope.flightsLoading = true;
                     const result = await NWData.getFlightOptions(job.id, job.Date);
                     $scope.flightOptions = result.flights;
                     $scope.flightMessage = result.message;
                     $scope.flightError = result.error;
                     updatePagedFlights($scope.flightOptions);
-                }
 
-                processActiveTable();
-                initializeJob(job);
-                await updateData(job, clear);
-                angular.element("#box-jobDetail .loading").css('display', 'none');
+                    $scope.flightsLoading = false;
+                }
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
