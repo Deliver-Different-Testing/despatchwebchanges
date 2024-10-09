@@ -773,12 +773,10 @@ class NationwideService {
      * Fetches flight options for a specific job. Optionally can specify departure date
      * @param {number} jobId - The ID of the job
      * @param {Date|Null} departureDate - The date of departure.
-     * @returns {Promise<FlightOptions[]>} A promise that resolves to an array of flight options.
      * @throws {Error} If the API request fails or returns an unexpected response.
      */
     async getFlightOptions(jobId, departureDate) {
-        // Set date to today if either null or not a date
-        if (!departureDate || !Number.isDate(departureDate)) {
+        if (!departureDate || !(departureDate instanceof Date)) {
             departureDate = new Date();
         }
 
@@ -792,12 +790,18 @@ class NationwideService {
                 }
             });
 
-            if (!response.data || !Array.isArray(response.data)) {
+            if (!Array.isArray(response.data)) {
                 console.error('Unexpected API response format');
+                return {error: 'Unexpected API response format', flights: []};
             }
-            return response.data;
+
+            return {
+                flights: response.data,
+                message: response.data.length === 0 ? 'No flights found for the specified criteria.' : null
+            };
         } catch (error) {
             console.error('Error fetching flight options:', error);
+            return {error: 'Error fetching flight options', flights: []};
         }
     }
 

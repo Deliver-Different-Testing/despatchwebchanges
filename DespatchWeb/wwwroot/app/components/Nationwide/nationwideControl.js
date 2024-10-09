@@ -2,16 +2,18 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
     ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog, LayoutService) => {
         $scope.jdSvc = jdSvc;
 
+        // Variables
         function initializeVariables() {
             $scope.name = "Nationwide";
             $scope.isInternal = (ClientInternal === "True");
+            $scope.isUsCustomer = APP_CONFIG.US_Customer;
 
             $scope.sort = [];
             $scope.flightOptions = [];
+            $scope.flightMessage = '';
+            $scope.flightError = '';
+
             $scope.currentJob = {};
-
-
-            $scope.isUsCustomer = APP_CONFIG.US_Customer;
             $scope.jobDetailFabIsOpen = false;
             $scope.courierListFabIsOpen = false;
             $scope.areas = [];
@@ -1907,8 +1909,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 // Get flights for jobs if airport infomation included
                 if (job.toAirportId && job.fromAirportId) {
-                    $scope.flights = await NWData.getFlightOptions(job.id, job.Date);
-                    updatePagedFlights($scope.flights);
+                    const result = await NWData.getFlightOptions(job.id, job.Date);
+                    $scope.flightOptions = result.flights;
+                    $scope.flightMessage = result.message;
+                    $scope.flightError = result.error;
+                    updatePagedFlights($scope.flightOptions);
                 }
 
                 processActiveTable();
