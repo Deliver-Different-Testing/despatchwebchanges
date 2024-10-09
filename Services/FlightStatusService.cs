@@ -58,11 +58,12 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
                 query.Add("extendedOptions", option);
 
         // Construct the final URI
-        var uriBuilder = new UriBuilder(BaseUrl)
+        var fullUrl = $"{BaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var uriBuilder = new UriBuilder(fullUrl)
         {
-            Path = relativeUrl,
             Query = query.ToString()
         };
+
         var uri = uriBuilder.Uri;
         Log.Debug($"FlightRequest: {uri}");
         // Execute the request
