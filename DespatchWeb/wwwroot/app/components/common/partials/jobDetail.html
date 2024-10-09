@@ -73,7 +73,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.updateGPS($event, jdSvc.currentJob,'toAddress')">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">To Address:</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{isUsCustomer ? currentJob.pickupAddress.fullAddress : currentJob.fromAddress }}
+                                {{isUsCustomer ? currentJob.deliveryAddress.fullAddress : currentJob.toAddress }}
                             </div>
                         </div>
                         <div class="field" data-field="toSuburb" ng-if="!jdSvc.isUsCustomer">

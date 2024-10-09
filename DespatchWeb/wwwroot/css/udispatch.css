@@ -1474,16 +1474,45 @@ md-list-item:not(.selected):hover {
   user-select: none;
 }
 
-.half-size-switch {
-  transform: scale(0.75);
-  margin: -5px 0;
+.material-toolbar-switch {
+  transform: scale(0.8);
+  margin: -4px 0;
 }
 
-.half-size-switch .md-container {
+.material-toolbar-switch .md-container {
   margin-right: 0;
 }
 
-.half-size-switch .md-label {
-  margin-left: 8px;
+.material-toolbar-switch .md-label {
+  margin-left: 6px;
+}
+
+.loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.material-icon-loader {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.material-icon-loader md-progress-circular {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.material-icon-loader .loader-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  color: #fddd00;
 }
 /*# sourceMappingURL=udispatch.css.map */

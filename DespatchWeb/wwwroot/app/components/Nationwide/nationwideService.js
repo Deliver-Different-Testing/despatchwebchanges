@@ -781,28 +781,17 @@ class NationwideService {
         }
 
         const formattedDate = departureDate.toISOString().split('T')[0];
-
-        try {
-            const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
-                params: {
-                    departureDate: formattedDate,
-                    jobId: jobId,
-                }
-            });
-
-            if (!Array.isArray(response.data)) {
-                console.error('Unexpected API response format');
-                return {error: 'Unexpected API response format', flights: []};
+        const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
+            params: {
+                departureDate: formattedDate,
+                jobId: jobId,
             }
+        });
 
-            return {
-                flights: response.data,
-                message: response.data.length === 0 ? 'No flights found for the specified criteria.' : null
-            };
-        } catch (error) {
-            console.error('Error fetching flight options:', error);
-            return {error: 'Error fetching flight options', flights: []};
-        }
+        return {
+            flights: response.data,
+            message: response.data.length === 0 ? 'No flights found for the specified criteria.' : null
+        };
     }
 
     /**

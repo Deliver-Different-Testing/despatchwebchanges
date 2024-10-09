@@ -1882,25 +1882,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {FlightOptions[]} flights
-         */
-        function updatePagedFlights(flights) {
-            const start = ($scope.query.page - 1) * $scope.query.limit;
-            const end = start + $scope.query.limit;
-            $scope.pagedFlights = flights.slice(start, end);
-        }
-
-        /**
-         * @param {number} page
-         * @param {number} limit
-         */
-        $scope.onPaginate = (page, limit) => {
-            $scope.flightTableQuery.page = page;
-            $scope.flightTableQuery.limit = limit;
-            updatePagedFlights($scope.flights);
-        };
-
-        /**
+         * @async
          * @param {Job} job
          * @param {boolean} clear
          */
@@ -1910,20 +1892,27 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 processActiveTable();
                 initializeJob(job);
+
+                // Get flights for jobs if airport information included
+                if (job.toAirportId && job.fromAirportId) {
+                    console.log('Getting flights');
+                    $scope.flightsLoading = true;
+
+                    const result = await NWData.getFlightOptions(job.id, job.Date);
+                    $scope.flightOptions = result.flights;
+                    console.log("Flight options:", result.flights);
+                    $scope.flightMessage = result.message;
+                    $scope.flightError = result.error;
+
+                    $scope.flightsLoading = false;
+
+                    $scope.$apply();
+                }
+
                 await updateData(job, clear);
                 angular.element("#box-jobDetail .loading").css('display', 'none');
 
-                // Get flights for jobs if airport infomation included
-                if (job.toAirportId && job.fromAirportId) {
-                    $scope.flightsLoading = true;
-                    const result = await NWData.getFlightOptions(job.id, job.Date);
-                    $scope.flightOptions = result.flights;
-                    $scope.flightMessage = result.message;
-                    $scope.flightError = result.error;
-                    updatePagedFlights($scope.flightOptions);
 
-                    $scope.flightsLoading = false;
-                }
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
