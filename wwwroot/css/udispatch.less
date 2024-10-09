@@ -1,6 +1,6 @@
 @brand: #333;
 @spacing: 14px;
-@yellow: #76EAFE;
+@primary-color: #76EAFE;
 
 body {
     overflow: hidden;
@@ -14,7 +14,7 @@ md-dialog {
 /* Global scrollbar styles */
 * {
     scrollbar-width: thin;
-    scrollbar-color: fade(@yellow, 70%) transparent;
+    scrollbar-color: fade(@primary-color, 70%) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -27,7 +27,7 @@ md-dialog {
 }
 
 *::-webkit-scrollbar-thumb {
-    background-color: fade(@yellow, 70%);
+    background-color: fade(@primary-color, 70%);
     border-radius: 4px;
 }
 
@@ -115,11 +115,11 @@ md-autocomplete.ng-leave {
     }
 
     &::-webkit-scrollbar-thumb {
-        background-color: fade(@yellow, 70%);
+        background-color: fade(@primary-color, 70%);
         border-radius: 4px;
     }
     /* For Firefox */
-    scrollbar-color: fade(@yellow, 70%) transparent;
+    scrollbar-color: fade(@primary-color, 70%) transparent;
     scrollbar-width: thin;
 }
 
@@ -171,7 +171,7 @@ md-autocomplete.ng-leave {
 }
 
 .btn-primary {
-    .material-button-mixin(@yellow);
+    .material-button-mixin(@primary-color);
     padding: 6px 12px;
     text-decoration: none;
     display: inline-block;
@@ -182,7 +182,7 @@ md-autocomplete.ng-leave {
 }
 
 .mat-button {
-    .material-button-mixin(@yellow);
+    .material-button-mixin(@primary-color);
     text-transform: uppercase;
     transition: background-color 0.3s ease;
 }
@@ -194,7 +194,7 @@ md-autocomplete.ng-leave {
 }
 
 a.pickadate-next, a.pickadate-prev {
-    .material-button-mixin(@yellow);
+    .material-button-mixin(@primary-color);
     font-size: 10px;
     padding: 6px 8px;
 }
@@ -243,15 +243,15 @@ md-divider {
         }
 
         .listActive {
-            background-color: @yellow;
+            background-color: @primary-color;
             color: #000;
 
             &:hover {
-                background-color: darken(@yellow, 5%);
+                background-color: darken(@primary-color, 5%);
             }
 
             &:active {
-                background-color: darken(@yellow, 10%);
+                background-color: darken(@primary-color, 10%);
             }
         }
 
@@ -399,14 +399,14 @@ md-divider {
         }
 
         .topbar-active {
-            background-color: @yellow;
-            border-color: darken(@yellow, 10%);
+            background-color: @primary-color;
+            border-color: darken(@primary-color, 10%);
             color: #000;
 
             &:hover {
                 color: #000;
-                background-color: darken(@yellow, 10%);
-                border-color: darken(@yellow, 18%);
+                background-color: darken(@primary-color, 10%);
+                border-color: darken(@primary-color, 18%);
             }
         }
     }
@@ -455,11 +455,11 @@ md-divider {
         }
 
         .topBarActive {
-            background-color: @yellow;
+            background-color: @primary-color;
             color: #000;
 
             &:hover {
-                background-color: @yellow;
+                background-color: @primary-color;
                 color: #000;
             }
 
@@ -658,7 +658,7 @@ md-divider {
 }
 
 .pickadate-active {
-    background-color: @yellow;
+    background-color: @primary-color;
 }
 
 .columns {
@@ -1319,11 +1319,11 @@ span.courierRed {
 
     .DragOver {
         background: #e8eaf6;
-        border-color: @yellow;
+        border-color: @primary-color;
     }
 
     md-icon {
-        color: @yellow;
+        color: @primary-color;
         margin-bottom: 10px;
     }
 
@@ -1529,12 +1529,12 @@ md-list-item.selected::before {
     top: 0;
     bottom: 0;
     width: 4px;
-    background-color: @yellow;
+    background-color: @primary-color;
 }
 
 md-list-item.selected md-icon,
 md-list-item.selected p {
-    color: @yellow;
+    color: @primary-color;
 }
 
 md-list-item:not(.selected):hover {
@@ -1559,5 +1559,35 @@ md-list-item:not(.selected):hover {
 
     .md-label {
         margin-left: 6px;
+    }
+}
+
+.loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+}
+
+.material-icon-loader {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin-top: 30px;
+
+    md-progress-circular {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .loader-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        color: @primary-color;
     }
 }

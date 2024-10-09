@@ -2184,7 +2184,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     private async Task<List<string>> GetViewFilters(List<int> selectedViewIds)
     {
         var viewFilters = selectedViewIds != null && selectedViewIds.Any()
-            ? await _context.TblDespatchViews
+            ? await Context.TblDespatchViews
                 .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
                 .Select(dv => dv.WhereCondition)
                 .ToListAsync()
