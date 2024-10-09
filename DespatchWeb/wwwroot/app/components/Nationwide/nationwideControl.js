@@ -43,8 +43,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             };
 
             $scope.flightTableQuery = {
-                limit: 10,
-                page: 1
+                order: 'departureTime', asc: 'asc'
             };
 
             $scope.allCouriers = {display: true, includeUA: false};

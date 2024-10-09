@@ -1473,20 +1473,16 @@ md-list-item:not(.selected):hover {
 .account-header * {
   user-select: none;
 }
-
 .material-toolbar-switch {
   transform: scale(0.8);
   margin: -4px 0;
 }
-
 .material-toolbar-switch .md-container {
   margin-right: 0;
 }
-
 .material-toolbar-switch .md-label {
   margin-left: 6px;
 }
-
 .loader-container {
   display: flex;
   justify-content: center;
@@ -1494,19 +1490,17 @@ md-list-item:not(.selected):hover {
   height: 100%;
   width: 100%;
 }
-
 .material-icon-loader {
   position: relative;
   width: 60px;
   height: 60px;
+  margin-top: 30px;
 }
-
 .material-icon-loader md-progress-circular {
   position: absolute;
   top: 0;
   left: 0;
 }
-
 .material-icon-loader .loader-icon {
   position: absolute;
   top: 50%;
