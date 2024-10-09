@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Models;
 
 namespace DespatchWeb.Interfaces;
@@ -30,7 +31,8 @@ public interface IJobRepository
         string ascending, bool isInternal, string clientIds, List<int> selectedViewIds);
 
     Task<List<JobViewModel>> NationwideJobListAsync(string status,
-        string order, string ascending, bool isInternal, string clientIds, int windowPane, List<int> selectedViewIds);
+        string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
+        List<int> selectedViewIds);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int id);

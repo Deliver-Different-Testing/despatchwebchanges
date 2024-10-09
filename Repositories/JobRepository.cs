@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
+using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
@@ -801,15 +804,12 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();
 
-        if (selectedViewIds != null && !selectedViewIds.Any()) return new List<JobViewModel>();
-        var viewFilters = await Context.TblDespatchViews
-            .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
-            .Select(dv => dv.WhereCondition)
-            .ToListAsync();
+        // Get view specific filters
+        var viewFilters = await GetViewFilters(selectedViewIds);
 
-        // Filters
-        var orderByClause = GetOrderByClause(order, ascending);
-        var whereClause = BuildWhereClause(isInternal, viewFilters, status, clientIds);
+        // Build filters
+        var orderByClause = GetJobOrderByClause(order, ascending);
+        var whereClause = BuildJobWhereClause(isInternal, viewFilters, status, clientIds);
 
         var sql =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
@@ -992,25 +992,23 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     }
 
     public async Task<List<JobViewModel>> NationwideJobListAsync(string status,
-        string order, string ascending, bool isInternal, string clientIds, int windowPane, List<int> selectedViewIds)
+        string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
+        List<int> selectedViewIds)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();
 
-        if (selectedViewIds != null && !selectedViewIds.Any()) return new List<JobViewModel>();
+        // Get view specific filters
+        var viewFilters = await GetViewFilters(selectedViewIds);
 
-        var viewFilters = await Context.TblDespatchViews
-            .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
-            .Select(dv => dv.WhereCondition)
-            .ToListAsync();
+        // Build filters
+        var orderByClause = GetNationwideOrderByClause(order, ascending);
+        var whereClause = BuildNationwideWhereClause(isInternal, viewFilters, status, windowPane, clientIds);
 
-        // Filters
-        var orderByClause = GetOrderByClause(order, ascending);
-        var whereClause = BuildWhereClause(isInternal, viewFilters, status, clientIds);
         var sql =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
 
-        var jobs = await Context.DeswebQryDespatches.FromSqlRaw(sql).ToListWithNoLockAsync();
+        var jobs = await Context.DeswebQryDespatches.FromSqlRaw(sql).ToListAsync();
         var list = jobs.Select(j => new JobViewModel
         {
             Id = j.UcjbId,
@@ -1175,7 +1173,9 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             AirportOnly = j.AirportOnly,
             HasNationwide = j.HasNationwide.HasValue,
             LoggedInContactName = j.LoggedInContactName,
-            StatusName = j.StatusName
+            StatusName = j.StatusName,
+            ToAirportId = j.ToAirportId,
+            FromAirportId = j.FromAirportId
         }).ToList();
 
 
@@ -2181,8 +2181,20 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
     }
 
+    private async Task<List<string>> GetViewFilters(List<int> selectedViewIds)
+    {
+        var viewFilters = selectedViewIds != null && selectedViewIds.Any()
+            ? await _context.TblDespatchViews
+                .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
+                .Select(dv => dv.WhereCondition)
+                .ToListAsync()
+            : new List<string>();
 
-    private static string GetOrderByClause(string order, string ascending)
+        return viewFilters;
+    }
+
+
+    private static string GetJobOrderByClause(string order, string ascending)
     {
         var ascDesc = ascending != null && ascending.Equals("asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
 
@@ -2203,23 +2215,44 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         };
     }
 
-    private static string BuildWhereClause(bool isInternal, List<string> viewFilters, string status, string clientIds)
+    private static string GetNationwideOrderByClause(string order, string ascending)
+    {
+        var ascDesc = ascending?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true ? "ASC" : "DESC";
+
+        return order?.ToLowerInvariant() switch
+        {
+            "courier" => $"Convert(int, CourierCode) {ascDesc}, ucjbtime {ascDesc}",
+            "remain" => $"FollowupTime {ascDesc},  ucjbDispTime {ascDesc}, Remaintime {ascDesc}, ucjbtime {ascDesc}",
+            "to" =>
+                $"SuburbTo {ascDesc}, ucjbTime {ascDesc}, SuburbFrom {ascDesc}, Convert(int, CourierCode) {ascDesc}",
+            "from" =>
+                $"SuburbFrom {ascDesc}, SuburbTo {ascDesc}, ucjbTime {ascDesc}, Convert(int, CourierCode) {ascDesc}",
+            "client" => $"ucclCode {ascDesc}, ucjbTime {ascDesc}, Convert(int, CourierCode) {ascDesc}",
+            "jobno" => $"ucjbNumber {ascDesc}, ucjbTime {ascDesc}, Convert(int, CourierCode) {ascDesc}",
+            "status" => $"ucjbStatus {ascDesc}",
+            "speed" => $"SpeedShortName {ascDesc}",
+            "notify" => $"NotifiedSpeed {ascDesc}",
+            "lp" => $"ucjbLatePick {ascDesc}",
+            "ld" => $"ucjbLateDel {ascDesc}",
+            "time" => $"ucjbTime {ascDesc}, Convert(int,CourierCode) {ascDesc}",
+            "pod" => $"ucjbPODName {ascDesc}, Convert(int, CourierCode) {ascDesc}",
+            _ =>
+                $"FollowupTime {ascDesc}, ucjbDispTime {ascDesc}, ucjbTime {ascDesc}, Convert(int, CourierCode) {ascDesc}"
+        };
+    }
+
+    private static string BuildJobWhereClause(bool isInternal, List<string> viewFilters, string status,
+        string clientIds)
     {
         var whereClauses = new List<string>();
 
-        switch (isInternal)
+        if (isInternal)
         {
-            // Handle internal/external logic
-            case true:
-            {
-                if (viewFilters != null && viewFilters.Any()) whereClauses.Add($"({string.Join(" OR ", viewFilters)})");
-                break;
-            }
-            default:
-            {
-                if (!string.IsNullOrEmpty(clientIds)) whereClauses.Add($"ucjbClientID IN ({clientIds})");
-                break;
-            }
+            if (viewFilters != null && viewFilters.Any()) whereClauses.Add($"({string.Join(" OR ", viewFilters)})");
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(clientIds)) whereClauses.Add($"ucjbClientID IN ({clientIds})");
         }
 
         // Handle status
@@ -2248,6 +2281,81 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
         // Combine all where clauses
         return string.Join(" AND ", whereClauses);
+    }
+
+    private static string BuildNationwideWhereClause(bool isInternal, List<string> filter, string status,
+        NationwideWindowPanel windowPane, string clientIds)
+    {
+        var whereClause = new StringBuilder();
+
+        if (isInternal)
+        {
+            if (filter != null && filter.Any())
+            {
+                whereClause.Append('(');
+                whereClause.Append(string.Join(" OR ", filter.Select(where => $"({where})")));
+                whereClause.Append(')');
+            }
+        }
+
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (whereClause.Length > 0) whereClause.Append(" AND ");
+
+            switch (status)
+            {
+                case "all":
+                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice ? "Reprice = 1" : "ucjbJobDone = 0");
+                    break;
+                case "active":
+                    switch (windowPane)
+                    {
+                        case NationwideWindowPanel.JobList:
+                            whereClause.Append("ucjbJobDone = 0");
+                            break;
+                        case NationwideWindowPanel.Pod:
+                        case NationwideWindowPanel.BookDelivery:
+                            whereClause.Append("ucjbJobDone = 0 AND FollowupTime < GETDATE()");
+                            break;
+                        case NationwideWindowPanel.Reprice:
+                            whereClause.Append("Reprice = 1");
+                            break;
+                        default:
+                            whereClause.Append(string.Empty);
+                            break;
+                    }
+
+                    break;
+                case "done":
+                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice ? "Reprice = 1" : "ucjbJobDone = 1");
+                    break;
+            }
+        }
+
+        if (whereClause.Length > 0) whereClause.Append(" AND ");
+
+        switch (windowPane)
+        {
+            case NationwideWindowPanel.JobList:
+                whereClause.Append("(InternalStatus = 1 OR (InternalStatus is Null AND ucjbStatus <> 9))");
+                break;
+            case NationwideWindowPanel.Pod:
+                whereClause.Append("(InternalStatus = 3 OR ucjbStatus = 9)");
+                break;
+            case NationwideWindowPanel.BookDelivery:
+                whereClause.Append("(InternalStatus = 2)");
+                break;
+            case NationwideWindowPanel.Reprice:
+                whereClause.Append("(ucjbStatus = 6)");
+                break;
+            default:
+                whereClause.Append(string.Empty);
+                break;
+        }
+
+        if (!isInternal && !string.IsNullOrEmpty(clientIds)) whereClause.Append($" AND ucjbClientID in ({clientIds})");
+
+        return whereClause.ToString();
     }
 
     private async Task<List<Size>> GetRelatedJobsAsync(int? rootParentId, int clientId)

@@ -24,16 +24,10 @@
                              context-menu="detailAddressMenu" data-field="fromAddress"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.updateGPS($event, jdSvc.currentJob, 'fromAddress')">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">From Address:</label>
-                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
-                                 ng-if="!jdSvc.isUsCustomer">
-                                {{jdSvc.currentJob.fromAddress}}
-                            </div>
-
                             <div class="value"
                                  ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.currentJob.pickupAddress.fullAddress}}
+                                {{isUsCustomer ? currentJob.pickupAddress.fullAddress : currentJob.fromAddress }}
                             </div>
-
                         </div>
                         <div class="field" data-field="fromSuburb" ng-if="!jdSvc.isUsCustomer">
                             <label class="disabled">From Suburb:</label>
@@ -46,7 +40,7 @@
                             <label class="disabled">From City:</label>
                             <div class="disabled value" ng-if="!jdSvc.isUsCustomer">{{jdSvc.currentJob.fromCity}}</div>
                             <div class="disabled value" ng-if="jdSvc.isUsCustomer">
-                                {{jdSvc.currentJob.pickupAddress.AddressLine5}}
+                                {{jdSvc.currentJob.pickupAddress.addressLine5}}
                             </div>
                         </div>
 
@@ -78,28 +72,21 @@
                              context-menu="detailAddressMenu" data-field="toAddress"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.updateGPS($event, jdSvc.currentJob,'toAddress')">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">To Address:</label>
-                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
-                                 ng-if="!jdSvc.isUsCustomer">
-                                {{jdSvc.currentJob.toAddress}}
-                            </div>
-
-                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
-                                 ng-if="jdSvc.isUsCustomer">
-                                {{jdSvc.currentJob.deliveryAddress.fullAddress}}
+                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                                {{isUsCustomer ? currentJob.deliveryAddress.fullAddress : currentJob.toAddress }}
                             </div>
                         </div>
                         <div class="field" data-field="toSuburb" ng-if="!jdSvc.isUsCustomer">
                             <label class="disabled">To Suburb:</label>
                             <div class="disabled value">{{jdSvc.currentJob.toSuburbName}}
-                                {{ jdSvc.currentJob.toPostCode
-                                }}
+                                {{ jdSvc.currentJob.toPostCode}}
                             </div>
                         </div>
                         <div class="field" data-field="toCity">
                             <label class="disabled">To City:</label>
                             <div class="disabled value" ng-if="!jdSvc.isUsCustomer">{{jdSvc.currentJob.toCity}}</div>
                             <div class="disabled value" ng-if="jdSvc.isUsCustomer">
-                                {{jdSvc.currentJob.deliveryAddress.AddressLine5}}
+                                {{jdSvc.currentJob.deliveryAddress.addressLine5}}
                             </div>
                         </div>
 

@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Serilog;
@@ -29,7 +30,7 @@ namespace DespatchWeb.Controllers;
             {
                 if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
-                if (despatchViewIds != null && !despatchViewIds.Any()) return Json(new List<JobViewModel>());
+                // Get jobs
                 var result = await jobRepository.JobListAsync(queryParams.Status, queryParams.Order,
                     queryParams.Asc, isInternal, clientIds, despatchViewIds);
                 return Json(result);
@@ -51,7 +52,7 @@ namespace DespatchWeb.Controllers;
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
         var result = await jobRepository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, 1, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.JobList, despatchViewIds);
         return Json(result);
     }
 
@@ -61,7 +62,7 @@ namespace DespatchWeb.Controllers;
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
         var result = await jobRepository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, 2, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Pod, despatchViewIds);
         return Json(result);
     }
 
@@ -72,7 +73,7 @@ namespace DespatchWeb.Controllers;
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
         var result = await jobRepository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, 3, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.BookDelivery, despatchViewIds);
         return Json(result);
     }
 
@@ -82,7 +83,7 @@ namespace DespatchWeb.Controllers;
         if (!isInternal) await ValidateClientAccess(cid, clientIds);
 
         var result = await jobRepository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, 4, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Reprice, despatchViewIds);
         return Json(result);
     }
 
@@ -754,8 +755,19 @@ namespace DespatchWeb.Controllers;
     public async Task<IActionResult> UpdateJob(int jobId, string field, string value, decimal? rate,
         string despatcherName, int staffId)
     {
-        await jobRepository.UpdateJobAsync(jobId, field, value, rate, despatcherName, staffId);
-        return Json("OK");
+        try
+        {
+            await jobRepository.UpdateJobAsync(jobId, field, value, rate, despatcherName, staffId);
+
+            // Get the new job detail to update the frontend
+            var jobDetail = await jobRepository.JobDetailAsync(jobId);
+            return Json(jobDetail);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<IActionResult> UpdateBulkJob(int bulkJobId, string field, string value, decimal? rate,

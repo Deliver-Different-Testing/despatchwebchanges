@@ -1,5 +1,5 @@
 class JobDetailService {
-    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG) {
+    constructor(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG, $rootScope) {
         this._dispatchData = DispatchData;
         this._$mdDialog = $mdDialog;
         this._toastrService = toastrService;
@@ -9,6 +9,7 @@ class JobDetailService {
         this._moment = moment;
         this._versionUrl = versionUrl;
         this.APP_CONFIG = APP_CONFIG;
+        this._$rootScope = $rootScope;
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
         this.options = {
@@ -673,42 +674,79 @@ class JobDetailService {
         return this.showEditPrompt($event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
     }
 
+    /**
+     * @param reRate
+     * @param {Job} job
+     * @param callData
+     */
     async updateField(reRate, job, callData) {
-        if (reRate && !job.bulkJob) {
-            const rate = await this._rateJobService.rateJob(job);
-            const numericRate = Number(rate.replace(/[^0-9.-]+/g, ""));
+        try {
+            let response;
+            if (reRate && !job.bulkJob) {
+                const rate = await this._rateJobService.rateJob(job);
 
-            return this._dispatchData.updateJobDetail(
-                callData.jobID,
-                callData.field,
-                callData.value,
-                numericRate,
-                FirstName,
-                ContactID,
-                job.preBook
-            );
-        } else {
-            if (job.bulkJob) {
-                return this._dispatchData.updateBulkJobDetail(
-                    job.id,
-                    callData.field,
-                    callData.value,
-                    job.charge,
-                    FirstName,
-                    ContactID
-                );
-            } else {
-                return this._dispatchData.updateJobDetail(
+                // Ensure rate is decimal
+                const numericRate = parseFloat(rate.replace(/[^\d.-]/g, ''));
+                if (isNaN(numericRate)) {
+                    console.error('Failed to convert rate to a number:', rate);
+                }
+
+                response = await this._dispatchData.updateJobDetail(
                     callData.jobID,
                     callData.field,
                     callData.value,
-                    job.charge,
+                    numericRate,
                     FirstName,
                     ContactID,
                     job.preBook
                 );
+            } else {
+                // Ensure rate is decimal
+                const numericRate = parseFloat(job.charge.replace(/[^\d.-]/g, ''));
+                if (isNaN(numericRate)) {
+                    console.error('Failed to convert rate to a number:', rate);
+                }
+
+                if (job.bulkJob) {
+                    response = await this._dispatchData.updateBulkJobDetail(
+                        job.id,
+                        callData.field,
+                        callData.value,
+                        numericRate,
+                        FirstName,
+                        ContactID
+                    );
+                } else {
+                    response = await this._dispatchData.updateJobDetail(
+                        callData.jobID,
+                        callData.field,
+                        callData.value,
+                        numericRate,
+                        FirstName,
+                        ContactID,
+                        job.preBook
+                    );
+                }
             }
+
+            // Update the currentJob with the new details
+            this.currentJob = response;
+
+            // Emit an event to update the job list
+            this.updateJobInList(response);
+        } catch (error) {
+            console.error('Error updating job:', error);
+            this._toastrService.showErrorToast('Failed to update job. Please try again.');
+            throw error;
         }
+    }
+
+    /**
+     * @param {Job} updatedJob
+     */
+    updateJobInList(updatedJob) {
+        // Emit an event to notify the controller to update the job in the list
+        this._$rootScope.$emit('jobUpdated', updatedJob);
     }
 
     /**
@@ -1102,17 +1140,12 @@ class JobDetailService {
      */
     async unlockJob(job) {
         try {
-            const response = await this._dispatchData.updateJobDetail(
-                job.id,
-                "Locked",
-                false,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook
-            );
+            const callData = {
+                "call": "updateDetailField", "field": 'Locked', "value": false, "jobID": job.id
+            };
+
+            await this.updateField(true, job, callData);
             this.currentJob.locked = false;
-            return response;
         } catch (error) {
             throw error; // Re-throw the error to propagate it
         }
@@ -1125,17 +1158,12 @@ class JobDetailService {
      */
     async lockJob(job) {
         try {
-            const response = await this._dispatchData.updateJobDetail(
-                job.id,
-                "Locked",
-                true,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook
-            );
+            const callData = {
+                "call": "updateDetailField", "field": 'Locked', "value": true, "jobID": job.id
+            };
+
+            await this.updateField(true, job, callData);
             this.currentJob.locked = true;
-            return response;
         } catch (error) {
             throw error; // Re-throw the error to propagate it
         }
@@ -1163,19 +1191,13 @@ class JobDetailService {
      */
     async vanOkClick(job) {
         const vanOkValue = !job.vanOK;
-
         try {
-            const response = await this._dispatchData.updateJobDetail(
-                job.id,
-                "VanOK",
-                vanOkValue,
-                job.charge,
-                FirstName,
-                ContactID,
-                job.preBook
-            );
+            const callData = {
+                "call": "updateDetailField", "field": 'VanOK', "value": vanOkValue, "jobID": job.id
+            };
+
+            await this.updateField(true, job, callData);
             this.currentJob.vanOK = vanOkValue;
-            return response;
         } catch (error) {
             throw error; // Re-throw the error to propagate it
         }
@@ -1188,24 +1210,11 @@ class JobDetailService {
         const vanValue = !job.van;
 
         try {
-            this.currentJob.charge = await this._rateJobService.rateJob(job);
-            console.log(rate);
+            const callData = {
+                "call": "updateDetailField", "field": 'Van', "value": vanValue, "jobID": job.id
+            };
 
-            const numericRate = Number(this.currentJob.charge.replace(/[^0-9.-]+/g, ""));
-
-            try {
-                return this._dispatchData.updateJobDetail(
-                    job.id,
-                    "Van",
-                    vanValue,
-                    numericRate,
-                    FirstName,
-                    ContactID,
-                    job.preBook
-                );
-            } catch (error) {
-                console.log(error.message);
-            }
+            await this.updateField(true, job, callData);
         } catch (error) {
             console.log(error.message);
         }
@@ -1275,6 +1284,7 @@ class JobDetailService {
     truckClick(job) {
         return this.toggleJobProperty(job, 'truck');
     }
+
     /**
      * Toggles the Direct status of a job
      * @param {Job} job - The job to update
@@ -1739,5 +1749,6 @@ angular.module('uDispatch').service('JobDetailService', [
     "moment",
     "versionUrl",
     "APP_CONFIG",
-    (DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG)
+    "$rootScope",
+    (DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG, $rootScope) => new JobDetailService(DispatchData, $mdDialog, toastrService, rateJobService, $document, $timeout, moment, versionUrl, APP_CONFIG, $rootScope)
 ]);

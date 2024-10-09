@@ -2,16 +2,19 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
     ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog, LayoutService) => {
         $scope.jdSvc = jdSvc;
 
+        // Variables
         function initializeVariables() {
             $scope.name = "Nationwide";
             $scope.isInternal = (ClientInternal === "True");
+            $scope.isUsCustomer = APP_CONFIG.US_Customer;
 
             $scope.sort = [];
             $scope.flightOptions = [];
+            $scope.flightMessage = '';
+            $scope.flightError = '';
+            $scope.flightsLoading = false;
+
             $scope.currentJob = {};
-
-
-            $scope.isUsCustomer = APP_CONFIG.US_Customer;
             $scope.jobDetailFabIsOpen = false;
             $scope.courierListFabIsOpen = false;
             $scope.areas = [];
@@ -40,8 +43,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             };
 
             $scope.flightTableQuery = {
-                limit: 10,
-                page: 1
+                order: 'departureTime', asc: 'asc'
             };
 
             $scope.allCouriers = {display: true, includeUA: false};
@@ -1879,25 +1881,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {FlightOptions[]} flights
-         */
-        function updatePagedFlights(flights) {
-            const start = ($scope.query.page - 1) * $scope.query.limit;
-            const end = start + $scope.query.limit;
-            $scope.pagedFlights = flights.slice(start, end);
-        }
-
-        /**
-         * @param {number} page
-         * @param {number} limit
-         */
-        $scope.onPaginate = (page, limit) => {
-            $scope.flightTableQuery.page = page;
-            $scope.flightTableQuery.limit = limit;
-            updatePagedFlights($scope.flights);
-        };
-
-        /**
+         * @async
          * @param {Job} job
          * @param {boolean} clear
          */
@@ -1905,16 +1889,29 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
 
-                // Get flights for jobs if airport infomation included
-                if (job.toAirportId && job.fromAirportId) {
-                    $scope.flights = await NWData.getFlightOptions(job.id, job.Date);
-                    updatePagedFlights($scope.flights);
-                }
-
                 processActiveTable();
                 initializeJob(job);
+
+                // Get flights for jobs if airport information included
+                if (job.toAirportId && job.fromAirportId) {
+                    console.log('Getting flights');
+                    $scope.flightsLoading = true;
+
+                    const result = await NWData.getFlightOptions(job.id, job.Date);
+                    $scope.flightOptions = result.flights;
+                    console.log("Flight options:", result.flights);
+                    $scope.flightMessage = result.message;
+                    $scope.flightError = result.error;
+
+                    $scope.flightsLoading = false;
+
+                    $scope.$apply();
+                }
+
                 await updateData(job, clear);
                 angular.element("#box-jobDetail .loading").css('display', 'none');
+
+
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
@@ -2397,10 +2394,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             const selectedClients = $scope.pickService.clients.map(a => a.id);
 
             try {
-                const [podData, newData, repriceData, deliveryData] = await Promise.all([NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)]);
+                const [newData, podData, repriceData, deliveryData] = await Promise.all([NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)]);
 
-                $scope.jobListPOD = podData;
                 $scope.jobList = newData;
+                $scope.jobListPOD = podData;
                 $scope.jobListReprice = repriceData;
                 $scope.jobListDelivery = deliveryData;
 

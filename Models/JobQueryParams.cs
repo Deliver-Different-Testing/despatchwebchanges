@@ -2,7 +2,7 @@ namespace DespatchWeb.Models;
 
 public class JobQueryParams
 {
-    public string Status { get; set; } = "all";
-    public string Order { get; set; } = "time";
-    public string Asc { get; set; } = "asc";
+    public string Status { get; set; }
+    public string Order { get; set; }
+    public string Asc { get; set; }
 }

@@ -70,11 +70,11 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
             return new List<FlightOptionsViewModel>();
 
         var flightOptions = flightStatusResponse.ScheduledFlights
-            .Where(flight => flight.DepartureTime > DateTime.Now)
+            .Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
             .Select(flight => new FlightOptionsViewModel
             {
                 Airline = flightStatusResponse.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
-                FlightNumber = flight.FlightNumber,
+                FlightNumber = flight.CarrierFsCode + flight.FlightNumber,
                 DepartureTime = flight.DepartureTime,
                 ArrivalTime = flight.ArrivalTime,
                 DepartureAirport = flight.DepartureAirportFsCode,
@@ -87,7 +87,7 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
                 ServiceClasses = flight.ServiceClasses,
                 IsCodeShare = flight.IsCodeShare,
                 CodeShareAirline = flight.IsCodeShare ? flight.Operator?.CarrierFsCode : null
-            }).OrderBy(f => f.DepartureTime).ToList();
+            }).OrderBy(flight => flight.DepartureTime).ToList();
 
         return flightOptions;
     }
