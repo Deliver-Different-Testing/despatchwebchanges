@@ -40,8 +40,9 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
         var month = effectiveDateTime.Month;
         var day = effectiveDateTime.Day;
 
-        // Construct the base URL
-        var baseUrl = $"json/from/{departureAirportCode}/to/{destinationAirportCode}/departing/{year}/{month}/{day}";
+        // Construct the relative URL
+        var relativeUrl = $"json/from/{departureAirportCode}/to/{destinationAirportCode}/departing/{year}/{month}/{day}";
+
 
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
@@ -56,7 +57,11 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
                 query.Add("extendedOptions", option);
 
         // Construct the final URI
-        var uriBuilder = new UriBuilder(baseUrl) { Query = query.ToString() };
+        var uriBuilder = new UriBuilder(BaseUrl)
+        {
+            Path = relativeUrl,
+            Query = query.ToString()
+        };
         var uri = uriBuilder.Uri;
 
         // Execute the request
