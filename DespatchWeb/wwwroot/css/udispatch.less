@@ -1451,7 +1451,8 @@ md-table-pagination {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      padding: 0 20px 0 0;
+      padding: 0 15px 0 0;
+      font-size: 11px;
     }
 
     // Column widths
@@ -1520,35 +1521,34 @@ md-table-pagination {
   }
 }
 
-md-list-item.selected {
-  background-color: rgba(0, 0, 0, 0.05);
-  position: relative;
-}
+md-list-item {
+  &.selected {
+    background-color: rgba(0, 0, 0, 0.05);
+    position: relative;
 
-md-list-item.selected::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: @primary-color;
-}
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background-color: @primary-color;
+    }
 
-md-list-item.selected md-icon,
-md-list-item.selected p {
-  color: @primary-color;
-}
+    md-icon,
+    p {
+      color: @primary-color;
+    }
+  }
 
-md-list-item:not(.selected):hover {
-  background-color: rgba(0, 0, 0, 0.03);
+  &:not(.selected):hover {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
 }
 
 .account-header {
   pointer-events: none;
-}
-
-.account-header * {
   user-select: none;
 }
 
