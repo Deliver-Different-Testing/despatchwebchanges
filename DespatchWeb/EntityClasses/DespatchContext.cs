@@ -5116,15 +5116,45 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobNotifiedJobTypes)
                     .HasForeignKey(d => d.NotifiedJobTypeId);
 
+                entity.HasOne(d => d.Parent)
+                    .WithMany(p => p.InverseParent)
+                    .HasForeignKey(d => d.ParentId)
+                    .HasConstraintName("fk_tucJob_ParentId");
+
+                entity.HasOne(d => d.Source)
+                    .WithMany(p => p.TucJobs)
+                    .HasForeignKey(d => d.SourceId)
+                    .HasConstraintName("fk_tucJob_Source");
+
                 entity.HasOne(d => d.ToAirport)
                     .WithMany(p => p.TucJobToAirports)
                     .HasForeignKey(d => d.ToAirportId)
                     .HasConstraintName("FK_tucJob_ToAirport");
 
+                entity.HasOne(d => d.UcjbDisp)
+                    .WithMany(p => p.TucJobs)
+                    .HasForeignKey(d => d.UcjbDispId)
+                    .HasConstraintName("fk_tucJob_DispID");
+
+                entity.HasOne(d => d.UcjbFromNavigation)
+                    .WithMany(p => p.TucJobUcjbFromNavigations)
+                    .HasForeignKey(d => d.UcjbFrom)
+                    .HasConstraintName("fk_tucJob_FromSuburb");
+
                 entity.HasOne(d => d.UcjbSpeedNavigation)
                     .WithMany(p => p.TucJobUcjbSpeedNavigations)
                     .HasForeignKey(d => d.UcjbSpeed)
-                    .HasConstraintName("FK_tucJob_tucJobType");
+                    .HasConstraintName("fk_tucJob_Speed");
+
+                entity.HasOne(d => d.UcjbStatusNavigation)
+                    .WithMany(p => p.TucJobs)
+                    .HasForeignKey(d => d.UcjbStatus)
+                    .HasConstraintName("fk_tucJob_Status");
+
+                entity.HasOne(d => d.UcjbToNavigation)
+                    .WithMany(p => p.TucJobUcjbToNavigations)
+                    .HasForeignKey(d => d.UcjbTo)
+                    .HasConstraintName("fk_tucJob_ToSuburb");
 
                 entity.HasOne(d => d.UndeliverableLocation)
                     .WithMany(p => p.TucJobs)

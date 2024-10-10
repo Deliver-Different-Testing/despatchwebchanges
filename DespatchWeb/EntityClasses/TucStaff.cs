@@ -7,6 +7,11 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TucStaff
     {
+        public TucStaff()
+        {
+            TucJobs = new HashSet<TucJob>();
+        }
+
         public int UcstId { get; set; }
         public string UcstFirstName { get; set; }
         public string UcstLastName { get; set; }
@@ -54,5 +59,6 @@ namespace DespatchWeb.EntityClasses
         public string AddressLine8 { get; set; }
 
         public virtual TucSuburb UcstSuburb { get; set; }
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }
