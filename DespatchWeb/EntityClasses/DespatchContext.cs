@@ -5677,6 +5677,12 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobNationwides)
                     .HasForeignKey(d => d.JobBookingId)
                     .HasConstraintName("FK_tucJobNationwide_tucJobBooking");
+
+                entity.HasOne(d => d.UcnwJob)
+                    .WithMany(p => p.TucJobNationwides)
+                    .HasForeignKey(d => d.UcnwJobId)
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .HasConstraintName("FK_tucJobNationwide_tucJob");
             });
 
             modelBuilder.Entity<TucJobStatus>(entity =>

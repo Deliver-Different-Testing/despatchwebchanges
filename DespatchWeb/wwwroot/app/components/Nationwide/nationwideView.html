@@ -104,7 +104,12 @@
 
                                 <span class="md-headline-title" flex>
                                     {{boxes[box.name].title}}
-                                    <span ng-if="box.name == 'jobDetail'">{{currentSelection}}</span>
+                                    <span ng-if="box.name == 'jobDetail'">{{currentSelection}}
+                                    <md-icon md-font-set="material-symbols-outlined" ng-if="currentJob.assignedFlight">flight</md-icon>
+                                        <span ng-if="jdSvc.currentJob.assignedFlight">{{ currentJob.assignedFlight.flightNumber
+                                            }}</span>
+
+                                    </span>
                                     <span ng-if="box.name == 'jobGroups'">{{groupJobsSelection}}</span>
                                     <span ng-if="box.name == 'potentialCouriers'">{{potentialCouriersSelection}}</span>
                                     <span ng-if="box.name == 'currentWork' || box.name == 'map'">{{currentWorkSelection}}</span>

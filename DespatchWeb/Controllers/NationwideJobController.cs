@@ -29,7 +29,7 @@ public class NationwideJobController : Controller
         var flightOptions =
             await _flightStatusService.GetFlightsAsync(fromAirport, toAirport, departureDate);
 
-        return Json(flightOptions ?? new List<FlightOptionsViewModel>());
+        return Json(flightOptions ?? new List<FlightViewModel>());
     }
 
     [HttpPost]

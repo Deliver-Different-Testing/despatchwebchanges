@@ -26,7 +26,7 @@ public class FlightStatusService : IFlightStatusService
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
     }
 
-    public async Task<List<FlightOptionsViewModel>> GetFlightsAsync(
+    public async Task<List<FlightViewModel>> GetFlightsAsync(
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
@@ -64,11 +64,11 @@ public class FlightStatusService : IFlightStatusService
         var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
 
         if (response.Data?.ScheduledFlights == null)
-            return new List<FlightOptionsViewModel>();
+            return new List<FlightViewModel>();
 
         var flightOptions = response.Data.ScheduledFlights
             //.Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
-            .Select(flight => new FlightOptionsViewModel
+            .Select(flight => new FlightViewModel
             {
                 Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
                 FlightNumber = flight.CarrierFsCode + flight.FlightNumber,

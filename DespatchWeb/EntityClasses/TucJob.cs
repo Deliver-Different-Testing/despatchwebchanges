@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucJob()
         {
             TucJobItems = new HashSet<TucJobItem>();
+            TucJobNationwides = new HashSet<TucJobNationwide>();
         }
 
         public int UcjbId { get; set; }
@@ -228,5 +229,6 @@ namespace DespatchWeb.EntityClasses
         public virtual TucJobType UcjbSpeedNavigation { get; set; }
         public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
         public virtual ICollection<TucJobItem> TucJobItems { get; set; }
+        public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }
     }
 }

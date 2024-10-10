@@ -211,6 +211,8 @@ public class JobRepository : IJobRepository
             from source in sourceJoin.DefaultIfEmpty()
             join st in _context.TucStaffs on tblJob.DispatcherId equals st.UcstId into staffJoin
             from staff in staffJoin.DefaultIfEmpty()
+            join jn in _context.TucJobNationwides on tblJob.JobId equals jn.UcnwJobId into nwJoin
+            from flightInfo in nwJoin.DefaultIfEmpty()
             where tblJob.JobId == jobId
             select new JobViewModel
             {
@@ -337,7 +339,14 @@ public class JobRepository : IJobRepository
                 HasNationwide = nationwide.UcnwJobId.HasValue,
                 StatusName = status.UcjsName,
                 DispatcherName = $"{staff.UcstFirstName ?? string.Empty} {staff.UcstLastName ?? string.Empty}",
-                CreatedDate = tblJob.Date
+                CreatedDate = tblJob.Date,
+                AssignedFlight = new AssignedFlight
+                {
+                    ExpectedArrival = flightInfo.UcnwEta,
+                    ExpectedDeparture = flightInfo.UcnwEtd,
+                    FlightNumber = flightInfo.UcnwFlightNo,
+                    Notes = flightInfo.UcnwNotes
+                }
             };
 
         var job = await jobQuery.FirstOrDefaultAsync();
@@ -411,7 +420,6 @@ public class JobRepository : IJobRepository
                 BookedDate = j.BookDate,
                 SizeId = j.Size,
                 Void = j.Void,
-                //PickupFrom = j.FromAddress,
                 JobNo = j.JobNumber,
                 Speed = to.ShortName,
                 SpeedName = to.UcjtName,
@@ -1186,6 +1194,19 @@ public class JobRepository : IJobRepository
             FromAirportId = j.FromAirportId
         }).ToList();
 
+        foreach (var job in list)
+        {
+            job.AssignedFlight = await _context.TucJobNationwides
+                .Where(nj => nj.UcnwJobId == job.Id)
+                .Select(nj => new AssignedFlight
+                {
+                    ExpectedArrival = nj.UcnwEta,
+                    ExpectedDeparture = nj.UcnwEtd,
+                    FlightNumber = nj.UcnwFlightNo,
+                    Notes = nj.UcnwNotes
+                })
+                .FirstOrDefaultAsync();
+        }
 
         return list;
     }
@@ -2222,7 +2243,7 @@ public class JobRepository : IJobRepository
                 UcnwJobId = job.ParentId,
                 UcnwJobNumber = job.ParentJobNumber,
                 UcnwClientId = job.ClientId ?? 0,
-                UcnwFlightNo = flight.FlightNumber,
+                UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
                 UcnwEtd = flight.DepartureTime,
                 UcnwEta = flight.ArrivalTime
             };
