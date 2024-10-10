@@ -19,7 +19,7 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
 
     
-    public async Task<List<FlightOptionsViewModel>> GetFlightsAsync(
+    public async Task<List<FlightViewModel>> GetFlightsAsync(
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
@@ -36,10 +36,8 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
 
         // If departureDateTime is not provided, use current date and time
         var effectiveDateTime = departureDateTime ?? DateTime.Now;
+        var (year, month, day) = SplitDate(effectiveDateTime);
 
-        var year = effectiveDateTime.Year;
-        var month = effectiveDateTime.Month;
-        var day = effectiveDateTime.Day;
 
         // Construct the relative URL
         var relativeUrl = $"json/from/{departureAirportCode}/to/{destinationAirportCode}/departing/{year}/{month}/{day}";
@@ -73,14 +71,14 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
         Log.Debug($"FlightService StatusCode: {response.StatusCode}");
 
         var content = await response.Content.ReadAsStringAsync();
-        var flightStatusResponse = JsonSerializer.Deserialize<FlightStatusResponse>(content);
+        var flightStatusResponse = JsonSerializer.Deserialize<FlightSchedulesResponse>(content);
 
         if (flightStatusResponse?.ScheduledFlights == null)
-            return new List<FlightOptionsViewModel>();
+            return new List<FlightSchedulesResponse>();
 
         var flightOptions = flightStatusResponse.ScheduledFlights
             .Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
-            .Select(flight => new FlightOptionsViewModel
+            .Select(flight => new FlightViewModel
             {
                 Airline = flightStatusResponse.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
                 FlightNumber = flight.CarrierFsCode + flight.FlightNumber,
@@ -100,4 +98,32 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
 
         return flightOptions;
     }
+
+    public async Task<ScheduledFlight> GetFlightDetailsByFlightNumber(string flightNumber,
+        DateTime departureTime)
+    {
+        if (string.IsNullOrEmpty(flightNumber))
+            throw new ArgumentException("Flight number is required and cannot be null or empty.", nameof(flightNumber));
+
+        var carrierCode = flightNumber[..2];
+        var number = flightNumber[2..];
+        var (year, month, day) = SplitDate(departureTime);
+
+        var request = new RestRequest($"json/flight/{carrierCode}/{number}/departing/{year}/{month}/{day}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Execute the request
+        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
+
+        if (!response.IsSuccessful)
+            throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
+
+        return response.Data.ScheduledFlights.FirstOrDefault();
+    }
+
+    private static (int year, int month, int day) SplitDate(DateTime effectiveDateTime) =>
+        (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day);
 }

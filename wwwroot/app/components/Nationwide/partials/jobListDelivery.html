@@ -1,4 +1,4 @@
-<div class="responsive-datatable">
+<div class="responsive-datatable" ng-if="!jobListLoading">
     <md-table-container>
         <table md-progress="jobPromise" md-table>
             <thead md-head md-order="jobDeliveryFilters.order">
@@ -49,4 +49,13 @@
     <md-table-pagination md-limit="jobDeliveryFilters.limit" md-limit-options="[5, 10, 15]"
                          md-on-paginate="onPaginate" md-page="jobDeliveryFilters.page"
                          md-page-select md-total="{{jobListDelivery.length}}"></md-table-pagination>
+</div>
+
+<div class="loader-container" ng-if="jobListLoading">
+    <div class="full-height" layout="row" layout-align="center center">
+        <div class="material-icon-loader">
+            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+            <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
+        </div>
+    </div>
 </div>

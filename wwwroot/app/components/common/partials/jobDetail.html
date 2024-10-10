@@ -38,9 +38,8 @@
 
                         <div class="field" data-field="fromCity">
                             <label class="disabled">From City:</label>
-                            <div class="disabled value" ng-if="!jdSvc.isUsCustomer">{{jdSvc.currentJob.fromCity}}</div>
-                            <div class="disabled value" ng-if="jdSvc.isUsCustomer">
-                                {{jdSvc.currentJob.pickupAddress.addressLine5}}
+                            <div class="disabled value">
+                                {{jdSvc.isUsCustomer ? jdSvc.currentJob.pickupAddress.addressLine5 : jdSvc.currentJob.fromCity}}
                             </div>
                         </div>
 
@@ -117,6 +116,15 @@
                     </md-button>
                     <div class="value">
                         <pre>{{jdSvc.currentJob.internalNotes}}</pre>
+                    </div>
+                </div>
+
+                <div class="field" data-field="flightInfo" ng-if="jdSvc.currentJob.assignedFlight">
+                    <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Flight Information</label>
+                    <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                        <div>Flight Number: {{jdSvc.currentJob.assignedFlight.flightNumber}}</div>
+                        <div>Departure: {{jdSvc.currentJob.assignedFlight.expectedDeparture | date:'medium'}}</div>
+                        <div>Arrival: {{jdSvc.currentJob.assignedFlight.expectedArrival | date:'medium'}}</div>
                     </div>
                 </div>
 

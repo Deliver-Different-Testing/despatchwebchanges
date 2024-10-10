@@ -1,6 +1,6 @@
-<div class="responsive-datatable">
+<div class="responsive-datatable" ng-if="!jobListLoading">
     <md-table-container>
-        <table md-progress="jobPromise" md-table>
+        <table md-table>
             <thead md-head md-order="jobQuery.order">
             <tr md-row>
                 <th class="col-md" md-column md-order-by="time"><span>Time</span></th>
@@ -20,7 +20,10 @@
             <tr md-row md-select="job" md-select-id="id" ng-mouseup="selectJob(job, true)"
                 ng-repeat="job in jobList | filter: box.searchBox | orderBy: jobQuery.order">
                 <td md-cell>{{job.time | date: "HH:mm"}}</td>
-                <td md-cell>{{job.speed}}</td>
+                <td md-cell>
+                    {{job.speed}}
+                    <md-icon md-font-set="material-symbols-outlined" ng-if="job.speed === 'AF'">local_airport</md-icon>
+                </td>
                 <td md-cell>{{job.jobNo}}</td>
                 <td md-cell>{{job.client}}</td>
                 <td md-cell>{{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}</td>
@@ -58,4 +61,13 @@
             md-page-select
             md-total="{{totalCount}}">
     </md-table-pagination>
+</div>
+
+<div class="loader-container" ng-if="jobListLoading">
+    <div class="full-height" layout="row" layout-align="center center">
+        <div class="material-icon-loader">
+            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+            <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
+        </div>
+    </div>
 </div>

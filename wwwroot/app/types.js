@@ -136,6 +136,9 @@
  * @property {string|null} createdDate - DateTime represented as an ISO string
  * @property {AddressDetails} pickupAddress
  * @property {AddressDetails} deliveryAddress
+ * @property {number} toAirportId
+ * @property {number} fromAirportId
+ * @property {AssignedFlight} assignedFlight
  */
 
 /**
@@ -338,8 +341,8 @@
  *
  * @property {string} airline - The name of the airline operating the flight.
  * @property {string} flightNumber - The flight number.
- * @property {string} departureTime - The departure time of the flight (ISO 8601 format).
- * @property {string} arrivalTime - The arrival time of the flight (ISO 8601 format).
+ * @property {Date} departureTime - The departure time of the flight (ISO 8601 format).
+ * @property {Date} arrivalTime - The arrival time of the flight (ISO 8601 format).
  * @property {string} departureAirport - The code of the departure airport.
  * @property {string} arrivalAirport - The code of the arrival airport.
  * @property {number} duration - The duration of the flight in milliseconds.
@@ -387,4 +390,14 @@
  * @property {number} rate - The rate of the service.
  * @property {boolean} onlyVan - Indicates if the service is only for vans.
  * @property {boolean} selected - Indicates if the service is selected.
+ */
+
+/**
+ * Represents an assigned flight.
+ *
+ * @typedef {Object} AssignedFlight
+ * @property {string} flightNumber - The unique identifier for the flight.
+ * @property {Date|null} expectedDeparture - The expected departure date and time of the flight. Can be null.
+ * @property {Date|null} expectedArrival - The expected arrival date and time of the flight. Can be null.
+ * @property {string} notes - Additional notes or comments about the flight.
  */

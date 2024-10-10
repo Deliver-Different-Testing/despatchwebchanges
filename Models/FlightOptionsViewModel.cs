@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.Models;
 
-public class FlightOptionsViewModel
+public class FlightViewModel
 {
     public string Airline { get; set; }
     public string FlightNumber { get; set; }

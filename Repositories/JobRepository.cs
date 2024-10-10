@@ -203,6 +203,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             from source in sourceJoin.DefaultIfEmpty()
             join st in Context.TucStaffs on tblJob.DispatcherId equals st.UcstId into staffJoin
             from staff in staffJoin.DefaultIfEmpty()
+            join jn in _context.TucJobNationwides on tblJob.JobId equals jn.UcnwJobId into nwJoin
+            from flightInfo in nwJoin.DefaultIfEmpty()
             where tblJob.JobId == jobId
             select new JobViewModel
             {
@@ -329,7 +331,14 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 HasNationwide = nationwide.UcnwJobId.HasValue,
                 StatusName = status.UcjsName,
                 DispatcherName = $"{staff.UcstFirstName ?? string.Empty} {staff.UcstLastName ?? string.Empty}",
-                CreatedDate = tblJob.Date
+                CreatedDate = tblJob.Date,
+                AssignedFlight = new AssignedFlight
+                {
+                    ExpectedArrival = flightInfo.UcnwEta,
+                    ExpectedDeparture = flightInfo.UcnwEtd,
+                    FlightNumber = flightInfo.UcnwFlightNo,
+                    Notes = flightInfo.UcnwNotes
+                }
             };
 
         var job = await jobQuery.FirstOrDefaultAsync();
@@ -403,7 +412,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 BookedDate = j.BookDate,
                 SizeId = j.Size,
                 Void = j.Void,
-                //PickupFrom = j.FromAddress,
                 JobNo = j.JobNumber,
                 Speed = to.ShortName,
                 SpeedName = to.UcjtName,
@@ -1178,6 +1186,19 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             FromAirportId = j.FromAirportId
         }).ToList();
 
+        foreach (var job in list)
+        {
+            job.AssignedFlight = await _context.TucJobNationwides
+                .Where(nj => nj.UcnwJobId == job.Id)
+                .Select(nj => new AssignedFlight
+                {
+                    ExpectedArrival = nj.UcnwEta,
+                    ExpectedDeparture = nj.UcnwEtd,
+                    FlightNumber = nj.UcnwFlightNo,
+                    Notes = nj.UcnwNotes
+                })
+                .FirstOrDefaultAsync();
+        }
 
         return list;
     }
@@ -2179,6 +2200,57 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .FirstOrDefaultAsync();
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
+    }
+
+
+    public async Task<bool> AddJobNationwide(int childJobId, ScheduledFlight flight)
+    {
+        if (flight == null)
+            throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
+
+        try
+        {
+            var job = await _context.TblJobs
+                .Where(j => j.JobId == childJobId)
+                .Select(j => new
+                {
+                    j.JobId,
+                    j.Number,
+                    j.ClientId,
+                    j.ParentId,
+                    ParentJobNumber = j.ParentId != null
+                        ? _context.TblJobs
+                            .Where(pj => pj.JobId == j.ParentId)
+                            .Select(pj => pj.Number)
+                            .FirstOrDefault()
+                        : null
+                })
+                .FirstOrDefaultAsync();
+
+            if (job == null)
+                throw new KeyNotFoundException($"Job with ID {childJobId} not found.");
+
+            var jobNationwide = new TucJobNationwide
+            {
+                UcnwJobId = job.ParentId,
+                UcnwJobNumber = job.ParentJobNumber,
+                UcnwClientId = job.ClientId ?? 0,
+                UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
+                UcnwEtd = flight.DepartureTime,
+                UcnwEta = flight.ArrivalTime
+            };
+
+            _context.TucJobNationwides.Add(jobNationwide);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Log the exception
+            Console.WriteLine(ex.Message);
+            return false;
+        }
     }
 
     private async Task<List<string>> GetViewFilters(List<int> selectedViewIds)
