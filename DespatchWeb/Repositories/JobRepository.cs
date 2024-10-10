@@ -2189,6 +2189,57 @@ public class JobRepository : IJobRepository
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
     }
 
+
+    public async Task<bool> AddJobNationwide(int childJobId, ScheduledFlight flight)
+    {
+        if (flight == null)
+            throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
+
+        try
+        {
+            var job = await _context.TblJobs
+                .Where(j => j.JobId == childJobId)
+                .Select(j => new
+                {
+                    j.JobId,
+                    j.Number,
+                    j.ClientId,
+                    j.ParentId,
+                    ParentJobNumber = j.ParentId != null
+                        ? _context.TblJobs
+                            .Where(pj => pj.JobId == j.ParentId)
+                            .Select(pj => pj.Number)
+                            .FirstOrDefault()
+                        : null
+                })
+                .FirstOrDefaultAsync();
+
+            if (job == null)
+                throw new KeyNotFoundException($"Job with ID {childJobId} not found.");
+
+            var jobNationwide = new TucJobNationwide
+            {
+                UcnwJobId = job.ParentId,
+                UcnwJobNumber = job.ParentJobNumber,
+                UcnwClientId = job.ClientId ?? 0,
+                UcnwFlightNo = flight.FlightNumber,
+                UcnwEtd = flight.DepartureTime,
+                UcnwEta = flight.ArrivalTime
+            };
+
+            _context.TucJobNationwides.Add(jobNationwide);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Log the exception
+            Console.WriteLine(ex.Message);
+            return false;
+        }
+    }
+
     private async Task<List<string>> GetViewFilters(List<int> selectedViewIds)
     {
         var viewFilters = selectedViewIds != null && selectedViewIds.Any()

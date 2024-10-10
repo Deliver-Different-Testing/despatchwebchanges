@@ -43,10 +43,7 @@ public class FlightStatusService : IFlightStatusService
 
         // If departureDateTime is not provided, use current date and time
         var effectiveDateTime = departureDateTime ?? DateTime.Now;
-
-        var year = effectiveDateTime.Year;
-        var month = effectiveDateTime.Month;
-        var day = effectiveDateTime.Day;
+        var (year, month, day) = SplitDate(effectiveDateTime);
 
         var request =
             new RestRequest(
@@ -64,7 +61,7 @@ public class FlightStatusService : IFlightStatusService
                 request.AddQueryParameter("extendedOptions", option);
 
         // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightStatusResponse>(request);
+        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
 
         if (response.Data?.ScheduledFlights == null)
             return new List<FlightOptionsViewModel>();
@@ -92,7 +89,7 @@ public class FlightStatusService : IFlightStatusService
         return flightOptions;
     }
 
-    public async Task<FlightStatusResponse> GetFlightDetailsByFlightNumberAndDepartureAsync(string flightNumber,
+    public async Task<ScheduledFlight> GetFlightDetailsByFlightNumber(string flightNumber,
         DateTime departureTime)
     {
         if (string.IsNullOrEmpty(flightNumber))
@@ -100,19 +97,23 @@ public class FlightStatusService : IFlightStatusService
 
         var carrierCode = flightNumber[..2];
         var number = flightNumber[2..];
+        var (year, month, day) = SplitDate(departureTime);
 
-        var request = new RestRequest($"json/flight/{carrierCode}/{number}/departing/{departureTime:yyyy/MM/dd}");
+        var request = new RestRequest($"json/flight/{carrierCode}/{number}/departing/{year}/{month}/{day}");
 
         // Add query parameters
         request.AddQueryParameter("appId", _appId);
         request.AddQueryParameter("appKey", _appKey);
 
         // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightStatusResponse>(request);
+        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
 
         if (!response.IsSuccessful)
             throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
 
-        return response.Data;
+        return response.Data.ScheduledFlights.FirstOrDefault();
     }
+
+    private static (int year, int month, int day) SplitDate(DateTime effectiveDateTime) =>
+        (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day);
 }

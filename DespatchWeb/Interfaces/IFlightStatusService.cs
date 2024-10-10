@@ -13,4 +13,7 @@ public interface IFlightStatusService
         DateTime? departureDateTime = null,
         string codeType = null,
         string[] extendedOptions = null);
+
+    Task<ScheduledFlight> GetFlightDetailsByFlightNumber(string flightNumber,
+        DateTime departureTime);
 }

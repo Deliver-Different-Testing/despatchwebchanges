@@ -64,4 +64,17 @@ public class FlightStatusServiceTest
     {
         Assert.DoesNotThrow(() => new FlightStatusService(_configuration));
     }
+
+
+    [Test]
+    [Category("Integration")]
+    public async Task GetFlightDetailsByFlightNumberAndDepartureAsync_WithValidInput_ReturnsFlightDetails()
+    {
+        // Arrange
+        const string flightNumber = "DL1132"; // American Airlines flight
+        var departureTime = DateTime.Now.AddDays(1); // Set departure as tomorrow
+
+        // Act
+        await _service.GetFlightDetailsByFlightNumber(flightNumber, departureTime);
+    }
 }

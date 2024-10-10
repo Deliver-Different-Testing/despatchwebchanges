@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace DespatchWeb.Models;
 
-public class FlightStatusResponse
+public class FlightSchedulesResponse
 {
     [JsonProperty("request")] public Request Request { get; set; }
 
@@ -200,4 +200,18 @@ public class ScheduledFlight
     [JsonProperty("referenceCode")] public string ReferenceCode { get; set; }
 
     [JsonProperty("operator")] public Operator Operator { get; set; }
+}
+
+public class Carrier
+{
+    [JsonProperty("requestedCode")] public string RequestedCode { get; set; }
+
+    [JsonProperty("fsCode")] public string FsCode { get; set; }
+}
+
+public class FlightNumber
+{
+    [JsonProperty("requested")] public string Requested { get; set; }
+
+    [JsonProperty("interpreted")] public string Interpreted { get; set; }
 }

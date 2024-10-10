@@ -340,8 +340,8 @@
  *
  * @property {string} airline - The name of the airline operating the flight.
  * @property {string} flightNumber - The flight number.
- * @property {string} departureTime - The departure time of the flight (ISO 8601 format).
- * @property {string} arrivalTime - The arrival time of the flight (ISO 8601 format).
+ * @property {Date} departureTime - The departure time of the flight (ISO 8601 format).
+ * @property {Date} arrivalTime - The arrival time of the flight (ISO 8601 format).
  * @property {string} departureAirport - The code of the departure airport.
  * @property {string} arrivalAirport - The code of the arrival airport.
  * @property {number} duration - The duration of the flight in milliseconds.

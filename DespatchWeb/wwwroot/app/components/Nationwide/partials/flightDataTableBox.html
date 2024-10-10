@@ -28,7 +28,8 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row ng-click="addFlightTobJob($event, flight.flightNumber, currentJob)"
+                            <tr md-row
+                                ng-click="addFlightToJob($event, flight, currentJob)"
                                 ng-repeat="flight in flightOptions | orderBy: flightTableQuery.order">
                                 <td md-cell>{{ flight.airline }}</td>
                                 <td md-cell>{{ flight.flightNumber }}</td>

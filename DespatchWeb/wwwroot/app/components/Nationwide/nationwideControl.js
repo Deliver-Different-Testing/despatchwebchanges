@@ -1898,7 +1898,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     console.log('Getting flights');
                     $scope.flightsLoading = true;
 
-                    const result = await NWData.getFlightOptions(job.id, job.bookedDate);
+                    const result = await NWData.getFlightOptions(job.id, job.date);
                     $scope.flightOptions = result.flights;
                     console.log("Flight options:", result.flights);
                     $scope.flightMessage = result.message;
@@ -1997,26 +1997,33 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         /**
          * @param {Object} $event
-         * @param {string} flightNumber
+         * @param {FlightOptions} flight
          * @param {Job} job
          */
-        $scope.addFlightTobJob = ($event, flightNumber, job) => {
-            const confirm = $mdDialog.confirm()
-                .title('Assign Flight To Job')
-                .textContent('You are assigning flight ' + flightNumber + ' to Job ' + job.jobNo + '. Please confirm this is correct.')
-                .ariaLabel('confirm assign flight to job')
-                .targetEvent($event)
-                .ok('Confirm')
-                .cancel('Cancel');
+        $scope.addFlightToJob = async ($event, flight, job) => {
+            try {
+                const confirm = $mdDialog.confirm()
+                    .title('Assign Flight To Job')
+                    .textContent(`You are assigning flight ${flight.flightNumber} to Job ${job.jobNo}. Please confirm this is correct.`)
+                    .ariaLabel('confirm assign flight to job')
+                    .targetEvent($event)
+                    .ok('Confirm')
+                    .cancel('Cancel');
 
-            $mdDialog.show(confirm).then(() => {
+                await $mdDialog.show(confirm);
+
                 console.log('Assigning to job');
-            }, () => {
-                console.log('User canceled!');
-            });
 
+                await NWData.assignFlightToJob(job.id, flight.flightNumber, flight.departureTime);
 
-        }
+            } catch (error) {
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error('Error assigning flight to job:', error);
+                }
+            }
+        };
 
 
 
