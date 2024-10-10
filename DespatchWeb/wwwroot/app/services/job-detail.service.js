@@ -1615,7 +1615,7 @@ class JobDetailService {
      * @param {Job} job
      */
     internalStatusClick($event, job) {
-        this.showSelectDialog($event, job, this.pickInternalStatus, "InternalStatusID", "Job FollowUp", "Select new status....");
+        this.showSelectDialog($event, job, this.pickInternalStatus, "InternalStatusID", "Service", "Select new status....");
     }
 
     /**

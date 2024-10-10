@@ -230,7 +230,7 @@ public class NationwideJobRepository : INationwideJobRepository
         return list;
     }
 
-    public async Task<bool> AddJobNationwide(int childJobId, ScheduledFlight flight)
+    public async Task<bool> AddJobNationwide(int jobId, ScheduledFlight flight)
     {
         if (flight == null)
             throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
@@ -238,29 +238,23 @@ public class NationwideJobRepository : INationwideJobRepository
         try
         {
             var job = await _context.TblJobs
-                .Where(j => j.JobId == childJobId)
+                .Where(j => j.JobId == jobId)
                 .Select(j => new
                 {
                     j.JobId,
                     j.Number,
                     j.ClientId,
-                    j.ParentId,
-                    ParentJobNumber = j.ParentId != null
-                        ? _context.TblJobs
-                            .Where(pj => pj.JobId == j.ParentId)
-                            .Select(pj => pj.Number)
-                            .FirstOrDefault()
-                        : null
+                    j.ParentId
                 })
                 .FirstOrDefaultAsync();
 
             if (job == null)
-                throw new KeyNotFoundException($"Job with ID {childJobId} not found.");
+                throw new KeyNotFoundException($"Job with ID {jobId} not found.");
 
             var jobNationwide = new TucJobNationwide
             {
-                UcnwJobId = job.ParentId,
-                UcnwJobNumber = job.ParentJobNumber,
+                UcnwJobId = job.JobId,
+                UcnwJobNumber = job.Number,
                 UcnwClientId = job.ClientId ?? 0,
                 UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
                 UcnwEtd = flight.DepartureTime,
