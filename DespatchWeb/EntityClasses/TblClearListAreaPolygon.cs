@@ -15,8 +15,10 @@ namespace DespatchWeb.EntityClasses
         public DateTime LastModified { get; set; }
         public string LastModifiedBy { get; set; }
         public string Notes { get; set; }
+        public int? ZipPolygonId { get; set; }
 
         public virtual TblClearListArea ClearListArea { get; set; }
         public virtual TblPolygon Polygon { get; set; }
+        public virtual ZipPolygon ZipPolygon { get; set; }
     }
 }

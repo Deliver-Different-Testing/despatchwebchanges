@@ -70,7 +70,7 @@ public class FlightStatusService : IFlightStatusService
             return new List<FlightOptionsViewModel>();
 
         var flightOptions = response.Data.ScheduledFlights
-            .Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
+            //.Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
             .Select(flight => new FlightOptionsViewModel
             {
                 Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
@@ -90,5 +90,29 @@ public class FlightStatusService : IFlightStatusService
             }).OrderBy(flight => flight.DepartureTime).ToList();
 
         return flightOptions;
+    }
+
+    public async Task<FlightStatusResponse> GetFlightDetailsByFlightNumberAndDepartureAsync(string flightNumber,
+        DateTime departureTime)
+    {
+        if (string.IsNullOrEmpty(flightNumber))
+            throw new ArgumentException("Flight number is required and cannot be null or empty.", nameof(flightNumber));
+
+        var carrierCode = flightNumber[..2];
+        var number = flightNumber[2..];
+
+        var request = new RestRequest($"json/flight/{carrierCode}/{number}/departing/{departureTime:yyyy/MM/dd}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Execute the request
+        var response = await _client.ExecuteGetAsync<FlightStatusResponse>(request);
+
+        if (!response.IsSuccessful)
+            throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
+
+        return response.Data;
     }
 }

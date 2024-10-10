@@ -133,5 +133,8 @@ namespace DespatchWeb.EntityClasses
         public string StatementBccEmailAddress { get; set; }
         public string StatementDirectory { get; set; }
         public bool? StatementMessageIsHtml { get; set; }
+        public string OpenforceClientId { get; set; }
+        public string OpenforceAccessKey { get; set; }
+        public string OpenforceActivationCode { get; set; }
     }
 }

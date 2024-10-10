@@ -31,4 +31,9 @@ public class NationwideJobController : Controller
 
         return Json(flightOptions ?? new List<FlightOptionsViewModel>());
     }
+
+    [HttpPost]
+    public async Task<IActionResult> AssignFlightToJob(string flightNumber, int jobId)
+    {
+    }
 }

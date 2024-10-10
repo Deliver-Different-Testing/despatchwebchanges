@@ -9,7 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public ZipPolygon()
         {
-            ClearListAreaZipPolygons = new HashSet<ClearListAreaZipPolygon>();
+            TblClearListAreaPolygons = new HashSet<TblClearListAreaPolygon>();
         }
 
         public int ZipPolygonId { get; set; }
@@ -21,6 +21,6 @@ namespace DespatchWeb.EntityClasses
         public string Wkt { get; set; }
         public string FixedWkt { get; set; }
 
-        public virtual ICollection<ClearListAreaZipPolygon> ClearListAreaZipPolygons { get; set; }
+        public virtual ICollection<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; }
     }
 }
