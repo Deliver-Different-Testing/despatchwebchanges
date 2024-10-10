@@ -5611,10 +5611,6 @@ namespace DespatchWeb.EntityClasses
 
                 entity.ToTable("tucJobNationwide");
 
-                entity.HasIndex(e => e.FromAirportId, "IX_tucJobNationwide_FromAirportId");
-
-                entity.HasIndex(e => e.ToAirportId, "IX_tucJobNationwide_ToAirportId");
-
                 entity.HasIndex(e => e.UcnwJobId, "IX_tucJobNationwide_ucnwJobID")
                     .HasFillFactor(80);
 
@@ -5677,20 +5673,10 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("ucnwSystemDate")
                     .HasDefaultValueSql("(getdate())");
 
-                entity.HasOne(d => d.FromAirport)
-                    .WithMany(p => p.TucJobNationwideFromAirports)
-                    .HasForeignKey(d => d.FromAirportId)
-                    .HasConstraintName("FK_tucJobNationwide_FromAirport");
-
                 entity.HasOne(d => d.JobBooking)
                     .WithMany(p => p.TucJobNationwides)
                     .HasForeignKey(d => d.JobBookingId)
                     .HasConstraintName("FK_tucJobNationwide_tucJobBooking");
-
-                entity.HasOne(d => d.ToAirport)
-                    .WithMany(p => p.TucJobNationwideToAirports)
-                    .HasForeignKey(d => d.ToAirportId)
-                    .HasConstraintName("FK_tucJobNationwide_ToAirport");
             });
 
             modelBuilder.Entity<TucJobStatus>(entity =>

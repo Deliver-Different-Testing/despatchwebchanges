@@ -26,11 +26,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime? UcnwSystemDate { get; set; }
         public int? JobBookingId { get; set; }
         public string UcnwCpsignature { get; set; }
-        public int? ToAirportId { get; set; }
-        public int? FromAirportId { get; set; }
 
-        public virtual TblAirport FromAirport { get; set; }
         public virtual TucJobBooking JobBooking { get; set; }
-        public virtual TblAirport ToAirport { get; set; }
     }
 }
