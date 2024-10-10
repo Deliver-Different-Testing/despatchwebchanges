@@ -178,5 +178,7 @@ namespace DespatchWeb.EntityClasses
         public string DeliveryAddressLine6 { get; set; }
         public string DeliveryAddressLine7 { get; set; }
         public string DeliveryAddressLine8 { get; set; }
+        public int? ToAirportId { get; set; }
+        public int? FromAirportId { get; set; }
     }
 }

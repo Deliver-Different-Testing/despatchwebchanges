@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucJob()
         {
             TucJobItems = new HashSet<TucJobItem>();
+            TucJobNationwides = new HashSet<TucJobNationwide>();
         }
 
         public int UcjbId { get; set; }
@@ -216,8 +217,8 @@ namespace DespatchWeb.EntityClasses
         public string DeliveryAddressLine6 { get; set; }
         public string DeliveryAddressLine7 { get; set; }
         public string DeliveryAddressLine8 { get; set; }
-        public int? FromAirportId { get; set; }
         public int? ToAirportId { get; set; }
+        public int? FromAirportId { get; set; }
 
         public virtual TucJobType AcceptedJobType { get; set; }
         public virtual TucClientContact Contact { get; set; }
@@ -228,5 +229,6 @@ namespace DespatchWeb.EntityClasses
         public virtual TucJobType UcjbSpeedNavigation { get; set; }
         public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
         public virtual ICollection<TucJobItem> TucJobItems { get; set; }
+        public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }
     }
 }

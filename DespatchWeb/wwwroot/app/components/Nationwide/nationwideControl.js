@@ -25,6 +25,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             };
 
             $scope.jobList = [];
+            $scope.jobListLoading = false;
             $scope.selected = [];
             $scope.jobFilters = {
                 order: 'time', filter: '', status: 'all', asc: 'asc'
@@ -1897,7 +1898,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     console.log('Getting flights');
                     $scope.flightsLoading = true;
 
-                    const result = await NWData.getFlightOptions(job.id, job.Date);
+                    const result = await NWData.getFlightOptions(job.id, job.date);
                     $scope.flightOptions = result.flights;
                     console.log("Flight options:", result.flights);
                     $scope.flightMessage = result.message;
@@ -1993,6 +1994,37 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.jobGroups = false;
             $scope.jobsCurrentList = false;
         }
+
+        /**
+         * @param {Object} $event
+         * @param {FlightOptions} flight
+         * @param {Job} job
+         */
+        $scope.addFlightToJob = async ($event, flight, job) => {
+            try {
+                const confirm = $mdDialog.confirm()
+                    .title('Assign Flight To Job')
+                    .textContent(`You are assigning flight ${flight.flightNumber} to Job ${job.jobNo}. Please confirm this is correct.`)
+                    .ariaLabel('confirm assign flight to job')
+                    .targetEvent($event)
+                    .ok('Confirm')
+                    .cancel('Cancel');
+
+                await $mdDialog.show(confirm);
+
+                console.log('Assigning to job');
+
+                await NWData.assignFlightToJob(job.id, flight.flightNumber, flight.departureTime);
+
+            } catch (error) {
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error('Error assigning flight to job:', error);
+                }
+            }
+        };
+
 
 
         $scope.setCurrentWorkMenu = () => {
@@ -2385,7 +2417,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.potentialCourierMenu = [{
             text: "Dispatch Selected", click: async ($itemScope, $event, modelValue, text, $li) => {
-                //$scope.selected = $itemScope.item.name;
                 await $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
             }
         }];
@@ -2394,6 +2425,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             const selectedClients = $scope.pickService.clients.map(a => a.id);
 
             try {
+                $scope.jobListLoading = true;
+
                 const [newData, podData, repriceData, deliveryData] = await Promise.all([NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)]);
 
                 $scope.jobList = newData;
@@ -2401,20 +2434,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.jobListReprice = repriceData;
                 $scope.jobListDelivery = deliveryData;
 
-                await Promise.all([$timeout(() => {
-                    angular.element("#box-jobsListPOD .loading").fadeOut();
-                    sizeHeadings(angular.element("#jobListPOD").parents(".column"));
-                }, 200), $timeout(() => {
-                    angular.element("#box-jobsList .loading").fadeOut();
-                    sizeHeadings(angular.element("#jobList").parents(".column"));
-                }, 200), $timeout(() => {
-                    angular.element("#box-jobsListReprice .loading").fadeOut();
-                    sizeHeadings(angular.element("#jobListReprice").parents(".column"));
-                }, 200), await $timeout(async () => {
-                    angular.element("#box-jobsListDelivery .loading").fadeOut();
-                    sizeHeadings(angular.element("#jobListDelivery").parents(".column"));
-                    await $scope.getAvailableCourierLocation();
-                }, 200)]);
+                $scope.jobListLoading = false;
+                $scope.apply;
+
+                await $scope.getAvailableCourierLocation();
             } catch (error) {
                 console.error("Error fetching job data:", error);
             }

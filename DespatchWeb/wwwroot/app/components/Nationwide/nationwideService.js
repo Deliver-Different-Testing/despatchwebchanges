@@ -776,11 +776,8 @@ class NationwideService {
      * @throws {Error} If the API request fails or returns an unexpected response.
      */
     async getFlightOptions(jobId, departureDate) {
-        if (!departureDate || !(departureDate instanceof Date)) {
-            departureDate = new Date();
-        }
+        const formattedDate = departureDate ? this._moment(departureDate).format('YYYY-MM-DD') : null;
 
-        const formattedDate = departureDate.toISOString().split('T')[0];
         const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
             params: {
                 departureDate: formattedDate,
@@ -790,8 +787,31 @@ class NationwideService {
 
         return {
             flights: response.data,
-            message: response.data.length === 0 ? 'No flights found for the specified criteria.' : null
+            message: response.data.length === 0 ? 'Sorry, we couldn\'t find any flights between these airports on the selected date. Please try different dates or airports.' : null
         };
+    }
+
+    /**
+     * Adds the flight to the JobNationwide table to keep a record
+     * @param {number} jobId - The ID of the job
+     * @param {string} flightNumber - The flight number
+     * @param {Date} departureDate - The date of departure.
+     * @throws {Error} If the API request fails or returns an unexpected response.
+     */
+    async assignFlightToJob(jobId, flightNumber, departureDate) {
+        try {
+            const formattedDate = departureDate ? this._moment(departureDate).format('YYYY-MM-DD') : null;
+
+            const response = await this._$http.post('nationwideJob/AssignFlightToJob', {
+                jobId: jobId,
+                flightNumber: flightNumber,
+                departureDate: formattedDate,
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error assigning flight to job:', error);
+        }
     }
 
     /**

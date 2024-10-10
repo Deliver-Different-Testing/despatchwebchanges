@@ -28,5 +28,6 @@ namespace DespatchWeb.EntityClasses
         public string UcnwCpsignature { get; set; }
 
         public virtual TucJobBooking JobBooking { get; set; }
+        public virtual TucJob UcnwJob { get; set; }
     }
 }

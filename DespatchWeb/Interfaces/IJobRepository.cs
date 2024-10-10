@@ -152,4 +152,6 @@ public interface IJobRepository
     Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
 
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
+
+    Task<bool> AddJobNationwide(int childJobId, ScheduledFlight flight);
 }

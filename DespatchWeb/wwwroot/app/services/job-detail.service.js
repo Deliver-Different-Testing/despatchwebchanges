@@ -60,8 +60,6 @@ class JobDetailService {
         this.pickContacts = [];
 
         this.gather = {};
-        this.gpsForm = {};
-
 
         DispatchData.getLeaveList().then(data => {
             this.pickLeaveList = data;

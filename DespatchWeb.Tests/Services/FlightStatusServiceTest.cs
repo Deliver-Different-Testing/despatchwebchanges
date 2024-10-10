@@ -51,7 +51,7 @@ public class FlightStatusServiceTest
             Assert.That(flight.DepartureAirport, Is.EqualTo(departureAirportCode), "Departure airport should match");
             Assert.That(flight.ArrivalAirport, Is.EqualTo(destinationAirportCode), "Arrival airport should match");
             Assert.That(flight.Duration, Is.GreaterThan(TimeSpan.Zero), "Duration should be positive");
-            // Add more assertions as needed based on the expected structure of FlightOptionsViewModel
+            // Add more assertions as needed based on the expected structure of FlightViewModel
         }
 
         // Check if the list is ordered by ascending departure time
@@ -63,5 +63,18 @@ public class FlightStatusServiceTest
     public void Constructor_WithValidConfiguration_InitializesService()
     {
         Assert.DoesNotThrow(() => new FlightStatusService(_configuration));
+    }
+
+
+    [Test]
+    [Category("Integration")]
+    public async Task GetFlightDetailsByFlightNumberAndDepartureAsync_WithValidInput_ReturnsFlightDetails()
+    {
+        // Arrange
+        const string flightNumber = "DL1132"; // American Airlines flight
+        var departureTime = DateTime.Now.AddDays(1); // Set departure as tomorrow
+
+        // Act
+        await _service.GetFlightDetailsByFlightNumber(flightNumber, departureTime);
     }
 }

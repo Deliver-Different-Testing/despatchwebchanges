@@ -101,18 +101,6 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(100);
 
                 entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
-
-                entity.HasOne(d => d.ClearListArea)
-                    .WithMany(p => p.ClearListAreaZipPolygons)
-                    .HasForeignKey(d => d.ClearListAreaId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_ClearListAreaZipPolygon_ClearListArea");
-
-                entity.HasOne(d => d.ZipPolygon)
-                    .WithMany(p => p.ClearListAreaZipPolygons)
-                    .HasForeignKey(d => d.ZipPolygonId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_ClearListAreaZipPolygon_ZipPolygon");
             });
 
             modelBuilder.Entity<DeliveryPhoto>(entity =>
@@ -271,13 +259,18 @@ namespace DespatchWeb.EntityClasses
             {
                 entity.ToTable("DespatchViewZoneGroup");
 
+                entity.HasIndex(e => new { e.DespatchViewId, e.ZoneGroupId }, "UQ_DespatchViewZoneGroup_DespatchView_ZoneGroup")
+                    .IsUnique();
+
                 entity.Property(e => e.DespatchViewZoneGroupId).HasColumnName("DespatchViewZoneGroupID");
 
                 entity.Property(e => e.CreatedBy)
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.CreatedDate).HasDefaultValueSql("(getdate())");
+                entity.Property(e => e.CreatedDate)
+                    .HasPrecision(0)
+                    .HasDefaultValueSql("(getdate())");
 
                 entity.Property(e => e.DespatchViewId).HasColumnName("DespatchViewID");
 
@@ -285,7 +278,9 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.LastModifiedDate).HasDefaultValueSql("(getdate())");
+                entity.Property(e => e.LastModifiedDate)
+                    .HasPrecision(0)
+                    .HasDefaultValueSql("(getdate())");
 
                 entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
 
@@ -293,7 +288,7 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.DespatchViewZoneGroups)
                     .HasForeignKey(d => d.DespatchViewId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_DespatchViewZoneGroup_tblDespatchView");
+                    .HasConstraintName("FK_DespatchViewZoneGroup_DespatchView");
 
                 entity.HasOne(d => d.ZoneGroup)
                     .WithMany(p => p.DespatchViewZoneGroups)
@@ -683,34 +678,29 @@ namespace DespatchWeb.EntityClasses
 
             modelBuilder.Entity<DfrntappUserViewPermission>(entity =>
             {
-                entity.HasKey(e => e.UserViewPermissionId)
-                    .HasName("PK__UserDesp__B13A9F177A08D20D");
+                entity.HasNoKey();
 
                 entity.ToTable("DFRNTAppUserViewPermissions");
 
                 entity.HasIndex(e => new { e.UserId, e.ViewId, e.IsVisible }, "IX_DfrntappUserViewPermissions_UserId_ViewId_IsVisible");
 
-                entity.Property(e => e.UserViewPermissionId)
-                    .ValueGeneratedNever()
-                    .HasColumnName("UserViewPermissionID");
-
-                entity.Property(e => e.Id)
-                    .ValueGeneratedOnAdd()
-                    .HasColumnName("ID");
-
                 entity.Property(e => e.UserId).HasColumnName("UserID");
+
+                entity.Property(e => e.UserViewPermissionId)
+                    .ValueGeneratedOnAdd()
+                    .HasColumnName("UserViewPermissionID");
 
                 entity.Property(e => e.ViewId).HasColumnName("ViewID");
 
                 entity.HasOne(d => d.User)
-                    .WithMany(p => p.DfrntappUserViewPermissions)
+                    .WithMany()
                     .HasForeignKey(d => d.UserId)
-                    .HasConstraintName("FK__UserDespa__UserI__7BF11A7F");
+                    .HasConstraintName("FK__DFRNTAppU__UserI__733BD8ED");
 
                 entity.HasOne(d => d.View)
-                    .WithMany(p => p.DfrntappUserViewPermissions)
+                    .WithMany()
                     .HasForeignKey(d => d.ViewId)
-                    .HasConstraintName("FK__UserDespa__Despa__7CE53EB8");
+                    .HasConstraintName("FK__DFRNTAppU__ViewI__7247B4B4");
             });
 
             modelBuilder.Entity<DfrntpageView>(entity =>
@@ -807,9 +797,7 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.AgentId).HasColumnName("AgentID");
 
-                entity.Property(e => e.AirportCode)
-                    .HasMaxLength(3)
-                    .IsUnicode(false);
+                entity.Property(e => e.AirportCode).HasMaxLength(3);
 
                 entity.Property(e => e.CargoFacilityFee).HasColumnType("money");
 
@@ -1116,8 +1104,6 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(100);
 
-                entity.Property(e => e.Notes).HasColumnType("ntext");
-
                 entity.Property(e => e.Order).HasDefaultValueSql("((1))");
             });
 
@@ -1158,6 +1144,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.PolygonId).HasColumnName("PolygonID");
 
+                entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
+
                 entity.HasOne(d => d.ClearListArea)
                     .WithMany(p => p.TblClearListAreaPolygons)
                     .HasForeignKey(d => d.ClearListAreaId)
@@ -1169,6 +1157,11 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.PolygonId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_tblClearListAreaPolygon_tblPolygon");
+
+                entity.HasOne(d => d.ZipPolygon)
+                    .WithMany(p => p.TblClearListAreaPolygons)
+                    .HasForeignKey(d => d.ZipPolygonId)
+                    .HasConstraintName("FK_ClearListAreaPolygon_ZipPolygon");
             });
 
             modelBuilder.Entity<TblClient>(entity =>
@@ -2653,8 +2646,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.Name)
                     .IsRequired()
                     .HasMaxLength(50);
-
-                entity.Property(e => e.Notes).HasColumnType("ntext");
 
                 entity.Property(e => e.ShowOnAssistDespatch).HasDefaultValueSql("((0))");
 
@@ -5671,9 +5662,7 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(50)
                     .HasColumnName("ucnwJobNumber");
 
-                entity.Property(e => e.UcnwNotes)
-                    .HasColumnType("text")
-                    .HasColumnName("ucnwNotes");
+                entity.Property(e => e.UcnwNotes).HasColumnName("ucnwNotes");
 
                 entity.Property(e => e.UcnwPickUpAgentId).HasColumnName("ucnwPickUpAgentID");
 
@@ -5688,6 +5677,12 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobNationwides)
                     .HasForeignKey(d => d.JobBookingId)
                     .HasConstraintName("FK_tucJobNationwide_tucJobBooking");
+
+                entity.HasOne(d => d.UcnwJob)
+                    .WithMany(p => p.TucJobNationwides)
+                    .HasForeignKey(d => d.UcnwJobId)
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .HasConstraintName("FK_tucJobNationwide_tucJob");
             });
 
             modelBuilder.Entity<TucJobStatus>(entity =>
@@ -6266,8 +6261,6 @@ namespace DespatchWeb.EntityClasses
             {
                 entity.ToTable("ZoneGroup");
 
-                entity.HasIndex(e => e.ClearListAreaId, "IX_ZoneGroup_ClearListAreaId");
-
                 entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
 
                 entity.Property(e => e.Created)
@@ -6287,7 +6280,7 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.ClearListArea)
                     .WithMany(p => p.ZoneGroups)
                     .HasForeignKey(d => d.ClearListAreaId)
-                    .HasConstraintName("FK_ZoneGroup_tblClearListArea");
+                    .HasConstraintName("FK_ZoneGroup_ClearListArea");
             });
 
             modelBuilder.Entity<ZoneName>(entity =>

@@ -185,6 +185,16 @@ public class JobViewModel
 
     public int? ToAirportId { get; set; }
     public int? FromAirportId { get; set; }
+
+    public AssignedFlight? AssignedFlight { get; set; }
+}
+
+public class AssignedFlight
+{
+    public string FlightNumber { get; set; }
+    public DateTime? ExpectedDeparture { get; set; }
+    public DateTime? ExpectedArrival { get; set; }
+    public string Notes { get; set; }
 }
 
 public class Vehicle

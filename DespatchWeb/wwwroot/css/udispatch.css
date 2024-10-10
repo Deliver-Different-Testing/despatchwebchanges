@@ -1470,6 +1470,7 @@ md-list-item:not(.selected):hover {
 .account-header {
   pointer-events: none;
 }
+
 .account-header * {
   user-select: none;
 }
