@@ -67,7 +67,7 @@ public class FlightStatusService : IFlightStatusService
             return new List<FlightViewModel>();
 
         var flightOptions = response.Data.ScheduledFlights
-            //.Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
+            .Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
             .Select(flight => new FlightViewModel
             {
                 Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,

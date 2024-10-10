@@ -75,6 +75,13 @@
                 details with relevant airport data.
             </div>
         </div>
+
+        <div class="no-data" ng-if="currentJob.assignedFlight">
+            <div class="text">
+                <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+                A flight has already been assigned to this job. This can be found in the job details widget.
+            </div>
+        </div>
     </div>
 
     <div class="no-data" ng-if="!currentJob">
