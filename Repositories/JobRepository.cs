@@ -203,7 +203,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             from source in sourceJoin.DefaultIfEmpty()
             join st in Context.TucStaffs on tblJob.DispatcherId equals st.UcstId into staffJoin
             from staff in staffJoin.DefaultIfEmpty()
-            join jn in _context.TucJobNationwides on tblJob.JobId equals jn.UcnwJobId into nwJoin
+            join jn in Context.TucJobNationwides on tblJob.JobId equals jn.UcnwJobId into nwJoin
             from flightInfo in nwJoin.DefaultIfEmpty()
             where tblJob.JobId == jobId
             select new JobViewModel
@@ -1188,7 +1188,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
         foreach (var job in list)
         {
-            job.AssignedFlight = await _context.TucJobNationwides
+            job.AssignedFlight = await Context.TucJobNationwides
                 .Where(nj => nj.UcnwJobId == job.Id)
                 .Select(nj => new AssignedFlight
                 {
@@ -2210,7 +2210,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
         try
         {
-            var job = await _context.TblJobs
+            var job = await Context.TblJobs
                 .Where(j => j.JobId == childJobId)
                 .Select(j => new
                 {
@@ -2219,7 +2219,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     j.ClientId,
                     j.ParentId,
                     ParentJobNumber = j.ParentId != null
-                        ? _context.TblJobs
+                        ? Context.TblJobs
                             .Where(pj => pj.JobId == j.ParentId)
                             .Select(pj => pj.Number)
                             .FirstOrDefault()
@@ -2240,8 +2240,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 UcnwEta = flight.ArrivalTime
             };
 
-            _context.TucJobNationwides.Add(jobNationwide);
-            await _context.SaveChangesAsync();
+            Context.TucJobNationwides.Add(jobNationwide);
+            await Context.SaveChangesAsync();
 
             return true;
         }

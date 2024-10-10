@@ -35,13 +35,13 @@ public class NationwideJobController(IJobRepository jobRepository, IFlightStatus
 
         try
         {
-            var flight = await _flightStatusService.GetFlightDetailsByFlightNumber(request.FlightNumber, departureDate);
+            var flight = await flightStatusService.GetFlightDetailsByFlightNumber(request.FlightNumber, departureDate);
 
             if (flight == null)
                 return NotFound(
                     $"Flight with number {request.FlightNumber} and departure date {departureDate:yyyy-MM-dd} not found.");
 
-            var addToDb = await _jobRepository.AddJobNationwide(request.JobId, flight);
+            var addToDb = await jobRepository.AddJobNationwide(request.JobId, flight);
 
             return addToDb
                 ? Ok("Flight successfully assigned to job.")

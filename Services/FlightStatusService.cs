@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection.Emit;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
@@ -74,7 +75,7 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
         var flightStatusResponse = JsonSerializer.Deserialize<FlightSchedulesResponse>(content);
 
         if (flightStatusResponse?.ScheduledFlights == null)
-            return new List<FlightSchedulesResponse>();
+            return new List<FlightViewModel>();
 
         var flightOptions = flightStatusResponse.ScheduledFlights
             .Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
@@ -109,19 +110,37 @@ public class FlightStatusService(HttpClient httpClient) : IFlightStatusService
         var number = flightNumber[2..];
         var (year, month, day) = SplitDate(departureTime);
 
-        var request = new RestRequest($"json/flight/{carrierCode}/{number}/departing/{year}/{month}/{day}");
+        
+        // Construct the relative URL
+        var relativeUrl = $"json/flight/{carrierCode}/{number}/departing/{year}/{month}/{day}";
 
-        // Add query parameters
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
 
+        var query = HttpUtility.ParseQueryString(string.Empty);
+        query["appId"] = _appId;
+        query["appKey"] = _appKey;
+
+        // Construct the final URI
+        var fullUrl = $"{BaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var uriBuilder = new UriBuilder(fullUrl)
+        {
+            Query = query.ToString()
+        };
+
+        var uri = uriBuilder.Uri;
+        Log.Debug($"FlightRequest: {uri}");
         // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
+        var response = await httpClient.GetAsync(uri);
+        //response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"Failed to retrieve flight information: {response.ReasonPhrase}");
 
-        if (!response.IsSuccessful)
-            throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
+        Log.Debug($"FlightService StatusCode: {response.StatusCode}");
 
-        return response.Data.ScheduledFlights.FirstOrDefault();
+        var content = await response.Content.ReadAsStringAsync();
+        var flightStatusResponse = JsonSerializer.Deserialize<FlightSchedulesResponse>(content);
+
+
+        return flightStatusResponse.ScheduledFlights.FirstOrDefault();
     }
 
     private static (int year, int month, int day) SplitDate(DateTime effectiveDateTime) =>

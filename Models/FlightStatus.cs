@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using ThirdParty.Json.LitJson;
 
 namespace DespatchWeb.Models;
 
-public class FlightStatusResponse
+public class FlightSchedulesResponse
 {
     [JsonPropertyName("request")] public Request Request { get; set; }
 
@@ -200,4 +201,18 @@ public class ScheduledFlight
     [JsonPropertyName("referenceCode")] public string ReferenceCode { get; set; }
 
     [JsonPropertyName("operator")] public Operator Operator { get; set; }
+}
+
+public class Carrier
+{
+    [JsonPropertyName("requestedCode")] public string RequestedCode { get; set; }
+
+    [JsonPropertyName("fsCode")] public string FsCode { get; set; }
+}
+
+public class FlightNumber
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
 }
