@@ -1898,7 +1898,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     console.log('Getting flights');
                     $scope.flightsLoading = true;
 
-                    const result = await NWData.getFlightOptions(job.id, job.Date);
+                    const result = await NWData.getFlightOptions(job.id, job.bookedDate);
                     $scope.flightOptions = result.flights;
                     console.log("Flight options:", result.flights);
                     $scope.flightMessage = result.message;
@@ -1994,6 +1994,30 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.jobGroups = false;
             $scope.jobsCurrentList = false;
         }
+
+        /**
+         * @param {Object} $event
+         * @param {string} flightNumber
+         * @param {Job} job
+         */
+        $scope.addFlightTobJob = ($event, flightNumber, job) => {
+            const confirm = $mdDialog.confirm()
+                .title('Assign Flight To Job')
+                .textContent('You are assigning flight ' + flightNumber + ' to Job ' + job.jobNo + '. Please confirm this is correct.')
+                .ariaLabel('confirm assign flight to job')
+                .targetEvent($event)
+                .ok('Confirm')
+                .cancel('Cancel');
+
+            $mdDialog.show(confirm).then(() => {
+                console.log('Assigning to job');
+            }, () => {
+                console.log('User canceled!');
+            });
+
+
+        }
+
 
 
         $scope.setCurrentWorkMenu = () => {

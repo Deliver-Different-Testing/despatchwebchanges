@@ -92,7 +92,4 @@ class UsStatesService {
     }
 }
 
-/**
- * Register the UsStatesService with the Angular module 'uDispatch'.
- */
 angular.module('uDispatch').service('UsStatesService', UsStatesService);

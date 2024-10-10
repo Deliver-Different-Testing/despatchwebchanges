@@ -790,7 +790,7 @@ class NationwideService {
 
         return {
             flights: response.data,
-            message: response.data.length === 0 ? 'No flights found for the specified criteria.' : null
+            message: response.data.length === 0 ? 'Sorry, we couldn\'t find any flights between these airports on the selected date. Please try different dates or airports.' : null
         };
     }
 

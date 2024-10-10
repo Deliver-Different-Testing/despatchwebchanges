@@ -136,6 +136,8 @@
  * @property {string|null} createdDate - DateTime represented as an ISO string
  * @property {AddressDetails} pickupAddress
  * @property {AddressDetails} deliveryAddress
+ * @property {number} toAirportId
+ * @property {number} fromAirportId
  */
 
 /**
