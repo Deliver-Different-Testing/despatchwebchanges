@@ -1436,47 +1436,40 @@ md-table-pagination {
     }
   }
 }
-
 .responsive-datatable {
   .md-table-container {
     overflow-x: auto;
     max-width: 100%;
   }
-
   table.md-table {
     min-width: 100%;
     table-layout: fixed;
-
     th.md-column, td.md-cell {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding: 0 15px 0 0;
+      white-space: normal;
+      overflow-x: auto;
+      overflow-y: hidden;
+      text-overflow: clip;
+      padding: 0 11px 0 0;
       font-size: 11px;
+      max-height: 3em; /* Adjust this value to control the height of the cells */
     }
-
     // Column widths
     .col-xs {
       width: 40px;
     }
-
     .col-sm {
       width: 60px;
     }
-
     .col-md {
       width: 100px;
     }
-
     .col-lg {
       width: 120px;
     }
-
     .col-xl {
       width: 200px;
     }
   }
-
   .md-table-pagination {
     min-height: 56px;
     display: flex;

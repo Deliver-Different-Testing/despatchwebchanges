@@ -1396,8 +1396,7 @@ md-table-pagination .md-button[disabled] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 15px 0 0;
-  font-size: 11px;
+  padding: 0 20px 0 0;
 }
 .responsive-datatable table.md-table .col-xs {
   width: 40px;
@@ -1470,6 +1469,9 @@ md-list-item:not(.selected):hover {
 }
 .account-header {
   pointer-events: none;
+}
+
+.account-header * {
   user-select: none;
 }
 .material-toolbar-switch {
