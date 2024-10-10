@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
-using DespatchWeb.Enums;
 using DespatchWeb.Models;
 
 namespace DespatchWeb.Interfaces;
@@ -29,10 +28,6 @@ public interface IJobRepository
 
     Task<List<JobViewModel>> JobListAsync(string status, string order,
         string ascending, bool isInternal, string clientIds, List<int> selectedViewIds);
-
-    Task<List<JobViewModel>> NationwideJobListAsync(string status,
-        string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
-        List<int> selectedViewIds);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int id);
@@ -150,8 +145,4 @@ public interface IJobRepository
     Task<PagedList<ClientItemsViewModel>> GetClientItemsBySpeedAsync(int clientId, int speedId, int jobId);
 
     Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
-
-    Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
-
-    Task<bool> AddJobNationwide(int childJobId, ScheduledFlight flight);
 }

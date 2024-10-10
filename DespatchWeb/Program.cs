@@ -46,12 +46,16 @@ builder.Services.Configure<KestrelServerOptions>(options =>
     if (options != null) options.Limits.MaxRequestBodySize = int.MaxValue;
 });
 
+// Repositories
 builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<INationwideJobRepository, NationwideJobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
 
+// Services
 builder.Services.AddScoped<IFlightStatusService, FlightStatusService>();
+builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 
 
 // Automapper

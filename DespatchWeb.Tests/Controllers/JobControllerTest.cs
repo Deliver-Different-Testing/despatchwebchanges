@@ -21,16 +21,16 @@ public class JobControllerTest
     {
         _mockJobRepo = new Mock<IJobRepository>();
         _mockCourierRepo = new Mock<ICourierRepository>();
-        _mockClientRepo = new Mock<IClientRepository>();
+        _mockClientAccessValidator = new Mock<IClientAccessValidatorService>();
         _mockConfig = new Mock<IConfiguration>();
 
-        _controller = new JobController(_mockJobRepo.Object, _mockCourierRepo.Object, _mockClientRepo.Object,
+        _controller = new JobController(_mockJobRepo.Object, _mockCourierRepo.Object, _mockClientAccessValidator.Object,
             _mockConfig.Object);
     }
 
     private Mock<IJobRepository> _mockJobRepo;
     private Mock<ICourierRepository> _mockCourierRepo;
-    private Mock<IClientRepository> _mockClientRepo;
+    private Mock<IClientAccessValidatorService> _mockClientAccessValidator;
     private Mock<IConfiguration> _mockConfig;
     private JobController _controller;
 
