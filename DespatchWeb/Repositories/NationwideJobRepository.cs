@@ -7,6 +7,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.FlightStats;
 using Microsoft.EntityFrameworkCore;
 using Vehicle = DespatchWeb.Models.Vehicle;
 

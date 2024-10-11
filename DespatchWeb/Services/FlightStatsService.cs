@@ -4,26 +4,60 @@ using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.FlightStats;
 using Microsoft.Extensions.Configuration;
 using RestSharp;
 
 namespace DespatchWeb.Services;
 
-public class FlightStatusService : IFlightStatusService
+public class FlightStatsService : IFlightStatsService
 {
     private const string BaseUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
     private readonly string _appId;
     private readonly string _appKey;
     private readonly RestClient _client;
+    private readonly string _webhookUrl;
 
-    public FlightStatusService(IConfiguration configuration)
+    public FlightStatsService(IConfiguration configuration)
     {
         _appId = configuration?["FlightStatusApiKeys:AppId"];
         _appKey = configuration?["FlightStatusApiKeys:AppKey"];
+        _webhookUrl = configuration?["FlightStatusApiKeys:WebhookUrl"];
         _client = new RestClient(BaseUrl);
 
         if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey))
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
+    }
+
+    public async Task CreateFlightRuleByDeparture(string completeFlightNumber, DateTime departureTime,
+        string departureAirportCode)
+    {
+        if (string.IsNullOrEmpty(departureAirportCode))
+            throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
+                nameof(departureAirportCode));
+
+        var uniqueWebhookId = Guid.NewGuid();
+        var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
+        var (year, month, day) = SplitDate(departureTime);
+
+        var request =
+            new RestRequest(
+                $"json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Webhook specific
+        request.AddQueryParameter("name", uniqueWebhookId);
+        request.AddQueryParameter("type", "JSON");
+        request.AddQueryParameter("deliverTo", _webhookUrl);
+
+        // Execute the request
+        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
+
+        if (!response.IsSuccessful)
+            throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
     }
 
     public async Task<List<FlightViewModel>> GetFlightsAsync(
@@ -89,17 +123,17 @@ public class FlightStatusService : IFlightStatusService
         return flightOptions;
     }
 
-    public async Task<ScheduledFlight> GetFlightDetailsByFlightNumber(string flightNumber,
+    public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime)
     {
-        if (string.IsNullOrEmpty(flightNumber))
-            throw new ArgumentException("Flight number is required and cannot be null or empty.", nameof(flightNumber));
+        if (string.IsNullOrEmpty(completeFlightNumber))
+            throw new ArgumentException("Flight number is required and cannot be null or empty.",
+                nameof(completeFlightNumber));
 
-        var carrierCode = flightNumber[..2];
-        var number = flightNumber[2..];
+        var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day) = SplitDate(departureTime);
 
-        var request = new RestRequest($"json/flight/{carrierCode}/{number}/departing/{year}/{month}/{day}");
+        var request = new RestRequest($"json/flight/{carrierCode}/{flightNumber}/departing/{year}/{month}/{day}");
 
         // Add query parameters
         request.AddQueryParameter("appId", _appId);
@@ -116,4 +150,7 @@ public class FlightStatusService : IFlightStatusService
 
     private static (int year, int month, int day) SplitDate(DateTime effectiveDateTime) =>
         (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day);
+
+    private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
+        (completeFlightNumber?[..2], completeFlightNumber?[2..]);
 }

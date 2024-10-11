@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Models;
+using DespatchWeb.Models.FlightStats;
 
 namespace DespatchWeb.Interfaces;
 
-public interface IFlightStatusService
+public interface IFlightStatsService
 {
     Task<List<FlightViewModel>> GetFlightsAsync(
         string departureAirportCode,
@@ -14,6 +15,8 @@ public interface IFlightStatusService
         string codeType = null,
         string[] extendedOptions = null);
 
-    Task<ScheduledFlight> GetFlightDetailsByFlightNumber(string flightNumber,
+    Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime);
+
+    Task CreateFlightRuleByDeparture(string completeFlightNumber, DateTime departureTime, string departureAirportCode);
 }

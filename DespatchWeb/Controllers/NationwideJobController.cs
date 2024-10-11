@@ -11,11 +11,11 @@ namespace DespatchWeb.Controllers;
 public class NationwideJobController : Controller
 {
     private readonly IClientAccessValidatorService _clientAccessValidator;
-    private readonly IFlightStatusService _flightService;
+    private readonly IFlightStatsService _flightService;
     private readonly INationwideJobRepository _repository;
 
     public NationwideJobController(INationwideJobRepository repository,
-        IFlightStatusService flightService, IClientAccessValidatorService clientAccessValidator)
+        IFlightStatsService flightService, IClientAccessValidatorService clientAccessValidator)
     {
         _repository = repository;
         _flightService = flightService;
@@ -90,16 +90,20 @@ public class NationwideJobController : Controller
         if (!DateTime.TryParse(request.DepartureDate, out var departureDate))
             return BadRequest("Invalid departure date format. Please use YYYY-MM-DD.");
 
-        var flight = await _flightService.GetFlightDetailsByFlightNumber(request.FlightNumber, departureDate);
+        var flight = await _flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber, departureDate);
+        var (_, departureAirportCode) = await _repository.GetAirportCodesByJobIdAsync(request.JobId);
 
         if (flight == null)
             return NotFound(
                 $"Flight with number {request.FlightNumber} and departure date {departureDate:yyyy-MM-dd} not found.");
 
         var addToDb = await _repository.AddJobNationwide(request.JobId, flight);
+        if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
 
-        return addToDb
-            ? Ok("Flight successfully assigned to job.")
-            : BadRequest("An error occurred while assigning the flight to the job.");
+        // Set up webhook to receive alerts
+        await _flightService.CreateFlightRuleByDeparture(request.FlightNumber, departureDate,
+            departureAirportCode);
+
+        return Ok();
     }
 }

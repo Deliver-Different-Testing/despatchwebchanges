@@ -54,7 +54,7 @@ builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
 
 // Services
-builder.Services.AddScoped<IFlightStatusService, FlightStatusService>();
+builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 
 

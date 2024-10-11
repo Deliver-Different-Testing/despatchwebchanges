@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
+using DespatchWeb.Models.FlightStats;
 
 namespace DespatchWeb.Interfaces;
 
