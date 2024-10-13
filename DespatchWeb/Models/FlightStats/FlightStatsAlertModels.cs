@@ -6,233 +6,308 @@ namespace DespatchWeb.Models.FlightStats;
 
 public class AlertPayload
 {
-    [JsonProperty("request")] public Request Request { get; set; }
-
     [JsonProperty("alert")] public Alert Alert { get; set; }
-
-    [JsonProperty("appendix")] public Appendix Appendix { get; set; }
 }
 
-public class ActualGateArrival
+public class ActualEquipment
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
+    [JsonProperty("iata")] public string Iata { get; set; }
 
-    [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+    [JsonProperty("jet")] public string Jet { get; set; }
+
+    [JsonProperty("name")] public string Name { get; set; }
+
+    [JsonProperty("regional")] public string Regional { get; set; }
+
+    [JsonProperty("turboProp")] public string TurboProp { get; set; }
+
+    [JsonProperty("widebody")] public string Widebody { get; set; }
 }
 
 public class ActualGateDeparture
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
-
     [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
+}
+
+public class ActualRunwayDeparture
+{
+    [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
 public class AirportResources
 {
-    [JsonProperty("departureTerminal")] public string DepartureTerminal { get; set; }
-
-    [JsonProperty("departureGate")] public string DepartureGate { get; set; }
+    [JsonProperty("arrivalGate")] public string ArrivalGate { get; set; }
 
     [JsonProperty("arrivalTerminal")] public string ArrivalTerminal { get; set; }
 
-    [JsonProperty("arrivalGate")] public string ArrivalGate { get; set; }
+    [JsonProperty("departureGate")] public string DepartureGate { get; set; }
 
-    [JsonProperty("baggage")] public string Baggage { get; set; }
+    [JsonProperty("departureTerminal")] public string DepartureTerminal { get; set; }
 }
 
 public class Alert
 {
-    [JsonProperty("rule")] public Rule Rule { get; set; }
-
-    [JsonProperty("flightStatus")] public FlightStatus FlightStatus { get; set; }
-
-    [JsonProperty("event")] public Event Event { get; set; }
-
     [JsonProperty("dataSource")] public string DataSource { get; set; }
 
     [JsonProperty("dateTimeRecorded")] public DateTime DateTimeRecorded { get; set; }
+
+    [JsonProperty("event")] public WebhookEvent Event { get; set; }
+
+    [JsonProperty("flightStatus")] public FlightStatus FlightStatus { get; set; }
+
+    [JsonProperty("rule")] public Rule Rule { get; set; }
 }
 
-public class AlertType
+public class WebhookEvent
 {
-    [JsonProperty("requested")] public string Requested { get; set; }
+    [JsonProperty("type")] public string Type { get; set; }
 
-    [JsonProperty("interpreted")] public string Interpreted { get; set; }
+    [JsonProperty("value")] public string Value { get; set; }
 }
 
 public class ArrivalDate
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
-
     [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
-public class ConfirmedIncident
+public class Codeshare
 {
-    [JsonProperty("publishedDate")] public DateTime PublishedDate { get; set; }
+    [JsonProperty("carrier")] public Carrier Carrier { get; set; }
 
-    [JsonProperty("message")] public string Message { get; set; }
+    [JsonProperty("flightNumber")] public string FlightNumber { get; set; }
+
+    [JsonProperty("relationship")] public string Relationship { get; set; }
+}
+
+public class Codeshares
+{
+    [JsonProperty("codeshare")] public List<Codeshare> Codeshare { get; set; }
+}
+
+public class Delays
+{
+    [JsonProperty("arrivalRunwayDelayMinutes")]
+    public string ArrivalRunwayDelayMinutes { get; set; }
 }
 
 public class DepartureDate
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
-
     [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
-}
 
-public class Description
-{
-    [JsonProperty("interpreted")] public string Interpreted { get; set; }
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
 public class EstimatedGateArrival
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
-
     [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
 public class EstimatedGateDeparture
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
-
     [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
-public class Event2
+public class EstimatedRunwayArrival
 {
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
+}
+
+public class EstimatedRunwayDeparture
+{
+    [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
 public class FlightDurations
 {
-    [JsonProperty("blockMinutes")] public int BlockMinutes { get; set; }
+    [JsonProperty("scheduledAirMinutes")] public string ScheduledAirMinutes { get; set; }
+
+    [JsonProperty("scheduledBlockMinutes")]
+    public string ScheduledBlockMinutes { get; set; }
+
+    [JsonProperty("scheduledTaxiInMinutes")]
+    public string ScheduledTaxiInMinutes { get; set; }
+
+    [JsonProperty("scheduledTaxiOutMinutes")]
+    public string ScheduledTaxiOutMinutes { get; set; }
+
+    [JsonProperty("taxiOutMinutes")] public string TaxiOutMinutes { get; set; }
 }
 
 public class FlightEquipment
 {
-    [JsonProperty("scheduledEquipmentIataCode")]
-    public string ScheduledEquipmentIataCode { get; set; }
+    [JsonProperty("actualEquipment")] public ActualEquipment ActualEquipment { get; set; }
 
-    [JsonProperty("actualEquipmentIataCode")]
-    public string ActualEquipmentIataCode { get; set; }
+    [JsonProperty("scheduledEquipment")] public ScheduledEquipment ScheduledEquipment { get; set; }
+}
 
-    [JsonProperty("tailNumber")] public string TailNumber { get; set; }
+public class FlightPlanPlannedArrival
+{
+    [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
+}
+
+public class FlightPlanPlannedDeparture
+{
+    [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
 public class FlightStatus
 {
-    [JsonProperty("flightId")] public int FlightId { get; set; }
+    [JsonProperty("airportResources")] public AirportResources AirportResources { get; set; }
 
-    [JsonProperty("carrierFsCode")] public string CarrierFsCode { get; set; }
-
-    [JsonProperty("operatingCarrierFsCode")]
-    public string OperatingCarrierFsCode { get; set; }
-
-    [JsonProperty("primaryCarrierFsCode")] public string PrimaryCarrierFsCode { get; set; }
-
-    [JsonProperty("flightNumber")] public string FlightNumber { get; set; }
-
-    [JsonProperty("departureAirportFsCode")]
-    public string DepartureAirportFsCode { get; set; }
-
-    [JsonProperty("arrivalAirportFsCode")] public string ArrivalAirportFsCode { get; set; }
-
-    [JsonProperty("departureDate")] public DepartureDate DepartureDate { get; set; }
+    [JsonProperty("arrivalAirport")] public ArrivalAirport ArrivalAirport { get; set; }
 
     [JsonProperty("arrivalDate")] public ArrivalDate ArrivalDate { get; set; }
 
-    [JsonProperty("status")] public string Status { get; set; }
+    [JsonProperty("carrier")] public Carrier Carrier { get; set; }
 
-    [JsonProperty("schedule")] public Schedule Schedule { get; set; }
+    [JsonProperty("codeshares")] public Codeshares Codeshares { get; set; }
 
-    [JsonProperty("operationalTimes")] public OperationalTimes OperationalTimes { get; set; }
+    [JsonProperty("delays")] public Delays Delays { get; set; }
 
-    [JsonProperty("codeshares")] public List<CodeShare> CodeShares { get; set; }
+    [JsonProperty("departureAirport")] public DepartureAirport DepartureAirport { get; set; }
+
+    [JsonProperty("departureDate")] public DepartureDate DepartureDate { get; set; }
 
     [JsonProperty("flightDurations")] public FlightDurations FlightDurations { get; set; }
 
-    [JsonProperty("airportResources")] public AirportResources AirportResources { get; set; }
-
     [JsonProperty("flightEquipment")] public FlightEquipment FlightEquipment { get; set; }
 
-    [JsonProperty("flightStatusUpdates")] public List<FlightStatusUpdate> FlightStatusUpdates { get; set; }
+    [JsonProperty("flightId")] public string FlightId { get; set; }
 
-    [JsonProperty("irregularOperations")] public List<IrregularOperation> IrregularOperations { get; set; }
+    [JsonProperty("flightNumber")] public string FlightNumber { get; set; }
 
-    [JsonProperty("confirmedIncident")] public ConfirmedIncident ConfirmedIncident { get; set; }
+    [JsonProperty("flightStatusUpdates")] public FlightStatusUpdates FlightStatusUpdates { get; set; }
+
+    [JsonProperty("operationalTimes")] public OperationalTimes OperationalTimes { get; set; }
+
+    [JsonProperty("schedule")] public Schedule Schedule { get; set; }
+
+    [JsonProperty("status")] public string Status { get; set; }
 }
 
 public class FlightStatusUpdate
 {
-    [JsonProperty("updatedAt")] public UpdatedAt UpdatedAt { get; set; }
-
     [JsonProperty("source")] public string Source { get; set; }
 
-    [JsonProperty("updatedTextFields")] public List<object> UpdatedTextFields { get; set; }
+    [JsonProperty("updatedAt")] public UpdatedAt UpdatedAt { get; set; }
 
-    [JsonProperty("updatedDateFields")] public List<UpdatedDateField> UpdatedDateFields { get; set; }
+    [JsonProperty("updatedDateFields")] public UpdatedDateFields UpdatedDateFields { get; set; }
+
+    [JsonProperty("updatedTextFields")] public UpdatedTextFields UpdatedTextFields { get; set; }
 }
 
-public class IrregularOperation
+public class FlightStatusUpdates
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
-
-    [JsonProperty("message")] public string Message { get; set; }
-
-    [JsonProperty("relatedFlightId")] public int RelatedFlightId { get; set; }
-
-    [JsonProperty("newArrivalAirportFsCode")]
-    public string NewArrivalAirportFsCode { get; set; }
+    [JsonProperty("flightStatusUpdate")] public List<FlightStatusUpdate> FlightStatusUpdate { get; set; }
 }
 
 public class OperationalTimes
 {
-    [JsonProperty("publishedDeparture")] public PublishedDeparture PublishedDeparture { get; set; }
+    [JsonProperty("actualGateDeparture")] public ActualGateDeparture ActualGateDeparture { get; set; }
+
+    [JsonProperty("actualRunwayDeparture")]
+    public ActualRunwayDeparture ActualRunwayDeparture { get; set; }
+
+    [JsonProperty("estimatedGateArrival")] public EstimatedGateArrival EstimatedGateArrival { get; set; }
 
     [JsonProperty("estimatedGateDeparture")]
     public EstimatedGateDeparture EstimatedGateDeparture { get; set; }
 
-    [JsonProperty("actualGateDeparture")] public ActualGateDeparture ActualGateDeparture { get; set; }
+    [JsonProperty("estimatedRunwayArrival")]
+    public EstimatedRunwayArrival EstimatedRunwayArrival { get; set; }
+
+    [JsonProperty("estimatedRunwayDeparture")]
+    public EstimatedRunwayDeparture EstimatedRunwayDeparture { get; set; }
+
+    [JsonProperty("flightPlanPlannedArrival")]
+    public FlightPlanPlannedArrival FlightPlanPlannedArrival { get; set; }
+
+    [JsonProperty("flightPlanPlannedDeparture")]
+    public FlightPlanPlannedDeparture FlightPlanPlannedDeparture { get; set; }
 
     [JsonProperty("publishedArrival")] public PublishedArrival PublishedArrival { get; set; }
 
-    [JsonProperty("estimatedGateArrival")] public EstimatedGateArrival EstimatedGateArrival { get; set; }
+    [JsonProperty("publishedDeparture")] public PublishedDeparture PublishedDeparture { get; set; }
 
-    [JsonProperty("actualGateArrival")] public ActualGateArrival ActualGateArrival { get; set; }
+    [JsonProperty("scheduledGateArrival")] public ScheduledGateArrival ScheduledGateArrival { get; set; }
+
+    [JsonProperty("scheduledGateDeparture")]
+    public ScheduledGateDeparture ScheduledGateDeparture { get; set; }
 }
 
 public class PublishedArrival
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
-
     [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
 public class PublishedDeparture
 {
-    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
-
     [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
+}
+
+public class RuleEvents
+{
+    [JsonProperty("ruleEvent")] public RuleEvent RuleEvent { get; set; }
 }
 
 public class Schedule
 {
     [JsonProperty("flightType")] public string FlightType { get; set; }
 
+    [JsonProperty("restrictions")] public string Restrictions { get; set; }
+
     [JsonProperty("serviceClasses")] public string ServiceClasses { get; set; }
-
-    [JsonProperty("uplines")] public List<object> Uplines { get; set; }
-
-    [JsonProperty("downlines")] public List<object> Downlines { get; set; }
 }
 
-public class Type
+public class ScheduledEquipment
 {
-    [JsonProperty("requested")] public string Requested { get; set; }
+    [JsonProperty("iata")] public string Iata { get; set; }
 
-    [JsonProperty("interpreted")] public string Interpreted { get; set; }
+    [JsonProperty("jet")] public string Jet { get; set; }
+
+    [JsonProperty("name")] public string Name { get; set; }
+
+    [JsonProperty("regional")] public string Regional { get; set; }
+
+    [JsonProperty("turboProp")] public string TurboProp { get; set; }
+
+    [JsonProperty("widebody")] public string Widebody { get; set; }
+}
+
+public class ScheduledGateArrival
+{
+    [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
+}
+
+public class ScheduledGateDeparture
+{
+    [JsonProperty("dateLocal")] public DateTime DateLocal { get; set; }
+
+    [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
 public class UpdatedAt
@@ -240,11 +315,12 @@ public class UpdatedAt
     [JsonProperty("dateUtc")] public DateTime DateUtc { get; set; }
 }
 
-public class UpdatedDateField
+public class UpdatedDateFields
 {
-    [JsonProperty("field")] public string Field { get; set; }
+    [JsonProperty("updatedDateField")] public object UpdatedDateField { get; set; }
+}
 
-    [JsonProperty("originalDateLocal")] public DateTime OriginalDateLocal { get; set; }
-
-    [JsonProperty("newDateLocal")] public DateTime NewDateLocal { get; set; }
+public class UpdatedTextFields
+{
+    [JsonProperty("updatedTextField")] public object UpdatedTextField { get; set; }
 }
