@@ -52,7 +52,7 @@ public class NationwideJobController : Controller
         if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
         var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.BookDelivery, despatchViewIds);
+            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Delivery, despatchViewIds);
         return Json(result);
     }
 

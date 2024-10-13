@@ -9,6 +9,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
@@ -16,10 +17,12 @@ namespace DespatchWeb.Repositories;
 public class NationwideJobRepository : INationwideJobRepository
 {
     private readonly DespatchContext _context;
+    private readonly ILogger<NationwideJobRepository> _logger;
 
-    public NationwideJobRepository(DespatchContext context)
+    public NationwideJobRepository(DespatchContext context, ILogger<NationwideJobRepository> logger)
     {
-        _context = context;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<List<JobViewModel>> NationwideJobListAsync(string status,
@@ -289,6 +292,64 @@ public class NationwideJobRepository : INationwideJobRepository
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
     }
 
+    public async Task UpdateNationwideJobStatusByFlightStatus(FlightStatsAlertEvent flightStatsAlertEvent,
+        Alert flightAlert)
+    {
+        if (flightAlert?.FlightStatus?.FlightNumber == null)
+        {
+            _logger.LogWarning("Flight number is null. Unable to update jobs.");
+            return;
+        }
+
+        var flightNumber = flightAlert.FlightStatus.FlightNumber;
+        var jobsToUpdate = await GetJobsToUpdate(flightNumber);
+
+        if (!jobsToUpdate.Any())
+        {
+            _logger.LogInformation($"No jobs found for flight number {flightNumber}");
+            return;
+        }
+
+        var updateInfo = new UpdateInfo(flightStatsAlertEvent);
+
+        foreach (var item in jobsToUpdate)
+        {
+            UpdateJobStatus(item.Job, updateInfo);
+            UpdateParentJobStatus(item.ParentJob, updateInfo);
+            UpdateNationwideJob(item.Nationwide, updateInfo);
+        }
+
+        await SaveChangesAsync(jobsToUpdate.Count, flightNumber);
+    }
+
+    public async Task UpdateJobNotesByFlightStatus(FlightStatsAlertEvent flightStatsAlertEvent, Alert flightAlert)
+    {
+        if (flightAlert?.FlightStatus?.FlightNumber == null)
+        {
+            _logger.LogWarning("Flight number is null. Unable to update job notes.");
+            return;
+        }
+
+        var flightNumber = flightAlert.FlightStatus.FlightNumber;
+        var jobsToUpdate = await GetJobsToUpdate(flightNumber);
+
+        if (!jobsToUpdate.Any())
+        {
+            _logger.LogInformation($"No jobs found for flight number {flightNumber}");
+            return;
+        }
+
+        var updateInfo = new UpdateInfo(flightStatsAlertEvent);
+
+        foreach (var item in jobsToUpdate)
+        {
+            UpdateJobNotes(item.Job, updateInfo);
+            UpdateParentJobNotes(item.ParentJob, updateInfo);
+        }
+
+        await SaveChangesAsync(jobsToUpdate.Count, flightNumber);
+    }
+
     private static string GetNationwideOrderByClause(string order, string ascending)
     {
         var ascDesc = ascending?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true ? "ASC" : "DESC";
@@ -346,7 +407,7 @@ public class NationwideJobRepository : INationwideJobRepository
                             whereClause.Append("ucjbJobDone = 0");
                             break;
                         case NationwideWindowPanel.Pod:
-                        case NationwideWindowPanel.BookDelivery:
+                        case NationwideWindowPanel.Delivery:
                             whereClause.Append("ucjbJobDone = 0 AND FollowupTime < GETDATE()");
                             break;
                         case NationwideWindowPanel.Reprice:
@@ -374,7 +435,7 @@ public class NationwideJobRepository : INationwideJobRepository
             case NationwideWindowPanel.Pod:
                 whereClause.Append("(InternalStatus = 3 OR ucjbStatus = 9)");
                 break;
-            case NationwideWindowPanel.BookDelivery:
+            case NationwideWindowPanel.Delivery:
                 whereClause.Append("(InternalStatus = 2)");
                 break;
             case NationwideWindowPanel.Reprice:
@@ -389,4 +450,85 @@ public class NationwideJobRepository : INationwideJobRepository
 
         return whereClause.ToString();
     }
+
+    private async Task<List<JobUpdateItem>> GetJobsToUpdate(string flightNumber)
+    {
+        return await _context.TucJobNationwides
+            .Where(jn => jn.UcnwFlightNo == flightNumber)
+            .Select(jn => new JobUpdateItem
+            {
+                Job = jn.UcnwJob,
+                ParentJob = jn.UcnwJob.Parent,
+                Nationwide = jn
+            })
+            .ToListAsync();
+    }
+
+    private static void UpdateJobStatus(TucJob job, UpdateInfo updateInfo)
+    {
+        job.UcjbJobDone = false;
+        job.FollowupTime = updateInfo.CurrentTime.Date;
+        job.InternalStatus = (int)InternalJobStatus.BookDelivery;
+        job.UcjbStatus = (int)JobStatus.Warning;
+        job.UcjbNotes = AppendNote(job.UcjbNotes, updateInfo.UpdateNote);
+    }
+
+    private void UpdateParentJobStatus(TucJob parentJob, UpdateInfo updateInfo)
+    {
+        if (parentJob != null) UpdateJobStatus(parentJob, updateInfo);
+    }
+
+    private static void UpdateJobNotes(TucJob job, UpdateInfo updateInfo) =>
+        job.UcjbNotes = AppendNote(job.UcjbNotes, updateInfo.UpdateNote);
+
+    private static void UpdateParentJobNotes(TucJob parentJob, UpdateInfo updateInfo)
+    {
+        if (parentJob != null) UpdateJobNotes(parentJob, updateInfo);
+    }
+
+    private static void UpdateNationwideJob(TucJobNationwide nationwide, UpdateInfo updateInfo)
+    {
+        nationwide.Modified = updateInfo.CurrentTime;
+        nationwide.ModifiedBy = "webhook";
+    }
+
+    private static string AppendNote(string existingNotes, string newNote) =>
+        string.IsNullOrEmpty(existingNotes) ? newNote : $"{existingNotes}\n{newNote}";
+
+    private async Task SaveChangesAsync(int updatedCount, string flightNumber)
+    {
+        try
+        {
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"Updated {updatedCount} jobs for flight {flightNumber}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error updating jobs for flight {flightNumber}");
+        }
+    }
+
+    #region PrivateModels
+
+    private class UpdateInfo
+    {
+        public UpdateInfo(FlightStatsAlertEvent flightStatsAlertEvent)
+        {
+            CurrentTime = DateTime.Now;
+            var alertStatus = flightStatsAlertEvent.ToString();
+            UpdateNote = $"Flight Alert Update ({CurrentTime:yyyy-MM-dd HH:mm:ss}): {alertStatus}";
+        }
+
+        public DateTime CurrentTime { get; }
+        public string UpdateNote { get; }
+    }
+
+    private class JobUpdateItem
+    {
+        public TucJob Job { get; set; }
+        public TucJob ParentJob { get; set; }
+        public TucJobNationwide Nationwide { get; set; }
+    }
+
+    #endregion
 }

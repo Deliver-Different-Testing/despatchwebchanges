@@ -5652,7 +5652,21 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.UcnwId).HasColumnName("ucnwID");
 
+                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasDefaultValueSql("('System')");
+
                 entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
+
+                entity.Property(e => e.Modified).HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.ModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasDefaultValueSql("('System')");
 
                 entity.Property(e => e.UcnwAirportOnly).HasColumnName("ucnwAirportOnly");
 

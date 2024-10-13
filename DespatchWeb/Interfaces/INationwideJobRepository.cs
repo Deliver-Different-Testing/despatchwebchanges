@@ -15,4 +15,8 @@ public interface INationwideJobRepository
     Task<bool> AddJobNationwide(int jobId, ScheduledFlight flight);
 
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
+
+    Task UpdateNationwideJobStatusByFlightStatus(FlightStatsAlertEvent flightStatsAlertEvent, Alert flightAlert);
+
+    Task UpdateJobNotesByFlightStatus(FlightStatsAlertEvent flightStatsAlertEvent, Alert flightAlert);
 }
