@@ -319,7 +319,7 @@ public class NationwideJobRepository : INationwideJobRepository
             UpdateNationwideJob(item.Nationwide, updateInfo);
         }
 
-        await SaveChangesAsync(jobsToUpdate.Count, flightNumber);
+        await _context.SaveChangesAsync();
     }
 
     public async Task UpdateJobNotesByFlightStatus(FlightStatsAlertEvent flightStatsAlertEvent, Alert flightAlert)
@@ -347,7 +347,7 @@ public class NationwideJobRepository : INationwideJobRepository
             UpdateParentJobNotes(item.ParentJob, updateInfo);
         }
 
-        await SaveChangesAsync(jobsToUpdate.Count, flightNumber);
+        await _context.SaveChangesAsync();
     }
 
     private static string GetNationwideOrderByClause(string order, string ascending)
@@ -407,7 +407,7 @@ public class NationwideJobRepository : INationwideJobRepository
                             whereClause.Append("ucjbJobDone = 0");
                             break;
                         case NationwideWindowPanel.Pod:
-                        case NationwideWindowPanel.Delivery:
+                        case NationwideWindowPanel.ActionRequired:
                             whereClause.Append("ucjbJobDone = 0 AND FollowupTime < GETDATE()");
                             break;
                         case NationwideWindowPanel.Reprice:
@@ -435,7 +435,7 @@ public class NationwideJobRepository : INationwideJobRepository
             case NationwideWindowPanel.Pod:
                 whereClause.Append("(InternalStatus = 3 OR ucjbStatus = 9)");
                 break;
-            case NationwideWindowPanel.Delivery:
+            case NationwideWindowPanel.ActionRequired:
                 whereClause.Append("(InternalStatus = 2)");
                 break;
             case NationwideWindowPanel.Reprice:
@@ -469,11 +469,10 @@ public class NationwideJobRepository : INationwideJobRepository
         job.UcjbJobDone = false;
         job.FollowupTime = updateInfo.CurrentTime.Date;
         job.InternalStatus = (int)InternalJobStatus.BookDelivery;
-        job.UcjbStatus = (int)JobStatus.Warning;
         job.UcjbNotes = AppendNote(job.UcjbNotes, updateInfo.UpdateNote);
     }
 
-    private void UpdateParentJobStatus(TucJob parentJob, UpdateInfo updateInfo)
+    private static void UpdateParentJobStatus(TucJob parentJob, UpdateInfo updateInfo)
     {
         if (parentJob != null) UpdateJobStatus(parentJob, updateInfo);
     }
@@ -494,19 +493,6 @@ public class NationwideJobRepository : INationwideJobRepository
 
     private static string AppendNote(string existingNotes, string newNote) =>
         string.IsNullOrEmpty(existingNotes) ? newNote : $"{existingNotes}\n{newNote}";
-
-    private async Task SaveChangesAsync(int updatedCount, string flightNumber)
-    {
-        try
-        {
-            await _context.SaveChangesAsync();
-            _logger.LogInformation($"Updated {updatedCount} jobs for flight {flightNumber}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error updating jobs for flight {flightNumber}");
-        }
-    }
 
     #region PrivateModels
 
