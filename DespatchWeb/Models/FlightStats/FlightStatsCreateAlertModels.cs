@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace DespatchWeb.Models.FlightStats;
 
-public class WebhookPayload
+public class CreateAlertResponse
 {
     [JsonProperty("request")] public Request Request { get; set; }
 

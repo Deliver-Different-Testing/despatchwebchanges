@@ -238,7 +238,7 @@ public class NationwideJobRepository : INationwideJobRepository
         return list;
     }
 
-    public async Task<bool> AddJobNationwide(int jobId, ScheduledFlight flight, Guid webhookId)
+    public async Task<bool> AddJobNationwide(int jobId, ScheduledFlight flight, string webhookAlertId)
     {
         if (flight == null)
             throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
@@ -267,7 +267,7 @@ public class NationwideJobRepository : INationwideJobRepository
                 UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
                 UcnwEtd = flight.DepartureTime,
                 UcnwEta = flight.ArrivalTime,
-                WebhookAlertSubscriptionId = webhookId
+                WebhookAlertId = webhookAlertId
             };
 
             _context.TucJobNationwides.Add(jobNationwide);

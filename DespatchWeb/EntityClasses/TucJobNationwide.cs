@@ -26,7 +26,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime? UcnwSystemDate { get; set; }
         public int? JobBookingId { get; set; }
         public string UcnwCpsignature { get; set; }
-        public Guid? WebhookAlertSubscriptionId { get; set; }
+        public string WebhookAlertId { get; set; }
 
         public virtual TucJobBooking JobBooking { get; set; }
         public virtual TucJob UcnwJob { get; set; }

@@ -30,7 +30,7 @@ public class FlightStatsService : IFlightStatsService
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
     }
 
-    public async Task<Guid> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
+    public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode)
     {
         if (string.IsNullOrEmpty(departureAirportCode))
@@ -39,7 +39,6 @@ public class FlightStatsService : IFlightStatsService
 
         var alertClient = new RestClient(AlertUrl);
 
-        var uniqueWebhookId = Guid.NewGuid();
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day) = SplitDate(departureTime);
 
@@ -52,17 +51,16 @@ public class FlightStatsService : IFlightStatsService
         request.AddQueryParameter("appKey", _appKey);
 
         // Webhook specific
-        request.AddQueryParameter("name", uniqueWebhookId);
         request.AddQueryParameter("type", "JSON");
         request.AddQueryParameter("deliverTo", _webhookUrl);
 
         // Execute the request
-        var response = await alertClient.ExecuteGetAsync<FlightSchedulesResponse>(request);
+        var response = await alertClient.ExecuteGetAsync<CreateAlertResponse>(request);
 
-        if (!response.IsSuccessful)
+        if (!response.IsSuccessful || response.Data is null)
             throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
 
-        return uniqueWebhookId;
+        return response.Data.Rule?.Id;
     }
 
     public async Task<List<FlightViewModel>> GetFlightsAsync(
