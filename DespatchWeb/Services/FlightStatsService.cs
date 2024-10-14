@@ -58,9 +58,51 @@ public class FlightStatsService : IFlightStatsService
         var response = await alertClient.ExecuteGetAsync<CreateAlertResponse>(request);
 
         if (!response.IsSuccessful || response.Data is null)
-            throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
+            throw new Exception($"Failed to set up alert: {response.ErrorMessage}");
 
         return response.Data.Rule?.Id;
+    }
+
+    public async Task<Rule> GetAlertSubscriptionByIdAsync(string alertId)
+    {
+        var alertClient = new RestClient(AlertUrl);
+
+        var request =
+            new RestRequest(
+                $"json/get/{alertId}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Execute the request
+        var response = await alertClient.ExecuteGetAsync<RetrieveAlertResponse>(request);
+
+        if (!response.IsSuccessful || response.Data is null)
+            throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
+
+        return response.Data.Rule;
+    }
+
+    public async Task DeleteAlertByIdAsync(string alertId)
+    {
+        var alertClient = new RestClient(AlertUrl);
+
+        var request =
+            new RestRequest(
+                $"json/delete/{alertId}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Execute the request
+        var response = await alertClient.ExecuteGetAsync(request);
+
+        if (response.IsSuccessful)
+            return;
+
+        throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
     }
 
     public async Task<List<FlightViewModel>> GetFlightsAsync(

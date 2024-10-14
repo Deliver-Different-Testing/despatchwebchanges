@@ -15,6 +15,15 @@ public class CreateAlertResponse
     [JsonProperty("appendix")] public Appendix Appendix { get; set; }
 }
 
+public class RetrieveAlertResponse
+{
+    [JsonProperty("request")] public Request Request { get; set; }
+
+    [JsonProperty("rule")] public Rule Rule { get; set; }
+
+    [JsonProperty("appendix")] public Appendix Appendix { get; set; }
+}
+
 public class AirlineCode
 {
     [JsonProperty("fsCode")] public string FsCode { get; set; }

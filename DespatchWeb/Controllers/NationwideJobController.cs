@@ -109,7 +109,7 @@ public class NationwideJobController : Controller
         var webhookId = await _flightService.CreateFlightRuleByDepartureAsync(request.FlightNumber, departureDate,
             departureAirportCode) ?? string.Empty;
 
-        var addToDb = await _repository.AddJobNationwide(request.JobId, flight, webhookId);
+        var addToDb = await _repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
         if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
 
 

@@ -238,7 +238,7 @@ public class NationwideJobRepository : INationwideJobRepository
         return list;
     }
 
-    public async Task<bool> AddJobNationwide(int jobId, ScheduledFlight flight, string webhookAlertId)
+    public async Task<bool> AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
     {
         if (flight == null)
             throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
