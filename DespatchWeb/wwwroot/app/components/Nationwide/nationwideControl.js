@@ -199,9 +199,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                         $mdDialog.alert()
                             .clickOutsideToClose(true)
                             .title('No Views Available')
-                            .textContent(
-                                'There are no dispatch views set up for your user account.\n\n' +
-                                'Please contact your system administrator to add views in the Admin Manager.\n\n' +
+                            .htmlContent(
+                                'There are no dispatch views set up for your user account.<br><br>' +
+                                'Please contact your system administrator to add views in the Admin Manager.<br><br>' +
                                 'Views are necessary to filter and organize dispatch information effectively.'
                             )
                             .ariaLabel('No Views Available Alert')
@@ -298,7 +298,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         $scope.JobRecordSelected = selectedJobId => {
             const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
-            return $scope.selectJob(selectedJob);
+            return $scope.selectJob(selectedJob, false);
         }
 
         /**
