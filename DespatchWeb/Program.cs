@@ -28,7 +28,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     // This lambda determines whether user consent for non-essential cookies is needed for a given request.
     if (options == null) return;
     options.CheckConsentNeeded = _ => true;
-    options.MinimumSameSitePolicy = SameSiteMode.None;
+    options.MinimumSameSitePolicy = SameSiteMode.Strict;
 });
 builder.Services.Configure<FormOptions>(x =>
 {
