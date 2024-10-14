@@ -719,7 +719,7 @@ class NationwideService {
             params.append('despatchViewIds', id.toString());
         });
 
-        const url = `job/${endpoint}?${params.toString()}`;
+        const url = `nationwidejob/${endpoint}?${params.toString()}`;
         const response = await this._$http.get(url);
         return response.data;
     }

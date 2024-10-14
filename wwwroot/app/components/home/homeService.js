@@ -10,7 +10,7 @@ class DispatchData {
      * @param {number} pageId
      */
     async getSelectedViews(userId, pageId) {
-        const response = await this._$http.get('DfrntViews/GetPageViews?userid=' + userId + '&pageid=' + pageId);
+        const response = await this._$http.get('home/GetPageViews?userid=' + userId + '&pageid=' + pageId);
         return response.data;
     }
 

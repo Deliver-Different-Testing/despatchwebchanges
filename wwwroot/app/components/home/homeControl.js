@@ -704,7 +704,7 @@ angular.module("uDispatch")
         };
 
         /**
-         * @param {DriverDes} driverDestination
+         * @param {DriverDestination} driverDestination
          */
         $scope.selectClearList = async (driverDestination) => {
             try {
@@ -733,9 +733,12 @@ angular.module("uDispatch")
             $scope.jobForDispatch = job;
         };
 
-        $scope.swapPOD = async (event) => {
+        /**
+         * @param {Object} $event
+         */
+        $scope.swapPOD = async ($event) => {
             try {
-                const jobNumber = await promptForJobNumber(event);
+                const jobNumber = await promptForJobNumber($event);
                 const secondJobId = await validateSwapPOD(jobNumber);
                 if (!secondJobId) {
                     await showInvalidJobAlert();
@@ -743,7 +746,7 @@ angular.module("uDispatch")
                 }
 
                 const firstJobId = $scope.currentJob.id;
-                await confirmSwapPOD(event, $scope.currentJob.jobNo, jobNumber);
+                await confirmSwapPOD($event, $scope.currentJob.jobNo, jobNumber);
                 await performSwapPOD($scope.currentJob.jobNo, jobNumber);
                 await showSuccessAlert();
                 await updateJobsAfterSwap(secondJobId, firstJobId);
@@ -752,18 +755,24 @@ angular.module("uDispatch")
             }
         };
 
-        async function promptForJobNumber(event) {
+        /**
+         * @param {Object} $event
+         */
+        async function promptForJobNumber($event) {
             return $mdDialog.show($mdDialog.prompt()
                 .title('Enter the other job number')
                 .textContent('Please enter the Job Number to swap the POD.')
                 .placeholder('Job Number')
                 .ariaLabel('Job Number')
-                .targetEvent(event)
+                .targetEvent($event)
                 .required(true)
                 .ok('Submit')
                 .cancel('Cancel'));
         }
 
+        /**
+         * @param {String} jobNumber
+         */
         async function validateSwapPOD(jobNumber) {
             return uCSData.validateSwapPOD(jobNumber);
         }
@@ -776,6 +785,11 @@ angular.module("uDispatch")
                 .ok('OK'));
         }
 
+        /**
+         * @param {Object} event
+         * @param {String} currentJobNo
+         * @param {String} jobNumber
+         */
         async function confirmSwapPOD(event, currentJobNo, jobNumber) {
             await $mdDialog.show($mdDialog.confirm()
                 .title('Swap Delivery Info?')
@@ -785,6 +799,10 @@ angular.module("uDispatch")
                 .cancel('No'));
         }
 
+        /**
+         * @param {String} currentJobNo
+         * @param {String} jobNumber
+         */
         async function performSwapPOD(currentJobNo, jobNumber) {
             await uCSData.swapPOD(currentJobNo, jobNumber);
         }
@@ -797,6 +815,10 @@ angular.module("uDispatch")
                 .ok('OK'));
         }
 
+        /**
+         * @param {number} secondJobId
+         * @param {number} firstJobId
+         */
         async function updateJobsAfterSwap(secondJobId, firstJobId) {
             await uCSData.reSendJobs(secondJobId);
             await uCSData.reAssignJobs(firstJobId);
