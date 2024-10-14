@@ -13,6 +13,7 @@ namespace DespatchWeb.Services;
 public class FlightStatsService : IFlightStatsService
 {
     private const string BaseUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
+    private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1/";
     private readonly string _appId;
     private readonly string _appKey;
     private readonly RestClient _client;
@@ -29,12 +30,14 @@ public class FlightStatsService : IFlightStatsService
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
     }
 
-    public async Task CreateFlightRuleByDeparture(string completeFlightNumber, DateTime departureTime,
+    public async Task CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode)
     {
         if (string.IsNullOrEmpty(departureAirportCode))
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
+
+        var alertClient = new RestClient(AlertUrl);
 
         var uniqueWebhookId = Guid.NewGuid();
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
@@ -54,7 +57,7 @@ public class FlightStatsService : IFlightStatsService
         request.AddQueryParameter("deliverTo", _webhookUrl);
 
         // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
+        var response = await alertClient.ExecuteGetAsync<FlightSchedulesResponse>(request);
 
         if (!response.IsSuccessful)
             throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");

@@ -109,7 +109,7 @@ public class NationwideJobController : Controller
         if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
 
         // Set up webhook to receive alerts
-        await _flightService.CreateFlightRuleByDeparture(request.FlightNumber, departureDate,
+        await _flightService.CreateFlightRuleByDepartureAsync(request.FlightNumber, departureDate,
             departureAirportCode);
 
         return Ok();

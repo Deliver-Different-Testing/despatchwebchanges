@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +24,42 @@ public class FlightStatsServiceTest
 
     private IConfiguration _configuration;
     private FlightStatsService _service;
+
+    [Test]
+    [Category("Integration")]
+    public async Task GetFlightsAndCreateFlightRule_WithRealApiCall_SuccessfullyCreatesRule()
+    {
+        // Arrange
+        const string departureAirportCode = "LAX"; // Los Angeles International Airport
+        const string destinationAirportCode = "JFK"; // John F. Kennedy International Airport
+        var tomorrow = DateTime.Now.AddDays(1);
+
+        // Act
+        var flights = await _service.GetFlightsAsync(departureAirportCode, destinationAirportCode, tomorrow);
+
+        // Assert
+        Assert.That(flights, Is.Not.Null.And.Not.Empty, "Should return at least one flight");
+
+        // Select the first flight
+        var firstFlight = flights.First();
+
+        // 2. Create flight rule
+        Assert.DoesNotThrowAsync(async () =>
+        {
+            await _service.CreateFlightRuleByDepartureAsync(
+                firstFlight.FlightNumber,
+                firstFlight.DepartureTime,
+                departureAirportCode
+            );
+        }, "CreateFlightRuleByDeparture should not throw an exception");
+
+        // Additional assertions
+        Assert.That(firstFlight.FlightNumber, Is.Not.Null.And.Not.Empty, "Flight number should not be empty");
+        Assert.That(firstFlight.DepartureTime, Is.GreaterThanOrEqualTo(DateTime.Now),
+            "Departure time should be in the future");
+        Assert.That(firstFlight.DepartureAirport, Is.EqualTo(departureAirportCode), "Departure airport should match");
+        Assert.That(firstFlight.ArrivalAirport, Is.EqualTo(destinationAirportCode), "Arrival airport should match");
+    }
 
     [Test]
     [Category("Integration")]
@@ -76,5 +113,21 @@ public class FlightStatsServiceTest
 
         // Act
         await _service.GetFlightDetailsByFlightNumberAsync(flightNumber, departureTime);
+    }
+
+    [Test]
+    [Category("Unit")]
+    public void CreateFlightRuleByDeparture_NullDepartureAirportCode_ThrowsArgumentException()
+    {
+        Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.CreateFlightRuleByDepartureAsync("AA123", DateTime.Now, null));
+    }
+
+    [Test]
+    [Category("Unit")]
+    public void CreateFlightRuleByDeparture_EmptyDepartureAirportCode_ThrowsArgumentException()
+    {
+        Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.CreateFlightRuleByDepartureAsync("AA123", DateTime.Now, ""));
     }
 }
