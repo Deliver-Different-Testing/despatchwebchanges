@@ -68,8 +68,7 @@ public class FlightStatsService : IFlightStatsService
         var alertClient = new RestClient(AlertUrl);
 
         var request =
-            new RestRequest(
-                $"json/get/{alertId}");
+            new RestRequest($"json/get/{alertId}");
 
         // Add query parameters
         request.AddQueryParameter("appId", _appId);
@@ -89,8 +88,7 @@ public class FlightStatsService : IFlightStatsService
         var alertClient = new RestClient(AlertUrl);
 
         var request =
-            new RestRequest(
-                $"json/delete/{alertId}");
+            new RestRequest($"json/delete/{alertId}");
 
         // Add query parameters
         request.AddQueryParameter("appId", _appId);

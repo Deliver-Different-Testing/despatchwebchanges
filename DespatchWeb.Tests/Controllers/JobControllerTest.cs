@@ -119,14 +119,15 @@ public class JobControllerTest
 
 
     [Test]
-    public async Task InterCourierCharge_WithNullViewModel_ReturnsInternalServerError()
+    public void InterCourierCharge_WithNullViewModel_ThrowsException()
     {
+        // Arrange
         InterCourierChargeViewModel viewModel = null;
 
-        var result = await _controller.InterCourierCharge(viewModel) as ObjectResult;
-
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.StatusCode, Is.EqualTo(StatusCodes.Status500InternalServerError));
+        // Act & Assert
+        Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            await _controller.InterCourierCharge(viewModel)
+        );
     }
 
     [Test]
