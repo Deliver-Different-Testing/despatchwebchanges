@@ -1,5 +1,12 @@
+/**
+ * @fileoverview Angular Material theme configuration for uDispatch module
+ * @module uDispatch
+ */
 angular.module('uDispatch')
     .config(['$mdThemingProvider', $mdThemingProvider => {
+        /**
+         * Define custom color palette for primary colors
+         */
         $mdThemingProvider.definePalette('urgentPrimary', {
             '50': 'fffbe0',
             '100': 'fef5b3',
@@ -20,6 +27,9 @@ angular.module('uDispatch')
             'contrastLightColors': []
         });
 
+        /**
+         * Define custom color palette for accent colors
+         */
         $mdThemingProvider.definePalette('urgentAccent', {
             '50': 'ececec',
             '100': 'cecece',
@@ -41,12 +51,16 @@ angular.module('uDispatch')
         });
 
 
-        // Material Theme
+        /**
+         * Configure the default theme with custom palettes
+         */
         $mdThemingProvider.theme('default')
             .primaryPalette('urgentPrimary')
             .accentPalette('urgentAccent');
 
-        // Register Toast themes
+        /**
+         * Register additional themes for toasts
+         */
         $mdThemingProvider.theme('success-toast')
         $mdThemingProvider.theme('warning-toast')
         $mdThemingProvider.theme('error-toast')

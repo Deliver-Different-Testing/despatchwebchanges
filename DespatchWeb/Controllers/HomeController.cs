@@ -3,11 +3,11 @@ using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace DespatchWeb.Controllers;
@@ -15,15 +15,15 @@ namespace DespatchWeb.Controllers;
 public class HomeController : Controller
 {
     private readonly IClientRepository _clientRepository;
-    private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _hostingEnvironment;
+    private readonly IDfrntViewsRepository _viewsRepository;
 
-    public HomeController(IClientRepository clientRepository, IConfiguration configuration,
-        IWebHostEnvironment hostingEnvironment)
+    public HomeController(IClientRepository clientRepository,
+        IWebHostEnvironment hostingEnvironment, IDfrntViewsRepository viewsRepository)
     {
         _clientRepository = clientRepository;
-        _configuration = configuration;
         _hostingEnvironment = hostingEnvironment;
+        _viewsRepository = viewsRepository;
     }
 
     // Temp Login for testing
@@ -32,6 +32,13 @@ public class HomeController : Controller
         var viewModel = await _clientRepository.TempLoginAsync();
         SetViewBagForDispatcher(viewModel, viewModel.FirstName);
         return View();
+    }
+
+    public async Task<IActionResult> GetPageViews(int userId, int pageId)
+    {
+        var page = (AppPage)pageId;
+        var viewOptions = await _viewsRepository.GetViewsByUserAndPageAsync(userId, page);
+        return Json(viewOptions);
     }
 
     /*public async Task<IActionResult> Index([FromQuery] string login)

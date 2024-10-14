@@ -175,7 +175,12 @@ namespace DespatchWeb.EntityClasses
         public string DeliveryAddressLine6 { get; set; }
         public string DeliveryAddressLine7 { get; set; }
         public string DeliveryAddressLine8 { get; set; }
+        public decimal? DryIceWeight { get; set; }
+        public int? FromAirportId { get; set; }
+        public int? ToAirportId { get; set; }
 
+        public virtual TblAirport FromAirport { get; set; }
+        public virtual TblAirport ToAirport { get; set; }
         public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; }
         public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }
     }

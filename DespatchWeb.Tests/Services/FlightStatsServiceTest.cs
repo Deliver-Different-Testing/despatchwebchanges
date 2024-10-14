@@ -7,8 +7,8 @@ using NUnit.Framework;
 namespace DespatchWeb.Tests.Services;
 
 [TestFixture]
-[TestOf(typeof(FlightStatusService))]
-public class FlightStatusServiceTest
+[TestOf(typeof(FlightStatsService))]
+public class FlightStatsServiceTest
 {
     [SetUp]
     public void Setup()
@@ -18,11 +18,11 @@ public class FlightStatusServiceTest
             .AddJsonFile("appsettings.json")
             ?.Build();
 
-        _service = new FlightStatusService(_configuration);
+        _service = new FlightStatsService(_configuration);
     }
 
     private IConfiguration _configuration;
-    private FlightStatusService _service;
+    private FlightStatsService _service;
 
     [Test]
     [Category("Integration")]
@@ -62,7 +62,7 @@ public class FlightStatusServiceTest
     [Category("Unit")]
     public void Constructor_WithValidConfiguration_InitializesService()
     {
-        Assert.DoesNotThrow(() => new FlightStatusService(_configuration));
+        Assert.DoesNotThrow(() => new FlightStatsService(_configuration));
     }
 
 
@@ -75,6 +75,6 @@ public class FlightStatusServiceTest
         var departureTime = DateTime.Now.AddDays(1); // Set departure as tomorrow
 
         // Act
-        await _service.GetFlightDetailsByFlightNumber(flightNumber, departureTime);
+        await _service.GetFlightDetailsByFlightNumberAsync(flightNumber, departureTime);
     }
 }

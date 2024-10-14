@@ -7,9 +7,16 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TucJobStatus
     {
+        public TucJobStatus()
+        {
+            TucJobs = new HashSet<TucJob>();
+        }
+
         public int UcjsId { get; set; }
         public string UcjsReplyCode { get; set; }
         public string UcjsName { get; set; }
         public string UcjsCode { get; set; }
+
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

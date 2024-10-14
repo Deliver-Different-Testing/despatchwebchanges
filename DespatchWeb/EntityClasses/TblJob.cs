@@ -180,5 +180,6 @@ namespace DespatchWeb.EntityClasses
         public string DeliveryAddressLine8 { get; set; }
         public int? ToAirportId { get; set; }
         public int? FromAirportId { get; set; }
+        public decimal? DryIceWeight { get; set; }
     }
 }

@@ -228,14 +228,7 @@
                                 {{jdSvc.currentJob.trackingEmail}}
                             </div>
                         </div>
-                        <div class="field"
-                             ng-click="!jdSvc.currentJob.locked && jdSvc.internalStatusClick($event, jdSvc.currentJob)"
-                             ng-if="!jdSvc.currentJob.bulkJob">
-                            <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Job FollowUp</label>
-                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.getInternalStatus(jdSvc.currentJob.internalStatusID)}}
-                            </div>
-                        </div>
+
                         <div class="field"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.showNotesDialog($event, jdSvc.currentJob, 'ConNote','Connote')"
                              ng-if="(name=='Nationwide' || name=='POD') && !jdSvc.currentJob.bulkJob && jdSvc.currentJob.hasNationwide">

@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Mail;
 using System.Reflection;
 using System.Threading.Tasks;
-using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Http;
@@ -21,17 +20,18 @@ namespace DespatchWeb.Controllers;
 
 public class JobController : Controller
 {
-    private readonly IClientRepository _clientRepo;
+    private readonly IClientAccessValidatorService _clientAccessValidator;
     private readonly IConfiguration _configuration;
     private readonly ICourierRepository _courierRepo;
     private readonly IJobRepository _jobRepo;
 
-    public JobController(IJobRepository jobRepository, ICourierRepository courierRepo, IClientRepository clientRepo,
+    public JobController(IJobRepository jobRepository, ICourierRepository courierRepo,
+        IClientAccessValidatorService clientAccessValidator,
         IConfiguration configuration)
     {
         _jobRepo = jobRepository;
         _courierRepo = courierRepo;
-        _clientRepo = clientRepo;
+        _clientAccessValidator = clientAccessValidator;
         _configuration = configuration;
     }
 
@@ -39,65 +39,12 @@ public class JobController : Controller
     public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        try
-        {
-            // Validate Client Access
-            if (!isInternal) await ValidateClientAccess(cid, clientIds);
+        // Validate Client Access
+        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-            // Get jobs
-            var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds);
-            return Json(result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized("You don't have permission to access these clients.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            return StatusCode(500, "An error occurred while processing your request.");
-        }
-    }
-
-    public async Task<IActionResult> NationwideJobListNew([FromQuery] JobQueryParams queryParams, bool isInternal,
-        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
-    {
-        if (!isInternal) await ValidateClientAccess(cid, clientIds);
-
-        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.JobList, despatchViewIds);
-        return Json(result);
-    }
-
-    public async Task<IActionResult> NationwideJobListPod([FromQuery] JobQueryParams queryParams, bool isInternal,
-        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
-    {
-        if (!isInternal) await ValidateClientAccess(cid, clientIds);
-
-        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Pod, despatchViewIds);
-        return Json(result);
-    }
-
-    public async Task<IActionResult> NationwideJobListBookDelivery([FromQuery] JobQueryParams queryParams,
-        bool isInternal,
-        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
-    {
-        if (!isInternal) await ValidateClientAccess(cid, clientIds);
-
-        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.BookDelivery, despatchViewIds);
-        return Json(result);
-    }
-
-    public async Task<IActionResult> NationwideJobListReprice([FromQuery] JobQueryParams queryParams, bool isInternal,
-        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
-    {
-        if (!isInternal) await ValidateClientAccess(cid, clientIds);
-
-        var result = await _jobRepo.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Reprice, despatchViewIds);
+        // Get jobs
+        var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
+            queryParams.Asc, isInternal, clientIds, despatchViewIds);
         return Json(result);
     }
 
@@ -1070,20 +1017,6 @@ public class JobController : Controller
     public async Task<IActionResult> DeleteFile(int jobId, string fileName)
     {
         return Json("OK");
-    }
-
-    private async Task ValidateClientAccess(int contactId, string clientIds)
-    {
-        if (string.IsNullOrEmpty(clientIds)) return;
-
-        var clientContacts = await _clientRepo.ClientContactsAsync(contactId);
-        var requestedClientIds = clientIds.Split(',').Select(int.Parse).ToHashSet();
-
-        var hasAccess = clientContacts?
-            .Select(c => c.ID)
-            .Any(x => requestedClientIds.Contains(x)) ?? false;
-
-        if (!hasAccess) throw new UnauthorizedAccessException();
     }
 
     public class ClientItemsModel

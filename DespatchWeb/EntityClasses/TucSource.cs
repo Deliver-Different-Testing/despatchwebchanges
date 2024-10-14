@@ -7,11 +7,18 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TucSource
     {
+        public TucSource()
+        {
+            TucJobs = new HashSet<TucJob>();
+        }
+
         public int SourceId { get; set; }
         public string Name { get; set; }
         public DateTime Created { get; set; }
         public string CreatedBy { get; set; }
         public DateTime LastModified { get; set; }
         public string LastModifiedBy { get; set; }
+
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }
