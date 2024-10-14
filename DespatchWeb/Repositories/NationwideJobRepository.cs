@@ -508,8 +508,8 @@ public class NationwideJobRepository : INationwideJobRepository
 
     private class JobUpdateItem
     {
-        public TucJob Job { get; set; }
-        public TucJob ParentJob { get; set; }
+        public TucJob Job { get; init; }
+        public TucJob ParentJob { get; init; }
         public TucJobNationwide Nationwide { get; set; }
     }
 
