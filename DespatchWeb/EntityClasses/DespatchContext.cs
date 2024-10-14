@@ -259,6 +259,8 @@ namespace DespatchWeb.EntityClasses
             {
                 entity.ToTable("DespatchViewZoneGroup");
 
+                entity.HasIndex(e => e.ZoneGroupId, "IX_DespatchViewZoneGroup_ZoneGroupID");
+
                 entity.HasIndex(e => new { e.DespatchViewId, e.ZoneGroupId }, "UQ_DespatchViewZoneGroup_DespatchView_ZoneGroup")
                     .IsUnique();
 
@@ -678,27 +680,28 @@ namespace DespatchWeb.EntityClasses
 
             modelBuilder.Entity<DfrntappUserViewPermission>(entity =>
             {
-                entity.HasNoKey();
+                entity.HasKey(e => e.UserViewPermissionId)
+                    .HasName("PK__UserDesp__B13A9F177A08D20D");
 
                 entity.ToTable("DFRNTAppUserViewPermissions");
 
                 entity.HasIndex(e => new { e.UserId, e.ViewId, e.IsVisible }, "IX_DfrntappUserViewPermissions_UserId_ViewId_IsVisible");
 
-                entity.Property(e => e.UserId).HasColumnName("UserID");
-
                 entity.Property(e => e.UserViewPermissionId)
-                    .ValueGeneratedOnAdd()
+                    .ValueGeneratedNever()
                     .HasColumnName("UserViewPermissionID");
+
+                entity.Property(e => e.UserId).HasColumnName("UserID");
 
                 entity.Property(e => e.ViewId).HasColumnName("ViewID");
 
                 entity.HasOne(d => d.User)
-                    .WithMany()
+                    .WithMany(p => p.DfrntappUserViewPermissions)
                     .HasForeignKey(d => d.UserId)
                     .HasConstraintName("FK__DFRNTAppU__UserI__733BD8ED");
 
                 entity.HasOne(d => d.View)
-                    .WithMany()
+                    .WithMany(p => p.DfrntappUserViewPermissions)
                     .HasForeignKey(d => d.ViewId)
                     .HasConstraintName("FK__DFRNTAppU__ViewI__7247B4B4");
             });
@@ -2800,6 +2803,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.DispatcherId).HasColumnName("DispatcherID");
 
+                entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
+
                 entity.Property(e => e.ExternalCodingId).HasColumnName("ExternalCodingID");
 
                 entity.Property(e => e.ExternalCourierCodingId).HasColumnName("ExternalCourierCodingID");
@@ -4628,6 +4633,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
+                entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
+
+                entity.HasIndex(e => e.ToAirportId, "IX_tucJob_ToAirportId");
+
                 entity.HasIndex(e => e.InformationParentId, "InformationParentID");
 
                 entity.HasIndex(e => e.JobRelationshipTypeId, "JobRelationshipTypeID");
@@ -4742,6 +4751,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.DropoffAmount).HasColumnType("money");
 
                 entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
+
+                entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
 
                 entity.Property(e => e.EmailForJobFu)
                     .HasColumnName("EmailForJobFU")
@@ -5119,12 +5130,12 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.Parent)
                     .WithMany(p => p.InverseParent)
                     .HasForeignKey(d => d.ParentId)
-                    .HasConstraintName("fk_tucJob_ParentId");
+                    .HasConstraintName("FK_tucJob_ParentID");
 
                 entity.HasOne(d => d.Source)
                     .WithMany(p => p.TucJobs)
                     .HasForeignKey(d => d.SourceId)
-                    .HasConstraintName("fk_tucJob_Source");
+                    .HasConstraintName("FK_tucJob_tucSource");
 
                 entity.HasOne(d => d.ToAirport)
                     .WithMany(p => p.TucJobToAirports)
@@ -5134,27 +5145,17 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.UcjbDisp)
                     .WithMany(p => p.TucJobs)
                     .HasForeignKey(d => d.UcjbDispId)
-                    .HasConstraintName("fk_tucJob_DispID");
-
-                entity.HasOne(d => d.UcjbFromNavigation)
-                    .WithMany(p => p.TucJobUcjbFromNavigations)
-                    .HasForeignKey(d => d.UcjbFrom)
-                    .HasConstraintName("fk_tucJob_FromSuburb");
+                    .HasConstraintName("FK_tucJob_tucStaff");
 
                 entity.HasOne(d => d.UcjbSpeedNavigation)
                     .WithMany(p => p.TucJobUcjbSpeedNavigations)
                     .HasForeignKey(d => d.UcjbSpeed)
-                    .HasConstraintName("fk_tucJob_Speed");
+                    .HasConstraintName("FK_tucJob_tucJobType");
 
                 entity.HasOne(d => d.UcjbStatusNavigation)
                     .WithMany(p => p.TucJobs)
                     .HasForeignKey(d => d.UcjbStatus)
-                    .HasConstraintName("fk_tucJob_Status");
-
-                entity.HasOne(d => d.UcjbToNavigation)
-                    .WithMany(p => p.TucJobUcjbToNavigations)
-                    .HasForeignKey(d => d.UcjbTo)
-                    .HasConstraintName("fk_tucJob_ToSuburb");
+                    .HasConstraintName("FK_tucJob_tucJobStatus");
 
                 entity.HasOne(d => d.UndeliverableLocation)
                     .WithMany(p => p.TucJobs)
@@ -5180,6 +5181,10 @@ namespace DespatchWeb.EntityClasses
                 entity.HasIndex(e => e.UcbkNextDue, "DespatchWebSearch2");
 
                 entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
+
+                entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
+
+                entity.HasIndex(e => e.ToAirportId, "IX_tucJobBooking_ToAirportID");
 
                 entity.HasIndex(e => e.InformationParentId, "InformationParentID");
 
@@ -5255,6 +5260,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
 
+                entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
+
                 entity.Property(e => e.FixedPrice)
                     .IsRequired()
                     .HasDefaultValueSql("((1))");
@@ -5270,6 +5277,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.FromAddressStreetName)
                     .HasMaxLength(200)
                     .HasColumnName("fromAddressStreetName");
+
+                entity.Property(e => e.FromAirportId).HasColumnName("FromAirportID");
 
                 entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
 
@@ -5398,6 +5407,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.ToAddressStreetName)
                     .HasMaxLength(200)
                     .HasColumnName("toAddressStreetName");
+
+                entity.Property(e => e.ToAirportId).HasColumnName("ToAirportID");
 
                 entity.Property(e => e.TrackingEmail).HasMaxLength(500);
 
@@ -5566,6 +5577,16 @@ namespace DespatchWeb.EntityClasses
                     .HasDefaultValueSql("((0))");
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
+
+                entity.HasOne(d => d.FromAirport)
+                    .WithMany(p => p.TucJobBookingFromAirports)
+                    .HasForeignKey(d => d.FromAirportId)
+                    .HasConstraintName("FK__tucJobBoo__FromA__69B26EB3");
+
+                entity.HasOne(d => d.ToAirport)
+                    .WithMany(p => p.TucJobBookingToAirports)
+                    .HasForeignKey(d => d.ToAirportId)
+                    .HasConstraintName("FK__tucJobBoo__ToAir__6AA692EC");
             });
 
             modelBuilder.Entity<TucJobBookingItem>(entity =>
@@ -5652,21 +5673,7 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.UcnwId).HasColumnName("ucnwID");
 
-                entity.Property(e => e.Created).HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.CreatedBy)
-                    .IsRequired()
-                    .HasMaxLength(100)
-                    .HasDefaultValueSql("('System')");
-
                 entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
-
-                entity.Property(e => e.Modified).HasDefaultValueSql("(getdate())");
-
-                entity.Property(e => e.ModifiedBy)
-                    .IsRequired()
-                    .HasMaxLength(100)
-                    .HasDefaultValueSql("('System')");
 
                 entity.Property(e => e.UcnwAirportOnly).HasColumnName("ucnwAirportOnly");
 
@@ -5706,7 +5713,9 @@ namespace DespatchWeb.EntityClasses
                     .HasMaxLength(50)
                     .HasColumnName("ucnwJobNumber");
 
-                entity.Property(e => e.UcnwNotes).HasColumnName("ucnwNotes");
+                entity.Property(e => e.UcnwNotes)
+                    .HasColumnType("text")
+                    .HasColumnName("ucnwNotes");
 
                 entity.Property(e => e.UcnwPickUpAgentId).HasColumnName("ucnwPickUpAgentID");
 
@@ -5725,7 +5734,6 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.UcnwJob)
                     .WithMany(p => p.TucJobNationwides)
                     .HasForeignKey(d => d.UcnwJobId)
-                    .OnDelete(DeleteBehavior.SetNull)
                     .HasConstraintName("FK_tucJobNationwide_tucJob");
             });
 
@@ -6304,6 +6312,8 @@ namespace DespatchWeb.EntityClasses
             modelBuilder.Entity<ZoneGroup>(entity =>
             {
                 entity.ToTable("ZoneGroup");
+
+                entity.HasIndex(e => e.ClearListAreaId, "IX_ZoneGroup_ClearListAreaId");
 
                 entity.Property(e => e.ZoneGroupId).HasColumnName("ZoneGroupID");
 

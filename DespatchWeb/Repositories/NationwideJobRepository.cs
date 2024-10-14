@@ -46,8 +46,12 @@ public class NationwideJobRepository : INationwideJobRepository
 
         var sql =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
+        _logger.LogInformation($"Executing SQL: {sql}");
 
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql).ToListAsync();
+        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql)
+            .AsNoTracking()
+            .ToListAsync();
+
         var list = jobs.Select(j => new JobViewModel
         {
             Id = j.UcjbId,
@@ -316,7 +320,6 @@ public class NationwideJobRepository : INationwideJobRepository
         {
             UpdateJobStatus(item.Job, updateInfo);
             UpdateParentJobStatus(item.ParentJob, updateInfo);
-            UpdateNationwideJob(item.Nationwide, updateInfo);
         }
 
         await _context.SaveChangesAsync();
@@ -483,12 +486,6 @@ public class NationwideJobRepository : INationwideJobRepository
     private static void UpdateParentJobNotes(TucJob parentJob, UpdateInfo updateInfo)
     {
         if (parentJob != null) UpdateJobNotes(parentJob, updateInfo);
-    }
-
-    private static void UpdateNationwideJob(TucJobNationwide nationwide, UpdateInfo updateInfo)
-    {
-        nationwide.Modified = updateInfo.CurrentTime;
-        nationwide.ModifiedBy = "webhook";
     }
 
     private static string AppendNote(string existingNotes, string newNote) =>

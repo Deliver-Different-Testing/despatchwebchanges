@@ -64,6 +64,7 @@ public class FlightStatsService : IFlightStatsService
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
+        DateTime? flightBuffer = null,
         string codeType = null,
         string[] extendedOptions = null)
     {
@@ -74,6 +75,9 @@ public class FlightStatsService : IFlightStatsService
         if (string.IsNullOrEmpty(destinationAirportCode))
             throw new ArgumentException("Arrival airport code is required and cannot be null or empty.",
                 nameof(destinationAirportCode));
+
+        // If no flight bugger provided, get flights from now
+        flightBuffer ??= DateTime.Now;
 
         // If departureDateTime is not provided, use current date and time
         var effectiveDateTime = departureDateTime ?? DateTime.Now;
@@ -101,7 +105,7 @@ public class FlightStatsService : IFlightStatsService
             return new List<FlightViewModel>();
 
         var flightOptions = response.Data.ScheduledFlights
-            .Where(flight => flight.DepartureTime > DateTime.Now && !flight.IsCodeShare)
+            .Where(flight => flight.DepartureTime > flightBuffer && !flight.IsCodeShare)
             .Select(flight => new FlightViewModel
             {
                 Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,

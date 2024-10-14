@@ -9,6 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public TucStaff()
         {
+            DfrntappUserViewPermissions = new HashSet<DfrntappUserViewPermission>();
             TucJobs = new HashSet<TucJob>();
         }
 
@@ -59,6 +60,7 @@ namespace DespatchWeb.EntityClasses
         public string AddressLine8 { get; set; }
 
         public virtual TucSuburb UcstSuburb { get; set; }
+        public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

@@ -26,10 +26,6 @@ namespace DespatchWeb.EntityClasses
         public DateTime? UcnwSystemDate { get; set; }
         public int? JobBookingId { get; set; }
         public string UcnwCpsignature { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime Created { get; set; }
-        public string ModifiedBy { get; set; }
-        public DateTime Modified { get; set; }
 
         public virtual TucJobBooking JobBooking { get; set; }
         public virtual TucJob UcnwJob { get; set; }

@@ -12,8 +12,6 @@ namespace DespatchWeb.EntityClasses
             TblPolygonGps = new HashSet<TblPolygonGp>();
             TblPolygonSuburbs = new HashSet<TblPolygonSuburb>();
             TucClients = new HashSet<TucClient>();
-            TucJobUcjbFromNavigations = new HashSet<TucJob>();
-            TucJobUcjbToNavigations = new HashSet<TucJob>();
             TucStaffs = new HashSet<TucStaff>();
         }
 
@@ -50,8 +48,6 @@ namespace DespatchWeb.EntityClasses
         public virtual ICollection<TblPolygonGp> TblPolygonGps { get; set; }
         public virtual ICollection<TblPolygonSuburb> TblPolygonSuburbs { get; set; }
         public virtual ICollection<TucClient> TucClients { get; set; }
-        public virtual ICollection<TucJob> TucJobUcjbFromNavigations { get; set; }
-        public virtual ICollection<TucJob> TucJobUcjbToNavigations { get; set; }
         public virtual ICollection<TucStaff> TucStaffs { get; set; }
     }
 }

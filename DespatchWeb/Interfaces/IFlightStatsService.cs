@@ -12,6 +12,7 @@ public interface IFlightStatsService
         string departureAirportCode,
         string destinationAirportCode,
         DateTime? departureDateTime = null,
+        DateTime? flightBuffer = null,
         string codeType = null,
         string[] extendedOptions = null);
 

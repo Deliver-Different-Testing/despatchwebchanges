@@ -26,11 +26,19 @@ public class NationwideJobController : Controller
     public async Task<IActionResult> NationwideJobListNew([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        try
+        {
+            if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-        var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.JobList, despatchViewIds);
-        return Json(result);
+            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+                queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.JobList, despatchViewIds);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpGet]
