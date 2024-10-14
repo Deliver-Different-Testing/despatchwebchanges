@@ -136,5 +136,6 @@ namespace DespatchWeb.EntityClasses
         public string OpenforceClientId { get; set; }
         public string OpenforceAccessKey { get; set; }
         public string OpenforceActivationCode { get; set; }
+        public int? AccountsMode { get; set; }
     }
 }

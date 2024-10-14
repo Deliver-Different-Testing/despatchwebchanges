@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
+using DespatchWeb.Repositories;
 using Microsoft.Extensions.Configuration;
 using RestSharp;
 
@@ -17,20 +18,22 @@ public class FlightStatsService : IFlightStatsService
     private readonly string _appId;
     private readonly string _appKey;
     private readonly RestClient _client;
+    private readonly NationwideJobRepository _nationwideJobRepository;
     private readonly string _webhookUrl;
 
-    public FlightStatsService(IConfiguration configuration)
+    public FlightStatsService(IConfiguration configuration, NationwideJobRepository nationwideJobRepository)
     {
         _appId = configuration?["FlightStatusApiKeys:AppId"];
         _appKey = configuration?["FlightStatusApiKeys:AppKey"];
         _webhookUrl = configuration?["FlightStatusApiKeys:WebhookUrl"];
         _client = new RestClient(BaseUrl);
+        _nationwideJobRepository = nationwideJobRepository;
 
         if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey))
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
     }
 
-    public async Task CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
+    public async Task<Guid> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode)
     {
         if (string.IsNullOrEmpty(departureAirportCode))
@@ -61,6 +64,8 @@ public class FlightStatsService : IFlightStatsService
 
         if (!response.IsSuccessful)
             throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
+
+        return uniqueWebhookId;
     }
 
     public async Task<List<FlightViewModel>> GetFlightsAsync(

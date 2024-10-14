@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
@@ -12,7 +13,7 @@ public interface INationwideJobRepository
         string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
         List<int> selectedViewIds);
 
-    Task<bool> AddJobNationwide(int jobId, ScheduledFlight flight);
+    Task<bool> AddJobNationwide(int jobId, ScheduledFlight flight, Guid webhookId);
 
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
 }
