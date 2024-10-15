@@ -1741,7 +1741,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         // GROUPED JOBS
         ////////////////////////////
 
-        $scope.getGroupedJobs = async (jobs, courier) => {
+        $scope.getGroupedJobs = async () => {
+            if ($scope.isUsCustomer) {
+                // Ignore this if DFRNT customer
+                return;
+            }
+
             try {
                 const $boxJobGroups = angular.element("#box-jobGroups");
                 $boxJobGroups.find(".loading").show();
@@ -1769,6 +1774,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         // CURRENT JOBS
         ////////////////////////////
 
+        /**
+         * @param {number} courierId
+         */
         $scope.getCurrentJobs = async (courierId) => {
             try {
                 const $boxCurrentWork = angular.element("#box-currentWork");
