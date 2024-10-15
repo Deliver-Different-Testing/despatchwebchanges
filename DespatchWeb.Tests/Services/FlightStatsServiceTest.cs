@@ -93,7 +93,7 @@ public class FlightStatsServiceTest
         var result = await _service.GetFlightsAsync(
             departureAirportCode,
             destinationAirportCode,
-            now
+            now, now
         );
 
         // Assert
@@ -107,7 +107,6 @@ public class FlightStatsServiceTest
             Assert.That(flight.DepartureAirport, Is.EqualTo(departureAirportCode), "Departure airport should match");
             Assert.That(flight.ArrivalAirport, Is.EqualTo(destinationAirportCode), "Arrival airport should match");
             Assert.That(flight.Duration, Is.GreaterThan(TimeSpan.Zero), "Duration should be positive");
-            // Add more assertions as needed based on the expected structure of FlightViewModel
         }
 
         // Check if the list is ordered by ascending departure time
