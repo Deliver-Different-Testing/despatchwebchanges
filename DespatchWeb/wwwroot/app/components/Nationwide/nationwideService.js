@@ -800,12 +800,10 @@ class NationwideService {
      */
     async assignFlightToJob(jobId, flightNumber, departureDate) {
         try {
-            const formattedDate = this._moment(departureDate, 'DD/MM/YYYY').format('YYYY-MM-DDTHH:mm:ss');
-
             const response = await this._$http.post('nationwideJob/AssignFlightToJob', {
                 jobId: jobId,
                 flightNumber: flightNumber,
-                departureDate: formattedDate,
+                departureDate: departureDate,
             });
 
             return response.data;
