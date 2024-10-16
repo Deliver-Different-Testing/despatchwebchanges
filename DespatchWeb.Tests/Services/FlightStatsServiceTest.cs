@@ -120,7 +120,6 @@ public class FlightStatsServiceTest
         Assert.DoesNotThrow(() => new FlightStatsService(_configuration));
     }
 
-
     [Test]
     [Category("Integration")]
     public async Task GetFlightDetailsByFlightNumberAndDepartureAsync_WithValidInput_ReturnsFlightDetails()

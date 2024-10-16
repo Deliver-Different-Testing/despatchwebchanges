@@ -28,6 +28,7 @@ angular.module("uDispatch")
             $scope.pickAllCouriers = [];
             $scope.selected = [];
             $scope.jobList = [];
+            $scope.jobsLoading = false;
             $scope.driverLocations = [];
             $scope.markers = [];
             $scope.truckCourierStatus = [];
@@ -568,23 +569,14 @@ angular.module("uDispatch")
          * @param {Job} job
          */
         $scope.handleRowClick = async ($event, job) => {
-            const cellElement = $event.target.closest('td');
-            if (!cellElement) return;
-
-            const isLpOrLdCell = cellElement.classList.contains('md-lp-cell') || cellElement.classList.contains('md-ld-cell');
-
-            if (!isLpOrLdCell) {
+            if (!$event.target.classList.contains('lateCallField') && !$event.target.classList.contains('dispatchField')) {
                 try {
-                    await $scope.selectJob(job);
-                    const codeCell = cellElement.parentElement.querySelector('.md-code-cell');
-                    if (codeCell) {
-                        const ctrl = await $scope.jobTableService.editField({target: codeCell}, job, 'courier', 'Set code');
-                        if (ctrl) {
-                            ctrl.getInput().$element.focus();
-                        }
-                    }
+                    $timeout(async () => {
+                        await $scope.selectJob(job);
+                        angular.element("#input_" + job.id).select();
+                    });
                 } catch (error) {
-                    console.error('Error in handleRowClick:', error);
+                    console.log('Error in handleRowClick:', error);
                 }
             }
         };
@@ -2547,6 +2539,7 @@ angular.module("uDispatch")
         }];
 
         async function getJobList() {
+            $scope.jobsLoading = true;
             if (Modernizr.localstorage) {
                 localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.queryParams));
             }
@@ -2574,6 +2567,8 @@ angular.module("uDispatch")
                 console.log('Error getting job list:', error);
                 console.log("Failed to get job list. Please try again.");
                 angular.element("#box-jobsList .loading").fadeOut();
+            } finally {
+                $scope.jobsLoading = false;
             }
         }
 
