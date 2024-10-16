@@ -1,5 +1,4 @@
-<div ng-if="!jobListLoading">
-
+<div ng-if="!jobListLoading && jobList.length > 0">
     <div class="table-headings">
         <table>
             <thead class="thead-dark no select">
@@ -155,6 +154,13 @@
         </tr>
         </tbody>
     </table>
+</div>
+
+<div class="no-data" ng-if="!jobListLoading &&  jobList.length === 0">
+    <div class="text">
+        <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+        No New Jobs Found
+    </div>
 </div>
 
 <div class="loader-container" ng-if="jobListLoading">

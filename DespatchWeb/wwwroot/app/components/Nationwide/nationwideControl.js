@@ -193,26 +193,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         async function initializeAreas() {
             if ($scope.areas && $scope.areas.length > 0) {
                 $scope.selectedAreas.push($scope.areas[0]);
-            } else {
-                try {
-                    await $mdDialog.show(
-                        $mdDialog.alert()
-                            .clickOutsideToClose(true)
-                            .title('No Views Available')
-                            .htmlContent(
-                                'There are no dispatch views set up for your user account.<br><br>' +
-                                'Please contact your system administrator to add views in the Admin Manager.<br><br>' +
-                                'Views are necessary to filter and organize dispatch information effectively.'
-                            )
-                            .ariaLabel('No Views Available Alert')
-                            .ok('Understood')
-                    );
-                } catch (error) {
-                    console.error('Error showing dialog:', error);
-                }
             }
         }
-
 
         $scope.updateFilters = async () => {
             try {
@@ -2032,7 +2014,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
             }
         };
-
 
 
         $scope.setCurrentWorkMenu = () => {
