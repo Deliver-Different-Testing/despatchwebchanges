@@ -92,25 +92,24 @@ public class NationwideJobController : Controller
     [HttpPost]
     public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobRequest request)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        if (request is null)
+            return BadRequest("Oops, no flight data was provided. Unable to assign to job.");
 
-        if (!DateTime.TryParse(request.DepartureDate, out var departureDate))
-            return BadRequest("Invalid departure date format. Please use YYYY-MM-DD.");
-
-        var flight = await _flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber, departureDate);
+        var flight =
+            await _flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber, request.DepartureDate);
         var (_, departureAirportCode) = await _repository.GetAirportCodesByJobIdAsync(request.JobId);
 
         if (flight == null)
             return NotFound(
-                $"Flight with number {request.FlightNumber} and departure date {departureDate:yyyy-MM-dd} not found.");
-
-        var addToDb = await _repository.AddJobNationwide(request.JobId, flight);
-        if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
+                $"Flight with number {request.FlightNumber} and departure date {request.DepartureDate:yyyy-MM-dd} not found.");
 
         // Set up webhook to receive alerts
-        await _flightService.CreateFlightRuleByDeparture(request.FlightNumber, departureDate,
-            departureAirportCode);
+        var webhookId = await _flightService.CreateFlightRuleByDepartureAsync(request.FlightNumber,
+            request.DepartureDate,
+            departureAirportCode) ?? string.Empty;
+
+        var addToDb = await _repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
+        if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
 
         return Ok();
     }

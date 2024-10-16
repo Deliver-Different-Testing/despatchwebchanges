@@ -2016,6 +2016,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await NWData.assignFlightToJob(job.id, flight.flightNumber, flight.departureTime);
 
+                // Refresh data
+                await $scope.getData();
             } catch (error) {
                 if (error === undefined) {
                     console.log('User canceled!');
