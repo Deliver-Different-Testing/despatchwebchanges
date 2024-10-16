@@ -26,6 +26,8 @@ ingress:
 service:
   externalPort: 5000
   internalPort: 8080
+  commonName: ""
+  url: ""
 
 livenessProbe:
   path: "/healthz"
