@@ -67,16 +67,13 @@
             <td action="speedColumnClick(event)" right-click>{{job.speed}}</td>
             <td>{{job.jobNo}}</td>
             <td action="clientColumnClick(event)" right-click>{{job.client}}</td>
-            <td action="fromColumnClick(event)" right-click>{{job.from}}
+            <td action="fromColumnClick(event)" right-click>
+                {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                 <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
             </td>
-            <td action="toColumnClick(event)" right-click>{{job.to}}
+            <td action="toColumnClick(event)" right-click>
+                {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.to}}
                 <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
-            </td>
-            <td context-menu="setCurrentWorkMenu">
-                <div style="width:200px; white-space:nowrap; overflow-x:hidden;" title="{{job.toAddress}}">
-                    {{job.toAddress}}
-                </div>
             </td>
         </tr>
         <tr>
