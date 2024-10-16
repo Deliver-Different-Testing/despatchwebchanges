@@ -14,4 +14,6 @@ public partial class TucJobStatus
     public string UcjsName { get; set; }
 
     public string UcjsCode { get; set; }
+
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

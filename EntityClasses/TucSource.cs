@@ -18,4 +18,6 @@ public partial class TucSource
     public DateTime LastModified { get; set; }
 
     public string LastModifiedBy { get; set; }
+
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

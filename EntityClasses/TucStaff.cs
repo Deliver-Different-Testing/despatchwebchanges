@@ -99,5 +99,7 @@ public partial class TucStaff
 
     public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; } = new List<DfrntappUserViewPermission>();
 
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
+
     public virtual TucSuburb UcstSuburb { get; set; }
 }

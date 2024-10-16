@@ -45,5 +45,9 @@ public partial class TucJobNationwide
 
     public string UcnwCpsignature { get; set; }
 
+    public string WebhookAlertId { get; set; }
+
     public virtual TucJobBooking JobBooking { get; set; }
+
+    public virtual TucJob UcnwJob { get; set; }
 }

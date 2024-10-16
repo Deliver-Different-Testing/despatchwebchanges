@@ -22,12 +22,16 @@ using Serilog;
 using StackExchange.Redis;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using DespatchWeb;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<SqlServerHealthCheck>("sql_server_health_check");
 builder.Services.AddControllersWithViews();
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 Log.Logger =  new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).WriteTo.Console().CreateLogger();
@@ -70,13 +74,13 @@ builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<INationwideJobRepository, NationwideJobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
 
-builder.Services.AddScoped<IFlightStatusService, FlightStatusService>();
-
-
+builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
+builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 
 // Automapper
 builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile),
@@ -139,7 +143,27 @@ builder.Services.AddSession(options => {
 
 
 var app = builder.Build();
-app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+
+        var response = new
+        {
+            Status = report.Status.ToString(),
+            Checks = report.Entries.Select(e => new
+            {
+                Component = e.Key,
+                Status = e.Value.Status.ToString(),
+                Description = e.Value.Description
+            }),
+            Duration = report.TotalDuration
+        };
+
+        await context.Response.WriteAsJsonAsync(response);
+    }
+});
 // Configure the HTTP request pipeline.
 var provider = new FileExtensionContentTypeProvider { Mappings = { [".tpl"] = "text/plain" } };
 

@@ -10,6 +10,7 @@
   <ItemGroup>
     <Content Remove="bundleconfig.json" />
     <Content Remove="compilerconfig.json" />
+    <Content Remove="wwwroot\app\materialTheme.js" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="appsettings.json">
@@ -207,6 +208,7 @@
     <None Include="bundleconfig.json" />
     <None Include="compilerconfig.json" />
     <None Include="efpt.config.json.user" />
+    <None Include="wwwroot\app\materialTheme.js" />
     <None Include="wwwroot\app\version.js" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.css" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.js" />

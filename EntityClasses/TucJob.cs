@@ -419,6 +419,8 @@ public partial class TucJob
 
     public int? ToAirportId { get; set; }
 
+    public decimal? DryIceWeight { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucClientContact Contact { get; set; }
@@ -427,13 +429,25 @@ public partial class TucJob
 
     public virtual TblAirport FromAirport { get; set; }
 
+    public virtual ICollection<TucJob> InverseParent { get; set; } = new List<TucJob>();
+
     public virtual TucJobType NotifiedJobType { get; set; }
+
+    public virtual TucJob Parent { get; set; }
+
+    public virtual TucSource Source { get; set; }
 
     public virtual TblAirport ToAirport { get; set; }
 
     public virtual ICollection<TucJobItem> TucJobItems { get; set; } = new List<TucJobItem>();
 
+    public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();
+
+    public virtual TucStaff UcjbDisp { get; set; }
+
     public virtual TucJobType UcjbSpeedNavigation { get; set; }
+
+    public virtual TucJobStatus UcjbStatusNavigation { get; set; }
 
     public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
 }

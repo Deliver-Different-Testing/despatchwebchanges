@@ -331,6 +331,16 @@ public partial class TucJobBooking
 
     public string DeliveryAddressLine8 { get; set; }
 
+    public decimal? DryIceWeight { get; set; }
+
+    public int? FromAirportId { get; set; }
+
+    public int? ToAirportId { get; set; }
+
+    public virtual TblAirport FromAirport { get; set; }
+
+    public virtual TblAirport ToAirport { get; set; }
+
     public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; } = new List<TucJobBookingItem>();
 
     public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();

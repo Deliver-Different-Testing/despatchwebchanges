@@ -352,4 +352,6 @@ public partial class TblJob
     public int? ToAirportId { get; set; }
 
     public int? FromAirportId { get; set; }
+
+    public decimal? DryIceWeight { get; set; }
 }

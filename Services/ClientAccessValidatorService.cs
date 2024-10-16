@@ -5,20 +5,13 @@ using DespatchWeb.Interfaces;
 
 namespace DespatchWeb.Services;
 
-public class ClientAccessValidatorService : IClientAccessValidatorService
+public class ClientAccessValidatorService(IClientRepository clientRepo) : IClientAccessValidatorService
 {
-    private readonly IClientRepository _clientRepo;
-
-    public ClientAccessValidatorService(IClientRepository clientRepo)
-    {
-        _clientRepo = clientRepo;
-    }
-
     public async Task ValidateClientAccess(int contactId, string clientIds)
     {
         if (string.IsNullOrEmpty(clientIds)) return;
 
-        var clientContacts = await _clientRepo.ClientContactsAsync(contactId);
+        var clientContacts = await clientRepo.ClientContactsAsync(contactId);
         var requestedClientIds = clientIds.Split(',').Select(int.Parse).ToHashSet();
 
         var hasAccess = clientContacts?

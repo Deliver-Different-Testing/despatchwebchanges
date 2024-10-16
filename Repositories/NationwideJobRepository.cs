@@ -1,29 +1,22 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using AutoMapper;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using Serilog;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Vehicle = DespatchWeb.Models.Vehicle;
-
 namespace DespatchWeb.Repositories;
 
-public class NationwideJobRepository : INationwideJobRepository
+public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), INationwideJobRepository
 {
-    private readonly DespatchContext _context;
-    private readonly ILogger<NationwideJobRepository> _logger;
-
-    public NationwideJobRepository(DespatchContext context, ILogger<NationwideJobRepository> logger)
-    {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    
 
     public async Task<List<JobViewModel>> NationwideJobListAsync(string status,
         string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
@@ -34,7 +27,7 @@ public class NationwideJobRepository : INationwideJobRepository
 
         // Get view specific filters
         var viewFilters = selectedViewIds != null && selectedViewIds.Any()
-            ? await _context.TblDespatchViews
+            ? await Context.TblDespatchViews
                 .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
                 .Select(dv => dv.WhereCondition)
                 .ToListAsync()
@@ -46,9 +39,9 @@ public class NationwideJobRepository : INationwideJobRepository
 
         var sql =
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
-        _logger.LogInformation($"Executing SQL: {sql}");
+        Log.Information($"Executing SQL: {sql}");
 
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(sql)
+        var jobs = await Context.DeswebQryDespatches.FromSqlRaw(sql)
             .AsNoTracking()
             .ToListAsync();
 
@@ -155,7 +148,7 @@ public class NationwideJobRepository : INationwideJobRepository
             InternalNotes = j.JobNotes,
             ChildNotes = j.ChildNotes,
             PalletInfo = (
-                from pa in _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
+                from pa in Context.TucJobItems.Where(p => p.JobId == j.UcjbId)
                 select new PalletInfo
                 {
                     Id = pa.JobId,
@@ -223,7 +216,7 @@ public class NationwideJobRepository : INationwideJobRepository
 
         foreach (var job in list)
         {
-            job.AssignedFlight = await _context.TucJobNationwides
+            job.AssignedFlight = await Context.TucJobNationwides
                 .Where(nj => nj.UcnwJobId == job.Id)
                 .Select(nj => new AssignedFlight
                 {
@@ -245,7 +238,7 @@ public class NationwideJobRepository : INationwideJobRepository
 
         try
         {
-            var job = await _context.TblJobs
+            var job = await Context.TblJobs
                 .Where(j => j.JobId == jobId)
                 .Select(j => new
                 {
@@ -269,8 +262,8 @@ public class NationwideJobRepository : INationwideJobRepository
                 UcnwEta = flight.ArrivalTime
             };
 
-            _context.TucJobNationwides.Add(jobNationwide);
-            await _context.SaveChangesAsync();
+            Context.TucJobNationwides.Add(jobNationwide);
+            await Context.SaveChangesAsync();
 
             return true;
         }
@@ -284,7 +277,7 @@ public class NationwideJobRepository : INationwideJobRepository
 
     public async Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId)
     {
-        var airportCodes = await _context.TucJobs
+        var airportCodes = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new
             {

@@ -1932,6 +1932,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DispatchDate).HasColumnType("datetime");
             entity.Property(e => e.DispatchTime).HasColumnType("datetime");
             entity.Property(e => e.DispatcherId).HasColumnName("DispatcherID");
+            entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.ExternalCodingId).HasColumnName("ExternalCodingID");
             entity.Property(e => e.ExternalCourierCodingId).HasColumnName("ExternalCourierCodingID");
             entity.Property(e => e.FlightDetails)
@@ -3168,7 +3169,11 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
 
+            entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
+
             entity.HasIndex(e => e.ToAirportId, "IX_tucJob_ToAirportId");
+
+            entity.HasIndex(e => e.UcjbDispId, "IX_tucJob_ucjbDispID");
 
             entity.HasIndex(e => e.InformationParentId, "InformationParentID");
 
@@ -3245,6 +3250,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.DropoffAmount).HasColumnType("money");
             entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
+            entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.EmailForJobFu)
                 .HasDefaultValue(false)
                 .HasColumnName("EmailForJobFU");
@@ -3485,13 +3491,29 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.NotifiedJobType).WithMany(p => p.TucJobNotifiedJobTypes).HasForeignKey(d => d.NotifiedJobTypeId);
 
+            entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
+                .HasForeignKey(d => d.ParentId)
+                .HasConstraintName("FK_tucJob_ParentID");
+
+            entity.HasOne(d => d.Source).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.SourceId)
+                .HasConstraintName("FK_tucJob_tucSource");
+
             entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobToAirports)
                 .HasForeignKey(d => d.ToAirportId)
                 .HasConstraintName("FK_tucJob_ToAirport");
 
+            entity.HasOne(d => d.UcjbDisp).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.UcjbDispId)
+                .HasConstraintName("FK_tucJob_tucStaff");
+
             entity.HasOne(d => d.UcjbSpeedNavigation).WithMany(p => p.TucJobUcjbSpeedNavigations)
                 .HasForeignKey(d => d.UcjbSpeed)
                 .HasConstraintName("FK_tucJob_tucJobType");
+
+            entity.HasOne(d => d.UcjbStatusNavigation).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.UcjbStatus)
+                .HasConstraintName("FK_tucJob_tucJobStatus");
 
             entity.HasOne(d => d.UndeliverableLocation).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.UndeliverableLocationId)
@@ -3515,6 +3537,10 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UcbkNextDue, "DespatchWebSearch2");
 
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
+
+            entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
+
+            entity.HasIndex(e => e.ToAirportId, "IX_tucJobBooking_ToAirportID");
 
             entity.HasIndex(e => e.InformationParentId, "InformationParentID");
 
@@ -3557,6 +3583,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.DropoffAmount).HasColumnType("money");
             entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
+            entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.FixedPrice).HasDefaultValue(true);
             entity.Property(e => e.FromAddressExtras)
                 .HasMaxLength(200)
@@ -3567,6 +3594,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FromAddressStreetName)
                 .HasMaxLength(200)
                 .HasColumnName("fromAddressStreetName");
+            entity.Property(e => e.FromAirportId).HasColumnName("FromAirportID");
             entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
             entity.Property(e => e.GssTrackingUrl)
                 .HasMaxLength(400)
@@ -3644,6 +3672,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ToAddressStreetName)
                 .HasMaxLength(200)
                 .HasColumnName("toAddressStreetName");
+            entity.Property(e => e.ToAirportId).HasColumnName("ToAirportID");
             entity.Property(e => e.TrackingEmail).HasMaxLength(500);
             entity.Property(e => e.TrackingMobile).HasMaxLength(500);
             entity.Property(e => e.TruckStartTime).HasColumnType("datetime");
@@ -3764,6 +3793,14 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValue(0)
                 .HasColumnName("ucbkWeight");
             entity.Property(e => e.VanOk).HasColumnName("VanOK");
+
+            entity.HasOne(d => d.FromAirport).WithMany(p => p.TucJobBookingFromAirports)
+                .HasForeignKey(d => d.FromAirportId)
+                .HasConstraintName("FK__tucJobBoo__FromA__69B26EB3");
+
+            entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobBookingToAirports)
+                .HasForeignKey(d => d.ToAirportId)
+                .HasConstraintName("FK__tucJobBoo__ToAir__6AA692EC");
         });
 
         modelBuilder.Entity<TucJobBookingItem>(entity =>
@@ -3867,10 +3904,15 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("ucnwSystemDate");
+            entity.Property(e => e.WebhookAlertId).HasMaxLength(36);
 
             entity.HasOne(d => d.JobBooking).WithMany(p => p.TucJobNationwides)
                 .HasForeignKey(d => d.JobBookingId)
                 .HasConstraintName("FK_tucJobNationwide_tucJobBooking");
+
+            entity.HasOne(d => d.UcnwJob).WithMany(p => p.TucJobNationwides)
+                .HasForeignKey(d => d.UcnwJobId)
+                .HasConstraintName("FK_tucJobNationwide_tucJob");
         });
 
         modelBuilder.Entity<TucJobStatus>(entity =>

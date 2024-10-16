@@ -1393,10 +1393,14 @@ md-table-pagination .md-button[disabled] {
 }
 .responsive-datatable table.md-table th.md-column,
 .responsive-datatable table.md-table td.md-cell {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 20px 0 0;
+  white-space: normal;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-overflow: clip;
+  padding: 0 11px 0 0;
+  font-size: 11px;
+  max-height: 3em;
+  /* Adjust this value to control the height of the cells */
 }
 .responsive-datatable table.md-table .col-xs {
   width: 40px;
@@ -1469,8 +1473,6 @@ md-list-item:not(.selected):hover {
 }
 .account-header {
   pointer-events: none;
-}
-.account-header * {
   user-select: none;
 }
 .material-toolbar-switch {
@@ -1482,4 +1484,30 @@ md-list-item:not(.selected):hover {
 }
 .material-toolbar-switch .md-label {
   margin-left: 6px;
+}
+.loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+.material-icon-loader {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  margin-top: 30px;
+}
+.material-icon-loader md-progress-circular {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.material-icon-loader .loader-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  color: #76EAFE;
 }

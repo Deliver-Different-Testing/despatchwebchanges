@@ -20,18 +20,18 @@ using Serilog;
 
 namespace DespatchWeb.Controllers;
 
-    public class JobController(IJobRepository jobRepository, ICourierRepository courierRepo, IClientAccessValidatorService clientAccessValidator, IAmazonS3 s3Client, HttpClient httpClient ) : Controller
-    {
+public class JobController(IJobRepository jobRepository, ICourierRepository courierRepo, IClientAccessValidatorService clientAccessValidator, IAmazonS3 s3Client, HttpClient httpClient) : Controller
+{
 
-        [HttpGet]
-        public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
-            int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
-        {
-            // Validate Client Access
-            if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+    [HttpGet]
+    public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
+        int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
+    {
+        // Validate Client Access
+        if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
         // Get jobs
-        var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
+        var result = await jobRepository.JobListAsync(queryParams.Status, queryParams.Order,
             queryParams.Asc, isInternal, clientIds, despatchViewIds);
         return Json(result);
     }

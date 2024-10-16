@@ -1,3 +1,8 @@
 [
-  
+  {
+    "outputFileName": "wwwroot/css/udispatch.min.css",
+    "inputFiles": [
+      "wwwroot/css/udispatch.css"
+    ]
+  }
 ]
