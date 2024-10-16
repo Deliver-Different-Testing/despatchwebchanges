@@ -12,7 +12,7 @@ using DespatchWeb.Interfaces;
 
 namespace DespatchWeb.Controllers
 {
-    public class HomeController(IClientRepository clientRepository, IConnectionStringManager connectionStringManager) : Controller
+    public class HomeController(IClientRepository clientRepository, IDfrntViewsRepository viewsRepository, IConnectionStringManager connectionStringManager) : Controller
     {
 
         public async Task<IActionResult> Index([FromQuery] string login)
@@ -62,6 +62,13 @@ namespace DespatchWeb.Controllers
                 Log.Error(ex.Message, ex);
                 return Redirect(Environment.GetEnvironmentVariable("PublicPath"));
             }
+        }
+
+        public async Task<IActionResult> GetPageViews(int userId, int pageId)
+        {
+            var page = (AppPage)pageId;
+            var viewOptions = await viewsRepository.GetViewsByUserAndPageAsync(userId, page);
+            return Json(viewOptions);
         }
         
         private string MaskSensitiveInfo(string connectionString)

@@ -776,7 +776,7 @@ class NationwideService {
      * @throws {Error} If the API request fails or returns an unexpected response.
      */
     async getFlightOptions(jobId, departureDate) {
-        const formattedDate = departureDate ? this._moment(departureDate).format('YYYY-MM-DD') : null;
+        const formattedDate = this._moment(departureDate, 'DD/MM/YYYY').format('YYYY-MM-DDTHH:mm:ss');
 
         const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
             params: {
