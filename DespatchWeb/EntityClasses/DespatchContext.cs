@@ -5726,6 +5726,8 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("ucnwSystemDate")
                     .HasDefaultValueSql("(getdate())");
 
+                entity.Property(e => e.WebhookAlertId).HasMaxLength(36);
+
                 entity.HasOne(d => d.JobBooking)
                     .WithMany(p => p.TucJobNationwides)
                     .HasForeignKey(d => d.JobBookingId)

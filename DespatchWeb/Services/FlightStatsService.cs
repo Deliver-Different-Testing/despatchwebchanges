@@ -13,6 +13,7 @@ namespace DespatchWeb.Services;
 public class FlightStatsService : IFlightStatsService
 {
     private const string BaseUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
+    private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1/";
     private readonly string _appId;
     private readonly string _appKey;
     private readonly RestClient _client;
@@ -29,14 +30,15 @@ public class FlightStatsService : IFlightStatsService
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
     }
 
-    public async Task CreateFlightRuleByDeparture(string completeFlightNumber, DateTime departureTime,
+    public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode)
     {
         if (string.IsNullOrEmpty(departureAirportCode))
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
 
-        var uniqueWebhookId = Guid.NewGuid();
+        var alertClient = new RestClient(AlertUrl);
+
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day) = SplitDate(departureTime);
 
@@ -49,15 +51,56 @@ public class FlightStatsService : IFlightStatsService
         request.AddQueryParameter("appKey", _appKey);
 
         // Webhook specific
-        request.AddQueryParameter("name", uniqueWebhookId);
         request.AddQueryParameter("type", "JSON");
         request.AddQueryParameter("deliverTo", _webhookUrl);
 
         // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
+        var response = await alertClient.ExecuteGetAsync<CreateAlertResponse>(request);
 
-        if (!response.IsSuccessful)
-            throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
+        if (!response.IsSuccessful || response.Data is null)
+            throw new Exception($"Failed to set up alert: {response.ErrorMessage}");
+
+        return response.Data.Rule?.Id;
+    }
+
+    public async Task<Rule> GetAlertSubscriptionByIdAsync(string alertId)
+    {
+        var alertClient = new RestClient(AlertUrl);
+
+        var request =
+            new RestRequest($"json/get/{alertId}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Execute the request
+        var response = await alertClient.ExecuteGetAsync<RetrieveAlertResponse>(request);
+
+        if (!response.IsSuccessful || response.Data is null)
+            throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
+
+        return response.Data.Rule;
+    }
+
+    public async Task DeleteAlertByIdAsync(string alertId)
+    {
+        var alertClient = new RestClient(AlertUrl);
+
+        var request =
+            new RestRequest($"json/delete/{alertId}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Execute the request
+        var response = await alertClient.ExecuteGetAsync(request);
+
+        if (response.IsSuccessful)
+            return;
+
+        throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
     }
 
     public async Task<List<FlightViewModel>> GetFlightsAsync(
