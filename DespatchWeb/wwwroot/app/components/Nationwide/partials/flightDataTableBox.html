@@ -53,7 +53,7 @@
                 </table>
             </div>
 
-            <div class="no-data" ng-if="flightOptions.length === 0">
+            <div class="no-data" ng-if="!flightsLoading && flightOptions.length === 0">
                 <div class="text">
                     <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
                     {{flightMessage || 'No flights available for the specified criteria.'}}
