@@ -1,48 +1,143 @@
 <div class="droppable-box" style="min-height:500px">
-    <md-table-container>
-        <table md-progress="bulkJobPromise" md-row-select md-table ng-model="selectedBulkJobs">
-            <thead md-head md-order="bulkJobQuery.order">
-            <tr md-row>
-                <th class="md-date-cell" md-column md-order-by="booked"><span>Booked</span></th>
-                <th class="md-speed-cell" md-column md-order-by="status"><span>Status</span></th>
-                <th class="md-speed-cell" md-column md-order-by="speed"><span>Speed</span></th>
-                <th class="md-job-cell" md-column md-order-by="jobNo"><span>Job</span></th>
-                <th class="md-client-cell" md-column md-order-by="client"><span>Client</span></th>
-                <th md-column md-order-by="from"><span>From</span></th>
-                <th md-column md-order-by="to"><span>To</span></th>
-                <th class="md-address-cell" md-column md-order-by="toAddress"><span>Street</span></th>
+    <div class="table-headings">
+        <table>
+            <thead class="thead-dark no select">
+            <tr>
+                <th ng-click="orderList('bulkJobList', 'booked')" scope="col">Booked
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='booked'">
+                        arrow_drop_down
+                    </md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='d-booked'">
+                        arrow_drop_up
+                    </md-icon>
+                </th>
+                <th ng-click="orderList('bulkJobList', 'status')" scope="col">Status
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='status'">
+                        arrow_drop_down
+                    </md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='d-status'">
+                        arrow_drop_up
+                    </md-icon>
+                </th>
+                <th ng-click="orderList('bulkJobList', 'speed')" scope="col">Speed
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='speed'">
+                        arrow_drop_down
+                    </md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='d-speed'">
+                        arrow_drop_up
+                    </md-icon>
+                </th>
+                <th ng-click="orderList('bulkJobList', 'jobNo')" scope="col">Job
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='jobNo'">
+                        arrow_drop_down
+                    </md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='d-jobNo'">
+                        arrow_drop_up
+                    </md-icon>
+                </th>
+                <th ng-click="orderList('bulkJobList', 'client')" scope="col">Client
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='client'">
+                        arrow_drop_down
+                    </md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='d-client'">
+                        arrow_drop_up
+                    </md-icon>
+                </th>
+                <th ng-click="orderList('bulkJobList', 'from')" scope="col">From
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='from'">
+                        arrow_drop_down
+                    </md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='d-from'">
+                        arrow_drop_up
+                    </md-icon>
+                </th>
+                <th ng-click="orderList('bulkJobList', 'to')" scope="col">To
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='to'">arrow_drop_down
+                    </md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList =='d-to'">arrow_drop_up
+                    </md-icon>
+                </th>
+                <th ng-click="orderList('bulkJobList','to')" scope="col">Street
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList == 'to'">
+                        arrow_drop_down
+                    </md-icon>
+                    <md-icon md-font-set="material-symbols-outlined" ng-show="sort.bulkJobList == 'd-to'">
+                        arrow_drop_up
+                    </md-icon>
+                </th>
             </tr>
             </thead>
-            <tbody md-body>
-            <tr md-row md-select="job" md-select-id="id" ng-click="selectBulkJobDetail(job.id)"
-                ng-repeat="job in bulkJobList | orderBy: bulkJobQuery.order">
-                <td class="md-date-cell" md-cell>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
-                <td class="status md-speed-cell" md-cell ng-class="job.status">{{job.status}}</td>
-                <td class="md-speed-cell" md-cell>{{job.speed}}</td>
-                <td class="md-job-cell" md-cell>{{job.jobNo}}</td>
-                <td class="md-client-cell" md-cell>{{job.client}}</td>
-                <td md-cell>
-                    {{job.from}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
-                </td>
-                <td md-cell>
-                    {{job.to}}
-                    <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
-                </td>
-                <td class="md-address-cell" md-cell>
-                    {{job.toAddress}}
-                </td>
-            </tr>
-            </tbody>
         </table>
-    </md-table-container>
+    </div>
 
-    <md-table-pagination
-            md-limit="bulkJobQuery.limit"
-            md-limit-options="[5, 10, 25, 50]"
-            md-on-paginate="bulkJobPageChanged"
-            md-page="bulkJobQuery.page"
-            md-page-select
-            md-total="{{bulkTotalCount}}">
-    </md-table-pagination>
+    <table class="table table-striped table-responsive table-rows" data-group="bulkJobList" id="bulkJobList">
+        <tbody>
+        <tr class="droppable-row draggable-row clickable-row noselect"
+            data-courier="{{job.courier}}"
+            data-jobNo="{{job.jobNo}}" data-jobid="{{job.id}}" ng-click="selectBulkJobDetail(job.id);"
+            ng-repeat="job in bulkJobList | filter: box.searchBox | orderBy: bulkJobQuery.order">
+            <td>{{job.booked | date: "dd/MM/yy HH:mm"}}</td>
+            <td class="status" ng-class="job.status">{{job.status}}</td>
+            <td action="speedColumnClick(event)" right-click>{{job.speed}}</td>
+            <td>{{job.jobNo}}</td>
+            <td action="clientColumnClick(event)" right-click>{{job.client}}</td>
+            <td action="fromColumnClick(event)" right-click>
+                {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.pickUpLongitude">warning</md-icon>
+            </td>
+            <td action="toColumnClick(event)" right-click>{{job.to}}
+                <md-icon md-font-set="material-symbols-outlined" ng-if="!job.deliveryLongitude">warning</md-icon>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div></div>
+            </td>
+            <td>
+                <div></div>
+            </td>
+            <td>
+                <div></div>
+            </td>
+            <td>
+                <div></div>
+            </td>
+            <td>
+                <div></div>
+            </td>
+            <td>
+                <div></div>
+            </td>
+            <td>
+                <div></div>
+            </td>
+            <td>
+                <div></div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 </div>
+
+<div class="loading" ng-if="bulkJobPromise">
+    <div class="text">
+        <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+</style>
+
+<script>
+    angular.element(".box-content").on("scroll", function () {
+        var newTop2 = angular.element(this).scrollTop();
+        angular.element(this).find(".box-calculator").css({"top": newTop2});
+    });
+</script>

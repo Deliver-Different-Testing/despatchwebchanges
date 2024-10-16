@@ -9,10 +9,7 @@ class JobTableService {
      */
     createQuery() {
         return {
-            order: 'time',
-            filter: '',
-            status: 'all',
-            asc: 'asc'
+            order: 'time', filter: '', status: 'all', asc: 'asc'
         };
     }
 
@@ -21,7 +18,12 @@ class JobTableService {
      */
     attention(job) {
         return job.attention || '';
-    }
+    };
+
+    updateField(job, field) {
+        // Handle field update logic
+        console.log('Updated ' + field + ' for job ' + job.id);
+    };
 
     /**
      * @param {Job} job
@@ -31,38 +33,6 @@ class JobTableService {
             'background-color': job.clientColor || '#4CAF50'
         };
     }
-
-    /**
-     * @param {Object} $event
-     * @param {Job} job
-     * @param {string|number} field
-     * @param {string} placeholder
-     * @param {string} type
-     */
-    editField($event, job, field, placeholder, type = 'text') {
-        $event.stopPropagation();
-        return this._$mdEditDialog.small({
-            modelValue: job[field], placeholder, type, save: (input) => {
-                job[field] = input.$modelValue;
-            }, targetEvent: $event
-        });
-    }
-
-    /**
-     * @param {Object} $event
-     * @param {Job} job
-     */
-    editTo($event, job) {
-        $event.stopPropagation();
-        return this._$mdEditDialog.small({
-            modelValue: `${job.to} ${job.toAddress || ''}`, placeholder: 'Set to', save: (input) => {
-                const parts = input.$modelValue.split(' ');
-                job.to = parts[0];
-                job.toAddress = parts.slice(1).join(' ');
-            }, targetEvent: $event
-        });
-    }
 }
 
-angular.module('uDispatch').service('JobTableService',
-    ['$mdEditDialog', ($mdEditDialog) => new JobTableService($mdEditDialog)]);
+angular.module('uDispatch').service('JobTableService', ['$mdEditDialog', ($mdEditDialog) => new JobTableService($mdEditDialog)]);

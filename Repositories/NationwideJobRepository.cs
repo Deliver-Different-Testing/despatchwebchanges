@@ -231,7 +231,7 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
         return list;
     }
 
-    public async Task<bool> AddJobNationwide(int jobId, ScheduledFlight flight)
+    public async Task<bool> AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
     {
         if (flight == null)
             throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
@@ -259,7 +259,8 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
                 UcnwClientId = job.ClientId ?? 0,
                 UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
                 UcnwEtd = flight.DepartureTime,
-                UcnwEta = flight.ArrivalTime
+                UcnwEta = flight.ArrivalTime,
+                WebhookAlertId = webhookAlertId
             };
 
             Context.TucJobNationwides.Add(jobNationwide);

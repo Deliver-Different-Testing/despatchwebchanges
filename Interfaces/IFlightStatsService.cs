@@ -19,5 +19,10 @@ public interface IFlightStatsService
     Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime);
 
-    Task CreateFlightRuleByDeparture(string completeFlightNumber, DateTime departureTime, string departureAirportCode);
+    Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
+        string departureAirportCode);
+
+    Task<Rule> GetAlertSubscriptionByIdAsync(string alertId);
+
+    Task DeleteAlertByIdAsync(string alertId);
 }

@@ -18,6 +18,7 @@ namespace DespatchWeb.Services;
 public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
 {
     private const string BaseUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
+    private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1/";
     private readonly string _appId = Environment.GetEnvironmentVariable("FlightStatusApiAppId");
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
     private readonly string _webhookUrl;
@@ -28,7 +29,8 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
 
-        var uniqueWebhookId = Guid.NewGuid();
+        var alertClient = new RestClient(AlertUrl);
+
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day) = SplitDate(departureTime);
 
@@ -52,12 +54,35 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
         var uri = uriBuilder.Uri;
         Log.Debug($"CreateFlightRuleRequest: {uri}");
         // Execute the request
+        var uri = uriBuilder.Uri;
+        Log.Debug($"CreateFlightRuleRequest: {uri}");
+        // Execute the request
         var response = await httpClient.GetAsync(uri);
 
-        Log.Debug($"CreateFlightRuleRequest StatusCode: {response.StatusCode}");
-        if (!response.IsSuccessStatusCode)
-            throw new Exception($"Failed to retrieve flight information: {response.ReasonPhrase}");
-        
+        if (!response.IsSuccessful || response.Data is null)
+            throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
+
+        return response.Data.Rule;
+    }
+
+    public async Task DeleteAlertByIdAsync(string alertId)
+    {
+        var alertClient = new RestClient(AlertUrl);
+
+        var request =
+            new RestRequest($"json/delete/{alertId}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Execute the request
+        var response = await alertClient.ExecuteGetAsync(request);
+
+        if (response.IsSuccessful)
+            return;
+
+        throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
     }
 
 

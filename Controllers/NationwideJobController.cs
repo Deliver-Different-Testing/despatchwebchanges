@@ -97,12 +97,13 @@ public class NationwideJobController(
             return NotFound(
                 $"Flight with number {request.FlightNumber} and departure date {departureDate:yyyy-MM-dd} not found.");
 
-        var addToDb = await repository.AddJobNationwide(request.JobId, flight);
+        // Set up webhook to receive alerts
+        var webhookId = await flightService.CreateFlightRuleByDepartureAsync(request.FlightNumber, departureDate,
+            departureAirportCode) ?? string.Empty;
+
+        var addToDb = await repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
         if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
 
-        // Set up webhook to receive alerts
-        await flightService.CreateFlightRuleByDeparture(request.FlightNumber, departureDate,
-            departureAirportCode);
 
         return Ok();
     }

@@ -193,26 +193,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         async function initializeAreas() {
             if ($scope.areas && $scope.areas.length > 0) {
                 $scope.selectedAreas.push($scope.areas[0]);
-            } else {
-                try {
-                    await $mdDialog.show(
-                        $mdDialog.alert()
-                            .clickOutsideToClose(true)
-                            .title('No Views Available')
-                            .htmlContent(
-                                'There are no dispatch views set up for your user account.<br><br>' +
-                                'Please contact your system administrator to add views in the Admin Manager.<br><br>' +
-                                'Views are necessary to filter and organize dispatch information effectively.'
-                            )
-                            .ariaLabel('No Views Available Alert')
-                            .ok('Understood')
-                    );
-                } catch (error) {
-                    console.error('Error showing dialog:', error);
-                }
             }
         }
-
 
         $scope.updateFilters = async () => {
             try {
@@ -1741,7 +1723,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         // GROUPED JOBS
         ////////////////////////////
 
-        $scope.getGroupedJobs = async (jobs, courier) => {
+        $scope.getGroupedJobs = async () => {
+            if ($scope.isUsCustomer) {
+                // Ignore this if DFRNT customer
+                return;
+            }
+
             try {
                 const $boxJobGroups = angular.element("#box-jobGroups");
                 $boxJobGroups.find(".loading").show();
@@ -1769,6 +1756,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         // CURRENT JOBS
         ////////////////////////////
 
+        /**
+         * @param {number} courierId
+         */
         $scope.getCurrentJobs = async (courierId) => {
             try {
                 const $boxCurrentWork = angular.element("#box-currentWork");
@@ -2027,7 +2017,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
             }
         };
-
 
 
         $scope.setCurrentWorkMenu = () => {
