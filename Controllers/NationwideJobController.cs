@@ -8,29 +8,21 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Controllers;
 
-public class NationwideJobController : Controller
+public class NationwideJobController(
+    INationwideJobRepository repository,
+    IFlightStatsService flightService,
+    IClientAccessValidatorService clientAccessValidator)
+    : Controller
 {
-    private readonly IClientAccessValidatorService _clientAccessValidator;
-    private readonly IFlightStatsService _flightService;
-    private readonly INationwideJobRepository _repository;
-
-    public NationwideJobController(INationwideJobRepository repository,
-        IFlightStatsService flightService, IClientAccessValidatorService clientAccessValidator)
-    {
-        _repository = repository;
-        _flightService = flightService;
-        _clientAccessValidator = clientAccessValidator;
-    }
-
     [HttpGet]
     public async Task<IActionResult> NationwideJobListNew([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
         try
         {
-            if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+            if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+            var result = await repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
                 queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.JobList, despatchViewIds);
             return Json(result);
         }
@@ -45,9 +37,9 @@ public class NationwideJobController : Controller
     public async Task<IActionResult> NationwideJobListPod([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-        var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+        var result = await repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
             queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Pod, despatchViewIds);
         return Json(result);
     }
@@ -57,9 +49,9 @@ public class NationwideJobController : Controller
         bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-        var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+        var result = await repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
             queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.ActionRequired, despatchViewIds);
         return Json(result);
     }
@@ -68,9 +60,9 @@ public class NationwideJobController : Controller
     public async Task<IActionResult> NationwideJobListReprice([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-        var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+        var result = await repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
             queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Reprice, despatchViewIds);
         return Json(result);
     }
@@ -78,13 +70,13 @@ public class NationwideJobController : Controller
     [HttpGet]
     public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId)
     {
-        var (toAirport, fromAirport) = await _repository.GetAirportCodesByJobIdAsync(jobId);
+        var (toAirport, fromAirport) = await repository.GetAirportCodesByJobIdAsync(jobId);
 
         if (string.IsNullOrEmpty(toAirport) || string.IsNullOrEmpty(fromAirport))
             return BadRequest("Invalid airport ID(s) provided.");
 
         var flightOptions =
-            await _flightService.GetFlightsAsync(fromAirport, toAirport, departureDate);
+            await flightService.GetFlightsAsync(fromAirport, toAirport, departureDate);
 
         return Json(flightOptions ?? new List<FlightViewModel>());
     }
@@ -98,18 +90,18 @@ public class NationwideJobController : Controller
         if (!DateTime.TryParse(request.DepartureDate, out var departureDate))
             return BadRequest("Invalid departure date format. Please use YYYY-MM-DD.");
 
-        var flight = await _flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber, departureDate);
-        var (_, departureAirportCode) = await _repository.GetAirportCodesByJobIdAsync(request.JobId);
+        var flight = await flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber, departureDate);
+        var (_, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(request.JobId);
 
         if (flight == null)
             return NotFound(
                 $"Flight with number {request.FlightNumber} and departure date {departureDate:yyyy-MM-dd} not found.");
 
-        var addToDb = await _repository.AddJobNationwide(request.JobId, flight);
+        var addToDb = await repository.AddJobNationwide(request.JobId, flight);
         if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
 
         // Set up webhook to receive alerts
-        await _flightService.CreateFlightRuleByDeparture(request.FlightNumber, departureDate,
+        await flightService.CreateFlightRuleByDeparture(request.FlightNumber, departureDate,
             departureAirportCode);
 
         return Ok();
