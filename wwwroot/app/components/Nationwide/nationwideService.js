@@ -800,7 +800,6 @@ class NationwideService {
      */
     async assignFlightToJob(jobId, flightNumber, departureDate) {
         try {
-
             const response = await this._$http.post('nationwideJob/AssignFlightToJob', {
                 jobId: jobId,
                 flightNumber: flightNumber,

@@ -2008,7 +2008,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 // Refresh data
                 await $scope.getData();
-
             } catch (error) {
                 if (error === undefined) {
                     console.log('User canceled!');
