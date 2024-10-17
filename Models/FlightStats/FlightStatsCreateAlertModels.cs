@@ -1,16 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using ThirdParty.Json.LitJson;
 
 namespace DespatchWeb.Models.FlightStats;
 
-public class WebhookPayload
+public class CreateAlertResponse
 {
     [JsonPropertyName("request")] public Request Request { get; set; }
 
     [JsonPropertyName("rule")] public Rule Rule { get; set; }
 
     [JsonPropertyName("alertCapabilities")] public AlertCapabilities AlertCapabilities { get; set; }
+
+    [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
+}
+public class RetrieveAlertResponse
+{
+    [JsonPropertyName("request")] public Request Request { get; set; }
+
+    [JsonPropertyName("rule")] public Rule Rule { get; set; }
 
     [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
 }

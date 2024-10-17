@@ -11,6 +11,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace DespatchWeb.Services;
 
@@ -23,13 +24,13 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
     private readonly string _webhookUrl;
 
-    public async Task CreateFlightRuleByDeparture(string completeFlightNumber, DateTime departureTime, string departureAirportCode)
+    public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime, string departureAirportCode)
     {
         if (string.IsNullOrEmpty(departureAirportCode))
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
 
-        var alertClient = new RestClient(AlertUrl);
+        var uniqueWebhookId = Guid.NewGuid();
 
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day) = SplitDate(departureTime);
@@ -51,38 +52,87 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
             Query = query.ToString()
         };
 
-        var uri = uriBuilder.Uri;
-        Log.Debug($"CreateFlightRuleRequest: {uri}");
-        // Execute the request
+
         var uri = uriBuilder.Uri;
         Log.Debug($"CreateFlightRuleRequest: {uri}");
         // Execute the request
         var response = await httpClient.GetAsync(uri);
 
-        if (!response.IsSuccessful || response.Data is null)
-            throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
+        Log.Debug($"FlightService StatusCode: {response.StatusCode}");
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"Failed to retrieve alert information: {response.ReasonPhrase}");
 
-        return response.Data.Rule;
+        var content = await response.Content.ReadAsStringAsync();
+        var createAlertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content);
+
+        
+
+        return createAlertResponse.Rule.ToString();
     }
+
+    public async Task<Rule> GetAlertSubscriptionByIdAsync(string alertId)
+    {
+        
+        // Construct the relative URL
+        var relativeUrl = $"json/get/{alertId}";
+
+        var query = HttpUtility.ParseQueryString(string.Empty);
+        query["appId"] = _appId;
+        query["appKey"] = _appKey;
+
+        
+        // Construct the final URI
+        var fullUrl = $"{BaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var uriBuilder = new UriBuilder(fullUrl)
+        {
+            Query = query.ToString()
+        };
+
+
+        var uri = uriBuilder.Uri;
+        Log.Debug($"DeleteAlertRequest: {uri}");
+        // Execute the request
+        var response = await httpClient.GetAsync(uri);
+        Log.Debug($"DeleteAlertRequest StatusCode: {response.StatusCode}");
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"Failed to retrieve alert information: {response.ReasonPhrase}");
+
+        var content = await response.Content.ReadAsStringAsync();
+        var retrieveAlertResponse = JsonSerializer.Deserialize<RetrieveAlertResponse>(content);
+
+
+        return retrieveAlertResponse.Rule;
+    }
+
 
     public async Task DeleteAlertByIdAsync(string alertId)
     {
-        var alertClient = new RestClient(AlertUrl);
+        // Construct the relative URL
+        var relativeUrl = $"json/delete/{alertId}";
 
-        var request =
-            new RestRequest($"json/delete/{alertId}");
+        var query = HttpUtility.ParseQueryString(string.Empty);
+        query["appId"] = _appId;
+        query["appKey"] = _appKey;
 
-        // Add query parameters
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
+        
+        // Construct the final URI
+        var fullUrl = $"{BaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var uriBuilder = new UriBuilder(fullUrl)
+        {
+            Query = query.ToString()
+        };
 
+
+        var uri = uriBuilder.Uri;
+        Log.Debug($"DeleteAlertRequest: {uri}");
         // Execute the request
-        var response = await alertClient.ExecuteGetAsync(request);
+        var response = await httpClient.GetAsync(uri);
 
-        if (response.IsSuccessful)
+        Log.Debug($"DeleteAlertRequest StatusCode: {response.StatusCode}");
+        if (response.IsSuccessStatusCode)
             return;
 
-        throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
+        throw new Exception($"Failed to retrieve alert information: {response.ReasonPhrase}");
     }
 
 

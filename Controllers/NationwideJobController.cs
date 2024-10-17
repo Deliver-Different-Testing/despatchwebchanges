@@ -89,7 +89,7 @@ public class NationwideJobController(
 
         var flight =
             await flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber, request.DepartureDate);
-        var (_, departureAirportCode) = await _repository.GetAirportCodesByJobIdAsync(request.JobId);
+        var (_, departureAirportCode) = await repository.GetAirportCodesByJobIdAsync(request.JobId);
 
         if (flight == null)
             return NotFound(
