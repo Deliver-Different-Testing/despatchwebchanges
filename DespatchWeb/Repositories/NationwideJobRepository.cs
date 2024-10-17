@@ -252,7 +252,8 @@ public class NationwideJobRepository : INationwideJobRepository
                     j.JobId,
                     j.Number,
                     j.ClientId,
-                    j.ParentId
+                    j.ParentId,
+                    j.CourierId
                 })
                 .FirstOrDefaultAsync();
 

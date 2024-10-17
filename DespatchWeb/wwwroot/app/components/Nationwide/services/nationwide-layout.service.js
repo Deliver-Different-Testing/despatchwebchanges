@@ -7,10 +7,12 @@ class NationwideLayoutService {
      * Create a NationwideLayoutService.
      * @param {Object} $window
      * @param {Object} $mdDialog
+     * @param {Object} $scope
      */
-    constructor($window, $mdDialog) {
+    constructor($window, $mdDialog, $scope) {
         this._$window = $window;
         this._$mdDialog = $mdDialog;
+        this._$scope = $scope;
 
         // Column width options
         /** @type {String} */
@@ -43,12 +45,28 @@ class NationwideLayoutService {
         this.mapTableBox = {name: "map", height: this.BOX_HEIGHT_XSMALL};
         /** @type {Box} */
         this.jobDetailBox = {name: "jobDetail", height: this.BOX_HEIGHT_LARGE};
+        /** @type {Box} */
+        this.agentDataTableBox = {name: "agentDataTable", height: this.BOX_HEIGHT_XSMALL};
 
         // Define columns
         /** @type {Column} */
         this.column1 = {
-            id: "col1", width: this.COL_WIDTH_LARGE, boxes: [this.jobsListBox, this.flightDataTableBox]
+            id: "col1",
+            width: this.COL_WIDTH_LARGE,
+            boxes: [
+                this.jobsListBox,
+                {
+                    get: () => {
+                        if (this.isDeliveryJob()) {
+                            return this.agentDataTableBox;
+                        } else {
+                            return this.flightDataTableBox;
+                        }
+                    }
+                }
+            ]
         };
+
         /** @type {Column} */
         this.column2 = {
             id: "col2", width: this.COL_WIDTH_LARGE, boxes: [this.jobDetailBox, this.mapTableBox]
@@ -102,6 +120,19 @@ class NationwideLayoutService {
             this.currentLayouts = this.defaultLayout;
         }
     }
+
+    /**
+     * Determines if the current job is a delivery job.
+     * @returns {boolean} True if the current job is a delivery job, false otherwise.
+     */
+    isDeliveryJob() {
+        if (!this._$scope.currentJob || !this._$scope.currentJob.jobNumber) {
+            return false;
+        }
+
+        const jobNumber = this._$scope.currentJob.jobNumber;
+        return jobNumber.charAt(jobNumber.length - 1) === '3';
+    };
 
     /**
      * Set the last active layout name.
@@ -259,4 +290,4 @@ class NationwideLayoutService {
     }
 }
 
-angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', ($window, $mdDialog) => new NationwideLayoutService($window, $mdDialog)]);
+angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', '$scope', ($window, $mdDialog, $scope) => new NationwideLayoutService($window, $mdDialog, $scope)]);

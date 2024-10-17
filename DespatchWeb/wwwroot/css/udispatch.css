@@ -878,9 +878,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #currentWork input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #currentWork input.lateCallField {
   width: 21px;
@@ -910,9 +910,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobList input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #jobList input.lateCallField {
   width: 21px;
@@ -942,9 +942,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #pbList input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #pbList input.lateCallField {
   width: 21px;
@@ -974,9 +974,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListPOD input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #jobListPOD input.lateCallField {
   width: 21px;
@@ -1006,9 +1006,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListDelivery input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #jobListDelivery input.lateCallField {
   width: 21px;
@@ -1038,9 +1038,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListReprice input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #jobListReprice input.lateCallField {
   width: 21px;

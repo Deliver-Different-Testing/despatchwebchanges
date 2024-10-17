@@ -14,6 +14,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.flightError = '';
             $scope.flightsLoading = false;
 
+            $scope.agentOptions = [];
+            $scope.agentMessage = '';
+            $scope.agentError = '';
+            $scope.agentLoading = false;
+
             $scope.currentJob = {};
             $scope.jobDetailFabIsOpen = false;
             $scope.courierListFabIsOpen = false;
@@ -150,6 +155,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }, "flightDataTable": {
                     "title": "Flight Options",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/flightDataTableBox.html"),
+                    "showSearch": 0,
+                    "showRefresh": 1
+                }, "agentDataTable": {
+                    "title": "Available Agents",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/agentDataTableBox.html"),
                     "showSearch": 0,
                     "showRefresh": 1
                 }
@@ -2019,7 +2029,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     .cancel('Cancel');
 
                 await $mdDialog.show(confirm);
-
                 console.log('Assigning to job');
 
                 await NWData.assignFlightToJob(job.id, flight.flightNumber, flight.departureTime);
