@@ -1,5 +1,5 @@
 /**
- * @fileoverview Service for managing layout configurations in the uDispatch application.
+ * @fileoverview Service for managing layout configurations on the nationwide page
  * @module NationwideLayoutService
  */
 class NationwideLayoutService {
@@ -7,12 +7,12 @@ class NationwideLayoutService {
      * Create a NationwideLayoutService.
      * @param {Object} $window
      * @param {Object} $mdDialog
-     * @param {Object} $scope
+     * @param {Object} JobDetailService
      */
-    constructor($window, $mdDialog, $scope) {
+    constructor($window, $mdDialog, JobDetailService) {
         this._$window = $window;
         this._$mdDialog = $mdDialog;
-        this._$scope = $scope;
+        this._JobDetailService = JobDetailService;
 
         // Column width options
         /** @type {String} */
@@ -126,11 +126,11 @@ class NationwideLayoutService {
      * @returns {boolean} True if the current job is a delivery job, false otherwise.
      */
     isDeliveryJob() {
-        if (!this._$scope.currentJob || !this._$scope.currentJob.jobNumber) {
+        if (!this._JobDetailService.currentJob || !this._JobDetailService.currentJob.jobNumber) {
             return false;
         }
 
-        const jobNumber = this._$scope.currentJob.jobNumber;
+        const jobNumber = this._JobDetailService.currentJob.jobNumber;
         return jobNumber.charAt(jobNumber.length - 1) === '3';
     };
 
@@ -290,4 +290,4 @@ class NationwideLayoutService {
     }
 }
 
-angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', '$scope', ($window, $mdDialog, $scope) => new NationwideLayoutService($window, $mdDialog, $scope)]);
+angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', 'JobDetailService', ($window, $mdDialog, JobDetailService) => new NationwideLayoutService($window, $mdDialog, JobDetailService)]);
