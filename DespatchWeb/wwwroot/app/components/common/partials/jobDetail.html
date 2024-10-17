@@ -237,19 +237,6 @@
                                 {{jdSvc.currentJob.conNote}}
                             </div>
                         </div>
-                        <div class="field"
-                             ng-click="!jdSvc.currentJob.locked && jdSvc.currentJob.internalStatusID !=1
-                             && jdSvc.currentJob.internalStatusID !=4
-                             && jdSvc.editFollowUpTime($event, jdSvc.currentJob)"
-                             ng-if="!jdSvc.currentJob.bulkJob">
-                            <label ng-class="jdSvc.currentJob.locked || jdSvc.currentJob.internalStatusID ===1 || jdSvc.currentJob.internalStatusID ===4 ? 'disabled' : ''">FollowUp
-                                Time</label>
-                            <div class="value"
-                                 ng-class="jdSvc.currentJob.locked || jdSvc.currentJob.internalStatusID ===1 || jdSvc.currentJob.internalStatusID ===4  ? 'disabled' : ''">
-                                {{jdSvc.currentJob.followupTime | date: "dd/MM/yyyy h:mm a"}}
-                            </div>
-                        </div>
-
                     </div>
                     <div class="col-md-4">
                         <div class="field"
