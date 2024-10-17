@@ -3,9 +3,11 @@
  * @module uDispatch
  */
 angular.module('uDispatch')
-    .config(['$mdThemingProvider', $mdThemingProvider => {
+    .config(['$mdThemingProvider', 'APP_CONFIG', ($mdThemingProvider, APP_CONFIG) => {
+        const isUsCustomer = APP_CONFIG.US_Customer;
+
         /**
-         * Define custom color palette for primary colors
+         * Define custom color palette for urgents primary colors
          */
         $mdThemingProvider.definePalette('urgentPrimary', {
             '50': 'fffbe0',
@@ -28,9 +30,32 @@ angular.module('uDispatch')
         });
 
         /**
-         * Define custom color palette for accent colors
+         * Define custom color palette for DFRNTS primary colors
          */
-        $mdThemingProvider.definePalette('urgentAccent', {
+        $mdThemingProvider.definePalette('dfrntPrimary', {
+            '50': '#e0f7fa',
+            '100': '#b2ebf2',
+            '200': '#80deea',
+            '300': '#4dd0e1',
+            '400': '#26c6da',
+            '500': '#3EAFC2',
+            '600': '#00acc1',
+            '700': '#0097a7',
+            '800': '#00838f',
+            '900': '#006064',
+            'A100': '#84ffff',
+            'A200': '#18ffff',
+            'A400': '#00e5ff',
+            'A700': '#00b8d4',
+            'contrastDefaultColor': 'dark',
+            'contrastDarkColors': ['50', '100', '200', '300', '400', 'A100', 'A200', 'A400', 'A700'],
+            'contrastLightColors': undefined
+        });
+
+        /**
+         * Define custom color palette for accent color
+         */
+        $mdThemingProvider.definePalette('accent', {
             '50': 'ececec',
             '100': 'cecece',
             '200': 'aeaeae',
@@ -54,9 +79,15 @@ angular.module('uDispatch')
         /**
          * Configure the default theme with custom palettes
          */
-        $mdThemingProvider.theme('default')
-            .primaryPalette('urgentPrimary')
-            .accentPalette('urgentAccent');
+        if (isUsCustomer) {
+            $mdThemingProvider.theme('default')
+                .primaryPalette('dfrntPrimary')
+                .accentPalette('accent');
+        } else {
+            $mdThemingProvider.theme('default')
+                .primaryPalette('urgentPrimary')
+                .accentPalette('accent');
+        }
 
         /**
          * Register additional themes for toasts

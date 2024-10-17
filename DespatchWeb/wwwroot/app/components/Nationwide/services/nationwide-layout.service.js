@@ -15,19 +15,19 @@ class NationwideLayoutService {
         this._JobDetailService = JobDetailService;
 
         // Column width options
-        /** @type {String} */
+        /** @type {string} */
         this.COL_WIDTH_LARGE = "35%";
-        /** @type {String} */
+        /** @type {string} */
         this.COL_WIDTH_MEDIUM = "30%";
 
         // Box height options
-        /** @type {String} */
+        /** @type {string} */
         this.BOX_HEIGHT_LARGE = "60%";
-        /** @type {String} */
+        /** @type {string} */
         this.BOX_HEIGHT_MEDIUM = "50%";
-        /** @type {String} */
+        /** @type {string} */
         this.BOX_HEIGHT_SMALL = "40%";
-        /** @type {String} */
+        /** @type {string} */
         this.BOX_HEIGHT_XSMALL = "30%";
 
         // Define individual boxes
@@ -92,7 +92,7 @@ class NationwideLayoutService {
         this.layoutsObject = null;
         /** @type {Object} Map zoom configuration */
         this.mapZoom = {display: true};
-        /** @type {String} Current layout name */
+        /** @type {string} Current layout name */
         this.currentLayoutName = "default";
 
         this.init();
@@ -136,7 +136,7 @@ class NationwideLayoutService {
 
     /**
      * Set the last active layout name.
-     * @param {String} layoutName - The name of the layout to set as last active.
+     * @param {string} layoutName - The name of the layout to set as last active.
      */
     setLastActiveLayoutName(layoutName) {
         if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
@@ -189,7 +189,7 @@ class NationwideLayoutService {
 
     /**
      * Get the user's first name.
-     * @returns {String} The user's first name.
+     * @returns {string} The user's first name.
      */
     getUserName() {
         return this._$window.FirstName;
@@ -283,7 +283,7 @@ class NationwideLayoutService {
 
     /**
      * Get the name of the current layout.
-     * @returns {String} The name of the current layout.
+     * @returns {string} The name of the current layout.
      */
     getCurrentLayoutName() {
         return this.currentLayoutName;

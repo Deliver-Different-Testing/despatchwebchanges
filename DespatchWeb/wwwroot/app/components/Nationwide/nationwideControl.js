@@ -201,7 +201,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await initializeAreas();
                 console.log("Failed to load dispatch views. Please try refreshing the page.");
             }
-        };
+        }
 
         // Initialize areas
         async function initializeAreas() {
@@ -2693,7 +2693,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             loadPageViews().then(() => {
                 console.log('Loaded Page Views!');
             });
-        };
+        }
 
         // Call the init function when the controller loads
         init();
