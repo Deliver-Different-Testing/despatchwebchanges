@@ -328,9 +328,6 @@ public class NationwideJobRepository : INationwideJobRepository
     {
         var whereClause = new StringBuilder();
 
-        // Add the ParentID is null condition at the beginning
-        whereClause.Append("ParentID IS NULL");
-
         if (isInternal)
         {
             if (filter != null && filter.Any())
