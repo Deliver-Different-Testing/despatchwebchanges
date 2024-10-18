@@ -212,8 +212,8 @@ public class NationwideJobRepository : INationwideJobRepository
             FollowupTime = j.FollowupTime,
             RootParentId = j.RootParentId,
             ScheduleName = j.ScheduleName,
-            ConNote = j.ConNote,
-            AirportOnly = j.AirportOnly,
+            ConNote = j.ConNote.ToString(),
+            AirportOnly = bool.Parse(j.AirportOnly.ToString()),
             HasNationwide = j.HasNationwide.HasValue,
             LoggedInContactName = j.LoggedInContactName,
             StatusName = j.StatusName,
@@ -297,6 +297,22 @@ public class NationwideJobRepository : INationwideJobRepository
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
     }
+
+    public async Task<List<AgentViewModel>> GetAgentsAsync(int airPortId, int vehicleSizeId)
+    {
+        var agents = await _context.AgentVehicles
+            .Where(av => av.AirportId == airPortId && av.VehicleSizeId == vehicleSizeId)
+            .Select(av => av.Agent)
+            .Select(a => new AgentViewModel
+            {
+                AgentName = a.UcagName,
+                AgentRanking = a.Ranking.AgentRankingName,
+            })
+            .ToListAsync();
+
+        return agents;
+    }
+
 
     private static string GetNationwideOrderByClause(string order, string ascending)
     {

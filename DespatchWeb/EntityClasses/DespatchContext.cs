@@ -54,6 +54,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblPolygonSuburb> TblPolygonSuburbs { get; set; }
         public virtual DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
         public virtual DbSet<TucAgent> TucAgents { get; set; }
+        public virtual DbSet<TucAgentRanking> TucAgentRankings { get; set; }
         public virtual DbSet<TucClient> TucClients { get; set; }
         public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
         public virtual DbSet<TucClientItem> TucClientItems { get; set; }
@@ -3882,11 +3883,30 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.UcagSuburbId).HasColumnName("ucagSuburbID");
 
+                entity.HasOne(d => d.Ranking)
+                    .WithMany(p => p.TucAgents)
+                    .HasForeignKey(d => d.RankingId)
+                    .HasConstraintName("FK__tucAgents__Ranki__0189F844");
+
                 entity.HasOne(d => d.UcagSuburb)
                     .WithMany(p => p.TucAgents)
                     .HasForeignKey(d => d.UcagSuburbId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_tucAgents_tucSuburb");
+            });
+
+            modelBuilder.Entity<TucAgentRanking>(entity =>
+            {
+                entity.HasKey(e => e.AgentRankingId)
+                    .HasName("PK__tucAgent__CF65D7502AFC116E");
+
+                entity.ToTable("tucAgentRanking");
+
+                entity.Property(e => e.AgentRankingId).HasColumnName("AgentRankingID");
+
+                entity.Property(e => e.AgentRankingName)
+                    .IsRequired()
+                    .HasMaxLength(100);
             });
 
             modelBuilder.Entity<TucClient>(entity =>

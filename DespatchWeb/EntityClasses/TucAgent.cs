@@ -53,6 +53,7 @@ namespace DespatchWeb.EntityClasses
         public int? RankingId { get; set; }
         public int? StatusId { get; set; }
 
+        public virtual TucAgentRanking Ranking { get; set; }
         public virtual TucSuburb UcagSuburb { get; set; }
         public virtual ICollection<AgentVehicle> AgentVehicles { get; set; }
         public virtual ICollection<TblAirport> TblAirports { get; set; }

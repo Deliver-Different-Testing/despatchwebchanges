@@ -15,10 +15,10 @@
    "T4TemplatePath": null,
    "Tables": [
       {
-        "Name": "[dbo].[AgentVehicles]",
-        "ObjectType": 0
+         "Name": "[dbo].[AgentVehicles]",
+         "ObjectType": 0
       },
-     {
+      {
          "Name": "[dbo].[ClearListAreaZipPolygon]",
          "ObjectType": 0
       },
@@ -123,10 +123,14 @@
          "ObjectType": 0
       },
       {
-        "Name": "[dbo].[tucAgents]",
-        "ObjectType": 0
+         "Name": "[dbo].[tucAgentRanking]",
+         "ObjectType": 0
       },
-     {
+      {
+         "Name": "[dbo].[tucAgents]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucClient]",
          "ObjectType": 0
       },
@@ -190,9 +194,9 @@
          "Name": "[dbo].[tucSuburb]",
          "ObjectType": 0
       },
-     {
-       "Name": "[dbo].[VehicleSize]",
-       "ObjectType": 0
+      {
+         "Name": "[dbo].[VehicleSize]",
+         "ObjectType": 0
       },
       {
          "Name": "[dbo].[ZipPolygon]",
