@@ -215,7 +215,7 @@ public class NationwideJobRepository : INationwideJobRepository
             RootParentId = j.RootParentId,
             ScheduleName = j.ScheduleName,
             ConNote = j.ConNote.ToString(),
-            AirportOnly = bool.Parse(j.AirportOnly.ToString()),
+            AirportOnly = bool.TryParse(j.AirportOnly?.ToString(), out bool airportOnly) && airportOnly,
             HasNationwide = j.HasNationwide.HasValue,
             LoggedInContactName = j.LoggedInContactName,
             StatusName = j.StatusName,

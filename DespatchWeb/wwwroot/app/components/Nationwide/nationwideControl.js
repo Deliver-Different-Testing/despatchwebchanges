@@ -1931,12 +1931,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 // Get flights for jobs if airport information included
                 if (job.toAirportId && job.fromAirportId) {
-                    await _processFlights();
+                    await _processFlights(job);
                 }
 
                 // Get agents if delivery job
                 if ($scope.isDeliveryJob()) {
-                    await _processAgents();
+                    await _processAgents(job);
                 }
 
                 $scope.$apply();
@@ -1951,8 +1951,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          * @async
          * @private
          * Get and process flight options for table
+         * @param {Job} job
          */
-        async function _processFlights() {
+        async function _processFlights(job) {
             console.log('Getting flights');
             LayoutService.showFlightTable();
 
@@ -1987,8 +1988,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          * @async
          * @private
          * Get and process agent options for table
+         * @param {Job} job
          */
-        async function _processAgents() {
+        async function _processAgents(job) {
             console.log('Getting agents');
             LayoutService.showAgentTable();
 

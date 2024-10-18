@@ -34,15 +34,17 @@
 
                 <table class="table table-responsive table-rows" data-group="agentGroup" id="agentList">
                     <tbody>
-                    <tr class="clickable-row noselect"
-                        ng-click="addAgentToJob($event, agent, currentJob)"
+                    <tr class="clickable-row draggable-row noselect status"
                         ng-repeat="agent in agentOptions | filter: box.searchBox">
                         <td>{{agent.agentName}}</td>
                         <td>{{agent.agentRate}}</td>
                         <td>{{agent.agentRanking}}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td ng-click="" style="width:20px;" title="Send Quote Request">
+                            <i class="material-symbols-outlined job-table-icon">request_quote</i>
+                        </td>
+                        <td ng-click="" style="width:20px;" title="Assign Job">
+                            <i class="material-symbols-outlined job-table-icon">add</i>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
@@ -80,12 +82,12 @@
         </div>
     </div>
 
-    <div class="no-data" ng-if="currentJob.assignedFlight">
-        <div class="text">
-            <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-            An agent has already been assigned to this job. This can be found in the job details widget.
-        </div>
-    </div>
+    <!--  <div class="no-data" ng-if="currentJob.assignedFlight">
+          <div class="text">
+              <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+              An agent has already been assigned to this job. This can be found in the job details widget.
+          </div>
+      </div>-->
 </div>
 
 <div class="no-data" ng-if="!currentJob">
