@@ -15,7 +15,7 @@ class NationwideLayoutService {
         this._$rootScope = $rootScope;
 
         /** @type {boolean} */
-        this.showFlightTable = true;
+        this.shouldDisplayFlightTable = true;
 
         // Column width options
         /** @type {string} */
@@ -133,7 +133,7 @@ class NationwideLayoutService {
             width: this.COL_WIDTH_LARGE,
             boxes: [
                 this.jobsListBox,
-                this.showFlightTable ? this.flightDataTableBox : this.agentDataTableBox
+                this.shouldDisplayFlightTable ? this.flightDataTableBox : this.agentDataTableBox
             ]
         };
 
@@ -148,7 +148,7 @@ class NationwideLayoutService {
      * Show the flight table
      */
     showFlightTable() {
-        this.showFlightTable = true;
+        this.shouldDisplayFlightTable = true;
         this.updateColumn1Layout();
     }
 
@@ -156,7 +156,7 @@ class NationwideLayoutService {
      * Show the flight table
      */
     showAgentTable() {
-        this.showFlightTable = false;
+        this.shouldDisplayFlightTable = false;
         this.updateColumn1Layout();
     }
 
