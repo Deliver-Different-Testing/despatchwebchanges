@@ -387,6 +387,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.layout = LayoutService.getCurrentLayout();
 
+        $scope.$on('layoutUpdated', () => {
+            $scope.layout = LayoutService.getCurrentLayout();
+            $scope.$apply();
+        });
+
+
         /**
          * @param {Number} index
          */
@@ -1908,35 +1914,69 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
 
-                processActiveTable();
-                initializeJob(job);
+                _processActiveTable();
+                _initializeJob(job);
 
                 // Get flights for jobs if airport information included
                 if (job.toAirportId && job.fromAirportId) {
-                    console.log('Getting flights');
-                    $scope.flightsLoading = true;
-
-                    const result = await NWData.getFlightOptions(job.id, job.date);
-                    $scope.flightOptions = result.flights;
-                    console.log("Flight options:", result.flights);
-                    $scope.flightMessage = result.message;
-                    $scope.flightError = result.error;
-
-                    $scope.flightsLoading = false;
-
-                    $scope.$apply();
+                    await _processFlights();
                 }
 
+                if ($scope.isDeliveryJob()) {
+                    processAgents();
+                }
+
+                $scope.$apply();
                 await updateData(job, clear);
                 angular.element("#box-jobDetail .loading").css('display', 'none');
-
-
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
         };
 
-        function processActiveTable() {
+        function processAgents() {
+            console.log('Getting agents');
+            LayoutService.showAgentTable();
+
+        }
+
+        /**
+         * @async
+         * @private
+         * Gets and process flight options for table
+         */
+        async function _processFlights() {
+            console.log('Getting flights');
+            LayoutService.showFlightTable();
+
+            $scope.flightsLoading = true;
+
+            const result = await NWData.getFlightOptions(job.id, job.date);
+            $scope.flightOptions = result.flights;
+            console.log("Flight options:", result.flights);
+            $scope.flightMessage = result.message;
+            $scope.flightError = result.error;
+
+            $scope.flightsLoading = false;
+        }
+
+        /**
+         * Determines if the current job is a delivery job.
+         * @returns {boolean} True if the current job is a delivery job, false otherwise.
+         */
+        $scope.isDeliveryJob = () => {
+            if (!$scope.currentJob || !$scope.currentJob.jobNo) {
+                return false;
+            }
+
+            const jobNumber = $scope.currentJob.jobNo;
+            const isDeliveryJob = jobNumber.charAt(jobNumber.length - 1) === '3';
+
+            console.log(jobNumber + " is delivery job!");
+            return isDeliveryJob;
+        }
+
+        function _processActiveTable() {
             $scope.selectedJobs = [];
             $scope.currentSupport = null;
             angular.element(".activeTable .active").each(function () {
@@ -1949,7 +1989,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         /**
          * @param {Job} job
          */
-        function initializeJob(job) {
+        function _initializeJob(job) {
             $scope.currentJob = job;
             $scope.$apply();
             console.log(job);

@@ -30,29 +30,6 @@ angular.module('uDispatch')
         });
 
         /**
-         * Define custom color palette for DFRNTS primary colors
-         */
-        $mdThemingProvider.definePalette('dfrntPrimary', {
-            '50': '#e0f7fa',
-            '100': '#b2ebf2',
-            '200': '#80deea',
-            '300': '#4dd0e1',
-            '400': '#26c6da',
-            '500': '#3EAFC2',
-            '600': '#00acc1',
-            '700': '#0097a7',
-            '800': '#00838f',
-            '900': '#006064',
-            'A100': '#84ffff',
-            'A200': '#18ffff',
-            'A400': '#00e5ff',
-            'A700': '#00b8d4',
-            'contrastDefaultColor': 'dark',
-            'contrastDarkColors': ['50', '100', '200', '300', '400', 'A100', 'A200', 'A400', 'A700'],
-            'contrastLightColors': undefined
-        });
-
-        /**
          * Define custom color palette for accent color
          */
         $mdThemingProvider.definePalette('accent', {
@@ -75,6 +52,28 @@ angular.module('uDispatch')
             'contrastLightColors': ['400', '500', '600', '700', '800', '900']
         });
 
+        /**
+         * Define custom color palette based on #3EAFC2
+         */
+        $mdThemingProvider.definePalette('dfrntPrimary', {
+            '50': '#e8f6f8',
+            '100': '#c5e8ed',
+            '200': '#9fd9e2',
+            '300': '#79c9d6',
+            '400': '#5cbccd',
+            '500': '#3EAFC2',  // Our base color
+            '600': '#38a8bc',
+            '700': '#309fb4',
+            '800': '#2896ac',
+            '900': '#1b869f',
+            'A100': '#e3f9ff',
+            'A200': '#b0eeff',
+            'A400': '#7de3ff',
+            'A700': '#64ddff',
+            'contrastDefaultColor': 'dark',
+            'contrastDarkColors': ['50', '100', '200', '300', '400', 'A100', 'A200', 'A400', 'A700'],
+            'contrastLightColors': ['500', '600', '700', '800', '900']
+        });
 
         /**
          * Configure the default theme with custom palettes

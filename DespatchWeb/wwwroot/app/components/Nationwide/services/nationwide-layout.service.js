@@ -7,12 +7,15 @@ class NationwideLayoutService {
      * Create a NationwideLayoutService.
      * @param {Object} $window
      * @param {Object} $mdDialog
-     * @param {Object} JobDetailService
+     * @param {Object} $rootScope
      */
-    constructor($window, $mdDialog, JobDetailService) {
+    constructor($window, $mdDialog, $rootScope) {
         this._$window = $window;
         this._$mdDialog = $mdDialog;
-        this._JobDetailService = JobDetailService;
+        this._$rootScope = $rootScope;
+
+        /** @type {boolean} */
+        this.showFlightTable = true;
 
         // Column width options
         /** @type {string} */
@@ -49,23 +52,8 @@ class NationwideLayoutService {
         this.agentDataTableBox = {name: "agentDataTable", height: this.BOX_HEIGHT_XSMALL};
 
         // Define columns
-        /** @type {Column} */
-        this.column1 = {
-            id: "col1",
-            width: this.COL_WIDTH_LARGE,
-            boxes: [
-                this.jobsListBox,
-                {
-                    get: () => {
-                        if (this.isDeliveryJob()) {
-                            return this.agentDataTableBox;
-                        } else {
-                            return this.flightDataTableBox;
-                        }
-                    }
-                }
-            ]
-        };
+        this.column1 = {};
+        this.updateColumn1Layout();
 
         /** @type {Column} */
         this.column2 = {
@@ -107,12 +95,26 @@ class NationwideLayoutService {
             const storedMapZoom = this._$window.localStorage.getItem(`mapZoomNW-${this._$window.ContactID}`);
 
             if (storedLayouts) {
-                this.currentLayouts = JSON.parse(storedLayouts);
-                this.currentLayouts[0] = this.defaultLayout[0]; // Always use the latest default layout
+                try {
+                    this.currentLayouts = JSON.parse(storedLayouts);
+                    // Ensure currentLayouts is an array and has at least one item
+                    if (!Array.isArray(this.currentLayouts) || this.currentLayouts.length === 0) {
+                        throw new Error('Invalid stored layouts');
+                    }
+                    this.currentLayouts[0] = this.defaultLayout[0]; // Always use the latest default layout
+                } catch (error) {
+                    console.error('Error parsing stored layouts:', error);
+                    this.currentLayouts = this.defaultLayout;
+                }
             }
 
             if (storedMapZoom) {
-                this.mapZoom = JSON.parse(storedMapZoom);
+                try {
+                    this.mapZoom = JSON.parse(storedMapZoom);
+                } catch (error) {
+                    console.error('Error parsing stored map zoom:', error);
+                    this.mapZoom = {display: true}; // Default value
+                }
             }
         }
 
@@ -122,17 +124,41 @@ class NationwideLayoutService {
     }
 
     /**
-     * Determines if the current job is a delivery job.
-     * @returns {boolean} True if the current job is a delivery job, false otherwise.
+     * Update the column1 layout based on the current showFlightTable value
      */
-    isDeliveryJob() {
-        if (!this._JobDetailService.currentJob || !this._JobDetailService.currentJob.jobNumber) {
-            return false;
-        }
+    updateColumn1Layout() {
+        /** @type {Column} */
+        this.column1 = {
+            id: "col1",
+            width: this.COL_WIDTH_LARGE,
+            boxes: [
+                this.jobsListBox,
+                this.showFlightTable ? this.flightDataTableBox : this.agentDataTableBox
+            ]
+        };
 
-        const jobNumber = this._JobDetailService.currentJob.jobNumber;
-        return jobNumber.charAt(jobNumber.length - 1) === '3';
-    };
+        // Update the current layout
+        if (this.currentLayouts && this.currentLayouts.length > 0) {
+            this.currentLayouts[0].layout.columns[0] = this.column1;
+            this.updateLayouts(this.currentLayouts);
+        }
+    }
+
+    /**
+     * Show the flight table
+     */
+    showFlightTable() {
+        this.showFlightTable = true;
+        this.updateColumn1Layout();
+    }
+
+    /**
+     * Show the flight table
+     */
+    showAgentTable() {
+        this.showFlightTable = false;
+        this.updateColumn1Layout();
+    }
 
     /**
      * Set the last active layout name.
@@ -202,7 +228,11 @@ class NationwideLayoutService {
     updateLayouts(newLayouts) {
         this.currentLayouts = newLayouts;
         if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.Stringify(this.currentLayouts));
+            this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.stringify(this.currentLayouts));
+        }
+        // Notify any listeners that the layout has changed
+        if (this._$rootScope) {
+            this._$rootScope.$broadcast('layoutUpdated');
         }
     }
 
@@ -290,4 +320,4 @@ class NationwideLayoutService {
     }
 }
 
-angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', 'JobDetailService', ($window, $mdDialog, JobDetailService) => new NationwideLayoutService($window, $mdDialog, JobDetailService)]);
+angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', '$rootScope', ($window, $mdDialog, $rootScope) => new NationwideLayoutService($window, $mdDialog, $rootScope)]);

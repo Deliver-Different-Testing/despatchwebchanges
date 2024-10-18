@@ -1,6 +1,6 @@
 <div class="box-content">
     <div ng-if="currentJob">
-        <div ng-if="isDeliveryJob">
+        <div ng-if="isDeliveryJob()">
             <div ng-if="!agentsLoading">
 
                 <div class="table-headings">
@@ -51,7 +51,7 @@
             <div class="no-data" ng-if="!agentsLoading && agentOptions.length === 0">
                 <div class="text">
                     <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-                    {{agentMessage || 'No flights available for the specified criteria.'}}
+                    {{agentMessage || 'No agents available for the specified criteria.'}}
                 </div>
             </div>
 
@@ -73,22 +73,22 @@
         </div>
     </div>
 
-    <div class="no-data" ng-if="!currentJob.toAirportId || !currentJob.fromAirportId">
+    <div class="no-data" ng-if="!isDeliveryJob()">
         <div class="text">
-            <md-icon md-font-set="material-symbols-outlined">local_airport</md-icon>
-            Airport information not applicable or not provided for this job. If needed, please update the job
-            details with relevant airport data.
+            <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+            Agent information is not applicable for this job. This section is only relevant for delivery jobs.
         </div>
     </div>
 
     <div class="no-data" ng-if="currentJob.assignedFlight">
         <div class="text">
             <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-            A flight has already been assigned to this job. This can be found in the job details widget.
+            An agent has already been assigned to this job. This can be found in the job details widget.
         </div>
     </div>
 </div>
 
 <div class="no-data" ng-if="!currentJob">
+    <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
     <div class="text">Please select a job to view available agents.</div>
 </div>
