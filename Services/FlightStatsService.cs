@@ -64,6 +64,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
 
 
         var uri = uriBuilder.Uri;
+        Log.Debug($"DeliverTo: {_webhookUrl}");
         Log.Debug($"CreateFlightRuleRequest: {uri}");
         // Execute the request
         var response = await httpClient.GetAsync(uri);
