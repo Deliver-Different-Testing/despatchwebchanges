@@ -73,11 +73,12 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
             throw new Exception($"Failed to retrieve alert information: {response.ReasonPhrase}");
 
         var content = await response.Content.ReadAsStringAsync();
+        Log.Debug($"CreateRule content response string: {content}");
+
         var createAlertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content);
 
-        
 
-        return createAlertResponse.Rule.ToString();
+        return createAlertResponse.Rule?.Id;
     }
 
     public async Task<Rule> GetAlertSubscriptionByIdAsync(string alertId)
