@@ -1,5 +1,4 @@
-﻿using ClientManager.Core.Domain;
-using DespatchWeb.Models;
+﻿using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;

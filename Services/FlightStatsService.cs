@@ -1,28 +1,32 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection.Emit;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+
 using static System.Net.Mime.MediaTypeNames;
 
 namespace DespatchWeb.Services;
 
 
-public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
+public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor contextAccessor) : IFlightStatsService
 {
     private const string BaseUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
-    private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1/";
+    private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1";
     private readonly string _appId = Environment.GetEnvironmentVariable("FlightStatusApiAppId");
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
-    private readonly string _webhookUrl;
+    private readonly string _webhookUrl =Environment.GetEnvironmentVariable("FlightWebhook");
 
     public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime, string departureAirportCode)
     {
@@ -31,6 +35,11 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
                 nameof(departureAirportCode));
 
         var uniqueWebhookId = Guid.NewGuid();
+        var connectionString = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
+        var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+        var userName = contextAccessor.HttpContext?.User.FindFirst( ClaimTypes.Name)?.Value;
+        var token = AuthenticationExtensions.CreateApiToken(userName, int.Parse(tenantId), connectionString);
+        var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
 
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day) = SplitDate(departureTime);
@@ -44,9 +53,10 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
         query["name"] = uniqueWebhookId.ToString();
         query["type"] = "JSON";
         query["deliverTo"] = _webhookUrl;
+        query["_token"] = requestToken;
 
         // Construct the final URI
-        var fullUrl = $"{BaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var fullUrl = $"{AlertUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
         {
             Query = query.ToString()
@@ -82,7 +92,7 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
 
         
         // Construct the final URI
-        var fullUrl = $"{BaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var fullUrl = $"{AlertUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
         {
             Query = query.ToString()
@@ -90,10 +100,10 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
 
 
         var uri = uriBuilder.Uri;
-        Log.Debug($"DeleteAlertRequest: {uri}");
+        Log.Debug($"GetAlertRequest: {uri}");
         // Execute the request
         var response = await httpClient.GetAsync(uri);
-        Log.Debug($"DeleteAlertRequest StatusCode: {response.StatusCode}");
+        Log.Debug($"GetAlertRequest StatusCode: {response.StatusCode}");
         if (!response.IsSuccessStatusCode)
             throw new Exception($"Failed to retrieve alert information: {response.ReasonPhrase}");
 
@@ -116,7 +126,7 @@ public class FlightStatsService(HttpClient httpClient) : IFlightStatsService
 
         
         // Construct the final URI
-        var fullUrl = $"{BaseUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+        var fullUrl = $"{AlertUrl.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
         var uriBuilder = new UriBuilder(fullUrl)
         {
             Query = query.ToString()

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
 
-namespace ClientManager.Core.Domain
+namespace DespatchWeb
 {
     public class DynamicDespatchDbContextFactory(
         IOptions<DbContextOptions<DespatchContext>> options,
