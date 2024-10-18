@@ -844,7 +844,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.AirportCode)
                     .IsRequired()
-                    .HasMaxLength(3);
+                    .HasMaxLength(3)
+                    .HasDefaultValueSql("(N'')");
 
                 entity.Property(e => e.CargoFacilityFee).HasColumnType("money");
 

@@ -9,18 +9,29 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.isUsCustomer = APP_CONFIG.US_Customer;
 
             $scope.sort = [];
+            /** @type {FlightOptions[]} */
             $scope.flightOptions = [];
+            /** @type {string} */
             $scope.flightMessage = '';
+            /** @type {string} */
             $scope.flightError = '';
+            /** @type {boolean} */
             $scope.flightsLoading = false;
 
+            /** @type {Agent[]} */
             $scope.agentOptions = [];
+            /** @type {string} */
             $scope.agentMessage = '';
+            /** @type {string} */
             $scope.agentError = '';
+            /** @type {boolean} */
             $scope.agentLoading = false;
 
+            /** @type {Job} */
             $scope.currentJob = {};
+            /** @type {boolean} */
             $scope.jobDetailFabIsOpen = false;
+            /** @type {boolean} */
             $scope.courierListFabIsOpen = false;
             $scope.areas = [];
             $scope.selectedAreas = [];
@@ -29,6 +40,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 active: false, done: false, all: true
             };
 
+            /** @type {Job[]} */
             $scope.jobList = [];
             $scope.jobListLoading = false;
             $scope.selected = [];
@@ -1922,8 +1934,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     await _processFlights();
                 }
 
+                // Get agents if delivery job
                 if ($scope.isDeliveryJob()) {
-                    processAgents();
+                    await _processAgents();
                 }
 
                 $scope.$apply();
@@ -1934,16 +1947,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        function processAgents() {
-            console.log('Getting agents');
-            LayoutService.showAgentTable();
-
-        }
-
         /**
          * @async
          * @private
-         * Gets and process flight options for table
+         * Get and process flight options for table
          */
         async function _processFlights() {
             console.log('Getting flights');
@@ -1975,6 +1982,27 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             console.log(jobNumber + " is delivery job!");
             return isDeliveryJob;
         }
+
+        /**
+         * @async
+         * @private
+         * Get and process agent options for table
+         */
+        async function _processAgents() {
+            console.log('Getting agents');
+            LayoutService.showAgentTable();
+
+            $scope.agentsLoading = true;
+
+            const result = await NWData.getAgentOptions(job.id);
+            $scope.agentOptions = result.agents;
+            console.log("Agent options:", result.agents);
+            $scope.agentMessage = result.message;
+            $scope.agentError = result.error;
+
+            $scope.agentsLoading = false;
+        }
+
 
         function _processActiveTable() {
             $scope.selectedJobs = [];

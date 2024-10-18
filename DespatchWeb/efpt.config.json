@@ -255,6 +255,10 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[DD_stpGetAgentDistanceRate]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DES_qdfCourier_ClearLists]",
          "ObjectType": 1
       },

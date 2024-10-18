@@ -37,12 +37,12 @@
                     <tr class="clickable-row noselect"
                         ng-click="addAgentToJob($event, agent, currentJob)"
                         ng-repeat="agent in agentOptions | filter: box.searchBox">
-                        <td>{{flight.airline}}</td>
-                        <td>{{flight.flightNumber}}</td>
-                        <td>{{flight.departureTime | date: "HH:mm"}}</td>
-                        <td>{{flight.arrivalTime | date: "HH:mm"}}</td>
-                        <td>{{flight.duration | date: "H:mm"}}</td>
-                        <td>{{flight.aircraft}}</td>
+                        <td>{{agent.agentName}}</td>
+                        <td>{{agent.agentRate}}</td>
+                        <td>{{agent.agentRanking}}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                     </tr>
                     </tbody>
                 </table>

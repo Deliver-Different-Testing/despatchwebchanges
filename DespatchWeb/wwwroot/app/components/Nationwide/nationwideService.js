@@ -813,6 +813,24 @@ class NationwideService {
     }
 
     /**
+     * Fetches agent options for a specific job. Optionally can specify departure date
+     * @param {number} jobId - The ID of the job
+     * @throws {Error} If the API request fails or returns an unexpected response.
+     */
+    async getAgentOptions(jobId) {
+        const response = await this._$http.get('nationwideJob/GetAgentsForJob', {
+            params: {
+                jobId: jobId,
+            }
+        });
+
+        return {
+            agents: response.data,
+            message: response.data.length === 0 ? 'Sorry, we couldn\'t find any agents that applied to this specific job. Please check the job information is correct and try again.' : null
+        };
+    }
+
+    /**
      * @param {Array} selectedAreas
      * @returns {Array}
      * @private
