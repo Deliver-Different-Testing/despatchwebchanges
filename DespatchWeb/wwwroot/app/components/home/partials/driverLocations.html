@@ -1,4 +1,4 @@
-<div id="driverLocations" ng-if="driverLocations.areas">
+<div id="driverLocations" ng-if="driverLocations.areas.length > 0">
     <div class="container-fluid">
         <div class="row">
             <div class="col-xs-3" ng-repeat="area in driverLocations.areas">
@@ -70,6 +70,13 @@
     </div>
 </div>
 
-<div class="no-data" ng-if="!driverLocations.areas">
-    <div class="text">No Driver Locations found. Please add some.</div>
+<div class="no-data" ng-if="driverLocations.areas.length === 0">
+    <div class="content">
+        <div class="icon">
+            <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+        </div>
+        <div class="text">
+            Driver locations not configured. Please set up in Admin Manager
+        </div>
+    </div>
 </div>
