@@ -772,7 +772,7 @@ class NationwideService {
     /**
      * Fetches flight options for a specific job. Optionally can specify departure date
      * @param {number} jobId - The ID of the job
-     * @param {Date|Null} departureDate - The date of departure.
+     * @param {string} departureDate - The date of departure.
      * @throws {Error} If the API request fails or returns an unexpected response.
      */
     async getFlightOptions(jobId, departureDate) {
@@ -810,6 +810,24 @@ class NationwideService {
         } catch (error) {
             console.error('Error assigning flight to job:', error);
         }
+    }
+
+    /**
+     * Fetches agent options for a specific job. Optionally can specify departure date
+     * @param {number} jobId - The ID of the job
+     * @throws {Error} If the API request fails or returns an unexpected response.
+     */
+    async getAgentOptions(jobId) {
+        const response = await this._$http.get('nationwideJob/GetAgentsForJob', {
+            params: {
+                jobId: jobId,
+            }
+        });
+
+        return {
+            agents: response.data,
+            message: response.data.length === 0 ? 'Sorry, we couldn\'t find any agents that applied to this specific job. Please check the job information is correct and try again.' : null
+        };
     }
 
     /**

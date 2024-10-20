@@ -15,4 +15,5 @@ public interface INationwideJobRepository
     Task<bool> AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId);
 
     Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId);
+    Task<IEnumerable<AgentViewModel>> GetAgentsAsync(int jobId);
 }

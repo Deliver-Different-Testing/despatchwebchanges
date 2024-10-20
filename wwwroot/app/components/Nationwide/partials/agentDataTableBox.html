@@ -1,0 +1,96 @@
+<div class="box-content">
+    <div ng-if="currentJob">
+        <div ng-if="isDeliveryJob()">
+            <div ng-if="!agentsLoading">
+
+                <div class="table-headings">
+                    <table>
+                        <thead class="thead-dark no select">
+                        <tr>
+                            <th ng-click="orderList('agentList','agentName')" scope="col">
+                                <i class="material-symbols-outlined" ng-if="sort.agentList == 'agentName'">arrow_drop_down</i>
+                                <i class="material-symbols-outlined" ng-if="sort.agentList == 'd-agentName'">arrow_drop_up</i>Agent
+                                Name
+                            </th>
+                            <th ng-click="orderList('agentList','agentRate')" scope="col">
+                                <i class="material-symbols-outlined" ng-if="sort.agentList == 'agentRate'">arrow_drop_down</i>
+                                <i class="material-symbols-outlined" ng-if="sort.agentList == 'd-agentRate'">arrow_drop_up</i>Rate
+                                No
+                            </th>
+                            <th ng-click="orderList('agentList', 'agentRanking')" scope="col">
+                                <i class="material-symbols-outlined" ng-if="sort.agentList == 'agentRanking'">arrow_drop_down</i>
+                                <i class="material-symbols-outlined" ng-if="sort.agentList == 'd-agentRanking'">arrow_drop_up</i>Ranking
+                            </th>
+                            <th scope="col">
+                                Send Quote Request
+                            </th>
+                            <th scope="col">
+                                Assign Job
+                            </th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+
+                <table class="table table-responsive table-rows" data-group="agentGroup" id="agentList">
+                    <tbody>
+                    <tr class="clickable-row draggable-row noselect status"
+                        ng-repeat="agent in agentOptions | filter: box.searchBox">
+                        <td>{{agent.agentName}}</td>
+                        <td>{{agent.agentRate}}</td>
+                        <td>{{agent.agentRanking}}</td>
+                        <td ng-click="" style="width:20px;" title="Send Quote Request">
+                            <i class="material-symbols-outlined job-table-icon">request_quote</i>
+                        </td>
+                        <td ng-click="" style="width:20px;" title="Assign Job">
+                            <i class="material-symbols-outlined job-table-icon">add</i>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="no-data" ng-if="!agentsLoading && agentOptions.length === 0">
+                <div class="text">
+                    <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+                    {{agentMessage || 'No agents available for the specified criteria.'}}
+                </div>
+            </div>
+
+            <div class="no-data" ng-if="agentError">
+                <div class="text">
+                    <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+                    {{agentError}}
+                </div>
+            </div>
+        </div>
+
+        <div class="loader-container" ng-if="agentsLoading">
+            <div class="full-height" layout="row" layout-align="center center">
+                <div class="material-icon-loader">
+                    <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+                    <md-icon class="loader-icon" md-font-set="material-symbols-outlined">handyman</md-icon>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="no-data" ng-if="!isDeliveryJob()">
+        <div class="text">
+            <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+            Agent information is not applicable for this job. This section is only relevant for delivery jobs.
+        </div>
+    </div>
+
+    <!--  <div class="no-data" ng-if="currentJob.assignedFlight">
+          <div class="text">
+              <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+              An agent has already been assigned to this job. This can be found in the job details widget.
+          </div>
+      </div>-->
+</div>
+
+<div class="no-data" ng-if="!currentJob">
+    <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+    <div class="text">Please select a job to view available agents.</div>
+</div>

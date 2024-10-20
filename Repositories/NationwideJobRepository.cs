@@ -1,4 +1,10 @@
-using AutoMapper;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -205,8 +211,8 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
             FollowupTime = j.FollowupTime,
             RootParentId = j.RootParentId,
             ScheduleName = j.ScheduleName,
-            ConNote = j.ConNote,
-            AirportOnly = j.AirportOnly,
+            ConNote = j.ConNote.ToString(),
+            AirportOnly = bool.TryParse(j.AirportOnly?.ToString(), out bool airportOnly) && airportOnly,
             HasNationwide = j.HasNationwide.HasValue,
             LoggedInContactName = j.LoggedInContactName,
             StatusName = j.StatusName,
@@ -245,7 +251,8 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
                     j.JobId,
                     j.Number,
                     j.ClientId,
-                    j.ParentId
+                    j.ParentId,
+                    j.CourierId
                 })
                 .FirstOrDefaultAsync();
 
@@ -288,6 +295,106 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
             .FirstOrDefaultAsync();
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
+    }
+
+    public async Task<IEnumerable<AgentViewModel>> GetAgentsAsync(int jobId)
+    {
+        var job = await GetJobDetailsAsync(jobId);
+        var agents = await GetEligibleAgentsAsync(job.AirPortId, job.VehicleSizeId);
+        return await ProcessAgentsInParallelAsync(job, agents);
+    }
+
+    private async Task<JobDetails> GetJobDetailsAsync(int jobId)
+    {
+        return await _context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new JobDetails
+            {
+                AirPortId = j.FromAirportId,
+                VehicleSizeId = j.UcjbSize,
+                ClientId = j.UcjbClientId,
+                FromZipCode = j.PickupAddressLine7,
+                ToZipCode = j.DeliveryAddressLine7,
+                TotalMiles = 20,
+                TotalWeight = (decimal)j.UcjbWeight,
+                BookTime = new DateTime(
+                    j.UcjbDate.Year,
+                    j.UcjbDate.Month,
+                    j.UcjbDate.Day,
+                    j.UcjbTime != null ? j.UcjbTime.Value.Hour : 0,
+                    j.UcjbTime != null ? j.UcjbTime.Value.Minute : 0,
+                    j.UcjbTime != null ? j.UcjbTime.Value.Second : 0
+                ),
+                DangerousGoods = j.Dgdocument,
+                DryIceWeight = j.DryIceWeight
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    private async Task<List<AgentInfo>> GetEligibleAgentsAsync(int? airportId, int? vehicleSizeId)
+    {
+        return await _context.AgentVehicles
+            .Where(av => av.AirportId == airportId && av.VehicleSizeId == vehicleSizeId)
+            .Select(a => new AgentInfo
+            {
+                AgentName = a.Agent.UcagName,
+                AgentRanking = a.Agent.Ranking.AgentRankingName,
+                DistanceRateId = a.DistanceRateId
+            })
+            .ToListAsync();
+    }
+
+    private async Task<IEnumerable<AgentViewModel>> ProcessAgentsInParallelAsync(JobDetails job,
+        List<AgentInfo> agents)
+    {
+        const int batchSize = 100;
+        var agentResults = new ConcurrentBag<AgentViewModel>();
+
+        await Parallel.ForEachAsync(
+            agents.Chunk(batchSize),
+            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+            async (batch, ct) =>
+            {
+                foreach (var agent in batch)
+                {
+                    var agentRate = await GetAgentRatesAsync(job, agent, ct);
+                    var viewModel = new AgentViewModel
+                    {
+                        AgentName = agent.AgentName,
+                        AgentRanking = agent.AgentRanking,
+                        AgentRate = agentRate.HasValue ? agentRate.Value : 0
+                    };
+
+                    agentResults.Add(viewModel);
+                }
+            });
+
+        return agentResults;
+    }
+
+    private async Task<decimal?> GetAgentRatesAsync(JobDetails job,
+        AgentInfo agent, CancellationToken ct)
+    {
+        var rates = await _context.Procedures.DD_stpGetAgentDistanceRateAsync(
+            ClientID: job.ClientId,
+            FromZipCode: int.Parse(job.FromZipCode),
+            ToZipCode: int.Parse(job.ToZipCode),
+            TotalMiles: job.TotalMiles,
+            TotalWeight: job.TotalWeight,
+            TotalPallets: null,
+            ExtraStopOffs: null,
+            BookTime: job.BookTime,
+            VehicleSizeID: job.VehicleSizeId,
+            DangerousGoods: job.DangerousGoods,
+            DryIceWeight: job.DryIceWeight,
+            WaitTime: null,
+            DistanceRateID: agent.DistanceRateId,
+            cancellationToken: ct
+        );
+
+        return rates
+            .Select(r => r.Rate)
+            .FirstOrDefault();
     }
 
     private static string GetNationwideOrderByClause(string order, string ascending)
@@ -389,5 +496,26 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
         if (!isInternal && !string.IsNullOrEmpty(clientIds)) whereClause.Append($" AND ucjbClientID in ({clientIds})");
 
         return whereClause.ToString();
+    }
+
+    private class JobDetails
+    {
+        public int? AirPortId { get; init; }
+        public int? VehicleSizeId { get; init; }
+        public int? ClientId { get; init; }
+        public string FromZipCode { get; init; }
+        public string ToZipCode { get; init; }
+        public int? TotalMiles { get; init; }
+        public decimal? TotalWeight { get; init; }
+        public DateTime? BookTime { get; init; }
+        public bool? DangerousGoods { get; init; }
+        public decimal? DryIceWeight { get; init; }
+    }
+
+    private class AgentInfo
+    {
+        public string AgentName { get; init; }
+        public string AgentRanking { get; init; }
+        public int? DistanceRateId { get; init; }
     }
 }

@@ -1,5 +1,5 @@
 /**
- * @fileoverview Service for managing layout configurations in the uDispatch application.
+ * @fileoverview Service for managing layout configurations on the nationwide page
  * @module NationwideLayoutService
  */
 class NationwideLayoutService {
@@ -7,25 +7,30 @@ class NationwideLayoutService {
      * Create a NationwideLayoutService.
      * @param {Object} $window
      * @param {Object} $mdDialog
+     * @param {Object} $rootScope
      */
-    constructor($window, $mdDialog) {
+    constructor($window, $mdDialog, $rootScope) {
         this._$window = $window;
         this._$mdDialog = $mdDialog;
+        this._$rootScope = $rootScope;
+
+        /** @type {boolean} */
+        this.shouldDisplayFlightTable = true;
 
         // Column width options
-        /** @type {String} */
+        /** @type {string} */
         this.COL_WIDTH_LARGE = "35%";
-        /** @type {String} */
+        /** @type {string} */
         this.COL_WIDTH_MEDIUM = "30%";
 
         // Box height options
-        /** @type {String} */
+        /** @type {string} */
         this.BOX_HEIGHT_LARGE = "60%";
-        /** @type {String} */
+        /** @type {string} */
         this.BOX_HEIGHT_MEDIUM = "50%";
-        /** @type {String} */
+        /** @type {string} */
         this.BOX_HEIGHT_SMALL = "40%";
-        /** @type {String} */
+        /** @type {string} */
         this.BOX_HEIGHT_XSMALL = "30%";
 
         // Define individual boxes
@@ -43,12 +48,13 @@ class NationwideLayoutService {
         this.mapTableBox = {name: "map", height: this.BOX_HEIGHT_XSMALL};
         /** @type {Box} */
         this.jobDetailBox = {name: "jobDetail", height: this.BOX_HEIGHT_LARGE};
+        /** @type {Box} */
+        this.agentDataTableBox = {name: "agentDataTable", height: this.BOX_HEIGHT_XSMALL};
 
         // Define columns
-        /** @type {Column} */
-        this.column1 = {
-            id: "col1", width: this.COL_WIDTH_LARGE, boxes: [this.jobsListBox, this.flightDataTableBox]
-        };
+        this.column1 = {};
+        this.updateColumn1Layout();
+
         /** @type {Column} */
         this.column2 = {
             id: "col2", width: this.COL_WIDTH_LARGE, boxes: [this.jobDetailBox, this.mapTableBox]
@@ -74,7 +80,7 @@ class NationwideLayoutService {
         this.layoutsObject = null;
         /** @type {Object} Map zoom configuration */
         this.mapZoom = {display: true};
-        /** @type {String} Current layout name */
+        /** @type {string} Current layout name */
         this.currentLayoutName = "default";
 
         this.init();
@@ -89,12 +95,26 @@ class NationwideLayoutService {
             const storedMapZoom = this._$window.localStorage.getItem(`mapZoomNW-${this._$window.ContactID}`);
 
             if (storedLayouts) {
-                this.currentLayouts = JSON.parse(storedLayouts);
-                this.currentLayouts[0] = this.defaultLayout[0]; // Always use the latest default layout
+                try {
+                    this.currentLayouts = JSON.parse(storedLayouts);
+                    // Ensure currentLayouts is an array and has at least one item
+                    if (!Array.isArray(this.currentLayouts) || this.currentLayouts.length === 0) {
+                        throw new Error('Invalid stored layouts');
+                    }
+                    this.currentLayouts[0] = this.defaultLayout[0]; // Always use the latest default layout
+                } catch (error) {
+                    console.error('Error parsing stored layouts:', error);
+                    this.currentLayouts = this.defaultLayout;
+                }
             }
 
             if (storedMapZoom) {
-                this.mapZoom = JSON.parse(storedMapZoom);
+                try {
+                    this.mapZoom = JSON.parse(storedMapZoom);
+                } catch (error) {
+                    console.error('Error parsing stored map zoom:', error);
+                    this.mapZoom = {display: true}; // Default value
+                }
             }
         }
 
@@ -104,8 +124,45 @@ class NationwideLayoutService {
     }
 
     /**
+     * Update the column1 layout based on the current showFlightTable value
+     */
+    updateColumn1Layout() {
+        /** @type {Column} */
+        this.column1 = {
+            id: "col1",
+            width: this.COL_WIDTH_LARGE,
+            boxes: [
+                this.jobsListBox,
+                this.shouldDisplayFlightTable ? this.flightDataTableBox : this.agentDataTableBox
+            ]
+        };
+
+        // Update the current layout
+        if (this.currentLayouts && this.currentLayouts.length > 0) {
+            this.currentLayouts[0].layout.columns[0] = this.column1;
+            this.updateLayouts(this.currentLayouts);
+        }
+    }
+
+    /**
+     * Show the flight table
+     */
+    showFlightTable() {
+        this.shouldDisplayFlightTable = true;
+        this.updateColumn1Layout();
+    }
+
+    /**
+     * Show the flight table
+     */
+    showAgentTable() {
+        this.shouldDisplayFlightTable = false;
+        this.updateColumn1Layout();
+    }
+
+    /**
      * Set the last active layout name.
-     * @param {String} layoutName - The name of the layout to set as last active.
+     * @param {string} layoutName - The name of the layout to set as last active.
      */
     setLastActiveLayoutName(layoutName) {
         if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
@@ -158,7 +215,7 @@ class NationwideLayoutService {
 
     /**
      * Get the user's first name.
-     * @returns {String} The user's first name.
+     * @returns {string} The user's first name.
      */
     getUserName() {
         return this._$window.FirstName;
@@ -171,7 +228,11 @@ class NationwideLayoutService {
     updateLayouts(newLayouts) {
         this.currentLayouts = newLayouts;
         if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.Stringify(this.currentLayouts));
+            this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.stringify(this.currentLayouts));
+        }
+        // Notify any listeners that the layout has changed
+        if (this._$rootScope) {
+            this._$rootScope.$broadcast('layoutUpdated');
         }
     }
 
@@ -252,11 +313,11 @@ class NationwideLayoutService {
 
     /**
      * Get the name of the current layout.
-     * @returns {String} The name of the current layout.
+     * @returns {string} The name of the current layout.
      */
     getCurrentLayoutName() {
         return this.currentLayoutName;
     }
 }
 
-angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', ($window, $mdDialog) => new NationwideLayoutService($window, $mdDialog)]);
+angular.module('uDispatch').service('NationwideLayoutService', ['$window', '$mdDialog', '$rootScope', ($window, $mdDialog, $rootScope) => new NationwideLayoutService($window, $mdDialog, $rootScope)]);

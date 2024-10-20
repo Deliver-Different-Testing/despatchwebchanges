@@ -401,3 +401,12 @@
  * @property {Date|null} expectedArrival - The expected arrival date and time of the flight. Can be null.
  * @property {string} notes - Additional notes or comments about the flight.
  */
+
+/**
+ * Represents a view model for an agent.
+ *
+ * @typedef {Object} Agent
+ * @property {string} agentName - The name of the agent.
+ * @property {number} agentRate - The rate associated with the agent. This is a decimal value.
+ * @property {string} agentRanking - The ranking of the agent.
+ */
