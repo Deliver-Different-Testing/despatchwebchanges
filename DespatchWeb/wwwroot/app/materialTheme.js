@@ -7,7 +7,7 @@ angular.module('uDispatch')
         const isUsCustomer = APP_CONFIG.US_Customer;
 
         /**
-         * Define custom color palette for urgents primary colors
+         * Define custom color palette for Urgent primary colors
          */
         $mdThemingProvider.definePalette('urgentPrimary', {
             '50': 'fffbe0',
@@ -53,7 +53,7 @@ angular.module('uDispatch')
         });
 
         /**
-         * Define custom color palette based on #3EAFC2
+         * Define custom color palette for DFRNT primary colors
          */
         $mdThemingProvider.definePalette('dfrntPrimary', {
             '50': '#e8f6f8',
@@ -61,7 +61,7 @@ angular.module('uDispatch')
             '200': '#9fd9e2',
             '300': '#79c9d6',
             '400': '#5cbccd',
-            '500': '#3EAFC2',  // Our base color
+            '500': '#3EAFC2',
             '600': '#38a8bc',
             '700': '#309fb4',
             '800': '#2896ac',

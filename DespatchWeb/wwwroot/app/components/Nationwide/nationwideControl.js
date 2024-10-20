@@ -1978,7 +1978,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
 
             const jobNumber = $scope.currentJob.jobNo;
-            const isDeliveryJob = jobNumber.charAt(jobNumber.length - 1) === '3';
+            const isDeliveryJob = jobNumber.charAt(jobNumber.length - 1) === '1' || jobNumber.charAt(jobNumber.length - 1) === '3';
 
             console.log(jobNumber + " is delivery job!");
             return isDeliveryJob;
