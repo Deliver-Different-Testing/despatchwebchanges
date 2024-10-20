@@ -18,6 +18,7 @@ namespace DespatchWeb.EntityClasses
         {
         }
 
+        public virtual DbSet<AgentVehicle> AgentVehicles { get; set; }
         public virtual DbSet<ClearListAreaZipPolygon> ClearListAreaZipPolygons { get; set; }
         public virtual DbSet<DeliveryPhoto> DeliveryPhotos { get; set; }
         public virtual DbSet<DesQryAllJobType> DesQryAllJobTypes { get; set; }
@@ -52,6 +53,8 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TblPolygonGp> TblPolygonGps { get; set; }
         public virtual DbSet<TblPolygonSuburb> TblPolygonSuburbs { get; set; }
         public virtual DbSet<TblUndeliverableLocation> TblUndeliverableLocations { get; set; }
+        public virtual DbSet<TucAgent> TucAgents { get; set; }
+        public virtual DbSet<TucAgentRanking> TucAgentRankings { get; set; }
         public virtual DbSet<TucClient> TucClients { get; set; }
         public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
         public virtual DbSet<TucClientItem> TucClientItems { get; set; }
@@ -70,6 +73,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucSuburb> TucSuburbs { get; set; }
         public virtual DbSet<UtlQryContactLookup> UtlQryContactLookups { get; set; }
         public virtual DbSet<UvwBookingToday> UvwBookingTodays { get; set; }
+        public virtual DbSet<VehicleSize> VehicleSizes { get; set; }
         public virtual DbSet<ZipPolygon> ZipPolygons { get; set; }
         public virtual DbSet<ZoneGroup> ZoneGroups { get; set; }
         public virtual DbSet<ZoneName> ZoneNames { get; set; }
@@ -77,6 +81,48 @@ namespace DespatchWeb.EntityClasses
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<AgentVehicle>(entity =>
+            {
+                entity.HasIndex(e => e.AirportId, "IX_AgentVehicles_AirportID");
+
+                entity.Property(e => e.AgentVehicleId).HasColumnName("AgentVehicleID");
+
+                entity.Property(e => e.AgentId).HasColumnName("AgentID");
+
+                entity.Property(e => e.AirportId).HasColumnName("AirportID");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(255);
+
+                entity.Property(e => e.DistanceRateId).HasColumnName("DistanceRateID");
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+
+                entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
+
+                entity.HasOne(d => d.Agent)
+                    .WithMany(p => p.AgentVehicles)
+                    .HasForeignKey(d => d.AgentId)
+                    .HasConstraintName("FK__AgentVehi__Agent__69D26A44");
+
+                entity.HasOne(d => d.Airport)
+                    .WithMany(p => p.AgentVehicles)
+                    .HasForeignKey(d => d.AirportId)
+                    .HasConstraintName("FK__AgentVehi__Airpo__0EE3F362");
+
+                entity.HasOne(d => d.VehicleSize)
+                    .WithMany(p => p.AgentVehicles)
+                    .HasForeignKey(d => d.VehicleSizeId)
+                    .HasConstraintName("FK__AgentVehi__Vehic__68DE460B");
+            });
+
             modelBuilder.Entity<ClearListAreaZipPolygon>(entity =>
             {
                 entity.ToTable("ClearListAreaZipPolygon");
@@ -322,10 +368,6 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.ClosestCourierId)
                     .HasMaxLength(50)
                     .HasColumnName("ClosestCourierID");
-
-                entity.Property(e => e.ConNote)
-                    .HasMaxLength(50)
-                    .IsUnicode(false);
 
                 entity.Property(e => e.CourierCode).HasMaxLength(50);
 
@@ -800,7 +842,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.AgentId).HasColumnName("AgentID");
 
-                entity.Property(e => e.AirportCode).HasMaxLength(3);
+                entity.Property(e => e.AirportCode)
+                    .IsRequired()
+                    .HasMaxLength(3)
+                    .HasDefaultValueSql("(N'')");
 
                 entity.Property(e => e.CargoFacilityFee).HasColumnType("money");
 
@@ -837,6 +882,11 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.Type).HasMaxLength(200);
 
                 entity.Property(e => e.UnitFlatFloorBuilding).HasMaxLength(100);
+
+                entity.HasOne(d => d.Agent)
+                    .WithMany(p => p.TblAirports)
+                    .HasForeignKey(d => d.AgentId)
+                    .HasConstraintName("FK__tblAirpor__Agent__7A280247");
             });
 
             modelBuilder.Entity<TblBulkJob>(entity =>
@@ -2761,6 +2811,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.Date).HasColumnType("datetime");
 
+                entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
+
                 entity.Property(e => e.DeliverToContact).HasMaxLength(100);
 
                 entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
@@ -3723,6 +3775,139 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.JobTypeId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_tblUndeliverableLocation_tucJobType");
+            });
+
+            modelBuilder.Entity<TucAgent>(entity =>
+            {
+                entity.HasKey(e => e.UcagId)
+                    .IsClustered(false);
+
+                entity.ToTable("tucAgents");
+
+                entity.HasIndex(e => e.RankingId, "IX_tucAgents_RankingID");
+
+                entity.HasIndex(e => e.StatusId, "IX_tucAgents_StatusID");
+
+                entity.HasIndex(e => e.UcagName, "Name")
+                    .IsUnique();
+
+                entity.HasIndex(e => e.UcagSuburbId, "SuburbID");
+
+                entity.Property(e => e.UcagId).HasColumnName("ucagID");
+
+                entity.Property(e => e.AddressLine1).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine2).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine3).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine4).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine5).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine6).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine7).HasMaxLength(255);
+
+                entity.Property(e => e.AddressLine8).HasMaxLength(255);
+
+                entity.Property(e => e.AgentRateMarkup).HasColumnType("decimal(18, 4)");
+
+                entity.Property(e => e.Created).HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Flagfall).HasColumnType("money");
+
+                entity.Property(e => e.ItemRate).HasColumnType("money");
+
+                entity.Property(e => e.KilometerRate).HasColumnType("money");
+
+                entity.Property(e => e.LastModified).HasColumnType("datetime");
+
+                entity.Property(e => e.LastModifiedBy)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Latitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.Longitude).HasColumnType("decimal(18, 9)");
+
+                entity.Property(e => e.MaxKms).HasColumnName("MaxKMs");
+
+                entity.Property(e => e.Notes).HasColumnType("ntext");
+
+                entity.Property(e => e.PostCode).HasMaxLength(50);
+
+                entity.Property(e => e.RankingId).HasColumnName("RankingID");
+
+                entity.Property(e => e.SiteId).HasColumnName("SiteID");
+
+                entity.Property(e => e.StatusId).HasColumnName("StatusID");
+
+                entity.Property(e => e.TextRef1).HasMaxLength(50);
+
+                entity.Property(e => e.TextRef2).HasMaxLength(50);
+
+                entity.Property(e => e.TextRef3).HasMaxLength(50);
+
+                entity.Property(e => e.UcagAddress)
+                    .HasMaxLength(200)
+                    .HasColumnName("ucagAddress");
+
+                entity.Property(e => e.UcagAltFax)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucagAltFax");
+
+                entity.Property(e => e.UcagAltPhone)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucagAltPhone");
+
+                entity.Property(e => e.UcagFax)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucagFax");
+
+                entity.Property(e => e.UcagName)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("ucagName");
+
+                entity.Property(e => e.UcagNotes)
+                    .HasColumnType("ntext")
+                    .HasColumnName("ucagNotes");
+
+                entity.Property(e => e.UcagPhone)
+                    .HasMaxLength(50)
+                    .HasColumnName("ucagPhone");
+
+                entity.Property(e => e.UcagSuburbId).HasColumnName("ucagSuburbID");
+
+                entity.HasOne(d => d.Ranking)
+                    .WithMany(p => p.TucAgents)
+                    .HasForeignKey(d => d.RankingId)
+                    .HasConstraintName("FK__tucAgents__Ranki__0189F844");
+
+                entity.HasOne(d => d.UcagSuburb)
+                    .WithMany(p => p.TucAgents)
+                    .HasForeignKey(d => d.UcagSuburbId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_tucAgents_tucSuburb");
+            });
+
+            modelBuilder.Entity<TucAgentRanking>(entity =>
+            {
+                entity.HasKey(e => e.AgentRankingId)
+                    .HasName("PK__tucAgent__CF65D7502AFC116E");
+
+                entity.ToTable("tucAgentRanking");
+
+                entity.Property(e => e.AgentRankingId).HasColumnName("AgentRankingID");
+
+                entity.Property(e => e.AgentRankingName)
+                    .IsRequired()
+                    .HasMaxLength(100);
             });
 
             modelBuilder.Entity<TucClient>(entity =>
@@ -4706,6 +4891,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
 
+                entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
+
                 entity.Property(e => e.DeliverToContact).HasMaxLength(100);
 
                 entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
@@ -5222,6 +5409,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
 
+                entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
+
                 entity.Property(e => e.DeliverToContact).HasMaxLength(100);
 
                 entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
@@ -5672,6 +5861,8 @@ namespace DespatchWeb.EntityClasses
                 entity.HasIndex(e => e.UcnwConNote, "ucnwConNote");
 
                 entity.Property(e => e.UcnwId).HasColumnName("ucnwID");
+
+                entity.Property(e => e.GateNumber).HasMaxLength(50);
 
                 entity.Property(e => e.JobBookingId).HasColumnName("JobBookingID");
 
@@ -6290,6 +6481,35 @@ namespace DespatchWeb.EntityClasses
                     .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("ucjtName");
+            });
+
+            modelBuilder.Entity<VehicleSize>(entity =>
+            {
+                entity.ToTable("VehicleSize");
+
+                entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
+
+                entity.Property(e => e.ClientId).HasColumnName("ClientID");
+
+                entity.Property(e => e.Created)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreatedBy).HasMaxLength(255);
+
+                entity.Property(e => e.CubicCapacity).HasColumnType("decimal(18, 4)");
+
+                entity.Property(e => e.LastModified)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+
+                entity.Property(e => e.VehicleName).HasMaxLength(255);
+
+                entity.Property(e => e.VehicleTypeId).HasColumnName("VehicleTypeID");
+
+                entity.Property(e => e.WeightCapacity).HasColumnType("decimal(18, 4)");
             });
 
             modelBuilder.Entity<ZipPolygon>(entity =>

@@ -15,6 +15,10 @@
    "T4TemplatePath": null,
    "Tables": [
       {
+         "Name": "[dbo].[AgentVehicles]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[ClearListAreaZipPolygon]",
          "ObjectType": 0
       },
@@ -119,6 +123,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucAgentRanking]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucAgents]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucClient]",
          "ObjectType": 0
       },
@@ -183,6 +195,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[VehicleSize]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[ZipPolygon]",
          "ObjectType": 0
       },
@@ -237,6 +253,10 @@
       {
          "Name": "[dbo].[uvwBookingToday]",
          "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[DD_stpGetAgentDistanceRate]",
+         "ObjectType": 1
       },
       {
          "Name": "[dbo].[DES_qdfCourier_ClearLists]",

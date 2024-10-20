@@ -178,6 +178,7 @@ namespace DespatchWeb.EntityClasses
         public decimal? DryIceWeight { get; set; }
         public int? FromAirportId { get; set; }
         public int? ToAirportId { get; set; }
+        public DateTime? DeliverByTime { get; set; }
 
         public virtual TblAirport FromAirport { get; set; }
         public virtual TblAirport ToAirport { get; set; }
