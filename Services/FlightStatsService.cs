@@ -39,6 +39,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
         var userName = contextAccessor.HttpContext?.User.FindFirst( ClaimTypes.Name)?.Value;
         var token = AuthenticationExtensions.CreateApiToken(userName, int.Parse(tenantId), connectionString);
+
         var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
 
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);

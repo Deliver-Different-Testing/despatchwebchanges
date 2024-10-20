@@ -16,6 +16,7 @@ namespace DespatchWeb
     {
         public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection)
         {
+            
             var symmetricSecurityKey =
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSecretKey")));
 
@@ -30,7 +31,8 @@ namespace DespatchWeb
                 new Claim(ClaimTypes.Name, name),
                 new Claim("SC", encryptedClaims)
             };
-
+            Log.Debug("JWT token create process");
+            Log.Debug("JWT Issuer: {Issuer}, Audience: {Audience}", Environment.GetEnvironmentVariable("Issuer"), Environment.GetEnvironmentVariable("Audience"));
             return new JwtSecurityToken(
                 issuer: Environment.GetEnvironmentVariable("Issuer"),
                 audience: Environment.GetEnvironmentVariable("Audience"),
