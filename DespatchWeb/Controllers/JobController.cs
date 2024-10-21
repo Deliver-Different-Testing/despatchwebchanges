@@ -906,7 +906,7 @@ public class JobController : Controller
                 var p = props.First(
                     x => string.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
 
-                message += p?.GetValue(data)?.ToString();
+                message += p.GetValue(data)?.ToString();
             }
             else
             {

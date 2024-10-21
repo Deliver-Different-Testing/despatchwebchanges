@@ -22,10 +22,8 @@
                                 <i class="material-symbols-outlined" ng-if="sort.agentList == 'd-agentRanking'">arrow_drop_up</i>Ranking
                             </th>
                             <th scope="col">
-                                Send Quote Request
                             </th>
                             <th scope="col">
-                                Assign Job
                             </th>
                         </tr>
                         </thead>
@@ -42,7 +40,7 @@
                         <td ng-click="" style="width:20px;" title="Send Quote Request">
                             <i class="material-symbols-outlined job-table-icon">request_quote</i>
                         </td>
-                        <td ng-click="" style="width:20px;" title="Assign Job">
+                        <td ng-click="addAgentToJob($event, agent, currentJob)" style="width:20px;" title="Assign Job">
                             <i class="material-symbols-outlined job-table-icon">add</i>
                         </td>
                     </tr>
@@ -51,16 +49,24 @@
             </div>
 
             <div class="no-data" ng-if="!agentsLoading && agentOptions.length === 0">
-                <div class="text">
-                    <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-                    {{agentMessage || 'No agents available for the specified criteria.'}}
+                <div class="content">
+                    <div class="icon">
+                        <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+                    </div>
+                    <div class="text">
+                        {{agentMessage || 'No agents available for the specified criteria.'}}
+                    </div>
                 </div>
             </div>
 
             <div class="no-data" ng-if="agentError">
-                <div class="text">
-                    <md-icon md-font-set="material-symbols-outlined">error</md-icon>
-                    {{agentError}}
+                <div class="content">
+                    <div class="icon">
+                        <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+                    </div>
+                    <div class="text">
+                        {{agentError}}
+                    </div>
                 </div>
             </div>
         </div>
@@ -76,9 +82,13 @@
     </div>
 
     <div class="no-data" ng-if="!isDeliveryJob()">
-        <div class="text">
-            <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-            Agent information is not applicable for this job. This section is only relevant for delivery jobs.
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+            </div>
+            <div class="text">
+                Agent information is not applicable for this job. This section is only relevant for delivery jobs.
+            </div>
         </div>
     </div>
 
@@ -91,6 +101,12 @@
 </div>
 
 <div class="no-data" ng-if="!currentJob">
-    <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
-    <div class="text">Please select a job to view available agents.</div>
+    <div class="content">
+        <div class="icon">
+            <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+        </div>
+        <div class="text">
+            Please select a job to view available agents.
+        </div>
+    </div>
 </div>

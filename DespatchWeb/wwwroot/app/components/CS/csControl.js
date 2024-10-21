@@ -21,53 +21,235 @@ angular.module('uDispatch').controller('CSControl', [
     'DispatchData',
     'versionUrl',
     'materialSidenavService',
-    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, materialSidenavService) => {
-        $scope.isAdmin = (ClientInternal === "True");
-        $scope.mapSetting = {
-            "allCouriers": false, "allRuns": false
-        };
+    'CSLayoutService',
+    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, materialSidenavService, LayoutService) => {
+        $scope.jdSvc = jdSvc;
+        $scope.dispatchJobService = dispatchJobService;
+
+        // Variables
+        function initializeVariables() {
+            $scope.isAdmin = (ClientInternal === "True");
+            $scope.mapSetting = {
+                "allCouriers": false, "allRuns": false
+            };
+
+            $scope.jobDetailFabIsOpen = false;
+            $scope.dateSearchRange = 1; // Set to fortnight
+            $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
+
+            $scope.searchBox = "";
+            $scope.selectedEvents = [];
+            $scope.maxSize = 5;
+            $scope.totalCount = 0;
+            $scope.pageIndex = 1;
+            $scope.pageSizeSelected = 50;
+            $scope.bulkTotalCount = 0;
+            $scope.bulkPageIndex = 1;
+            $scope.bulkPageSizeSelected = 50;
+            $scope.pbTotalCount = 0;
+            $scope.pbPageIndex = 1;
+            $scope.pbPageSizeSelected = 50;
+            $scope.name = "POD";
+
+            $scope.jobRecordSearchText = "";
+            $scope.sort = [];
+
+            const now = new Date();
+            let sevenDaysBefore = new Date();
+            sevenDaysBefore.setDate(now.getDate() - 7);
+            let sevenDaysAfter = new Date();
+            sevenDaysAfter.setDate(now.getDate() + 7);
+
+            uCSData.getActiveCouriers().then(data => {
+                $scope.pickCouriers = data;
+            });
+
+            uCSData.getAllCouriers().then(data => {
+                $scope.pickAllCouriers = data;
+            });
+
+            NgMap.getMap().then(map => {
+                $scope.map = map;
+                $scope.marker = map.markers[0];
+                $scope.onMapReady();
+            });
+
+            $scope.pickDateService = {
+                "client": '',
+                "courier": "",
+                "date": now,
+                "from_date": sevenDaysBefore,
+                "to_date": sevenDaysAfter,
+                "followupClient": "All",
+                "includeClosed": true
+            };
+            $scope.clientSelectedItem = $scope.pickDateService.client;
+            $scope.courierSelectedItem = $scope.pickDateService.client;
+            $scope.clientSearchText = '';
+            $scope.courierSearchText = '';
+
+            $scope.sortableOptions = {
+                connectWith: ".column-sortable",
+                items: '.box',
+                placeholder: "placeholder",
+                scroll: true,
+                scrollSensitivity: 100,
+                scrollSpeed: 20,
+                handle: '.box-handle',
+                activate: (e, ui) => {
+                    const box = angular.element("#" + ui.item.context.id);
+                    const parent = box.parent();
+                    parent.find(".box").each(function () {
+                        angular.element(this).attr("data-height", angular.element(this).height() + "px");
+                    });
+                },
+                update: (e, ui) => {
+                    $timeout(() => {
+                        const box = angular.element("#" + ui.item.context.id);
+                        const parent = box.parent();
+                        parent.find(".box").each(function () {
+                            angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
+                        });
+                        parent.find(".box").last().css({"flex-basis": "0"});
+                    }, 0);
+                }
+            };
+
+            $scope.showInput = {};
+            $scope.inputWidth = {};
+
+            $scope.followupClient = {
+                name: "All"
+            };
+
+            $scope.jobQuery = {
+                order: 'booked', limit: 50, page: 1
+            };
+
+            $scope.bulkJobQuery = {
+                order: 'booked', limit: 50, page: 1
+            };
+
+            $scope.preBookQuery = {
+                order: 'booked', limit: 50, page: 1
+            };
+
+            $scope.jobPromise = null;
+            $scope.bulkJobPromise = null;
+            $scope.preBookPromise = null;
+
+            $scope.jobHeaders = [
+                {key: 'booked', label: 'Booked'},
+                {key: 'status', label: 'Status'},
+                {key: 'speed', label: 'Speed'},
+                {key: 'jobNo', label: 'Job'},
+                {key: 'client', label: 'Client'},
+                {key: 'from', label: 'From'},
+                {key: 'to', label: 'To'},
+                {key: 'street', label: 'Street'}
+            ];
+
+            $scope.options = {
+                "detail": {
+                    "size": [{
+                        "id": 1, "label": "Bike"
+                    }, {
+                        "id": 2, "label": "Car"
+                    }, {
+                        "id": 3, "label": "Van"
+                    }, {
+                        "id": 4, "label": "Truck"
+                    }, {
+                        "id": 5, "label": "Scooter"
+                    }], "tracking": [{
+                        "id": 1, "label": "Email"
+                    }, {
+                        "id": 2, "label": "Mobile"
+                    }, {
+                        "id": 3, "label": "Email & Mobile"
+                    }], "DGClass": [{
+                        "id": 0, "label": "0"
+                    }, {
+                        "id": 1, "label": "1"
+                    }, {
+                        "id": 2, "label": "2"
+                    }, {
+                        "id": 3, "label": "3"
+                    }, {
+                        "id": 4, "label": "4"
+                    }, {
+                        "id": 5, "label": "5"
+                    }, {
+                        "id": 6, "label": "6"
+                    }, {
+                        "id": 7, "label": "7"
+                    }, {
+                        "id": 8, "label": "8"
+                    }, {
+                        "id": 9, "label": "9"
+                    }]
+                }
+            };
+
+            $scope.jobListMenu = [{
+                text: "Close Event", click: ($itemScope, $event, modelValue, text, $li) => {
+                    $scope.gather.form = {
+                        id: "closeEvent", title: "Close Event?", fields: [{
+                            "name": "editName", "label": "Edit your name", "value": ""
+                        }], onSubmit: async () => {
+                            angular.element("#box-jobList").find(".loading").show();
+                            angular.element("#box-map").find(".loading").show();
+
+                            const userName = angular.element("#gather-editName").val();
+
+                            await uCSData.closeEvent($itemScope.event.bulkEventID, userName);
+                            await $scope.refreshData(1, true);
+                        }, submitValue: "Close Event"
+                    };
+
+                    $scope.gather.showForm();
+                }
+            }];
+
+            $scope.boxes = {
+                "pickDate": {
+                    "title": "Filters",
+                    "templateUrl": versionUrl("app/components/CS/partials/pickDate.html"),
+                    "showSearch": 0
+                },
+                "jobList": {
+                    "title": "Live Job Data",
+                    "templateUrl": versionUrl("app/components/CS/partials/jobList.html"),
+                    "showSearch": 1,
+                }, "bulkJobList": {
+                    "title": "Bulk Job Data",
+                    "templateUrl": versionUrl("app/components/CS/partials/bulkJobList.html"),
+                    "showSearch": 1,
+                }, "pbList": {
+                    "title": "PreBook Data",
+                    "templateUrl": versionUrl("app/components/CS/partials/pbList.html"),
+                    "showSearch": 1,
+                    "showRefresh": 1,
+                }, "jobDetail": {
+                    "title": "Detail",
+                    "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
+                    "showSearch": 0,
+                    "showDetailButtons": 1
+                }, "scanList": {
+                    "title": "Scan Detail",
+                    "templateUrl": versionUrl("app/components/CS/partials/scanList.html"),
+                    "showSearch": 0,
+                }, "map": {
+                    "title": "Google Map",
+                    "templateUrl": versionUrl("app/components/CS/partials/map.html"),
+                    "showSearch": 0
+                }
+            };
+        }
 
         $scope.toggleSidenav = () => {
             materialSidenavService.toggle();
         };
-
-        $scope.userName = FirstName;
-        $scope.jobDetailFabIsOpen = false;
-        $scope.dateSearchRange = 1; // Set to fortnight
-        $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
-
-        $scope.searchBox = "";
-        $scope.selectedEvents = [];
-        $scope.maxSize = 5;     // Limit number for pagination display number.
-        $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero
-        $scope.pageIndex = 1;   // Current page number. First page is 1.-->
-        $scope.pageSizeSelected = 50; // Maximum number of items per page.
-        $scope.bulkTotalCount = 0;  // Total number of items in all pages. initialize as a zero
-        $scope.bulkPageIndex = 1;   // Current page number. First page is 1.-->
-        $scope.bulkPageSizeSelected = 50; // Maximum number of items per page.
-        $scope.pbTotalCount = 0;  // Total number of items in all pages. initialize as a zero
-        $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->
-        $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
-        $scope.name = "POD";
-
-        $scope.jdSvc = jdSvc;
-        $scope.dispatchJobService = dispatchJobService;
-
-        $scope.jobQuery = {
-            order: 'booked', limit: 50, page: 1
-        };
-
-        $scope.bulkJobQuery = {
-            order: 'booked', limit: 50, page: 1
-        };
-
-        $scope.preBookQuery = {
-            order: 'booked', limit: 50, page: 1
-        };
-
-        $scope.jobPromise = null;
-        $scope.bulkJobPromise = null;
-        $scope.preBookPromise = null;
 
         $scope.greetUser = () => {
             return greetingService.greetUser(FirstName);
@@ -208,155 +390,6 @@ angular.module('uDispatch').controller('CSControl', [
 
         jdSvc.setGather($scope.gather);
 
-        $scope.options = {
-            "detail": {
-                "size": [{
-                    "id": 1, "label": "Bike"
-                }, {
-                    "id": 2, "label": "Car"
-                }, {
-                    "id": 3, "label": "Van"
-                }, {
-                    "id": 4, "label": "Truck"
-                }, {
-                    "id": 5, "label": "Scooter"
-                }], "tracking": [{
-                    "id": 1, "label": "Email"
-                }, {
-                    "id": 2, "label": "Mobile"
-                }, {
-                    "id": 3, "label": "Email & Mobile"
-                }], "DGClass": [{
-                    "id": 0, "label": "0"
-                }, {
-                    "id": 1, "label": "1"
-                }, {
-                    "id": 2, "label": "2"
-                }, {
-                    "id": 3, "label": "3"
-                }, {
-                    "id": 4, "label": "4"
-                }, {
-                    "id": 5, "label": "5"
-                }, {
-                    "id": 6, "label": "6"
-                }, {
-                    "id": 7, "label": "7"
-                }, {
-                    "id": 8, "label": "8"
-                }, {
-                    "id": 9, "label": "9"
-                }]
-            }
-        };
-
-        $scope.boxes = {
-            "pickDate": {
-                "title": "Filters",
-                "templateUrl": versionUrl("app/components/CS/partials/pickDate.html"),
-                "showSearch": 0
-            },
-
-            "jobList": {
-                "title": "Live Job Data",
-                "templateUrl": versionUrl("app/components/CS/partials/jobList.html"),
-                "showSearch": 1,
-                "model": "jobList",
-                "headings": [{
-                    "label": "Created", "name": "created"
-                }, {
-                    "label": "ID", "name": "bulkEventID"
-                }, {
-                    "label": "Job #", "name": "jobNumber"
-                }, {
-                    "label": "Courier", "name": "courierCode"
-                }, {
-                    "label": "Created By", "name": "name"
-                }, {
-                    "label": "Followup By", "name": "clientFollowup"
-                }, {
-                    "label": "Client Visible", "name": "clientVisible"
-                }, {
-                    "label": "Closed By", "name": "closedByName"
-                }, {
-                    "label": "Notes", "name": "notes"
-                }
-
-
-                ]
-            }, "bulkJobList": {
-                "title": "Bulk Job Data",
-                "templateUrl": versionUrl("app/components/CS/partials/bulkJobList.html"),
-                "showSearch": 1,
-                "model": "bulkJobList",
-                "headings": [{
-                    "label": "Created", "name": "created"
-                }, {
-                    "label": "ID", "name": "bulkEventID"
-                }, {
-                    "label": "Job #", "name": "jobNumber"
-                }, {
-                    "label": "Courier", "name": "courierCode"
-                }, {
-                    "label": "Created By", "name": "name"
-                }, {
-                    "label": "Followup By", "name": "clientFollowup"
-                }, {
-                    "label": "Client Visible", "name": "clientVisible"
-                }, {
-                    "label": "Closed By", "name": "closedByName"
-                }, {
-                    "label": "Notes", "name": "notes"
-                }
-                ]
-            }, "pbList": {
-                "title": "PreBook Data",
-                "templateUrl": versionUrl("app/components/CS/partials/pbList.html"),
-                "showSearch": 1,
-                "showRefresh": 1,
-                "model": "pbList",
-                "headings": [{
-                    "label": "Booked", "name": "booked"
-                }, {
-                    "label": "Speed", "name": "speed"
-                }, {
-                    "label": "Job #", "name": "jobNumber"
-                }, {
-                    "label": "Client", "name": "clientCode"
-                }, {
-                    "label": "From", "name": "froAddress"
-                }, {
-                    "label": "To", "name": "toAddress"
-                }, {
-                    "label": "Code", "name": "code"
-                }, {
-                    "label": "Send", "name": "send"
-                }, {
-                    "label": "Void", "name": "void"
-                }
-                ]
-            }, "jobDetail": {
-                "title": "Detail",
-                "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
-                "showSearch": 0,
-                "showDetailButtons": 1
-            }, "scanList": {
-                "title": "Scan Detail",
-                "templateUrl": versionUrl("app/components/CS/partials/scanList.html"),
-                "showSearch": 0,
-                "model": "scanList",
-                "headings": [{
-                    "label": "Time", "name": "scanDateTime"
-                }, {
-                    "label": "Scan Type", "name": "scanDetail"
-                }, {
-                    "label": "Courier", "name": "courier"
-                }]
-            }, "map": {
-                "title": "Google Map", "templateUrl": versionUrl("app/components/CS/partials/map.html"), "showSearch": 0
-            }
-
-        };
 
         ///////////////////////////////
         // LAYOUT
@@ -366,176 +399,58 @@ angular.module('uDispatch').controller('CSControl', [
             layoutsObject = JSON.parse(localStorage.getItem("layoutsCS-" + ContactID));
         }
 
-        const defaultLayout = [{
-            name: "Default", layout: {
-                "columns": [{
-                    "id": "col1", "width": "350px", "boxes": [{
+        const defaultLayout = LayoutService.getDefaultLayout();
 
-                        "name": "pickDate"
-                    }]
-                }, {
-                    "id": "col2", "width": "1350px", "boxes": [{
-
-                        "name": "jobList", "height": "550px"
-                    }, {
-
-                        "name": "bulkJobList", "height": "225px"
-                    }, {
-
-                        "name": "pbList", "height": "225px"
-                    }]
-                },
-
-                    {
-                        "id": "col3", "boxes": [{
-                            "name": "jobDetail", "height": "550px"
-                        }, {
-                            "name": "scanList", "height": "225px"
-                        }, {
-                            "name": "map"
-                        }]
-                    }]
-            }
-        }];
 
         if (layoutsObject !== null) {
             layoutsObject[0] = defaultLayout[0];
         }
 
-        $scope.layouts = layoutsObject || defaultLayout;
-
-
-        const now = new Date();
-        let sevenDaysBefore = new Date();
-        sevenDaysBefore.setDate(now.getDate() - 7);
-        let sevenDaysAfter = new Date();
-        sevenDaysAfter.setDate(now.getDate() + 7);
-
-        $scope.pickDateService = {
-            "client": '',
-            "courier": "",
-            "date": now,
-            "from_date": sevenDaysBefore,
-            "to_date": sevenDaysAfter,
-            "followupClient": "All",
-            "includeClosed": true
-        };
-
-        $scope.followupClient = {
-            name: "All"
-        };
-
-        $scope.layout = angular.copy($scope.layouts[0].layout);
-        $scope.currentLayoutName = $scope.layouts[0].name;
+        $scope.layouts = LayoutService.getLayouts();
+        $scope.userName = LayoutService.getUserName();
+        $scope.currentLayoutName = "default";
+        $scope.layout = LayoutService.getCurrentLayout();
 
         /**
          * @param {Number} index
          */
         $scope.deleteLayout = async (index) => {
-            try {
-                const deleteConfirm = $mdDialog.confirm()
-                    .title('Delete Layout?')
-                    .textContent('Are you sure you would like to delete this layout?')
-                    .ariaLabel('delete layout')
-                    .ok('Delete')
-                    .cancel('Cancel');
-
-                await $mdDialog.show(deleteConfirm);
-
-                $scope.layouts.splice(index, 1);
-                if (Modernizr.localstorage) {
-                    localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
-                }
-            } catch (error) {
-                console.log("Delete layout canceled!");
-            }
+            await LayoutService.deleteLayout(index);
+            $scope.layouts = LayoutService.getLayouts();
+            $scope.$apply();
         };
 
-        /**
-         * @param {string} layoutName
-         */
-        $scope.setLastActiveLayoutName = layoutName => {
-            if (Modernizr.localstorage) {
-                localStorage.setItem("lastActiveLayoutCS-" + ContactID, layoutName);
-            }
-        };
 
         /**
-         * @param {number} index
+         * @param {Number} index
          */
-        $scope.loadLayout = index => {
-            $scope.currentLayoutName = $scope.layouts[index].name;
-            $scope.layout = angular.copy($scope.layouts[index].layout);
+        $scope.loadLayout = (index) => {
+            const loadedLayout = LayoutService.loadLayout(index);
+            $scope.currentLayoutName = loadedLayout.name;
+            $scope.layout = loadedLayout.layout;
 
-            // save layout as last active
-            $scope.setLastActiveLayoutName($scope.currentLayoutName);
-
-            $timeout($scope.initFilters, 1000);
+            $timeout($scope.getData, 1000);
         };
 
         $scope.saveLayout = async () => {
+            // Update layout dimensions
+            angular.forEach($scope.layout.columns, (column, colKey) => {
+                column.width = angular.element("#co-" + column.id).css("flex-basis");
+                angular.forEach(column.boxes, (box, boxKey) => {
+                    box.height = angular.element("#box-" + box.name).css("flex-basis");
+                });
+            });
+
             try {
-                angular.forEach($scope.layout.columns, (column, colKey) => {
-                    column.width = angular.element("#co-" + column.id).css("flex-basis");
-                    angular.forEach(column.boxes, (box, boxKey) => {
-                        box.height = angular.element("#box-" + box.name).css("flex-basis");
-                    });
-                });
-
-                const saveLayoutPrompt = $mdDialog.prompt()
-                    .title('Save Layout')
-                    .textContent('Please enter a name for this layout.')
-                    .ariaLabel('Layout name')
-                    .required(true)
-                    .ok('Save')
-                    .cancel('Cancel');
-
-                const layoutName = await $mdDialog.show(saveLayoutPrompt);
-
-                if (Modernizr.localstorage) {
-                    $scope.layouts = $scope.layouts.concat({
-                        name: layoutName, layout: angular.copy($scope.layout)
-                    });
-                    localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
-
-                    // save last active layout
-                    $scope.setLastActiveLayoutName(layoutName);
-                }
+                const result = await LayoutService.saveLayout($scope.layout);
+                $scope.layouts = LayoutService.getLayouts();
+                $scope.currentLayoutName = result.name;
+                $scope.$apply();
+                return result;
             } catch (error) {
-                console.log("Save Layout Cancelled!");
+                console.error("Save Layout Cancelled!");
             }
         };
-
-
-        $scope.sortableOptions = {
-            connectWith: ".column-sortable",
-            items: '.box',
-            placeholder: "placeholder",
-            scroll: true,
-            scrollSensitivity: 100,
-            scrollSpeed: 20,
-            handle: '.box-handle',
-            activate: (e, ui) => {
-                const box = angular.element("#" + ui.item.context.id);
-                const parent = box.parent();
-                parent.find(".box").each(function () {
-                    angular.element(this).attr("data-height", angular.element(this).height() + "px");
-                });
-            },
-            update: (e, ui) => {
-                $timeout(() => {
-                    const box = angular.element("#" + ui.item.context.id);
-                    const parent = box.parent();
-                    parent.find(".box").each(function () {
-                        angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
-                    });
-                    parent.find(".box").last().css({"flex-basis": "0"});
-                }, 0);
-            }
-        };
-
-        $scope.showInput = {};
-        $scope.inputWidth = {};
 
         /**
          * @param {string} boxName
@@ -552,14 +467,12 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
-
         $scope.goToRunViewer = () => {
             console.log("goToRunViewer.");
             $state.go('home');
         };
 
         //Column Sorting
-        $scope.sort = [];
         $scope.orderList = (list, prop) => {
             if ($scope.sort[list] !== prop) {
                 $scope.sort[list] = prop;
@@ -569,8 +482,6 @@ angular.module('uDispatch').controller('CSControl', [
                 $scope[list] = $filter('orderBy')($scope[list], "-" + prop);
             }
         };
-
-        $scope.jobRecordSearchText = "";
 
         /**
          *
@@ -895,33 +806,6 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
-
-        /////////////////////////////////
-
-        $scope.showJobs = group => {
-            angular.element("#box-jobsList").find(".loading").show();
-            $scope.jobList = group.jobs;
-            $timeout(() => {
-                sizeHeadings(angular.element("#jobList").parents(".column"));
-            }, 1000);
-            angular.element("#box-jobsList .loading").fadeOut();
-        };
-
-        /**
-         * @param {number} sizeId
-         */
-        $scope.sizeName = sizeId => {
-            if (!sizeId) {
-                return "";
-            }
-            const sn = $scope.options.detail.size.find(obj => {
-
-                return obj.id === sizeId;
-
-            });
-            return sn === undefined ? "" : sn.label;
-        };
-
         /**
          * @param {number} jobId
          * @param {string} jobNumber
@@ -963,7 +847,7 @@ angular.module('uDispatch').controller('CSControl', [
 
                 const data = await uCSData.getJobDetail(jobId);
                 $scope.currentJob = data;
-                jdSvc.setJob($scope.currentJob);
+                await jdSvc.setJob($scope.currentJob);
                 jobDetailLoading.hide();
                 $scope.currentSelection = " for Job " + data.jobNo;
 
@@ -1054,7 +938,7 @@ angular.module('uDispatch').controller('CSControl', [
 
                 const data = await uCSData.getPreBookDetail(prebookJobId);
                 $scope.currentJob = data;
-                jdSvc.setJob($scope.currentJob);
+                await jdSvc.setJob($scope.currentJob);
                 jobDetailLoading.hide();
                 $scope.currentSelection = " for Job " + data.jobNo;
 
@@ -1122,7 +1006,7 @@ angular.module('uDispatch').controller('CSControl', [
 
                 const data = await uCSData.getBulkJobDetail(bulkJobId);
                 $scope.currentJob = data;
-                jdSvc.setJob($scope.currentJob);
+                await jdSvc.setJob($scope.currentJob);
                 jobDetailLoading.hide();
                 $scope.currentSelection = " for Bulk Job " + data.jobNo;
 
@@ -1216,25 +1100,19 @@ angular.module('uDispatch').controller('CSControl', [
         /**
          * @param {number} index
          */
-        $scope.bulkPageChanged = index => {
+        $scope.bulkPageChanged = async index => {
             $scope.bulkPageIndex = index;
-            $scope.refreshBulkData();
+            await $scope.refreshBulkData();
         };
 
         /**
          * @param {number} index
          */
-        $scope.changePageSize = index => {
+        $scope.changePageSize = async index => {
             $scope.pageIndex = index;
             $scope.pageSizeSelected = index;
-            return $scope.refreshData();
+            await $scope.refreshData();
         };
-
-        // New Material Autocompletes
-        $scope.clientSelectedItem = $scope.pickDateService.client;
-        $scope.courierSelectedItem = $scope.pickDateService.client;
-        $scope.clientSearchText = '';
-        $scope.courierSearchText = '';
 
         /**
          * @param {string} searchText
@@ -1276,45 +1154,12 @@ angular.module('uDispatch').controller('CSControl', [
             await $scope.refreshAllData(true);
         };
 
-        uCSData.getActiveCouriers().then(data => {
-            $scope.pickCouriers = data;
-        });
-
-        uCSData.getAllCouriers().then(data => {
-            $scope.pickAllCouriers = data;
-        });
-
-        NgMap.getMap().then(map => {
-            $scope.map = map;
-            $scope.marker = map.markers[0];
-            $scope.onMapReady();
-        });
 
         $scope.highlightEvent = () => {
             $timeout(() => {
                 $scope.selectedEvents = $scope.selected || [];
             }, 10);
         };
-
-        $scope.jobListMenu = [{
-            text: "Close Event", click: ($itemScope, $event, modelValue, text, $li) => {
-
-                $scope.gather.form = {
-                    id: "closeEvent", title: "Close Event?", fields: [{
-                        "name": "editName", "label": "Edit your name", "value": ""
-                    }], onSubmit: () => {
-                        angular.element("#box-jobList").find(".loading").show();
-                        angular.element("#box-map").find(".loading").show();
-                        const userName = angular.element("#gather-editName").val();
-                        uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(() => {
-                            $scope.refreshData(1, true);
-                        });
-                    }, submitValue: "Close Event"
-                };
-
-                $scope.gather.showForm();
-            }
-        }];
 
         $scope.reply = currentEvent => {
             function resetCursor(txtElement) {
@@ -1456,7 +1301,6 @@ angular.module('uDispatch').controller('CSControl', [
 
 
         $scope.addEventNote = (eventId, type, options) => {
-
             $scope.gather.form = {
                 id: "addNote", title: "Add Event Note ", fields: [{
                     "name": "notes",
@@ -1489,31 +1333,6 @@ angular.module('uDispatch').controller('CSControl', [
 
             $scope.gather.showForm();
         };
-
-
-        // Load custom layout
-        $scope.init = () => {
-            if (Modernizr.localstorage) {
-                const storedLayouts = localStorage.getItem("layoutsCS-" + ContactID);
-                const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutCS-" + ContactID);
-
-                if (storedLayouts) {
-                    $scope.layouts = JSON.parse(storedLayouts);
-
-                    if (lastActiveLayoutName) {
-                        const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
-
-                        // if the last active layout is found among stored layouts
-                        if (lastActiveLayoutIndex !== -1) {
-                            $scope.loadLayout(lastActiveLayoutIndex);
-                        }
-                    }
-                }
-            }
-        };
-
-        // Call the init function when the controller loads
-        $scope.init();
 
         /**
          * @param {number} dateRangeOption
@@ -1562,14 +1381,29 @@ angular.module('uDispatch').controller('CSControl', [
 
         // Default to fortnight
         $scope.onSearchRangeChange($scope.dateSearchRange);
+
+        // Call the init function when the controller loads
+        initializeVariables();
     }
 ]);
 
-// Convert Degrees to Radians
+/**
+ * Converts degrees to radians.
+ * @param {number} deg - The angle in degrees.
+ * @returns {number} The angle in radians.
+ */
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
 
+/**
+ * Calculates the distance between two points on Earth using the Pythagorean theorem on an equirectangular projection.
+ * @param {number} lat1 - Latitude of the first point in degrees.
+ * @param {number} lon1 - Longitude of the first point in degrees.
+ * @param {number} lat2 - Latitude of the second point in degrees.
+ * @param {number} lon2 - Longitude of the second point in degrees.
+ * @returns {number} The distance between the two points in kilometers.
+ */
 function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     lat1 = Deg2Rad(lat1);
     lat2 = Deg2Rad(lat2);
@@ -1582,9 +1416,11 @@ function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
 }
 
 /**
- * @param {number} latitude
- * @param {number} longitude
- * @param {*[]} locations
+ * Finds the closest location from a list of locations to a given latitude and longitude.
+ * @param {number} latitude - The latitude of the reference point.
+ * @param {number} longitude - The longitude of the reference point.
+ * @param {Array<Array<*>>} locations - An array of locations. Each location should be an array where the second element is latitude and the third element is longitude.
+ * @returns {Array<*>} The closest location from the list.
  */
 function closestLocation(latitude, longitude, locations) {
     let minDifference = 99999;

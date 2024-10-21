@@ -222,8 +222,10 @@ namespace DespatchWeb.EntityClasses
         public int? ToAirportId { get; set; }
         public decimal? DryIceWeight { get; set; }
         public DateTime? DeliverByTime { get; set; }
+        public int? AgentId { get; set; }
 
         public virtual TucJobType AcceptedJobType { get; set; }
+        public virtual TucAgent Agent { get; set; }
         public virtual TucClientContact Contact { get; set; }
         public virtual TucJobType DesiredJobType { get; set; }
         public virtual TblAirport FromAirport { get; set; }

@@ -44,6 +44,20 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.jobList = [];
             $scope.jobListLoading = false;
             $scope.selected = [];
+
+            $scope.jobHeaders = [
+                {key: 'time', label: 'Time'},
+                {key: 'speed', label: 'Speed'},
+                {key: 'jobno', label: 'Job No'},
+                {key: 'client', label: 'Client'},
+                {key: 'from', label: 'From'},
+                {key: 'to', label: 'To'},
+                {key: 'courier', label: 'Courier'},
+                {key: 'pod', label: 'POD'},
+                {key: 'remain', label: 'Remain'},
+                {key: 'status', label: 'S'}
+            ];
+
             $scope.jobFilters = {
                 order: 'time', filter: '', status: 'all', asc: 'asc'
             };
@@ -208,6 +222,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await $scope.getEventTypes();
                 await $scope.getData();
+
+                $timeout(() => sizeHeadings(), 1000);
+                $timeout(() => sizeHeadings(), 2000);
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
                 await initializeAreas();
@@ -293,7 +310,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.jobRecordSearchText = "";
 
         /**
-         * @param {String} searchText
+         * @param {string} searchText
          */
         $scope.jobRecordSearch = searchText => {
             return $scope.jobList
@@ -302,7 +319,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         }
 
         /**
-         * @param {Number} selectedJobId
+         * @param {number} selectedJobId
          */
         $scope.JobRecordSelected = selectedJobId => {
             const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
@@ -404,9 +421,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.$apply();
         });
 
-
         /**
-         * @param {Number} index
+         * @param {number} index
          */
         $scope.deleteLayout = async (index) => {
             await LayoutService.deleteLayout(index);
@@ -415,7 +431,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {Number} index
+         * @param {number} index
          */
         $scope.loadLayout = (index) => {
             const loadedLayout = LayoutService.loadLayout(index);
@@ -530,8 +546,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.inputWidth = {};
 
         /**
-         * @param {String} boxName
-         * @param {Number} index
+         * @param {string} boxName
+         * @param {number} index
          */
         $scope.openSearch = (boxName, index) => {
             const boxID = boxName + '-' + index;
@@ -643,8 +659,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {String} jobNumber
-         * @param {Number} jobId
+         * @param {string} jobNumber
+         * @param {number} jobId
          */
         $scope.voidJobForm = (jobNumber, jobId) => $mdDialog.show($mdDialog.prompt()
             .title("Void Job")
@@ -723,11 +739,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {Number} lat
-         * @param {Number} lng
+         * @param {number} lat
+         * @param {number} lng
          * @param {Object} flags
          * @param {*} carMarker
-         * @param {String} jobNumber
+         * @param {string} jobNumber
          */
         $scope.dispatchDroppedMarkerToClosestCourier = async (lat, lng, flags, carMarker, jobNumber) => {
             try {
@@ -810,8 +826,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     $scope.courier = {gpsCourier: foundCourier.id};
                     await $scope.searchCourier();
                 } catch {
-                    let unDespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                    displayPickupPoints(unDespatchedData, true, null);
+                    let undispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    displayPickupPoints(undispatchedData, true, null);
                     await $scope.getAvailableCourierLocation();
                 }
             } catch (error) {
@@ -1394,7 +1410,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.searchCourier();
 
             } catch (error) {
-                // This block will be executed if the dialog is cancelled or if any errors occur
                 console.log("Resend All operation cancelled or encountered an error:", error);
             }
         };
@@ -1605,9 +1620,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 angular.element("#box-potentialCouriers .loading").fadeOut();
 
                 $scope.activateDrop();
-
             });
-
         };
 
 
@@ -1766,39 +1779,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         ////////////////////////////
-        // GROUPED JOBS
-        ////////////////////////////
-
-        $scope.getGroupedJobs = async () => {
-            if ($scope.isUsCustomer) {
-                // Ignore this if DFRNT customer
-                return;
-            }
-
-            try {
-                const $boxJobGroups = angular.element("#box-jobGroups");
-                $boxJobGroups.find(".loading").show();
-
-                const data = await NWData.getJobsGrouped();
-
-                $boxJobGroups.find(".loading").fadeOut();
-
-                $scope.jobGroups = data;
-
-                const sizeHeadingsColumn = () => {
-                    sizeHeadings(angular.element("#jobGroups").parents(".column"));
-                };
-
-                await new Promise(() => $timeout(sizeHeadingsColumn, 1000));
-                await new Promise(() => $timeout(sizeHeadingsColumn, 2000));
-
-            } catch (error) {
-                console.error("Error in getGroupedJobs:", error);
-                // Handle the error appropriately
-            }
-        };
-
-        ////////////////////////////
         // CURRENT JOBS
         ////////////////////////////
 
@@ -1828,16 +1808,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 $scope.activateDrop();
 
-                const sizeHeadingsColumn = () => {
-                    sizeHeadings(angular.element("#currentWork").parents(".column"));
-                };
-
-                await new Promise(() => $timeout(sizeHeadingsColumn, 1000));
-                await new Promise(() => $timeout(sizeHeadingsColumn, 2000));
+                $timeout(() => sizeHeadings(), 1000);
+                $timeout(() => sizeHeadings(), 2000);
 
             } catch (error) {
                 console.error("Error in getCurrentJobs:", error);
-                // Handle the error appropriately
             }
         };
 
@@ -1929,12 +1904,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 _processActiveTable();
                 _initializeJob(job);
 
-                // Get flights for jobs if airport information included
                 if (job.toAirportId && job.fromAirportId) {
                     await _processFlights(job);
                 }
 
-                // Get agents if delivery job
                 if ($scope.isDeliveryJob()) {
                     await _processAgents(job);
                 }
@@ -1942,6 +1915,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.$apply();
                 await updateData(job, clear);
                 angular.element("#box-jobDetail .loading").css('display', 'none');
+
+                $timeout(() => sizeHeadings(), 200);
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
@@ -2068,7 +2043,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         async function processClearSettings(job) {
             clearSettings(job);
-            await $scope.getGroupedJobs();
             $scope.potentialCouriersSelection = " for Job " + job.jobNo;
             $scope.groupJobsSelection = " for Job " + job.jobNo;
             $scope.currentWorkSelection = "";
@@ -2091,8 +2065,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.addFlightToJob = async ($event, flight, job) => {
             try {
                 const confirm = $mdDialog.confirm()
-                    .title('Assign Flight To Job')
-                    .textContent(`You are assigning flight ${flight.flightNumber} to Job ${job.jobNo}. Please confirm this is correct.`)
+                    .title('Assign Flight')
+                    .textContent(`You are assigning to Job ${job.jobNo} to ${flight.flightNumber}. Please confirm this is correct.`)
                     .ariaLabel('confirm assign flight to job')
                     .targetEvent($event)
                     .ok('Confirm')
@@ -2114,39 +2088,37 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
+        /**
+         * @param {Object} $event
+         * @param {Agent} agent
+         * @param {Job} job
+         */
+        $scope.addAgentToJob = async ($event, agent, job) => {
+            try {
+                const confirm = $mdDialog.confirm()
+                    .title('Assign Agent')
+                    .textContent(`You are assigning Job ${job.jobNo} to ${agent.agentName}. Please confirm this is correct.`)
+                    .ariaLabel('confirm assign flight to job')
+                    .targetEvent($event)
+                    .ok('Confirm')
+                    .cancel('Cancel');
 
-        $scope.setCurrentWorkMenu = () => {
-            const multiple = angular.element(".activeTable .active").length > 1;
+                await $mdDialog.show(confirm);
+                console.log('Assigning to job');
 
-            return [{
-                text: "Restore", click: async ($itemScope, $event, modelValue, text, $li) => {
-                    try {
-                        await $scope.restoreJobsFromCurrentWindow();
-                    } catch (error) {
-                        console.error("Error in Restore click handler:", error);
-                        // Handle the error appropriately
-                    }
+                await NWData.assignAgentToJob(job.id, agent.agentId);
+
+                // Refresh data
+                await $scope.getData();
+            } catch (error) {
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error('Error assigning flight to job:', error);
                 }
-            }, {
-                text: "Redispatch", click: async ($itemScope, $event, modelValue, text, $li) => {
-                    try {
-                        await $scope.reAllocateJobsFromCurrentWindow();
-                    } catch (error) {
-                        console.error("Error in Redispatch click handler:", error);
-                        // Handle the error appropriately
-                    }
-                }
-            }, {
-                text: "Resend", click: async ($itemScope, $event, modelValue, text, $li) => {
-                    try {
-                        await $scope.resendJobsFromCurrentWindow();
-                    } catch (error) {
-                        console.error("Error in Resend click handler:", error);
-                        // Handle the error appropriately
-                    }
-                }
-            }];
+            }
         };
+
 
 
         $scope.fromColumnClick = evt => {
@@ -2515,7 +2487,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 $scope.jobListLoading = true;
 
-                const [newData, podData, repriceData, deliveryData] = await Promise.all([NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)]);
+                const [newData, podData, repriceData, deliveryData] = await Promise.all([
+                    NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)
+                ]);
 
                 $scope.jobList = newData;
                 $scope.jobListPOD = podData;
@@ -2523,9 +2500,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.jobListDelivery = deliveryData;
 
                 $scope.jobListLoading = false;
-                $scope.apply;
+                $scope.$apply();
 
                 await $scope.getAvailableCourierLocation();
+
+                $timeout(() => sizeHeadings(), 200);
+                $timeout(() => sizeHeadings(), 1000);
             } catch (error) {
                 console.error("Error fetching job data:", error);
             }
@@ -2564,7 +2544,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 $scope.supports = await NWData.getSupports($scope.supportChannel);
 
-                $scope.supportMenu = [// NEW IMPLEMENTATION
+                $scope.supportMenu = [
                     {
                         text: "Complete", click: ($itemScope, $event, modelValue, text, $li) => {
                             $scope.closeSupport($itemScope.support);
@@ -2584,13 +2564,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     });
                 }, 100);
 
-                await $timeout(() => {
-                    sizeHeadings(angular.element("#supports").parents(".column"));
-                }, 1000);
-
-                await $timeout(() => {
-                    sizeHeadings(angular.element("#supports").parents(".column"));
-                }, 2000);
+                $timeout(() => sizeHeadings(), 1000);
+                $timeout(() => sizeHeadings(), 2000);
 
             } catch (error) {
                 console.error("Error fetching supports:", error);
@@ -2719,7 +2694,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.courierSearchText = "";
         /**
-         * @param {String} searchText
+         * @param {string} searchText
          */
         $scope.courierSearch = searchText => {
             try {
@@ -2741,24 +2716,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         // Load custom layout
         function init() {
-            if (Modernizr.localstorage) {
-                const storedLayouts = localStorage.getItem("layoutsNW-" + ContactID);
-                const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutNW-" + ContactID);
-
-                if (storedLayouts) {
-                    $scope.layouts = JSON.parse(storedLayouts);
-                    if (lastActiveLayoutName) {
-                        const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
-
-                        // if the last active layout is found among stored layouts
-                        if (lastActiveLayoutIndex !== -1) {
-                            $scope.loadLayout(lastActiveLayoutIndex);
-                        }
-                    }
-                }
-            }
-
-            // Init functions
             initializeVariables();
             loadPageViews().then(() => {
                 console.log('Loaded Page Views!');
@@ -2770,10 +2727,23 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
     }]);
 
 
+/**
+ * Converts degrees to radians.
+ * @param {number} deg - The angle in degrees.
+ * @returns {number} The angle in radians.
+ */
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
 
+/**
+ * Calculates the distance between two points on Earth using the Pythagorean theorem on an equirectangular projection.
+ * @param {number} lat1 - Latitude of the first point in degrees.
+ * @param {number} lon1 - Longitude of the first point in degrees.
+ * @param {number} lat2 - Latitude of the second point in degrees.
+ * @param {number} lon2 - Longitude of the second point in degrees.
+ * @returns {number} The distance between the two points in kilometers.
+ */
 function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     lat1 = Deg2Rad(lat1);
     lat2 = Deg2Rad(lat2);
@@ -2785,6 +2755,13 @@ function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     return Math.sqrt(x * x + y * y) * R;
 }
 
+/**
+ * Finds the closest location from a list of locations to a given latitude and longitude.
+ * @param {number} latitude - The latitude of the reference point.
+ * @param {number} longitude - The longitude of the reference point.
+ * @param {Array<Array<*>>} locations - An array of locations. Each location should be an array where the second element is latitude and the third element is longitude.
+ * @returns {Array<*>} The closest location from the list.
+ */
 function closestLocation(latitude, longitude, locations) {
     let minDifference = 99999;
     let closest;

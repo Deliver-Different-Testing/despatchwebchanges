@@ -54,16 +54,24 @@
             </div>
 
             <div class="no-data" ng-if="!flightsLoading && flightOptions.length === 0">
-                <div class="text">
-                    <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-                    {{flightMessage || 'No flights available for the specified criteria.'}}
+                <div class="content">
+                    <div class="icon">
+                        <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+                    </div>
+                    <div class="text">
+                        {{flightMessage || 'No flights available for the specified criteria.'}}
+                    </div>
                 </div>
             </div>
 
             <div class="no-data" ng-if="flightError">
-                <div class="text">
-                    <md-icon md-font-set="material-symbols-outlined">error</md-icon>
-                    {{flightError}}
+                <div class="content">
+                    <div class="icon">
+                        <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+                    </div>
+                    <div class="text">
+                        {{flightError}}
+                    </div>
                 </div>
             </div>
         </div>
@@ -79,21 +87,36 @@
     </div>
 
     <div class="no-data" ng-if="!currentJob.toAirportId || !currentJob.fromAirportId">
-        <div class="text">
-            <md-icon md-font-set="material-symbols-outlined">local_airport</md-icon>
-            Airport information not applicable or not provided for this job. If needed, please update the job
-            details with relevant airport data.
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">local_airport</md-icon>
+            </div>
+            <div class="text">
+                Airport information not applicable or not provided for this job. If needed, please update the job
+                details with relevant airport data.
+            </div>
         </div>
     </div>
 
     <div class="no-data" ng-if="currentJob.assignedFlight">
-        <div class="text">
-            <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-            A flight has already been assigned to this job. This can be found in the job details widget.
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+            </div>
+            <div class="text">
+                A flight has already been assigned to this job. This can be found in the job details widget.
+            </div>
         </div>
     </div>
 </div>
 
 <div class="no-data" ng-if="!currentJob">
-    <div class="text">Please select a job to view available flights.</div>
+    <div class="content">
+        <div class="icon">
+            <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+        </div>
+        <div class="text">
+            Please select a job to view available flights.
+        </div>
+    </div>
 </div>

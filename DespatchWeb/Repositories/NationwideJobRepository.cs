@@ -307,6 +307,30 @@ public class NationwideJobRepository : INationwideJobRepository
         return await ProcessAgentsInParallelAsync(job, agents);
     }
 
+    public async Task<bool> AddAgentToJobAsync(int agentId, int jobId)
+    {
+        try
+        {
+            var jobToUpdate = new TucJob
+            {
+                UcjbId = jobId,
+                AgentId = agentId
+            };
+
+            _context.TucJobs.Attach(jobToUpdate);
+            _context.Entry(jobToUpdate).Property(x => x.AgentId).IsModified = true;
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+
     private async Task<JobDetails> GetJobDetailsAsync(int jobId)
     {
         return await _context.TucJobs
@@ -340,6 +364,7 @@ public class NationwideJobRepository : INationwideJobRepository
             .Where(av => av.AirportId == airportId && av.VehicleSizeId == vehicleSizeId)
             .Select(a => new AgentInfo
             {
+                AgentId = a.AgentId.Value,
                 AgentName = a.Agent.UcagName,
                 AgentRanking = a.Agent.Ranking.AgentRankingName,
                 DistanceRateId = a.DistanceRateId
@@ -363,9 +388,10 @@ public class NationwideJobRepository : INationwideJobRepository
                     var agentRate = await GetAgentRatesAsync(job, agent, ct);
                     var viewModel = new AgentViewModel
                     {
+                        AgentId = agent.AgentId,
                         AgentName = agent.AgentName,
                         AgentRanking = agent.AgentRanking,
-                        AgentRate = agentRate.HasValue ? agentRate.Value : 0
+                        AgentRate = agentRate ?? 0
                     };
 
                     agentResults.Add(viewModel);
@@ -399,6 +425,7 @@ public class NationwideJobRepository : INationwideJobRepository
             .Select(r => r.Rate)
             .FirstOrDefault();
     }
+
 
     private static string GetNationwideOrderByClause(string order, string ascending)
     {
@@ -517,6 +544,7 @@ public class NationwideJobRepository : INationwideJobRepository
 
     private class AgentInfo
     {
+        public int AgentId { get; init; }
         public string AgentName { get; init; }
         public string AgentRanking { get; init; }
         public int? DistanceRateId { get; init; }

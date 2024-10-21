@@ -1,4 +1,4 @@
-<div ng-if="jobsCurrentList">
+<div ng-if="jobsCurrentList.length > 0">
 
     <div class="table-headings">
         <table>
@@ -153,9 +153,28 @@
 
 </div>
 
-<div class="no-data" ng-if="!jobsCurrentList">
-    <div class="text">Please select a courier</div>
+<div class="no-data" ng-if="jobsCurrentList === 0">
+    <div class="content">
+        <div class="icon">
+            <md-icon md-font-set="material-symbols-outlined">work_history</md-icon>
+        </div>
+        <div class="text">
+            This Courier Does Not Have Any Available Work
+        </div>
+    </div>
 </div>
+
+<div class="no-data" ng-if="!jobsCurrentList">
+    <div class="content">
+        <div class="icon">
+            <md-icon md-font-set="material-symbols-outlined">work_history</md-icon>
+        </div>
+        <div class="text">
+            Please Select a Courier
+        </div>
+    </div>
+</div>
+
 
 <div class="loading">
     <div class="text">

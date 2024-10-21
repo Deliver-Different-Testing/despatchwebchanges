@@ -4867,6 +4867,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
 
+                entity.Property(e => e.AgentId).HasColumnName("AgentID");
+
                 entity.Property(e => e.AutoDespatch).HasDefaultValueSql("((1))");
 
                 entity.Property(e => e.Barcode).HasMaxLength(300);
@@ -5295,6 +5297,11 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.AcceptedJobType)
                     .WithMany(p => p.TucJobAcceptedJobTypes)
                     .HasForeignKey(d => d.AcceptedJobTypeId);
+
+                entity.HasOne(d => d.Agent)
+                    .WithMany(p => p.TucJobs)
+                    .HasForeignKey(d => d.AgentId)
+                    .HasConstraintName("FK_tucJob_tucAgents");
 
                 entity.HasOne(d => d.Contact)
                     .WithMany(p => p.TucJobs)
