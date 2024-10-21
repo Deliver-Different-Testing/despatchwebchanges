@@ -109,7 +109,7 @@ public class NationwideJobController(
     [HttpGet]
     public async Task<IActionResult> GetAgentsForJob(int jobId)
     {
-        var agents = await _repository.GetAgentsAsync(jobId);
+        var agents = await repository.GetAgentsAsync(jobId);
         return Json(agents);
     }
 }

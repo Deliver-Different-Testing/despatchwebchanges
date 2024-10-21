@@ -8,7 +8,7 @@ md-dialog {
 /* Global scrollbar styles */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(118, 234, 254, 0.7) transparent;
+  scrollbar-color: rgba(62, 175, 194, 0.7) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
@@ -18,7 +18,7 @@ md-dialog {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: rgba(118, 234, 254, 0.7);
+  background-color: rgba(62, 175, 194, 0.7);
   border-radius: 4px;
 }
 .horizontal-scroll {
@@ -81,7 +81,7 @@ md-autocomplete.ng-leave {
   align-items: center;
   /* For Chrome and Safari */
   /* For Firefox */
-  scrollbar-color: rgba(118, 234, 254, 0.7) transparent;
+  scrollbar-color: rgba(62, 175, 194, 0.7) transparent;
   scrollbar-width: thin;
 }
 .row-overflow::-webkit-scrollbar {
@@ -92,7 +92,7 @@ md-autocomplete.ng-leave {
   background: transparent;
 }
 .row-overflow::-webkit-scrollbar-thumb {
-  background-color: rgba(118, 234, 254, 0.7);
+  background-color: rgba(62, 175, 194, 0.7);
   border-radius: 4px;
 }
 .autocomplete-style {
@@ -116,7 +116,7 @@ md-autocomplete.ng-leave {
   margin: 0 8px;
 }
 .btn-primary {
-  background-color: #76EAFE;
+  background-color: #3EAFC2;
   color: #000;
   border: none;
   border-radius: 4px;
@@ -132,7 +132,7 @@ md-autocomplete.ng-leave {
   transition: all 0.3s ease-out;
 }
 .btn-primary:hover {
-  background-color: #5de6fe;
+  background-color: #379eaf;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
 }
 .btn-primary:active {
@@ -140,7 +140,7 @@ md-autocomplete.ng-leave {
   transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .mat-button {
-  background-color: #76EAFE;
+  background-color: #3EAFC2;
   color: #000;
   border: none;
   border-radius: 4px;
@@ -151,7 +151,7 @@ md-autocomplete.ng-leave {
   transition: background-color 0.3s ease;
 }
 .mat-button:hover {
-  background-color: #5de6fe;
+  background-color: #379eaf;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
 }
 .mat-button:active {
@@ -165,7 +165,7 @@ md-autocomplete.ng-leave {
 }
 a.pickadate-next,
 a.pickadate-prev {
-  background-color: #76EAFE;
+  background-color: #3EAFC2;
   color: #000;
   border: none;
   border-radius: 4px;
@@ -177,7 +177,7 @@ a.pickadate-prev {
 }
 a.pickadate-next:hover,
 a.pickadate-prev:hover {
-  background-color: #5de6fe;
+  background-color: #379eaf;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
 }
 a.pickadate-next:active,
@@ -234,14 +234,14 @@ md-divider {
   background-color: #707070;
 }
 #driverLocations .driverLocations-list .listActive {
-  background-color: #76EAFE;
+  background-color: #3EAFC2;
   color: #000;
 }
 #driverLocations .driverLocations-list .listActive:hover {
-  background-color: #5de6fe;
+  background-color: #379eaf;
 }
 #driverLocations .driverLocations-list .listActive:active {
-  background-color: #43e2fe;
+  background-color: #318c9c;
 }
 #driverLocations .driverLocations-list table {
   width: 100%;
@@ -363,14 +363,14 @@ md-divider {
   border-color: darkgrey;
 }
 .top-bar .topbar-NavButtons .topbar-active {
-  background-color: #76EAFE;
-  border-color: #43e2fe;
+  background-color: #3EAFC2;
+  border-color: #318c9c;
   color: #000;
 }
 .top-bar .topbar-NavButtons .topbar-active:hover {
   color: #000;
-  background-color: #43e2fe;
-  border-color: #1bdcfd;
+  background-color: #318c9c;
+  border-color: #27707d;
 }
 .top-bar .topbar-buttons {
   margin-left: auto;
@@ -407,11 +407,11 @@ md-divider {
   color: #e0e0e0;
 }
 .top-bar .btn-group .topBarActive {
-  background-color: #76EAFE;
+  background-color: #3EAFC2;
   color: #000;
 }
 .top-bar .btn-group .topBarActive:hover {
-  background-color: #76EAFE;
+  background-color: #3EAFC2;
   color: #000;
 }
 .top-bar .btn-group .topBarActive:active {
@@ -633,7 +633,7 @@ md-divider {
   padding-right: 12px;
 }
 .pickadate-active {
-  background-color: #76EAFE;
+  background-color: #3EAFC2;
 }
 .columns {
   min-height: 50px;
@@ -1306,10 +1306,10 @@ span.courierRed {
 }
 .DropBox .DragOver {
   background: #e8eaf6;
-  border-color: #76EAFE;
+  border-color: #3EAFC2;
 }
 .DropBox md-icon {
-  color: #76EAFE;
+  color: #3EAFC2;
   margin-bottom: 10px;
 }
 .DropBox p {
@@ -1462,11 +1462,11 @@ md-list-item.selected::before {
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: #76EAFE;
+  background-color: #3EAFC2;
 }
 md-list-item.selected md-icon,
 md-list-item.selected p {
-  color: #76EAFE;
+  color: #3EAFC2;
 }
 md-list-item:not(.selected):hover {
   background-color: rgba(0, 0, 0, 0.03);
@@ -1509,5 +1509,5 @@ md-list-item:not(.selected):hover {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 24px;
-  color: #76EAFE;
+  color: #3EAFC2;
 }

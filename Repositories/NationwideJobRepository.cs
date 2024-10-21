@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 using Vehicle = DespatchWeb.Models.Vehicle;
 namespace DespatchWeb.Repositories;
 
-public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), INationwideJobRepository
+public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), INationwideJobRepository
 {
     
 
@@ -306,7 +306,7 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
 
     private async Task<JobDetails> GetJobDetailsAsync(int jobId)
     {
-        return await _context.TucJobs
+        return await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new JobDetails
             {
@@ -333,7 +333,7 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
 
     private async Task<List<AgentInfo>> GetEligibleAgentsAsync(int? airportId, int? vehicleSizeId)
     {
-        return await _context.AgentVehicles
+        return await Context.AgentVehicles
             .Where(av => av.AirportId == airportId && av.VehicleSizeId == vehicleSizeId)
             .Select(a => new AgentInfo
             {
@@ -375,7 +375,7 @@ public class NationwideJobRepository(IMapper mapper, IDbContextFactory<DespatchC
     private async Task<decimal?> GetAgentRatesAsync(JobDetails job,
         AgentInfo agent, CancellationToken ct)
     {
-        var rates = await _context.Procedures.DD_stpGetAgentDistanceRateAsync(
+        var rates = await Context.Procedures.DD_stpGetAgentDistanceRateAsync(
             ClientID: job.ClientId,
             FromZipCode: int.Parse(job.FromZipCode),
             ToZipCode: int.Parse(job.ToZipCode),
