@@ -310,7 +310,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.jobRecordSearchText = "";
 
         /**
-         * @param {String} searchText
+         * @param {string} searchText
          */
         $scope.jobRecordSearch = searchText => {
             return $scope.jobList
@@ -319,7 +319,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         }
 
         /**
-         * @param {Number} selectedJobId
+         * @param {number} selectedJobId
          */
         $scope.JobRecordSelected = selectedJobId => {
             const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
@@ -422,7 +422,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         });
 
         /**
-         * @param {Number} index
+         * @param {number} index
          */
         $scope.deleteLayout = async (index) => {
             await LayoutService.deleteLayout(index);
@@ -431,7 +431,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {Number} index
+         * @param {number} index
          */
         $scope.loadLayout = (index) => {
             const loadedLayout = LayoutService.loadLayout(index);
@@ -546,8 +546,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.inputWidth = {};
 
         /**
-         * @param {String} boxName
-         * @param {Number} index
+         * @param {string} boxName
+         * @param {number} index
          */
         $scope.openSearch = (boxName, index) => {
             const boxID = boxName + '-' + index;
@@ -659,8 +659,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {String} jobNumber
-         * @param {Number} jobId
+         * @param {string} jobNumber
+         * @param {number} jobId
          */
         $scope.voidJobForm = (jobNumber, jobId) => $mdDialog.show($mdDialog.prompt()
             .title("Void Job")
@@ -739,11 +739,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {Number} lat
-         * @param {Number} lng
+         * @param {number} lat
+         * @param {number} lng
          * @param {Object} flags
          * @param {*} carMarker
-         * @param {String} jobNumber
+         * @param {string} jobNumber
          */
         $scope.dispatchDroppedMarkerToClosestCourier = async (lat, lng, flags, carMarker, jobNumber) => {
             try {
@@ -1410,7 +1410,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.searchCourier();
 
             } catch (error) {
-                // This block will be executed if the dialog is cancelled or if any errors occur
                 console.log("Resend All operation cancelled or encountered an error:", error);
             }
         };
@@ -2094,8 +2093,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.addFlightToJob = async ($event, flight, job) => {
             try {
                 const confirm = $mdDialog.confirm()
-                    .title('Assign Flight To Job')
-                    .textContent(`You are assigning flight ${flight.flightNumber} to Job ${job.jobNo}. Please confirm this is correct.`)
+                    .title('Assign Flight')
+                    .textContent(`You are assigning to Job ${job.jobNo} to ${flight.flightNumber}. Please confirm this is correct.`)
                     .ariaLabel('confirm assign flight to job')
                     .targetEvent($event)
                     .ok('Confirm')
@@ -2117,39 +2116,37 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
+        /**
+         * @param {Object} $event
+         * @param {Agent} agent
+         * @param {Job} job
+         */
+        $scope.addAgentToJob = async ($event, agent, job) => {
+            try {
+                const confirm = $mdDialog.confirm()
+                    .title('Assign Agent')
+                    .textContent(`You are assigning Job ${job.jobNo} to ${agent.agentName}. Please confirm this is correct.`)
+                    .ariaLabel('confirm assign flight to job')
+                    .targetEvent($event)
+                    .ok('Confirm')
+                    .cancel('Cancel');
 
-        $scope.setCurrentWorkMenu = () => {
-            const multiple = angular.element(".activeTable .active").length > 1;
+                await $mdDialog.show(confirm);
+                console.log('Assigning to job');
 
-            return [{
-                text: "Restore", click: async ($itemScope, $event, modelValue, text, $li) => {
-                    try {
-                        await $scope.restoreJobsFromCurrentWindow();
-                    } catch (error) {
-                        console.error("Error in Restore click handler:", error);
-                        // Handle the error appropriately
-                    }
+                await NWData.assignAgentToJob(job.id, agent.agentId);
+
+                // Refresh data
+                await $scope.getData();
+            } catch (error) {
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error('Error assigning flight to job:', error);
                 }
-            }, {
-                text: "Redispatch", click: async ($itemScope, $event, modelValue, text, $li) => {
-                    try {
-                        await $scope.reAllocateJobsFromCurrentWindow();
-                    } catch (error) {
-                        console.error("Error in Redispatch click handler:", error);
-                        // Handle the error appropriately
-                    }
-                }
-            }, {
-                text: "Resend", click: async ($itemScope, $event, modelValue, text, $li) => {
-                    try {
-                        await $scope.resendJobsFromCurrentWindow();
-                    } catch (error) {
-                        console.error("Error in Resend click handler:", error);
-                        // Handle the error appropriately
-                    }
-                }
-            }];
+            }
         };
+
 
 
         $scope.fromColumnClick = evt => {
@@ -2725,7 +2722,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.courierSearchText = "";
         /**
-         * @param {String} searchText
+         * @param {string} searchText
          */
         $scope.courierSearch = searchText => {
             try {

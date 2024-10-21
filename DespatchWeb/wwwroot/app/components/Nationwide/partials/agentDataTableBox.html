@@ -22,10 +22,8 @@
                                 <i class="material-symbols-outlined" ng-if="sort.agentList == 'd-agentRanking'">arrow_drop_up</i>Ranking
                             </th>
                             <th scope="col">
-                                Send Quote Request
                             </th>
                             <th scope="col">
-                                Assign Job
                             </th>
                         </tr>
                         </thead>
@@ -42,7 +40,7 @@
                         <td ng-click="" style="width:20px;" title="Send Quote Request">
                             <i class="material-symbols-outlined job-table-icon">request_quote</i>
                         </td>
-                        <td ng-click="" style="width:20px;" title="Assign Job">
+                        <td ng-click="addAgentToJob($event, agent, currentJob)" style="width:20px;" title="Assign Job">
                             <i class="material-symbols-outlined job-table-icon">add</i>
                         </td>
                     </tr>

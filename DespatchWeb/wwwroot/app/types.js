@@ -396,6 +396,7 @@
  * Represents an assigned flight.
  *
  * @typedef {Object} AssignedFlight
+ *
  * @property {string} flightNumber - The unique identifier for the flight.
  * @property {Date|null} expectedDeparture - The expected departure date and time of the flight. Can be null.
  * @property {Date|null} expectedArrival - The expected arrival date and time of the flight. Can be null.
@@ -406,6 +407,8 @@
  * Represents a view model for an agent.
  *
  * @typedef {Object} Agent
+ *
+ * @property {number} agentId - The ID of the agent.
  * @property {string} agentName - The name of the agent.
  * @property {number} agentRate - The rate associated with the agent. This is a decimal value.
  * @property {string} agentRanking - The ranking of the agent.

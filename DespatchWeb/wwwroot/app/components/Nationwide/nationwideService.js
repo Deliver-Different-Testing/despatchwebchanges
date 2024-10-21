@@ -781,7 +781,7 @@ class NationwideService {
         const response = await this._$http.get('nationwideJob/GetScheduledFlightOptions', {
             params: {
                 departureDate: formattedDate,
-                jobId: jobId,
+                jobId,
             }
         });
 
@@ -801,9 +801,9 @@ class NationwideService {
     async assignFlightToJob(jobId, flightNumber, departureDate) {
         try {
             const response = await this._$http.post('nationwideJob/AssignFlightToJob', {
-                jobId: jobId,
-                flightNumber: flightNumber,
-                departureDate: departureDate,
+                jobId,
+                flightNumber,
+                departureDate,
             });
 
             return response.data;
@@ -820,7 +820,7 @@ class NationwideService {
     async getAgentOptions(jobId) {
         const response = await this._$http.get('nationwideJob/GetAgentsForJob', {
             params: {
-                jobId: jobId,
+                jobId,
             }
         });
 
@@ -828,6 +828,25 @@ class NationwideService {
             agents: response.data,
             message: response.data.length === 0 ? 'Sorry, we couldn\'t find any agents that applied to this specific job. Please check the job information is correct and try again.' : null
         };
+    }
+
+    /**
+     * Adds the flight to the JobNationwide table to keep a record
+     * @param {number} jobId - The ID of the job
+     * @param {number} agentId - The ID of the agent
+     * @throws {Error} If the API request fails or returns an unexpected response.
+     */
+    async assignAgentToJob(jobId, agentId) {
+        try {
+            const response = await this._$http.post('nationwideJob/AssignAgentToJob', {
+                jobId,
+                agentId,
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error assigning agent to job:', error);
+        }
     }
 
     /**
