@@ -58,7 +58,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 {key: 'status', label: 'S'}
             ];
 
-
             $scope.jobFilters = {
                 order: 'time', filter: '', status: 'all', asc: 'asc'
             };
@@ -828,8 +827,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     $scope.courier = {gpsCourier: foundCourier.id};
                     await $scope.searchCourier();
                 } catch {
-                    let unDespatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                    displayPickupPoints(unDespatchedData, true, null);
+                    let undispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    displayPickupPoints(undispatchedData, true, null);
                     await $scope.getAvailableCourierLocation();
                 }
             } catch (error) {
@@ -1623,9 +1622,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 angular.element("#box-potentialCouriers .loading").fadeOut();
 
                 $scope.activateDrop();
-
             });
-
         };
 
 
@@ -2780,10 +2777,23 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
     }]);
 
 
+/**
+ * Converts degrees to radians.
+ * @param {number} deg - The angle in degrees.
+ * @returns {number} The angle in radians.
+ */
 function Deg2Rad(deg) {
     return deg * Math.PI / 180;
 }
 
+/**
+ * Calculates the distance between two points on Earth using the Pythagorean theorem on an equirectangular projection.
+ * @param {number} lat1 - Latitude of the first point in degrees.
+ * @param {number} lon1 - Longitude of the first point in degrees.
+ * @param {number} lat2 - Latitude of the second point in degrees.
+ * @param {number} lon2 - Longitude of the second point in degrees.
+ * @returns {number} The distance between the two points in kilometers.
+ */
 function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     lat1 = Deg2Rad(lat1);
     lat2 = Deg2Rad(lat2);
@@ -2795,6 +2805,13 @@ function PythagorasEquirectAngular(lat1, lon1, lat2, lon2) {
     return Math.sqrt(x * x + y * y) * R;
 }
 
+/**
+ * Finds the closest location from a list of locations to a given latitude and longitude.
+ * @param {number} latitude - The latitude of the reference point.
+ * @param {number} longitude - The longitude of the reference point.
+ * @param {Array<Array<*>>} locations - An array of locations. Each location should be an array where the second element is latitude and the third element is longitude.
+ * @returns {Array<*>} The closest location from the list.
+ */
 function closestLocation(latitude, longitude, locations) {
     let minDifference = 99999;
     let closest;

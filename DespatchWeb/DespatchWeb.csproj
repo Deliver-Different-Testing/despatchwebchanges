@@ -247,4 +247,8 @@
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.23" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\app\components\CS\services\"/>
+  </ItemGroup>
+
 </Project>
