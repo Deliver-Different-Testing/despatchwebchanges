@@ -1,5 +1,5 @@
-angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "greetingService", "$mdDialog", "$document", "$window", "toastrService", "DispatchData", "moment", "versionUrl", "materialSidenavService", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService",
-    ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog, LayoutService) => {
+angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "greetingService", "$mdDialog", "$document", "$window", "toastrService", "DispatchData", "moment", "versionUrl", "materialSidenavService", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService", "$mdMenu",
+    ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu) => {
         $scope.jdSvc = jdSvc;
 
         // Variables
@@ -63,6 +63,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.flightTableQuery = {
                 order: 'departureTime', asc: 'asc'
             };
+
+            DispatchData.getInternalStatusList().then(data => {
+                $scope.internalStatusOptions = data;
+            });
 
             $scope.allCouriers = {display: true, includeUA: false};
             $scope.mapZoom = {display: true};
@@ -439,6 +443,20 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             } catch (error) {
                 console.error("Save Layout Cancelled!");
             }
+        };
+
+        $scope.getSelectedStatusText = () => {
+            const selectedStatus = $scope.internalStatusOptions.find(status => status.id === $scope.currentJob.internalStatusId);
+            return selectedStatus ? selectedStatus.text : 'Select Status';
+        };
+
+        $scope.setInternalStatus = async internalStatusId => {
+            $scope.currentJob.internalStatusId = internalStatusId;
+            $mdMenu.hide();
+
+            // Update Job
+            const currentJob = $scope.currentJob;
+            await this._dispatchData.updateJobDetail(currentJob.id, "InternalStatusID", internalStatusId, currentJob.charge, FirstName, ContactID);
         };
 
         $scope.attention = job => {

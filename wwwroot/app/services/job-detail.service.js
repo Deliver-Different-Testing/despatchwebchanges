@@ -77,11 +77,6 @@ class JobDetailService {
             this.pickSuburbs = data;
         });
 
-        DispatchData.getInternalStatusList().then((data) => {
-            this.pickInternalStatus = data;
-        });
-
-
         this.pickHolidays = [{
             "id": "0", "label": "Don't Book"
         }, {
