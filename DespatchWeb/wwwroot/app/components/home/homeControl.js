@@ -149,6 +149,21 @@ angular.module("uDispatch")
             }, {
                 "id": "3", "label": "Trucks"
             }];
+
+            $scope.jobListHeaders = [
+                {key: 'time', label: 'T'},
+                {key: 'speed', label: 'Speed'},
+                {key: 'notify', label: 'N'},
+                {key: 'vehicle', label: 'V'},
+                {key: 'jobNo', label: 'Job'},
+                {key: 'client', label: 'Client'},
+                {key: 'from', label: 'From'},
+                {key: 'to', label: 'To'},
+                {key: '', label: ''},
+                {key: 'remain', label: 'Remain'},
+                {key: 'status', label: 'S'}
+            ];
+
         }
 
         /**
@@ -263,26 +278,6 @@ angular.module("uDispatch")
             $scope.queryParams.page = page;
             $scope.queryParams.limit = limit;
             return $scope.pageChanged();
-        };
-
-        // Order list handler
-        $scope.orderList = async (list, prop) => {
-            const serverOrder = list === "jobList";
-            if ($scope.sort[list] !== prop) {
-                $scope.sort[list] = prop;
-                $scope.queryParams.asc = "asc";
-            } else {
-                $scope.sort[list] = "d-" + prop;
-                $scope.queryParams.asc = "desc";
-            }
-
-            if (!serverOrder) {
-                $scope[list] = $filter("orderBy")($scope[list], $scope.sort[list].startsWith('d-') ? '-' + prop : prop);
-            }
-
-            if (serverOrder) {
-                await setFilters({"order": prop});
-            }
         };
 
         function init() {
@@ -561,23 +556,6 @@ angular.module("uDispatch")
             if ($event.target.tagName === 'INPUT') {
                 document.getElementsByName('courierSearch')[0].value = '';
                 $scope.courierSearchTextv = '';
-            }
-        };
-
-        /**
-         * @param {Object} $event
-         * @param {Job} job
-         */
-        $scope.handleRowClick = async ($event, job) => {
-            if (!$event.target.classList.contains('lateCallField') && !$event.target.classList.contains('dispatchField')) {
-                try {
-                    $timeout(async () => {
-                        await $scope.selectJob(job);
-                        angular.element("#input_" + job.id).select();
-                    });
-                } catch (error) {
-                    console.log('Error in handleRowClick:', error);
-                }
             }
         };
 
@@ -1033,6 +1011,26 @@ angular.module("uDispatch")
                 return $q.reject(error);
             });
 
+        // Order list handler
+        $scope.orderList = async (list, prop) => {
+            const serverOrder = list === "jobList";
+            if ($scope.sort[list] !== prop) {
+                $scope.sort[list] = prop;
+                $scope.queryParams.asc = "asc";
+            } else {
+                $scope.sort[list] = "d-" + prop;
+                $scope.queryParams.asc = "desc";
+            }
+
+            if (!serverOrder) {
+                $scope[list] = $filter("orderBy")($scope[list], $scope.sort[list].startsWith('d-') ? '-' + prop : prop);
+            }
+
+            if (serverOrder) {
+                await setFilters({"order": prop});
+            }
+        };
+
         /**
          * @param {Job} job
          */
@@ -1041,6 +1039,23 @@ angular.module("uDispatch")
             classToUse = classToUse + ((job.speed === "CT" || job.speed === "CTHIRE" || job.speed === "FT" || job.speed === "FTHIRE" || job.speed === "HC" || job.speed === "TC") ? "chilled" : "");
             return classToUse;
         }
+
+        /**
+         * @param {Object} $event
+         * @param {Job} job
+         */
+        $scope.handleRowClick = async ($event, job) => {
+            if (!$event.target.classList.contains('lateCallField') && !$event.target.classList.contains('dispatchField')) {
+                try {
+                    $timeout(async () => {
+                        await $scope.selectJob(job);
+                        angular.element("#input_" + job.id).select();
+                    });
+                } catch (error) {
+                    console.log('Error in handleRowClick:', error);
+                }
+            }
+        };
 
         $scope.getJobsToDispatch = () => {
             let activeJobs = Array.from(angular.element("#jobList .active"));
