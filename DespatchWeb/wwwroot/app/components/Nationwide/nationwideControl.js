@@ -1,3 +1,36 @@
+/**
+ * @fileoverview Controller for the Nationwide dispatch system.
+ * @module NationwideControl
+ */
+
+/**
+ * NationwideControl - Angular controller for managing nationwide dispatch operations.
+ * @function
+ * @param {Object} $scope - Angular scope object.
+ * @param {Object} jdSvc - Job Detail Service.
+ * @param {Object} NWData - Nationwide Data Service.
+ * @param {Object} $state - UI Router state service.
+ * @param {Object} $filter - Angular filter service.
+ * @param {Object} $parse - Angular parse service.
+ * @param {Object} hotkeys - Hotkeys service.
+ * @param {Object} NgMap - Google Maps Angular service.
+ * @param {Object} $q - Angular promise service.
+ * @param {Object} $timeout - Angular timeout service.
+ * @param {Object} greetingService - Custom greeting service.
+ * @param {Object} $mdDialog - Angular Material dialog service.
+ * @param {Object} $document - Angular document service.
+ * @param {Object} $window - Angular window service.
+ * @param {Object} toastrService - Toastr notification service.
+ * @param {Object} DispatchData - Dispatch Data Service.
+ * @param {Object} moment - Moment.js library.
+ * @param {string} versionUrl - URL for versioned assets.
+ * @param {Object} materialSidenavService - Material sidenav service.
+ * @param {Object} AppPages - Application pages configuration.
+ * @param {Object} APP_CONFIG - Application configuration.
+ * @param {Object} $mdEditDialog - Angular Material edit dialog service.
+ * @param {Object} LayoutService - Layout management service.
+ * @param {Object} $mdMenu - Angular Material menu service.
+ */
 angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetailService', "NWData", "$state", "$filter", "$parse", "hotkeys", "NgMap", "$q", "$timeout", "greetingService", "$mdDialog", "$document", "$window", "toastrService", "DispatchData", "moment", "versionUrl", "materialSidenavService", "AppPages", "APP_CONFIG", "$mdEditDialog", "NationwideLayoutService", "$mdMenu",
     ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu) => {
         $scope.jdSvc = jdSvc;
@@ -44,6 +77,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.filters = {
                 active: false, done: false, all: true
             };
+
+            $scope.showInput = {};
+            $scope.inputWidth = {};
 
             /** @type {Job[]} */
             $scope.jobList = [];
@@ -152,6 +188,19 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     return normal;
                 }
             };
+
+            $scope.courierMenu = [
+                {
+                    text: "Dispatch Selected", click: ($itemScope) => {
+                        $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
+                    }
+                }];
+
+            $scope.potentialCourierMenu = [{
+                text: "Dispatch Selected", click: async ($itemScope) => {
+                    await $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
+                }
+            }];
 
             $scope.normalStyle = "{'font-weight:normal'}";
             /** @type {boolean} */
@@ -452,9 +501,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.saveLayout = async () => {
             // Update layout dimensions
-            angular.forEach($scope.layout.columns, (column, colKey) => {
+            angular.forEach($scope.layout.columns, (column) => {
                 column.width = angular.element("#co-" + column.id).css("flex-basis");
-                angular.forEach(column.boxes, (box, boxKey) => {
+                angular.forEach(column.boxes, (box) => {
                     box.height = angular.element("#box-" + box.name).css("flex-basis");
                 });
             });
@@ -479,7 +528,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             return selectedStatus ? selectedStatus.text : 'Select Status';
         };
 
-        $scope.setInternalStatus = async internalStatusId => {
+        /**
+         * @param {number} internalStatusId
+         */
+        $scope.setInternalStatus = async (internalStatusId) => {
             $scope.currentJob.internalStatusId = internalStatusId;
             $mdMenu.hide();
 
@@ -488,6 +540,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             await this._dispatchData.updateJobDetail(currentJob.id, "InternalStatusID", internalStatusId, currentJob.charge, FirstName, ContactID);
         };
 
+        /**
+         * @param {Job} job
+         */
         $scope.attention = job => {
             let temp = "";
 
@@ -555,9 +610,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        $scope.showInput = {};
-        $scope.inputWidth = {};
-
         /**
          * @param {string} boxName
          * @param {number} index
@@ -573,20 +625,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        $scope.openChat = () => {
-            if (angular.element(".chat").hasClass("open")) {
-                angular.element(".chat input").fadeOut(() => {
-                    angular.element(".chat").removeClass("open");
-                    angular.element(".chat").animate({"width": "31px"}, 500);
-                });
-            } else {
-                angular.element(".chat").animate({"width": "250px"}, 500, () => {
-                    angular.element(".chat").addClass("open");
-                    angular.element(".chat").find("input").fadeIn();
-                });
-            }
-        };
-
+        /**
+         * @param {string} list
+         * @param {*} prop
+         */
         $scope.orderList = async (list, prop) => {
             const serverOrder = list === "jobList";
             if ($scope.sort[list] !== prop) {
@@ -629,7 +671,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             combo: "esc",
             description: "Close gather screen",
             allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-            callback: (event, hk) => {
+            callback: (event) => {
                 angular.element('.gatherForm').css('display', 'none');
                 angular.element(".eventForm").hide();
                 if (event.srcElement.classList.contains("dispatchField")) {
@@ -642,7 +684,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             combo: "enter",
             description: "Submit gather form",
             allowIn: ["INPUT", "SELECT", "TEXTAREA"],
-            callback: async (event, hk) => {
+            callback: async (event) => {
                 try {
                     if (angular.element(".gatherForm").is(":visible") === true) {
                         await $timeout(async () => {
@@ -836,7 +878,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                     let jobs = [];
                     jobs.push(j.id);
-                    const response = await NWData.allocateJobs(foundCourier.courierID, ContactID, jobs);
+                    await NWData.allocateJobs(foundCourier.courierID, ContactID, jobs);
                     await $scope.getData();
                     angular.element("#box-map").find(".loading").show();
                     $scope.courier = {gpsCourier: foundCourier.id};
@@ -1261,7 +1303,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 angular.element("#jobList .active").each(function () {
                     const j = $scope.jobList.find(jo => jo.id === angular.element(this).data("jobid"));
-                    const jn = j.jobNo;
+
                     foundCourier = $scope.pickCouriers.find(c => c.courierID === j.courierData.courierID);
                     callData.jobs.push(angular.element(this).attr("data-jobid"));
                 });
@@ -1603,7 +1645,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         /////////////////////////////
         $scope.palletMenu = [// NEW IMPLEMENTATION
             {
-                text: "Delete", click: ($itemScope, $event, modelValue, text, $li) => {
+                text: "Delete", click: ($itemScope) => {
                     const index = $scope.currentJob.PalletInfo.indexOf($itemScope.pallet);
                     $scope.currentJob.PalletInfo.splice(index, 1);
                 }
@@ -1618,7 +1660,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     angular.element(".droppable-row").droppable({
                         classes: {
                             "ui-droppable-hover": "active"
-                        }, drop: function (event, ui) {
+                        }, drop: function () {
                             const parent = angular.element(this).parents(".box");
                             const parentOffset = parent.offset();
                             const parentTop = parentOffset.top;
@@ -2299,7 +2341,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             return false;
         };
 
-        $scope.speedColumnClick = $event => {
+        /**
+         * @param {Object} $event
+         */
+        $scope.speedColumnClick = ($event) => {
             switch ($event.which) {
                 case 1:
                     // this is left click
@@ -2323,7 +2368,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             return false;
         };
 
-        $scope.clientColumnClick = $event => {
+        /**
+         * @param {Object} $event
+         */
+        $scope.clientColumnClick = ($event) => {
             switch ($event.which) {
                 case 1:
                     // this is left click
@@ -2347,7 +2395,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             return false;
         };
 
-        $scope.notifyColumnClick = $event => {
+        /**
+         * @param {Object} $event
+         */
+        $scope.notifyColumnClick = ($event) => {
             switch ($event.which) {
                 case 1:
                     // this is left click
@@ -2373,13 +2424,13 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.setEventsMenu = () => {
             return [{
-                text: "Void Job", click: ($itemScope, $event, modelValue, text, $li) => {
+                text: "Void Job", click: () => {
                     $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
                 }
             },
 
                 {
-                    text: "Add Event - Other", click: ($itemScope, $event, modelValue, text, $li) => {
+                    text: "Add Event - Other", click: () => {
                         $scope.otherEventForm($scope.currentJob.jobNo);
                     }
                 }];
@@ -2408,26 +2459,26 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
 
             let multipleMenu = [{
-                text: "Dispatch Selected", click: async ($itemScope, $event, modelValue, text, $li) => {
+                text: "Dispatch Selected", click: async () => {
                     await $scope.dispatchJobsForm();
                 }
             }, {
-                text: "Re-dispatch Selected", click: async ($itemScope, $event, modelValue, text, $li) => {
+                text: "Re-dispatch Selected", click: async () => {
                     // Async operation might be needed here
                 }
             }];
 
             if (sameCourier) {
                 multipleMenu.push({
-                    text: "Restore Selected", click: async ($itemScope, $event, modelValue, text, $li) => {
+                    text: "Restore Selected", click: async () => {
                         await $scope.restoreJobs();
                     }
                 }, {
-                    text: "Redispatch Selected", click: async ($itemScope, $event, modelValue, text, $li) => {
+                    text: "Redispatch Selected", click: async () => {
                         await $scope.reAllocateJobs();
                     }
                 }, {
-                    text: "Resend Selected", click: async ($itemScope, $event, modelValue, text, $li) => {
+                    text: "Resend Selected", click: async () => {
                         await $scope.resendJobs();
                     }
                 });
@@ -2435,14 +2486,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             if (sameCourier && lastCourier === null) {
                 multipleMenu = [{
-                    text: "Dispatch Selected", click: async ($itemScope, $event, modelValue, text, $li) => {
+                    text: "Dispatch Selected", click: async () => {
                         await $scope.dispatchJobsForm();
                     }
                 }];
             }
 
             const fullMenu = [{
-                text: "Dispatch", click: async ($itemScope, $event, modelValue, text, $li) => {
+                text: "Dispatch", click: async () => {
                     await $scope.dispatchJobsForm();
                 }
             }];
@@ -2452,15 +2503,15 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 multipleMenu.shift();
                 fullMenu.shift();
                 fullMenu.push({
-                    text: "Restore", click: async ($itemScope, $event, modelValue, text, $li) => {
+                    text: "Restore", click: async () => {
                         await $scope.restoreJobs();
                     }
                 }, {
-                    text: "Redispatch", click: async ($itemScope, $event, modelValue, text, $li) => {
+                    text: "Redispatch", click: async () => {
                         await $scope.reAllocateJobs();
                     }
                 }, {
-                    text: "Resend", click: async ($itemScope, $event, modelValue, text, $li) => {
+                    text: "Resend", click: async () => {
                         await $scope.resendJobs();
                     }
                 });
@@ -2525,20 +2576,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 console.error("Error fetching available courier locations:", error);
             }
         };
-
-        $scope.courierMenu = [// NEW IMPLEMENTATION
-            {
-                text: "Dispatch Selected", click: ($itemScope, $event, modelValue, text, $li) => {
-                    //$scope.selected = $itemScope.item.name;
-                    $scope.dispatchJobs($itemScope.courier.courier || $itemScope.courier.code);
-                }
-            }];
-
-        $scope.potentialCourierMenu = [{
-            text: "Dispatch Selected", click: async ($itemScope, $event, modelValue, text, $li) => {
-                await $scope.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
-            }
-        }];
 
         $scope.getJobList = async () => {
             const selectedClients = $scope.pickService.clients.map(a => a.id);
@@ -2605,11 +2642,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 $scope.supportMenu = [
                     {
-                        text: "Complete", click: ($itemScope, $event, modelValue, text, $li) => {
+                        text: "Complete", click: ($itemScope) => {
                             $scope.closeSupport($itemScope.support);
                         }
                     }, {
-                        text: "Toggle Lock", click: ($itemScope, $event, modelValue, text, $li) => {
+                        text: "Toggle Lock", click: ($itemScope) => {
                             $scope.lockSupport($itemScope.support);
                         }
                     }];
@@ -2679,7 +2716,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         /////////////////////////
         $scope.detailAddressMenu = [
             {
-                text: "Update GPS", click: ($itemScope, $event, modelValue, text, $li) => {
+                text: "Update GPS", click: ($itemScope, $event) => {
                     console.log($event.currentTarget.attributes["data-field"].nodeValue);
                     $scope.jdSvc.updateGPS($scope.currentJob, $event.currentTarget.attributes["data-field"].nodeValue);
                 }
