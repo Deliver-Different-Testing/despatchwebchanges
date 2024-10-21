@@ -1,4 +1,4 @@
-<div ng-if="potentialCouriers">
+<div ng-if="potentialCouriers.length > 0">
 
 <div class="table-headings">
     <table>
@@ -42,8 +42,15 @@
 
 </div>
 
-<div class="no-data" ng-if="!potentialCouriers">
-    <div class="text">Please select a job</div>
+<div class="no-data" ng-if="potentialCouriers.length === 0">
+    <div class="content">
+        <div class="icon">
+            <md-icon md-font-set="material-symbols-outlined">directions_car</md-icon>
+        </div>
+        <div class="text">
+            Please Select a Job or Courier
+        </div>
+    </div>
 </div>
 
 <div class="loading">
@@ -54,14 +61,8 @@
 </div>
 
 <script>
-
     angular.element(".box-content").on("scroll", function () {
         var newTop = angular.element(this).scrollTop();
         angular.element(this).find(".table-headings").css({"top": newTop});
     });
-
-
-
-
-
 </script>

@@ -1,5 +1,10 @@
+<<<<<<<< HEAD:wwwroot/app/components/Nationwide/nationwideViewScripts.js
 ﻿/**
  * @file nationwideViewScripts.js
+========
+/**
+ * @file keyboardEvents.js
+>>>>>>>> 9ea3602 (Merged PR 83: Removed old Urgent Json files & POD page clean up):wwwroot/app/components/Nationwide/keyboardEvents.js
  * @description These scripts lived in nationwideView.html.
  */
 

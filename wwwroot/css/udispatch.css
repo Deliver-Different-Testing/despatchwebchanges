@@ -1,4 +1,4 @@
-﻿body {
+body {
   overflow: hidden;
   font-family: 'Roboto', sans-serif;
 }
@@ -427,14 +427,25 @@ md-divider {
   bottom: 0;
   right: 0;
   background-color: #e8e8e8;
-  text-align: center;
   position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.no-data .content {
+  text-align: center;
+}
+
+.no-data .icon {
+  margin-bottom: 10px;
 }
 .no-data .text {
-  position: absolute;
-  top: 50%;
   width: 100%;
-  transform: translateY(-50%);
+}
+
+.no-data md-icon {
+  font-size: 24px;
 }
 .loading {
   display: none;
@@ -878,9 +889,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #currentWork input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #currentWork input.lateCallField {
   width: 21px;
@@ -910,9 +921,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobList input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #jobList input.lateCallField {
   width: 21px;
@@ -942,9 +953,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #pbList input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #pbList input.lateCallField {
   width: 21px;
@@ -974,9 +985,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListPOD input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #jobListPOD input.lateCallField {
   width: 21px;
@@ -1006,9 +1017,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListDelivery input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #jobListDelivery input.lateCallField {
   width: 21px;
@@ -1038,9 +1049,9 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListReprice input.dispatchField {
-  width: 29px;
+  width: 50px;
   text-align: center;
-  height: 15px;
+  height: 25px;
 }
 #jobListReprice input.lateCallField {
   width: 21px;
@@ -1511,3 +1522,4 @@ md-list-item:not(.selected):hover {
   font-size: 24px;
   color: #3EAFC2;
 }
+/*# sourceMappingURL=udispatch.css.map */

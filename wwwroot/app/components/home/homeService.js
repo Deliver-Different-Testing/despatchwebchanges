@@ -102,23 +102,6 @@ class DispatchData {
         const response = await this._$http.post('job/AddRestoreEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName);
         return response.data;
     }
-
-    /**
-     * @param {string} jobNo
-     * @param {number} clientId
-     * @param {string} contact
-     * @param {number} staffId
-     * @param {number} courierId
-     * @param {number} jobId
-     * @param {number} jobType
-     * @param {string} despatcherName
-     * @param {string} notes
-     */
-    async addOtherEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName, notes) {
-        const response = await this._$http.post('job/addOtherEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName + '&notes=' + notes);
-        return response.data;
-    }
-
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
@@ -249,11 +232,6 @@ class DispatchData {
         return response.data;
     }
 
-    async getJobs() {
-        const response = await this._$http.get('app/components/home/api/jobsList.php');
-        return response.data;
-    }
-
     /**
      * @param {number} jobId
      */
@@ -270,40 +248,12 @@ class DispatchData {
         const response = await this._$http.get('/Job/Related?parentId=' + parentId + '&clientId=' + clientId);
         return response.data;
     }
-
-    async getJobsGrouped() {
-        const response = await this._$http.get('app/components/home/api/jobsGroupedList.json');
-        return response.data;
-    }
-
     /**
      * @param {number} courierId
      * @param {boolean} done
      */
     async getJobsCurrent(courierId, done) {
         const response = await this._$http.get('job/current?courierId=' + courierId + '&done=' + done);
-        return response.data;
-    }
-
-    async getCouriersPicked() {
-        const response = await this._$http.get('app/components/home/api/couriersPicked.json');
-        return response.data;
-
-    }
-
-    async getCouriersThrough() {
-        const response = await this._$http.get('app/components/home/api/couriersThrough.json');
-        return response.data;
-    }
-
-    async getCouriersClear() {
-        const response = await this._$http.get('app/components/home/api/couriersClear.json');
-        return response.data;
-
-    }
-
-    async getAreaList() {
-        const response = await this._$http.get('app/components/home/api/areaList.json');
         return response.data;
     }
 
@@ -343,11 +293,6 @@ class DispatchData {
      */
     async unLockSupport(supportId, dispatcherName) {
         return this._$http.post('job/UnLockSupport?id=' + supportId + '&dispatcher=' + dispatcherName);
-    }
-
-    async getLateCalls() {
-        const response = await this._$http.get('app/components/home/api/lateCalls.json');
-        return response.data;
     }
 
     /**
@@ -840,11 +785,6 @@ class DispatchData {
             value = this._moment(value).format('YYYY-MM-DD');
         }
         return this._$http.post('job/UpdateBulkJob?bulkJobId=' + bulkJobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
-    }
-
-    async doAPI(data) {
-        const response = await this._$http.post('app/components/home/api/api.php', data);
-        return response.data;
     }
 
     /**
