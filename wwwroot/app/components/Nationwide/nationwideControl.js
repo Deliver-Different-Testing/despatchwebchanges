@@ -6,7 +6,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         function initializeVariables() {
             $scope.name = "Nationwide";
             $scope.isInternal = (ClientInternal === "True");
+            /** @type {boolean} */
             $scope.isUsCustomer = APP_CONFIG.US_Customer;
+            /** @type {string} */
+            $scope.courierSearchText = "";
+            /** @type {string} */
+            $scope.jobRecordSearchText = "";
 
             $scope.sort = [];
             /** @type {FlightOptions[]} */
@@ -42,6 +47,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             /** @type {Job[]} */
             $scope.jobList = [];
+            /** @type {boolean} */
             $scope.jobListLoading = false;
             $scope.selected = [];
 
@@ -78,8 +84,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 order: 'departureTime', asc: 'asc'
             };
 
+            $scope.internalStatusOptions = [];
             DispatchData.getInternalStatusList().then(data => {
                 $scope.internalStatusOptions = data;
+            }).catch(error => {
+                console.error('Error fetching internal status list:', error);
+                $scope.internalStatusOptions = [];
             });
 
             $scope.allCouriers = {display: true, includeUA: false};
@@ -132,18 +142,19 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.getJobStyle = assigned => {
                 const normal = {
                     "font-weight": "normal"
-
                 }, bold = {
                     "font-weight": "bold"
-
                 };
+
                 if (assigned) {
                     return bold;
                 } else {
                     return normal;
                 }
             };
+
             $scope.normalStyle = "{'font-weight:normal'}";
+            /** @type {boolean} */
             $scope.showChat = false;
             $scope.chatBox = "";
             $scope.boxes = {
@@ -307,8 +318,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         });
 
-        $scope.jobRecordSearchText = "";
-
         /**
          * @param {string} searchText
          */
@@ -462,6 +471,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         $scope.getSelectedStatusText = () => {
+            if (!$scope.internalStatusOptions || !$scope.currentJob) {
+                return 'Select Status';
+            }
+
             const selectedStatus = $scope.internalStatusOptions.find(status => status.id === $scope.currentJob.internalStatusId);
             return selectedStatus ? selectedStatus.text : 'Select Status';
         };
@@ -760,9 +773,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                             const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                             displayPickupPoints(unDispatchedData, true, null);
                             await $scope.getAvailableCourierLocation();
-                        } catch {
-                            // This will be executed if the user cancels the dialog.
-                            // Handle the cancel action here
+                        } catch (error) {
+                            if (error === undefined) {
+                                console.log('User canceled!');
+                            } else {
+                                console.error(error);
+                            }
                         }
                     };
                     return;
@@ -831,8 +847,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     await $scope.getAvailableCourierLocation();
                 }
             } catch (error) {
-                console.error('Error in dispatchDroppedMarkerToClosestCourier:', error);
-                // Handle any errors here
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -848,7 +867,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.lateCall(minsAway, 1, j, true);
             } catch (error) {
                 console.error('Error in latePickup:', error);
-                // Handle any errors here
             }
         };
 
@@ -860,7 +878,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.lateCall(minsAway, 2, j, true);
             } catch (error) {
                 console.error('Error in lateDelivery:', error);
-                // Handle any errors here
             }
         };
 
@@ -876,7 +893,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 return response;
             } catch (error) {
                 console.error('Error in lateCall:', error);
-                // Handle any errors here
                 throw error; // Re-throw the error if you want calling code to handle it
             }
         };
@@ -949,7 +965,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 return response;
             } catch (error) {
                 console.error('Error in dispatchJobsFromNew:', error);
-                // Handle any errors here
             }
         };
 
@@ -1020,8 +1035,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 return response;
             } catch (error) {
-                console.error('Error in dispatchJobsFromPOD:', error);
-                // Handle any errors here
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1081,8 +1099,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 return response;
             } catch (error) {
-                console.error('Error in dispatchJobsFromPotentialCouriers:', error);
-                // Handle any errors here
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
         ////////////////////////////////////////
@@ -1128,7 +1149,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             } catch (error) {
                 console.error('Error in restoreJobsFromNew:', error);
-                // Handle any errors here
             }
         };
 
@@ -1166,16 +1186,17 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
 
                 await $scope.getData();
-
-                //angular.element("#box-jobDetail").find(".loading").show();
                 angular.element("#box-map").find(".loading").show();
 
                 $scope.courier = {gpsCourier: foundCourier.id};
                 await $scope.searchCourier();
 
             } catch (error) {
-                console.error('Error in restoreJobsFromPOD:', error);
-                // Handle any errors here
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1219,8 +1240,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.courier = {gpsCourier: foundCourier.id};
                 await $scope.searchCourier();
             } catch (error) {
-                console.error('Error in restoreJobsFromDelivery:', error);
-                // Handle any errors here
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1254,7 +1278,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.searchCourier();
             } catch (error) {
                 console.error('Error in reAllocateJobs:', error);
-                // Handle any errors here
             }
         };
 
@@ -1283,8 +1306,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.courier = {gpsCourier: foundCourier.id};
                 await $scope.searchCourier();
             } catch (error) {
-                console.error('Error in resendJobs:', error);
-                // Handle any errors here
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1331,8 +1357,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getCurrentJobs(foundCourier.courierID);
                 await $scope.getData();
             } catch (error) {
-                // Handle any errors here
-                console.error('Error in restoreAll:', error);
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1370,8 +1399,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.courier = {gpsCourier: foundCourier.id};
                 await $scope.searchCourier();
             } catch (error) {
-                // Handle any errors here
-                console.error('Error in redispatchAll:', error);
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1410,7 +1442,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.searchCourier();
 
             } catch (error) {
-                console.log("Resend All operation cancelled or encountered an error:", error);
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1511,8 +1547,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getCurrentJobs(foundCourier.courierID);
                 await $scope.getData();
             } catch (error) {
-                console.error("Error in restoreJobsFromCurrentWindow:", error);
-                // Handle the error as needed
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
+
             }
         };
 
@@ -1550,7 +1590,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     resolve();
                 }, 1000));
             } catch (error) {
-                console.error("An error occurred:", error);
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1603,8 +1647,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         // POTENTIAL COURIERS
         ////////////////////////////
 
-        $scope.getPotentialCouriers = jobId => {
-
+        /**
+         * @param {number} jobId
+         */
+        $scope.getPotentialCouriers = (jobId) => {
             angular.element("#box-potentialCouriers .loading").show();
             NWData.getPotentialCouriers(jobId).then(data => {
                 $scope.potentialCouriers = data;
@@ -1622,7 +1668,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.activateDrop();
             });
         };
-
 
         // Search Courier GPS
         $scope.searchCourier = async () => {
@@ -1723,8 +1768,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 $scope.truckCourierStatus = await NWData.truckCourierStatus(courier.courierID);
             } catch (error) {
-                console.error("Error fetching truck courier status:", error);
-                // Handle the error appropriately
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
         $scope.selectPotentialCourier = async (courier) => {
@@ -1812,7 +1860,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $timeout(() => sizeHeadings(), 2000);
 
             } catch (error) {
-                console.error("Error in getCurrentJobs:", error);
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1870,7 +1922,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     map.setZoom(12);
                 }
             } catch (error) {
-                console.error("Error in selectSupportJobDetail:", error);
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error(error);
+                }
             }
         };
 
@@ -1900,6 +1956,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.selectJob = async (job, clear) => {
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
+
+                $scope.currentJob = job;
+                if ($scope.currentJob) {
+                    $scope.getSelectedStatusText();
+                }
 
                 _processActiveTable();
                 _initializeJob(job);
@@ -2119,10 +2180,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-
-
-        $scope.fromColumnClick = evt => {
-            switch (evt.which) {
+        $scope.fromColumnClick = $event => {
+            switch ($event.which) {
                 case 1:
                     // this is left click
                     break;
@@ -2140,13 +2199,13 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 default:
                     console.log("you have a strange mouse!");
                     break;
-
             }
+
             return false;
         };
 
-        $scope.toColumnClick = evt => {
-            switch (evt.which) {
+        $scope.toColumnClick = $event => {
+            switch ($event.which) {
                 case 1:
                     // this is left click
                     break;
@@ -2169,8 +2228,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             return false;
         };
 
-        $scope.latePickColumnClick = evt => {
-            switch (evt.which) {
+        $scope.latePickColumnClick = $event => {
+            switch ($event.which) {
                 case 1:
                     // this is left click
                     break;
@@ -2618,7 +2677,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         /////////////////////////
         // JOB DETAILS
         /////////////////////////
-        $scope.detailAddressMenu = [// NEW IMPLEMENTATION
+        $scope.detailAddressMenu = [
             {
                 text: "Update GPS", click: ($itemScope, $event, modelValue, text, $li) => {
                     console.log($event.currentTarget.attributes["data-field"].nodeValue);
@@ -2665,7 +2724,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getData();
                 console.log('Pallet Dialog closed!');
             } catch (error) {
-                console.error("Error in createEvent:", error);
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error("Error in createEvent:", error);
+                }
             }
         };
 
@@ -2688,11 +2751,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     bindToController: true
                 });
             } catch (error) {
-                console.error("Error in truckLoadingStatus:", error);
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    console.error("Error in truckLoadingStatus:", error);
+                }
             }
         };
 
-        $scope.courierSearchText = "";
         /**
          * @param {string} searchText
          */
