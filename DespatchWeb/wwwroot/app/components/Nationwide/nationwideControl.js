@@ -223,6 +223,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await $scope.getEventTypes();
                 await $scope.getData();
+
+                $timeout(() => sizeHeadings(), 1000);
+                $timeout(() => sizeHeadings(), 2000);
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
                 await initializeAreas();
@@ -1786,7 +1789,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.getGroupedJobs = async () => {
             if ($scope.isUsCustomer) {
-                // Ignore this if DFRNT customer
                 return;
             }
 
@@ -1800,16 +1802,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 $scope.jobGroups = data;
 
-                const sizeHeadingsColumn = () => {
-                    sizeHeadings(angular.element("#jobGroups").parents(".column"));
-                };
-
-                await new Promise(() => $timeout(sizeHeadingsColumn, 1000));
-                await new Promise(() => $timeout(sizeHeadingsColumn, 2000));
+                $timeout(() => sizeHeadings(), 1000);
+                $timeout(() => sizeHeadings(), 2000);
 
             } catch (error) {
                 console.error("Error in getGroupedJobs:", error);
-                // Handle the error appropriately
             }
         };
 
@@ -1843,16 +1840,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 $scope.activateDrop();
 
-                const sizeHeadingsColumn = () => {
-                    sizeHeadings(angular.element("#currentWork").parents(".column"));
-                };
-
-                await new Promise(() => $timeout(sizeHeadingsColumn, 1000));
-                await new Promise(() => $timeout(sizeHeadingsColumn, 2000));
+                $timeout(() => sizeHeadings(), 1000);
+                $timeout(() => sizeHeadings(), 2000);
 
             } catch (error) {
                 console.error("Error in getCurrentJobs:", error);
-                // Handle the error appropriately
             }
         };
 
@@ -1944,12 +1936,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 _processActiveTable();
                 _initializeJob(job);
 
-                // Get flights for jobs if airport information included
                 if (job.toAirportId && job.fromAirportId) {
                     await _processFlights(job);
                 }
 
-                // Get agents if delivery job
                 if ($scope.isDeliveryJob()) {
                     await _processAgents(job);
                 }
@@ -1957,6 +1947,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.$apply();
                 await updateData(job, clear);
                 angular.element("#box-jobDetail .loading").css('display', 'none');
+
+                $timeout(() => sizeHeadings(), 200);
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
@@ -2530,7 +2522,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 $scope.jobListLoading = true;
 
-                const [newData, podData, repriceData, deliveryData] = await Promise.all([NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas), NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)]);
+                const [newData, podData, repriceData, deliveryData] = await Promise.all([
+                    NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
+                    NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)
+                ]);
 
                 $scope.jobList = newData;
                 $scope.jobListPOD = podData;
@@ -2538,9 +2535,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.jobListDelivery = deliveryData;
 
                 $scope.jobListLoading = false;
-                $scope.apply;
+                $scope.$apply();
 
                 await $scope.getAvailableCourierLocation();
+
+                $timeout(() => sizeHeadings(), 200);
+                $timeout(() => sizeHeadings(), 1000);
             } catch (error) {
                 console.error("Error fetching job data:", error);
             }
@@ -2579,7 +2579,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             try {
                 $scope.supports = await NWData.getSupports($scope.supportChannel);
 
-                $scope.supportMenu = [// NEW IMPLEMENTATION
+                $scope.supportMenu = [
                     {
                         text: "Complete", click: ($itemScope, $event, modelValue, text, $li) => {
                             $scope.closeSupport($itemScope.support);
@@ -2599,13 +2599,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     });
                 }, 100);
 
-                await $timeout(() => {
-                    sizeHeadings(angular.element("#supports").parents(".column"));
-                }, 1000);
-
-                await $timeout(() => {
-                    sizeHeadings(angular.element("#supports").parents(".column"));
-                }, 2000);
+                $timeout(() => sizeHeadings(), 1000);
+                $timeout(() => sizeHeadings(), 2000);
 
             } catch (error) {
                 console.error("Error fetching supports:", error);
