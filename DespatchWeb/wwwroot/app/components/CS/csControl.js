@@ -21,7 +21,8 @@ angular.module('uDispatch').controller('CSControl', [
     'DispatchData',
     'versionUrl',
     'materialSidenavService',
-    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, materialSidenavService) => {
+    'CSLayoutService',
+    ($scope, jdSvc, uCSData, $state, $stateParams, $filter, $parse, $location, $q, NgMap, GeoCoder, $mdDialog, greetingService, $document, $timeout, loadingService, dispatchJobService, toastrService, moment, DispatchData, versionUrl, materialSidenavService, LayoutService) => {
         $scope.jdSvc = jdSvc;
         $scope.dispatchJobService = dispatchJobService;
 
@@ -32,7 +33,6 @@ angular.module('uDispatch').controller('CSControl', [
                 "allCouriers": false, "allRuns": false
             };
 
-            $scope.userName = FirstName;
             $scope.jobDetailFabIsOpen = false;
             $scope.dateSearchRange = 1; // Set to fortnight
             $scope.DEFAULT_DATE_FORMAT = "dd/MM/yyyy";
@@ -50,6 +50,56 @@ angular.module('uDispatch').controller('CSControl', [
             $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->
             $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
             $scope.name = "POD";
+
+            const now = new Date();
+            let sevenDaysBefore = new Date();
+            sevenDaysBefore.setDate(now.getDate() - 7);
+            let sevenDaysAfter = new Date();
+            sevenDaysAfter.setDate(now.getDate() + 7);
+
+            $scope.pickDateService = {
+                "client": '',
+                "courier": "",
+                "date": now,
+                "from_date": sevenDaysBefore,
+                "to_date": sevenDaysAfter,
+                "followupClient": "All",
+                "includeClosed": true
+            };
+
+            $scope.sortableOptions = {
+                connectWith: ".column-sortable",
+                items: '.box',
+                placeholder: "placeholder",
+                scroll: true,
+                scrollSensitivity: 100,
+                scrollSpeed: 20,
+                handle: '.box-handle',
+                activate: (e, ui) => {
+                    const box = angular.element("#" + ui.item.context.id);
+                    const parent = box.parent();
+                    parent.find(".box").each(function () {
+                        angular.element(this).attr("data-height", angular.element(this).height() + "px");
+                    });
+                },
+                update: (e, ui) => {
+                    $timeout(() => {
+                        const box = angular.element("#" + ui.item.context.id);
+                        const parent = box.parent();
+                        parent.find(".box").each(function () {
+                            angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
+                        });
+                        parent.find(".box").last().css({"flex-basis": "0"});
+                    }, 0);
+                }
+            };
+
+            $scope.showInput = {};
+            $scope.inputWidth = {};
+
+            $scope.followupClient = {
+                name: "All"
+            };
 
             $scope.jobQuery = {
                 order: 'booked', limit: 50, page: 1
@@ -120,91 +170,45 @@ angular.module('uDispatch').controller('CSControl', [
                 }
             };
 
+            $scope.jobListMenu = [{
+                text: "Close Event", click: ($itemScope, $event, modelValue, text, $li) => {
+                    $scope.gather.form = {
+                        id: "closeEvent", title: "Close Event?", fields: [{
+                            "name": "editName", "label": "Edit your name", "value": ""
+                        }], onSubmit: async () => {
+                            angular.element("#box-jobList").find(".loading").show();
+                            angular.element("#box-map").find(".loading").show();
+
+                            const userName = angular.element("#gather-editName").val();
+
+                            await uCSData.closeEvent($itemScope.event.bulkEventID, userName);
+                            await $scope.refreshData(1, true);
+                        }, submitValue: "Close Event"
+                    };
+
+                    $scope.gather.showForm();
+                }
+            }];
+
             $scope.boxes = {
                 "pickDate": {
                     "title": "Filters",
                     "templateUrl": versionUrl("app/components/CS/partials/pickDate.html"),
                     "showSearch": 0
                 },
-
                 "jobList": {
                     "title": "Live Job Data",
                     "templateUrl": versionUrl("app/components/CS/partials/jobList.html"),
                     "showSearch": 1,
-                    "model": "jobList",
-                    "headings": [{
-                        "label": "Created", "name": "created"
-                    }, {
-                        "label": "ID", "name": "bulkEventID"
-                    }, {
-                        "label": "Job #", "name": "jobNumber"
-                    }, {
-                        "label": "Courier", "name": "courierCode"
-                    }, {
-                        "label": "Created By", "name": "name"
-                    }, {
-                        "label": "Followup By", "name": "clientFollowup"
-                    }, {
-                        "label": "Client Visible", "name": "clientVisible"
-                    }, {
-                        "label": "Closed By", "name": "closedByName"
-                    }, {
-                        "label": "Notes", "name": "notes"
-                    }
-
-
-                    ]
                 }, "bulkJobList": {
                     "title": "Bulk Job Data",
                     "templateUrl": versionUrl("app/components/CS/partials/bulkJobList.html"),
                     "showSearch": 1,
-                    "model": "bulkJobList",
-                    "headings": [{
-                        "label": "Created", "name": "created"
-                    }, {
-                        "label": "ID", "name": "bulkEventID"
-                    }, {
-                        "label": "Job #", "name": "jobNumber"
-                    }, {
-                        "label": "Courier", "name": "courierCode"
-                    }, {
-                        "label": "Created By", "name": "name"
-                    }, {
-                        "label": "Followup By", "name": "clientFollowup"
-                    }, {
-                        "label": "Client Visible", "name": "clientVisible"
-                    }, {
-                        "label": "Closed By", "name": "closedByName"
-                    }, {
-                        "label": "Notes", "name": "notes"
-                    }
-                    ]
                 }, "pbList": {
                     "title": "PreBook Data",
                     "templateUrl": versionUrl("app/components/CS/partials/pbList.html"),
                     "showSearch": 1,
                     "showRefresh": 1,
-                    "model": "pbList",
-                    "headings": [{
-                        "label": "Booked", "name": "booked"
-                    }, {
-                        "label": "Speed", "name": "speed"
-                    }, {
-                        "label": "Job #", "name": "jobNumber"
-                    }, {
-                        "label": "Client", "name": "clientCode"
-                    }, {
-                        "label": "From", "name": "froAddress"
-                    }, {
-                        "label": "To", "name": "toAddress"
-                    }, {
-                        "label": "Code", "name": "code"
-                    }, {
-                        "label": "Send", "name": "send"
-                    }, {
-                        "label": "Void", "name": "void"
-                    }
-                    ]
                 }, "jobDetail": {
                     "title": "Detail",
                     "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
@@ -214,14 +218,6 @@ angular.module('uDispatch').controller('CSControl', [
                     "title": "Scan Detail",
                     "templateUrl": versionUrl("app/components/CS/partials/scanList.html"),
                     "showSearch": 0,
-                    "model": "scanList",
-                    "headings": [{
-                        "label": "Time", "name": "scanDateTime"
-                    }, {
-                        "label": "Scan Type", "name": "scanDetail"
-                    }, {
-                        "label": "Courier", "name": "courier"
-                    }]
                 }, "map": {
                     "title": "Google Map",
                     "templateUrl": versionUrl("app/components/CS/partials/map.html"),
@@ -374,7 +370,6 @@ angular.module('uDispatch').controller('CSControl', [
         jdSvc.setGather($scope.gather);
 
 
-
         ///////////////////////////////
         // LAYOUT
         ///////////////////////////////
@@ -383,176 +378,59 @@ angular.module('uDispatch').controller('CSControl', [
             layoutsObject = JSON.parse(localStorage.getItem("layoutsCS-" + ContactID));
         }
 
-        const defaultLayout = [{
-            name: "Default", layout: {
-                "columns": [{
-                    "id": "col1", "width": "350px", "boxes": [{
+        const defaultLayout = LayoutService.getDefaultLayout();
 
-                        "name": "pickDate"
-                    }]
-                }, {
-                    "id": "col2", "width": "1350px", "boxes": [{
-
-                        "name": "jobList", "height": "550px"
-                    }, {
-
-                        "name": "bulkJobList", "height": "225px"
-                    }, {
-
-                        "name": "pbList", "height": "225px"
-                    }]
-                },
-
-                    {
-                        "id": "col3", "boxes": [{
-                            "name": "jobDetail", "height": "550px"
-                        }, {
-                            "name": "scanList", "height": "225px"
-                        }, {
-                            "name": "map"
-                        }]
-                    }]
-            }
-        }];
 
         if (layoutsObject !== null) {
             layoutsObject[0] = defaultLayout[0];
         }
 
-        $scope.layouts = layoutsObject || defaultLayout;
-
-
-        const now = new Date();
-        let sevenDaysBefore = new Date();
-        sevenDaysBefore.setDate(now.getDate() - 7);
-        let sevenDaysAfter = new Date();
-        sevenDaysAfter.setDate(now.getDate() + 7);
-
-        $scope.pickDateService = {
-            "client": '',
-            "courier": "",
-            "date": now,
-            "from_date": sevenDaysBefore,
-            "to_date": sevenDaysAfter,
-            "followupClient": "All",
-            "includeClosed": true
-        };
-
-        $scope.followupClient = {
-            name: "All"
-        };
-
-        $scope.layout = angular.copy($scope.layouts[0].layout);
-        $scope.currentLayoutName = $scope.layouts[0].name;
+        $scope.layouts = LayoutService.getLayouts();
+        $scope.userName = LayoutService.getUserName();
+        $scope.currentLayoutName = "default";
+        $scope.layout = LayoutService.getCurrentLayout();
 
         /**
          * @param {Number} index
          */
         $scope.deleteLayout = async (index) => {
-            try {
-                const deleteConfirm = $mdDialog.confirm()
-                    .title('Delete Layout?')
-                    .textContent('Are you sure you would like to delete this layout?')
-                    .ariaLabel('delete layout')
-                    .ok('Delete')
-                    .cancel('Cancel');
-
-                await $mdDialog.show(deleteConfirm);
-
-                $scope.layouts.splice(index, 1);
-                if (Modernizr.localstorage) {
-                    localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
-                }
-            } catch (error) {
-                console.log("Delete layout canceled!");
-            }
+            await LayoutService.deleteLayout(index);
+            $scope.layouts = LayoutService.getLayouts();
+            $scope.$apply();
         };
 
-        /**
-         * @param {string} layoutName
-         */
-        $scope.setLastActiveLayoutName = layoutName => {
-            if (Modernizr.localstorage) {
-                localStorage.setItem("lastActiveLayoutCS-" + ContactID, layoutName);
-            }
-        };
 
         /**
-         * @param {number} index
+         * @param {Number} index
          */
-        $scope.loadLayout = index => {
-            $scope.currentLayoutName = $scope.layouts[index].name;
-            $scope.layout = angular.copy($scope.layouts[index].layout);
+        $scope.loadLayout = (index) => {
+            const loadedLayout = LayoutService.loadLayout(index);
+            $scope.currentLayoutName = loadedLayout.name;
+            $scope.layout = loadedLayout.layout;
 
-            // save layout as last active
-            $scope.setLastActiveLayoutName($scope.currentLayoutName);
-
-            $timeout($scope.initFilters, 1000);
+            $timeout($scope.getData, 1000);
         };
 
         $scope.saveLayout = async () => {
+            // Update layout dimensions
+            angular.forEach($scope.layout.columns, (column, colKey) => {
+                column.width = angular.element("#co-" + column.id).css("flex-basis");
+                angular.forEach(column.boxes, (box, boxKey) => {
+                    box.height = angular.element("#box-" + box.name).css("flex-basis");
+                });
+            });
+
             try {
-                angular.forEach($scope.layout.columns, (column, colKey) => {
-                    column.width = angular.element("#co-" + column.id).css("flex-basis");
-                    angular.forEach(column.boxes, (box, boxKey) => {
-                        box.height = angular.element("#box-" + box.name).css("flex-basis");
-                    });
-                });
-
-                const saveLayoutPrompt = $mdDialog.prompt()
-                    .title('Save Layout')
-                    .textContent('Please enter a name for this layout.')
-                    .ariaLabel('Layout name')
-                    .required(true)
-                    .ok('Save')
-                    .cancel('Cancel');
-
-                const layoutName = await $mdDialog.show(saveLayoutPrompt);
-
-                if (Modernizr.localstorage) {
-                    $scope.layouts = $scope.layouts.concat({
-                        name: layoutName, layout: angular.copy($scope.layout)
-                    });
-                    localStorage.setItem("layoutsCS-" + ContactID, JSON.stringify($scope.layouts));
-
-                    // save last active layout
-                    $scope.setLastActiveLayoutName(layoutName);
-                }
+                const result = await LayoutService.saveLayout($scope.layout);
+                $scope.layouts = LayoutService.getLayouts();
+                $scope.currentLayoutName = result.name;
+                $scope.$apply();
+                return result;
             } catch (error) {
-                console.log("Save Layout Cancelled!");
+                console.error("Save Layout Cancelled!");
             }
         };
 
-
-        $scope.sortableOptions = {
-            connectWith: ".column-sortable",
-            items: '.box',
-            placeholder: "placeholder",
-            scroll: true,
-            scrollSensitivity: 100,
-            scrollSpeed: 20,
-            handle: '.box-handle',
-            activate: (e, ui) => {
-                const box = angular.element("#" + ui.item.context.id);
-                const parent = box.parent();
-                parent.find(".box").each(function () {
-                    angular.element(this).attr("data-height", angular.element(this).height() + "px");
-                });
-            },
-            update: (e, ui) => {
-                $timeout(() => {
-                    const box = angular.element("#" + ui.item.context.id);
-                    const parent = box.parent();
-                    parent.find(".box").each(function () {
-                        angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
-                    });
-                    parent.find(".box").last().css({"flex-basis": "0"});
-                }, 0);
-            }
-        };
-
-        $scope.showInput = {};
-        $scope.inputWidth = {};
 
         /**
          * @param {string} boxName
@@ -1313,26 +1191,6 @@ angular.module('uDispatch').controller('CSControl', [
             }, 10);
         };
 
-        $scope.jobListMenu = [{
-            text: "Close Event", click: ($itemScope, $event, modelValue, text, $li) => {
-
-                $scope.gather.form = {
-                    id: "closeEvent", title: "Close Event?", fields: [{
-                        "name": "editName", "label": "Edit your name", "value": ""
-                    }], onSubmit: () => {
-                        angular.element("#box-jobList").find(".loading").show();
-                        angular.element("#box-map").find(".loading").show();
-                        const userName = angular.element("#gather-editName").val();
-                        uCSData.closeEvent($itemScope.event.bulkEventID, userName).then(() => {
-                            $scope.refreshData(1, true);
-                        });
-                    }, submitValue: "Close Event"
-                };
-
-                $scope.gather.showForm();
-            }
-        }];
-
         $scope.reply = currentEvent => {
             function resetCursor(txtElement) {
                 if (txtElement.setSelectionRange) {
@@ -1555,32 +1413,8 @@ angular.module('uDispatch').controller('CSControl', [
         // Default to fortnight
         $scope.onSearchRangeChange($scope.dateSearchRange);
 
-        // Load custom layout
-        function init() {
-            if (Modernizr.localstorage) {
-                const storedLayouts = localStorage.getItem("layoutsCS-" + ContactID);
-                const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutCS-" + ContactID);
-
-                if (storedLayouts) {
-                    $scope.layouts = JSON.parse(storedLayouts);
-
-                    if (lastActiveLayoutName) {
-                        const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
-
-                        // if the last active layout is found among stored layouts
-                        if (lastActiveLayoutIndex !== -1) {
-                            $scope.loadLayout(lastActiveLayoutIndex);
-                        }
-                    }
-                }
-            }
-
-            // Init functions
-            initializeVariables();
-        }
-
         // Call the init function when the controller loads
-        init();
+        initializeVariables();
     }
 ]);
 

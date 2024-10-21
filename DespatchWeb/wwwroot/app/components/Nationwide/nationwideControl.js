@@ -421,7 +421,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.$apply();
         });
 
-
         /**
          * @param {Number} index
          */
@@ -2748,24 +2747,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         // Load custom layout
         function init() {
-            if (Modernizr.localstorage) {
-                const storedLayouts = localStorage.getItem("layoutsNW-" + ContactID);
-                const lastActiveLayoutName = localStorage.getItem("lastActiveLayoutNW-" + ContactID);
-
-                if (storedLayouts) {
-                    $scope.layouts = JSON.parse(storedLayouts);
-                    if (lastActiveLayoutName) {
-                        const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
-
-                        // if the last active layout is found among stored layouts
-                        if (lastActiveLayoutIndex !== -1) {
-                            $scope.loadLayout(lastActiveLayoutIndex);
-                        }
-                    }
-                }
-            }
-
-            // Init functions
             initializeVariables();
             loadPageViews().then(() => {
                 console.log('Loaded Page Views!');
