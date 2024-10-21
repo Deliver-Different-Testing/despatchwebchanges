@@ -277,14 +277,6 @@ class NationwideService {
     }
 
     /**
-     * Retrieves grouped jobs data.
-     * @returns {Promise<Object>} A promise that resolves with the grouped jobs data.
-     */
-    getJobsGrouped() {
-        return this._$http.get("app/components/home/api/jobsGroupedList.json").then(response => response.data);
-    }
-
-    /**
      * Retrieves current jobs for a specific courier.
      * @param {string} courierId - The ID of the courier.
      * @param {boolean} done - Indicates whether to retrieve completed jobs.
