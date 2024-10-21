@@ -11,6 +11,7 @@ namespace DespatchWeb.EntityClasses
         {
             AgentVehicles = new HashSet<AgentVehicle>();
             TblAirports = new HashSet<TblAirport>();
+            TucJobs = new HashSet<TucJob>();
         }
 
         public int UcagId { get; set; }
@@ -57,5 +58,6 @@ namespace DespatchWeb.EntityClasses
         public virtual TucSuburb UcagSuburb { get; set; }
         public virtual ICollection<AgentVehicle> AgentVehicles { get; set; }
         public virtual ICollection<TblAirport> TblAirports { get; set; }
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }
