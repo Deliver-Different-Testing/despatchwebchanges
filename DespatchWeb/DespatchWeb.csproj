@@ -226,6 +226,34 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\services\getUsStates.service.min.js.map"/>
     <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\directives\flight-table\flight-table.directive.js"/>
     <_ContentIncludedByDefault Remove="wwwroot\app\components\Nationwide\directives\flight-table\flight-table.html"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\keyboardEvents.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\keyboardEvents.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\keyboardEvents.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\keyboardEvents.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\services\cs-layout.service.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\services\cs-layout.service.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\services\cs-layout.service.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\CS\services\cs-layout.service.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\keyboardEvents.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\keyboardEvents.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\keyboardEvents.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\home\keyboardEvents.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\directives\flight-table\flight-table.directive.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\directives\flight-table\flight-table.directive.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\directives\flight-table\flight-table.directive.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\directives\flight-table\flight-table.directive.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\keyboardEvents.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\keyboardEvents.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\keyboardEvents.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\keyboardEvents.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideViewScripts.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideViewScripts.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideViewScripts.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\nationwideViewScripts.min.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\services\nationwide-layout.service.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\services\nationwide-layout.service.js.map"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\services\nationwide-layout.service.min.js"/>
+      <_ContentIncludedByDefault Remove="wwwroot\dist\components\Nationwide\services\nationwide-layout.service.min.js.map"/>
   </ItemGroup>
 
   <ItemGroup>

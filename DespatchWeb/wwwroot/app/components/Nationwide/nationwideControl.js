@@ -1779,33 +1779,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         ////////////////////////////
-        // GROUPED JOBS
-        ////////////////////////////
-
-        $scope.getGroupedJobs = async () => {
-            if ($scope.isUsCustomer) {
-                return;
-            }
-
-            try {
-                const $boxJobGroups = angular.element("#box-jobGroups");
-                $boxJobGroups.find(".loading").show();
-
-                const data = await NWData.getJobsGrouped();
-
-                $boxJobGroups.find(".loading").fadeOut();
-
-                $scope.jobGroups = data;
-
-                $timeout(() => sizeHeadings(), 1000);
-                $timeout(() => sizeHeadings(), 2000);
-
-            } catch (error) {
-                console.error("Error in getGroupedJobs:", error);
-            }
-        };
-
-        ////////////////////////////
         // CURRENT JOBS
         ////////////////////////////
 
@@ -2070,7 +2043,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         async function processClearSettings(job) {
             clearSettings(job);
-            await $scope.getGroupedJobs();
             $scope.potentialCouriersSelection = " for Job " + job.jobNo;
             $scope.groupJobsSelection = " for Job " + job.jobNo;
             $scope.currentWorkSelection = "";

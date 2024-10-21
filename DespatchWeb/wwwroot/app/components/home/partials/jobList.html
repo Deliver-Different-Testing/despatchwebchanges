@@ -12,7 +12,7 @@
                        ng-if="sort.jobList == 'd-' + header.key">arrow_drop_up</i>
                     {{header.label}}
                 </th>
-                <th ng-repeat="action in ['', '', 'R', 'RD']">{{action}}</th>
+                <th ng-repeat="action in ['', '', 'R', 'RD'] track by $index">{{action}}</th>
             </tr>
             </thead>
         </table>
