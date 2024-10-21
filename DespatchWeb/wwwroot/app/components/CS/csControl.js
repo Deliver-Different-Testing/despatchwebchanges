@@ -39,23 +39,40 @@ angular.module('uDispatch').controller('CSControl', [
 
             $scope.searchBox = "";
             $scope.selectedEvents = [];
-            $scope.maxSize = 5;     // Limit number for pagination display number.
-            $scope.totalCount = 0;  // Total number of items in all pages. initialize as a zero
-            $scope.pageIndex = 1;   // Current page number. First page is 1.-->
-            $scope.pageSizeSelected = 50; // Maximum number of items per page.
-            $scope.bulkTotalCount = 0;  // Total number of items in all pages. initialize as a zero
-            $scope.bulkPageIndex = 1;   // Current page number. First page is 1.-->
-            $scope.bulkPageSizeSelected = 50; // Maximum number of items per page.
-            $scope.pbTotalCount = 0;  // Total number of items in all pages. initialize as a zero
-            $scope.pbPageIndex = 1;   // Current page number. First page is 1.-->
-            $scope.pbPageSizeSelected = 50; // Maximum number of items per page.
+            $scope.maxSize = 5;
+            $scope.totalCount = 0;
+            $scope.pageIndex = 1;
+            $scope.pageSizeSelected = 50;
+            $scope.bulkTotalCount = 0;
+            $scope.bulkPageIndex = 1;
+            $scope.bulkPageSizeSelected = 50;
+            $scope.pbTotalCount = 0;
+            $scope.pbPageIndex = 1;
+            $scope.pbPageSizeSelected = 50;
             $scope.name = "POD";
+
+            $scope.jobRecordSearchText = "";
+            $scope.sort = [];
 
             const now = new Date();
             let sevenDaysBefore = new Date();
             sevenDaysBefore.setDate(now.getDate() - 7);
             let sevenDaysAfter = new Date();
             sevenDaysAfter.setDate(now.getDate() + 7);
+
+            uCSData.getActiveCouriers().then(data => {
+                $scope.pickCouriers = data;
+            });
+
+            uCSData.getAllCouriers().then(data => {
+                $scope.pickAllCouriers = data;
+            });
+
+            NgMap.getMap().then(map => {
+                $scope.map = map;
+                $scope.marker = map.markers[0];
+                $scope.onMapReady();
+            });
 
             $scope.pickDateService = {
                 "client": '',
@@ -66,6 +83,10 @@ angular.module('uDispatch').controller('CSControl', [
                 "followupClient": "All",
                 "includeClosed": true
             };
+            $scope.clientSelectedItem = $scope.pickDateService.client;
+            $scope.courierSelectedItem = $scope.pickDateService.client;
+            $scope.clientSearchText = '';
+            $scope.courierSearchText = '';
 
             $scope.sortableOptions = {
                 connectWith: ".column-sortable",
@@ -431,7 +452,6 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
-
         /**
          * @param {string} boxName
          * @param {number} index
@@ -447,14 +467,12 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
-
         $scope.goToRunViewer = () => {
             console.log("goToRunViewer.");
             $state.go('home');
         };
 
         //Column Sorting
-        $scope.sort = [];
         $scope.orderList = (list, prop) => {
             if ($scope.sort[list] !== prop) {
                 $scope.sort[list] = prop;
@@ -464,8 +482,6 @@ angular.module('uDispatch').controller('CSControl', [
                 $scope[list] = $filter('orderBy')($scope[list], "-" + prop);
             }
         };
-
-        $scope.jobRecordSearchText = "";
 
         /**
          *
@@ -790,33 +806,6 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
-
-        /////////////////////////////////
-
-        $scope.showJobs = group => {
-            angular.element("#box-jobsList").find(".loading").show();
-            $scope.jobList = group.jobs;
-            $timeout(() => {
-                sizeHeadings(angular.element("#jobList").parents(".column"));
-            }, 1000);
-            angular.element("#box-jobsList .loading").fadeOut();
-        };
-
-        /**
-         * @param {number} sizeId
-         */
-        $scope.sizeName = sizeId => {
-            if (!sizeId) {
-                return "";
-            }
-            const sn = $scope.options.detail.size.find(obj => {
-
-                return obj.id === sizeId;
-
-            });
-            return sn === undefined ? "" : sn.label;
-        };
-
         /**
          * @param {number} jobId
          * @param {string} jobNumber
@@ -858,7 +847,7 @@ angular.module('uDispatch').controller('CSControl', [
 
                 const data = await uCSData.getJobDetail(jobId);
                 $scope.currentJob = data;
-                jdSvc.setJob($scope.currentJob);
+                await jdSvc.setJob($scope.currentJob);
                 jobDetailLoading.hide();
                 $scope.currentSelection = " for Job " + data.jobNo;
 
@@ -1125,12 +1114,6 @@ angular.module('uDispatch').controller('CSControl', [
             await $scope.refreshData();
         };
 
-        // New Material Autocompletes
-        $scope.clientSelectedItem = $scope.pickDateService.client;
-        $scope.courierSelectedItem = $scope.pickDateService.client;
-        $scope.clientSearchText = '';
-        $scope.courierSearchText = '';
-
         /**
          * @param {string} searchText
          */
@@ -1171,19 +1154,6 @@ angular.module('uDispatch').controller('CSControl', [
             await $scope.refreshAllData(true);
         };
 
-        uCSData.getActiveCouriers().then(data => {
-            $scope.pickCouriers = data;
-        });
-
-        uCSData.getAllCouriers().then(data => {
-            $scope.pickAllCouriers = data;
-        });
-
-        NgMap.getMap().then(map => {
-            $scope.map = map;
-            $scope.marker = map.markers[0];
-            $scope.onMapReady();
-        });
 
         $scope.highlightEvent = () => {
             $timeout(() => {
@@ -1331,7 +1301,6 @@ angular.module('uDispatch').controller('CSControl', [
 
 
         $scope.addEventNote = (eventId, type, options) => {
-
             $scope.gather.form = {
                 id: "addNote", title: "Add Event Note ", fields: [{
                     "name": "notes",

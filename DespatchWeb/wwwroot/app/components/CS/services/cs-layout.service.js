@@ -14,7 +14,7 @@ class CSLayoutService {
 
         // Column width options
         /** @type {string} */
-        this.COL_WIDTH_LARGE = "35%";
+        this.COL_WIDTH_LARGE = "50%";
         /** @type {string} */
         this.COL_WIDTH_MEDIUM = "30%";
         /** @type {string} */
