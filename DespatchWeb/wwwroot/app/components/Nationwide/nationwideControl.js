@@ -44,6 +44,21 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.jobList = [];
             $scope.jobListLoading = false;
             $scope.selected = [];
+
+            $scope.jobHeaders = [
+                {key: 'time', label: 'Time'},
+                {key: 'speed', label: 'Speed'},
+                {key: 'jobno', label: 'Job No'},
+                {key: 'client', label: 'Client'},
+                {key: 'from', label: 'From'},
+                {key: 'to', label: 'To'},
+                {key: 'courier', label: 'Courier'},
+                {key: 'pod', label: 'POD'},
+                {key: 'remain', label: 'Remain'},
+                {key: 'status', label: 'S'}
+            ];
+
+
             $scope.jobFilters = {
                 order: 'time', filter: '', status: 'all', asc: 'asc'
             };

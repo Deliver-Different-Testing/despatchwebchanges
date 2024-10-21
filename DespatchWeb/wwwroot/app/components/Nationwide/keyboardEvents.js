@@ -1,5 +1,5 @@
 /**
- * @file nationwideViewScripts.js
+ * @file keyboardEvents.js
  * @description These scripts lived in nationwideView.html.
  */
 
