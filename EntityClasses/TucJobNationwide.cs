@@ -47,6 +47,8 @@ public partial class TucJobNationwide
 
     public string WebhookAlertId { get; set; }
 
+    public string GateNumber { get; set; }
+
     public virtual TucJobBooking JobBooking { get; set; }
 
     public virtual TucJob UcnwJob { get; set; }

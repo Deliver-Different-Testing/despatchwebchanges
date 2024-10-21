@@ -421,6 +421,8 @@ public partial class TucJob
 
     public decimal? DryIceWeight { get; set; }
 
+    public DateTime? DeliverByTime { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucClientContact Contact { get; set; }

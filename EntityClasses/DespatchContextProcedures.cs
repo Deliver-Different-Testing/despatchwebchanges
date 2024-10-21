@@ -43,6 +43,110 @@ namespace DespatchWeb.EntityClasses
             _context = context;
         }
 
+        public virtual async Task<List<DD_stpGetAgentDistanceRateResult>> DD_stpGetAgentDistanceRateAsync(int? ClientID, int? FromZipCode, int? ToZipCode, decimal? TotalMiles, decimal? TotalWeight, int? TotalPallets, int? ExtraStopOffs, DateTime? BookTime, int? VehicleSizeID, bool? DangerousGoods, decimal? DryIceWeight, int? WaitTime, int? DistanceRateID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "ClientID",
+                    Value = ClientID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FromZipCode",
+                    Value = FromZipCode ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ToZipCode",
+                    Value = ToZipCode ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "TotalMiles",
+                    Precision = 18,
+                    Scale = 4,
+                    Value = TotalMiles ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "TotalWeight",
+                    Precision = 18,
+                    Scale = 4,
+                    Value = TotalWeight ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "TotalPallets",
+                    Value = TotalPallets ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ExtraStopOffs",
+                    Value = ExtraStopOffs ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "BookTime",
+                    Value = BookTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.DateTime,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "VehicleSizeID",
+                    Value = VehicleSizeID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DangerousGoods",
+                    Value = DangerousGoods ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Bit,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DryIceWeight",
+                    Precision = 18,
+                    Scale = 4,
+                    Value = DryIceWeight ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Decimal,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "WaitTime",
+                    Value = WaitTime ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DistanceRateID",
+                    Value = DistanceRateID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterreturnValue,
+            };
+            var _ = await _context.SqlQueryAsync<DD_stpGetAgentDistanceRateResult>("EXEC @returnValue = [dbo].[DD_stpGetAgentDistanceRate] @ClientID = @ClientID, @FromZipCode = @FromZipCode, @ToZipCode = @ToZipCode, @TotalMiles = @TotalMiles, @TotalWeight = @TotalWeight, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @BookTime = @BookTime, @VehicleSizeID = @VehicleSizeID, @DangerousGoods = @DangerousGoods, @DryIceWeight = @DryIceWeight, @WaitTime = @WaitTime, @DistanceRateID = @DistanceRateID", sqlParameters, cancellationToken);
+
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
         public virtual async Task<List<DES_qdfCourier_ClearListsResult>> DES_qdfCourier_ClearListsAsync(int? ClearListAreaID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter

@@ -63,6 +63,10 @@ public partial class TblAirport
 
     public string AirportCode { get; set; }
 
+    public virtual TucAgent Agent { get; set; }
+
+    public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
+
     public virtual ICollection<TucJobBooking> TucJobBookingFromAirports { get; set; } = new List<TucJobBooking>();
 
     public virtual ICollection<TucJobBooking> TucJobBookingToAirports { get; set; } = new List<TucJobBooking>();

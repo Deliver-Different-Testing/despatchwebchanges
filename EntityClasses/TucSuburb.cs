@@ -69,6 +69,8 @@ public partial class TucSuburb
 
     public virtual ICollection<TblPolygonSuburb> TblPolygonSuburbs { get; set; } = new List<TblPolygonSuburb>();
 
+    public virtual ICollection<TucAgent> TucAgents { get; set; } = new List<TucAgent>();
+
     public virtual ICollection<TucClient> TucClients { get; set; } = new List<TucClient>();
 
     public virtual ICollection<TucStaff> TucStaffs { get; set; } = new List<TucStaff>();

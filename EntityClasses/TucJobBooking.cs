@@ -337,6 +337,8 @@ public partial class TucJobBooking
 
     public int? ToAirportId { get; set; }
 
+    public DateTime? DeliverByTime { get; set; }
+
     public virtual TblAirport FromAirport { get; set; }
 
     public virtual TblAirport ToAirport { get; set; }
