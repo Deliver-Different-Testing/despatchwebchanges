@@ -119,7 +119,7 @@ public class NationwideJobController(
         if (agentId is null || jobId is null)
             return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
 
-        var addToDb = await _repository.AddAgentToJobAsync(agentId.Value, jobId.Value);
+        var addToDb = await repository.AddAgentToJobAsync(agentId.Value, jobId.Value);
         if (!addToDb) return BadRequest("An error occurred while assigning the agent to the job.");
 
         return Ok();

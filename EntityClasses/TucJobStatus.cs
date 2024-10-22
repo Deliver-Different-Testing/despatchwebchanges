@@ -15,5 +15,7 @@ public partial class TucJobStatus
 
     public string UcjsCode { get; set; }
 
+    public int? JobStatusNotificationId { get; set; }
+
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

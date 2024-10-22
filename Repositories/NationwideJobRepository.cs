@@ -314,10 +314,10 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 AgentId = agentId
             };
 
-            _context.TucJobs.Attach(jobToUpdate);
-            _context.Entry(jobToUpdate).Property(x => x.AgentId).IsModified = true;
+            Context.TucJobs.Attach(jobToUpdate);
+            Context.Entry(jobToUpdate).Property(x => x.AgentId).IsModified = true;
 
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
 
             return true;
         }

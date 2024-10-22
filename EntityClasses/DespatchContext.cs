@@ -2160,6 +2160,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.Date).HasColumnType("datetime");
+            entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
             entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
             entity.Property(e => e.DeliverToPhone).HasMaxLength(100);
@@ -2185,6 +2186,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.DropoffAmount).HasColumnType("money");
             entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
+            entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.EmailForJobFu).HasColumnName("EmailForJobFU");
             entity.Property(e => e.FdcourierId).HasColumnName("FDCourierID");
             entity.Property(e => e.FlightDetails)
@@ -3305,6 +3307,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
+            entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
+
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
@@ -3353,6 +3357,7 @@ public partial class DespatchContext : DbContext
 
             entity.Property(e => e.UcjbId).HasColumnName("ucjbID");
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
+            entity.Property(e => e.AgentId).HasColumnName("AgentID");
             entity.Property(e => e.AutoDespatch).HasDefaultValue(true);
             entity.Property(e => e.Barcode).HasMaxLength(300);
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
@@ -3617,6 +3622,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.WhenSpeedChangeNotificationSent).HasColumnType("datetime");
 
             entity.HasOne(d => d.AcceptedJobType).WithMany(p => p.TucJobAcceptedJobTypes).HasForeignKey(d => d.AcceptedJobTypeId);
+
+            entity.HasOne(d => d.Agent).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.AgentId)
+                .HasConstraintName("FK_tucJob_tucAgents");
 
             entity.HasOne(d => d.Contact).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.ContactId)
@@ -3964,12 +3973,15 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucJobInternalStatus>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("tucJobInternalStatus");
+            entity.HasKey(e => e.Tcis);
 
-            entity.Property(e => e.DefaultSchedule).HasMaxLength(50);
+            entity.ToTable("tucJobInternalStatus");
+
+            entity.HasIndex(e => e.JobStatusNotificationId, "IX_tucJobInternalStatus_JobStatusNotificationID");
+
             entity.Property(e => e.Tcis).HasColumnName("tcis");
+            entity.Property(e => e.DefaultSchedule).HasMaxLength(50);
+            entity.Property(e => e.JobStatusNotificationId).HasColumnName("JobStatusNotificationID");
             entity.Property(e => e.TcisName)
                 .HasMaxLength(20)
                 .HasColumnName("tcisName");
@@ -4062,7 +4074,10 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucJobStatus");
 
+            entity.HasIndex(e => e.JobStatusNotificationId, "IX_tucJobStatus_JobStatusNotificationID");
+
             entity.Property(e => e.UcjsId).HasColumnName("ucjsID");
+            entity.Property(e => e.JobStatusNotificationId).HasColumnName("JobStatusNotificationID");
             entity.Property(e => e.UcjsCode)
                 .HasMaxLength(10)
                 .IsUnicode(false)

@@ -91,5 +91,7 @@ public partial class TucAgent
 
     public virtual ICollection<TblAirport> TblAirports { get; set; } = new List<TblAirport>();
 
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
+
     public virtual TucSuburb UcagSuburb { get; set; }
 }

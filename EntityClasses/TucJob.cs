@@ -423,7 +423,11 @@ public partial class TucJob
 
     public DateTime? DeliverByTime { get; set; }
 
+    public int? AgentId { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
+
+    public virtual TucAgent Agent { get; set; }
 
     public virtual TucClientContact Contact { get; set; }
 

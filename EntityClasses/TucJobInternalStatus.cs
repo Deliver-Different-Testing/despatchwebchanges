@@ -14,4 +14,6 @@ public partial class TucJobInternalStatus
     public string DefaultSchedule { get; set; }
 
     public int? DefaultMinutes { get; set; }
+
+    public int? JobStatusNotificationId { get; set; }
 }

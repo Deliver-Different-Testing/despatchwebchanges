@@ -518,4 +518,8 @@ public partial class TblJobToday
     public int? FromAirportId { get; set; }
 
     public int? ToAirportId { get; set; }
+
+    public decimal? DryIceWeight { get; set; }
+
+    public DateTime? DeliverByTime { get; set; }
 }
