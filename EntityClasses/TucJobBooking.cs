@@ -341,6 +341,8 @@ public partial class TucJobBooking
 
     public virtual TblAirport FromAirport { get; set; }
 
+    public virtual TblJobRelationshipType JobRelationshipType { get; set; }
+
     public virtual TblAirport ToAirport { get; set; }
 
     public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; } = new List<TucJobBookingItem>();

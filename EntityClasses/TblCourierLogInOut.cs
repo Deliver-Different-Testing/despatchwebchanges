@@ -30,4 +30,6 @@ public partial class TblCourierLogInOut
     public string Notes { get; set; }
 
     public string AppVersion { get; set; }
+
+    public virtual ICollection<TucCourier> TucCouriers { get; set; } = new List<TucCourier>();
 }

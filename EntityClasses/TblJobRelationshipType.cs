@@ -3,39 +3,51 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class TblJobRelationshipType
 {
-    public partial class TblJobRelationshipType
-    {
-        public TblJobRelationshipType()
-        {
-            TucJobBookings = new HashSet<TucJobBooking>();
-            TucJobs = new HashSet<TucJob>();
-        }
+    public int JobRelationshipTypeId { get; set; }
 
-        public int JobRelationshipTypeId { get; set; }
-        public string Name { get; set; }
-        public string SystemName { get; set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime LastModified { get; set; }
-        public string LastModifiedBy { get; set; }
-        public bool PostAmountToClient { get; set; }
-        public bool PostAmountToCourier { get; set; }
-        public bool DisplayWeb { get; set; }
-        public bool DisplayDespatch { get; set; }
-        public bool DisplayStatement { get; set; }
-        public bool SendJobToCourier { get; set; }
-        public bool UpdateJobInformationParentFromDevice { get; set; }
-        public bool SendJobUpdatesToClient { get; set; }
-        public bool SendJobPodtoClient { get; set; }
-        public bool RecalculateAutomaticSpeedCalculation { get; set; }
-        public string ShortName { get; set; }
-        public bool AutoDespatchToOtherChildJobs { get; set; }
-        public bool AutoVoid { get; set; }
-        public bool PostToClientXero { get; set; }
+    public string Name { get; set; }
 
-        public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
-        public virtual ICollection<TucJob> TucJobs { get; set; }
-    }
+    public string SystemName { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string CreatedBy { get; set; }
+
+    public DateTime LastModified { get; set; }
+
+    public string LastModifiedBy { get; set; }
+
+    public bool PostAmountToClient { get; set; }
+
+    public bool PostAmountToCourier { get; set; }
+
+    public bool DisplayWeb { get; set; }
+
+    public bool DisplayDespatch { get; set; }
+
+    public bool DisplayStatement { get; set; }
+
+    public bool SendJobToCourier { get; set; }
+
+    public bool UpdateJobInformationParentFromDevice { get; set; }
+
+    public bool SendJobUpdatesToClient { get; set; }
+
+    public bool SendJobPodtoClient { get; set; }
+
+    public bool RecalculateAutomaticSpeedCalculation { get; set; }
+
+    public string ShortName { get; set; }
+
+    public bool AutoDespatchToOtherChildJobs { get; set; }
+
+    public bool AutoVoid { get; set; }
+
+    public bool PostToClientXero { get; set; }
+
+    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
 }

@@ -28,4 +28,6 @@ public partial class TblCourierGp
     public bool GpswasEstimated { get; set; }
 
     public virtual TblPolygon Polygon { get; set; }
+
+    public virtual ICollection<TucCourier> TucCouriers { get; set; } = new List<TucCourier>();
 }
