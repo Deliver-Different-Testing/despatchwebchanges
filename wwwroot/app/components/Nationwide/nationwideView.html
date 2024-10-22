@@ -133,7 +133,7 @@
                                         </md-button>
                                         <md-menu-content class="md-dense">
                                             <md-menu-item ng-repeat="status in internalStatusOptions">
-                                                <md-button ng-click="setInternalStatus(status.id)"
+                                                <md-button ng-click="setInternalStatus(status.id, currentJob)"
                                                            ng-disabled="$index === 1">
                                                     {{status.text}}
                                                 </md-button>

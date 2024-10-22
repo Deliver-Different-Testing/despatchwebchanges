@@ -15,8 +15,15 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
     
     public async Task<List<SelectItem>> GetViewsByUserAndPageAsync(int userId, AppPage page)
     {
-        var query =
-            from aup in Context.DfrntappUserViewPermissions
+        return await Context.TblDespatchViews.Select(dv => new SelectItem
+        {
+            Id = dv.DespatchViewId,
+            Name = dv.Name
+        }).ToListAsync();
+
+
+        /*var query =
+            from aup in _context.DfrntappUserViewPermissions
             where aup.UserId == userId && aup.IsVisible == true
             join av in Context.TblDespatchViews on aup.ViewId equals av.DespatchViewId
             join pv in Context.DfrntpageViews on av.DespatchViewId equals pv.ViewId
@@ -31,7 +38,7 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
                 Name = av.Name
             };
 
-        return await query.ToListAsync();
+        return await query.ToListAsync();*/
     }
 
     public async Task<string> GetWhereClauseByDispatchView(int viewId)

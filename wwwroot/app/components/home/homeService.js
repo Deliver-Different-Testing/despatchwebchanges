@@ -763,6 +763,12 @@ class DispatchData {
         if (field === 'DeliverToContact') {
             field = 'ToContactName';
         }
+
+        // Remove any symbols from rate
+        if (rate && typeof rate === 'string') {
+            rate = rate.replace(/[$]/g, '');
+        }
+
         const method = preBook ? 'job/UpdateJobBooking' : 'job/UpdateJob';
         const response = await this._$http.post(method + '?jobId=' + jobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
 

@@ -472,7 +472,9 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             switch (status)
             {
                 case "all":
-                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice ? "Reprice = 1" : "ucjbJobDone = 0");
+                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice
+                        ? "(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice + ")"
+                        : "ucjbJobDone = 0");
                     break;
                 case "active":
                     switch (windowPane)
@@ -485,7 +487,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                             whereClause.Append("ucjbJobDone = 0 AND FollowupTime < GETDATE()");
                             break;
                         case NationwideWindowPanel.Reprice:
-                            whereClause.Append("Reprice = 1");
+                            whereClause.Append("(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice +
+                                               ")");
                             break;
                         default:
                             whereClause.Append(string.Empty);
@@ -494,7 +497,9 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
                     break;
                 case "done":
-                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice ? "Reprice = 1" : "ucjbJobDone = 1");
+                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice
+                        ? "(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice + ")"
+                        : "ucjbJobDone = 1");
                     break;
             }
         }
@@ -504,16 +509,17 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         switch (windowPane)
         {
             case NationwideWindowPanel.JobList:
-                whereClause.Append("(InternalStatus = 1 OR (InternalStatus is Null AND ucjbStatus <> 9))");
+                whereClause.Append(
+                    $"(InternalStatus = {(int)InternalJobStatus.NewJobs} OR (InternalStatus is Null AND ucjbStatus <> 9))");
                 break;
             case NationwideWindowPanel.Pod:
-                whereClause.Append("(InternalStatus = 3 OR ucjbStatus = 9)");
+                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.AwaitingPod} OR ucjbStatus = 9)");
                 break;
             case NationwideWindowPanel.ActionRequired:
-                whereClause.Append("(InternalStatus = 2)");
+                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.BookDelivery})");
                 break;
             case NationwideWindowPanel.Reprice:
-                whereClause.Append("(ucjbStatus = 6)");
+                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.Reprice} OR Reprice = 1)");
                 break;
             default:
                 whereClause.Append(string.Empty);
@@ -524,6 +530,205 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
         return whereClause.ToString();
     }
+
+
+    /*
+    private async Task<List<JobViewModel>> DespatchQry()
+    {
+        var excludedSpeeds = new int?[] { 38, 39, 55, 56 };
+        var specialSpeeds = new int?[] { 53, 54 };
+        var specialClients = new[] { "UCLHP", "UCLHR" };
+
+        var jobs = await _context.TucJobs
+            .Where(j => !j.UcjbVoid
+                        && j.ParentId != null
+                        && j.UcjbStatus != 18
+                        && (j.JobRelationshipType.DisplayDespatch == true ||
+                            (j.JobRelationshipTypeId == 10 && !excludedSpeeds.Contains(j.UcjbSpeed)))
+                        && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
+                        && (j.UcjbDate.Date <= DateTime.Today ||
+                            specialSpeeds.Contains(j.UcjbSpeed) ||
+                            specialClients.Contains(j.UcjbClientCode)))
+            .Select(j => new JobViewModel
+            {
+                ClientId = j.UcjbId,
+                Id = j.UcjbId,
+                JobNo = j.UcjbNumber,
+                Time = j.UcjbTime,
+                PickupTime = j.UcjbSpeedNavigation.PickupTime,
+                DeliveryTime = j.UcjbSpeedNavigation.DeliveryTime,
+
+                // Courier
+                Courier = j.UcjbCourier.Code,
+                CourierData = new CourierData
+                {
+                    Courier = string.IsNullOrEmpty(j.UcjbCourier.Code)
+                        ? ""
+                        : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
+                    CourierId = j.UcjbCourierId
+                },
+
+                // Address information
+                PickupAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8,
+                    Latitude = j.PickUpLatitude,
+                    Longitude = j.PickUpLongitude,
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8,
+                    Latitude = j.DeliveryLatitude,
+                    Longitude = j.DeliveryLongitude,
+                },
+
+                // Airport information
+                ToAirportId = j.ToAirportId,
+                FromAirportId = j.FromAirportId,
+
+                // Assigned flight information
+                AssignedFlight = j.TucJobNationwides.Select(nj => new AssignedFlight
+                {
+                    ExpectedArrival = nj.UcnwEta,
+                    ExpectedDeparture = nj.UcnwEtd,
+                    FlightNumber = nj.UcnwFlightNo,
+                    Notes = nj.UcnwNotes
+                }).FirstOrDefault(),
+
+                // Assigned agent
+                AssignedAgent = new AgentViewModel
+                {
+                    AgentId = j.Agent.UcagId,
+                    AgentName = j.Agent.UcagName,
+                    AgentRanking = j.Agent.Ranking.AgentRankingName,
+                },
+
+                // Notes
+                ClientNotes = j.UcjbClient.UcclNotes,
+                InternalNotes = j.InternalNotes,
+                ChildNotes = j.UcjbNotes,
+
+                // Suburb information
+                From = j.UcjbFromNavigation.UcsuName ?? "Unknown",
+                FromSuburbName = j.UcjbFromNavigation.UcsuName,
+                FromPostCode = j.UcjbFromNavigation.PostCode,
+                FromAddress = j.UcjbFromAddr,
+                To = j.UcjbToNavigation.UcsuName ?? "Unknown",
+                ToSuburbName = j.UcjbToNavigation.UcsuName,
+                ToPostCode = j.UcjbToNavigation.PostCode,
+                ToCity = j.UcjbToNavigation.City,
+
+                // Region information
+                FromSuburbId = j.UcjbFromNavigation.UcsuId,
+                ToSuburbId = j.UcjbToNavigation.UcsuId,
+
+                // Delivery details
+                PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
+                Return = j.UcjbReturn,
+                SaturdayDelivery = j.SaturdayDelivery,
+
+                // Location data
+                PickUpLatitude = j.PickUpLatitude,
+                PickUpLongitude = j.PickUpLongitude,
+                DeliveryLatitude = j.DeliveryLatitude,
+                DeliveryLongitude = j.DeliveryLongitude,
+
+                // Client information
+                Client = j.UcjbClientCode,
+                ClientName = j.UcjbClient.UcclName,
+
+                // Job characteristics
+                Weight = j.UcjbWeight,
+                ToAddress = j.UcjbToAddr,
+                JobType = (int)(j.UcjbType ?? 0),
+                Direct = j.Direct,
+                Van = j.UcjbVan,
+                VanOk = j.VanOk,
+                Truck = j.Truck,
+
+                // Job status and details
+                Done = j.UcjbJobDone,
+                AlertLatePickup = j.UcjbClient.AlertLatePickUp,
+                AlertLateDelivery = j.UcjbClient.AlertLateDelivery,
+                Lp = j.UcjbLatePick,
+                Ld = j.UcjbLateDel,
+
+                PickupFrom = j.UcjbPickUpFrom,
+                Notify = j.NotifiedJobType.UcjtName,
+                FromContactName = j.PickupFromContact,
+                FromContactNumber = j.PickupFromPhone,
+
+                // Speed and job type information
+                Speed = j.UcjbSpeedNavigation.ShortName,
+                SpeedName = j.UcjbSpeedNavigation.UcjtName,
+                NotifiedName = j.NotifiedJobType.UcjtName,
+                AcceptedName = j.AcceptedJobType.UcjtName,
+                SpeedId = j.UcjbSpeed,
+                NotifiedJobTypeId = j.NotifiedJobTypeId,
+                AcceptedJobTypeId = j.AcceptedJobTypeId,
+
+                // References and amounts
+                RefA = j.UcjbClientRefa,
+                RefB = j.UcjbClientRefb,
+                Charge = $"{j.UcjbAmount:C}",
+                OurRef = j.UcjbOurRef,
+
+                // Status
+                StatusId = j.UcjbStatusNavigation.UcjsId,
+                Status = j.UcjbStatusNavigation.UcjsCode,
+                StatusName = j.UcjbStatusNavigation.UcjsName,
+
+                // Vehicle
+                Vehicle = new Vehicle
+                {
+                    Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                    Label = j.UcjbVan
+                        ? "Van"
+                        : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                },
+                Size = new Vehicle
+                {
+                    Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                    Label = j.UcjbVan
+                        ? "Van"
+                        : Enum.GetName(typeof(Enums.Vehicle), (int)(j.UcjbSize ?? 2))
+                },
+
+                // Job items
+                PalletInfo = j.TucJobItems.Select(i => new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length,
+                    Depth = i.Depth,
+                    Height = i.Height,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }).ToList(),
+            }).AsNoTracking().ToListAsync();
+
+        return jobs;
+    }
+    */
+
 
     private class JobDetails
     {
