@@ -20,7 +20,14 @@ public class DfrntViewsRepository : IDfrntViewsRepository
 
     public async Task<List<SelectItem>> GetViewsByUserAndPageAsync(int userId, AppPage page)
     {
-        var query =
+        return await _context.TblDespatchViews.Select(dv => new SelectItem
+        {
+            Id = dv.DespatchViewId,
+            Name = dv.Name
+        }).ToListAsync();
+
+
+        /*var query =
             from aup in _context.DfrntappUserViewPermissions
             where aup.UserId == userId && aup.IsVisible == true
             join av in _context.TblDespatchViews on aup.ViewId equals av.DespatchViewId
@@ -36,7 +43,7 @@ public class DfrntViewsRepository : IDfrntViewsRepository
                 Name = av.Name
             };
 
-        return await query.ToListAsync();
+        return await query.ToListAsync();*/
     }
 
     public async Task<string> GetWhereClauseByDispatchView(int viewId)

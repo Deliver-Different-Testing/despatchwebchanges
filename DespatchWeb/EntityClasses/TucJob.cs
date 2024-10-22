@@ -228,14 +228,20 @@ namespace DespatchWeb.EntityClasses
         public virtual TucAgent Agent { get; set; }
         public virtual TucClientContact Contact { get; set; }
         public virtual TucJobType DesiredJobType { get; set; }
+        public virtual TucCourier Fdcourier { get; set; }
         public virtual TblAirport FromAirport { get; set; }
+        public virtual TblJobRelationshipType JobRelationshipType { get; set; }
         public virtual TucJobType NotifiedJobType { get; set; }
         public virtual TucJob Parent { get; set; }
         public virtual TucSource Source { get; set; }
         public virtual TblAirport ToAirport { get; set; }
+        public virtual TucClient UcjbClient { get; set; }
+        public virtual TucCourier UcjbCourier { get; set; }
         public virtual TucStaff UcjbDisp { get; set; }
+        public virtual TucSuburb UcjbFromNavigation { get; set; }
         public virtual TucJobType UcjbSpeedNavigation { get; set; }
         public virtual TucJobStatus UcjbStatusNavigation { get; set; }
+        public virtual TucSuburb UcjbToNavigation { get; set; }
         public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
         public virtual ICollection<TucJob> InverseParent { get; set; }
         public virtual ICollection<TucJobItem> TucJobItems { get; set; }

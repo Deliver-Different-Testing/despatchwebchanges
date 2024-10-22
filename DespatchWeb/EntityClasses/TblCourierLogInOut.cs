@@ -7,6 +7,11 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TblCourierLogInOut
     {
+        public TblCourierLogInOut()
+        {
+            TucCouriers = new HashSet<TucCourier>();
+        }
+
         public int CourierLogInOutId { get; set; }
         public int CourierId { get; set; }
         public DateTime LogInTime { get; set; }
@@ -19,5 +24,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime LastModified { get; set; }
         public string Notes { get; set; }
         public string AppVersion { get; set; }
+
+        public virtual ICollection<TucCourier> TucCouriers { get; set; }
     }
 }

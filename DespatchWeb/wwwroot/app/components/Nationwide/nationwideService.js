@@ -554,8 +554,16 @@ class NationwideService {
         if (field === "Date" || field === "StopDate" || field === "RestartDate" || field === "InActiveDate" || field === "FirstDue" || field === "LastDone" || field === "NextDue") {
             value = this._moment(value).format("YYYY-MM-DD");
         }
+
+        // Remove any symbols from rate
+        if (rate && typeof rate === 'string') {
+            rate = rate.replace(/[$]/g, '');
+        }
+
         const method = preBook ? "job/UpdateJobBooking" : "job/UpdateJob";
-        return this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        const response = await this._$http.post(method + "?jobId=" + jobId + "&field=" + field + "&value=" + value + "&rate=" + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+
+        return response.data;
     }
 
     /**
