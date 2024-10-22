@@ -7,6 +7,11 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TblCourierGp
     {
+        public TblCourierGp()
+        {
+            TucCouriers = new HashSet<TucCourier>();
+        }
+
         public int CourierGpsid { get; set; }
         public int CourierId { get; set; }
         public string RawData { get; set; }
@@ -19,5 +24,6 @@ namespace DespatchWeb.EntityClasses
         public bool GpswasEstimated { get; set; }
 
         public virtual TblPolygon Polygon { get; set; }
+        public virtual ICollection<TucCourier> TucCouriers { get; set; }
     }
 }

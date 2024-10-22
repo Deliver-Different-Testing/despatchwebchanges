@@ -181,6 +181,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime? DeliverByTime { get; set; }
 
         public virtual TblAirport FromAirport { get; set; }
+        public virtual TblJobRelationshipType JobRelationshipType { get; set; }
         public virtual TblAirport ToAirport { get; set; }
         public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; }
         public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }

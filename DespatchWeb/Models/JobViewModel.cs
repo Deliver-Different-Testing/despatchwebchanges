@@ -187,6 +187,8 @@ public class JobViewModel
     public int? FromAirportId { get; set; }
 
     public AssignedFlight? AssignedFlight { get; set; }
+
+    public AgentViewModel? AssignedAgent { get; set; }
 }
 
 public class AssignedFlight
