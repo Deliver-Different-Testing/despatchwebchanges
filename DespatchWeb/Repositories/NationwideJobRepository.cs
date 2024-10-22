@@ -475,7 +475,9 @@ public class NationwideJobRepository : INationwideJobRepository
             switch (status)
             {
                 case "all":
-                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice ? "Reprice = 1" : "ucjbJobDone = 0");
+                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice
+                        ? "(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice + ")"
+                        : "ucjbJobDone = 0");
                     break;
                 case "active":
                     switch (windowPane)
@@ -488,7 +490,8 @@ public class NationwideJobRepository : INationwideJobRepository
                             whereClause.Append("ucjbJobDone = 0 AND FollowupTime < GETDATE()");
                             break;
                         case NationwideWindowPanel.Reprice:
-                            whereClause.Append("Reprice = 1");
+                            whereClause.Append("(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice +
+                                               ")");
                             break;
                         default:
                             whereClause.Append(string.Empty);
@@ -497,7 +500,9 @@ public class NationwideJobRepository : INationwideJobRepository
 
                     break;
                 case "done":
-                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice ? "Reprice = 1" : "ucjbJobDone = 1");
+                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice
+                        ? "(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice + ")"
+                        : "ucjbJobDone = 1");
                     break;
             }
         }
@@ -507,16 +512,17 @@ public class NationwideJobRepository : INationwideJobRepository
         switch (windowPane)
         {
             case NationwideWindowPanel.JobList:
-                whereClause.Append("(InternalStatus = 1 OR (InternalStatus is Null AND ucjbStatus <> 9))");
+                whereClause.Append(
+                    $"(InternalStatus = {(int)InternalJobStatus.NewJobs} OR (InternalStatus is Null AND ucjbStatus <> 9))");
                 break;
             case NationwideWindowPanel.Pod:
-                whereClause.Append("(InternalStatus = 3 OR ucjbStatus = 9)");
+                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.AwaitingPod} OR ucjbStatus = 9)");
                 break;
             case NationwideWindowPanel.ActionRequired:
-                whereClause.Append("(InternalStatus = 2)");
+                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.BookDelivery})");
                 break;
             case NationwideWindowPanel.Reprice:
-                whereClause.Append("(ucjbStatus = 6)");
+                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.Reprice} OR Reprice = 1)");
                 break;
             default:
                 whereClause.Append(string.Empty);

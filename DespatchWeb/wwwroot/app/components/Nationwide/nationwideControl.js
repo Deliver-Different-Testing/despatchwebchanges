@@ -529,15 +529,38 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {number} internalStatusId
+         * Sets the internal status for a job and refreshes relevant data
+         * @param {number} internalStatusId - The new internal status ID
+         * @param {Job} job - The job being updated
          */
-        $scope.setInternalStatus = async (internalStatusId) => {
-            $scope.currentJob.internalStatusId = internalStatusId;
+        $scope.setInternalStatus = async (internalStatusId, job) => {
             $mdMenu.hide();
 
             // Update Job
-            const currentJob = $scope.currentJob;
-            await this._dispatchData.updateJobDetail(currentJob.id, "InternalStatusID", internalStatusId, currentJob.charge, FirstName, ContactID);
+            await NWData.updateJobDetail(job.id, "InternalStatusID", internalStatusId,
+                job.charge, FirstName, ContactID, false);
+
+            // Refresh the job tables
+            await getJobList();
+
+            // Update the relevant job lists
+            const jobList = $scope.jobList
+            const podList = $scope.jobListPOD;
+            const deliveryList = $scope.jobListDelivery;
+            const repriceList = $scope.jobListReprice;
+
+            // Reselect the current job to refresh the detail view
+            const refreshedJob = [...jobList, ...podList, ...deliveryList, ...repriceList]
+                .find(j => j.id === job.id);
+
+            if (refreshedJob) {
+                await $scope.selectJob(refreshedJob, true);
+            }
+
+            // Adjust table headings after data update
+            $timeout(() => {
+                sizeHeadings();
+            }, 200);
         };
 
         /**
@@ -2577,7 +2600,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        $scope.getJobList = async () => {
+        async function getJobList() {
             const selectedClients = $scope.pickService.clients.map(a => a.id);
 
             try {
@@ -2705,7 +2728,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 ///////////////////////////
                 // JOB DETAIL
                 //////////////////////////
-                await $scope.getJobList();
+                await getJobList();
             } catch (error) {
                 console.error("Error in getData:", error);
             }
