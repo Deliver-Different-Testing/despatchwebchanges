@@ -46,6 +46,18 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             /** @type {string} */
             $scope.jobRecordSearchText = "";
 
+            /**
+             * @type {JobDataType}
+             * @constant
+             */
+            $scope.jobDataType = {
+                NEW: 'new',
+                POD: 'pod',
+                REPRICE: 'reprice',
+                DELIVERY: 'delivery',
+                ALL: 'all'
+            };
+
             $scope.sort = [];
             /** @type {FlightOptions[]} */
             $scope.flightOptions = [];
@@ -71,7 +83,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.jobDetailFabIsOpen = false;
             /** @type {boolean} */
             $scope.courierListFabIsOpen = false;
+            /** @type {Array} */
             $scope.areas = [];
+            /** @type {Array} */
             $scope.selectedAreas = [];
 
             $scope.filters = {
@@ -83,8 +97,17 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             /** @type {Job[]} */
             $scope.jobList = [];
+
+            // Job list loading indicators
             /** @type {boolean} */
             $scope.jobListLoading = false;
+            /** @type {boolean} */
+            $scope.deliveryListLoading = false;
+            /** @type {boolean} */
+            $scope.podListLoading = false;
+            /** @type {boolean} */
+            $scope.repriceListLoading = false;
+
             $scope.selected = [];
 
             $scope.jobHeaders = [
@@ -262,6 +285,33 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             };
             $scope.pickClients = [];
             $scope.pickEventTypes = [];
+
+            $scope.sortableOptions = {
+                connectWith: ".column-sortable",
+                items: ".box",
+                placeholder: "placeholder",
+                scroll: true,
+                scrollSensitivity: 100,
+                scrollSpeed: 20,
+                handle: ".box-handle",
+                activate: (e, ui) => {
+                    const box = angular.element("#" + ui.item.context.id);
+                    const parent = box.parent();
+                    parent.find(".box").each(function () {
+                        angular.element(this).attr("data-height", angular.element(this).height() + "px");
+                    });
+                },
+                update: (e, ui) => {
+                    $timeout(() => {
+                        const box = angular.element("#" + ui.item.context.id);
+                        const parent = box.parent();
+                        parent.find(".box").each(function () {
+                            angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
+                        });
+                        parent.find(".box").last().css({"flex-basis": "0"});
+                    }, 0);
+                }
+            };
         }
 
         $scope.toggleSidenav = () => {
@@ -298,6 +348,17 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.selectedAreas.push($scope.areas[0]);
             }
         }
+
+        // Load custom layout
+        function init() {
+            initializeVariables();
+            loadPageViews().then(() => {
+                console.log('Loaded Page Views!');
+            });
+        }
+
+        // Call the init function when the controller loads
+        init();
 
         $scope.updateFilters = async () => {
             try {
@@ -407,8 +468,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             };
 
             try {
-                const ctrl = await $mdEditDialog.small(editDialog);
-                const input = ctrl.getInput();
+                const dialog = await $mdEditDialog.small(editDialog);
+                const input = dialog.getInput();
                 input.$viewChangeListeners.push(() => {
                     input.$setValidity('test', input.$modelValue !== 'invalid');
                 });
@@ -521,11 +582,22 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.getSelectedStatusText = () => {
             if (!$scope.internalStatusOptions || !$scope.currentJob) {
-                return 'Select Status';
+                return 'Status';
             }
 
             const selectedStatus = $scope.internalStatusOptions.find(status => status.id === $scope.currentJob.internalStatusId);
-            return selectedStatus ? selectedStatus.text : 'Select Status';
+            return selectedStatus ? selectedStatus.text : 'Status';
+        };
+
+        /**
+         * Maps internal status IDs to job data types
+         * @type {Object.<number, number[]>}
+         */
+        const STATUS_TO_LIST_MAP = {
+            1: [$scope.jobDataType.NEW],
+            2: [$scope.jobDataType.DELIVERY],
+            3: [$scope.jobDataType.POD],
+            4: [$scope.jobDataType.REPRICE]
         };
 
         /**
@@ -534,33 +606,58 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          * @param {Job} job - The job being updated
          */
         $scope.setInternalStatus = async (internalStatusId, job) => {
-            $mdMenu.hide();
+            try {
+                $mdMenu.hide();
 
-            // Update Job
-            await NWData.updateJobDetail(job.id, "InternalStatusID", internalStatusId,
-                job.charge, FirstName, ContactID, false);
+                // Get the current status before update
+                const previousStatusId = job.internalStatusId;
 
-            // Refresh the job tables
-            await getJobList();
+                // Update Job
+                await NWData.updateJobDetail(
+                    job.id,
+                    "InternalStatusID",
+                    internalStatusId,
+                    job.charge,
+                    FirstName,
+                    ContactID,
+                    false
+                );
 
-            // Update the relevant job lists
-            const jobList = $scope.jobList
-            const podList = $scope.jobListPOD;
-            const deliveryList = $scope.jobListDelivery;
-            const repriceList = $scope.jobListReprice;
+                // Determine which lists need refreshing
+                const listsToRefresh = new Set([
+                    ...STATUS_TO_LIST_MAP[previousStatusId] || [],
+                    ...STATUS_TO_LIST_MAP[internalStatusId] || []
+                ]);
 
-            // Reselect the current job to refresh the detail view
-            const refreshedJob = [...jobList, ...podList, ...deliveryList, ...repriceList]
-                .find(j => j.id === job.id);
+                // Only refresh the affected lists
+                await getJobList(Array.from(listsToRefresh));
 
-            if (refreshedJob) {
-                await $scope.selectJob(refreshedJob, true);
+                // Get all potentially affected lists based on what we just refreshed
+                const relevantLists = [];
+                if (listsToRefresh.has($scope.jobDataType.NEW)) {
+                    relevantLists.push(...($scope.jobList || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.POD)) {
+                    relevantLists.push(...($scope.jobListPOD || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.DELIVERY)) {
+                    relevantLists.push(...($scope.jobListDelivery || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.REPRICE)) {
+                    relevantLists.push(...($scope.jobListReprice || []));
+                }
+
+                // Find and reselect the updated job
+                const refreshedJob = relevantLists.find(j => j.id === job.id);
+                if (refreshedJob) {
+                    await $scope.selectJob(refreshedJob);
+                }
+
+                // Adjust table headings after data update
+                $timeout(() => sizeHeadings(), 200);
+            } catch (error) {
+                console.error("Error setting internal status:", error);
             }
-
-            // Adjust table headings after data update
-            $timeout(() => {
-                sizeHeadings();
-            }, 200);
         };
 
         /**
@@ -606,33 +703,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             return temp.trim();
         };
 
-        $scope.sortableOptions = {
-            connectWith: ".column-sortable",
-            items: ".box",
-            placeholder: "placeholder",
-            scroll: true,
-            scrollSensitivity: 100,
-            scrollSpeed: 20,
-            handle: ".box-handle",
-            activate: (e, ui) => {
-                const box = angular.element("#" + ui.item.context.id);
-                const parent = box.parent();
-                parent.find(".box").each(function () {
-                    angular.element(this).attr("data-height", angular.element(this).height() + "px");
-                });
-            },
-            update: (e, ui) => {
-                $timeout(() => {
-                    const box = angular.element("#" + ui.item.context.id);
-                    const parent = box.parent();
-                    parent.find(".box").each(function () {
-                        angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
-                    });
-                    parent.find(".box").last().css({"flex-basis": "0"});
-                }, 0);
-            }
-        };
-
         /**
          * @param {string} boxName
          * @param {number} index
@@ -649,30 +719,35 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {string} list
-         * @param {*} prop
+         * Orders a job list by the given property
+         * @param {string} list - The name of the list to order ('jobList', 'jobListPOD', etc.)
+         * @param {string} prop - The property to sort by
+         * @returns {Promise<void>}
          */
         $scope.orderList = async (list, prop) => {
+            // Determine if we should use server-side ordering
             const serverOrder = list === "jobList";
+
+            // Update sort state
             if ($scope.sort[list] !== prop) {
+                // New sort property
                 $scope.sort[list] = prop;
                 $scope.jobFilters.asc = "asc";
-                if (!serverOrder) {
-                    $scope[list] = $filter("orderBy")($scope[list], prop);
-                }
-
             } else {
+                // Toggle sort direction for same property
                 $scope.sort[list] = "d-" + prop;
                 $scope.jobFilters.asc = "desc";
-                if (!serverOrder) {
-                    $scope[list] = $filter("orderBy")($scope[list], "-" + prop);
-                }
             }
 
+            // Handle server-side sorting
             if (serverOrder) {
-                await $scope.setFilters({"order": prop});
+                await $scope.setFilters(list, {"order": prop});
+                return;
             }
 
+            // Client-side sorting for other lists
+            const direction = $scope.sort[list].startsWith('d-') ? '-' : '';
+            $scope[list] = $filter("orderBy")($scope[list], direction + prop);
         };
 
         ///////////////////////////
@@ -723,12 +798,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         });
 
-        $scope.unlockJob = () => {
-            return $scope.jdSvc.unlockJob($scope.currentJob);
+        $scope.unlockJob = async () => {
+            await $scope.jdSvc.unlockJob($scope.currentJob);
         };
 
-        $scope.lockJob = () => {
-            return $scope.jdSvc.lockJob($scope.currentJob);
+        $scope.lockJob = async () => {
+            await $scope.jdSvc.lockJob($scope.currentJob);
         };
 
         $scope.selectForDispatch = job => {
@@ -907,8 +982,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     $scope.courier = {gpsCourier: foundCourier.id};
                     await $scope.searchCourier();
                 } catch {
-                    let undispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                    displayPickupPoints(undispatchedData, true, null);
+                    let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    displayPickupPoints(unDispatchedData, true, null);
                     await $scope.getAvailableCourierLocation();
                 }
             } catch (error) {
@@ -1637,7 +1712,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getData();
 
                 const refreshedJob = $scope.jobList.find(jo => jo.id === firstJob.id);
-                await $scope.selectJob(refreshedJob, false);
+                await $scope.selectJob(refreshedJob);
 
                 await new Promise(resolve => $timeout(() => {
                     angular.element(`#jobList tr[data-jobid='${firstJob.id}']`).addClass("active");
@@ -1933,28 +2008,62 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        $scope.setFilters = async (data) => {
+        /**
+         * Updates filters and refreshes job lists
+         * @param {string} list - The name of the list being filtered ('jobList', 'jobListPOD', etc)
+         * @param {Object} data - Filter data to apply
+         * @param {string} [data.status] - Status filter value
+         * @param {string} [data.area] - Area filter value
+         * @param {string} [data.order] - Order/sort filter value
+         * @returns {Promise<void>}
+         */
+        $scope.setFilters = async (list, data) => {
             try {
+                // Debounce filter changes
                 await new Promise(resolve => $timeout(resolve, 300));
 
+                // Update status filter if provided
                 if (data.status) {
                     $scope.jobFilters.status = data.status;
                 }
 
+                // Handle area filter updates
                 if (data.area) {
                     const selected = angular.element("#area-group > .btn.topBarActive").length;
-                    if (selected > 1) {
-                        $scope.jobFilters.area += "," + data.area;
-                    } else {
-                        $scope.jobFilters.area = data.area;
-                    }
+                    $scope.jobFilters.area = selected > 1
+                        ? $scope.jobFilters.area + "," + data.area
+                        : data.area;
                 }
 
+                // Update sort order if provided
                 if (data.order) {
                     $scope.jobFilters.order = data.order;
                 }
 
-                await $scope.getData();
+                // Map list names to corresponding JobDataType
+                const listToDataType = {
+                    'jobList': $scope.jobDataType.NEW,
+                    'jobListPOD': $scope.jobDataType.POD,
+                    'jobListReprice': $scope.jobDataType.REPRICE,
+                    'jobListDelivery': $scope.jobDataType.DELIVERY
+                };
+
+                // Determine which list(s) to refresh
+                let dataTypesToRefresh;
+
+                if (data.status || data.area) {
+                    // Status and area filters affect all lists
+                    dataTypesToRefresh = $scope.jobDataType.ALL;
+                } else if (data.order) {
+                    // Order/sort only affects the current list
+                    dataTypesToRefresh = listToDataType[list] || $scope.jobDataType.NEW;
+                } else {
+                    // Default to refreshing just the current list
+                    dataTypesToRefresh = listToDataType[list] || $scope.jobDataType.NEW;
+                }
+
+                // Refresh the appropriate lists
+                await getJobList(dataTypesToRefresh);
             } catch (error) {
                 console.error("Error in setFilters:", error);
             }
@@ -2016,37 +2125,56 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         /**
          * @async
          * @param {Job} job
-         * @param {boolean} clear
          */
-        $scope.selectJob = async (job, clear) => {
+        $scope.selectJob = async (job) => {
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
 
-                $scope.currentJob = job;
-                if ($scope.currentJob) {
+                // Store the previously selected job before updating
+                const previousJob = $scope.currentJob;
+
+                if (previousJob && previousJob.id !== job.id) {
+                    angular.element(`[data-jobid="${previousJob.id}"]`).removeClass('active-job');
+                }
+
+                if (job) {
+                    angular.element(`[data-jobid="${job.id}"]`).addClass('active-job');
                     $scope.getSelectedStatusText();
                 }
 
                 _processActiveTable();
                 _initializeJob(job);
 
+                // Show flight table
                 if (job.toAirportId && job.fromAirportId) {
                     await _processFlights(job);
                 }
 
+                // Show agent table
                 if ($scope.isDeliveryJob()) {
                     await _processAgents(job);
                 }
 
-                $scope.$apply();
-                await updateData(job, clear);
-                angular.element("#box-jobDetail .loading").css('display', 'none');
+                _maintainJobHighlight(); // Ensure highlight persists after any DOM updates
 
+                $scope.$apply();
+                angular.element("#box-jobDetail .loading").css('display', 'none');
                 $timeout(() => sizeHeadings(), 200);
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
         };
+
+        /**
+         * Maintains the highlight state of the selected job
+         * @private
+         */
+        function _maintainJobHighlight() {
+            if ($scope.currentJob) {
+                angular.element('.job-list-table tr').removeClass('active-job');
+                angular.element(`[data-jobid="${$scope.currentJob.id}"]`).addClass('active-job');
+            }
+        }
 
         /**
          * @async
@@ -2105,7 +2233,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             $scope.agentsLoading = false;
         }
-
 
         function _processActiveTable() {
             $scope.selectedJobs = [];
@@ -2203,8 +2330,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await NWData.assignFlightToJob(job.id, flight.flightNumber, flight.departureTime);
 
-                // Refresh data
-                await $scope.getData();
+                // Refresh both new jobs and POD lists since flight assignment can affect both
+                await getJobList([
+                    $scope.jobDataType.NEW,
+                    $scope.jobDataType.POD
+                ]);
+
+                const successMessage = (`Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`)
+                toastrService.showSuccessToast(successMessage)
             } catch (error) {
                 if (error === undefined) {
                     console.log('User canceled!');
@@ -2234,8 +2367,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await NWData.assignAgentToJob(job.id, agent.agentId);
 
-                // Refresh data
-                await $scope.getData();
+                // Refresh both new jobs and POD lists since flight assignment can affect both
+                await getJobList([
+                    $scope.jobDataType.NEW,
+                    $scope.jobDataType.POD
+                ]);
+
+                const successMessage = (`Successfully assigned agent ${agent.agentName} to job ${job.jobNo}`)
+                toastrService.showSuccessToast(successMessage)
             } catch (error) {
                 if (error === undefined) {
                     console.log('User canceled!');
@@ -2600,35 +2739,113 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        async function getJobList() {
+        /**
+         * Gets job list data for specified data types
+         * @param {JobDataType|JobDataType[]} dataTypes - Single data type or array of data types to fetch
+         * @returns {Promise<void>}
+         */
+        async function getJobList(dataTypes = $scope.jobDataType.ALL) {
             const selectedClients = $scope.pickService.clients.map(a => a.id);
+            const types = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
 
             try {
-                $scope.jobListLoading = true;
+                // Set loading state for requested types
+                if (types.includes($scope.jobDataType.ALL)) {
+                    $scope.jobListLoading = true;
+                    $scope.deliveryListLoading = true;
+                    $scope.podListLoading = true;
+                    $scope.repriceListLoading = true;
+                } else {
+                    if (types.includes($scope.jobDataType.NEW)) $scope.jobListLoading = true;
+                    if (types.includes($scope.jobDataType.DELIVERY)) $scope.deliveryListLoading = true;
+                    if (types.includes($scope.jobDataType.POD)) $scope.podListLoading = true;
+                    if (types.includes($scope.jobDataType.REPRICE)) $scope.repriceListLoading = true;
+                }
 
-                const [newData, podData, repriceData, deliveryData] = await Promise.all([
-                    NWData.getNationwideJobsNew($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
-                    NWData.getNationwideJobsPOD($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
-                    NWData.getNationwideJobsReprice($scope.jobFilters, selectedClients, $scope.isInternal, $scope.selectedAreas),
-                    NWData.getNationwideJobsBookDelivery($scope.jobDeliveryFilters, selectedClients, $scope.isInternal, $scope.selectedAreas)
-                ]);
+                // Create a map of fetch promises based on requested data types
+                const fetchMap = {
+                    [$scope.jobDataType.NEW]: () => NWData.getNationwideJobsNew(
+                        $scope.jobFilters,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedAreas
+                    ),
+                    [$scope.jobDataType.POD]: () => NWData.getNationwideJobsPOD(
+                        $scope.jobFilters,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedAreas
+                    ),
+                    [$scope.jobDataType.REPRICE]: () => NWData.getNationwideJobsReprice(
+                        $scope.jobFilters,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedAreas
+                    ),
+                    [$scope.jobDataType.DELIVERY]: () => NWData.getNationwideJobsBookDelivery(
+                        $scope.jobDeliveryFilters,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedAreas
+                    )
+                };
 
-                $scope.jobList = newData;
-                $scope.jobListPOD = podData;
-                $scope.jobListReprice = repriceData;
-                $scope.jobListDelivery = deliveryData;
+                // Determine which promises to execute
+                const promisesToExecute = types.includes($scope.jobDataType.ALL)
+                    ? Object.values(fetchMap).map(fn => fn())
+                    : types.map(type => fetchMap[type]());
 
-                $scope.jobListLoading = false;
+                // Execute selected promises
+                const results = await Promise.all(promisesToExecute);
+
+                // Update scope based on which data types were requested
+                let resultIndex = 0;
+                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.NEW)) {
+                    $scope.jobList = results[resultIndex++];
+                    $scope.jobListLoading = false;
+                }
+                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.POD)) {
+                    $scope.jobListPOD = results[resultIndex++];
+                    $scope.podListLoading = false;
+                }
+                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.REPRICE)) {
+                    $scope.jobListReprice = results[resultIndex++];
+                    $scope.repriceListLoading = false;
+                }
+                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.DELIVERY)) {
+                    $scope.jobListDelivery = results[resultIndex++];
+                    $scope.deliveryListLoading = false;
+                }
+
                 $scope.$apply();
 
-                await $scope.getAvailableCourierLocation();
+                // Only fetch courier locations if we're getting delivery data
+                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.DELIVERY)) {
+                    await $scope.getAvailableCourierLocation();
+                }
 
-                $timeout(() => sizeHeadings(), 200);
-                $timeout(() => sizeHeadings(), 1000);
+                // Run size headings if any data was fetched
+                if (results.length > 0) {
+                    $timeout(() => sizeHeadings(), 200);
+                    $timeout(() => sizeHeadings(), 1000);
+                }
             } catch (error) {
                 console.error("Error fetching job data:", error);
+                // Reset all loading states that were set
+                if (types.includes($scope.jobDataType.ALL)) {
+                    $scope.jobListLoading = false;
+                    $scope.deliveryListLoading = false;
+                    $scope.podListLoading = false;
+                    $scope.repriceListLoading = false;
+                } else {
+                    if (types.includes($scope.jobDataType.NEW)) $scope.jobListLoading = false;
+                    if (types.includes($scope.jobDataType.DELIVERY)) $scope.deliveryListLoading = false;
+                    if (types.includes($scope.jobDataType.POD)) $scope.podListLoading = false;
+                    if (types.includes($scope.jobDataType.REPRICE)) $scope.repriceListLoading = false;
+                }
+                $scope.$apply();
             }
-        };
+        }
 
         $scope.closeSupport = async (support) => {
             try {
@@ -2728,7 +2945,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 ///////////////////////////
                 // JOB DETAIL
                 //////////////////////////
-                await getJobList();
+                await getJobList($scope.jobDataType.ALL);
             } catch (error) {
                 console.error("Error in getData:", error);
             }
@@ -2839,17 +3056,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 this.updateCourierData(courier.id, courier.text);
             }
         };
-
-        // Load custom layout
-        function init() {
-            initializeVariables();
-            loadPageViews().then(() => {
-                console.log('Loaded Page Views!');
-            });
-        }
-
-        // Call the init function when the controller loads
-        init();
     }]);
 
 

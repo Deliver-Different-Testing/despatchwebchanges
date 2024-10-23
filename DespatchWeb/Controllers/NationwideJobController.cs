@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Controllers;
@@ -122,12 +123,12 @@ public class NationwideJobController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> AssignAgentToJob([FromBody] int? agentId, [FromBody] int? jobId)
+    public async Task<IActionResult> AssignAgentToJob([FromBody] AssignAgentModel model)
     {
-        if (agentId is null || jobId is null)
+        if (model?.AgentId == null || model.JobId == null)
             return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
 
-        var addToDb = await _repository.AddAgentToJobAsync(agentId.Value, jobId.Value);
+        var addToDb = await _repository.AddAgentToJobAsync(model.AgentId.Value, model.JobId.Value);
         if (!addToDb) return BadRequest("An error occurred while assigning the agent to the job.");
 
         return Ok();

@@ -25,7 +25,7 @@
         <!-- Job List -->
         <table class="table table-responsive table-rows" data-group="jobsGroup" id="jobList">
             <tbody>
-            <tr class="clickable-row draggable-row noselect status"
+            <tr class="clickable-row noselect status"
                 data-allowDispatch="{{job.allowDispatch}}"
                 data-courier="{{job.courier}}"
                 data-index="{{$index}}"
@@ -35,20 +35,33 @@
                 ng-repeat="job in jobList | filter: box.searchBox">
 
                 <td>{{job.time | date: "HH:mm"}}</td>
-                <td action="speedColumnClick($event)" right-click>
+                <td ng-click="speedColumnClick($event)"
+                    ng-contextmenu="speedColumnClick($event)"
+                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{job.speed}}
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="job.speed === 'AF' || (job.fromAirportId && job.toAirportId)">local_airport</i>
+                    <i class="material-symbols-outlined job-table-icon"
+                       ng-if="(job.assignedAgent)">engineering</i>
                 </td>
-                <td context-menu="setEventsMenu">{{job.jobNo}}</td>
-                <td action="clientColumnClick($event)" right-click>{{job.client}}</td>
-                <td action="fromColumnClick($event)" class="address-cell" right-click>
+                <td ng-contextmenu="setEventsMenu($event)">{{job.jobNo}}</td>
+                <td ng-click="clientColumnClick($event)"
+                    ng-contextmenu="clientColumnClick($event)"
+                    ng-mousedown="$event.button === 2 && $event.preventDefault()">{{job.client}}
+                </td>
+                <td class="address-cell"
+                    ng-click="fromColumnClick($event)"
+                    ng-contextmenu="fromColumnClick($event)"
+                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                 </td>
-                <td action="toColumnClick($event)" class="address-cell" right-click>
+                <td class="address-cell"
+                    ng-click="toColumnClick($event)"
+                    ng-contextmenu="toColumnClick($event)"
+                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}
                 </td>
-                <td ng-if="!job.toAirportId || !job.fromAirportId">
+                <td ng-if="!job.toAirportId || !job.fromAirportId || !job.assignedAgent">
                     <input class="dispatchField" ng-keydown="$event.keyCode === 13 && dispatchJobsFromNew(job.courier)"
                            ng-model="job.courier"
                            ng-readonly="job.courierData.courierID !== null"
@@ -60,6 +73,13 @@
                     <input class="dispatchField" ng-model="job.assignedFlight.flightNumber"
                            ng-readonly="true"
                            ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
+                           placeholder=""
+                           type="text"/>
+                </td>
+                <td ng-if="job.assignedAgent">
+                    <input class="dispatchField" ng-model="job.assignedAgent.agentName"
+                           ng-readonly="true"
+                           ng-style="getJobStyle(job.assignedAgent.agentName !== null)"
                            placeholder=""
                            type="text"/>
                 </td>

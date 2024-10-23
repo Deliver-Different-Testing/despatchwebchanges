@@ -139,6 +139,7 @@
  * @property {number} toAirportId
  * @property {number} fromAirportId
  * @property {AssignedFlight} assignedFlight
+ * @property {Agent} assignedAgent
  */
 
 /**
@@ -412,4 +413,16 @@
  * @property {string} agentName - The name of the agent.
  * @property {number} agentRate - The rate associated with the agent. This is a decimal value.
  * @property {string} agentRanking - The ranking of the agent.
+ */
+
+/**
+ * @typedef {Object} JobDataType
+ * @readonly
+ * @description Enum-like object defining the different types of job data that can be fetched.
+ *
+ * @property {string} NEW - Represents new/unassigned jobs
+ * @property {string} POD - Represents Proof of Delivery jobs
+ * @property {string} REPRICE - Represents jobs requiring repricing
+ * @property {string} DELIVERY - Represents delivery booking jobs
+ * @property {string} ALL - Special value to indicate all job types should be fetched
  */
