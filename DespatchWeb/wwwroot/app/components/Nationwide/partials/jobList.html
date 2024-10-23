@@ -62,10 +62,8 @@
                     {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}
                 </td>
                 <td>
-
-                    <!-- Courier input when no airport IDs or agent -->
                     <input class="dispatchField"
-                           ng-if="!job.toAirportId || !job.fromAirportId || !job.assignedAgent.agentName"
+                           ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
                            ng-keydown="$event.keyCode === 13 && dispatchJobsFromNew(job.courier)"
                            ng-model="job.courier"
                            ng-readonly="job.courierData.courierID !== null"
@@ -73,16 +71,14 @@
                            placeholder=""
                            type="text"/>
 
-                    <!-- Flight number input when both airport IDs exist -->
                     <input class="dispatchField"
-                           ng-if="job.toAirportId && job.fromAirportId && !job.assignedAgent.agentName"
+                           ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
                            ng-model="job.assignedFlight.flightNumber"
                            ng-readonly="true"
                            ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
                            placeholder=""
                            type="text"/>
 
-                    <!-- Agent name input when agent is assigned -->
                     <input class="dispatchField"
                            ng-if="job.assignedAgent.agentName"
                            ng-model="job.assignedAgent.agentName"
@@ -91,7 +87,6 @@
                            placeholder=""
                            type="text"/>
                 </td>
-
                 <td>{{job.pod}}</td>
                 <td><span class="remain-time">{{job.remain}}</span></td>
                 <td class="status" ng-class="job.status">{{job.status}}</td>
