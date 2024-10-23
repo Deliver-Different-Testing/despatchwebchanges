@@ -29,8 +29,6 @@ public class BaseJobRepository
         try
         {
             var excludedSpeeds = new int?[] { 38, 39, 55, 56 };
-            var specialSpeeds = new int?[] { 53, 54 };
-            var specialClients = new[] { "UCLHP", "UCLHR" };
 
             var query = _context.TucJobs
                 .Where(j => !j.UcjbVoid
@@ -38,9 +36,7 @@ public class BaseJobRepository
                             && j.UcjbStatus != 18
                             && (j.JobRelationshipType.DisplayDespatch == true ||
                                 (j.JobRelationshipTypeId == 10 && !excludedSpeeds.Contains(j.UcjbSpeed)))
-                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
-                            && (j.UcjbDate.Date <= DateTime.Today || specialSpeeds.Contains(j.UcjbSpeed) ||
-                                specialClients.Contains(j.UcjbClientCode)));
+                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true));
 
             // Apply Nationwide filters
             query = ApplyNationwideFilters(query, isInternal, viewFilters, status, windowPane, clientIds);
@@ -55,6 +51,12 @@ public class BaseJobRepository
                 Id = j.UcjbId,
                 JobNo = j.UcjbNumber,
                 Time = j.UcjbTime,
+                RootParentId = j.RootParentId,
+                Date = j.UcjbDate.ToString("dd/MM/yyyy"),
+                Booked =
+                    DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
+                DispatchTime = j.UcjbDispTime,
+
                 PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
                 DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
 
@@ -123,9 +125,7 @@ public class BaseJobRepository
 
                 // Notes
                 ClientNotes = j.UcjbClient != null ? j.UcjbClient.UcclNotes : null,
-                InternalNotes = j.InternalNotes,
-                ChildNotes = j.UcjbNotes,
-
+                InternalNotes = j.UcjbNotes,
 
                 // Suburb information
                 From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
@@ -155,6 +155,8 @@ public class BaseJobRepository
                 // Client information
                 Client = j.UcjbClientCode,
                 ClientName = j.UcjbClient.UcclName,
+                Phone = j.DeliverToPhone,
+                PodName = j.UcjbPodname,
 
                 // Job characteristics
                 Weight = j.UcjbWeight,
@@ -164,6 +166,8 @@ public class BaseJobRepository
                 Van = j.UcjbVan,
                 VanOk = j.VanOk,
                 Truck = j.Truck,
+                DgClass = j.Dgclass,
+                DgDocumentation = j.Dgdocument,
 
                 // Job status and details
                 Done = j.UcjbJobDone,

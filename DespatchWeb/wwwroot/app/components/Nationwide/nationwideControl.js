@@ -349,6 +349,17 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         }
 
+        // Load custom layout
+        function init() {
+            initializeVariables();
+            loadPageViews().then(() => {
+                console.log('Loaded Page Views!');
+            });
+        }
+
+        // Call the init function when the controller loads
+        init();
+
         $scope.updateFilters = async () => {
             try {
                 // Handle status filters
@@ -579,38 +590,75 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
+         * Maps internal status IDs to job data types
+         * @type {Object.<number, number[]>}
+         */
+        const STATUS_TO_LIST_MAP = {
+            1: [$scope.jobDataType.NEW],
+            2: [$scope.jobDataType.DELIVERY],
+            3: [$scope.jobDataType.POD],
+            4: [$scope.jobDataType.REPRICE]
+        };
+
+
+        /**
          * Sets the internal status for a job and refreshes relevant data
          * @param {number} internalStatusId - The new internal status ID
          * @param {Job} job - The job being updated
          */
         $scope.setInternalStatus = async (internalStatusId, job) => {
-            $mdMenu.hide();
+            try {
+                $mdMenu.hide();
 
-            // Update Job
-            await NWData.updateJobDetail(job.id, "InternalStatusID", internalStatusId,
-                job.charge, FirstName, ContactID, false);
+                // Get the current status before update
+                const previousStatusId = job.internalStatusId;
 
-            // Refresh the job tables
-            await getJobList();
+                // Update Job
+                await NWData.updateJobDetail(
+                    job.id,
+                    "InternalStatusID",
+                    internalStatusId,
+                    job.charge,
+                    FirstName,
+                    ContactID,
+                    false
+                );
 
-            // Update the relevant job lists
-            const jobList = $scope.jobList
-            const podList = $scope.jobListPOD;
-            const deliveryList = $scope.jobListDelivery;
-            const repriceList = $scope.jobListReprice;
+                // Determine which lists need refreshing
+                const listsToRefresh = new Set([
+                    ...STATUS_TO_LIST_MAP[previousStatusId] || [],
+                    ...STATUS_TO_LIST_MAP[internalStatusId] || []
+                ]);
 
-            // Reselect the current job to refresh the detail view
-            const refreshedJob = [...jobList, ...podList, ...deliveryList, ...repriceList]
-                .find(j => j.id === job.id);
+                // Only refresh the affected lists
+                await getJobList(Array.from(listsToRefresh));
 
-            if (refreshedJob) {
-                await $scope.selectJob(refreshedJob, true);
+                // Get all potentially affected lists based on what we just refreshed
+                const relevantLists = [];
+                if (listsToRefresh.has($scope.jobDataType.NEW)) {
+                    relevantLists.push(...($scope.jobList || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.POD)) {
+                    relevantLists.push(...($scope.jobListPOD || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.DELIVERY)) {
+                    relevantLists.push(...($scope.jobListDelivery || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.REPRICE)) {
+                    relevantLists.push(...($scope.jobListReprice || []));
+                }
+
+                // Find and reselect the updated job
+                const refreshedJob = relevantLists.find(j => j.id === job.id);
+                if (refreshedJob) {
+                    await $scope.selectJob(refreshedJob);
+                }
+
+                // Adjust table headings after data update
+                $timeout(() => sizeHeadings(), 200);
+            } catch (error) {
+                console.error("Error setting internal status:", error);
             }
-
-            // Adjust table headings after data update
-            $timeout(() => {
-                sizeHeadings();
-            }, 200);
         };
 
         /**
@@ -2997,17 +3045,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 this.updateCourierData(courier.id, courier.text);
             }
         };
-
-        // Load custom layout
-        function init() {
-            initializeVariables();
-            loadPageViews().then(() => {
-                console.log('Loaded Page Views!');
-            });
-        }
-
-        // Call the init function when the controller loads
-        init();
     }]);
 
 
