@@ -432,18 +432,15 @@ md-divider {
   justify-content: center;
   align-items: center;
 }
-
 .no-data .content {
   text-align: center;
 }
-
 .no-data .icon {
   margin-bottom: 10px;
 }
 .no-data .text {
   width: 100%;
 }
-
 .no-data md-icon {
   font-size: 24px;
 }
@@ -1297,6 +1294,7 @@ span.courierRed {
 }
 .job-table-icon {
   font-size: 14px;
+  margin: 2px;
 }
 .colum-table-icon {
   font-size: 7px;

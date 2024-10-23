@@ -1,4 +1,4 @@
-<div ng-if="!jobListLoading && jobListDelivery.length > 0">
+<div ng-if="!deliveryListLoading && jobListDelivery.length > 0">
     <div class="table-headings">
         <table>
             <thead class="thead-dark no select">
@@ -133,7 +133,7 @@
     </table>
 </div>
 
-<div class="no-data" ng-if="!jobListLoading && jobListDelivery.length === 0">
+<div class="no-data" ng-if="!deliveryListLoading && jobListDelivery.length === 0">
     <div class="content">
         <div class="icon">
             <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
@@ -144,7 +144,7 @@
     </div>
 </div>
 
-<div class="loader-container" ng-if="jobListLoading">
+<div class="loader-container" ng-if="deliveryListLoading">
     <div class="full-height" layout="row" layout-align="center center">
         <div class="material-icon-loader">
             <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
