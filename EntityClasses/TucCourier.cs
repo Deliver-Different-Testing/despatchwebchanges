@@ -245,5 +245,7 @@ public partial class TucCourier
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
 
-    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
+    public virtual ICollection<TucJob> TucJobFdcouriers { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<TucJob> TucJobUcjbCouriers { get; set; } = new List<TucJob>();
 }

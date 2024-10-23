@@ -481,17 +481,25 @@ md-divider {
     bottom: 0;
     right: 0;
     background-color: #e8e8e8;
-    text-align: center;
     position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .content {
+        text-align: center;
+    }
+
+    .icon {
+        margin-bottom: 10px;
+    }
 
     .text {
-        position: absolute;
-        top: 50%;
         width: 100%;
-        transform: translateY(-50%);
+    }
 
-        .fa {
-        }
+    md-icon {
+        font-size: 24px;
     }
 }
 
@@ -979,9 +987,9 @@ input.pod-DispatchField {
     }
 
     input.dispatchField {
-        width: 29px;
+        width: 50px;
         text-align: center;
-        height: 15px;
+        height: 25px;
     }
 
     input.lateCallField {
@@ -1296,6 +1304,7 @@ span.courierRed {
 
 .job-table-icon {
     font-size: 14px;
+    margin: 2px;
 }
 
 .colum-table-icon {

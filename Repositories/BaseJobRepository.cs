@@ -1,25 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class BaseJobRepository
+public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory):BaseRepository(contextFactory)
 {
-    private readonly DespatchContext _context;
-    private readonly ILogger<BaseJobRepository> _logger;
-
-    public BaseJobRepository(DespatchContext context, ILogger<BaseJobRepository> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
 
     // This function replaces the sql view "DESWEB_qryDespatch"
     public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
@@ -30,7 +22,7 @@ public class BaseJobRepository
         {
             var excludedSpeeds = new int?[] { 38, 39, 55, 56 };
 
-            var query = _context.TucJobs
+            var query = Context.TucJobs
                 .Where(j => !j.UcjbVoid
                             && j.ParentId != null
                             && j.UcjbStatus != 18
@@ -223,7 +215,7 @@ public class BaseJobRepository
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error occured getting jobs for dispatch page. Please see exception.");
+            Log.Error(e, "Error occured getting jobs for dispatch page. Please see exception.");
             throw;
         }
     }
@@ -240,7 +232,7 @@ public class BaseJobRepository
         if (isInternal && filters != null && filters.Any())
         {
             // For now, log that these filters couldn't be applied
-            _logger.LogWarning("String-based filters are not supported in this version. Filters: {Filters}",
+            Log.Warning("String-based filters are not supported in this version. Filters: {Filters}",
                 string.Join(", ", filters));
         }
 
@@ -302,7 +294,7 @@ public class BaseJobRepository
         var clientIdList = clientIds.Split(',')
             .Select(id => int.Parse(id.Trim()))
             .ToList();
-        query = query.Where(j => clientIdList.Contains(j.UcjbClientId));
+        query = query.Where(j => clientIdList.Contains(j.UcjbClientId.Value));
 
         return query;
     }

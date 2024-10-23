@@ -573,5 +573,7 @@ public partial class TucClient
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
 
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
+
     public virtual TucSuburb UcclSuburb { get; set; }
 }

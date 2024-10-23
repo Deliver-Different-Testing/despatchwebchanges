@@ -3597,6 +3597,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
 
+            entity.HasIndex(e => e.FdcourierId, "IX_tucJob_FDCourierID");
+
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
@@ -3921,9 +3923,17 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.DesiredJobType).WithMany(p => p.TucJobDesiredJobTypes).HasForeignKey(d => d.DesiredJobTypeId);
 
+            entity.HasOne(d => d.Fdcourier).WithMany(p => p.TucJobFdcouriers)
+                .HasForeignKey(d => d.FdcourierId)
+                .HasConstraintName("FK_tucJob_FDCourier");
+
             entity.HasOne(d => d.FromAirport).WithMany(p => p.TucJobFromAirports)
                 .HasForeignKey(d => d.FromAirportId)
                 .HasConstraintName("FK_tucJob_FromAirport");
+
+            entity.HasOne(d => d.JobRelationshipType).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.JobRelationshipTypeId)
+                .HasConstraintName("FK_tucJob_tblJobRelationshipType");
 
             entity.HasOne(d => d.NotifiedJobType).WithMany(p => p.TucJobNotifiedJobTypes).HasForeignKey(d => d.NotifiedJobTypeId);
 
@@ -3939,13 +3949,21 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.ToAirportId)
                 .HasConstraintName("FK_tucJob_ToAirport");
 
-            entity.HasOne(d => d.UcjbCourier).WithMany(p => p.TucJobs)
+            entity.HasOne(d => d.UcjbClient).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.UcjbClientId)
+                .HasConstraintName("FK_tucJob_Client");
+
+            entity.HasOne(d => d.UcjbCourier).WithMany(p => p.TucJobUcjbCouriers)
                 .HasForeignKey(d => d.UcjbCourierId)
-                .HasConstraintName("FK_tucJob_tucCourier");
+                .HasConstraintName("FK_tucJob_Courier");
 
             entity.HasOne(d => d.UcjbDisp).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.UcjbDispId)
                 .HasConstraintName("FK_tucJob_tucStaff");
+
+            entity.HasOne(d => d.UcjbFromNavigation).WithMany(p => p.TucJobUcjbFromNavigations)
+                .HasForeignKey(d => d.UcjbFrom)
+                .HasConstraintName("FK_tucJob_FromSuburb");
 
             entity.HasOne(d => d.UcjbSpeedNavigation).WithMany(p => p.TucJobUcjbSpeedNavigations)
                 .HasForeignKey(d => d.UcjbSpeed)
@@ -3954,6 +3972,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.UcjbStatusNavigation).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.UcjbStatus)
                 .HasConstraintName("FK_tucJob_tucJobStatus");
+
+            entity.HasOne(d => d.UcjbToNavigation).WithMany(p => p.TucJobUcjbToNavigations)
+                .HasForeignKey(d => d.UcjbTo)
+                .HasConstraintName("FK_tucJob_ToSuburb");
 
             entity.HasOne(d => d.UndeliverableLocation).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.UndeliverableLocationId)
@@ -4797,7 +4819,6 @@ public partial class DespatchContext : DbContext
             entity.ToTable("ZipPolygon");
 
             entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
-            entity.Property(e => e.FixedWkt).HasColumnName("FixedWKT");
             entity.Property(e => e.Latitude).HasColumnType("decimal(18, 8)");
             entity.Property(e => e.Longitude).HasColumnType("decimal(18, 8)");
             entity.Property(e => e.Wkt).HasColumnName("WKT");

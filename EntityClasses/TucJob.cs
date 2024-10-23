@@ -433,9 +433,13 @@ public partial class TucJob
 
     public virtual TucJobType DesiredJobType { get; set; }
 
+    public virtual TucCourier Fdcourier { get; set; }
+
     public virtual TblAirport FromAirport { get; set; }
 
     public virtual ICollection<TucJob> InverseParent { get; set; } = new List<TucJob>();
+
+    public virtual TblJobRelationshipType JobRelationshipType { get; set; }
 
     public virtual TucJobType NotifiedJobType { get; set; }
 
@@ -449,13 +453,19 @@ public partial class TucJob
 
     public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();
 
+    public virtual TucClient UcjbClient { get; set; }
+
     public virtual TucCourier UcjbCourier { get; set; }
 
     public virtual TucStaff UcjbDisp { get; set; }
 
+    public virtual TucSuburb UcjbFromNavigation { get; set; }
+
     public virtual TucJobType UcjbSpeedNavigation { get; set; }
 
     public virtual TucJobStatus UcjbStatusNavigation { get; set; }
+
+    public virtual TucSuburb UcjbToNavigation { get; set; }
 
     public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
 }

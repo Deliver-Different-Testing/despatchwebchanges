@@ -73,5 +73,9 @@ public partial class TucSuburb
 
     public virtual ICollection<TucClient> TucClients { get; set; } = new List<TucClient>();
 
+    public virtual ICollection<TucJob> TucJobUcjbFromNavigations { get; set; } = new List<TucJob>();
+
+    public virtual ICollection<TucJob> TucJobUcjbToNavigations { get; set; } = new List<TucJob>();
+
     public virtual ICollection<TucStaff> TucStaffs { get; set; } = new List<TucStaff>();
 }
