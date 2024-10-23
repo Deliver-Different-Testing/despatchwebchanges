@@ -19,7 +19,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime UcjbDate { get; set; }
         public DateTime? UcjbTime { get; set; }
         public double? UcjbType { get; set; }
-        public int? UcjbClientId { get; set; }
+        public int UcjbClientId { get; set; }
         public string UcjbContact { get; set; }
         public double? UcjbChargeType { get; set; }
         public decimal? UcjbAmount { get; set; }
