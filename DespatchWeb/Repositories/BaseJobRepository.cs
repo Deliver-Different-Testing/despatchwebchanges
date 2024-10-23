@@ -216,6 +216,13 @@ public class BaseJobRepository
                     Do = i.Do,
                     DgClass = i.Dgclass,
                     Notes = i.Notes
+                }).ToList(),
+
+                // Related jobs
+                RelatedJobs = j.Parent.InverseParent.Select(p => new Size
+                {
+                    Id = p.UcjbId,
+                    Label = p.UcjbNumber
                 }).ToList()
             }).AsNoTracking().ToListAsync();
 
@@ -302,7 +309,7 @@ public class BaseJobRepository
         var clientIdList = clientIds.Split(',')
             .Select(id => int.Parse(id.Trim()))
             .ToList();
-        query = query.Where(j => clientIdList.Contains(j.UcjbClientId.Value));
+        query = query.Where(j => clientIdList.Contains(j.UcjbClientId));
 
         return query;
     }
