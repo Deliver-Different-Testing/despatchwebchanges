@@ -1,0 +1,411 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
+using DespatchWeb.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace DespatchWeb.Repositories;
+
+public class BaseJobRepository
+{
+    private readonly DespatchContext _context;
+    private readonly ILogger<BaseJobRepository> _logger;
+
+    public BaseJobRepository(DespatchContext context, ILogger<BaseJobRepository> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+
+    // This function replaces the sql view "DESWEB_qryDespatch"
+    public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
+        string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
+        List<string> viewFilters)
+    {
+        try
+        {
+            var excludedSpeeds = new int?[] { 38, 39, 55, 56 };
+
+            var query = _context.TucJobs
+                .Where(j => !j.UcjbVoid
+                            && j.ParentId != null
+                            && j.UcjbStatus != 18
+                            && (j.JobRelationshipType.DisplayDespatch == true ||
+                                (j.JobRelationshipTypeId == 10 && !excludedSpeeds.Contains(j.UcjbSpeed)))
+                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true));
+
+            // Apply Nationwide filters
+            query = ApplyNationwideFilters(query, isInternal, viewFilters, status, windowPane, clientIds);
+
+            // Apply ordering
+            query = NationwideApplyOrdering(query, order, ascending);
+
+            // Grab the matching jobs
+            var jobs = await query.Select(j => new JobViewModel
+            {
+                ClientId = j.UcjbId,
+                Id = j.UcjbId,
+                JobNo = j.UcjbNumber,
+                Time = j.UcjbTime,
+                RootParentId = j.RootParentId,
+                Date = j.UcjbDate.ToString("MM/dd/yyyy"),
+                Booked =
+                    DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
+                DispatchTime = j.UcjbDispTime,
+
+                PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
+                DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
+
+                // Courier
+                Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
+                CourierData = j.UcjbCourier != null
+                    ? new CourierData
+                    {
+                        Courier = string.IsNullOrEmpty(j.UcjbCourier.Code)
+                            ? string.Empty
+                            : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
+                        CourierId = j.UcjbCourierId
+                    }
+                    : null,
+
+                // Address information
+                PickupAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8,
+                    Latitude = j.PickUpLatitude,
+                    Longitude = j.PickUpLongitude,
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8,
+                    Latitude = j.DeliveryLatitude,
+                    Longitude = j.DeliveryLongitude,
+                },
+
+                // Airport information
+                ToAirportId = j.ToAirportId,
+                FromAirportId = j.FromAirportId,
+
+                // Assigned flight information
+                AssignedFlight = j.TucJobNationwides.Select(nj => new AssignedFlight
+                {
+                    ExpectedArrival = nj.UcnwEta,
+                    ExpectedDeparture = nj.UcnwEtd,
+                    FlightNumber = nj.UcnwFlightNo,
+                    Notes = nj.UcnwNotes
+                }).FirstOrDefault(),
+
+                // Assigned agent
+                AssignedAgent = j.Agent != null
+                    ? new AgentViewModel
+                    {
+                        AgentId = j.Agent.UcagId,
+                        AgentName = j.Agent.UcagName,
+                        AgentRanking = j.Agent.Ranking != null ? j.Agent.Ranking.AgentRankingName : null
+                    }
+                    : null,
+
+                // Notes
+                ClientNotes = j.UcjbClient != null ? j.UcjbClient.UcclNotes : null,
+                InternalNotes = j.UcjbNotes,
+
+                // Suburb information
+                From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
+                FromSuburbName = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
+                FromPostCode = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.PostCode : null,
+                FromAddress = j.UcjbFromAddr,
+                To = j.UcjbToNavigation != null ? j.UcjbToNavigation.UcsuName : "Unknown",
+                ToSuburbName = j.UcjbToNavigation != null ? j.UcjbToNavigation.UcsuName : null,
+                ToPostCode = j.UcjbToNavigation != null ? j.UcjbToNavigation.PostCode : null,
+                ToCity = j.UcjbToNavigation != null ? j.UcjbToNavigation.City : null,
+
+                // Region information
+                FromSuburbId = j.UcjbFromNavigation.UcsuId,
+                ToSuburbId = j.UcjbToNavigation.UcsuId,
+
+                // Delivery details
+                PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
+                Return = j.UcjbReturn,
+                SaturdayDelivery = j.SaturdayDelivery,
+
+                // Location data
+                PickUpLatitude = j.PickUpLatitude,
+                PickUpLongitude = j.PickUpLongitude,
+                DeliveryLatitude = j.DeliveryLatitude,
+                DeliveryLongitude = j.DeliveryLongitude,
+
+                // Client information
+                Client = j.UcjbClientCode,
+                ClientName = j.UcjbClient.UcclName,
+                Phone = j.DeliverToPhone,
+                PodName = j.UcjbPodname,
+
+                // Job characteristics
+                Weight = j.UcjbWeight,
+                ToAddress = j.UcjbToAddr,
+                JobType = (int)(j.UcjbType ?? 0),
+                Direct = j.Direct,
+                Van = j.UcjbVan,
+                VanOk = j.VanOk,
+                Truck = j.Truck,
+                DgClass = j.Dgclass,
+                DgDocumentation = j.Dgdocument,
+
+                // Job status and details
+                Done = j.UcjbJobDone,
+                AlertLatePickup = j.UcjbClient.AlertLatePickUp,
+                AlertLateDelivery = j.UcjbClient.AlertLateDelivery,
+                Lp = j.UcjbLatePick,
+                Ld = j.UcjbLateDel,
+
+                PickupFrom = j.UcjbPickUpFrom,
+                Notify = j.NotifiedJobType.UcjtName,
+                FromContactName = j.PickupFromContact,
+                FromContactNumber = j.PickupFromPhone,
+
+                // Speed and job type information
+                Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.ShortName : null,
+                SpeedName = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.UcjtName : null,
+                NotifiedName = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
+                AcceptedName = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
+                SpeedId = j.UcjbSpeed,
+                NotifiedJobTypeId = j.NotifiedJobTypeId,
+                AcceptedJobTypeId = j.AcceptedJobTypeId,
+
+                // References and amounts
+                RefA = j.UcjbClientRefa,
+                RefB = j.UcjbClientRefb,
+                Charge = $"{j.UcjbAmount:C}",
+                OurRef = j.UcjbOurRef,
+
+                // Status
+                StatusId = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsId : 0,
+                Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
+                StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+                InternalStatusId = j.InternalStatus,
+
+                // Job items
+                PalletInfo = j.TucJobItems.Select(i => new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length,
+                    Depth = i.Depth,
+                    Height = i.Height,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }).ToList()
+            }).AsNoTracking().ToListAsync();
+
+            return jobs;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error occured getting jobs for dispatch page. Please see exception.");
+            throw;
+        }
+    }
+
+    private IQueryable<TucJob> ApplyNationwideFilters(
+        IQueryable<TucJob> query,
+        bool isInternal,
+        List<string> filters,
+        string status,
+        NationwideWindowPanel windowPane,
+        string clientIds)
+    {
+        // Handle internal filters
+        if (isInternal && filters != null && filters.Any())
+        {
+            // For now, log that these filters couldn't be applied
+            _logger.LogWarning("String-based filters are not supported in this version. Filters: {Filters}",
+                string.Join(", ", filters));
+        }
+
+        // Apply status filters
+        if (!string.IsNullOrEmpty(status))
+        {
+            query = status switch
+            {
+                "all" => windowPane == NationwideWindowPanel.Reprice
+                    ? query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice)
+                    : query.Where(j => !j.UcjbJobDone),
+
+                "active" => windowPane switch
+                {
+                    NationwideWindowPanel.JobList =>
+                        query.Where(j => !j.UcjbJobDone),
+
+                    NationwideWindowPanel.Pod or NationwideWindowPanel.ActionRequired =>
+                        query.Where(j => !j.UcjbJobDone && j.FollowupTime < DateTime.Now),
+
+                    NationwideWindowPanel.Reprice =>
+                        query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice),
+
+                    _ => query
+                },
+
+                "done" => windowPane == NationwideWindowPanel.Reprice
+                    ? query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice)
+                    : query.Where(j => j.UcjbJobDone),
+
+                _ => query
+            };
+        }
+
+        // Apply window pane filters
+        query = windowPane switch
+        {
+            NationwideWindowPanel.JobList =>
+                query.Where(j => j.InternalStatus == (int)InternalJobStatus.NewJobs ||
+                                 (j.InternalStatus == null && j.UcjbStatus != 9)),
+
+            NationwideWindowPanel.Pod =>
+                query.Where(j => j.InternalStatus == (int)InternalJobStatus.AwaitingPod ||
+                                 j.UcjbStatus == 9),
+
+            NationwideWindowPanel.ActionRequired =>
+                query.Where(j => j.InternalStatus == (int)InternalJobStatus.BookDelivery),
+
+            NationwideWindowPanel.Reprice =>
+                query.Where(j => j.InternalStatus == (int)InternalJobStatus.Reprice ||
+                                 j.Reprice == true),
+
+            _ => query
+        };
+
+        // Apply client filters for non-internal users
+        if (isInternal || string.IsNullOrEmpty(clientIds)) return query;
+
+        var clientIdList = clientIds.Split(',')
+            .Select(id => int.Parse(id.Trim()))
+            .ToList();
+        query = query.Where(j => clientIdList.Contains(j.UcjbClientId));
+
+        return query;
+    }
+
+
+    private static IQueryable<TucJob> NationwideApplyOrdering(IQueryable<TucJob> query, string order, string ascending)
+    {
+        if (string.IsNullOrEmpty(order))
+            return query;
+
+        var isAscending = ascending?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
+
+        return order.ToLowerInvariant() switch
+        {
+            "courier" => isAscending
+                ? query.OrderBy(j => j.UcjbCourier.Code).ThenBy(j => j.UcjbTime)
+                : query.OrderByDescending(j => j.UcjbCourier.Code).ThenByDescending(j => j.UcjbTime),
+
+            "remain" => isAscending
+                ? query.OrderBy(j => j.FollowupTime)
+                    .ThenBy(j => j.UcjbDispTime)
+                    .ThenBy(j => j.UcjbTime)
+                : query.OrderByDescending(j => j.FollowupTime)
+                    .ThenByDescending(j => j.UcjbDispTime)
+                    .ThenByDescending(j => j.UcjbTime),
+
+            "to" => isAscending
+                ? query.OrderBy(j => j.UcjbToNavigation.UcsuName)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbFromNavigation.UcsuName)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbToNavigation.UcsuName)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbFromNavigation.UcsuName)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "from" => isAscending
+                ? query.OrderBy(j => j.UcjbFromNavigation.UcsuName)
+                    .ThenBy(j => j.UcjbToNavigation.UcsuName)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbFromNavigation.UcsuName)
+                    .ThenByDescending(j => j.UcjbToNavigation.UcsuName)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "client" => isAscending
+                ? query.OrderBy(j => j.UcjbClient.UcclCode)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbClient.UcclCode)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "jobno" => isAscending
+                ? query.OrderBy(j => j.UcjbNumber)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbNumber)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "status" => isAscending
+                ? query.OrderBy(j => j.UcjbStatus)
+                : query.OrderByDescending(j => j.UcjbStatus),
+
+            "speed" => isAscending
+                ? query.OrderBy(j => j.UcjbSpeedNavigation.ShortName)
+                : query.OrderByDescending(j => j.UcjbSpeedNavigation.ShortName),
+
+            "notify" => isAscending
+                ? query.OrderBy(j => j.NotifiedJobType.UcjtName)
+                : query.OrderByDescending(j => j.NotifiedJobType.UcjtName),
+
+            "lp" => isAscending
+                ? query.OrderBy(j => j.UcjbLatePick)
+                : query.OrderByDescending(j => j.UcjbLatePick),
+
+            "ld" => isAscending
+                ? query.OrderBy(j => j.UcjbLateDel)
+                : query.OrderByDescending(j => j.UcjbLateDel),
+
+            "time" => isAscending
+                ? query.OrderBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "pod" => isAscending
+                ? query.OrderBy(j => j.UcjbPodname)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbPodname)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            _ => isAscending
+                ? query.OrderBy(j => j.FollowupTime)
+                    .ThenBy(j => j.UcjbDispTime)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.FollowupTime)
+                    .ThenByDescending(j => j.UcjbDispTime)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbCourier.Code)
+        };
+    }
+}

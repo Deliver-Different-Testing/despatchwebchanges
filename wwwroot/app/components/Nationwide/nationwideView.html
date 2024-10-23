@@ -129,7 +129,9 @@
                                     <md-menu>
                                         <md-button aria-label="internal stage" class="md-raised md-primary"
                                                    ng-click="$mdMenu.open($event)">
-                                            <span>{{getSelectedStatusText()}} </span>
+                                            <span>{{getSelectedStatusText()}}
+                                            <md-icon md-font-set="material-symbols-outlined">monitoring</md-icon>
+                                            </span>
                                         </md-button>
                                         <md-menu-content class="md-dense">
                                             <md-menu-item ng-repeat="status in internalStatusOptions">

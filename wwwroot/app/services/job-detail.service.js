@@ -555,28 +555,27 @@ class JobDetailService {
         }
     }
 
-
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editClientCode($event, job) {
-        return this.showEditPrompt($event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
+    async editClientCode($event, job) {
+        await this.showEditPrompt($event, job, 'Edit Client Code', 'Client Code...', 'client code', job.client, 'ClientCode');
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editItems($event, job) {
-        return this.showEditPrompt($event, job, 'Edit Items', 'Items...', 'items', job.items, 'Items');
+    async editItems($event, job) {
+        await this.showEditPrompt($event, job, 'Edit Items', 'Items...', 'items', job.items, 'Items');
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editJobToPhone($event, job) {
+    async editJobToPhone($event, job) {
         return this.showEditPrompt($event, job, 'Edit To Contact Phone', 'To Contact Phone...', 'to contact phone', job.phone, 'ToContactPhone');
     }
 
@@ -584,16 +583,16 @@ class JobDetailService {
      * @param {Object} event
      * @param {Job} job
      */
-    editJobFromPhone(event, job) {
-        return this.showEditPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
+    async editJobFromPhone(event, job) {
+        await this.showEditPrompt(event, job, 'Edit From Contact Phone', 'From Contact Phone...', 'from contact phone', job.fromContactNumber, 'FromContactPhone');
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editToJobContact($event, job) {
-        return this.showEditPrompt($event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'DeliverToContact');
+    async editToJobContact($event, job) {
+        await this.showEditPrompt($event, job, 'Edit To Contact Name', 'To Contact Name...', 'to contact name', job.deliverToContact, 'DeliverToContact');
     }
 
     /**
@@ -601,32 +600,32 @@ class JobDetailService {
      * @param {Job} job
      */
 
-    editPodName($event, job) {
-        return this.showEditPrompt($event, job, 'Edit POD Name', 'POD Name...', 'pod name', job.podName, 'PODName');
+    async editPodName($event, job) {
+        await this.showEditPrompt($event, job, 'Edit POD Name', 'POD Name...', 'pod name', job.podName, 'PODName');
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editFromJobContact($event, job) {
-        return this.showEditPrompt($event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
+    async editFromJobContact($event, job) {
+        await this.showEditPrompt($event, job, 'Edit From Contact Name', 'From Contact Name...', 'from contact name', job.fromContactName, 'FromContactName');
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editJobWeight($event, job) {
-        return this.showEditPrompt($event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
+    async editJobWeight($event, job) {
+        await this.showEditPrompt($event, job, 'Edit Weight', 'Job Weight...', 'job weight', job.weight, 'Weight');
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editAmount($event, job) {
-        return this.showEditPrompt($event, job, 'Amount', 'Amount...', 'job weight', job.charge, 'Amount');
+    async editAmount($event, job) {
+        await this.showEditPrompt($event, job, 'Amount', 'Amount...', 'job weight', job.charge, 'Amount');
     }
 
     /**
@@ -634,11 +633,11 @@ class JobDetailService {
      * @param {Job} job
      * @param {boolean} isRefA
      */
-    editRef($event, job, isRefA) {
+    async editRef($event, job, isRefA) {
         if (isRefA) {
-            return this.showEditPrompt($event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
+            await this.showEditPrompt($event, job, 'Edit RefA', 'RefA...', 'refa', job.refA, 'RefA');
         } else {
-            return this.showEditPrompt($event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
+            await this.showEditPrompt($event, job, 'Edit RefA', 'RefB...', 'refb', job.refB, 'RefB');
         }
     }
 
@@ -647,24 +646,24 @@ class JobDetailService {
      * @param {Object} $event
      * @param {Job} job
      */
-    editOurRef($event, job) {
-        return this.showEditPrompt($event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
+    async editOurRef($event, job) {
+        await this.showEditPrompt($event, job, 'Edit Our Reference', 'Our Reference...', 'our reference', job.ourRef, 'OurRef');
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editTrackingMobile($event, job) {
-        return this.showEditPrompt($event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
+    async editTrackingMobile($event, job) {
+        await this.showEditPrompt($event, job, 'Edit Tracking Mobile', 'Tracking Mobile...', 'tracking mobile', job.trackingMobile, 'TrackingMobile');
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editTrackingEmail($event, job) {
-        return this.showEditPrompt($event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
+    async editTrackingEmail($event, job) {
+        await this.showEditPrompt($event, job, 'Edit Tracking Email', 'Tracking Email...', 'tracking email', job.trackingEmail, 'TrackingEmail');
     }
 
     /**
@@ -1101,7 +1100,7 @@ class JobDetailService {
         const rate = Number(callData.rate.replace(/[^0-9.-]+/g, ""));
 
         if (isDeliveryAddress) {
-            return this._dispatchData.updateDeliveryAddress(
+            await this._dispatchData.updateDeliveryAddress(
                 callData.jobID,
                 suburbId,
                 address,
@@ -1113,7 +1112,7 @@ class JobDetailService {
                 job.preBook
             );
         } else {
-            return this._dispatchData.updatePickupAddress(
+            await this._dispatchData.updatePickupAddress(
                 callData.jobID,
                 suburbId,
                 address,
@@ -1266,16 +1265,16 @@ class JobDetailService {
      * Toggles the Pedal status of a job
      * @param {Job} job - The job to update
      */
-    pedalClick(job) {
-        return this.toggleJobProperty(job, 'pedal');
+    async pedalClick(job) {
+        await this.toggleJobProperty(job, 'pedal');
     }
 
     /**
      * Toggles the Truck status of a job
      * @param {Job} job - The job to update
      */
-    truckClick(job) {
-        return this.toggleJobProperty(job, 'truck');
+    async truckClick(job) {
+        await this.toggleJobProperty(job, 'truck');
     }
 
     /**
@@ -1295,7 +1294,7 @@ class JobDetailService {
                 throw error;
             }
         } else {
-            return this.toggleJobProperty(job, 'direct', false);
+            await this.toggleJobProperty(job, 'direct', false);
         }
     }
 

@@ -35,8 +35,8 @@ public class CourierData
     public string Lrm { get; set; }
     public string Eta2Lrm { get; set; }
     public int? CourierId { get; set; }
-    public string? CourierName { get; set; }
-    public string? CourierMobile { get; set; }
+    public string CourierName { get; set; }
+    public string CourierMobile { get; set; }
 }
 
 public class Destination

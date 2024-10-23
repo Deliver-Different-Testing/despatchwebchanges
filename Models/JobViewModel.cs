@@ -11,18 +11,18 @@ public class JobViewModel
     public int? RootParentId { get; set; }
     public DateTime? Time { get; set; }
     public DateTime? BookedDate { get; set; }
-    public bool Direct { get; set; }
+    public bool? Direct { get; set; }
     public bool Van { get; set; }
     public int? JobRelationshipTypeId { get; set; }
     public bool? VanOk { get; set; }
     public bool? Done { get; set; }
-    public bool Void { get; set; }
+    public bool? Void { get; set; }
     public bool? Truck { get; set; }
-    public bool SaturdayDelivery { get; set; }
-    public bool Return { get; set; }
+    public bool? SaturdayDelivery { get; set; }
+    public bool? Return { get; set; }
     public bool? Pedal { get; set; }
     public bool? Reprice { get; set; }
-    public bool Attention { get; set; }
+    public bool? Attention { get; set; }
     public short? PickupFrom { get; set; }
     public string JobNo { get; set; }
     public string Speed { get; set; }
@@ -32,12 +32,13 @@ public class JobViewModel
     public string NotifiedName { get; set; }
     public string AcceptedName { get; set; }
     [JsonPropertyName("speedID")] public int? SpeedId { get; set; }
+
     public string Notify { get; set; }
     public Vehicle Vehicle { get; set; }
 
     [JsonPropertyName("clientID")] public int? ClientId { get; set; }
 
-    public int JobType { get; set; }
+    public int? JobType { get; set; }
     public string Client { get; set; }
     public string ClientName { get; set; }
 
@@ -82,8 +83,8 @@ public class JobViewModel
     public int? Remain { get; set; }
     public int? PickupTime { get; set; }
     public int? DeliveryTime { get; set; }
-    public int AlertLatePickup { get; set; }
-    public int AlertLateDelivery { get; set; }
+    public int? AlertLatePickup { get; set; }
+    public int? AlertLateDelivery { get; set; }
     public int? Minutes { get; set; }
     public int? StatusId { get; set; }
     public string Status { get; set; }
@@ -124,8 +125,8 @@ public class JobViewModel
     public DateTime? FollowupTime { get; set; }
     public int? InternalStatusId { get; set; }
     public string ChildNotes { get; set; }
-    public bool Locked { get; set; }
-    public bool Invoiced { get; set; }
+    public bool? Locked { get; set; }
+    public bool? Invoiced { get; set; }
 
     [Obsolete("Use DeliveryAddress instead. This property will be removed in a future version.")]
     public decimal? PickUpLongitude { get; set; }
@@ -152,12 +153,12 @@ public class JobViewModel
     public int? TruckWeightLimit { get; set; }
     public DateTime? TruckStartTime { get; set; }
     public double? TruckHours { get; set; }
-    public bool PrivateRes { get; set; }
-    public bool? AllowSplit { get; internal set; }
+    public bool? PrivateRes { get; set; }
+    public bool? AllowSplit { get; set; }
     public DateTime? CompletedTime { get; set; }
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
-    public bool RatedManually { get; set; }
+    public bool? RatedManually { get; set; }
     public short? SizeId { get; set; }
     public bool? Active { get; set; }
     public bool? OneOff { get; set; }
@@ -169,15 +170,15 @@ public class JobViewModel
     public DateTime? StopDate { get; set; }
     public DateTime? RestartDate { get; set; }
     public string Days { get; set; }
-    public bool PreBook { get; set; }
-    public bool BulkJob { get; set; }
+    public bool? PreBook { get; set; }
+    public bool? BulkJob { get; set; }
     public string RunName { get; set; }
 
     public string ScheduleName { get; set; }
     public string ConNote { get; set; }
     public bool? AirportOnly { get; set; }
-    public bool HasNationwide { get; set; }
-    public string? DispatcherName { get; set; }
+    public bool? HasNationwide { get; set; }
+    public string DispatcherName { get; set; }
     public DateTime? CreatedDate { get; set; }
 
     public AddressViewModel PickupAddress { get; set; }
@@ -186,9 +187,9 @@ public class JobViewModel
     public int? ToAirportId { get; set; }
     public int? FromAirportId { get; set; }
 
-    public AssignedFlight? AssignedFlight { get; set; }
+    public AssignedFlight AssignedFlight { get; set; }
 
-    public AgentViewModel? AssignedAgent { get; set; }
+    public AgentViewModel AssignedAgent { get; set; }
 }
 
 public class AssignedFlight

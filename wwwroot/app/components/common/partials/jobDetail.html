@@ -130,6 +130,15 @@
                     </div>
                 </div>
 
+                <div class="field" data-field="flightInfo" ng-if="jdSvc.assignedAgent">
+                    <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Agent Information</label>
+                    <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                        <div>Agent Name: {{jdSvc.currentJob.assignedAgent.agentName}}</div>
+                        <div>Agent Rate: {{jdSvc.currentJob.assignedAgent.agentRate}}</div>
+                        <div>Agent Ranking: {{jdSvc.currentJob.assignedAgent.agentRanking}}</div>
+                    </div>
+                </div>
+
             </div>
             <div class="col-md-6">
                 <div class="row row-no-padding">
