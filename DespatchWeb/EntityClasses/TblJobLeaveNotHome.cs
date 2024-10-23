@@ -7,6 +7,11 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class TblJobLeaveNotHome
     {
+        public TblJobLeaveNotHome()
+        {
+            TucJobs = new HashSet<TucJob>();
+        }
+
         public int LeaveNotHomeId { get; set; }
         public string Name { get; set; }
         public string Smsname { get; set; }
@@ -19,5 +24,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime Created { get; set; }
         public string CreatedBy { get; set; }
         public string Notes { get; set; }
+
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

@@ -19,7 +19,6 @@ namespace DespatchWeb.EntityClasses
         public long? LandAreaSqM { get; set; }
         public long? WaterAreaSqM { get; set; }
         public string Wkt { get; set; }
-        public string FixedWkt { get; set; }
 
         public virtual ICollection<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; }
     }

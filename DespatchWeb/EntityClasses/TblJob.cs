@@ -182,5 +182,6 @@ namespace DespatchWeb.EntityClasses
         public int? FromAirportId { get; set; }
         public decimal? DryIceWeight { get; set; }
         public DateTime? DeliverByTime { get; set; }
+        public int? AgentId { get; set; }
     }
 }
