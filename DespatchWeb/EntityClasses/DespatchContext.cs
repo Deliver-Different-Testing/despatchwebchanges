@@ -2763,6 +2763,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
 
+                entity.Property(e => e.AgentId).HasColumnName("AgentID");
+
                 entity.Property(e => e.Amount).HasColumnType("money");
 
                 entity.Property(e => e.Barcode).HasMaxLength(300);
@@ -5716,6 +5718,11 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.ContactId)
                     .HasConstraintName("FK_tucJob_tucClientContact");
 
+                entity.HasOne(d => d.DeliverToLeave)
+                    .WithMany(p => p.TucJobs)
+                    .HasForeignKey(d => d.DeliverToLeaveId)
+                    .HasConstraintName("FK_tucJob_LeaveNotHome");
+
                 entity.HasOne(d => d.DesiredJobType)
                     .WithMany(p => p.TucJobDesiredJobTypes)
                     .HasForeignKey(d => d.DesiredJobTypeId);
@@ -5747,7 +5754,7 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.Source)
                     .WithMany(p => p.TucJobs)
                     .HasForeignKey(d => d.SourceId)
-                    .HasConstraintName("FK_tucJob_tucSource");
+                    .HasConstraintName("FK_tucJob_Source");
 
                 entity.HasOne(d => d.ToAirport)
                     .WithMany(p => p.TucJobToAirports)
@@ -5767,7 +5774,7 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.UcjbDisp)
                     .WithMany(p => p.TucJobs)
                     .HasForeignKey(d => d.UcjbDispId)
-                    .HasConstraintName("FK_tucJob_tucStaff");
+                    .HasConstraintName("FK_tucJob_Dispatcher");
 
                 entity.HasOne(d => d.UcjbFromNavigation)
                     .WithMany(p => p.TucJobUcjbFromNavigations)
@@ -6975,8 +6982,6 @@ namespace DespatchWeb.EntityClasses
                 entity.ToTable("ZipPolygon");
 
                 entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
-
-                entity.Property(e => e.FixedWkt).HasColumnName("FixedWKT");
 
                 entity.Property(e => e.Latitude).HasColumnType("decimal(18, 8)");
 

@@ -302,7 +302,7 @@ public class BaseJobRepository
         var clientIdList = clientIds.Split(',')
             .Select(id => int.Parse(id.Trim()))
             .ToList();
-        query = query.Where(j => clientIdList.Contains(j.UcjbClientId));
+        query = query.Where(j => clientIdList.Contains(j.UcjbClientId.Value));
 
         return query;
     }

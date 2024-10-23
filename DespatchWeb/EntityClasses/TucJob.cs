@@ -19,7 +19,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime UcjbDate { get; set; }
         public DateTime? UcjbTime { get; set; }
         public double? UcjbType { get; set; }
-        public int UcjbClientId { get; set; }
+        public int? UcjbClientId { get; set; }
         public string UcjbContact { get; set; }
         public double? UcjbChargeType { get; set; }
         public decimal? UcjbAmount { get; set; }
@@ -227,6 +227,7 @@ namespace DespatchWeb.EntityClasses
         public virtual TucJobType AcceptedJobType { get; set; }
         public virtual TucAgent Agent { get; set; }
         public virtual TucClientContact Contact { get; set; }
+        public virtual TblJobLeaveNotHome DeliverToLeave { get; set; }
         public virtual TucJobType DesiredJobType { get; set; }
         public virtual TucCourier Fdcourier { get; set; }
         public virtual TblAirport FromAirport { get; set; }
