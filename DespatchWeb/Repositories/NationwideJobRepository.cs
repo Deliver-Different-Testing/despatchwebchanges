@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
@@ -242,87 +241,6 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
         return rates
             .Select(r => r.Rate)
             .FirstOrDefault();
-    }
-
-    private static string BuildNationwideWhereClause(bool isInternal, List<string> filter, string status,
-        NationwideWindowPanel windowPane, string clientIds)
-    {
-        var whereClause = new StringBuilder();
-
-        if (isInternal)
-        {
-            if (filter != null && filter.Any())
-            {
-                whereClause.Append('(');
-                whereClause.Append(string.Join(" OR ", filter.Select(where => $"({where})")));
-                whereClause.Append(')');
-            }
-        }
-
-        if (!string.IsNullOrEmpty(status))
-        {
-            if (whereClause.Length > 0) whereClause.Append(" AND ");
-
-            switch (status)
-            {
-                case "all":
-                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice
-                        ? "(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice + ")"
-                        : "ucjbJobDone = 0");
-                    break;
-                case "active":
-                    switch (windowPane)
-                    {
-                        case NationwideWindowPanel.JobList:
-                            whereClause.Append("ucjbJobDone = 0");
-                            break;
-                        case NationwideWindowPanel.Pod:
-                        case NationwideWindowPanel.ActionRequired:
-                            whereClause.Append("ucjbJobDone = 0 AND FollowupTime < GETDATE()");
-                            break;
-                        case NationwideWindowPanel.Reprice:
-                            whereClause.Append("(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice +
-                                               ")");
-                            break;
-                        default:
-                            whereClause.Append(string.Empty);
-                            break;
-                    }
-
-                    break;
-                case "done":
-                    whereClause.Append(windowPane == NationwideWindowPanel.Reprice
-                        ? "(Reprice = 1 OR InternalStatus = " + (int)InternalJobStatus.Reprice + ")"
-                        : "ucjbJobDone = 1");
-                    break;
-            }
-        }
-
-        if (whereClause.Length > 0) whereClause.Append(" AND ");
-
-        switch (windowPane)
-        {
-            case NationwideWindowPanel.JobList:
-                whereClause.Append(
-                    $"(InternalStatus = {(int)InternalJobStatus.NewJobs} OR (InternalStatus is Null AND ucjbStatus <> 9))");
-                break;
-            case NationwideWindowPanel.Pod:
-                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.AwaitingPod} OR ucjbStatus = 9)");
-                break;
-            case NationwideWindowPanel.ActionRequired:
-                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.BookDelivery})");
-                break;
-            case NationwideWindowPanel.Reprice:
-                whereClause.Append($"(InternalStatus = {(int)InternalJobStatus.Reprice} OR Reprice = 1)");
-                break;
-            default:
-                whereClause.Append(string.Empty);
-                break;
-        }
-
-        if (!isInternal && !string.IsNullOrEmpty(clientIds)) whereClause.Append($" AND ucjbClientID in ({clientIds})");
-
-        return whereClause.ToString();
     }
 
     private class JobDetails

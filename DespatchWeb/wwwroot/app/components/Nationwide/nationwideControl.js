@@ -2367,8 +2367,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await NWData.assignAgentToJob(job.id, agent.agentId);
 
-                // Refresh data
-                await $scope.getData();
+                // Refresh both new jobs and POD lists since flight assignment can affect both
+                await getJobList([
+                    $scope.jobDataType.NEW,
+                    $scope.jobDataType.POD
+                ]);
+
+                const successMessage = (`Successfully assigned agent ${agent.agentName} to job ${job.jobNo}`)
+                toastrService.showSuccessToast(successMessage)
             } catch (error) {
                 if (error === undefined) {
                     console.log('User canceled!');

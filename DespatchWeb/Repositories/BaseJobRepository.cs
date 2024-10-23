@@ -200,6 +200,7 @@ public class BaseJobRepository
                 StatusId = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsId : 0,
                 Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
                 StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+                InternalStatusId = j.InternalStatus,
 
                 // Job items
                 PalletInfo = j.TucJobItems.Select(i => new PalletInfo
