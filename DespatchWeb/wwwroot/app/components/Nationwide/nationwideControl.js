@@ -600,7 +600,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             4: [$scope.jobDataType.REPRICE]
         };
 
-
         /**
          * Sets the internal status for a job and refreshes relevant data
          * @param {number} internalStatusId - The new internal status ID
@@ -2331,8 +2330,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await NWData.assignFlightToJob(job.id, flight.flightNumber, flight.departureTime);
 
-                // Refresh data
-                await $scope.getData();
+                // Refresh both new jobs and POD lists since flight assignment can affect both
+                await getJobList([
+                    $scope.jobDataType.NEW,
+                    $scope.jobDataType.POD
+                ]);
+
+                const successMessage = (`Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`)
+                toastrService.showSuccessToast(successMessage)
             } catch (error) {
                 if (error === undefined) {
                     console.log('User canceled!');

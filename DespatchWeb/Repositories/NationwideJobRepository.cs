@@ -78,8 +78,18 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 UcnwEta = flight.ArrivalTime,
                 WebhookAlertId = webhookAlertId
             };
-
             _context.TucJobNationwides.Add(jobNationwide);
+
+            // Update job status
+            var jobToUpdate = new TucJob
+            {
+                UcjbId = jobId, InternalStatus = (int)InternalJobStatus.AwaitingPod
+            };
+
+            _context.TucJobs.Attach(jobToUpdate);
+            _context.Entry(jobToUpdate).Property(x => x.InternalStatus).IsModified = true;
+
+            // Apply updates
             await _context.SaveChangesAsync();
 
             return true;
@@ -120,11 +130,13 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
             var jobToUpdate = new TucJob
             {
                 UcjbId = jobId,
-                AgentId = agentId
+                AgentId = agentId,
+                InternalStatus = (int)InternalJobStatus.AwaitingPod
             };
 
             _context.TucJobs.Attach(jobToUpdate);
             _context.Entry(jobToUpdate).Property(x => x.AgentId).IsModified = true;
+            _context.Entry(jobToUpdate).Property(x => x.InternalStatus).IsModified = true;
 
             await _context.SaveChangesAsync();
 
