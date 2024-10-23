@@ -52,7 +52,7 @@ public class BaseJobRepository
                 JobNo = j.UcjbNumber,
                 Time = j.UcjbTime,
                 RootParentId = j.RootParentId,
-                Date = j.UcjbDate.ToString("dd/MM/yyyy"),
+                Date = j.UcjbDate.ToString("MM/dd/yyyy"),
                 Booked =
                     DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
                 DispatchTime = j.UcjbDispTime,
