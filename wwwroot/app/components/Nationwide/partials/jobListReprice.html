@@ -71,9 +71,32 @@
             <td action="toColumnClick(event)" right-click>
                 {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.to}}
             </td>
-            <td><input class="dispatchField" ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)" ng-model="job.courier"
-                       ng-readonly="job.courierData.courierID !== null" ng-style="getJobStyle(job.courierData.courierID !== null)"
-                       placeholder="" type="text"/></td>
+            <td>
+                <input class="dispatchField"
+                       ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
+                       ng-keydown="$event.keyCode === 13 && dispatchJobsFromNew(job.courier)"
+                       ng-model="job.courier"
+                       ng-readonly="job.courierData.courierID !== null"
+                       ng-style="getJobStyle(job.courierData.courierID !== null)"
+                       placeholder=""
+                       type="text"/>
+
+                <input class="dispatchField"
+                       ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
+                       ng-model="job.assignedFlight.flightNumber"
+                       ng-readonly="true"
+                       ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
+                       placeholder=""
+                       type="text"/>
+
+                <input class="dispatchField"
+                       ng-if="job.assignedAgent.agentName"
+                       ng-model="job.assignedAgent.agentName"
+                       ng-readonly="true"
+                       ng-style="getJobStyle(job.assignedAgent.agentName !== null)"
+                       placeholder=""
+                       type="text"/>
+            </td>
             <td>{{job.pod}}</td>
             <td><span ng-style='{"color":"darkorange", "font-weight": "bold"}'>{{job.remain}}</span></td>
             <td class="status" ng-class="job.status">{{job.status}}</td>

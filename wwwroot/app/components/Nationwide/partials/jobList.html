@@ -61,23 +61,27 @@
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}
                 </td>
-                <td ng-if="!job.toAirportId || !job.fromAirportId || !job.assignedAgent">
-                    <input class="dispatchField" ng-keydown="$event.keyCode === 13 && dispatchJobsFromNew(job.courier)"
+                <td>
+                    <input class="dispatchField"
+                           ng-if="!job.assignedAgent.agentName && (!job.toAirportId || !job.fromAirportId)"
+                           ng-keydown="$event.keyCode === 13 && dispatchJobsFromNew(job.courier)"
                            ng-model="job.courier"
                            ng-readonly="job.courierData.courierID !== null"
                            ng-style="getJobStyle(job.courierData.courierID !== null)"
                            placeholder=""
                            type="text"/>
-                </td>
-                <td ng-if="job.toAirportId && job.fromAirportId">
-                    <input class="dispatchField" ng-model="job.assignedFlight.flightNumber"
+
+                    <input class="dispatchField"
+                           ng-if="!job.assignedAgent.agentName && job.toAirportId && job.fromAirportId"
+                           ng-model="job.assignedFlight.flightNumber"
                            ng-readonly="true"
                            ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
                            placeholder=""
                            type="text"/>
-                </td>
-                <td ng-if="job.assignedAgent">
-                    <input class="dispatchField" ng-model="job.assignedAgent.agentName"
+
+                    <input class="dispatchField"
+                           ng-if="job.assignedAgent.agentName"
+                           ng-model="job.assignedAgent.agentName"
                            ng-readonly="true"
                            ng-style="getJobStyle(job.assignedAgent.agentName !== null)"
                            placeholder=""

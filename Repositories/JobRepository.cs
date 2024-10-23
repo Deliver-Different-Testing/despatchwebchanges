@@ -203,6 +203,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             from staff in staffJoin.DefaultIfEmpty()
             join jn in Context.TucJobNationwides on tblJob.JobId equals jn.UcnwJobId into nwJoin
             from flightInfo in nwJoin.DefaultIfEmpty()
+            join ag in _context.TucAgents on tblJob.AgentId equals ag.UcagId into agJoin
+            from agentInfo in agJoin.DefaultIfEmpty()
             where tblJob.JobId == jobId
             select new JobViewModel
             {
@@ -336,6 +338,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                     ExpectedDeparture = flightInfo.UcnwEtd,
                     FlightNumber = flightInfo.UcnwFlightNo,
                     Notes = flightInfo.UcnwNotes
+                },
+                AssignedAgent = new AgentViewModel
+                {
+                    AgentId = agentInfo.UcagId,
+                    AgentName = agentInfo.UcagName,
                 }
             };
 
