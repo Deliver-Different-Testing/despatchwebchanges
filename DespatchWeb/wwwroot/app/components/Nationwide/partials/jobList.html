@@ -61,7 +61,7 @@
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}
                 </td>
-                <td ng-if="!job.toAirportId || !job.fromAirportId">
+                <td ng-if="!job.toAirportId || !job.fromAirportId || !job.assignedAgent">
                     <input class="dispatchField" ng-keydown="$event.keyCode === 13 && dispatchJobsFromNew(job.courier)"
                            ng-model="job.courier"
                            ng-readonly="job.courierData.courierID !== null"
