@@ -41,6 +41,8 @@
                     {{job.speed}}
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="job.speed === 'AF' || (job.fromAirportId && job.toAirportId)">local_airport</i>
+                    <i class="material-symbols-outlined job-table-icon"
+                       ng-if="(job.assignedAgent)">handyman</i>
                 </td>
                 <td ng-contextmenu="setEventsMenu($event)">{{job.jobNo}}</td>
                 <td ng-click="clientColumnClick($event)"
@@ -71,6 +73,13 @@
                     <input class="dispatchField" ng-model="job.assignedFlight.flightNumber"
                            ng-readonly="true"
                            ng-style="getJobStyle(job.assignedFlight.flightNumber !== null)"
+                           placeholder=""
+                           type="text"/>
+                </td>
+                <td ng-if="job.assignedAgent">
+                    <input class="dispatchField" ng-model="job.assignedAgent.agentName"
+                           ng-readonly="true"
+                           ng-style="getJobStyle(job.assignedAgent.agentName !== null)"
                            placeholder=""
                            type="text"/>
                 </td>
