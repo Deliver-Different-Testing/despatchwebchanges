@@ -571,11 +571,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         $scope.getSelectedStatusText = () => {
             if (!$scope.internalStatusOptions || !$scope.currentJob) {
-                return 'Select Status';
+                return 'Status';
             }
 
             const selectedStatus = $scope.internalStatusOptions.find(status => status.id === $scope.currentJob.internalStatusId);
-            return selectedStatus ? selectedStatus.text : 'Select Status';
+            return selectedStatus ? selectedStatus.text : 'Status';
         };
 
         /**
@@ -751,12 +751,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         });
 
-        $scope.unlockJob = () => {
-            return $scope.jdSvc.unlockJob($scope.currentJob);
+        $scope.unlockJob = async () => {
+            await $scope.jdSvc.unlockJob($scope.currentJob);
         };
 
-        $scope.lockJob = () => {
-            return $scope.jdSvc.lockJob($scope.currentJob);
+        $scope.lockJob = async () => {
+            await $scope.jdSvc.lockJob($scope.currentJob);
         };
 
         $scope.selectForDispatch = job => {
@@ -935,8 +935,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     $scope.courier = {gpsCourier: foundCourier.id};
                     await $scope.searchCourier();
                 } catch {
-                    let undispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                    displayPickupPoints(undispatchedData, true, null);
+                    let unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                    displayPickupPoints(unDispatchedData, true, null);
                     await $scope.getAvailableCourierLocation();
                 }
             } catch (error) {
@@ -1665,7 +1665,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $scope.getData();
 
                 const refreshedJob = $scope.jobList.find(jo => jo.id === firstJob.id);
-                await $scope.selectJob(refreshedJob, false);
+                await $scope.selectJob(refreshedJob);
 
                 await new Promise(resolve => $timeout(() => {
                     angular.element(`#jobList tr[data-jobid='${firstJob.id}']`).addClass("active");
@@ -2078,37 +2078,56 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         /**
          * @async
          * @param {Job} job
-         * @param {boolean} clear
          */
-        $scope.selectJob = async (job, clear) => {
+        $scope.selectJob = async (job) => {
             try {
                 await new Promise(resolve => $timeout(resolve, 0));
 
-                $scope.currentJob = job;
-                if ($scope.currentJob) {
+                // Store the previously selected job before updating
+                const previousJob = $scope.currentJob;
+
+                if (previousJob && previousJob.id !== job.id) {
+                    angular.element(`[data-jobid="${previousJob.id}"]`).removeClass('active-job');
+                }
+
+                if (job) {
+                    angular.element(`[data-jobid="${job.id}"]`).addClass('active-job');
                     $scope.getSelectedStatusText();
                 }
 
                 _processActiveTable();
                 _initializeJob(job);
 
+                // Show flight table
                 if (job.toAirportId && job.fromAirportId) {
                     await _processFlights(job);
                 }
 
+                // Show agent table
                 if ($scope.isDeliveryJob()) {
                     await _processAgents(job);
                 }
 
-                $scope.$apply();
-                await updateData(job, clear);
-                angular.element("#box-jobDetail .loading").css('display', 'none');
+                _maintainJobHighlight(); // Ensure highlight persists after any DOM updates
 
+                $scope.$apply();
+                angular.element("#box-jobDetail .loading").css('display', 'none');
                 $timeout(() => sizeHeadings(), 200);
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
         };
+
+        /**
+         * Maintains the highlight state of the selected job
+         * @private
+         */
+        function _maintainJobHighlight() {
+            if ($scope.currentJob) {
+                angular.element('.job-list-table tr').removeClass('active-job');
+                angular.element(`[data-jobid="${$scope.currentJob.id}"]`).addClass('active-job');
+            }
+        }
 
         /**
          * @async
@@ -2167,7 +2186,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             $scope.agentsLoading = false;
         }
-
 
         function _processActiveTable() {
             $scope.selectedJobs = [];

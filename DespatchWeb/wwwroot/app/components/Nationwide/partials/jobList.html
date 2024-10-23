@@ -35,17 +35,28 @@
                 ng-repeat="job in jobList | filter: box.searchBox">
 
                 <td>{{job.time | date: "HH:mm"}}</td>
-                <td action="speedColumnClick($event)" right-click>
+                <td ng-click="speedColumnClick($event)"
+                    ng-contextmenu="speedColumnClick($event)"
+                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{job.speed}}
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="job.speed === 'AF' || (job.fromAirportId && job.toAirportId)">local_airport</i>
                 </td>
-                <td context-menu="setEventsMenu">{{job.jobNo}}</td>
-                <td action="clientColumnClick($event)" right-click>{{job.client}}</td>
-                <td action="fromColumnClick($event)" class="address-cell" right-click>
+                <td ng-contextmenu="setEventsMenu($event)">{{job.jobNo}}</td>
+                <td ng-click="clientColumnClick($event)"
+                    ng-contextmenu="clientColumnClick($event)"
+                    ng-mousedown="$event.button === 2 && $event.preventDefault()">{{job.client}}
+                </td>
+                <td class="address-cell"
+                    ng-click="fromColumnClick($event)"
+                    ng-contextmenu="fromColumnClick($event)"
+                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                 </td>
-                <td action="toColumnClick($event)" class="address-cell" right-click>
+                <td class="address-cell"
+                    ng-click="toColumnClick($event)"
+                    ng-contextmenu="toColumnClick($event)"
+                    ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}
                 </td>
                 <td ng-if="!job.toAirportId || !job.fromAirportId">
