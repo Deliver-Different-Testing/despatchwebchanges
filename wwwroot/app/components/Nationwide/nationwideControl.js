@@ -442,7 +442,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         $scope.JobRecordSelected = selectedJobId => {
             const selectedJob = $scope.jobList.find(job => job.id === selectedJobId);
-            return $scope.selectJob(selectedJob, false);
+            return $scope.selectJob(selectedJob);
         }
 
         /**

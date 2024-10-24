@@ -156,61 +156,47 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     }
 
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
-{
-    try
     {
-        Log.Information("Starting GetClearListsAsync for despatch view IDs: {@DespatchViewIds}", despatchViewIds);
-
-        var activeCouriers = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
-        Log.Debug("Retrieved {Count} active couriers", activeCouriers?.Count() ?? 0);
-
-        var clearLists = await Context.TblDespatchViews
-            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-            .SelectMany(dv => dv.DespatchViewZoneGroups)
-            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
-            .Distinct()
-            .ToListAsync();
-
-        Log.Debug("Found {Count} distinct clear lists", clearLists?.Count ?? 0);
-
-        var viewModel = new ClearListViewModel();
-        foreach (var clearList in clearLists)
+        try
         {
-            if (clearList == null)
+            var activeCouriers = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
+
+            var clearLists = await Context.TblDespatchViews
+                .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
+                .SelectMany(dv => dv.DespatchViewZoneGroups)
+                .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
+                .Distinct()
+                .ToListAsync();
+
+            var viewModel = new ClearListViewModel();
+            foreach (var clearList in clearLists)
             {
-                Log.Warning("Null clear list encountered in results");
-                continue;
+                if (clearList == null)
+                {
+                    continue;
+                }
+
+                var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
+
+                if (areaClearList == null)
+                {
+                    continue;
+                }
+
+                var clearListName = clearList.Name?.ToLower();
+                areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearListName);
+
+                viewModel.Areas?.Add(areaClearList);
             }
 
-            Log.Debug("Building clear list view model for area: {ClearListName}", clearList.Name);
-            var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
-
-            if (areaClearList == null)
-            {
-                Log.Warning("BuildClearListViewModel returned null for area: {ClearListName}", clearList.Name);
-                continue;
-            }
-
-            var clearListName = clearList.Name?.ToLower();
-            areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearListName);
-            Log.Debug("Total remaining for {ClearListName}: {TotalRemaining}",
-                clearListName, areaClearList.TotalRemaining);
-
-            viewModel.Areas?.Add(areaClearList);
+            return viewModel;
         }
-
-        Log.Information("Completed GetClearListsAsync successfully. Generated {Count} area clear lists",
-            viewModel.Areas?.Count ?? 0);
-
-        return viewModel;
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            throw;
+        }
     }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Error executing GetClearListsAsync for despatch view IDs: {@DespatchViewIds}",
-            despatchViewIds);
-        throw;
-    }
-}
 
     public async Task<string> GetAirportCodeByIdAsync(int airportId)
     {
