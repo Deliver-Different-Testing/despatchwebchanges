@@ -99,6 +99,8 @@ public class BaseJobRepository
                 Booked =
                     DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
                 DispatchTime = j.UcjbDispTime,
+                CreatedDate = j.UcjbDate,
+                ScheduleName = j.ScheduleName,
 
                 PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
                 DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
@@ -189,6 +191,8 @@ public class BaseJobRepository
                 Return = j.UcjbReturn,
                 SaturdayDelivery = j.SaturdayDelivery,
                 Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
+                CompletedTime = j.UcjbComplTime,
+
 
                 // Location data
                 PickUpLatitude = j.PickUpLatitude,
@@ -201,6 +205,7 @@ public class BaseJobRepository
                 ClientName = j.UcjbClient.UcclName,
                 Phone = j.DeliverToPhone,
                 PodName = j.UcjbPodname,
+                PuTime = j.PickUpTime,
 
                 // Job characteristics
                 Weight = j.UcjbWeight,
