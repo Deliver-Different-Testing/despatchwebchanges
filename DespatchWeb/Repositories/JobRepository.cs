@@ -1820,7 +1820,6 @@ public class JobRepository : BaseJobRepository, IJobRepository
         await _context.SaveChangesAsync();
     }
 
-
     private async Task<List<Size>> GetRelatedJobsAsync(int? rootParentId, int clientId)
     {
         if (!rootParentId.HasValue) return new List<Size>();
@@ -1876,27 +1875,21 @@ public class JobRepository : BaseJobRepository, IJobRepository
     private IQueryable<ClientItemsViewModel> BuildClientItemsQuery(int clientId, int speedId,
         IEnumerable<int> clientItemIds)
     {
-        var query =
-            from cas in _context.TblClientAvailableSpeeds
-            where cas.ClientId == clientId && cas.SpeedId == speedId
-            join casi in _context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
-            where casi.Active
-            join ci in _context.TucClientItems on casi.ClientItemId equals ci.ItemId
-            where ci.ClientId == clientId
-            orderby ci.Name
-            select new ClientItemsViewModel
-            {
-                ItemId = ci.ItemId,
-                ClientId = ci.ClientId,
-                Name = ci.Name,
-                Description = ci.Description,
-                PerItem = ci.PerItem,
-                Rate = ci.Rate,
-                OnlyVan = ci.OnlyVan,
-                Selected = clientItemIds.Contains(ci.ItemId)
-            };
-
-        return query;
+        return _context.TblClientAvailableSpeeds
+            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .SelectMany(cas => cas.TblClientAvailableSpeedItems
+                .Where(casi => casi.Active)
+                .Select(casi => new ClientItemsViewModel
+                {
+                    ItemId = casi.ClientItem.ItemId,
+                    ClientId = casi.ClientItem.ClientId,
+                    Name = casi.ClientItem.Name,
+                    Description = casi.ClientItem.Description,
+                    PerItem = casi.ClientItem.PerItem,
+                    Rate = casi.ClientItem.Rate,
+                    OnlyVan = casi.ClientItem.OnlyVan,
+                    Selected = clientItemIds.Contains(casi.ClientItem.ItemId)
+                }));
     }
 
     private static async Task<PagedList<ClientItemsViewModel>> CreatePagedList(IQueryable<ClientItemsViewModel> query)
