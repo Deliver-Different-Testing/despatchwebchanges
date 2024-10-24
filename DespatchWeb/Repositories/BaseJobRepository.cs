@@ -7,6 +7,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
@@ -21,28 +22,66 @@ public class BaseJobRepository
         _logger = logger;
     }
 
+    // Create
+    public async Task<T> Add<T>(T entity) where T : class
+    {
+        var result = await _context.Set<T>().AddAsync(entity);
+        await _context.SaveChangesAsync();
+        return result.Entity;
+    }
+
+    // Read
+    public async Task<T> Get<T>(int id) where T : class
+    {
+        return await _context.Set<T>().FindAsync(id);
+    }
+
+    // Update
+    public async Task<T> Update<T>(T entity) where T : class
+    {
+        _context.Set<T>().Update(entity);
+        await _context.SaveChangesAsync();
+        return entity;
+    }
+
+    // Delete
+    public async Task<T> Delete<T>(int id) where T : class
+    {
+        var entity = await Get<T>(id);
+        if (entity == null) return entity;
+
+        _context.Set<T>().Remove(entity);
+        await _context.SaveChangesAsync();
+
+        return entity;
+    }
+
     // This function replaces the sql view "DESWEB_qryDespatch"
     public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
-        string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
-        List<string> viewFilters)
+        string order, string ascending, bool isInternal, string clientIds,
+        List<string> viewFilters, NationwideWindowPanel? windowPane = null)
     {
         try
         {
-            var excludedSpeeds = new int?[] { 38, 39, 55, 56 };
-
-            var query = _context.TucJobs
+                     var query = _context.TucJobs
                 .Where(j => !j.UcjbVoid
-                            && j.ParentId != null
                             && j.UcjbStatus != 18
-                            && (j.JobRelationshipType.DisplayDespatch == true ||
-                                (j.JobRelationshipTypeId == 10 && !excludedSpeeds.Contains(j.UcjbSpeed)))
+                            && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
                             && (j.DisplayInDespatch == null || j.DisplayInDespatch == true));
 
-            // Apply Nationwide filters
-            query = ApplyNationwideFilters(query, isInternal, viewFilters, status, windowPane, clientIds);
-
-            // Apply ordering
-            query = NationwideApplyOrdering(query, order, ascending);
+            switch (page)
+            {
+                case AppPage.Dispatch:
+                    query = ApplyDashboardFilters(query, isInternal, viewFilters, status, clientIds);
+                    query = ApplyDashboardOrdering(query, order, ascending);
+                    break;
+                case AppPage.Domestic:
+                    query = ApplyNationwideFilters(query, isInternal, viewFilters, status, windowPane.Value, clientIds);
+                    query = ApplyNationwideOrdering(query, order, ascending);
+                    break;
+                default:
+                    return new List<JobViewModel>();
+            }
 
             // Grab the matching jobs
             var jobs = await query.Select(j => new JobViewModel
@@ -56,6 +95,8 @@ public class BaseJobRepository
                 Booked =
                     DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss")),
                 DispatchTime = j.UcjbDispTime,
+                CreatedDate = j.UcjbDate,
+                ScheduleName = j.ScheduleName,
 
                 PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
                 DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
@@ -145,6 +186,9 @@ public class BaseJobRepository
                 PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
                 Return = j.UcjbReturn,
                 SaturdayDelivery = j.SaturdayDelivery,
+                Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
+                CompletedTime = j.UcjbComplTime,
+
 
                 // Location data
                 PickUpLatitude = j.PickUpLatitude,
@@ -157,6 +201,7 @@ public class BaseJobRepository
                 ClientName = j.UcjbClient.UcclName,
                 Phone = j.DeliverToPhone,
                 PodName = j.UcjbPodname,
+                PuTime = j.PickUpTime,
 
                 // Job characteristics
                 Weight = j.UcjbWeight,
@@ -202,6 +247,19 @@ public class BaseJobRepository
                 StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
                 InternalStatusId = j.InternalStatus,
 
+                // Size
+                Size = new Vehicle
+                {
+                    Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
+                    Label = j.UcjbVan ? "Van" :
+                        j.UcjbSize == 1 ? "Bike" :
+                        j.UcjbSize == 2 ? "Car" :
+                        j.UcjbSize == 3 ? "Van" :
+                        j.UcjbSize == 4 ? "Truck" :
+                        j.UcjbSize == 5 ? "Scooter" :
+                        "Car" // Default case
+                },
+
                 // Job items
                 PalletInfo = j.TucJobItems.Select(i => new PalletInfo
                 {
@@ -216,6 +274,13 @@ public class BaseJobRepository
                     Do = i.Do,
                     DgClass = i.Dgclass,
                     Notes = i.Notes
+                }).ToList(),
+
+                // Related jobs
+                RelatedJobs = j.Parent.InverseParent.Select(p => new Size
+                {
+                    Id = p.UcjbId,
+                    Label = p.UcjbNumber
                 }).ToList()
             }).AsNoTracking().ToListAsync();
 
@@ -226,6 +291,135 @@ public class BaseJobRepository
             _logger.LogError(e, "Error occured getting jobs for dispatch page. Please see exception.");
             throw;
         }
+    }
+
+    private IQueryable<TucJob> ApplyDashboardFilters(
+        IQueryable<TucJob> query,
+        bool isInternal,
+        List<string> viewFilters,
+        string status,
+        string clientIds)
+    {
+        switch (isInternal)
+        {
+            // Apply client filters for non-internal users
+            case false when !string.IsNullOrEmpty(clientIds):
+            {
+                var clientIdList = clientIds.Split(',')
+                    .Select(id => int.Parse(id.Trim()))
+                    .ToList();
+                query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
+                break;
+            }
+            // Apply internal view filters
+            case true when viewFilters?.Any() == true:
+                _logger.LogWarning("View filters not implemented in IQueryable version");
+                break;
+        }
+
+        // Apply status filters
+        query = status?.ToLower() switch
+        {
+            "new" => query.Where(j => j.UcjbStatusNavigation != null && (j.UcjbCourierId == null ||
+                                                                         j.UcjbStatusNavigation.UcjsCode == "D" ||
+                                                                         j.UcjbStatusNavigation.UcjsCode == "N")),
+
+            "nda" => query.Where(j => j.UcjbCourierId == null ||
+                                      j.UcjbStatusNavigation.UcjsCode == "N" ||
+                                      j.UcjbStatusNavigation.UcjsCode == "D" ||
+                                      j.UcjbStatusNavigation.UcjsCode == "A" ||
+                                      j.UcjbStatusNavigation.UcjsCode == "LP"),
+
+            "active" => query.Where(j => !j.UcjbJobDone),
+
+            "done" => query.Where(j => j.UcjbJobDone),
+
+            "all" => query,
+
+            _ => query
+        };
+
+        // Always exclude status 9
+        return query.Where(j => j.UcjbStatus != 9);
+    }
+
+
+    private static IQueryable<TucJob> ApplyDashboardOrdering(IQueryable<TucJob> query, string order, string ascending)
+    {
+        if (string.IsNullOrEmpty(order))
+            return query;
+
+        var isAscending = ascending?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
+
+        return order.ToLowerInvariant() switch
+        {
+            "remain" => isAscending
+                ? query.OrderBy(j => j.UcjbDispTime)
+                    .ThenBy(j => j.UcjbTime)
+                : query.OrderByDescending(j => j.UcjbDispTime)
+                    .ThenByDescending(j => j.UcjbTime),
+
+            "to" => isAscending
+                ? query.OrderBy(j => j.UcjbTo)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbFrom)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbTo)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbFrom)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "from" => isAscending
+                ? query.OrderBy(j => j.UcjbFrom)
+                    .ThenBy(j => j.UcjbTo)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbFrom)
+                    .ThenByDescending(j => j.UcjbTo)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "client" => isAscending
+                ? query.OrderBy(j => j.UcjbClientCode)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbClientCode)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "jobno" => isAscending
+                ? query.OrderBy(j => j.UcjbNumber)
+                    .ThenBy(j => j.UcjbTime)
+                    .ThenBy(j => j.UcjbCourier.Code)
+                : query.OrderByDescending(j => j.UcjbNumber)
+                    .ThenByDescending(j => j.UcjbTime)
+                    .ThenByDescending(j => j.UcjbCourier.Code),
+
+            "status" => isAscending
+                ? query.OrderBy(j => j.UcjbStatus)
+                : query.OrderByDescending(j => j.UcjbStatus),
+
+            "speed" => isAscending
+                ? query.OrderBy(j => j.UcjbSpeedNavigation.ShortName)
+                : query.OrderByDescending(j => j.UcjbSpeedNavigation.ShortName),
+
+            "notify" => isAscending
+                ? query.OrderBy(j => j.NotifiedJobType.UcjtName)
+                : query.OrderByDescending(j => j.NotifiedJobType.UcjtName),
+
+            "lp" => isAscending
+                ? query.OrderBy(j => j.UcjbLatePick)
+                : query.OrderByDescending(j => j.UcjbLatePick),
+
+            "ld" => isAscending
+                ? query.OrderBy(j => j.UcjbLateDel)
+                : query.OrderByDescending(j => j.UcjbLateDel),
+
+            "time" => isAscending
+                ? query.OrderBy(j => j.UcjbTime)
+                : query.OrderByDescending(j => j.UcjbTime),
+            _ => throw new ArgumentOutOfRangeException()
+        };
     }
 
     private IQueryable<TucJob> ApplyNationwideFilters(
@@ -240,7 +434,7 @@ public class BaseJobRepository
         if (isInternal && filters != null && filters.Any())
         {
             // For now, log that these filters couldn't be applied
-            _logger.LogWarning("String-based filters are not supported in this version. Filters: {Filters}",
+            _logger.LogWarning($"String-based filters are not supported in this version. Filters: {filters}",
                 string.Join(", ", filters));
         }
 
@@ -302,13 +496,13 @@ public class BaseJobRepository
         var clientIdList = clientIds.Split(',')
             .Select(id => int.Parse(id.Trim()))
             .ToList();
-        query = query.Where(j => clientIdList.Contains(j.UcjbClientId.Value));
+        query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
 
         return query;
     }
 
 
-    private static IQueryable<TucJob> NationwideApplyOrdering(IQueryable<TucJob> query, string order, string ascending)
+    private static IQueryable<TucJob> ApplyNationwideOrdering(IQueryable<TucJob> query, string order, string ascending)
     {
         if (string.IsNullOrEmpty(order))
             return query;
@@ -407,5 +601,48 @@ public class BaseJobRepository
                     .ThenByDescending(j => j.UcjbTime)
                     .ThenByDescending(j => j.UcjbCourier.Code)
         };
+    }
+
+    public static int? CalculateRemainTime(TucJob job, TucJobType jobType)
+    {
+        if (job == null)
+            return null;
+
+        var now = DateTime.Now;
+        var jobDateTime = CombineDateAndTime(job.UcjbDate, job.UcjbTime);
+
+        // Handle Economy Delivery (Speed = 36)
+        if (job.UcjbSpeed == 36)
+        {
+            var economyDeliveryDateTime = CombineDateAndTime(job.UcjbDate, job.DeliverByTime);
+            return (int)(economyDeliveryDateTime - now).TotalMinutes;
+        }
+
+        // Handle Special Speeds (41,42,43,51,52) with Required Delivery Time
+        if (job.UcjbSpeed != null && new[] { 41, 42, 43, 51, 52 }.Contains(job.UcjbSpeed.Value) &&
+            job.RequiredDeliveryTime.HasValue)
+        {
+            var requiredDeliveryDateTime = CombineDateAndTime(job.UcjbDate, job.RequiredDeliveryTime.Value);
+            return (int)(requiredDeliveryDateTime - now).TotalMinutes;
+        }
+
+        // Handle Standard Case
+        var standardDeliveryDateTime = jobDateTime.AddMinutes(jobType.Minutes ?? 0);
+        return (int)(standardDeliveryDateTime - now).TotalMinutes;
+    }
+
+    private static DateTime CombineDateAndTime(DateTime date, DateTime? time)
+    {
+        if (time is null) return date;
+
+        // Else combine the dates
+        return new DateTime(
+            date.Year,
+            date.Month,
+            date.Day,
+            time.Value.Hour,
+            time.Value.Minute,
+            time.Value.Second
+        );
     }
 }

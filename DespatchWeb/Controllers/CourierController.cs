@@ -20,7 +20,7 @@ public class CourierController : Controller
     public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds)
     {
         if (despatchViewIds is { Count: 0 })
-            return Json(new ClearListViewModel());
+            despatchViewIds.Add(49);
 
         var result = await _courierRepo.GetClearListsAsync(despatchViewIds);
         return Json(result);

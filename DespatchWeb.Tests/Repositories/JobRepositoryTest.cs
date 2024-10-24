@@ -8,6 +8,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MockQueryable.Moq;
 using Moq;
 using NUnit.Framework;
@@ -23,6 +24,7 @@ public class JobRepositoryTest
     {
         _mockContext = new Mock<DespatchContext>();
         _mockMapper = new Mock<IMapper>();
+        _mockLogger = new Mock<Logger<JobRepository>>();
 
         _mockContext.Setup(c => c.TucClientItems).Returns(CreateClientItems()?.Object);
         _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(CreateAvailableSpeedItems()?.Object);
@@ -40,9 +42,10 @@ public class JobRepositoryTest
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
-        _repository = new JobRepository(_mockContext.Object, _mockMapper.Object);
+        _repository = new JobRepository(_mockContext.Object, _mockMapper.Object, _mockLogger.Object);
     }
 
+    private Mock<Logger<JobRepository>> _mockLogger;
     private Mock<DespatchContext> _mockContext;
     private Mock<IMapper> _mockMapper;
     private IJobRepository _repository;

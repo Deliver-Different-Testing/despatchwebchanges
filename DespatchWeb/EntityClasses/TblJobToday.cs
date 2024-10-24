@@ -261,5 +261,10 @@ namespace DespatchWeb.EntityClasses
         public string DeliveryAddressLine6 { get; set; }
         public string DeliveryAddressLine7 { get; set; }
         public string DeliveryAddressLine8 { get; set; }
+        public int? FromAirportId { get; set; }
+        public int? ToAirportId { get; set; }
+        public decimal? DryIceWeight { get; set; }
+        public DateTime? DeliverByTime { get; set; }
+        public int? AgentId { get; set; }
     }
 }

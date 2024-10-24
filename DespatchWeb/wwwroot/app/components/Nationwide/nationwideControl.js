@@ -798,14 +798,23 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         });
 
-        $scope.unlockJob = async () => {
-            await $scope.jdSvc.unlockJob($scope.currentJob);
+        /**
+         * @param {Job} job
+         */
+        $scope.unlockJob = async (job) => {
+            await jdSvc.unlockJob(job);
         };
 
-        $scope.lockJob = async () => {
-            await $scope.jdSvc.lockJob($scope.currentJob);
+        /**
+         * @param {Job} job
+         */
+        $scope.lockJob = async (job) => {
+            await jdSvc.lockJob(job);
         };
 
+        /**
+         * @param {Job} job
+         */
         $scope.selectForDispatch = job => {
             console.log("In SelectForDispatch");
             $scope.jobForDispatch = job;
@@ -826,7 +835,13 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             console.log("Job void canceled or error occurred", error);
         });
 
-        $scope.sendSMS = (courierId, message) => NWData.sendSMS(courierId, ContactID, FirstName, message);
+        /**
+         * @param {number} courierId
+         * @param {string} message
+         */
+        $scope.sendSMS = async (courierId, message) => {
+            await NWData.sendSMS(courierId, ContactID, FirstName, message);
+        }
 
         /**
          * @param {Object} $event
@@ -863,6 +878,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         }
 
+        /**
+         * @param {Job} job
+         * @returns {string}
+         */
         $scope.getStatusClass = job => {
             const n = new Date();
             if (!job.done && Date.parse(job.followupTime) < n && (job.speedID === 6 || job.speedID === 7 || job.speedID === 21)) {

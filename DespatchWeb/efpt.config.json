@@ -163,6 +163,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucJobArchive]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJobBooking]",
          "ObjectType": 0
       },

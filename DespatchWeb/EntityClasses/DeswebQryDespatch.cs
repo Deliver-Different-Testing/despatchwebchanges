@@ -139,7 +139,7 @@ namespace DespatchWeb.EntityClasses
         public string ScheduleName { get; set; }
         public string FromPostCode { get; set; }
         public string ToPostCode { get; set; }
-        public int? ConNote { get; set; }
+        public bool? ConNote { get; set; }
         public int? AirportOnly { get; set; }
         public string SpeedName { get; set; }
         public string NotifiedName { get; set; }

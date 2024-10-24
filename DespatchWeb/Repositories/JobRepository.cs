@@ -7,23 +7,28 @@ using System.Threading.Tasks;
 using AutoMapper;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
-public class JobRepository : IJobRepository
+public class JobRepository : BaseJobRepository, IJobRepository
 {
     private readonly DespatchContext _context;
+    private readonly ILogger<JobRepository> _logger;
     private readonly IMapper _mapper;
 
-    public JobRepository(DespatchContext context, IMapper mapper)
+    public JobRepository(DespatchContext context, IMapper mapper, ILogger<JobRepository> logger)
+        : base(context, logger)
     {
         _context = context;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<JobViewModel> PreBookDetailAsync(int prebookId)
@@ -833,188 +838,7 @@ public class JobRepository : IJobRepository
                 .ToListAsync()
             : new List<string>();
 
-        // Build filters
-        var orderByClause = GetJobOrderByClause(order, ascending);
-        var whereClause = BuildJobWhereClause(isInternal, viewFilters, status, clientIds);
-
-        var sql =
-            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {whereClause} order by {orderByClause}";
-
-        var jobs = await _context.DeswebQryDespatches
-            .FromSqlRaw(sql)
-            .AsNoTracking()
-            .ToListAsync();
-
-        var list = jobs.Select(j => new JobViewModel
-        {
-            Id = j.UcjbId,
-            RootParentId = j.RootParentId,
-            Time = j.UcjbTime,
-            Direct = j.Direct,
-            Van = j.UcjbVan,
-            VanOk = j.VanOk,
-            Truck = j.Truck,
-            Return = j.UcjbReturn,
-            PickupFrom = j.UcjbPickUpFrom,
-            SaturdayDelivery = j.SaturdayDelivery,
-            JobNo = j.UcjbNumber,
-            Speed = j.SpeedShortName,
-            SpeedName = j.SpeedName,
-            SpeedId = j.UcjbSpeed,
-            Notify = j.NotifiedSpeed,
-            NotifiedName = j.NotifiedName,
-            AcceptedJobTypeId = j.AcceptedJobTypeId,
-            AcceptedName = j.OriginalName,
-            NotifiedJobTypeId = j.NotifiedJobTypeId,
-            Vehicle = new Vehicle
-            {
-                Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                Label = j.UcjbVan ? "Van" :
-                    j.UcjbSize.HasValue ? Enum.GetName(typeof(Enums.Vehicle), (int)j.UcjbSize) : null
-            },
-            Client = j.UcclCode,
-            ClientId = j.UcjbClientId,
-            ClientName = j.ClientName,
-            JobType = (int)(j.UcjbType ?? 0),
-            PickupAddress = new AddressViewModel
-            {
-                AddressLine1 = j.PickupAddressLine1,
-                AddressLine2 = j.PickupAddressLine2,
-                AddressLine3 = j.PickupAddressLine3,
-                AddressLine4 = j.PickupAddressLine4,
-                AddressLine5 = j.PickupAddressLine5,
-                AddressLine6 = j.PickupAddressLine6,
-                AddressLine7 = j.PickupAddressLine7,
-                AddressLine8 = j.PickupAddressLine8,
-                Latitude = j.PickUpLatitude,
-                Longitude = j.PickUpLongitude,
-            },
-            DeliveryAddress = new AddressViewModel
-            {
-                AddressLine1 = j.DeliveryAddressLine1,
-                AddressLine2 = j.DeliveryAddressLine2,
-                AddressLine3 = j.DeliveryAddressLine3,
-                AddressLine4 = j.DeliveryAddressLine4,
-                AddressLine5 = j.DeliveryAddressLine5,
-                AddressLine6 = j.DeliveryAddressLine6,
-                AddressLine7 = j.DeliveryAddressLine7,
-                AddressLine8 = j.DeliveryAddressLine8,
-                Latitude = j.DeliveryLatitude,
-                Longitude = j.DeliveryLongitude,
-            },
-            From = j.SuburbFrom,
-            FromContactName = j.PickupFromContact,
-            FromContactNumber = j.PickupFromPhone,
-            FromSuburbId = j.FromSuburbId,
-            FromSuburbName = j.FromSuburbName,
-            FromPostCode = j.FromPostCode,
-            FromAddress = j.UcjbFromAddr,
-            To = j.SuburbTo,
-            ToSuburbId = j.ToSuburbId,
-            ToSuburbName = j.ToSuburbName,
-            ToPostCode = j.ToPostCode,
-            ToAddress = j.UcjbToAddr,
-            ToCity = j.ToCity,
-            Courier = j.CourierCode,
-            Remain = j.RemainTime,
-            StatusId = j.UcjbStatus,
-            Status = j.UcjsCode,
-            Lp = j.UcjbLatePick,
-            Ld = j.UcjbLateDel,
-            ContactName = j.UcjbContact,
-            Phone = j.DeliverToPhone,
-            SpeedAccepted = j.OriginalSpeed,
-            Size = new Vehicle
-            {
-                Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                Label = j.UcjbVan ? "Van" :
-                    j.UcjbSize.HasValue ? Enum.GetName(typeof(Enums.Vehicle), (int)j.UcjbSize) : null
-            },
-            Weight = j.UcjbWeight,
-            Items = j.UcjbQty,
-            RefA = j.UcjbClientRefa,
-            RefB = j.UcjbClientRefb,
-            OurRef = j.UcjbOurRef,
-            SigNotRequired = j.SigNotRequired,
-            Charge = j.UcjbAmount.HasValue ? $"{j.UcjbAmount:C}" : null,
-            Booked = j.UcjbTime.HasValue
-                ? DateTime.Parse(j.UcjbDate.ToString("yyyy-MM-dd") + " " + j.UcjbTime.Value.ToString("HH:mm:ss"))
-                : DateTime.Now,
-            Date = j.UcjbDate.ToString("dd/MM/yyyy"),
-            DispatchTime = j.UcjbDispTime,
-            PuTime = j.Putime,
-            ClientNotes = j.ClientNotes,
-            InternalNotes = j.JobNotes,
-            ChildNotes = j.ChildNotes,
-            PickUpLatitude = j.PickUpLatitude,
-            PickUpLongitude = j.PickUpLongitude,
-            DeliveryLatitude = j.DeliveryLatitude,
-            DeliveryLongitude = j.DeliveryLongitude,
-            PalletInfo = (
-                from pa in _context.TucJobItems.Where(p => p.JobId == j.UcjbId)
-                select new PalletInfo
-                {
-                    Id = pa.JobId,
-                    Quantity = pa.Items,
-                    ItemId = pa.ItemId,
-                    Weight = pa.Weight,
-                    Length = pa.Length,
-                    Depth = pa.Depth,
-                    Height = pa.Height,
-                    Pu = pa.Pu,
-                    Do = pa.Do,
-                    DgClass = pa.Dgclass,
-                    Notes = pa.Notes
-                }).ToList(),
-            CourierData = new CourierData
-            {
-                Courier = string.IsNullOrEmpty(j.CourierCode) ? "" : j.CourierCode + " " + j.CourierName,
-                CourierId = j.UcjbCourierId
-            },
-            AllowDispatch = j.AllowDespatch,
-            AllowSplit = j.AllowSplit,
-            DgClass = j.Dgclass,
-            DgDocumentation = j.Dgdocument,
-            DisplaySplitJobDetail = j.DisplaySplitJobDetail == 1,
-            TruckWeightLimit = j.TruckWeightLimit,
-            TruckStartTime = j.TruckStartTime,
-            TruckHours = j.TruckHours,
-            PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
-            PickupTime = j.PickupTime,
-            DeliveryTime = j.DeliveryTime,
-            AlertLatePickup = j.AlertLatePickUp,
-            AlertLateDelivery = j.AlertLateDelivery,
-            Minutes = j.Minutes,
-            DeliverToContact = j.DeliverToContact,
-            PodPhoto = j.DeliveryPhoto,
-            PodName = j.UcjbPodname,
-            CompletedTime = j.UcjbComplTime.HasValue
-                ? DateTime.Parse(j.UcjbComplTime?.ToString("yyyy-MM-dd") + " " +
-                                 j.UcjbComplTime?.ToString("HH:mm"))
-                : j.UcjbComplTime,
-            Done = j.UcjbJobDone,
-            TrackingMethod = j.TrackingMethod,
-            TrackingMobile = j.TrackingMobile,
-            TrackingEmail = j.TrackingEmail,
-            UdStatus = j.Udstatus,
-            RatedManually = j.RatedManually,
-            PreBook = false,
-            Attention = j.UcjbAttention,
-            Pedal = j.UcjbCbd,
-            Locked = j.Locked ?? false,
-            Invoiced = false,
-            InternalStatusId = j.InternalStatus,
-            FollowupTime = j.FollowupTime,
-            Reprice = j.Reprice,
-            GstRate = j.Gstrate,
-            ScheduleName = j.ScheduleName,
-            LoggedInContactName = j.LoggedInContactName,
-            StatusName = j.StatusName,
-            FromAirportId = j.FromAirportId,
-            ToAirportId = j.ToAirportId
-        }).ToList();
-
-        return list;
+        return await DespatchQry(AppPage.Dispatch, status, order, ascending, isInternal, clientIds, viewFilters);
     }
 
 
@@ -2001,68 +1825,6 @@ public class JobRepository : IJobRepository
         await _context.SaveChangesAsync();
     }
 
-    private static string GetJobOrderByClause(string order, string ascending)
-    {
-        var ascDesc = ascending != null && ascending.Equals("asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
-
-        return order?.ToLowerInvariant() switch
-        {
-            "remain" => $"ucjbDispTime {ascDesc}, RemainTime {ascDesc}, ucjbTime {ascDesc}",
-            "to" => $"SuburbTo {ascDesc}, ucjbTime {ascDesc}, SuburbFrom {ascDesc}, CourierCode {ascDesc}",
-            "from" => $"SuburbFrom {ascDesc}, SuburbTo {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
-            "client" => $"ucclCode {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
-            "jobno" => $"ucjbNumber {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
-            "status" => $"ucjbStatus {ascDesc}",
-            "speed" => $"SpeedShortName {ascDesc}",
-            "notify" => $"NotifiedSpeed {ascDesc}",
-            "lp" => $"ucjbLatePick {ascDesc}",
-            "ld" => $"ucjbLateDel {ascDesc}",
-            "time" => $"ucjbTime {ascDesc}",
-            _ => $"RemainTime {ascDesc}"
-        };
-    }
-
-    private static string BuildJobWhereClause(bool isInternal, List<string> viewFilters, string status,
-        string clientIds)
-    {
-        var whereClauses = new List<string>();
-
-        if (isInternal)
-        {
-            if (viewFilters != null && viewFilters.Any()) whereClauses.Add($"({string.Join(" OR ", viewFilters)})");
-        }
-        else
-        {
-            if (!string.IsNullOrEmpty(clientIds)) whereClauses.Add($"ucjbClientID IN ({clientIds})");
-        }
-
-        // Handle status
-        switch (status?.ToLower())
-        {
-            case "new":
-                whereClauses.Add("(ucjbCourierID IS NULL OR ucjsCode = 'D' OR ucjsCode = 'N')");
-                break;
-            case "nda":
-                whereClauses.Add(
-                    "(ucjbCourierID IS NULL OR ucjsCode = 'N' OR ucjsCode = 'D' OR ucjsCode = 'A' OR ucjsCode = 'LP')");
-                break;
-            case "active":
-                whereClauses.Add("ucjbJobDone = 0");
-                break;
-            case "done":
-                whereClauses.Add("ucjbJobDone = 1");
-                break;
-            case "all":
-                // No additional filter for "all"
-                break;
-        }
-
-        // Always exclude status 9
-        whereClauses.Add("ucjbStatus <> 9");
-
-        // Combine all where clauses
-        return string.Join(" AND ", whereClauses);
-    }
 
     private async Task<List<Size>> GetRelatedJobsAsync(int? rootParentId, int clientId)
     {
