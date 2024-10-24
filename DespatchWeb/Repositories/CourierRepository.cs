@@ -175,19 +175,12 @@ public class CourierRepository : ICourierRepository
                 .ToListAsync();
 
             var viewModel = new ClearListViewModel();
-            foreach (var clearList in clearLists)
+            foreach (var clearList in clearLists.Where(clearList => clearList != null))
             {
-                if (clearList == null)
-                {
-                    continue;
-                }
-
                 var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
 
                 if (areaClearList == null)
-                {
                     continue;
-                }
 
                 var clearListName = clearList.Name?.ToLower();
                 areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearListName);
@@ -246,11 +239,15 @@ public class CourierRepository : ICourierRepository
 
     private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId)
     {
-        return from cla in _context.TblClearListAreas
-            join clazp in _context.ClearListAreaZipPolygons on cla.ClearListAreaId equals clazp.ClearListAreaId
-            join zp in _context.ZipPolygons on clazp.ZipPolygonId equals zp.ZipPolygonId
-            where cla.ClearListAreaId == clearListAreaId
-            select new EnvelopeCoordinate { Longitude = (decimal)zp.Longitude, Latitude = (decimal)zp.Latitude };
+        return _context.TblClearListAreas
+            .Where(area => area.ClearListAreaId == clearListAreaId) // Added missing filter
+            .SelectMany(area => area.TblClearListAreaPolygons)
+            .Select(polygon => polygon.ZipPolygon)
+            .Select(zipPolygon => new EnvelopeCoordinate
+            {
+                Longitude = Convert.ToDecimal(zipPolygon.Longitude),
+                Latitude = Convert.ToDecimal(zipPolygon.Latitude)
+            });
     }
 
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)
