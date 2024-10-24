@@ -65,7 +65,6 @@ public class BaseJobRepository
         {
             var query = _context.TucJobs
                 .Where(j => !j.UcjbVoid
-                            && j.UcjbStatus != 18
                             && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
                             && (j.DisplayInDespatch == null || j.DisplayInDespatch == true));
 
