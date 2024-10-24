@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Serilog;
+using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
@@ -16,22 +17,22 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     // Create
     public async Task<T> Add<T>(T entity) where T : class
     {
-        var result = await _context.Set<T>().AddAsync(entity);
-        await _context.SaveChangesAsync();
+        var result = await Context.Set<T>().AddAsync(entity);
+        await Context.SaveChangesAsync();
         return result.Entity;
     }
 
     // Read
     public async Task<T> Get<T>(int id) where T : class
     {
-        return await _context.Set<T>().FindAsync(id);
+        return await Context.Set<T>().FindAsync(id);
     }
 
     // Update
     public async Task<T> Update<T>(T entity) where T : class
     {
-        _context.Set<T>().Update(entity);
-        await _context.SaveChangesAsync();
+        Context.Set<T>().Update(entity);
+        await Context.SaveChangesAsync();
         return entity;
     }
 
@@ -41,8 +42,8 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         var entity = await Get<T>(id);
         if (entity == null) return entity;
 
-        _context.Set<T>().Remove(entity);
-        await _context.SaveChangesAsync();
+        Context.Set<T>().Remove(entity);
+        await Context.SaveChangesAsync();
 
         return entity;
     }
@@ -304,7 +305,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             }
             // Apply internal view filters
             case true when viewFilters?.Any() == true:
-                _logger.LogWarning("View filters not implemented in IQueryable version");
+                Log.Warning("View filters not implemented in IQueryable version");
                 break;
         }
 

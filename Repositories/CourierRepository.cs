@@ -10,6 +10,7 @@ using DespatchWeb.Models;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace DespatchWeb.Repositories;
 
@@ -170,42 +171,42 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             .Distinct()
             .ToListAsync();
 
-        _logger.LogDebug("Found {Count} distinct clear lists", clearLists?.Count ?? 0);
+        Log.Debug("Found {Count} distinct clear lists", clearLists?.Count ?? 0);
 
         var viewModel = new ClearListViewModel();
         foreach (var clearList in clearLists)
         {
             if (clearList == null)
             {
-                _logger.LogWarning("Null clear list encountered in results");
+                Log.Warning("Null clear list encountered in results");
                 continue;
             }
 
-            _logger.LogDebug("Building clear list view model for area: {ClearListName}", clearList.Name);
+            Log.Debug("Building clear list view model for area: {ClearListName}", clearList.Name);
             var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
 
             if (areaClearList == null)
             {
-                _logger.LogWarning("BuildClearListViewModel returned null for area: {ClearListName}", clearList.Name);
+                Log.Warning("BuildClearListViewModel returned null for area: {ClearListName}", clearList.Name);
                 continue;
             }
 
             var clearListName = clearList.Name?.ToLower();
             areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearListName);
-            _logger.LogDebug("Total remaining for {ClearListName}: {TotalRemaining}",
+            Log.Debug("Total remaining for {ClearListName}: {TotalRemaining}",
                 clearListName, areaClearList.TotalRemaining);
 
             viewModel.Areas?.Add(areaClearList);
         }
 
-        _logger.LogInformation("Completed GetClearListsAsync successfully. Generated {Count} area clear lists",
+        Log.Information("Completed GetClearListsAsync successfully. Generated {Count} area clear lists",
             viewModel.Areas?.Count ?? 0);
 
         return viewModel;
     }
     catch (Exception ex)
     {
-        _logger.LogError(ex, "Error executing GetClearListsAsync for despatch view IDs: {@DespatchViewIds}",
+        Log.Error(ex, "Error executing GetClearListsAsync for despatch view IDs: {@DespatchViewIds}",
             despatchViewIds);
         throw;
     }
