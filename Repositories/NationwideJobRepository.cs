@@ -38,8 +38,8 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 .ToListAsync()
             : new List<string>();
 
-        return await DespatchQry(AppPage.Domestic, status, order, ascending, isInternal, clientIds, windowPane,
-            viewFilters);
+        return await DespatchQry(AppPage.Domestic, status, order, ascending, isInternal, clientIds,
+            viewFilters, windowPane);
     }
 
     public async Task<bool> AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)

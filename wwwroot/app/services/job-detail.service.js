@@ -361,7 +361,6 @@ class JobDetailService {
             bindToController: true
         }).then(updatedJob => {
             this.currentJob = updatedJob
-            this.selectJobDetail(job.id);
         });
     }
 
@@ -397,7 +396,6 @@ class JobDetailService {
             bindToController: true
         })
             .then(() => {
-                this.selectJobDetail(job.id);
                 console.log('Dialog closed successfully');
             })
             .catch(error => {
@@ -443,7 +441,6 @@ class JobDetailService {
             },
             bindToController: true
         }).then(_ => {
-            this.selectJobDetail(job.id);
             console.log('Dialog closed!');
         });
     }
@@ -492,7 +489,6 @@ class JobDetailService {
             },
             bindToController: true
         }).then(_ => {
-            this.selectJobDetail(job.id);
             console.log('Dialog closed!');
         });
     }
@@ -683,7 +679,7 @@ class JobDetailService {
                     console.error('Failed to convert rate to a number:', rate);
                 }
 
-                response = await this._dispatchData.updateJobDetail(
+                await this._dispatchData.updateJobDetail(
                     callData.jobID,
                     callData.field,
                     callData.value,
@@ -700,7 +696,7 @@ class JobDetailService {
                 }
 
                 if (job.bulkJob) {
-                    response = await this._dispatchData.updateBulkJobDetail(
+                    await this._dispatchData.updateBulkJobDetail(
                         job.id,
                         callData.field,
                         callData.value,
@@ -709,7 +705,7 @@ class JobDetailService {
                         ContactID
                     );
                 } else {
-                    response = await this._dispatchData.updateJobDetail(
+                    await this._dispatchData.updateJobDetail(
                         callData.jobID,
                         callData.field,
                         callData.value,
@@ -720,12 +716,6 @@ class JobDetailService {
                     );
                 }
             }
-
-            // Update the currentJob with the new details
-            this.currentJob = response;
-
-            // Emit an event to update the job list
-            this.updateJobInList(response);
         } catch (error) {
             console.error('Error updating job:', error);
             this._toastrService.showErrorToast('Failed to update job. Please try again.');
@@ -739,211 +729,6 @@ class JobDetailService {
     updateJobInList(updatedJob) {
         // Emit an event to notify the controller to update the job in the list
         this._$rootScope.$emit('jobUpdated', updatedJob);
-    }
-
-    /**
-     * @param {{fromSuburbId: number, toSuburbID: number, size: {id: number}, speedID: number, truckStartTime: (string|null), truckHours: number, truckWeightLimit: (number|null), pedal: boolean, van: boolean, return: boolean, weight: number, true: boolean, direct: boolean, acceptedJobTypeID: number, ourRef: string, refA: string, refB: string, items: Array, booked: Date}} job
-     * @param {string} fieldName
-     * @param {string} label
-     * @param {Date} value
-     * @param {number} jobID
-     * @param {string} type
-     * @param {{id: number, label: string}|[{id: number, label: string},{id: number, label: string},{id: number, label: string}]} options
-     */
-    editDetailField(job, fieldName, label, value, jobID, type, options) {
-        if (type === "time" || type === "date") {
-            if (!(value instanceof Date)) {
-                value = new Date(value);
-            }
-        }
-
-        if (type === "datetime") {
-            value = new Date(this._moment(value).format("YYYY-MM-DDTHH:mm"))
-        }
-
-        let max = "";
-        let valueToUse = options ? options[value] : value;
-
-        switch (fieldName) {
-            case "RefA":
-                max = "20";
-                break;
-            case "RefB":
-                max = "12";
-                break;
-            case "OurRef":
-                max = "20";
-                break;
-            case "TrackingMobile":
-                max = "500";
-                break;
-            case "TrackingEmail":
-                max = "500";
-                break;
-            case "ConNote":
-                max = "50";
-                break;
-            case "Size":
-                valueToUse = options[value.id - 1];
-                break;
-            case "TrackingMethod":
-                valueToUse = options[value - 1];
-                break;
-            default:
-                break;
-        }
-
-
-        this.gather.form = {
-            id: "editField",
-            title: (fieldName === "Notes" ? "Add " : "Edit ") + label,
-            fields: fieldName === "clientId" ? [{
-                "name": fieldName,
-                "label": label + "...",
-                "value": value,
-                "jobID": jobID,
-                "type": type,
-                "options": options
-            }, {
-                "name": "Rate",
-                "label": "Re-Rate?",
-                "value": false,
-                "jobID": jobID,
-                "type": "checkbox",
-                "options": options
-            }] : fieldName === "DGClass" ? [{
-                "name": fieldName,
-                "label": label + "...",
-                "value": options[value],
-                "jobID": jobID,
-                "type": type,
-                "options": options,
-                "maxLength": max
-            }, {
-                "name": "Documentation",
-                "label": "Has Documentation?",
-                "value": job.dgDocumentation,
-                "jobID": jobID,
-                "type": "checkbox",
-                "options": options
-            }] : [{
-                "name": fieldName,
-                "label": label + "...",
-                "value": valueToUse,
-                "jobID": jobID,
-                "type": type,
-                "options": options,
-                "maxLength": max
-            }],
-            onSubmit: function () {
-                const self = this;
-                let reRate = false;
-
-                const callData = {
-                    "call": "updateDetailField",
-                    "field": self.gather.form.fields[0].name,
-                    "value": self.gather.form.fields[0].value,
-                    "jobID": self.gather.form.fields[0].jobID
-                };
-
-                if (callData.field === "Notes") {
-                    return job.bulkJob ? self._dispatchData.addBulkJobNote(job.id, callData.value, FirstName, job.preBook) : self._dispatchData.addNote(job.id, callData.value, FirstName, job.preBook);
-                }
-
-                if (fieldName === "Items" || fieldName === "Weight" || fieldName === "Date") {
-                    reRate = true;
-                }
-                if (fieldName === "Size") {
-                    callData.value = self.gather.form.fields[0].value.id;
-                    reRate = true;
-                }
-                if (fieldName === "TrackingMethod") {
-                    callData.value = self.gather.form.fields[0].value.id;
-
-                }
-                if (fieldName === "Size" || fieldName === "TrackingMethod") {
-                    job[callData.field.toLowerCase()] = self.gather.form.fields[0].value;
-                } else {
-                    job[callData.field.toLowerCase()] = callData.value;
-                }
-
-                if (fieldName === "SpeedID") {
-                    callData.value = self.gather.form.fields[0].value;
-                    job.speedID = parseInt(self.gather.form.fields[0].value);
-                    job.speed = angular.element("#gather-SpeedID option:selected").text();
-                    reRate = true;
-                }
-                if (fieldName === "JobTypeID") {
-                    callData.value = self.gather.form.fields[0].value;
-                    job.jobType = self.gather.form.fields[0].value;
-                    return self._dispatchData
-                        .updateJobType(callData.jobID, callData.value, FirstName).then(() => {
-
-                        });
-                }
-                if (fieldName === "InternalStatusID") {
-                    callData.value = self.gather.form.fields[0].value;
-                    job.internalStatusID = self.gather.form.fields[0].value;
-                }
-                if (fieldName === "NotifiedJobTypeID") {
-                    callData.value = self.gather.form.fields[0].value;
-                    job.notifiedJobTypeID = parseInt(self.gather.form.fields[0].value);
-                    job.notify = angular.element("#gather-NotifiedJobTypeID option:selected").text();
-                    reRate = true;
-                }
-                if (fieldName === "AcceptedJobTypeID") {
-                    callData.value = self.gather.form.fields[0].value;
-                    job.acceptedJobTypeID = parseInt(self.gather.form.fields[0].value);
-                    job.speedAccepted = angular.element("#gather-AcceptedJobTypeID option:selected").text();
-                    reRate = true;
-                }
-                if (fieldName === "DeliverToLeaveID") {
-                    callData.value = self.gather.form.fields[0].value;
-                    job.sigNotRequired = angular.element("#gather-DeliverToLeaveID option:selected").text();
-                }
-
-                if (fieldName === "UndeliverableLocationID") {
-                    callData.value = self.gather.form.fields[0].value;
-                    job.UDStatus = angular.element("#gather-UndeliverableLocationID option:selected").text();
-                }
-                if (fieldName === "clientId") {
-                    callData.value = self.gather.form.fields[0].value;
-                    job.clientId = self.gather.form.fields[0].value;
-                    reRate = self.gather.form.fields[1].value;
-                }
-                if (fieldName === "DGClass") {
-                    callData.value = callData.value.id;
-                    job.dgClass = callData.value.id;
-                    let dgdocs = self.gather.form.fields[1].value;
-
-                    return self._dispatchData
-                        .updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID, job.preBook).then(response => {
-                            if (job.dgDocumentation !== dgdocs) {
-                                job.dgDocumentation = dgdocs;
-                                return self._dispatchData
-                                    .updateJobDetail(callData.jobID, "DGDocumentation", job.dgDocumentation, job.charge, FirstName, ContactID, job.preBook).then(response => response);
-                            } else {
-                                return response;
-                            }
-                        });
-                }
-                if (reRate && !job.bulkJob) {
-                    return self._rateJobService.rateJob(job).then(rate => self._dispatchData
-                        .updateJobDetail(callData.jobID, callData.field, callData.value, Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, job.preBook).then(response => response));
-                } else {
-                    return job.bulkJob ? self._dispatchData
-                        .updateBulkJobDetail(job.id, callData.field, callData.value, job.charge, FirstName, ContactID).then(response => response) : self._dispatchData
-                        .updateJobDetail(callData.jobID, callData.field, callData.value, job.charge, FirstName, ContactID, job.preBook).then(response => response);
-                }
-
-            },
-            submitValue: "Update Field"
-        };
-
-        this._$timeout(function () {
-            console.log(this.gather);
-            this.gather.showForm();
-        }, 200);
     }
 
     /**
@@ -1136,10 +921,10 @@ class JobDetailService {
                 "call": "updateDetailField", "field": 'Locked', "value": false, "jobID": job.id
             };
 
-            await this.updateField(true, job, callData);
+            await this.updateField(false, job, callData);
             this.currentJob.locked = false;
         } catch (error) {
-            throw error; // Re-throw the error to propagate it
+            console.error('An error occured unlocking the job.');
         }
     }
 
@@ -1154,10 +939,10 @@ class JobDetailService {
                 "call": "updateDetailField", "field": 'Locked', "value": true, "jobID": job.id
             };
 
-            await this.updateField(true, job, callData);
+            await this.updateField(false, job, callData);
             this.currentJob.locked = true;
         } catch (error) {
-            throw error; // Re-throw the error to propagate it
+            console.error('An error occured locking the job.');
         }
     }
 

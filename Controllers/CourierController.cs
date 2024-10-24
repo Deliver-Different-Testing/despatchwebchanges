@@ -14,7 +14,7 @@ namespace DespatchWeb.Controllers
      public async Task<IActionResult> Index([FromQuery]List<int> despatchViewIds)
     {
         if (despatchViewIds is { Count: 0 })
-            return Json(new ClearListViewModel());
+            despatchViewIds.Add(49);
 
         var result = await courierRepository.GetClearListsAsync(despatchViewIds);
         return Json(result);

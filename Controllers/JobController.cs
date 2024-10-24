@@ -707,10 +707,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         try
         {
             await jobRepository.UpdateJobAsync(jobId, field, value, rate, despatcherName, staffId);
-
-            // Get the new job detail to update the frontend
-            var jobDetail = await jobRepository.JobDetailAsync(jobId);
-            return Json(jobDetail);
+            return Ok();
         }
         catch (Exception e)
         {

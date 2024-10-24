@@ -7,10 +7,12 @@ using System.Threading.Tasks;
 using AutoMapper;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
@@ -1993,68 +1995,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         await Context.SaveChangesAsync();
     }
 
-    private static string GetJobOrderByClause(string order, string ascending)
-    {
-        var ascDesc = ascending != null && ascending.Equals("asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
-
-        return order?.ToLowerInvariant() switch
-        {
-            "remain" => $"ucjbDispTime {ascDesc}, RemainTime {ascDesc}, ucjbTime {ascDesc}",
-            "to" => $"SuburbTo {ascDesc}, ucjbTime {ascDesc}, SuburbFrom {ascDesc}, CourierCode {ascDesc}",
-            "from" => $"SuburbFrom {ascDesc}, SuburbTo {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
-            "client" => $"ucclCode {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
-            "jobno" => $"ucjbNumber {ascDesc}, ucjbTime {ascDesc}, CourierCode {ascDesc}",
-            "status" => $"ucjbStatus {ascDesc}",
-            "speed" => $"SpeedShortName {ascDesc}",
-            "notify" => $"NotifiedSpeed {ascDesc}",
-            "lp" => $"ucjbLatePick {ascDesc}",
-            "ld" => $"ucjbLateDel {ascDesc}",
-            "time" => $"ucjbTime {ascDesc}",
-            _ => $"RemainTime {ascDesc}"
-        };
-    }
-
-    private static string BuildJobWhereClause(bool isInternal, List<string> viewFilters, string status,
-        string clientIds)
-    {
-        var whereClauses = new List<string>();
-
-        if (isInternal)
-        {
-            if (viewFilters != null && viewFilters.Any()) whereClauses.Add($"({string.Join(" OR ", viewFilters)})");
-        }
-        else
-        {
-            if (!string.IsNullOrEmpty(clientIds)) whereClauses.Add($"ucjbClientID IN ({clientIds})");
-        }
-
-        // Handle status
-        switch (status?.ToLower())
-        {
-            case "new":
-                whereClauses.Add("(ucjbCourierID IS NULL OR ucjsCode = 'D' OR ucjsCode = 'N')");
-                break;
-            case "nda":
-                whereClauses.Add(
-                    "(ucjbCourierID IS NULL OR ucjsCode = 'N' OR ucjsCode = 'D' OR ucjsCode = 'A' OR ucjsCode = 'LP')");
-                break;
-            case "active":
-                whereClauses.Add("ucjbJobDone = 0");
-                break;
-            case "done":
-                whereClauses.Add("ucjbJobDone = 1");
-                break;
-            case "all":
-                // No additional filter for "all"
-                break;
-        }
-
-        // Always exclude status 9
-        whereClauses.Add("ucjbStatus <> 9");
-
-        // Combine all where clauses
-        return string.Join(" AND ", whereClauses);
-    }
 
     private async Task<List<Size>> GetRelatedJobsAsync(int? rootParentId, int clientId)
     {
