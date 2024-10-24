@@ -1788,17 +1788,12 @@ public class JobRepository : BaseJobRepository, IJobRepository
 
     public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
     {
-        var query =
-            from cas in _context.TblClientAvailableSpeeds
-            where cas.ClientId == clientId && cas.SpeedId == speedId
-            join casi in _context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
-            where casi.Active
-            join ci in _context.TucClientItems on casi.ClientItemId equals ci.ItemId
-            select ci;
-
-        var count = await query.CountAsync();
-
-        return count > 0;
+        return await _context.TblClientAvailableSpeeds
+            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .SelectMany(cas => cas.TblClientAvailableSpeedItems
+                .Where(casi => casi.Active)
+                .Select(casi => casi.ClientItem))
+            .AnyAsync();
     }
 
     public async Task<PagedList<ClientItemsViewModel>> GetClientItemsBySpeedAsync(int clientId, int speedId,
