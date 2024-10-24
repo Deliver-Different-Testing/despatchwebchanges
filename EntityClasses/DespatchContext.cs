@@ -1931,6 +1931,7 @@ public partial class DespatchContext : DbContext
                 .ToView("tblJob");
 
             entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
+            entity.Property(e => e.AgentId).HasColumnName("AgentID");
             entity.Property(e => e.Amount).HasColumnType("money");
             entity.Property(e => e.Barcode).HasMaxLength(300);
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
@@ -3597,6 +3598,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
 
+            entity.HasIndex(e => e.DeliverToLeaveId, "IX_tucJob_DeliverToLeaveID");
+
             entity.HasIndex(e => e.FdcourierId, "IX_tucJob_FDCourierID");
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
@@ -3921,6 +3924,10 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.ContactId)
                 .HasConstraintName("FK_tucJob_tucClientContact");
 
+            entity.HasOne(d => d.DeliverToLeave).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.DeliverToLeaveId)
+                .HasConstraintName("FK_tucJob_LeaveNotHome");
+
             entity.HasOne(d => d.DesiredJobType).WithMany(p => p.TucJobDesiredJobTypes).HasForeignKey(d => d.DesiredJobTypeId);
 
             entity.HasOne(d => d.Fdcourier).WithMany(p => p.TucJobFdcouriers)
@@ -3943,7 +3950,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.SourceId)
-                .HasConstraintName("FK_tucJob_tucSource");
+                .HasConstraintName("FK_tucJob_Source");
 
             entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobToAirports)
                 .HasForeignKey(d => d.ToAirportId)
@@ -3959,7 +3966,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.UcjbDisp).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.UcjbDispId)
-                .HasConstraintName("FK_tucJob_tucStaff");
+                .HasConstraintName("FK_tucJob_Dispatcher");
 
             entity.HasOne(d => d.UcjbFromNavigation).WithMany(p => p.TucJobUcjbFromNavigations)
                 .HasForeignKey(d => d.UcjbFrom)

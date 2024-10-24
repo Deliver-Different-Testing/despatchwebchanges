@@ -431,6 +431,8 @@ public partial class TucJob
 
     public virtual TucClientContact Contact { get; set; }
 
+    public virtual TblJobLeaveNotHome DeliverToLeave { get; set; }
+
     public virtual TucJobType DesiredJobType { get; set; }
 
     public virtual TucCourier Fdcourier { get; set; }

@@ -203,7 +203,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             from staff in staffJoin.DefaultIfEmpty()
             join jn in Context.TucJobNationwides on tblJob.JobId equals jn.UcnwJobId into nwJoin
             from flightInfo in nwJoin.DefaultIfEmpty()
-            join ag in _context.TucAgents on tblJob.AgentId equals ag.UcagId into agJoin
+            join ag in Context.TucAgents on tblJob.AgentId equals ag.UcagId into agJoin
             from agentInfo in agJoin.DefaultIfEmpty()
             where tblJob.JobId == jobId
             select new JobViewModel

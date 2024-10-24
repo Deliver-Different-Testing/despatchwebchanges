@@ -30,4 +30,6 @@ public partial class TblJobLeaveNotHome
     public string CreatedBy { get; set; }
 
     public string Notes { get; set; }
+
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }
