@@ -3146,6 +3146,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.AcceptedJobTypeId).HasColumnName("AcceptedJobTypeID");
 
+                entity.Property(e => e.AgentId).HasColumnName("AgentID");
+
                 entity.Property(e => e.Amount).HasColumnType("money");
 
                 entity.Property(e => e.Barcode).HasMaxLength(300);
@@ -3198,6 +3200,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.Date).HasColumnType("datetime");
 
+                entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
+
                 entity.Property(e => e.DeliverToContact).HasMaxLength(100);
 
                 entity.Property(e => e.DeliverToLeaveId).HasColumnName("DeliverToLeaveID");
@@ -3247,6 +3251,8 @@ namespace DespatchWeb.EntityClasses
                 entity.Property(e => e.DropoffAmount).HasColumnType("money");
 
                 entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
+
+                entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
 
                 entity.Property(e => e.EmailForJobFu).HasColumnName("EmailForJobFU");
 
@@ -5229,9 +5235,19 @@ namespace DespatchWeb.EntityClasses
 
                 entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
+                entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
+
+                entity.HasIndex(e => e.DeliverToLeaveId, "IX_tucJob_DeliverToLeaveID");
+
+                entity.HasIndex(e => e.FdcourierId, "IX_tucJob_FDCourierID");
+
                 entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
 
+                entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
+
                 entity.HasIndex(e => e.ToAirportId, "IX_tucJob_ToAirportId");
+
+                entity.HasIndex(e => e.UcjbDispId, "IX_tucJob_ucjbDispID");
 
                 entity.HasIndex(e => e.InformationParentId, "InformationParentID");
 
@@ -5827,6 +5843,8 @@ namespace DespatchWeb.EntityClasses
                 entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
                 entity.HasIndex(e => e.UcjbClientRefb, "IX_tucJobArchive");
+
+                entity.HasIndex(e => e.AgentId, "IX_tucJobArchive_AgentID");
 
                 entity.HasIndex(e => e.FromAirportId, "IX_tucJobArchive_FromAirportId");
 

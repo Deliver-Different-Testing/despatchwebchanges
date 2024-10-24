@@ -63,14 +63,10 @@ public class BaseJobRepository
     {
         try
         {
-            var excludedSpeeds = new int?[] { 38, 39, 55, 56 };
-
-            var query = _context.TucJobs
+                     var query = _context.TucJobs
                 .Where(j => !j.UcjbVoid
-                            && j.ParentId != null
                             && j.UcjbStatus != 18
-                            && (j.JobRelationshipType.DisplayDespatch == true ||
-                                (j.JobRelationshipTypeId == 10 && !excludedSpeeds.Contains(j.UcjbSpeed)))
+                            && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
                             && (j.DisplayInDespatch == null || j.DisplayInDespatch == true));
 
             switch (page)
@@ -438,7 +434,7 @@ public class BaseJobRepository
         if (isInternal && filters != null && filters.Any())
         {
             // For now, log that these filters couldn't be applied
-            _logger.LogWarning("String-based filters are not supported in this version. Filters: {Filters}",
+            _logger.LogWarning($"String-based filters are not supported in this version. Filters: {filters}",
                 string.Join(", ", filters));
         }
 
