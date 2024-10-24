@@ -1137,10 +1137,10 @@ class JobDetailService {
                 "call": "updateDetailField", "field": 'Locked', "value": false, "jobID": job.id
             };
 
-            await this.updateField(true, job, callData);
+            await this.updateField(false, job, callData);
             this.currentJob.locked = false;
         } catch (error) {
-            throw error; // Re-throw the error to propagate it
+            console.error('An error occured unlocking the job.');
         }
     }
 
@@ -1155,10 +1155,10 @@ class JobDetailService {
                 "call": "updateDetailField", "field": 'Locked', "value": true, "jobID": job.id
             };
 
-            await this.updateField(true, job, callData);
+            await this.updateField(false, job, callData);
             this.currentJob.locked = true;
         } catch (error) {
-            throw error; // Re-throw the error to propagate it
+            console.error('An error occured locking the job.');
         }
     }
 
