@@ -955,6 +955,7 @@ input.pod-DispatchField {
     text-align: center;
 }
 
+
 .tableMixin() {
     th {
         white-space: nowrap;
@@ -986,16 +987,18 @@ input.pod-DispatchField {
         background-color: #d7f3ce;
     }
 
+    @jobListInputHeight: 20px;
+
     input.dispatchField {
         width: 50px;
         text-align: center;
-        height: 25px;
+        height: @jobListInputHeight;
     }
 
     input.lateCallField {
-        width: 21px;
+        width: 30px;
         text-align: center;
-        height: 15px;
+        height: @jobListInputHeight;
     }
 }
 
@@ -1058,7 +1061,7 @@ input.pod-DispatchField {
 #supports {
     tr {
         &.Yel {
-            background-color: yellow;
+            background-color: @primary-color;
         }
 
         &.Gre {
@@ -1600,5 +1603,61 @@ md-list-item {
         transform: translate(-50%, -50%);
         font-size: 24px;
         color: @primary-color;
+    }
+}
+
+
+// Variables
+@header-bg-color: #343a40;
+@header-border-color: #454d55;
+@header-text-color: white;
+@min-column-width: 100px;
+@table-z-index: 2;
+
+// Job List Container
+.job-list-container {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    z-index: @table-z-index;
+}
+
+// Sticky Header Styles
+.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: @table-z-index;
+    background-color: white;
+
+    table {
+        width: 100%;
+        margin-bottom: 0;
+        table-layout: fixed;
+    }
+
+    th {
+        background-color: @primary-color;
+        color: @header-text-color;
+        padding: 0.75rem;
+        vertical-align: middle;
+        border-bottom: 2px solid @header-border-color;
+        white-space: nowrap;
+    }
+}
+
+// Table Body Container
+.table-body-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: auto;
+
+    table {
+        margin-top: 0;
+        table-layout: fixed;
+    }
+
+    td {
+        white-space: nowrap;
     }
 }

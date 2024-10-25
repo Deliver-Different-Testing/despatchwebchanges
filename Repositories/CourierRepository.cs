@@ -17,6 +17,7 @@ namespace DespatchWeb.Repositories;
 
 public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), ICourierRepository
 {
+    private readonly DbContextWrapper _dbContextWrapper = new DbContextWrapper(contextFactory);
     public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatusAsync(string courierId)
     {
         var result = await Context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
@@ -163,7 +164,8 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
         try
         {
-            var activeCouriersTask = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
+            var dbContext = _dbContextWrapper.GetContext();
+            var activeCouriersTask = dbContext.Procedures.DES_qryCourierCombo_ActiveAsync();
 
             var clearListsQuery = await Context.TblDespatchViews
                 .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
@@ -198,7 +200,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in GetClearListsAsync for despatchViewIds: {@DespatchViewIds}",
+            Log.Error(ex, "Error in GetClearListsAsync for despatchViewIds: {@DespatchViewIds}",
                 despatchViewIds);
             throw;
         }
