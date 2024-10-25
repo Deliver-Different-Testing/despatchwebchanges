@@ -1599,3 +1599,57 @@ md-list-item {
     color: @primary-color;
   }
 }
+
+
+// Variables
+@header-bg-color: #343a40;
+@header-border-color: #454d55;
+@header-text-color: white;
+@min-column-width: 100px;
+
+// Job List Container
+.job-list-container {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+// Sticky Header Styles
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: white;
+
+  table {
+    width: 100%;
+    margin-bottom: 0;
+    table-layout: fixed;
+  }
+
+  th {
+    background-color: @primary-color;
+    color: @header-text-color;
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-bottom: 2px solid @header-border-color;
+    white-space: nowrap;
+  }
+}
+
+// Table Body Container
+.table-body-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+
+  table {
+    margin-top: 0;
+    table-layout: fixed;
+  }
+
+  td {
+    white-space: nowrap;
+  }
+}
