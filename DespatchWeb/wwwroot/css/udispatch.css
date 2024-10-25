@@ -1525,11 +1525,12 @@ md-list-item:not(.selected):hover {
   height: 100%;
   display: flex;
   flex-direction: column;
+  z-index: 2;
 }
 .sticky-header {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 2;
   background-color: white;
 }
 .sticky-header table {
