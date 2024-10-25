@@ -1,5 +1,6 @@
 angular.module("uDispatch")
-    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope", ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope) => {
+    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope",
+        ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope) => {
         // Initialize variables and scope properties
         function initializeVariables() {
             $scope.name = "Home";
@@ -19,11 +20,15 @@ angular.module("uDispatch")
             $scope.hasAttachedFile = false;
             $scope.areas = [];
             $scope.selectedAreas = [];
-            $scope.filters = {
-                new: false, nda: true, active: false, done: false, all: false
-            };
+            $scope.filters = [
+                {value: 'new', label: 'New', active: false},
+                {value: 'nda', label: 'NDA', active: false},
+                {value: 'active', label: 'Active', active: false},
+                {value: 'done', label: 'Done', active: false},
+                {value: 'all', label: 'All', active: true}  // default active filter
+            ];
 
-            $scope.selectedFilter = 'nda';
+            $scope.selectedFilter = 'all'; // default value
 
             $scope.pickAllCouriers = [];
             $scope.selected = [];
@@ -118,6 +123,11 @@ angular.module("uDispatch")
                     "showSearch": 0,
                     "showRefresh": 0
                 }
+            };
+
+            $scope.dispatchState = {
+                processing: false,
+                selectedJobs: new Set()
             };
 
             $scope.pickService = {
@@ -258,29 +268,38 @@ angular.module("uDispatch")
         async function initializeAreas() {
             if ($scope.areas && $scope.areas.length > 0) {
                 $scope.selectedAreas.push($scope.areas[0]);
+                $scope.$apply();
             }
         }
 
-        /**
-         * Updates filters based on the selected filter option.
-         * @param {string} selectedFilter - The selected filter option.
-         * @returns {Promise<void>}
-         */
-        $scope.updateFilters = async (selectedFilter) => {
-            try {
-                // Set all filters to false
-                Object.keys($scope.filters).forEach(key => {
-                    $scope.filters[key] = false;
-                });
+            /**
+             * Updates filters based on the selected filter option.
+             * @param {string} selectedFilter - The selected filter option.
+             * @returns {Promise<void>}
+             */
+            $scope.updateFilters = async (selectedFilter) => {
+                try {
+                    // Set all filters to inactive
+                    $scope.filters.forEach(filter => {
+                        filter.active = false;
+                    });
 
-                // Set the selected filter to true
-                $scope.filters[selectedFilter] = true;
+                    // Set the selected filter to active
+                    const selectedFilterObj = $scope.filters.find(filter => filter.value === selectedFilter);
+                    if (selectedFilterObj) {
+                        selectedFilterObj.active = true;
+                    }
 
-                await setFilters({'status': selectedFilter});
-            } catch (error) {
-                console.error('Error updating filters:', error);
-            }
-        }
+                    await setFilters({'status': selectedFilter});
+
+                    // Ensure Angular updates the UI
+                    if (!$scope.$$phase) {
+                        $scope.$apply();
+                    }
+                } catch (error) {
+                    console.error('Error updating filters:', error);
+                }
+            };
 
         /**
          * Sets the active area in the driverLocations.
@@ -290,18 +309,6 @@ angular.module("uDispatch")
             $scope.driverLocations.areas.forEach(area => {
                 area.isActive = (area === selectedArea);
             });
-        };
-
-        // Page changed handler
-        $scope.pageChanged = async () => {
-            await getJobList();
-        };
-
-        // Pagination handler
-        $scope.onPaginate = (page, limit) => {
-            $scope.queryParams.page = page;
-            $scope.queryParams.limit = limit;
-            return $scope.pageChanged();
         };
 
         function init() {
@@ -719,12 +726,63 @@ angular.module("uDispatch")
             }
         };
 
+            /**
+             * Handles keyboard input for dispatch field
+             * @param {Event} event - Keyboard event
+             * @param {Object} job - Job object
+             */
+            $scope.handleDispatchKeydown = async (event, job) => {
+                // Only handle Enter key
+                if (event.keyCode !== 13) return;
+
+                event.preventDefault();
+
+                if ($scope.dispatchState.processing) {
+                    console.log('Dispatch already in progress');
+                    return;
+                }
+
+                try {
+                    $scope.dispatchState.processing = true;
+                    await $scope.dispatchJobs(job.courier);
+                } catch (error) {
+                    console.error('Error in dispatch:', error);
+                } finally {
+                    $scope.dispatchState.processing = false;
+                }
+            };
+
+            /**
+             * Handle clicks on dispatch field
+             * @param {Event} event - Click event
+             * @param {Object} job - Job object
+             */
+            $scope.handleDispatchFieldClick = (event, job) => {
+                // Prevent event bubbling
+                event.stopPropagation();
+
+                // Select the job
+                $scope.selectForDispatch(job);
+
+                // Focus and select the input text
+                const input = event.target;
+                input.focus();
+                input.select();
+            };
+
         /**
          * @param {Job} job
          */
-        $scope.selectForDispatch = async (job) => {
-            console.log("In SelectForDispatch");
-            $scope.jobForDispatch = job;
+        $scope.selectForDispatch = (job) => {
+            const jobId = job.id;
+
+            if ($scope.dispatchState.selectedJobs.has(jobId)) {
+                $scope.dispatchState.selectedJobs.delete(jobId);
+                angular.element(`tr[data-jobid="${jobId}"]`).removeClass('active');
+            } else {
+                $scope.dispatchState.selectedJobs.add(jobId);
+                angular.element(`tr[data-jobid="${jobId}"]`).addClass('active');
+            }
         };
 
         /**
@@ -1064,53 +1122,96 @@ angular.module("uDispatch")
             return classToUse;
         }
 
-        /**
-         * @param {Object} $event
-         * @param {Job} job
-         */
-        $scope.handleRowClick = async ($event, job) => {
-            if (!$event.target.classList.contains('lateCallField') && !$event.target.classList.contains('dispatchField')) {
-                try {
-                    $timeout(async () => {
-                        await $scope.selectJob(job);
-                        angular.element("#input_" + job.id).select();
-                    });
-                } catch (error) {
-                    console.log('Error in handleRowClick:', error);
-                }
-            }
-        };
+            /**
+             * @param {Object} $event
+             * @param {Job} job
+             */
+            $scope.handleRowClick = async ($event, job) => {
+                // Ignore clicks on input fields
+                if (!$event.target.classList.contains('lateCallField') && !$event.target.classList.contains('dispatchField')) {
+                    try {
+                        // Wait for the next digest cycle
+                        await $timeout(async () => {
+                            // First select the job
+                            await $scope.selectJob(job);
 
-        $scope.getJobsToDispatch = () => {
-            let activeJobs = Array.from(angular.element("#jobList .active"));
-            return $scope.jobList.filter(jo => activeJobs.some(aJob => jo.id === angular.element(aJob).data("jobid")));
-        }
+                            // Find and focus the input
+                            const input = angular.element(`#input_${job.id}`);
+                            input[0].focus();
+                            input[0].select();
+                        });
+                    } catch (error) {
+                        console.error('Error in handleRowClick:', error);
+                    }
+                }
+            };
+
+            $scope.getJobsToDispatch = () => {
+                return $scope.jobList.filter(job => $scope.dispatchState.selectedJobs.has(job.id));
+            };
 
         /**
          * @param {string} courierNumber
          */
         $scope.dispatchJobs = async (courierNumber) => {
-            const jobsToDispatch = getJobsToDispatch();
+            if ($scope.dispatchState.processing) {
+                console.warn('Dispatch already in progress');
+                return;
+            }
+
+            const jobsToDispatch = $scope.getJobsToDispatch();
 
             if (!jobsToDispatch.length) {
-                console.warn('No jobs to dispatch');
+                console.warn('No jobs selected for dispatch');
                 return;
             }
 
             try {
+                $scope.dispatchState.processing = true;
+
+                // Validate courier number
+                const courier = await validateCourier(courierNumber);
+                if (!courier) {
+                    console.error('Invalid courier number');
+                }
+
+                // Perform dispatch operation
                 await dispatchJobService.dispatchJobs(courierNumber, jobsToDispatch);
-                await getJobList();
+
+                // Clear selection state
+                $scope.dispatchState.selectedJobs.clear();
+
+                // Refresh data
+                await $scope.getData();
+
+                // If we have a current courier, update their job list
+                if ($scope.currentCourier) {
+                    await getCurrentJobs($scope.currentCourier.courierID);
+                }
+
+                // Update courier locations
+                await $scope.getAvailableCourierLocation();
+
             } catch (error) {
                 console.error('Error dispatching jobs:', error);
                 throw error;
+            } finally {
+                $scope.dispatchState.processing = false;
+                $scope.$apply();
             }
         };
 
-        function getJobsToDispatch() {
-            const activeJobs = Array.from(angular.element("#jobList .active"));
-            return $scope.jobList.filter(job => activeJobs.some(activeJob => job.id === angular.element(activeJob).data("jobid")));
-        }
+            async function validateCourier(courierNumber) {
+                // First check active couriers
+                let courier = $scope.pickCouriers.find(c => c.code === courierNumber);
 
+                // If not found in active, check all couriers
+                if (!courier) {
+                    courier = $scope.pickAllCouriers.find(c => c.code === courierNumber);
+                }
+
+                return courier;
+            }
 
         $scope.restoreJobs = async () => {
             const callData = initializeRestoreData();
@@ -2109,12 +2210,9 @@ angular.module("uDispatch")
                 console.log("selectJob");
                 $scope.currentJob = job;
                 $scope.$apply();
-
-
                 console.log(job);
 
                 await JobDetailService.setJob($scope.currentJob);
-
                 await checkForAttachments(job.id);
 
                 try {
@@ -2131,12 +2229,17 @@ angular.module("uDispatch")
                     }
                 }
 
-                if (job.courier === null) {
-                    await handleUndispatchedJob(job);
-                } else {
-                    $scope.potentialCouriers = false;
-                    await $scope.selectCourier(job.courierData);
+                try {
+                    if (job.courier === null) {
+                        await handleUndispatchedJob(job);
+                    } else {
+                        $scope.potentialCouriers = false;
+                        await $scope.selectCourier(job.courierData);
+                    }
+                } catch (error) {
+                    console.error('An error occured finding and couriers');
                 }
+
 
                 focusDispatchField();
             }, 0);
@@ -2431,6 +2534,10 @@ angular.module("uDispatch")
                 return [];
             }
 
+            /**
+             * @param {string} text
+             * @param {function(): Promise<void>} action
+             */
             function createMenuItem(text, action) {
                 return {
                     text: text, click: ($itemScope, $event) => $q.when(action($itemScope, $event))
@@ -3026,7 +3133,11 @@ angular.module("uDispatch")
 
                 console.log('Additional Services Dialog closed!');
             } catch (error) {
-                console.log('Error in showAdditionalServicesMenu:', error);
+                if (error === undefined) {
+                    console.log('User canceled dialog!')
+                } else {
+                    console.error('Error in showAdditionalServicesMenu:', error);
+                }
             }
         };
     }]);
