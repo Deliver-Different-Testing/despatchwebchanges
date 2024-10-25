@@ -57,7 +57,6 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         {
                      var query = Context.TucJobs
                 .Where(j => !j.UcjbVoid
-                            && j.UcjbStatus != 18
                             && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
                             && (j.DisplayInDespatch == null || j.DisplayInDespatch == true));
 
@@ -489,6 +488,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             .Select(id => int.Parse(id.Trim()))
             .ToList();
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
+
+        // Only get child jobs
+        query = query.Where(j => j.ParentId != null);
 
         return query;
     }

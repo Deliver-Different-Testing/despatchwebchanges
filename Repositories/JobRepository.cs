@@ -1777,17 +1777,12 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
     public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
     {
-        var query =
-            from cas in Context.TblClientAvailableSpeeds
-            where cas.ClientId == clientId && cas.SpeedId == speedId
-            join casi in Context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
-            where casi.Active
-            join ci in Context.TucClientItems on casi.ClientItemId equals ci.ItemId
-            select ci;
-
-        var count = await query.CountAsync();
-
-        return count > 0;
+        return await Context.TblClientAvailableSpeeds
+            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .SelectMany(cas => cas.TblClientAvailableSpeedItems
+                .Where(casi => casi.Active)
+                .Select(casi => casi.ClientItem))
+            .AnyAsync();
     }
 
     public async Task<PagedList<ClientItemsViewModel>> GetClientItemsBySpeedAsync(int clientId, int speedId,
@@ -1813,7 +1808,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         Context.Entry(job).Property(x => x.UcjbAmount).IsModified = true;
         await Context.SaveChangesAsync();
     }
-
 
     private async Task<List<Size>> GetRelatedJobsAsync(int? rootParentId, int clientId)
     {
@@ -1870,27 +1864,21 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     private IQueryable<ClientItemsViewModel> BuildClientItemsQuery(int clientId, int speedId,
         IEnumerable<int> clientItemIds)
     {
-        var query =
-            from cas in Context.TblClientAvailableSpeeds
-            where cas.ClientId == clientId && cas.SpeedId == speedId
-            join casi in Context.TblClientAvailableSpeedItems on cas.Id equals casi.ClientAvailableSpeedId
-            where casi.Active
-            join ci in Context.TucClientItems on casi.ClientItemId equals ci.ItemId
-            where ci.ClientId == clientId
-            orderby ci.Name
-            select new ClientItemsViewModel
-            {
-                ItemId = ci.ItemId,
-                ClientId = ci.ClientId,
-                Name = ci.Name,
-                Description = ci.Description,
-                PerItem = ci.PerItem,
-                Rate = ci.Rate,
-                OnlyVan = ci.OnlyVan,
-                Selected = clientItemIds.Contains(ci.ItemId)
-            };
-
-        return query;
+        return Context.TblClientAvailableSpeeds
+            .Where(cas => cas.ClientId == clientId && cas.SpeedId == speedId)
+            .SelectMany(cas => cas.TblClientAvailableSpeedItems
+                .Where(casi => casi.Active)
+                .Select(casi => new ClientItemsViewModel
+                {
+                    ItemId = casi.ClientItem.ItemId,
+                    ClientId = casi.ClientItem.ClientId,
+                    Name = casi.ClientItem.Name,
+                    Description = casi.ClientItem.Description,
+                    PerItem = casi.ClientItem.PerItem,
+                    Rate = casi.ClientItem.Rate,
+                    OnlyVan = casi.ClientItem.OnlyVan,
+                    Selected = clientItemIds.Contains(casi.ClientItem.ItemId)
+                }));
     }
 
     private static async Task<PagedList<ClientItemsViewModel>> CreatePagedList(IQueryable<ClientItemsViewModel> query)

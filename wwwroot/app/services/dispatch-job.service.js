@@ -45,20 +45,20 @@ class DispatchJobService {
 
     /**
      * Dispatch a job by its ID to a specific courier.
-     * @param {number} courierNumber - The ID of the courier.
+     * @param {number} courierId - The ID of the courier.
      * @param {number} jobId - The ID of the job to dispatch.
      * @returns {Promise} A promise that resolves when the job is dispatched.
      */
-    async dispatchJobByJobId(courierNumber, jobId) {
+    async dispatchJobByJobId(courierId, jobId) {
         const job = await this.dispatchData.getJobDetail(jobId);
-        const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierNumber);
+        const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierId);
         await this.dispatchJob(selectedCourier.id, job);
     }
 
     /**
      * Dispatch multiple jobs to a specific courier.
      * @param {number} courierNumber - The ID of the courier.
-     * @param {Array<Object>} jobs - An array of job objects to dispatch.
+     * @param {Job[]} jobs - An array of job objects to dispatch.
      * @returns {Promise} A promise that resolves when all jobs are dispatched.
      */
     async dispatchJobs(courierNumber, jobs) {
@@ -71,7 +71,7 @@ class DispatchJobService {
     /**
      * Dispatch a single job to a specific courier.
      * @param {number} courierNumber - The ID of the courier.
-     * @param {Object} job - The job object to dispatch.
+     * @param {Job} job - The job object to dispatch.
      * @returns {Promise} A promise that resolves when the job is dispatched.
      */
     async dispatchJob(courierNumber, job) {
@@ -144,7 +144,7 @@ class DispatchJobService {
 
     /**
      * Validate a job before dispatching.
-     * @param {Object} job - The job object to validate.
+     * @param {Job} job - The job object to validate.
      * @param {Object} courier - The courier object to validate against.
      * @returns {boolean} True if the job is valid for dispatching, false otherwise.
      */

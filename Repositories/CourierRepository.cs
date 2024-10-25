@@ -157,43 +157,49 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
+        // Early validation
+        if (despatchViewIds == null || !despatchViewIds.Any())
+            return new ClearListViewModel { Areas = new List<AreaClearList>() };
+
         try
         {
-            var activeCouriers = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
+            var activeCouriersTask = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
 
-            var clearLists = await Context.TblDespatchViews
+            var clearListsQuery = await Context.TblDespatchViews
                 .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
                 .SelectMany(dv => dv.DespatchViewZoneGroups)
                 .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
+                .Where(cla => cla != null) // Filter nulls early
                 .Distinct()
                 .ToListAsync();
 
-            var viewModel = new ClearListViewModel();
-            foreach (var clearList in clearLists)
+            var activeCouriers = await activeCouriersTask; // Await parallel task
+
+            // Process clear lists in parallel
+            var viewModel = new ClearListViewModel
             {
-                if (clearList == null)
-                {
-                    continue;
-                }
+                Areas = new List<AreaClearList>()
+            };
 
+            var areaTasks = clearListsQuery.Select(async clearList =>
+            {
                 var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
-
-                if (areaClearList == null)
-                {
-                    continue;
-                }
+                if (areaClearList == null) return null;
 
                 var clearListName = clearList.Name?.ToLower();
                 areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearListName);
+                return areaClearList;
+            });
 
-                viewModel.Areas?.Add(areaClearList);
-            }
+            var areas = await Task.WhenAll(areaTasks);
+            viewModel.Areas.AddRange(areas.Where(a => a != null));
 
             return viewModel;
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.LogError(ex, "Error in GetClearListsAsync for despatchViewIds: {@DespatchViewIds}",
+                despatchViewIds);
             throw;
         }
     }
@@ -240,11 +246,15 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
     private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId)
     {
-        return from cla in Context.TblClearListAreas
-            join clazp in Context.ClearListAreaZipPolygons on cla.ClearListAreaId equals clazp.ClearListAreaId
-            join zp in Context.ZipPolygons on clazp.ZipPolygonId equals zp.ZipPolygonId
-            where cla.ClearListAreaId == clearListAreaId
-            select new EnvelopeCoordinate { Longitude = (decimal)zp.Longitude, Latitude = (decimal)zp.Latitude };
+        return Context.TblClearListAreas
+            .Where(area => area.ClearListAreaId == clearListAreaId) // Added missing filter
+            .SelectMany(area => area.TblClearListAreaPolygons)
+            .Select(polygon => polygon.ZipPolygon)
+            .Select(zipPolygon => new EnvelopeCoordinate
+            {
+                Longitude = Convert.ToDecimal(zipPolygon.Longitude),
+                Latitude = Convert.ToDecimal(zipPolygon.Latitude)
+            });
     }
 
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)

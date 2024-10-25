@@ -7,35 +7,29 @@
                 <span flex></span>
 
                 <md-menu>
-                    <md-button aria-label="Open status menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                    <md-button aria-label="Open status menu" class="md-icon-button"
+                               ng-click="$mdMenu.open($event)">
                         <md-icon md-font-set="material-symbols-outlined">filter_list</md-icon>
                         <md-tooltip md-direction="bottom">Filters</md-tooltip>
                     </md-button>
                     <md-menu-content>
-                        <md-radio-group ng-change="updateFilters(selectedFilter)" ng-model="selectedFilter">
-                            <md-menu-item>
-                                <md-radio-button value="new">New</md-radio-button>
-                            </md-menu-item>
-                            <md-menu-item>
-                                <md-radio-button value="nda">NDA</md-radio-button>
-                            </md-menu-item>
-                            <md-menu-item>
-                                <md-radio-button value="active">Active</md-radio-button>
-                            </md-menu-item>
-                            <md-menu-item>
-                                <md-radio-button value="done">Done</md-radio-button>
-                            </md-menu-item>
-                            <md-menu-item>
-                                <md-radio-button value="all">All</md-radio-button>
-                            </md-menu-item>
-                        </md-radio-group>
+                        <md-menu-item ng-repeat="filter in filters">
+                            <md-button ng-click="updateFilters(filter.value)">
+                                <md-icon md-font-set="material-symbols-outlined">
+                                    tune
+                                </md-icon>
+                                <span ng-style="filter.active ? {'font-weight':'bold'} : {}">
+                    {{filter.label}}
+                </span>
+                            </md-button>
+                        </md-menu-item>
                     </md-menu-content>
                 </md-menu>
 
                 <md-menu ng-if="isInternal">
                     <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">location_on</md-icon>
-                        <md-tooltip md-direction="bottom">Areas</md-tooltip>
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">view_quilt</md-icon>
+                        <md-tooltip md-direction="bottom">Views</md-tooltip>
                         <md-progress-circular md-diameter="18" md-mode="indeterminate"
                                               ng-if="!areas"></md-progress-circular>
                     </md-button>

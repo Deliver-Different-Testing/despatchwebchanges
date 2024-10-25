@@ -1,7 +1,7 @@
 <!-- Job List Component -->
 <div class="job-list-container">
     <!-- Table Headers -->
-    <div class="table-headings">
+    <div class="table-headings sticky-header">
         <table>
             <thead class="thead-dark no-select">
             <tr>
@@ -53,11 +53,13 @@
                 </div>
             </td>
             <td>
-                <input class="dispatchField" id="input_{{job.id}}" ng-click="selectJob(job)"
-                       ng-keydown="$event.keyCode === 13 && dispatchJobs(job.courier)"
+                <input class="dispatchField"
+                       id="input_{{job.id}}"
                        ng-model="job.courier"
-                       ng-readonly="job.courierData.courierID !== null"
+                       ng-keydown="handleDispatchKeydown($event, job)"
                        ng-style="getJobStyle(job.courierData.courierID !== null)"
+                       ng-readonly="job.courier !== null"
+                       ng-click="handleDispatchFieldClick($event, job)"
                        placeholder=""
                        type="text"/>
             </td>
