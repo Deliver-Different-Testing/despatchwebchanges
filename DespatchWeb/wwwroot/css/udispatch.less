@@ -957,6 +957,7 @@ input.pod-DispatchField {
   text-align: center;
 }
 
+
 .tableMixin() {
   th {
     white-space: nowrap;
@@ -988,16 +989,18 @@ input.pod-DispatchField {
     background-color: #d7f3ce;
   }
 
+  @jobListInputHeight: 20px;
+
   input.dispatchField {
     width: 50px;
     text-align: center;
-    height: 25px;
+    height: @jobListInputHeight;
   }
 
   input.lateCallField {
-    width: 21px;
+    width: 30px;
     text-align: center;
-    height: 15px;
+    height: @jobListInputHeight;
   }
 }
 
@@ -1060,7 +1063,7 @@ input.pod-DispatchField {
 #supports {
   tr {
     &.Yel {
-      background-color: yellow;
+      background-color: @primary-color;
     }
 
     &.Gre {

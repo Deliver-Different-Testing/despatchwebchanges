@@ -666,67 +666,40 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     false
                 );
 
-                // Remove job from its current list
-                const removeFromList = (jobId, list) => {
-                    const index = list.findIndex(item => item.id === jobId);
-                    if (index !== -1) {
-                        list.splice(index, 1);
-                    }
-                };
+                // Determine which lists need refreshing
+                const listsToRefresh = new Set([
+                    ...STATUS_TO_LIST_MAP[previousStatusId] || [],
+                    ...STATUS_TO_LIST_MAP[internalStatusId] || []
+                ]);
 
-                // Handle job movement between lists
-                if (previousStatusId !== internalStatusId) {
-                    // Remove from old list based on previous status
-                    switch (previousStatusId) {
-                        case 1:
-                            removeFromList(job.id, $scope.jobList);
-                            break;
-                        case 2:
-                            removeFromList(job.id, $scope.jobListDelivery);
-                            break;
-                        case 3:
-                            removeFromList(job.id, $scope.jobListPOD);
-                            break;
-                        case 4:
-                            removeFromList(job.id, $scope.jobListReprice);
-                            break;
-                    }
+                // Only refresh the affected lists
+                await getJobList(Array.from(listsToRefresh));
 
-                    // Get updated job data for the new list
-                    const updatedJob = await NWData.getJobDetail(job.id);
-
-                    // Add to new list based on new status
-                    switch (internalStatusId) {
-                        case 1:
-                            $scope.jobList.unshift(updatedJob);
-                            break;
-                        case 2:
-                            $scope.jobListDelivery.unshift(updatedJob);
-                            break;
-                        case 3:
-                            $scope.jobListPOD.unshift(updatedJob);
-                            break;
-                        case 4:
-                            $scope.jobListReprice.unshift(updatedJob);
-                            break;
-                    }
+                // Get all potentially affected lists based on what we just refreshed
+                const relevantLists = [];
+                if (listsToRefresh.has($scope.jobDataType.NEW)) {
+                    relevantLists.push(...($scope.jobList || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.POD)) {
+                    relevantLists.push(...($scope.jobListPOD || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.DELIVERY)) {
+                    relevantLists.push(...($scope.jobListDelivery || []));
+                }
+                if (listsToRefresh.has($scope.jobDataType.REPRICE)) {
+                    relevantLists.push(...($scope.jobListReprice || []));
                 }
 
-                // Update the current job if it's selected
-                if ($scope.currentJob && $scope.currentJob.id === job.id) {
-                    $scope.currentJob = await NWData.getJobDetail(job.id);
+                // Find and reselect the updated job
+                const refreshedJob = relevantLists.find(j => j.id === job.id);
+                if (refreshedJob) {
+                    await $scope.selectJob(refreshedJob);
                 }
 
                 // Adjust table headings after data update
                 $timeout(() => sizeHeadings(), 200);
-
-                // Apply changes to trigger view update
-                if (!$scope.$$phase) {
-                    $scope.$apply();
-                }
             } catch (error) {
                 console.error("Error setting internal status:", error);
-                // Consider adding error notification here
             }
         };
 

@@ -888,12 +888,12 @@ input.pod-DispatchField {
 #currentWork input.dispatchField {
   width: 50px;
   text-align: center;
-  height: 25px;
+  height: 20px;
 }
 #currentWork input.lateCallField {
-  width: 21px;
+  width: 30px;
   text-align: center;
-  height: 15px;
+  height: 20px;
 }
 #jobList th {
   white-space: nowrap;
@@ -920,12 +920,12 @@ input.pod-DispatchField {
 #jobList input.dispatchField {
   width: 50px;
   text-align: center;
-  height: 25px;
+  height: 20px;
 }
 #jobList input.lateCallField {
-  width: 21px;
+  width: 30px;
   text-align: center;
-  height: 15px;
+  height: 20px;
 }
 #pbList th {
   white-space: nowrap;
@@ -952,12 +952,12 @@ input.pod-DispatchField {
 #pbList input.dispatchField {
   width: 50px;
   text-align: center;
-  height: 25px;
+  height: 20px;
 }
 #pbList input.lateCallField {
-  width: 21px;
+  width: 30px;
   text-align: center;
-  height: 15px;
+  height: 20px;
 }
 #jobListPOD th {
   white-space: nowrap;
@@ -984,12 +984,12 @@ input.pod-DispatchField {
 #jobListPOD input.dispatchField {
   width: 50px;
   text-align: center;
-  height: 25px;
+  height: 20px;
 }
 #jobListPOD input.lateCallField {
-  width: 21px;
+  width: 30px;
   text-align: center;
-  height: 15px;
+  height: 20px;
 }
 #jobListDelivery th {
   white-space: nowrap;
@@ -1016,12 +1016,12 @@ input.pod-DispatchField {
 #jobListDelivery input.dispatchField {
   width: 50px;
   text-align: center;
-  height: 25px;
+  height: 20px;
 }
 #jobListDelivery input.lateCallField {
-  width: 21px;
+  width: 30px;
   text-align: center;
-  height: 15px;
+  height: 20px;
 }
 #jobListReprice th {
   white-space: nowrap;
@@ -1048,12 +1048,12 @@ input.pod-DispatchField {
 #jobListReprice input.dispatchField {
   width: 50px;
   text-align: center;
-  height: 25px;
+  height: 20px;
 }
 #jobListReprice input.lateCallField {
-  width: 21px;
+  width: 30px;
   text-align: center;
-  height: 15px;
+  height: 20px;
 }
 #map_canvas_container {
   position: relative;
@@ -1088,7 +1088,7 @@ input.pod-DispatchField {
   display: none;
 }
 #supports tr.Yel {
-  background-color: yellow;
+  background-color: #3EAFC2;
 }
 #supports tr.Gre {
   background-color: lightgreen;
