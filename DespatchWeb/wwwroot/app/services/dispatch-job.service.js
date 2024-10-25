@@ -26,7 +26,7 @@ class DispatchJobService {
         /** @type {Array} List of all couriers */
         this.pickAllCouriers = [];
 
-        this.fetchCouriersData().then(_ => console.log('Complete!'));
+        this.fetchCouriersData();
     }
 
     /**

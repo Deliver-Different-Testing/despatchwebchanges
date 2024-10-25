@@ -3133,7 +3133,11 @@ angular.module("uDispatch")
 
                 console.log('Additional Services Dialog closed!');
             } catch (error) {
-                console.log('Error in showAdditionalServicesMenu:', error);
+                if (error === undefined) {
+                    console.log('User canceled dialog!')
+                } else {
+                    console.error('Error in showAdditionalServicesMenu:', error);
+                }
             }
         };
     }]);
