@@ -1,5 +1,6 @@
 angular.module("uDispatch")
-    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope", ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope) => {
+    .controller("HomeControl", ['$document', "$filter", 'greetingService', "JobDetailService", "$mdDialog", "$parse", "$q", "$scope", "$state", "$window", "$timeout", 'toastrService', "DispatchData", "uCSData", "dispatchJobService", "moment", "Upload", "bytesFilter", "versionUrl", "hotkeys", "APP_CONFIG", "JobTableService", "materialSidenavService", "AppPages", "$rootScope",
+        ($document, $filter, greetingService, JobDetailService, $mdDialog, $parse, $q, $scope, $state, $window, $timeout, toastrService, DispatchData, uCSData, dispatchJobService, moment, Upload, bytesFilter, versionUrl, hotkeys, APP_CONFIG, JobTableService, materialSidenavService, AppPages, $rootScope) => {
         // Initialize variables and scope properties
         function initializeVariables() {
             $scope.name = "Home";
@@ -19,11 +20,15 @@ angular.module("uDispatch")
             $scope.hasAttachedFile = false;
             $scope.areas = [];
             $scope.selectedAreas = [];
-            $scope.filters = {
-                new: false, nda: true, active: false, done: false, all: false
-            };
+            $scope.filters = [
+                {value: 'new', label: 'New', active: false},
+                {value: 'nda', label: 'NDA', active: false},
+                {value: 'active', label: 'Active', active: false},
+                {value: 'done', label: 'Done', active: false},
+                {value: 'all', label: 'All', active: true}  // default active filter
+            ];
 
-            $scope.selectedFilter = 'nda';
+            $scope.selectedFilter = 'all'; // default value
 
             $scope.pickAllCouriers = [];
             $scope.selected = [];
@@ -258,29 +263,38 @@ angular.module("uDispatch")
         async function initializeAreas() {
             if ($scope.areas && $scope.areas.length > 0) {
                 $scope.selectedAreas.push($scope.areas[0]);
+                $scope.$apply();
             }
         }
 
-        /**
-         * Updates filters based on the selected filter option.
-         * @param {string} selectedFilter - The selected filter option.
-         * @returns {Promise<void>}
-         */
-        $scope.updateFilters = async (selectedFilter) => {
-            try {
-                // Set all filters to false
-                Object.keys($scope.filters).forEach(key => {
-                    $scope.filters[key] = false;
-                });
+            /**
+             * Updates filters based on the selected filter option.
+             * @param {string} selectedFilter - The selected filter option.
+             * @returns {Promise<void>}
+             */
+            $scope.updateFilters = async (selectedFilter) => {
+                try {
+                    // Set all filters to inactive
+                    $scope.filters.forEach(filter => {
+                        filter.active = false;
+                    });
 
-                // Set the selected filter to true
-                $scope.filters[selectedFilter] = true;
+                    // Set the selected filter to active
+                    const selectedFilterObj = $scope.filters.find(filter => filter.value === selectedFilter);
+                    if (selectedFilterObj) {
+                        selectedFilterObj.active = true;
+                    }
 
-                await setFilters({'status': selectedFilter});
-            } catch (error) {
-                console.error('Error updating filters:', error);
-            }
-        }
+                    await setFilters({'status': selectedFilter});
+
+                    // Ensure Angular updates the UI
+                    if (!$scope.$$phase) {
+                        $scope.$apply();
+                    }
+                } catch (error) {
+                    console.error('Error updating filters:', error);
+                }
+            };
 
         /**
          * Sets the active area in the driverLocations.
@@ -290,18 +304,6 @@ angular.module("uDispatch")
             $scope.driverLocations.areas.forEach(area => {
                 area.isActive = (area === selectedArea);
             });
-        };
-
-        // Page changed handler
-        $scope.pageChanged = async () => {
-            await getJobList();
-        };
-
-        // Pagination handler
-        $scope.onPaginate = (page, limit) => {
-            $scope.queryParams.page = page;
-            $scope.queryParams.limit = limit;
-            return $scope.pageChanged();
         };
 
         function init() {

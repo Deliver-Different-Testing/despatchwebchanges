@@ -88,9 +88,15 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             /** @type {Array} */
             $scope.selectedAreas = [];
 
-            $scope.filters = {
-                active: false, done: false, all: true
-            };
+            $scope.filters = [
+                {value: 'new', label: 'New', active: false},
+                {value: 'nda', label: 'NDA', active: false},
+                {value: 'active', label: 'Active', active: false},
+                {value: 'done', label: 'Done', active: false},
+                {value: 'all', label: 'All', active: true}  // default active filter
+            ];
+
+            $scope.selectedFilter = 'all'; // default value
 
             $scope.showInput = {};
             $scope.inputWidth = {};
@@ -121,6 +127,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 {key: 'pod', label: 'POD'},
                 {key: 'remain', label: 'Remain'},
                 {key: 'status', label: 'S'}
+            ];
+
+            $scope.filters = [
+                {value: 'new', label: 'New', active: false},
+                {value: 'nda', label: 'NDA', active: false},
+                {value: 'active', label: 'Active', active: false},
+                {value: 'done', label: 'Done', active: false},
+                {value: 'all', label: 'All', active: true}  // default active filter
             ];
 
             $scope.jobFilters = {
@@ -376,6 +390,35 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
+        /**
+         * Updates filters based on the selected filter option.
+         * @param {string} selectedFilter - The selected filter option.
+         * @returns {Promise<void>}
+         */
+        $scope.updateFilters = async (selectedFilter) => {
+            try {
+                // Set all filters to inactive
+                $scope.filters.forEach(filter => {
+                    filter.active = false;
+                });
+
+                // Set the selected filter to active
+                const selectedFilterObj = $scope.filters.find(filter => filter.value === selectedFilter);
+                if (selectedFilterObj) {
+                    selectedFilterObj.active = true;
+                }
+
+                await setFilters({'status': selectedFilter});
+
+                // Ensure Angular updates the UI
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
+            } catch (error) {
+                console.error('Error updating filters:', error);
+            }
+        };
+
         $scope.setActiveArea = selectedArea => {
             angular.forEach($scope.driverLocations.areas, area => {
                 area.isActive = (area === selectedArea);
@@ -623,40 +666,67 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     false
                 );
 
-                // Determine which lists need refreshing
-                const listsToRefresh = new Set([
-                    ...STATUS_TO_LIST_MAP[previousStatusId] || [],
-                    ...STATUS_TO_LIST_MAP[internalStatusId] || []
-                ]);
+                // Remove job from its current list
+                const removeFromList = (jobId, list) => {
+                    const index = list.findIndex(item => item.id === jobId);
+                    if (index !== -1) {
+                        list.splice(index, 1);
+                    }
+                };
 
-                // Only refresh the affected lists
-                await getJobList(Array.from(listsToRefresh));
+                // Handle job movement between lists
+                if (previousStatusId !== internalStatusId) {
+                    // Remove from old list based on previous status
+                    switch (previousStatusId) {
+                        case 1:
+                            removeFromList(job.id, $scope.jobList);
+                            break;
+                        case 2:
+                            removeFromList(job.id, $scope.jobListDelivery);
+                            break;
+                        case 3:
+                            removeFromList(job.id, $scope.jobListPOD);
+                            break;
+                        case 4:
+                            removeFromList(job.id, $scope.jobListReprice);
+                            break;
+                    }
 
-                // Get all potentially affected lists based on what we just refreshed
-                const relevantLists = [];
-                if (listsToRefresh.has($scope.jobDataType.NEW)) {
-                    relevantLists.push(...($scope.jobList || []));
-                }
-                if (listsToRefresh.has($scope.jobDataType.POD)) {
-                    relevantLists.push(...($scope.jobListPOD || []));
-                }
-                if (listsToRefresh.has($scope.jobDataType.DELIVERY)) {
-                    relevantLists.push(...($scope.jobListDelivery || []));
-                }
-                if (listsToRefresh.has($scope.jobDataType.REPRICE)) {
-                    relevantLists.push(...($scope.jobListReprice || []));
+                    // Get updated job data for the new list
+                    const updatedJob = await NWData.getJobDetail(job.id);
+
+                    // Add to new list based on new status
+                    switch (internalStatusId) {
+                        case 1:
+                            $scope.jobList.unshift(updatedJob);
+                            break;
+                        case 2:
+                            $scope.jobListDelivery.unshift(updatedJob);
+                            break;
+                        case 3:
+                            $scope.jobListPOD.unshift(updatedJob);
+                            break;
+                        case 4:
+                            $scope.jobListReprice.unshift(updatedJob);
+                            break;
+                    }
                 }
 
-                // Find and reselect the updated job
-                const refreshedJob = relevantLists.find(j => j.id === job.id);
-                if (refreshedJob) {
-                    await $scope.selectJob(refreshedJob);
+                // Update the current job if it's selected
+                if ($scope.currentJob && $scope.currentJob.id === job.id) {
+                    $scope.currentJob = await NWData.getJobDetail(job.id);
                 }
 
                 // Adjust table headings after data update
                 $timeout(() => sizeHeadings(), 200);
+
+                // Apply changes to trigger view update
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
             } catch (error) {
                 console.error("Error setting internal status:", error);
+                // Consider adding error notification here
             }
         };
 
