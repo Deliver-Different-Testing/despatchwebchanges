@@ -268,78 +268,101 @@ public class CourierRepository : ICourierRepository
 
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)
     {
-        var today = DateTime.Today;
-        return from c in _context.TblCouriers
-            join jt in _context.TblJobTodays on c.CourierId equals jt.CourierId
-            join zp in _context.ZipPolygons on new { Lat = jt.PickUpLatitude, Lon = jt.PickUpLongitude }
-                equals new { Lat = zp.Latitude, Lon = zp.Longitude }
-            join clazp in _context.ClearListAreaZipPolygons on zp.ZipPolygonId equals clazp.ZipPolygonId
-            join cla in _context.TblClearListAreas on clazp.ClearListAreaId equals cla.ClearListAreaId
-            join clio in _context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
-            join cg in _context.TblCourierGps on c.CourierGpsid equals cg.CourierGpsid
-            where cla.ClearListAreaId == clearListAreaId
-                  && clio.LogInTime.Date == today
-                  && clio.LogOutTime == null
-                  && jt.JobDone == false
-                  && jt.Void == false
-                  && cla.ChannelId == c.ChannelId
-            select new EnvelopeCoordinate { Longitude = (decimal)cg.Longitude, Latitude = (decimal)cg.Latitude };
+        return _context.TucCouriers
+            .SelectMany(c => c.TucJobUcjbCouriers
+                .Where(jt => !jt.UcjbJobDone && !jt.UcjbVoid)
+                .SelectMany(jt => _context.ZipPolygons
+                    .Where(zp => zp.Latitude == jt.PickUpLatitude && zp.Longitude == jt.PickUpLongitude)
+                    .SelectMany(zp => zp.TblClearListAreaPolygons
+                        .Where(clap => clap.ClearListArea.ClearListAreaId == clearListAreaId &&
+                                       clap.ClearListArea.ChannelId == c.UccrChannelId)
+                        .Select(clap => new
+                        {
+                            Courier = c,
+                            Job = jt,
+                        })
+                    )
+                )
+            )
+            .Where(x => x.Courier.CourierLogInOut.LogInTime.Date == DateTime.Now &&
+                        x.Courier.CourierLogInOut.LogOutTime == null)
+            .Select(x => new EnvelopeCoordinate
+            {
+                Longitude = (decimal)x.Courier.CourierGps.Longitude,
+                Latitude = (decimal)x.Courier.CourierGps.Latitude
+            });
     }
 
     private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryUs(int clearListAreaId)
     {
-        return from jt in _context.TblJobTodays
-            join zp in _context.ZipPolygons on new { Lat = jt.PickUpLatitude, Lon = jt.PickUpLongitude }
-                equals new { Lat = zp.Latitude, Lon = zp.Longitude }
-            join clazp in _context.ClearListAreaZipPolygons on zp.ZipPolygonId equals clazp.ZipPolygonId
-            where clazp.ClearListAreaId == clearListAreaId
-                  && jt.JobDone == false
-                  && jt.Void == false
-                  && jt.CourierId == null
-            select new EnvelopeCoordinate
-                { Longitude = (decimal)jt.DeliveryLongitude, Latitude = (decimal)jt.DeliveryLatitude };
+        return _context.TucJobs
+            .Where(jt => !jt.UcjbJobDone &&
+                         !jt.UcjbVoid &&
+                         jt.UcjbCourierId == null)
+            .SelectMany(jt => _context.ZipPolygons
+                .Where(zp => zp.Latitude == jt.PickUpLatitude &&
+                             zp.Longitude == jt.PickUpLongitude)
+                .SelectMany(zp => zp.TblClearListAreaPolygons
+                    .Where(clazp => clazp.ClearListAreaId == clearListAreaId)
+                    .Select(clazp => new EnvelopeCoordinate
+                    {
+                        Longitude = (decimal)jt.DeliveryLongitude,
+                        Latitude = (decimal)jt.DeliveryLatitude
+                    })
+                )
+            );
     }
 
     private IQueryable<EnvelopeCoordinate> GetAreaPolygonsQueryNz(int clearListAreaId)
     {
-        return from cla in _context.TblClearListAreas
-            join clap in _context.TblClearListAreaPolygons on cla.ClearListAreaId equals clap.ClearListAreaId
-            join pgps in _context.TblPolygonGps on clap.PolygonId equals pgps.PolygonId
-            where cla.ClearListAreaId == clearListAreaId
-            select new EnvelopeCoordinate { Longitude = pgps.Longitude, Latitude = pgps.Latitude };
+        return _context.TblClearListAreas
+            .Where(cla => cla.ClearListAreaId == clearListAreaId)
+            .SelectMany(cla => cla.TblClearListAreaPolygons
+                .SelectMany(clap => clap.Polygon.TblPolygonGps
+                    .Select(pgps => new EnvelopeCoordinate
+                    {
+                        Longitude = pgps.Longitude,
+                        Latitude = pgps.Latitude
+                    })
+                ));
     }
 
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
     {
-        var today = DateTime.Today;
-        return from c in _context.TblCouriers
-            join jt in _context.TblJobTodays on c.CourierId equals jt.CourierId
-            join dps in _context.TblPolygonSuburbs on jt.ToSuburbId equals dps.SuburbId
-            join dp in _context.TblPolygons on dps.PolygonId equals dp.PolygonId
-            join dclap in _context.TblClearListAreaPolygons on dp.PolygonId equals dclap.PolygonId
-            join dcla in _context.TblClearListAreas on dclap.ClearListAreaId equals dcla.ClearListAreaId
-            join clio in _context.TblCourierLogInOuts on c.CourierLogInOutId equals clio.CourierLogInOutId
-            join cgps in _context.TblCourierGps on c.CourierGpsid equals cgps.CourierGpsid
-            where dcla.ClearListAreaId == clearListAreaId
-                  && clio.LogInTime.Date == today
-                  && clio.LogOutTime == null
-                  && jt.JobDone == false
-                  && jt.Void == false
-                  && dcla.ChannelId == c.ChannelId
-            select new EnvelopeCoordinate { Longitude = (decimal)cgps.Longitude, Latitude = (decimal)cgps.Latitude };
+        return _context.TucCouriers
+            .Where(c => c.CourierLogInOut.LogInTime.Date == DateTime.Now &&
+                        c.CourierLogInOut.LogOutTime == null)
+            .SelectMany(c => c.TucJobUcjbCouriers
+                .Where(jt => !jt.UcjbJobDone &&
+                             !jt.UcjbVoid)
+                .SelectMany(jt => jt.UcjbToNavigation.TblPolygonSuburbs
+                    .SelectMany(dps => dps.Polygon.TblClearListAreaPolygons
+                        .Where(dclap => dclap.ClearListArea.ClearListAreaId == clearListAreaId &&
+                                        dclap.ClearListArea.ChannelId == c.UccrChannelId)
+                        .Select(dclap => new EnvelopeCoordinate
+                        {
+                            Longitude = (decimal)c.CourierGps.Longitude,
+                            Latitude = (decimal)c.CourierGps.Latitude
+                        })
+                    )
+                ));
     }
 
     private IQueryable<EnvelopeCoordinate> GetUnassignedJobLocationsQueryNz(int clearListAreaId)
     {
-        return from jt in _context.TblJobTodays
-            join ps in _context.TblPolygonSuburbs on jt.ToSuburbId equals ps.SuburbId
-            join clap in _context.TblClearListAreaPolygons on ps.PolygonId equals clap.PolygonId
-            where clap.ClearListAreaId == clearListAreaId
-                  && jt.JobDone == false
-                  && jt.Void == false
-                  && jt.CourierId == null
-            select new EnvelopeCoordinate
-                { Longitude = (decimal)jt.DeliveryLongitude, Latitude = (decimal)jt.DeliveryLatitude };
+        return _context.TucJobs
+            .Where(jt => !jt.UcjbJobDone &&
+                         !jt.UcjbVoid &&
+                         jt.UcjbCourierId == null)
+            .SelectMany(jt => jt.UcjbToNavigation.TblPolygonSuburbs
+                .SelectMany(ps => ps.Polygon.TblClearListAreaPolygons
+                    .Where(clap => clap.ClearListAreaId == clearListAreaId)
+                    .Select(clap => new EnvelopeCoordinate
+                    {
+                        Longitude = (decimal)jt.DeliveryLongitude,
+                        Latitude = (decimal)jt.DeliveryLatitude
+                    })
+                ));
     }
 
     private static async Task<ClearListEnvelopeViewModel> CalculateEnvelopeAsync(IQueryable<EnvelopeCoordinate> query)
