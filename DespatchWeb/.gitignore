@@ -1,2 +1,3 @@
 /wwwroot/dist/
 !/wwwroot/app/version.js
+wwwroot/app/version.js
