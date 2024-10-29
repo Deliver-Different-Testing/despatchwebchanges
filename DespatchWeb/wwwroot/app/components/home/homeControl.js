@@ -2345,8 +2345,8 @@ angular.module("uDispatch")
                         break;
                     case 3:
 // this is right click
-                        $timeout(() => {
-                            JobDetailService.updateGPS(job, 'toAddress', true);
+                        $timeout(async () => {
+                            await JobDetailService.updateGPS($event, job, 'toAddress');
                         }, 100);
                         break;
                     default:
@@ -2357,8 +2357,8 @@ angular.module("uDispatch")
                 return false;
             };
 
-            $scope.latePickColumnClick = evt => {
-                switch (evt.which) {
+            $scope.latePickColumnClick = $event => {
+                switch ($event.which) {
                     case 1:
 // this is left click
                         break;
