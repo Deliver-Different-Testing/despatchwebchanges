@@ -34,7 +34,9 @@ angular.module("uDispatch")
                 $scope.pickAllCouriers = [];
                 $scope.selected = [];
                 $scope.jobList = [];
+                $scope.supports = [];
                 $scope.jobsLoading = false;
+                $scope.supportsLoading = false;
                 $scope.driverLocations = [];
                 $scope.markers = [];
                 $scope.truckCourierStatus = [];
@@ -161,37 +163,9 @@ angular.module("uDispatch")
                     "id": "3", "label": "Trucks"
                 }];
 
-                $scope.jobListHeaders = [
-                    {key: 'time', label: 'T'},
-                    {key: 'speed', label: 'Speed'},
-                    {key: 'notify', label: 'N'},
-                    {key: 'vehicle', label: 'V'},
-                    {key: 'jobNo', label: 'Job'},
-                    {key: 'client', label: 'Client'},
-                    {key: 'from', label: 'From'},
-                    {key: 'to', label: 'To'},
-                    {key: '', label: ''},
-                    {key: 'remain', label: 'Remain'},
-                    {key: 'status', label: 'S'}
-                ];
-
-                $scope.currentLisHeaders = [
-                    {key: 'time', label: 'T'},
-                    {key: 'speed', label: 'Speed'},
-                    {key: 'notify', label: 'N'},
-                    {key: 'vehicle', label: 'V'},
-                    {key: 'jobNo', label: 'Job'},
-                    {key: 'client', label: 'Client'},
-                    {key: 'from', label: 'From'},
-                    {key: 'to', label: 'To'},
-                    {key: '', label: ''},
-                    {key: 'remain', label: 'Remain'},
-                    {key: 'status', label: 'S'},
-                    {key: 'lp', label: 'LP'},
-                    {key: 'ld', label: 'LD'},
-                    {key: 'runOrder', label: 'RO'},
-                ];
-
+                // Set up table headers
+                initTableHeaders();
+                
                 $scope.courierMenu = [{
                     text: "Dispatch Selected",
                     click: async ($itemScope) => {
@@ -216,6 +190,50 @@ angular.module("uDispatch")
                         }
                     }
                 }];
+            }
+
+            function initTableHeaders() {
+                $scope.jobListHeaders = [
+                    {key: 'time', label: 'T'},
+                    {key: 'speed', label: 'Speed'},
+                    {key: 'notify', label: 'N'},
+                    {key: 'vehicle', label: 'V'},
+                    {key: 'jobNo', label: 'Job'},
+                    {key: 'client', label: 'Client'},
+                    {key: 'from', label: 'From'},
+                    {key: 'to', label: 'To'},
+                    {key: '', label: ''},
+                    {key: 'remain', label: 'Remain'},
+                    {key: 'status', label: 'S'}
+                ];
+
+                $scope.supportListHeaders = [
+                    {key: 'time', label: 'Time'},
+                    {key: 'courier', label: '#'},
+                    {key: 'staff', label: 'Staff'},
+                    {key: 'jobNum', label: 'Job #'},
+                    {key: 'event', label: 'Event'},
+                    {key: 'notes', label: 'Notes'},
+                    {key: 'remain', label: 'Remain'},
+                    {key: 'lockedBy', label: 'Locked by'}
+                ];
+
+                $scope.currentListHeaders = [
+                    {key: 'time', label: 'T'},
+                    {key: 'speed', label: 'Speed'},
+                    {key: 'notify', label: 'N'},
+                    {key: 'vehicle', label: 'V'},
+                    {key: 'jobNo', label: 'Job'},
+                    {key: 'client', label: 'Client'},
+                    {key: 'from', label: 'From'},
+                    {key: 'to', label: 'To'},
+                    {key: '', label: ''},
+                    {key: 'remain', label: 'Remain'},
+                    {key: 'status', label: 'S'},
+                    {key: 'lp', label: 'LP'},
+                    {key: 'ld', label: 'LD'},
+                    {key: 'runOrder', label: 'RO'},
+                ];
             }
 
             /**

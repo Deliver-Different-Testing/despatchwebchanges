@@ -1,5 +1,5 @@
 <!-- Job List Component -->
-<div class="job-list-container">
+<div class="job-list-container" ng-if="!jobsLoading && jobList.length > 0">
     <!-- Table Headers -->
     <div class="table-headings sticky-header">
         <table>
@@ -109,13 +109,24 @@
         </tr>
         </tbody>
     </table>
+</div>
 
-    <!-- Loading Indicator -->
-    <div class="loading" ng-if="jobListLoading">
-        <div class="text">
-            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-            <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
-            <span class="sr-only">Loading...</span>
+<div class="no-data" ng-if="!jobsLoading && (!jobList || jobList === 0)">
+    <div class="content">
+        <div class="icon">
+            <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
         </div>
+        <div class="text">
+            No Jobs Available
+        </div>
+    </div>
+</div>
+
+<!-- Loading Indicator -->
+<div class="loading" ng-if="jobsLoading">
+    <div class="text">
+        <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+        <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
+        <span class="sr-only">Loading...</span>
     </div>
 </div>
