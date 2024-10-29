@@ -110,16 +110,9 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
     {
         try
         {
-            var jobToUpdate = new TucJob
-            {
-                UcjbId = jobId,
-                AgentId = agentId,
-                InternalStatus = (int)InternalJobStatus.AwaitingPod
-            };
-
-            _context.TucJobs.Attach(jobToUpdate);
-            _context.Entry(jobToUpdate).Property(x => x.AgentId).IsModified = true;
-            _context.Entry(jobToUpdate).Property(x => x.InternalStatus).IsModified = true;
+            var job = await _context.TucJobs.Where(j => j.UcjbId == jobId).FirstOrDefaultAsync();
+            job.AgentId = agentId;
+            job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
 
             await _context.SaveChangesAsync();
 
@@ -127,7 +120,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            _logger.LogError(e, $"An error occured adding Agent {agentId} to job {jobId}");
             return false;
         }
     }
