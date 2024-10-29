@@ -93,7 +93,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         catch (Exception ex)
         {
             // Log the exception
-            Console.WriteLine(ex.Message);
+            Log.Error(ex, $"AddJobNationwideAsync:{ex.Message}");
             return false;
         }
     }
