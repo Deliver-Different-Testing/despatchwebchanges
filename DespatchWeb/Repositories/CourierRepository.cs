@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -81,6 +82,15 @@ public class CourierRepository : ICourierRepository
         return result;
     }
 
+    public async Task<string> GetAirportCodeByIdAsync(int airportId)
+    {
+        return await _context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .Select(a => a.AirportCode)
+            .FirstOrDefaultAsync();
+    }
+
+
     public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
         var results = await _context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
@@ -93,8 +103,21 @@ public class CourierRepository : ICourierRepository
     /// <returns></returns>
     public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
     {
-        var results = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
-        return _mapper.Map<List<ActiveCouriersViewModel>>(results);
+        try
+        {
+            var results = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+            return _mapper.Map<List<ActiveCouriersViewModel>>(results);
+        }
+        catch (DbException ex)
+        {
+            _logger.LogError(ex, "Database error occurred while fetching active couriers");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error occurred while fetching active couriers");
+            throw;
+        }
     }
 
     /// <summary>
@@ -153,9 +176,17 @@ public class CourierRepository : ICourierRepository
         return jobs.Count;
     }
 
-    public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
-        Country country, bool includeCouriers = false)
+    public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
+        int clearListAreaId,
+        Country country,
+        bool includeCouriers = false)
     {
+        if (clearListAreaId <= 0)
+            throw new ArgumentException("Invalid clearListAreaId", nameof(clearListAreaId));
+
+        if (!Enum.IsDefined(typeof(Country), country))
+            throw new ArgumentException("Invalid country", nameof(country));
+
         return country switch
         {
             Country.Nz => await GetClearListEnvelopeNzAsync(clearListAreaId, includeCouriers),
@@ -172,38 +203,29 @@ public class CourierRepository : ICourierRepository
 
         try
         {
-            var activeCouriersTask = _context.Procedures.DES_qryCourierCombo_ActiveAsync();
-
-            var clearListsQuery = await _context.TblDespatchViews
+            // Get all required data upfront
+            var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+            var clearLists = await _context.TblDespatchViews
                 .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
                 .SelectMany(dv => dv.DespatchViewZoneGroups)
                 .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
-                .Where(cla => cla != null) // Filter nulls early
+                .Where(cla => cla != null)
                 .Distinct()
+                .Select(cl => new { cl.ClearListAreaId, cl.Name, cl.Order })
                 .ToListAsync();
 
-            var activeCouriers = await activeCouriersTask; // Await parallel task
-
-            // Process clear lists in parallel
-            var viewModel = new ClearListViewModel
-            {
-                Areas = new List<AreaClearList>()
-            };
-
-            var areaTasks = clearListsQuery.Select(async clearList =>
+            // Process each clear list sequentially to avoid DbContext threading issues
+            var areas = new List<AreaClearList>();
+            foreach (var clearList in clearLists)
             {
                 var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
-                if (areaClearList == null) return null;
+                if (areaClearList == null) continue;
 
-                var clearListName = clearList.Name?.ToLower();
-                areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearListName);
-                return areaClearList;
-            });
+                areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearList.Name?.ToLower());
+                areas.Add(areaClearList);
+            }
 
-            var areas = await Task.WhenAll(areaTasks);
-            viewModel.Areas.AddRange(areas.Where(a => a != null));
-
-            return viewModel;
+            return new ClearListViewModel { Areas = areas };
         }
         catch (Exception ex)
         {
@@ -213,13 +235,6 @@ public class CourierRepository : ICourierRepository
         }
     }
 
-    public async Task<string> GetAirportCodeByIdAsync(int airportId)
-    {
-        return await _context.TblAirports
-            .Where(a => a.AirportId == airportId)
-            .Select(a => a.AirportCode)
-            .FirstOrDefaultAsync();
-    }
 
     private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeUsAsync(int clearListAreaId,
         bool includeCouriers)
@@ -380,32 +395,25 @@ public class CourierRepository : ICourierRepository
     }
 
     private async Task<AreaClearList> BuildClearListViewModel(
-        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers, TblClearListArea clearList,
+        IReadOnlyCollection<DES_qryCourierCombo_ActiveResult> activeCouriers,
+        dynamic clearList,
         int percentHeight)
     {
-        var result =
-            await _context.Procedures.DES_qdfCourier_ClearListsAsync(clearList?.ClearListAreaId);
+        // Combine multiple queries into one
+        var clearListData = await _context.Procedures.DES_qdfCourier_ClearListsAsync(clearList.ClearListAreaId);
+
+        if (clearListData == null) return null;
 
         var acl = new AreaClearList
         {
             Id = clearList.ClearListAreaId,
             Name = clearList.Name,
             Order = clearList.Order,
-            PercentHeight = percentHeight
+            PercentHeight = percentHeight,
+            Top = BuildClearListSection(clearListData, activeCouriers, 1),
+            Middle = BuildClearListSection(clearListData, activeCouriers, 3),
+            Bottom = BuildClearListSection(clearListData, activeCouriers, 5)
         };
-
-        var sections = new Dictionary<string, int>
-        {
-            { "Top", 1 },
-            { "Middle", 3 },
-            { "Bottom", 5 }
-        };
-
-        foreach (var section in sections)
-        {
-            var sectionData = BuildClearListSection(result, activeCouriers, section.Value);
-            if (section.Key != null) typeof(AreaClearList).GetProperty(section.Key)?.SetValue(acl, sectionData);
-        }
 
         return acl;
     }

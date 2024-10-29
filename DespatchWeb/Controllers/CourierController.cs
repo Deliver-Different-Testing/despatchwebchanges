@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Controllers;
@@ -19,11 +18,19 @@ public class CourierController : Controller
 
     public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds)
     {
-        if (despatchViewIds is { Count: 0 })
-            despatchViewIds.Add(49);
+        try
+        {
+            if (despatchViewIds is { Count: 0 })
+                despatchViewIds.Add(49);
 
-        var result = await _courierRepo.GetClearListsAsync(despatchViewIds);
-        return Json(result);
+            var result = await _courierRepo.GetClearListsAsync(despatchViewIds);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpGet]
