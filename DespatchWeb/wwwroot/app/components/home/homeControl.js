@@ -165,7 +165,7 @@ angular.module("uDispatch")
 
                 // Set up table headers
                 initTableHeaders();
-                
+
                 $scope.courierMenu = [{
                     text: "Dispatch Selected",
                     click: async ($itemScope) => {
@@ -183,7 +183,7 @@ angular.module("uDispatch")
                     text: "Dispatch Selected",
                     async click($itemScope) {
                         try {
-                            await dispatchJobsFromPotentialCouriers($itemScope.courier.code);
+                            await dispatchJobService.dispatchJobsFromPotentialCouriers($itemScope.courier.code);
                             console.log('Dispatch from Potential Couriers completed successfully');
                         } catch (error) {
                             console.log('Error in Dispatch from Potential Couriers:', error);
@@ -2688,11 +2688,7 @@ angular.module("uDispatch")
                 const selectedClients = $scope.pickService.clients.map(a => a.id);
 
                 try {
-                    angular.element("#box-jobsList .loading").show();
-
                     $scope.jobList = await DispatchData.getJobsWithFilters($scope.queryParams, selectedClients, $scope.isInternal, $scope.selectedAreas);
-
-                    angular.element("#box-jobsList .loading").fadeOut();
 
                     await $timeout(async () => {
                         sizeHeadings();
@@ -2707,7 +2703,6 @@ angular.module("uDispatch")
                 } catch (error) {
                     console.log('Error getting job list:', error);
                     console.log("Failed to get job list. Please try again.");
-                    angular.element("#box-jobsList .loading").fadeOut();
                 } finally {
                     $scope.jobsLoading = false;
                 }
@@ -2747,7 +2742,7 @@ angular.module("uDispatch")
 
             $scope.getSupports = async () => {
                 try {
-                    angular.element("#box-supports").find(".loading").show();
+                    $scope.supportsLoading = true;
                     const data = await DispatchData.getSupports($scope.supportChannel);
 
                     const first = $scope.supports === null || $scope.supports === undefined;
@@ -2757,7 +2752,6 @@ angular.module("uDispatch")
                     if (first) {
                         $scope.supportChannel.split(',').forEach(SetSelectedChannels);
                     }
-                    angular.element("#box-supports").find(".loading").fadeOut();
 
                     $scope.supportMenu = [{
                         text: "Complete", click: ($itemScope) => {
@@ -2792,7 +2786,8 @@ angular.module("uDispatch")
                     }, 2000);
                 } catch (error) {
                     console.log('Error getting supports:', error);
-                    angular.element("#box-supports").find(".loading").fadeOut();
+                } finally {
+                    $scope.supportsLoading = false;
                 }
             };
 
@@ -2816,7 +2811,6 @@ angular.module("uDispatch")
             }
 
             async function initializeJobList() {
-                angular.element("#box-jobsList").find(".loading").show();
                 $scope.jobList = [];
                 $scope.currentJob = null;
                 $scope.jdSvc.currentJob = null;

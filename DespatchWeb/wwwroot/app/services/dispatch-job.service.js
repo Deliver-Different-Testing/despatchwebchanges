@@ -26,7 +26,7 @@ class DispatchJobService {
         /** @type {Array} List of all couriers */
         this.pickAllCouriers = [];
 
-        this.fetchCouriersData();
+        this.fetchCouriersData().then(r => console.log('Courier Data Fetched!'));
     }
 
     /**
@@ -97,6 +97,72 @@ class DispatchJobService {
             await this.dispatchJobsContinue(foundCourier, [job]);
         }
     }
+
+    /**
+     * Dispatch jobs from a list of potential couriers
+     * @param {number} courierId - The ID of the courier
+     * @param {Job[]} jobList - Array of jobs to process
+     * @param {string} contactId - The contact ID for the dispatch
+     * @param {string} firstName - The first name for followup events
+     * @returns {Promise} A promise that resolves when jobs are dispatched
+     */
+    async dispatchJobsFromPotentialCouriers(courierId, jobList, contactId, firstName) {
+        // Find courier in active couriers list
+        const foundCourier = this.pickCouriers.find(c => c.id === courierId);
+        if (!foundCourier) {
+            await this.showAlertMessage("Invalid Courier");
+            return;
+        }
+
+        // Filter and validate jobs
+        const validJobs = [];
+        const activeJobs = jobList.filter(job => job.isActive);
+
+        for (const job of activeJobs) {
+            // Validate each job
+            if (!this.validateJob(job, foundCourier)) {
+                return; // Exit if any validation fails
+            }
+
+            validJobs.push(job.id);
+
+            // Handle dangerous goods followup events
+            if (this.requiresFollowupEvent(job)) {
+                await this.dispatchData.addFollowupEvent(
+                    job.jobNo,
+                    job.clientId,
+                    job.contactName,
+                    contactId,
+                    foundCourier.courierID,
+                    job.id,
+                    job.jobType,
+                    firstName
+                );
+            }
+        }
+
+        if (validJobs.length === 0) {
+            return;
+        }
+
+        // Allocate jobs and update data
+        try {
+            await this.dispatchData.allocateJobs(
+                foundCourier.courierID,
+                contactId,
+                validJobs
+            );
+
+            // Return the courier info for any UI updates needed
+            return {
+                gpsCourier: foundCourier.id
+            };
+        } catch (error) {
+            await this.showAlertMessage("Failed to dispatch jobs: " + error.message);
+            throw error;
+        }
+    }
+
 
     /**
      * Find a courier by their ID.
@@ -195,20 +261,20 @@ class DispatchJobService {
      * @param {Object} courier - The courier object to validate against.
      * @returns {boolean} True if the job is valid for dispatching, false otherwise.
      */
-    validateJob(job, courier) {
+    async validateJob(job, courier) {
         if (job.courierData && job.courierData.courierID !== null) {
-            this.showAlertMessage(`Restore ${job.jobNo} prior to dispatching to another courier`);
+            await this.showAlertMessage(`Restore ${job.jobNo} prior to dispatching to another courier`);
             return false;
         }
 
         if (job.dgClass !== null && job.dgClass > 0) {
             if (!courier.dangerousGoods) {
-                this.showAlertMessage(`DG job ${job.jobNo} can not be dispatched to courier ${courier.id} - doesn't have DGLicense.`);
+                await this.showAlertMessage(`DG job ${job.jobNo} can not be dispatched to courier ${courier.id} - doesn't have DGLicense.`);
                 return false;
             }
 
             if (job.DGLicenseExpiry === null || this.moment(courier.dgLicenseExpiry) < this.moment().add(1, 'days')) {
-                this.showAlertMessage(`Courier ${courier.id} doesn't have a DGLicense or license has expired.`);
+                await this.showAlertMessage(`Courier ${courier.id} doesn't have a DGLicense or license has expired.`);
                 return false;
             }
         }
@@ -219,8 +285,9 @@ class DispatchJobService {
     /**
      * Show an alert message dialog.
      * @param {string} textContent - The message to display in the alert.
+     * @returns {Promise} A promise that resolves when the dialog is closed
      */
-    showAlertMessage(textContent) {
+    async showAlertMessage(textContent) {
         const alert = this.$mdDialog.alert()
             .parent(angular.element(this.$document.body))
             .clickOutsideToClose(true)
@@ -229,7 +296,7 @@ class DispatchJobService {
             .ariaLabel('unable to despatch')
             .ok('OK');
 
-        this.$mdDialog.show(alert);
+        return await this.$mdDialog.show(alert);
     }
 }
 
