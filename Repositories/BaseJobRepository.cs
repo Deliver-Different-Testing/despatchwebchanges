@@ -542,7 +542,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                                  j.UcjbStatus == 9),
 
             NationwideWindowPanel.ActionRequired =>
-                query.Where(j => j.InternalStatus == (int)InternalJobStatus.BookDelivery),
+                query.Where(j => j.InternalStatus == (int)InternalJobStatus.ActionRequired),
 
             NationwideWindowPanel.Reprice =>
                 query.Where(j => j.InternalStatus == (int)InternalJobStatus.Reprice ||

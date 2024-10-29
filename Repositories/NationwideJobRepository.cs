@@ -44,58 +44,42 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
     public async Task<bool> AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
     {
+        if (jobId <= 0)
+            throw new ArgumentException("Job ID must be greater than zero.", nameof(jobId));
+
         if (flight == null)
             throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
 
-        try
+        if (string.IsNullOrWhiteSpace(webhookAlertId))
+            throw new ArgumentException("Webhook alert ID cannot be empty.", nameof(webhookAlertId));
+
+        if (string.IsNullOrWhiteSpace(flight.CarrierFsCode) || string.IsNullOrWhiteSpace(flight.FlightNumber))
+            throw new ArgumentException("Flight carrier code and number must be provided.", nameof(flight));
+
+        var job = await _context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .FirstOrDefaultAsync();
+
+        if (job == null)
+            throw new KeyNotFoundException($"Job with ID {jobId} not found.");
+
+        var jobNationwide = new TucJobNationwide
         {
-            var job = await Context.TblJobs
-                .Where(j => j.JobId == jobId)
-                .Select(j => new
-                {
-                    j.JobId,
-                    j.Number,
-                    j.ClientId,
-                    j.ParentId,
-                    j.CourierId
-                })
-                .FirstOrDefaultAsync();
+            UcnwJobId = job.UcjbId,
+            UcnwJobNumber = job.UcjbNumber,
+            UcnwClientId = job.UcjbClientId ?? 0,
+            UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
+            UcnwEtd = flight.DepartureTime,
+            UcnwEta = flight.ArrivalTime,
+            WebhookAlertId = webhookAlertId
+        };
 
-            if (job == null)
-                throw new KeyNotFoundException($"Job with ID {jobId} not found.");
+        // Move job to POD
+        job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
 
-            var jobNationwide = new TucJobNationwide
-            {
-                UcnwJobId = job.JobId,
-                UcnwJobNumber = job.Number,
-                UcnwClientId = job.ClientId ?? 0,
-                UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
-                UcnwEtd = flight.DepartureTime,
-                UcnwEta = flight.ArrivalTime,
-                WebhookAlertId = webhookAlertId
-            };
-            Context.TucJobNationwides.Add(jobNationwide);
-
-            // Update job status
-            var jobToUpdate = new TucJob
-            {
-                UcjbId = jobId, InternalStatus = (int)InternalJobStatus.AwaitingPod
-            };
-
-            Context.TucJobs.Attach(jobToUpdate);
-            Context.Entry(jobToUpdate).Property(x => x.InternalStatus).IsModified = true;
-
-            // Apply updates
-            await Context.SaveChangesAsync();
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            // Log the exception
-            Log.Error(ex, $"AddJobNationwideAsync:{ex.Message}");
-            return false;
-        }
+        _context.TucJobNationwides.Add(jobNationwide);
+        await Context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId)
@@ -123,16 +107,9 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     {
         try
         {
-            var jobToUpdate = new TucJob
-            {
-                UcjbId = jobId,
-                AgentId = agentId,
-                InternalStatus = (int)InternalJobStatus.AwaitingPod
-            };
-
-            Context.TucJobs.Attach(jobToUpdate);
-            Context.Entry(jobToUpdate).Property(x => x.AgentId).IsModified = true;
-            Context.Entry(jobToUpdate).Property(x => x.InternalStatus).IsModified = true;
+            var job = await Context.TucJobs.Where(j => j.UcjbId == jobId).FirstOrDefaultAsync();
+            job.AgentId = agentId;
+            job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
 
             await Context.SaveChangesAsync();
 
@@ -140,7 +117,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            _logger.LogError(e, $"An error occured adding Agent {agentId} to job {jobId}");
             return false;
         }
     }
