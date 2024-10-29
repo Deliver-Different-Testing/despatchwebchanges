@@ -45,44 +45,50 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
             viewFilters, windowPane);
     }
 
-    public async Task<bool> AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
+    public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
     {
-        if (jobId <= 0)
-            throw new ArgumentException("Job ID must be greater than zero.", nameof(jobId));
-
-        if (flight == null)
-            throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
-
-        if (string.IsNullOrWhiteSpace(webhookAlertId))
-            throw new ArgumentException("Webhook alert ID cannot be empty.", nameof(webhookAlertId));
-
-        if (string.IsNullOrWhiteSpace(flight.CarrierFsCode) || string.IsNullOrWhiteSpace(flight.FlightNumber))
-            throw new ArgumentException("Flight carrier code and number must be provided.", nameof(flight));
-
-        var job = await _context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .FirstOrDefaultAsync();
-
-        if (job == null)
-            throw new KeyNotFoundException($"Job with ID {jobId} not found.");
-
-        var jobNationwide = new TucJobNationwide
+        try
         {
-            UcnwJobId = job.UcjbId,
-            UcnwJobNumber = job.UcjbNumber,
-            UcnwClientId = job.UcjbClientId ?? 0,
-            UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
-            UcnwEtd = flight.DepartureTime,
-            UcnwEta = flight.ArrivalTime,
-            WebhookAlertId = webhookAlertId
-        };
+            if (jobId <= 0)
+                throw new ArgumentException("Job ID must be greater than zero.", nameof(jobId));
 
-        // Move job to POD
-        job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+            if (flight == null)
+                throw new ArgumentNullException(nameof(flight), "Flight information cannot be null.");
 
-        _context.TucJobNationwides.Add(jobNationwide);
-        await _context.SaveChangesAsync();
-        return true;
+            if (string.IsNullOrWhiteSpace(webhookAlertId))
+                throw new ArgumentException("Webhook alert ID cannot be empty.", nameof(webhookAlertId));
+
+            if (string.IsNullOrWhiteSpace(flight.CarrierFsCode) || string.IsNullOrWhiteSpace(flight.FlightNumber))
+                throw new ArgumentException("Flight carrier code and number must be provided.", nameof(flight));
+
+            var job = await _context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .FirstOrDefaultAsync();
+
+            if (job == null)
+                throw new KeyNotFoundException($"Job with ID {jobId} not found.");
+
+            var jobNationwide = new TucJobNationwide
+            {
+                UcnwJobId = job.UcjbId,
+                UcnwJobNumber = job.UcjbNumber,
+                UcnwClientId = job.UcjbClientId ?? 0,
+                UcnwFlightNo = flight.CarrierFsCode + flight.FlightNumber,
+                UcnwEtd = flight.DepartureTime,
+                UcnwEta = flight.ArrivalTime,
+                WebhookAlertId = webhookAlertId
+            };
+
+            // Move job to POD
+            job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+
+            _context.TucJobNationwides.Add(jobNationwide);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured adding Flight {flight.FlightNumber} to job {jobId}");
+        }
     }
 
     public async Task<(string toAirport, string fromAirport)> GetAirportCodesByJobIdAsync(int jobId)
