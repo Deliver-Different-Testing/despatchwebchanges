@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -109,6 +111,13 @@ public class BaseJobRepository
                             ? string.Empty
                             : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
                         CourierId = j.UcjbCourierId
+                    }
+                    : null,
+                AssignedCourier = j.UcjbCourier != null
+                    ? new Suggestion
+                    {
+                        Id = j.UcjbCourier.UccrId,
+                        Name = j.UcjbCourier.Code
                     }
                     : null,
 
@@ -312,8 +321,39 @@ public class BaseJobRepository
             }
             // Apply internal view filters
             case true when viewFilters?.Any() == true:
-                _logger.LogWarning("View filters not implemented in IQueryable version");
+            {
+                // Combine all view filters with OR logic
+                var parameter = Expression.Parameter(typeof(TucJob), "j");
+                Expression combinedFilter = null;
+
+                foreach (var filter in viewFilters)
+                {
+                    try
+                    {
+                        // Parse the filter string into an expression tree
+                        var parser = new DynamicLinqParser<TucJob>();
+                        var filterExpression = parser.ParseExpression(filter, parameter);
+
+                        // Combine filters with OR logic
+                        combinedFilter = combinedFilter == null
+                            ? filterExpression
+                            : Expression.OrElse(combinedFilter, filterExpression);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error parsing view filter: {Filter}", filter);
+                    }
+                }
+
+                // Apply the combined filter if any were successfully parsed
+                if (combinedFilter != null)
+                {
+                    var lambda = Expression.Lambda<Func<TucJob, bool>>(combinedFilter, parameter);
+                    query = query.Where(lambda);
+                }
+
                 break;
+            }
         }
 
         // Apply status filters
@@ -424,20 +464,46 @@ public class BaseJobRepository
     private IQueryable<TucJob> ApplyNationwideFilters(
         IQueryable<TucJob> query,
         bool isInternal,
-        List<string> filters,
+        List<string> viewFilters,
         string status,
         NationwideWindowPanel windowPane,
         string clientIds)
     {
-        // Handle internal filters
-        if (isInternal && filters != null && filters.Any())
+        // Handle internal viewFilters
+        if (isInternal && viewFilters != null && viewFilters.Any())
         {
-            // For now, log that these filters couldn't be applied
-            _logger.LogWarning($"String-based filters are not supported in this version. Filters: {filters}",
-                string.Join(", ", filters));
+            // Combine all view viewFilters with OR logic
+            var parameter = Expression.Parameter(typeof(TucJob), "j");
+            Expression combinedFilter = null;
+
+            foreach (var filter in viewFilters)
+            {
+                try
+                {
+                    // Parse the filter string into an expression tree
+                    var parser = new DynamicLinqParser<TucJob>();
+                    var filterExpression = parser.ParseExpression(filter, parameter);
+
+                    // Combine viewFilters with OR logic
+                    combinedFilter = combinedFilter == null
+                        ? filterExpression
+                        : Expression.OrElse(combinedFilter, filterExpression);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error parsing view filter: {Filter}", filter);
+                }
+            }
+
+            // Apply the combined filter if any were successfully parsed
+            if (combinedFilter != null)
+            {
+                var lambda = Expression.Lambda<Func<TucJob, bool>>(combinedFilter, parameter);
+                query = query.Where(lambda);
+            }
         }
 
-        // Apply status filters
+        // Apply status viewFilters
         if (!string.IsNullOrEmpty(status))
         {
             query = status switch
@@ -468,7 +534,7 @@ public class BaseJobRepository
             };
         }
 
-        // Apply window pane filters
+        // Apply window pane viewFilters
         query = windowPane switch
         {
             NationwideWindowPanel.JobList =>
@@ -489,7 +555,7 @@ public class BaseJobRepository
             _ => query
         };
 
-        // Apply client filters for non-internal users
+        // Apply client viewFilters for non-internal users
         if (isInternal || string.IsNullOrEmpty(clientIds)) return query;
 
         var clientIdList = clientIds.Split(',')

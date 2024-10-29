@@ -53,15 +53,29 @@
                 </div>
             </td>
             <td>
-                <input class="dispatchField"
-                       id="input_{{job.id}}"
-                       ng-model="job.courier"
-                       ng-keydown="handleDispatchKeydown($event, job)"
-                       ng-style="getJobStyle(job.courierData.courierID !== null)"
-                       ng-readonly="job.courier !== null"
-                       ng-click="handleDispatchFieldClick($event, job)"
-                       placeholder=""
-                       type="text"/>
+                <md-autocomplete
+                        class="dispatchField"
+                        id="input_{{job.id}}"
+                        md-autoselect
+                        md-escape-options="clear"
+                        md-item-text="item.text"
+                        md-items="item in courierSearch(dispatchCourierSearchTest)"
+                        md-min-length="2"
+                        md-search-text="dispatchCourierSearchTest"
+                        md-select-on-focus
+                        md-selected-item="job.assignedCourier"
+                        md-selected-item-change="handleDispatchSelection(item, job)"
+                        ng-click="handleDispatchFieldClick($event, job)"
+                        ng-readonly="job.courier !== null"
+                        placeholder="Courier...">
+                    <md-item-template>
+            <span md-highlight-flags="^i"
+                  md-highlight-text="courierSearchText">{{item.text}}</span>
+                    </md-item-template>
+                    <md-not-found>
+                        No couriers matching "{{dispatchCourierSearchTest}}" were found.
+                    </md-not-found>
+                </md-autocomplete>
             </td>
             <td>
                 <span class="remain-time">{{job.remain}}</span>
@@ -89,7 +103,8 @@
                 <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">undo</i>
             </td>
             <td ng-click="job.courier == null || reAllocateJobs();" title="ReDispatch">
-                <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">repeat</i>
+
+            <i class="material-symbols-outlined job-table-icon" ng-if="job.courier !== null">repeat</i>
             </td>
         </tr>
         </tbody>

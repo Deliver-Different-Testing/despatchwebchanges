@@ -255,10 +255,6 @@
          "ObjectType": 3
       },
       {
-         "Name": "[dbo].[tblJob_Today]",
-         "ObjectType": 3
-      },
-      {
          "Name": "[dbo].[UTL_qryContact_Lookup]",
          "ObjectType": 3
       },
