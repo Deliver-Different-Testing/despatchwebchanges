@@ -190,6 +190,8 @@ public class JobViewModel
     public AssignedFlight AssignedFlight { get; set; }
 
     public AgentViewModel AssignedAgent { get; set; }
+
+    public Suggestion AssignedCourier { get; set; }
 }
 
 public class AssignedFlight
@@ -253,4 +255,10 @@ public class AddressViewModel
                 AddressLine8
             }
             .Where(line => !string.IsNullOrWhiteSpace(line)));
+}
+
+public class Suggestion
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
 }

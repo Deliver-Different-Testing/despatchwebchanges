@@ -205,7 +205,7 @@
 /**
  * @typedef {Object} Suggestion - A suggested location returned from the autocompleteAddressSearch.
  *
- * @property {string} id - The ID of the location.
+ * @property {number} id - The ID of the location.
  * @property {string} text - The textual representation of the location.
  */
 
