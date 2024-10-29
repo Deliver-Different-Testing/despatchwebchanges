@@ -11,6 +11,8 @@ angular.module("uDispatch")
                 $scope.isUsCustomer = APP_CONFIG.US_Customer;
                 $scope.selectedCourier = null;
 
+                initWidgetLoadingStates();
+
                 $scope.courierSearchText = "";
                 $scope.jobRecordSearchText = "";
                 $scope.dispatchCourierSearchTest = "";
@@ -35,8 +37,7 @@ angular.module("uDispatch")
                 $scope.selected = [];
                 $scope.jobList = [];
                 $scope.supports = [];
-                $scope.jobsLoading = false;
-                $scope.supportsLoading = false;
+
                 $scope.driverLocations = [];
                 $scope.markers = [];
                 $scope.truckCourierStatus = [];
@@ -192,6 +193,12 @@ angular.module("uDispatch")
                 }];
             }
 
+            function initWidgetLoadingStates() {
+                $scope.jobsLoading = false;
+                $scope.supportsLoading = false;
+                $scope.potentialCouriersLoading = false;
+            }
+
             function initTableHeaders() {
                 $scope.jobListHeaders = [
                     {key: 'time', label: 'T'},
@@ -233,6 +240,12 @@ angular.module("uDispatch")
                     {key: 'lp', label: 'LP'},
                     {key: 'ld', label: 'LD'},
                     {key: 'runOrder', label: 'RO'},
+                ];
+
+                $scope.potentialCouriersHeaders = [
+                    {key: 'courier', label: 'Courier'},
+                    {key: 'rule', label: 'Rule#'},
+                    {key: 'reason', label: 'Reason'}
                 ];
             }
 
@@ -285,10 +298,12 @@ angular.module("uDispatch")
                 try {
                     $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
 
-                    // Run functions
+                    // Run functions sequentially to prevent race conditions
                     await initializeAreas();
                     await $scope.updateFilters("nda");
                     await fetchDriverLocations();
+
+                    // Single getData call
                     await $scope.getData();
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
@@ -2680,31 +2695,46 @@ angular.module("uDispatch")
             };
 
             async function getJobList() {
-                $scope.jobsLoading = true;
-                if (Modernizr.localstorage) {
-                    localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.queryParams));
+                if ($scope.jobsLoading) {
+                    return; // Prevent concurrent loads
                 }
 
-                const selectedClients = $scope.pickService.clients.map(a => a.id);
+                $scope.jobsLoading = true;
 
                 try {
-                    $scope.jobList = await DispatchData.getJobsWithFilters($scope.queryParams, selectedClients, $scope.isInternal, $scope.selectedAreas);
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.queryParams));
+                    }
 
-                    await $timeout(async () => {
-                        sizeHeadings();
-                        if ($scope.jobList.length > 0) {
+                    const selectedClients = $scope.pickService.clients.map(a => a.id);
+                    const newJobList = await DispatchData.getJobsWithFilters(
+                        $scope.queryParams,
+                        selectedClients,
+                        $scope.isInternal,
+                        $scope.selectedAreas
+                    );
+
+                    // Only update if we have new data
+                    if (newJobList && newJobList.length > 0) {
+                        $scope.jobList = newJobList;
+
+                        // Defer UI updates
+                        await $timeout(async () => {
+                            sizeHeadings();
                             const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
                             displayPickupPoints(unDispatchedData, true, null);
-                        }
-
-                        await $scope.getAvailableCourierLocation();
-                    }, 200);
+                            await $scope.getAvailableCourierLocation();
+                        }, 200);
+                    }
 
                 } catch (error) {
-                    console.log('Error getting job list:', error);
+                    console.error('Error getting job list:', error);
                     console.log("Failed to get job list. Please try again.");
                 } finally {
                     $scope.jobsLoading = false;
+                    if (!$scope.$$phase) {
+                        $scope.$apply();
+                    }
                 }
             }
 
@@ -2801,27 +2831,38 @@ angular.module("uDispatch")
 
             $scope.getData = async () => {
                 try {
-                    await initializeJobList();
-                    await fetchCouriers();
+                    // Only reset current selections, not the full job list
+                    $scope.currentJob = null;
+                    $scope.jdSvc.currentJob = null;
+                    $scope.potentialCouriers = null;
+                    $scope.jobGroups = false;
+
+                    if (!$scope.courier) {
+                        $scope.currentCourier = null;
+                    }
+
+                    // Fetch data concurrently
+                    const [activeCouriers, allCouriers] = await Promise.all([
+                        DispatchData.getActiveCouriers(),
+                        DispatchData.getAllCouriers()
+                    ]);
+
+                    $scope.pickCouriers = activeCouriers;
+                    $scope.pickAllCouriers = allCouriers;
+
+                    // Get job list only once
                     await getJobList();
+
+                    // Apply any UI updates
+                    if (!$scope.$$phase) {
+                        $scope.$apply();
+                    }
                 } catch (error) {
                     console.error('Error in getData:', error);
                     console.log("An error occurred while loading data. Please refresh the page.");
                 }
-            }
 
-            async function initializeJobList() {
-                $scope.jobList = [];
-                $scope.currentJob = null;
-                $scope.jdSvc.currentJob = null;
-                $scope.potentialCouriers = null;
-                $scope.jobGroups = false;
-                if (!$scope.courier) {
-                    $scope.jobsCurrentList = false;
-                    $scope.currentCourier = null;
-                }
-            }
-
+            };
             async function fetchDriverLocations() {
                 $scope.getClearListEnvelope = async (clearListId) => {
                     try {

@@ -25,8 +25,6 @@ class DispatchJobService {
         this.pickCouriers = [];
         /** @type {Array} List of all couriers */
         this.pickAllCouriers = [];
-
-        this.fetchCouriersData().then(r => console.log('Courier Data Fetched!'));
     }
 
     /**
@@ -50,6 +48,8 @@ class DispatchJobService {
      * @returns {Promise} A promise that resolves when the job is dispatched.
      */
     async dispatchJobByJobId(courierId, jobId) {
+        await this.fetchCouriersData();
+
         const job = await this.dispatchData.getJobDetail(jobId);
         const foundCourier = this.pickAllCouriers.find(c => c.courierID === courierId);
 
@@ -65,6 +65,7 @@ class DispatchJobService {
      * @returns {Promise} A promise that resolves when the job is dispatched.
      */
     async dispatchJobsByCourierId(courierId, jobs) {
+        await this.fetchCouriersData();
         const foundCourier = this.pickAllCouriers.find(c => c.courierID === courierId);
 
         if (foundCourier) {
@@ -79,7 +80,9 @@ class DispatchJobService {
      * @returns {Promise} A promise that resolves when all jobs are dispatched.
      */
     async dispatchJobs(courierNumber, jobs) {
+        await this.fetchCouriersData();
         const foundCourier = await this.findCourier(courierNumber);
+
         if (foundCourier) {
             await this.dispatchJobsContinue(foundCourier, jobs);
         }
@@ -92,7 +95,9 @@ class DispatchJobService {
      * @returns {Promise} A promise that resolves when the job is dispatched.
      */
     async dispatchJob(courierNumber, job) {
+        await this.fetchCouriersData();
         const foundCourier = await this.findCourier(courierNumber);
+
         if (foundCourier) {
             await this.dispatchJobsContinue(foundCourier, [job]);
         }
@@ -216,7 +221,7 @@ class DispatchJobService {
      * Process a batch of valid jobs for dispatch
      * @private
      * @param {Object} courier - The courier object
-     * @param {Array<Object>} jobs - Array of validated jobs
+     * @param {Job[]} jobs - Array of validated jobs
      * @returns {Promise<void>}
      */
     async processValidJobs(courier, jobs) {
@@ -240,7 +245,7 @@ class DispatchJobService {
         const jobIds = jobs.map(job => job.id);
         await this.dispatchData.allocateJobs(
             courier.courierID,
-            jobs[0].ContactID,
+            ContactID,
             jobIds
         );
     }

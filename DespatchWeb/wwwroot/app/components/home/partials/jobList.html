@@ -1,5 +1,7 @@
 <!-- Job List Component -->
-<div class="job-list-container" ng-if="!jobsLoading && jobList.length > 0">
+<div class="job-list-container">
+    <!-- Job List Table -->
+    <div class="job-list-table" ng-if="!jobsLoading && jobList.length > 0">
     <!-- Table Headers -->
     <div class="table-headings sticky-header">
         <table>
@@ -129,4 +131,5 @@
         <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
         <span class="sr-only">Loading...</span>
     </div>
+</div>
 </div>
