@@ -97,16 +97,16 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
         try
         {
             var results = await Context.Procedures.DES_qryCourierCombo_ActiveAsync();
-            return _mapper.Map<List<ActiveCouriersViewModel>>(results);
+            return mapper.Map<List<ActiveCouriersViewModel>>(results);
         }
         catch (DbException ex)
         {
-            _logger.LogError(ex, "Database error occurred while fetching active couriers");
+            Log.Error(ex, "Database error occurred while fetching active couriers");
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error occurred while fetching active couriers");
+            Log.Error(ex, "Unexpected error occurred while fetching active couriers");
             throw;
         }
     }

@@ -271,9 +271,9 @@ public partial class DeswebQryDespatch
 
     public string ToPostCode { get; set; }
 
-    public bool? ConNote { get; set; }
+    public string ConNote { get; set; }
 
-    public int? AirportOnly { get; set; }
+    public bool? AirportOnly { get; set; }
 
     public string SpeedName { get; set; }
 

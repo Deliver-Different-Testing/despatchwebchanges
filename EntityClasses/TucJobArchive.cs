@@ -5,113 +5,13 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.EntityClasses;
 
-public partial class TblJobToday
+public partial class TucJobArchive
 {
-    public int JobId { get; set; }
-
-    public string Number { get; set; }
-
-    public int? ClientId { get; set; }
-
-    public string ClientCode { get; set; }
-
-    public int? CourierId { get; set; }
-
-    public DateTime Date { get; set; }
-
-    public DateTime? Time { get; set; }
-
-    public int? JobTypeId { get; set; }
-
-    public int? FromSuburbId { get; set; }
-
-    public int? ToSuburbId { get; set; }
-
-    public decimal? Amount { get; set; }
-
-    public int Locked { get; set; }
-
-    public int? Month { get; set; }
-
-    public int? Year { get; set; }
-
-    public string OurRef { get; set; }
-
-    public bool JobDone { get; set; }
-
-    public bool Void { get; set; }
-
-    public string Podname { get; set; }
-
-    public int? Speed { get; set; }
-
-    public int? LatePickUp { get; set; }
-
-    public int? LateDelivery { get; set; }
-
-    public DateTime? CompletedTime { get; set; }
-
-    public DateTime? DispatchDate { get; set; }
-
-    public DateTime? DispatchTime { get; set; }
-
-    public int? DispatcherId { get; set; }
-
-    public bool RtnJob { get; set; }
-
-    public int? Status { get; set; }
-
-    public double? Weight { get; set; }
-
-    public short? Quantity { get; set; }
-
-    public string FromAddress { get; set; }
-
-    public string ToAddress { get; set; }
-
-    public string Notes { get; set; }
-
-    public string ClientReferenceA { get; set; }
-
-    public string ClientReferenceB { get; set; }
-
-    public string Recipient { get; set; }
-
-    public short? Size { get; set; }
-
-    public int? OperatorId { get; set; }
-
-    public double? ChargeType { get; set; }
-
-    public double? Km { get; set; }
-
-    public double? Type { get; set; }
-
-    public string Contact { get; set; }
-
-    public string ToSpecial { get; set; }
-
-    public bool Cbd { get; set; }
-
-    public string FlightDetails { get; set; }
-
-    public bool Van { get; set; }
-
-    public bool Attention { get; set; }
-
-    public short? PickupFrom { get; set; }
-
-    public int? RefJobId { get; set; }
-
-    public string ContactPhone { get; set; }
-
-    public int? OriginalSpeedId { get; set; }
-
     public int UcjbId { get; set; }
 
     public string UcjbNumber { get; set; }
 
-    public DateTime UcjbDate { get; set; }
+    public DateTime? UcjbDate { get; set; }
 
     public DateTime? UcjbTime { get; set; }
 
@@ -193,13 +93,17 @@ public partial class TblJobToday
 
     public int? UcjbLateDel { get; set; }
 
+    public int? UcjbInvoiceNo { get; set; }
+
+    public int? UcjbLocked { get; set; }
+
+    public int? UcjbMonth { get; set; }
+
+    public int? UcjbYear { get; set; }
+
     public int? UcjbRefJobId { get; set; }
 
     public string UcjbNotes { get; set; }
-
-    public bool UcjbMobileSend { get; set; }
-
-    public DateTime? UcjbSendTime { get; set; }
 
     public string UcjbContactPhone { get; set; }
 
@@ -225,7 +129,7 @@ public partial class TblJobToday
 
     public DateTime? PickUpTime { get; set; }
 
-    public decimal RebateAmt { get; set; }
+    public decimal? RebateAmt { get; set; }
 
     public decimal FuelSurchargeAmount { get; set; }
 
@@ -233,9 +137,9 @@ public partial class TblJobToday
 
     public string InternalNotes { get; set; }
 
-    public string PickupFromContact { get; set; }
+    public string PickUpFromContact { get; set; }
 
-    public string PickupFromPhone { get; set; }
+    public string PickUpFromPhone { get; set; }
 
     public int? DeliverToPrivateBusiness { get; set; }
 
@@ -273,6 +177,12 @@ public partial class TblJobToday
 
     public byte[] DeliverySignature { get; set; }
 
+    public int? JournalHeaderId { get; set; }
+
+    public int? JournalCodingId { get; set; }
+
+    public int? ExternalJournalCodingId { get; set; }
+
     public decimal? PickUpLongitude { get; set; }
 
     public decimal? PickUpLatitude { get; set; }
@@ -297,6 +207,22 @@ public partial class TblJobToday
 
     public int? UndeliverableLocationId { get; set; }
 
+    public int? ExternalCodingId { get; set; }
+
+    public int? InvoiceProcessId { get; set; }
+
+    public decimal? Gst { get; set; }
+
+    public decimal? Inclusive { get; set; }
+
+    public decimal? RebateAmtGst { get; set; }
+
+    public decimal? RebateAmtInclusive { get; set; }
+
+    public decimal? FuelSurchargeGst { get; set; }
+
+    public decimal? FuelSurchargeInclusive { get; set; }
+
     public int? JobRelationshipTypeId { get; set; }
 
     public int? ParentId { get; set; }
@@ -307,13 +233,9 @@ public partial class TblJobToday
 
     public int? ClosestCourierId { get; set; }
 
-    public bool? DisplayInDespatch { get; set; }
-
     public int? Sequence { get; set; }
 
-    public bool ColsolidateMarsInformation { get; set; }
-
-    public DateTime? WhenColsolidateMarsInformation { get; set; }
+    public int? ExternalCourierCodingId { get; set; }
 
     public int? ClosestCourierRule { get; set; }
 
@@ -322,8 +244,6 @@ public partial class TblJobToday
     public DateTime? WhenSpeedChangeNotificationSent { get; set; }
 
     public bool? AutoDespatch { get; set; }
-
-    public byte? PickRunOrder { get; set; }
 
     public byte? DropRunOrder { get; set; }
 
@@ -361,15 +281,15 @@ public partial class TblJobToday
 
     public bool? Dgdocument { get; set; }
 
-    public bool ItemNotReadyNotificationHasBeenSent { get; set; }
+    public bool? ItemNotReadyNotificationHasBeenSent { get; set; }
 
-    public bool ItemNotReadyNotification { get; set; }
+    public bool? ItemNotReadyNotification { get; set; }
 
     public DateTime? WhenItemNotReadyNotificationSent { get; set; }
 
     public string ItemNotReadyNotificationNotes { get; set; }
 
-    public bool? EmailForJobFu { get; set; }
+    public decimal? GrossProfitValue { get; set; }
 
     public string UcjbClientRefc { get; set; }
 
@@ -401,11 +321,7 @@ public partial class TblJobToday
 
     public decimal? NwrawAmount { get; set; }
 
-    public int? FdcourierId { get; set; }
-
-    public bool DesCheck { get; set; }
-
-    public bool JobTrackingNotificationHasBeenSent { get; set; }
+    public bool? JobTrackingNotificationHasBeenSent { get; set; }
 
     public DateTime? WhenJobTrackingNotificationSent { get; set; }
 
@@ -414,8 +330,6 @@ public partial class TblJobToday
     public string TrackingMobile { get; set; }
 
     public string TrackingEmail { get; set; }
-
-    public bool FirstJob { get; set; }
 
     public double? RunCourierPercentage { get; set; }
 
@@ -426,6 +340,8 @@ public partial class TblJobToday
     public int? ToGeoType { get; set; }
 
     public int? Duration { get; set; }
+
+    public int? PickRunOrder { get; set; }
 
     public byte[] DeliveryPhoto { get; set; }
 
@@ -451,6 +367,8 @@ public partial class TblJobToday
 
     public DateTime? OutForDelivery { get; set; }
 
+    public DateTime? UpdatedTimeStamp { get; set; }
+
     public int? DepotId { get; set; }
 
     public string Barcode { get; set; }
@@ -462,8 +380,6 @@ public partial class TblJobToday
     public int? SourceId { get; set; }
 
     public string StripeChargeId { get; set; }
-
-    public bool? UcjbLocked { get; set; }
 
     public string ScheduleName { get; set; }
 
@@ -522,4 +438,12 @@ public partial class TblJobToday
     public decimal? DryIceWeight { get; set; }
 
     public DateTime? DeliverByTime { get; set; }
+
+    public int? AgentId { get; set; }
+
+    public virtual TucAgent Agent { get; set; }
+
+    public virtual TblAirport FromAirport { get; set; }
+
+    public virtual TblAirport ToAirport { get; set; }
 }

@@ -6,6 +6,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using System.Collections.Generic;
+using Serilog;
 
 namespace DespatchWeb.Controllers
 {

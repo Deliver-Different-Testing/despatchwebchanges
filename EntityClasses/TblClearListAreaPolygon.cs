@@ -11,7 +11,7 @@ public partial class TblClearListAreaPolygon
 
     public int ClearListAreaId { get; set; }
 
-    public int PolygonId { get; set; }
+    public int? PolygonId { get; set; }
 
     public DateTime Created { get; set; }
 

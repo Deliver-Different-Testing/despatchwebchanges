@@ -337,7 +337,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error parsing view filter: {Filter}", filter);
+                        Log.Error(ex, "Error parsing view filter: {Filter}", filter);
                     }
                 }
 
@@ -487,7 +487,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error parsing view filter: {Filter}", filter);
+                    Log.Error(ex, "Error parsing view filter: {Filter}", filter);
                 }
             }
 

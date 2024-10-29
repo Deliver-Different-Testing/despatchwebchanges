@@ -886,14 +886,14 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #currentWork input.dispatchField {
-  width: 50px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #currentWork input.lateCallField {
-  width: 30px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #jobList th {
   white-space: nowrap;
@@ -918,14 +918,14 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobList input.dispatchField {
-  width: 50px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #jobList input.lateCallField {
-  width: 30px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #pbList th {
   white-space: nowrap;
@@ -950,14 +950,14 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #pbList input.dispatchField {
-  width: 50px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #pbList input.lateCallField {
-  width: 30px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #jobListPOD th {
   white-space: nowrap;
@@ -982,14 +982,14 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListPOD input.dispatchField {
-  width: 50px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #jobListPOD input.lateCallField {
-  width: 30px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #jobListDelivery th {
   white-space: nowrap;
@@ -1014,14 +1014,14 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListDelivery input.dispatchField {
-  width: 50px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #jobListDelivery input.lateCallField {
-  width: 30px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #jobListReprice th {
   white-space: nowrap;
@@ -1046,14 +1046,14 @@ input.pod-DispatchField {
   background-color: #d7f3ce;
 }
 #jobListReprice input.dispatchField {
-  width: 50px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #jobListReprice input.lateCallField {
-  width: 30px;
-  text-align: center;
+  width: 40px;
   height: 20px;
+  text-align: center;
 }
 #map_canvas_container {
   position: relative;

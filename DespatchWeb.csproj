@@ -205,6 +205,9 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\directives\auto-resize-table.directive.min.js.map" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Helpers\DynamicLinqParser.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="bundleconfig.json" />
     <None Include="compilerconfig.json" />
     <None Include="efpt.config.json.user" />
