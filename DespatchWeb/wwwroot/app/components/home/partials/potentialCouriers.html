@@ -13,9 +13,6 @@
             <th ng-click="orderList('potentialCouriers', 'reason')" scope="col">Reason <i class="fa fa-caret-down"
                                                                                           ng-if="sort.potentialCouriers =='reason'"></i><i
                     class="fa fa-caret-up" ng-if="sort.potentialCouriers =='d-reason'"></i></th>
-            <!--<th scope="col" ng-click="orderList('potentialCouriers', 'del')">DEL <i class="fa fa-caret-down" ng-if="sort.potentialCouriers =='del'"></i><i class="fa fa-caret-up" ng-if="sort.potentialCouriers =='d-del'"></i></th>
-            <th scope="col" ng-click="orderList('potentialCouriers', 'lrm')">LRM <i class="fa fa-caret-down" ng-if="sort.potentialCouriers =='lrm'"></i><i class="fa fa-caret-up" ng-if="sort.potentialCouriers =='d-lrm'"></i></th>
-            <th scope="col" ng-click="orderList('potentialCouriers', 'eta2lrm')">ETA<i class="fa fa-caret-down" ng-if="sort.potentialCouriers =='eta2lrm'"></i><i class="fa fa-caret-up" ng-if="sort.potentialCouriers =='d-eta2lrm'"></i></th>-->
         </tr>
         </thead>
     </table>
@@ -42,7 +39,7 @@
 
 </div>
 
-<div class="no-data" ng-if="potentialCouriers.length === 0">
+<div class="no-data" ng-if="!potentialCouriers || potentialCouriers.length === 0">
     <div class="content">
         <div class="icon">
             <md-icon md-font-set="material-symbols-outlined">directions_car</md-icon>
