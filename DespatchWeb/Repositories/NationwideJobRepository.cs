@@ -77,10 +77,10 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
             WebhookAlertId = webhookAlertId
         };
 
-        // CRUD ops
-        _context.TucJobNationwides.Add(jobNationwide);
-        _context.TucJobs.Update(job);
+        // Move job to POD
+        job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
 
+        _context.TucJobNationwides.Add(jobNationwide);
         await _context.SaveChangesAsync();
         return true;
     }
