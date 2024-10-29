@@ -228,6 +228,7 @@ public class BaseJobRepository
                 AlertLateDelivery = j.UcjbClient.AlertLateDelivery,
                 Lp = j.UcjbLatePick,
                 Ld = j.UcjbLateDel,
+                Items = j.UcjbQty,
 
                 PickupFrom = j.UcjbPickUpFrom,
                 Notify = j.NotifiedJobType.UcjtName,
