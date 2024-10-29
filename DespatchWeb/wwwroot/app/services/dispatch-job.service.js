@@ -51,8 +51,25 @@ class DispatchJobService {
      */
     async dispatchJobByJobId(courierId, jobId) {
         const job = await this.dispatchData.getJobDetail(jobId);
-        const selectedCourier = this.pickAllCouriers.find(c => c.courierID === courierId);
-        await this.dispatchJob(selectedCourier.id, job);
+        const foundCourier = this.pickAllCouriers.find(c => c.courierID === courierId);
+
+        if (foundCourier) {
+            await this.dispatchJob(foundCourier.id, job);
+        }
+    }
+
+    /**
+     * Dispatch multiple jobs to a specific courierId.
+     * @param {number} courierId - The ID of the courier.
+     * @param {Job[]} jobs - An array of job objects to dispatch.
+     * @returns {Promise} A promise that resolves when the job is dispatched.
+     */
+    async dispatchJobsByCourierId(courierId, jobs) {
+        const foundCourier = this.pickAllCouriers.find(c => c.courierID === courierId);
+
+        if (foundCourier) {
+            await this.dispatchJobsContinue(foundCourier, jobs);
+        }
     }
 
     /**
@@ -64,7 +81,7 @@ class DispatchJobService {
     async dispatchJobs(courierNumber, jobs) {
         const foundCourier = await this.findCourier(courierNumber);
         if (foundCourier) {
-            await this.dispatchJobsContinue(courierNumber, foundCourier, jobs);
+            await this.dispatchJobsContinue(foundCourier, jobs);
         }
     }
 
@@ -77,7 +94,7 @@ class DispatchJobService {
     async dispatchJob(courierNumber, job) {
         const foundCourier = await this.findCourier(courierNumber);
         if (foundCourier) {
-            await this.dispatchJobsContinue(courierNumber, foundCourier, [job]);
+            await this.dispatchJobsContinue(foundCourier, [job]);
         }
     }
 
@@ -115,31 +132,61 @@ class DispatchJobService {
 
     /**
      * Continue the process of dispatching jobs after finding the courier.
-     * @param {number} courierNumber - The ID of the courier.
-     * @param {Object} foundCourier - The found courier object.
-     * @param {Array<Object>} jobs - An array of job objects to dispatch.
-     * @returns {Promise} A promise that resolves when all jobs are processed.
+     * @param {Object} courier - The found courier object
+     * @param {Array<Object>} jobs - An array of job objects to dispatch
+     * @returns {Promise<void>} A promise that resolves when all jobs are processed
      */
-    async dispatchJobsContinue(courierNumber, foundCourier, jobs) {
-        const jobIds = [];
+    async dispatchJobsContinue(courier, jobs) {
+        const validJobs = jobs.filter(job => this.validateJob(job, courier));
 
-        for (const job of jobs) {
-            if (!this.validateJob(job, foundCourier)) continue;
-
-            if (job.dgClass !== null && job.dgClass > 0) {
-                await this.dispatchData.addFollowupEvent(
-                    job.jobNo, job.clientId, job.contactName,
-                    ContactID, foundCourier.courierID, job.id,
-                    job.jobType, FirstName
-                );
-            }
-
-            jobIds.push(job.id);
+        if (validJobs.length === 0) {
+            return;
         }
 
-        if (jobIds.length > 0) {
-            await this.dispatchData.allocateJobs(foundCourier.courierID, jobs[0].ContactID, jobIds);
-        }
+        await this.processValidJobs(courier, validJobs);
+    }
+
+    /**
+     * Process a batch of valid jobs for dispatch
+     * @private
+     * @param {Object} courier - The courier object
+     * @param {Array<Object>} jobs - Array of validated jobs
+     * @returns {Promise<void>}
+     */
+    async processValidJobs(courier, jobs) {
+        const jobsRequiringFollowup = jobs.filter(job => this.requiresFollowupEvent(job));
+
+        // Process followup events first
+        await Promise.all(jobsRequiringFollowup.map(job =>
+            this.dispatchData.addFollowupEvent(
+                job.jobNo,
+                job.clientId,
+                job.contactName,
+                job.ContactID,
+                courier.courierID,
+                job.id,
+                job.jobType,
+                job.FirstName
+            )
+        ));
+
+        // Allocate all valid jobs
+        const jobIds = jobs.map(job => job.id);
+        await this.dispatchData.allocateJobs(
+            courier.courierID,
+            jobs[0].ContactID,
+            jobIds
+        );
+    }
+
+    /**
+     * Check if a job requires a followup event
+     * @private
+     * @param {Object} job - The job to check
+     * @returns {boolean}
+     */
+    requiresFollowupEvent(job) {
+        return job.dgClass !== null && job.dgClass > 0;
     }
 
     /**

@@ -111,6 +111,13 @@ public class BaseJobRepository
                         CourierId = j.UcjbCourierId
                     }
                     : null,
+                AssignedCourier = j.UcjbCourier != null
+                    ? new Suggestion
+                    {
+                        Id = j.UcjbCourier.UccrId,
+                        Name = j.UcjbCourier.Code
+                    }
+                    : null,
 
                 // Address information
                 PickupAddress = new AddressViewModel
