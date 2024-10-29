@@ -4,18 +4,22 @@ using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace DespatchWeb.Controllers;
 
 public class CourierController : Controller
 {
     private readonly ICourierRepository _courierRepo;
+    private readonly ILogger<CourierController> _logger;
 
-    public CourierController(ICourierRepository courierRepository)
+    public CourierController(ICourierRepository courierRepository, ILogger<CourierController> logger)
     {
         _courierRepo = courierRepository;
+        _logger = logger;
     }
 
+    [HttpGet]
     public async Task<IActionResult> Index([FromQuery] List<int> despatchViewIds)
     {
         try
@@ -28,8 +32,8 @@ public class CourierController : Controller
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            _logger.LogError(e, "An error occured getting clear lists");
+            return StatusCode(500);
         }
     }
 
@@ -42,71 +46,147 @@ public class CourierController : Controller
             var result = await _courierRepo.GetClearListAreaEnvelopeAsync(clearListId, country);
             return Json(result);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine(e);
-            throw;
+            _logger.LogError(ex, "Error getting clear list envelopes");
+            return StatusCode(500);
         }
     }
 
+    [HttpGet]
     public async Task<IActionResult> Active()
     {
-        var result = await _courierRepo.ActiveCouriersAsync();
-        return Json(result);
+        try
+        {
+            var result = await _courierRepo.ActiveCouriersAsync();
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active couriers");
+            return StatusCode(500);
+        }
     }
 
     [HttpGet]
     public IActionResult AvailableCourierLocation(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat)
     {
-        var result = _courierRepo.GetAvailableCouriers(minLng, minLat, maxLng, maxLat);
-        return Json(result);
+        try
+        {
+            var result = _courierRepo.GetAvailableCouriers(minLng, minLat, maxLng, maxLat);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting available courier locations");
+            return StatusCode(500);
+        }
     }
 
     [HttpGet]
     public async Task<IActionResult> PotentialCouriers(int jobId)
     {
-        var result = await _courierRepo.GetPotentialCouriersAsync(jobId);
-        return Json(result);
+        try
+        {
+            var result = await _courierRepo.GetPotentialCouriersAsync(jobId);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting potential couriers");
+            return StatusCode(500);
+        }
     }
 
+    [HttpGet]
     public async Task<IActionResult> AllActiveSearch(string searchTerm)
     {
-        var result = await _courierRepo.AllActiveCouriersAsync(searchTerm);
-        return Json(result);
+        try
+        {
+            var result = await _courierRepo.AllActiveCouriersAsync(searchTerm);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching active couriers");
+            return StatusCode(500);
+        }
     }
 
+    [HttpGet]
     public async Task<IActionResult> AllActive()
     {
-        var result = await _courierRepo.AllActiveCouriersAsync();
-        return Json(result);
+        try
+        {
+            var result = await _courierRepo.AllActiveCouriersAsync();
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all active couriers");
+            return StatusCode(500);
+        }
     }
 
-
+    [HttpGet]
     public IActionResult Location(string code)
     {
-        var result = _courierRepo.Location(code);
-        return Json(result);
+        try
+        {
+            var result = _courierRepo.Location(code);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting courier location");
+            return StatusCode(500);
+        }
     }
 
     [HttpGet]
     public async Task<IActionResult> Route(string code, DateTime? start, DateTime? end)
     {
-        var result = await _courierRepo.GetCourierRouteAsync(code, start, end);
-        return Json(result);
+        try
+        {
+            var result = await _courierRepo.GetCourierRouteAsync(code, start, end);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting courier route");
+            return StatusCode(500);
+        }
     }
 
+    [HttpGet]
     public async Task<IActionResult> TruckCourierStatus(string courierId)
     {
-        var result = await _courierRepo.TruckCourierStatusAsync(courierId);
-        return Json(result);
+        try
+        {
+            var result = await _courierRepo.TruckCourierStatusAsync(courierId);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting truck courier status");
+            return StatusCode(500);
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> AddFollowupEvent(string jobNo, int clientId, string contact, int staffId,
         int courierId, int jobId, int jobType, string despatcherName)
     {
-        await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
-            despatcherName, "Follow up dangerous goods license with courier", 69);
-        return Json("OK");
+        try
+        {
+            await _courierRepo.AddEventAsync(jobNo, clientId, contact, staffId, courierId, jobId, jobType,
+                despatcherName, "Follow up dangerous goods license with courier", 69);
+            return Json("OK");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding followup event");
+            return StatusCode(500);
+        }
     }
 }
