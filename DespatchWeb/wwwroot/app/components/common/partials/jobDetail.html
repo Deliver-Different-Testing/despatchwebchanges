@@ -561,7 +561,7 @@
                                 </div>
                             </div>
 
-                            <div class="field" ng-if="name=='POD' && !jdSvc.currentJob.bulkJob">
+                            <div class="field" ng-if="!jdSvc.currentJob.bulkJob">
                                 <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Done</label>
                                 <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
                                     <md-checkbox
