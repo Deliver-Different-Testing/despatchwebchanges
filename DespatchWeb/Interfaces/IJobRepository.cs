@@ -77,7 +77,7 @@ public interface IJobRepository
     Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId);
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
-    Task<List<InternalStatus>> InternalStatusListAsync();
+    Task<List<InternalStatus>> GetInternalStatusListAsync();
     Task<List<Lookup>> EventTypeListAsync();
 
     Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed,

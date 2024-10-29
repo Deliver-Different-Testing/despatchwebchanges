@@ -1331,9 +1331,10 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .ToListAsync();
     }
 
-    public async Task<List<InternalStatus>> InternalStatusListAsync()
+    public async Task<List<InternalStatus>> GetInternalStatusListAsync()
     {
         return await _context.TucJobInternalStatuses
+            .Where(x => x.Tcis == 5) // Ignore Overnight CP. Better soltuion is needed
             .OrderBy(u => u.Tcis)
             .Select(x => new InternalStatus
             {

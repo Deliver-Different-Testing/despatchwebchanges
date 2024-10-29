@@ -560,7 +560,7 @@ public class JobController : Controller
 
     public async Task<IActionResult> InternalStatusList()
     {
-        var data = await _jobRepo.InternalStatusListAsync();
+        var data = await _jobRepo.GetInternalStatusListAsync();
         return Json(data);
     }
 
