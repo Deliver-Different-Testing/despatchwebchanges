@@ -56,7 +56,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         if (string.IsNullOrWhiteSpace(flight.CarrierFsCode) || string.IsNullOrWhiteSpace(flight.FlightNumber))
             throw new ArgumentException("Flight carrier code and number must be provided.", nameof(flight));
 
-        var job = await _context.TucJobs
+        var job = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .FirstOrDefaultAsync();
 
@@ -77,7 +77,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         // Move job to POD
         job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
 
-        _context.TucJobNationwides.Add(jobNationwide);
+        Context.TucJobNationwides.Add(jobNationwide);
         await Context.SaveChangesAsync();
         return true;
     }
@@ -117,7 +117,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"An error occured adding Agent {agentId} to job {jobId}");
+            Log.Error(e, $"An error occured adding Agent {agentId} to job {jobId}");
             return false;
         }
     }
