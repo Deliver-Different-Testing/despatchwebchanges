@@ -174,7 +174,7 @@ class DispatchJobService {
         const jobIds = jobs.map(job => job.id);
         await this.dispatchData.allocateJobs(
             courier.courierID,
-            jobs[0].ContactID,
+            ContactID,
             jobIds
         );
     }
