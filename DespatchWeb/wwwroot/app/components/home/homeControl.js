@@ -2850,7 +2850,7 @@ angular.module("uDispatch")
                     $scope.pickCouriers = activeCouriers;
                     $scope.pickAllCouriers = allCouriers;
 
-                    // Get job list only once
+                    // Get job list only once - this function manages its own loading state
                     await getJobList();
 
                     // Apply any UI updates
@@ -2861,8 +2861,8 @@ angular.module("uDispatch")
                     console.error('Error in getData:', error);
                     console.log("An error occurred while loading data. Please refresh the page.");
                 }
-
             };
+
             async function fetchDriverLocations() {
                 $scope.getClearListEnvelope = async (clearListId) => {
                     try {
@@ -3210,6 +3210,17 @@ angular.module("uDispatch")
                     }
                 }
             };
+
+            function resetLoadingAfterTimeout() {
+                setTimeout(() => {
+                    if ($scope.jobsLoading) {
+                        $scope.jobsLoading = false;
+                        if (!$scope.$$phase) {
+                            $scope.$apply();
+                        }
+                    }
+                }, 30000); // 30 second timeout
+            }
         }]);
 
 /**

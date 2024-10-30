@@ -87,7 +87,7 @@ public class BaseJobRepository
             // Grab the matching jobs
             var jobs = await query.Select(j => new JobViewModel
             {
-                ClientId = j.UcjbId,
+                ClientId = j.UcjbClientId,
                 Id = j.UcjbId,
                 JobNo = j.UcjbNumber,
                 Time = j.UcjbTime,
@@ -117,7 +117,7 @@ public class BaseJobRepository
                     ? new Suggestion
                     {
                         Id = j.UcjbCourier.UccrId,
-                        Name = j.UcjbCourier.Code
+                        Text = j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName
                     }
                     : null,
 
