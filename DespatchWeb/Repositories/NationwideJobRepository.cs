@@ -38,6 +38,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
             ? await _context.TblDespatchViews
                 .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
                 .Select(dv => dv.WhereCondition)
+                .AsNoTracking()
                 .ToListAsync()
             : new List<string>();
 
@@ -100,6 +101,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 ToAirport = j.ToAirport.AirportCode,
                 FromAirport = j.FromAirport.AirportCode
             })
+            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
@@ -155,6 +157,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 DangerousGoods = j.Dgdocument,
                 DryIceWeight = j.DryIceWeight
             })
+            .AsNoTracking()
             .FirstOrDefaultAsync();
     }
 
@@ -169,6 +172,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 AgentRanking = a.Agent.Ranking.AgentRankingName,
                 DistanceRateId = a.DistanceRateId
             })
+            .AsNoTracking()
             .ToListAsync();
     }
 
