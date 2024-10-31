@@ -674,6 +674,43 @@ public class JobRepository : BaseJobRepository, IJobRepository
         return Tuple.Create(total, jobs);
     }
 
+    public async Task<List<JobDownloadModel>> GetJobDownloadsByIds(IdsRequest request)
+    {
+        var ids = request.Ids
+            .Distinct()
+            .ToList();
+
+        if (ids == null || !ids.Any())
+            return new List<JobDownloadModel>();
+
+        var query = from j in _context.TblJobs
+                        where ids.Contains(j.JobId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
+                        orderby j.Number
+                        select new JobDownloadModel
+                        {
+                            Id = j.JobId,
+                            ParentId = j.ParentId,
+                            JobNumber = j.Number,
+                            BookDate = DateTime.Parse($"{j.Date.Value.ToString("yyyy-MM-dd")} {j.Time.Value.ToString("HH:mm:ss")}"),
+                            Amount = j.Amount,
+                            FuelSurcharge = j.FuelSurchargeAmount,
+                            Ppd = j.Ppdexclusiveamount,
+                            CourierPayment = j.CourierPayment,
+                            CourierFuel = j.CourierFuel,
+                            CourierBonus = j.CourierBonus,
+                            DeliveryAddressLine1 = j.DeliveryAddressLine1,
+                            DeliveryAddressLine2 = j.DeliveryAddressLine2,
+                            DeliveryAddressLine3 = j.DeliveryAddressLine3,
+                            DeliveryAddressLine4 = j.DeliveryAddressLine4,
+                            DeliveryAddressLine5 = j.DeliveryAddressLine5,
+                            DeliveryAddressLine6 = j.DeliveryAddressLine6,
+                            DeliveryAddressLine7 = j.DeliveryAddressLine7,
+                            DeliveryAddressLine8 = j.DeliveryAddressLine8
+                        };
+
+        return await query.ToListAsync();
+    }
+
     public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
         DateTime fromDate, DateTime toDate, int? clientId, int pageIndex, int pageSize)
     {
