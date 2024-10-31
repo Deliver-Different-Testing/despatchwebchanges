@@ -1843,7 +1843,13 @@ angular.module("uDispatch")
             $scope.courierSearch = async (searchText) => {
                 const url = "/courier/AllActiveSearch";
                 try {
-                    return DispatchData.autocompleteSearch(searchText, url);
+                    const results = await DispatchData.autocompleteSearch(searchText, url);
+                    if (results.length === 1) {
+                        $scope.job.assignedCourier = results[0];
+                        await $scope.handleDispatchSelection(results[0], $scope.job);
+                    }
+
+                    return results;
                 } catch (error) {
                     console.error(error.message);
                     throw error;
