@@ -35,7 +35,9 @@ public class DfrntViewsRepository : IDfrntViewsRepository
                 {
                     Id = dv.View.DespatchViewId,
                     Name = dv.View.Name
-                }).ToListAsync();
+                })
+                .AsNoTracking()
+                .ToListAsync();
 
             _logger.LogInformation("Retrieved {Count} views for user {UserId} and page {Page}",
                 views.Count, userId, page);
@@ -57,6 +59,7 @@ public class DfrntViewsRepository : IDfrntViewsRepository
             var whereClause = await _context.TblDespatchViews
                 .Where(dv => dv.DespatchViewId == viewId)
                 .Select(dv => dv.WhereCondition)
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             if (whereClause == null)
@@ -83,7 +86,7 @@ public class DfrntViewsRepository : IDfrntViewsRepository
         _logger.LogInformation("Getting all zone groups");
         try
         {
-            var zoneGroups = await _context.ZoneGroups.ToListAsync();
+            var zoneGroups = await _context.ZoneGroups.AsNoTracking().ToListAsync();
             _logger.LogInformation("Retrieved {Count} zone groups", zoneGroups.Count);
             return zoneGroups;
         }
@@ -107,6 +110,7 @@ public class DfrntViewsRepository : IDfrntViewsRepository
                     LayoutName = l.LayoutName,
                     Json = l.Layout
                 })
+                .AsNoTracking()
                 .ToListAsync();
         }
         catch (Exception e)
@@ -115,7 +119,6 @@ public class DfrntViewsRepository : IDfrntViewsRepository
             throw;
         }
     }
-
 
     public async Task SaveUserLayoutAsync(PageLayoutRequest viewModel)
     {
