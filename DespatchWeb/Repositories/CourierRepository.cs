@@ -88,10 +88,6 @@ public class CourierRepository : ICourierRepository
         return _mapper.Map<List<PotentialCouriersViewModel>>(results);
     }
 
-    /// <summary>
-    /// filters by active, sms setting and logged in
-    /// </summary>
-    /// <returns></returns>
     public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
     {
         try
@@ -111,10 +107,6 @@ public class CourierRepository : ICourierRepository
         }
     }
 
-    /// <summary>
-    /// All active couriers regardless of logged in or not via search
-    /// </summary>
-    /// <returns></returns>
     public async Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm)
     {
         var results = await _context.Procedures.DESWeb_qryCourierComboAsync(searchTerm);
@@ -132,10 +124,6 @@ public class CourierRepository : ICourierRepository
         return _mapper.Map<List<CourierPosition>>(results);
     }
 
-    /// <summary>
-    /// All active couriers regardless of logged in or not
-    /// </summary>
-    /// <returns></returns>
     public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
     {
         var results = await _context.Procedures.DESWEB_qryCourierActiveAsync();
@@ -233,7 +221,6 @@ public class CourierRepository : ICourierRepository
             throw;
         }
     }
-
 
     private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeUsAsync(int clearListAreaId,
         bool includeCouriers)
