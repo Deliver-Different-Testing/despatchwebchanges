@@ -78,9 +78,8 @@
                             md-match-case-insensitive="true"
                             md-select-on-match="true"
                             ng-click="handleDispatchFieldClick($event, job)"
-                            ng-readonly="job.courier !== null"
-                            placeholder="Dispatch to Courier..."
-                            style="width: 70%; transform: scale(0.7);">
+                            ng-readonly="job.assignedCourier"
+                            placeholder="Dispatch to Courier...">
                         <md-item-template>
                             <span md-highlight-flags="^i" md-highlight-text="courierSearchText">{{item.text}}</span>
                         </md-item-template>

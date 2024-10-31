@@ -982,6 +982,7 @@ input.pod-DispatchField {
   }
 
   td {
+    padding: 4px 8px;
     border: 1px solid rgba(0, 0, 0, 0.5);
   }
 
@@ -989,19 +990,31 @@ input.pod-DispatchField {
     background-color: #d7f3ce;
   }
 
-  @jobListInputHeight: 20px;
+  @jobListInputHeight: 30px;
   @jobListInputWidth: 40px;
 
-  input.dispatchField {
-    width: @jobListInputWidth;
+  md-autocomplete {
+    margin: 0;
     height: @jobListInputHeight;
-    text-align: center;
+    width: @jobListInputWidth;
+
+    .md-whiteframe-z1 {
+      box-shadow: none;
+    }
+
+    input {
+      height: 28px !important;
+      line-height: 28px !important;
+      padding: 2px 4px !important;
+    }
   }
 
+  input.dispatchField,
   input.lateCallField {
     width: @jobListInputWidth;
     height: @jobListInputHeight;
     text-align: center;
+    padding: 2px 4px;
   }
 }
 
