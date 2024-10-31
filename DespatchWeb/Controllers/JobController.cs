@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Mail;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -22,17 +25,20 @@ public class JobController : Controller
 {
     private readonly IClientAccessValidatorService _clientAccessValidator;
     private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _hostingEnvironment;
     private readonly ICourierRepository _courierRepo;
     private readonly IJobRepository _jobRepo;
 
     public JobController(IJobRepository jobRepository, ICourierRepository courierRepo,
         IClientAccessValidatorService clientAccessValidator,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IWebHostEnvironment hostingEnvironment)
     {
         _jobRepo = jobRepository;
         _courierRepo = courierRepo;
         _clientAccessValidator = clientAccessValidator;
         _configuration = configuration;
+        _hostingEnvironment = hostingEnvironment;
     }
 
     [HttpGet]
@@ -175,6 +181,62 @@ public class JobController : Controller
             toDate.ResetTimeToEndOfDay(), clientId, pageIndex, pageSize);
 
         return Json(result);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Download([FromBody] IdsRequest request)
+    {
+        try
+        {
+            var data = await _jobRepo.GetJobDownloadsByIds(request);
+
+            var formatField = (object x) =>
+            {
+                string formatted = x
+                    ?.ToString()
+                    ?.Replace("\"", "\"\"")
+                    ?.Replace("\n", "\\n") 
+                    ?? string.Empty;
+
+                return formatted.Contains("\"") || formatted.Contains(",")
+                    ? $"\"{formatted}\""
+                    : formatted;
+
+            };
+
+            string folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["DownloadDirectory"]);
+            folderPath = Path.Combine(folderPath, DateTime.Now.ToString("yyyyMM"));
+            // Create the folder if it doesn't exist
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var filename = $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}.csv";
+            string filePath = Path.Combine(folderPath, filename);
+
+
+            using (var stream = new MemoryStream())
+            {
+                using (var writer = new StreamWriter(stream, Encoding.UTF8))
+                {
+                    writer.WriteLine("Id,ParentId,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8");
+                    foreach (var x in data)
+                    {
+                        writer.WriteLine($"{x.Id},{x.ParentId},{formatField(x.JobNumber)},{x.BookDate.ToString("yyyy-MM-dd HH:mm:ss")},{x.Amount},{x.FuelSurcharge},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)}");
+                    }
+                }
+
+                var bytes = stream.ToArray();
+                //stream.Position = 0;
+                System.IO.File.WriteAllBytes(filePath, bytes);
+
+                //stream.Position = 0;
+                return File(bytes, "text/csv", filename);
+            }
+        }
+        catch (Exception e)
+        {
+            throw;
+        }
     }
 
     public async Task<IActionResult> ValidateSwapPod(string job)
