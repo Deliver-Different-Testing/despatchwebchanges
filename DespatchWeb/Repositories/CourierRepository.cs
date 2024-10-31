@@ -109,13 +109,17 @@ public class CourierRepository : ICourierRepository
 
     public async Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm)
     {
-        var results = await _context.Procedures.DESWeb_qryCourierComboAsync(searchTerm);
-
-        return results.Select(r => new AllCourierActiveViewModel
-        {
-            ID = r.ID,
-            Text = r.Text
-        }).ToList();
+        var couriers = await _context.TucCouriers
+            .Where(c => c.Active == true &&
+                        (c.Code + " " + c.UccrName + " " + c.UccrSurname)
+                        .Contains(searchTerm))
+            .OrderBy(c => c.Code)
+            .Select(c => new AllCourierActiveViewModel
+            {
+                ID = c.UccrId,
+                Text = c.UccrName + " " + c.UccrSurname
+            })
+            .ToListAsync();
     }
 
     public async Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end)
@@ -257,7 +261,7 @@ public class CourierRepository : ICourierRepository
     private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId)
     {
         return _context.TblClearListAreas
-            .Where(area => area.ClearListAreaId == clearListAreaId) // Added missing filter
+            .Where(area => area.ClearListAreaId == clearListAreaId)
             .SelectMany(area => area.TblClearListAreaPolygons)
             .Select(polygon => polygon.ZipPolygon)
             .Select(zipPolygon => new EnvelopeCoordinate

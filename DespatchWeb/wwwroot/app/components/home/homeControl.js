@@ -197,6 +197,7 @@ angular.module("uDispatch")
                 $scope.jobsLoading = false;
                 $scope.supportsLoading = false;
                 $scope.potentialCouriersLoading = false;
+                $scope.currentListLoading = false;
             }
 
             function initTableHeaders() {
@@ -260,7 +261,9 @@ angular.module("uDispatch")
                  * @returns {Object|undefined} The courier object if found, otherwise undefined.
                  */
                 findCourier: (courierID) => {
-                    return $scope.pickCouriers.find(c => c.courierID === courierID) || $scope.pickAllCouriers.find(c => c.courierID === courierID);
+                    if (!courierID) return null;
+                    return $scope.pickCouriers.find(c => c?.courierID === courierID) ||
+                        $scope.pickAllCouriers.find(c => c?.courierID === courierID);
                 },
 
                 /**
@@ -2108,12 +2111,16 @@ angular.module("uDispatch")
              */
             async function getCurrentJobs(courierId) {
                 try {
-                    angular.element('#box-currentWork').find(".loading").css('display', 'block');
+                    if (!courierId) {
+                        console.warn('No courier ID provided');
+                        return;
+                    }
+
+                    $scope.currentListLoading = true;
                     const foundCourier = $scope.pickCouriers.find(x => x.courierID === courierId);
                     const code = foundCourier !== undefined ? foundCourier.id : "";
 
                     const data = await DispatchData.getJobsCurrent(courierId, $scope.jobFilters.status === "done");
-                    angular.element('#box-currentWork').find(".loading").css('display', 'none');
 
                     $scope.jobsCurrentList = data;
                     if (data.length > 0) {
@@ -2132,7 +2139,8 @@ angular.module("uDispatch")
                     }, 2000);
                 } catch (error) {
                     console.log('Error getting current jobs:', error);
-                    angular.element('#box-currentWork').find(".loading").css('display', 'none');
+                } finally {
+                    $scope.currentListLoading = false;
                 }
             }
 
@@ -2250,6 +2258,8 @@ angular.module("uDispatch")
              * @param {Job} job
              */
             $scope.selectJob = async (job) => {
+                if (!job) return;
+
                 await $timeout(async () => {
                     $scope.selectedJobs = [];
                     $scope.currentSupport = null;
@@ -2281,14 +2291,15 @@ angular.module("uDispatch")
                     try {
                         if (job.courier === null) {
                             await handleUndispatchedJob(job);
-                        } else {
+                        } else if (job.courierData) {
                             $scope.potentialCouriers = false;
                             await $scope.selectCourier(job.courierData);
+                        } else {
+                            console.warn('Missing courier data for job:', job);
                         }
                     } catch (error) {
                         console.error('An error occured finding and couriers');
                     }
-
 
                     focusDispatchField();
                 }, 0);
@@ -2312,7 +2323,7 @@ angular.module("uDispatch")
                 $scope.currentCourier = null;
                 $scope.currentSelection = ` for Job ${job.jobNo}`;
 
-                const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
+                const unDispatchedData = $scope.jobList.filter(x => x?.courierData?.courierID === null);
                 displayPickupPoints(unDispatchedData, true, job);
             }
 
