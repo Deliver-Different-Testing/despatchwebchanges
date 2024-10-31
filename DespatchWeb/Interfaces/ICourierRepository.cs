@@ -28,7 +28,7 @@ public interface ICourierRepository
     /// All active couriers regardless of logged in or not via search
     /// </summary>
     /// <returns></returns>
-    Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm);
+    Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm);
 
     Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end);
 
