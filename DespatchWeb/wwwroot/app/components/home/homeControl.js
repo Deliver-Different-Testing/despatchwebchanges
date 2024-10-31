@@ -2207,13 +2207,12 @@ angular.module("uDispatch")
              */
             $scope.loadRelatedJobDetail = async (jobId, jobNumber) => {
                 try {
-                    helperFunctions.showLoading("#box-jobDetail");
-                    $scope.currentJob = await DispatchData.getJobDetail(jobId);
-                    helperFunctions.hideLoading("#box-jobDetail");
+                    const currentJob = await DispatchData.getJobDetail(jobId);
+
+                    await $scope.selectJob(currentJob);
                     $scope.currentSelection = ` for Job ${jobNumber}`;
                 } catch (error) {
                     console.error('Error loading related job detail:', error);
-                    helperFunctions.hideLoading("#box-jobDetail");
                 }
             };
 
