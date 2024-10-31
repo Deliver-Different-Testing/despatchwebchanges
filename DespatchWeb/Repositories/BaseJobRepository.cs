@@ -68,7 +68,8 @@ public class BaseJobRepository
             var query = _context.TucJobs
                 .Where(j => !j.UcjbVoid
                             && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
-                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true));
+                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
+                            && string.IsNullOrEmpty(j.UcjbPodname) && j.UcjbComplTime < DateTime.Now);
 
             switch (page)
             {
