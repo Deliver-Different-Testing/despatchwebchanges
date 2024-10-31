@@ -82,15 +82,6 @@ public class CourierRepository : ICourierRepository
         return result;
     }
 
-    public async Task<string> GetAirportCodeByIdAsync(int airportId)
-    {
-        return await _context.TblAirports
-            .Where(a => a.AirportId == airportId)
-            .Select(a => a.AirportCode)
-            .FirstOrDefaultAsync();
-    }
-
-
     public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
         var results = await _context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
@@ -158,6 +149,14 @@ public class CourierRepository : ICourierRepository
             .WithSqlParam("@CourierCode", code)
             .ExecuteStoredProc(handle => { currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault(); });
         return currentLocation;
+    }
+
+    public async Task<string> GetAirportCodeByIdAsync(int airportId)
+    {
+        return await _context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .Select(a => a.AirportCode)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<int> ClearListTotalRemainingAsync(string area)
