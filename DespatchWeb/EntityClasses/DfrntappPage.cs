@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public DfrntappPage()
         {
             DfrntpageViews = new HashSet<DfrntpageView>();
+            DfrntuserPageLayouts = new HashSet<DfrntuserPageLayout>();
         }
 
         public int PageId { get; set; }
@@ -20,5 +21,6 @@ namespace DespatchWeb.EntityClasses
 
         public virtual Dfrntapp App { get; set; }
         public virtual ICollection<DfrntpageView> DfrntpageViews { get; set; }
+        public virtual ICollection<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; }
     }
 }

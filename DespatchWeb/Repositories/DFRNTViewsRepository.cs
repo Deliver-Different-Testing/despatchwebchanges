@@ -6,6 +6,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -89,6 +90,50 @@ public class DfrntViewsRepository : IDfrntViewsRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving all zone groups");
+            throw;
+        }
+    }
+
+    public async Task<List<PageLayoutViewModel>> GetSavedLayoutsForUserAsync(AppPage page, int staffId)
+    {
+        try
+        {
+            return await _context.TucStaffs
+                .Where(s => s.UcstId == staffId)
+                .SelectMany(s => s.DfrntuserPageLayouts)
+                .Where(l => l.PageId == (int)page)
+                .Select(l => new PageLayoutViewModel
+                {
+                    LayoutName = l.LayoutName,
+                    Json = l.Layout
+                })
+                .ToListAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"Error retrieving layouts for staffId {staffId}");
+            throw;
+        }
+    }
+
+
+    public async Task SaveUserLayoutAsync(PageLayoutRequest viewModel)
+    {
+        try
+        {
+            var layout = new DfrntuserPageLayout
+            {
+                LayoutName = viewModel.LayoutName,
+                PageId = viewModel.PageId,
+                UserId = viewModel.StaffId,
+                CreatedDate = DateTime.Now
+            };
+
+            await _context.DfrntuserPageLayouts.AddAsync(layout);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"Error saving layout for staffId {viewModel.StaffId}");
             throw;
         }
     }
