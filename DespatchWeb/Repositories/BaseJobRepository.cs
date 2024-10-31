@@ -117,7 +117,7 @@ public class BaseJobRepository
                     ? new Suggestion
                     {
                         Id = j.UcjbCourier.UccrId,
-                        Text = j.UcjbCourier.UccrName
+                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     }
                     : null,
 

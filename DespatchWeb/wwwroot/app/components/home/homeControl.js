@@ -560,7 +560,7 @@ angular.module("uDispatch")
                         localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
                     }
 
-                    // Optionally, you can add a success message here
+                    toastrService.showSuccessToast("Layout deleted successfully");
                     console.log("Layout deleted successfully");
                 } catch (error) {
                     // This will catch if the user cancels the dialog
@@ -621,6 +621,7 @@ angular.module("uDispatch")
 
                         // save last active layout
                         $scope.setLastActiveLayoutName(layoutName);
+                        toastrService.showSuccessToast("Layout saved successfully");
                     }
 
                     return {data: "OK"};
@@ -797,9 +798,13 @@ angular.module("uDispatch")
                 }
 
                 try {
+                    $scope.dispatchState.selectedJobs.add(job.id);
                     await dispatchJobs(selectedCourier.id);
+
+                    $scope.dispatchState.selectedJobs.clear();
                 } catch (error) {
                     console.error('Error in dispatch:', error);
+                    $scope.dispatchState.selectedJobs.delete(job.id);
                 }
             };
 
@@ -901,6 +906,7 @@ angular.module("uDispatch")
              */
             async function performSwapPOD(currentJobNo, jobNumber) {
                 await uCSData.swapPOD(currentJobNo, jobNumber);
+                toastrService.showSuccessToast("POD swapped successfully");
             }
 
             async function showSuccessAlert() {
@@ -936,7 +942,10 @@ angular.module("uDispatch")
                 .cancel('Cancel'))
                 .then(note => DispatchData.addNote(jobId, note, FirstName, false))
                 .then(() => DispatchData.voidJob(jobId))
-                .then(() => $scope.getData())
+                .then(() => {
+                    toastrService.showSuccessToast("Job voided successfully");
+                    return $scope.getData();
+                })
                 .catch(error => {
                     console.error("Job void canceled or error occurred", error);
                 });
@@ -1125,16 +1134,36 @@ angular.module("uDispatch")
              * @param {Job} job
              * @param {boolean} calc
              */
-            $scope.lateCall = (lateTime, lateType, job, calc) => DispatchData.lateCall(lateType, lateTime, job.minutes, job.pickupTime, job.alertLatePickup, job.deliveryTime, job.alertLateDelivery, job.jobNo, job.clientId, job.contactName, ContactID, job.time, job.id, job.jobType, job.speed, job.notify || job.speed, FirstName, calc)
-                .then(response => $scope.getData().then(() => {
+            $scope.lateCall = async (lateTime, lateType, job, calc) => {
+                try {
+                    const response = await DispatchData.lateCall(
+                        lateType,
+                        lateTime,
+                        job.minutes,
+                        job.pickupTime,
+                        job.alertLatePickup,
+                        job.deliveryTime,
+                        job.alertLateDelivery,
+                        job.jobNo,
+                        job.clientId,
+                        job.contactName,
+                        ContactID,
+                        job.time,
+                        job.id,
+                        job.jobType,
+                        job.speed,
+                        job.notify || job.speed,
+                        FirstName,
+                        calc
+                    );
+
+                    await $scope.getData();
                     toastrService.showSuccessToast("Late call applied successfully");
                     return response;
-                }))
-                .catch(error => {
-                    console.log("Error applying late call:", error);
-                    console.log("Failed to apply late call");
-                    return $q.reject(error);
-                });
+                } catch (error) {
+                    console.error("Error applying late call:", error);
+                }
+            };
 
             // Order list handler
             $scope.orderList = async (list, prop) => {
@@ -1235,6 +1264,9 @@ angular.module("uDispatch")
                         await getCurrentJobs($scope.currentCourier.courierID);
                     }
 
+                    // Inform the user
+                    toastrService.showSuccessToast(jobsToDispatch.length + " job(s) dispatched to " + courier.name)
+
                     // Update courier locations
                     await $scope.getAvailableCourierLocation();
                     await getJobList();
@@ -1245,7 +1277,7 @@ angular.module("uDispatch")
                     $scope.dispatchState.processing = false;
                     $scope.$apply();
                 }
-            };
+            }
 
             /**
              * @param {number} courierId
@@ -1356,6 +1388,7 @@ angular.module("uDispatch")
 
                 if (callData.jobs.length > 0) {
                     await DispatchData.reAllocateJobs(foundCourier.courierID, ContactID, callData.jobs);
+                    toastrService.showSuccessToast("Jobs reallocated successfully");
                 }
 
                 await $scope.getData();
@@ -1375,6 +1408,7 @@ angular.module("uDispatch")
 
                 try {
                     await DispatchData.resendJobs(jobIds);
+                    toastrService.showSuccessToast("Jobs resent successfully");
                     await $scope.getData();
 
                     const lastJobElement = activeJobElements.last();
@@ -1670,6 +1704,7 @@ angular.module("uDispatch")
 
                 try {
                     await Promise.all(promises);
+                    toastrService.showSuccessToast("Jobs restored successfully");
                 } catch (error) {
                     console.log('Error restoring jobs:', error);
                     throw error;
@@ -1688,6 +1723,7 @@ angular.module("uDispatch")
                         .cancel('No'));
                     await DispatchData.setFirstJob(job.id, $scope.currentCourier.courierID);
                     await getCurrentJobs($scope.currentCourier.courierID);
+                    toastrService.showSuccessToast("Job set as first job successfully");
                 } catch (error) {
                     console.log('Action cancelled or error occurred:', error);
                 }
@@ -1838,18 +1874,13 @@ angular.module("uDispatch")
             };
 
             /**
+             * Search for active couriers
              * @param {string} searchText
              */
             $scope.courierSearch = async (searchText) => {
                 const url = "/courier/AllActiveSearch";
                 try {
-                    const results = await DispatchData.autocompleteSearch(searchText, url);
-                    if (results.length === 1) {
-                        $scope.job.assignedCourier = results[0];
-                        await $scope.handleDispatchSelection(results[0], $scope.job);
-                    }
-
-                    return results;
+                    return await DispatchData.autocompleteSearch(searchText, url);
                 } catch (error) {
                     console.error(error.message);
                     throw error;
@@ -2759,6 +2790,7 @@ angular.module("uDispatch")
                     await DispatchData.closeSupport(support.eventId, ContactID);
                     await $scope.getSupports();
                     $scope.currentSupport = null;
+                    toastrService.showSuccessToast("Support ticket closed successfully");
                 } catch (error) {
                     console.log('Error closing support:', error);
                 }
@@ -2769,8 +2801,10 @@ angular.module("uDispatch")
                 try {
                     if (support.lockedBy === Dispatcher) {
                         await DispatchData.unLockSupport(support.eventId, Dispatcher);
+                        toastrService.showSuccessToast("Support unlocked successfully");
                     } else {
                         await DispatchData.lockSupport(support.eventId, Dispatcher);
+                        toastrService.showSuccessToast("Support locked successfully");
                     }
                     await $scope.getSupports();
                 } catch (error) {
@@ -3100,46 +3134,64 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {Object}  $event
+             * @param {Object} $event
              */
-            $scope.interCourierCharge = $event => {
-                return $mdDialog.show({
-                    controller: 'InterCourierChargeDialog',
-                    controllerAs: 'ctrl',
-                    parent: angular.element($document.body),
+            $scope.interCourierCharge = async $event => {
+                try {
+                    await $mdDialog.show({
+                        controller: 'InterCourierChargeDialog',
+                        controllerAs: 'ctrl',
+                        parent: angular.element($document.body),
+                        templateUrl: versionUrl("app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html"),
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            staffId: ContactID,
+                        },
+                        bindToController: true
+                    });
 
-                    templateUrl: versionUrl("app/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.html"),
-                    clickOutsideToClose: false,
-                    fullscreen: true,
-                    locals: {
-                        staffId: ContactID,
-                    },
-                    bindToController: true
-                }).then(() => {
-                    console.log("Inter-courier Charge Added!")
-                }).then(() => "Inter-courier Charge Canceled!");
-            }
+                    console.log("Inter-courier Charge Added!");
+                    toastrService.showSuccessToast("Inter-courier charge added successfully");
+                } catch (error) {
+                    if (error === undefined) {
+                        console.log("Inter-courier Charge Canceled!");
+                    } else {
+                        throw error;
+                    }
+                }
+            };
 
             /**
-             * @param {Object}  $event
-             * @param {Job}  job
+             * @param {Object} $event
+             * @param {Job} job
              */
-            $scope.createEvent = ($event, job) => {
-                return $mdDialog.show({
-                    controller: 'AddEventDialogController',
-                    controllerAs: "ctrl",
-                    templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
-                    parent: angular.element($document.body),
+            $scope.createEvent = async ($event, job) => {
+                try {
+                    await $mdDialog.show({
+                        controller: 'AddEventDialogController',
+                        controllerAs: "ctrl",
+                        templateUrl: versionUrl("app/components/dialogs/add-event-dialog/add-event-dialog.html"),
+                        parent: angular.element($document.body),
+                        clickOutsideToClose: true,
+                        fullscreen: true,
+                        locals: {
+                            job: job,
+                            dispatherName: FirstName,
+                            contactId: ContactID
+                        },
+                        bindToController: true
+                    });
 
-                    clickOutsideToClose: true,
-                    fullscreen: true,
-                    locals: {
-                        job: job, dispatherName: FirstName, contactId: ContactID
-                    },
-                    bindToController: true
-                }).then(() => {
+                    toastrService.showSuccessToast("Event created successfully");
                     console.log('Pallet Dialog closed!');
-                });
+                } catch (error) {
+                    if (error === undefined) {
+                        console.log('User canceled!')
+                    } else {
+                        throw error;
+                    }
+                }
             };
 
             /**
@@ -3160,29 +3212,35 @@ angular.module("uDispatch")
                 } finally {
                     $scope.isCheckingAttachments = false;
                 }
-            };
+            }
 
             /**
-             * @param {Object}  $event
+             * @param {Object} $event
              * @param {Job} job
              */
-            $scope.openFileAttachmentDialog = ($event, job) => {
-                return $mdDialog.show({
-                    controller: 'JobFileUploadController',
-                    controllerAs: 'ctrl',
-                    parent: angular.element($document.body),
+            $scope.openFileAttachmentDialog = async ($event, job) => {
+                try {
+                    await $mdDialog.show({
+                        controller: 'JobFileUploadController',
+                        controllerAs: 'ctrl',
+                        parent: angular.element($document.body),
+                        templateUrl: versionUrl("app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html"),
+                        clickOutsideToClose: false,
+                        fullscreen: true,
+                        locals: {
+                            jobId: job.id
+                        },
+                        bindToController: true
+                    });
 
-                    templateUrl: versionUrl("app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html"),
-                    clickOutsideToClose: false,
-                    fullscreen: true,
-                    locals: {
-                        jobId: job.id
-                    },
-                    bindToController: true
-                }).then(() => {
-// Dialog Closed
-                    console.log('Job File Upload Dialog Closed!')
-                });
+                    console.log('Job File Upload Dialog Closed!');
+                } catch (error) {
+                    if (error === undefined) {
+                        console.log('User canceled!');
+                    } else {
+                        throw error;
+                    }
+                }
             };
 
             /**
