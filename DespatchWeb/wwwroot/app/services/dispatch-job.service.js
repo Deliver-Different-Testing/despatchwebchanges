@@ -29,33 +29,35 @@ class DispatchJobService {
 
     /**
      * Fetch couriers data from the server.
-     * @returns {Promise} A promise that resolves when the data is fetched.
+     * @returns {Promise<void>} A promise that resolves when the data is fetched.
      */
-    fetchCouriersData() {
-        Promise.all([
+    async fetchCouriersData() {
+        const [activeCouriers, allCouriers] = await Promise.all([
             this.dispatchData.getActiveCouriers(),
             this.dispatchData.getAllCouriers()
-        ]).then(([activeCouriers, allCouriers]) => {
-            this.pickCouriers = activeCouriers;
-            this.pickAllCouriers = allCouriers;
-        });
+        ]);
+
+        this.pickCouriers = activeCouriers;
+        this.pickAllCouriers = allCouriers;
     }
 
     /**
      * Dispatch a job by its ID to a specific courier.
      * @param {number} courierId - The ID of the courier.
      * @param {number} jobId - The ID of the job to dispatch.
-     * @returns {Promise} A promise that resolves when the job is dispatched.
      */
     async dispatchJobByJobId(courierId, jobId) {
         await this.fetchCouriersData();
 
         const job = await this.dispatchData.getJobDetail(jobId);
-        const foundCourier = this.pickAllCouriers.find(c => c.courierID === courierId);
+        const foundCourier = this.pickAllCouriers.find(c => c?.courierID === courierId);
 
-        if (foundCourier) {
-            await this.dispatchJob(foundCourier.id, job);
+        if (!foundCourier) {
+            await this.showAlertMessage(`Could not find courier with ID ${courierId}`);
+            return;
         }
+
+        await this.dispatchJob(foundCourier.id, job);
     }
 
     /**
@@ -105,28 +107,25 @@ class DispatchJobService {
 
     /**
      * Dispatch jobs from a list of potential couriers
-     * @param {number} courierId - The ID of the courier
-     * @param {Job[]} jobList - Array of jobs to process
-     * @param {string} contactId - The contact ID for the dispatch
-     * @param {string} firstName - The first name for followup events
-     * @returns {Promise} A promise that resolves when jobs are dispatched
      */
     async dispatchJobsFromPotentialCouriers(courierId, jobList, contactId, firstName) {
+        await this.fetchCouriersData();
+
         // Find courier in active couriers list
-        const foundCourier = this.pickCouriers.find(c => c.id === courierId);
-        if (!foundCourier) {
-            await this.showAlertMessage("Invalid Courier");
+        const foundCourier = this.pickCouriers.find(c => c?.id === courierId);
+        if (!foundCourier || !foundCourier.courierID) {
+            await this.showAlertMessage(`Could not find active courier with ID ${courierId}`);
             return;
         }
 
         // Filter and validate jobs
         const validJobs = [];
-        const activeJobs = jobList.filter(job => job.isActive);
+        const activeJobs = jobList.filter(job => job && job.isActive);  // Add null check for job
 
         for (const job of activeJobs) {
             // Validate each job
-            if (!this.validateJob(job, foundCourier)) {
-                return; // Exit if any validation fails
+            if (!job || !this.validateJob(job, foundCourier)) {
+                continue; // Skip invalid jobs instead of returning
             }
 
             validJobs.push(job.id);
@@ -147,6 +146,7 @@ class DispatchJobService {
         }
 
         if (validJobs.length === 0) {
+            await this.showAlertMessage("No valid jobs to dispatch");
             return;
         }
 
@@ -233,11 +233,11 @@ class DispatchJobService {
                 job.jobNo,
                 job.clientId,
                 job.contactName,
-                job.ContactID,
+                ContactID,
                 courier.courierID,
                 job.id,
                 job.jobType,
-                job.FirstName
+                FirstName
             )
         ));
 

@@ -136,7 +136,8 @@ public class JobController : Controller
 
     public async Task<IActionResult> Detail(int jobId)
     {
-        var result = await _jobRepo.JobDetailAsync(jobId);
+        var result = await _jobRepo.GetJobByIdAsync(jobId);
+
         return Json(result);
     }
 
@@ -980,7 +981,7 @@ public class JobController : Controller
 
     public async Task<IActionResult> SendPod(int jobId, string toEmail)
     {
-        var selectedJob = await _jobRepo.JobDetailAsync(jobId);
+        var selectedJob = await _jobRepo.GetJobByIdAsync(jobId);
 
         if (selectedJob == null)
         {

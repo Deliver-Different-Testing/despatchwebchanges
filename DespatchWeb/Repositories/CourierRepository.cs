@@ -82,25 +82,12 @@ public class CourierRepository : ICourierRepository
         return result;
     }
 
-    public async Task<string> GetAirportCodeByIdAsync(int airportId)
-    {
-        return await _context.TblAirports
-            .Where(a => a.AirportId == airportId)
-            .Select(a => a.AirportCode)
-            .FirstOrDefaultAsync();
-    }
-
-
     public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
         var results = await _context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
         return _mapper.Map<List<PotentialCouriersViewModel>>(results);
     }
 
-    /// <summary>
-    /// filters by active, sms setting and logged in
-    /// </summary>
-    /// <returns></returns>
     public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
     {
         try
@@ -120,19 +107,19 @@ public class CourierRepository : ICourierRepository
         }
     }
 
-    /// <summary>
-    /// All active couriers regardless of logged in or not via search
-    /// </summary>
-    /// <returns></returns>
     public async Task<List<AllCourierActiveViewModel>> AllActiveCouriersAsync(string searchTerm)
     {
-        var results = await _context.Procedures.DESWeb_qryCourierComboAsync(searchTerm);
-
-        return results.Select(r => new AllCourierActiveViewModel
-        {
-            ID = r.ID,
-            Text = r.Text
-        }).ToList();
+        var couriers = await _context.TucCouriers
+            .Where(c => c.Active == true &&
+                        (c.Code + " " + c.UccrName + " " + c.UccrSurname)
+                        .Contains(searchTerm))
+            .OrderBy(c => c.Code)
+            .Select(c => new AllCourierActiveViewModel
+            {
+                ID = c.UccrId,
+                Text = c.UccrName + " " + c.UccrSurname
+            })
+            .ToListAsync();
     }
 
     public async Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end)
@@ -141,10 +128,6 @@ public class CourierRepository : ICourierRepository
         return _mapper.Map<List<CourierPosition>>(results);
     }
 
-    /// <summary>
-    /// All active couriers regardless of logged in or not
-    /// </summary>
-    /// <returns></returns>
     public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
     {
         var results = await _context.Procedures.DESWEB_qryCourierActiveAsync();
@@ -158,6 +141,14 @@ public class CourierRepository : ICourierRepository
             .WithSqlParam("@CourierCode", code)
             .ExecuteStoredProc(handle => { currentLocation = handle.ReadToList<CourierLocation>().FirstOrDefault(); });
         return currentLocation;
+    }
+
+    public async Task<string> GetAirportCodeByIdAsync(int airportId)
+    {
+        return await _context.TblAirports
+            .Where(a => a.AirportId == airportId)
+            .Select(a => a.AirportCode)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<int> ClearListTotalRemainingAsync(string area)
@@ -235,7 +226,6 @@ public class CourierRepository : ICourierRepository
         }
     }
 
-
     private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeUsAsync(int clearListAreaId,
         bool includeCouriers)
     {
@@ -271,7 +261,7 @@ public class CourierRepository : ICourierRepository
     private IQueryable<EnvelopeCoordinate> GetClearListAreaBoundariesQuery(int clearListAreaId)
     {
         return _context.TblClearListAreas
-            .Where(area => area.ClearListAreaId == clearListAreaId) // Added missing filter
+            .Where(area => area.ClearListAreaId == clearListAreaId)
             .SelectMany(area => area.TblClearListAreaPolygons)
             .Select(polygon => polygon.ZipPolygon)
             .Select(zipPolygon => new EnvelopeCoordinate
