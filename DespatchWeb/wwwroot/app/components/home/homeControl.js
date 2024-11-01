@@ -11,6 +11,7 @@ angular.module("uDispatch")
                 $scope.isUsCustomer = APP_CONFIG.US_Customer;
                 $scope.selectedCourier = null;
 
+                // Loading States
                 initWidgetLoadingStates();
 
                 $scope.courierSearchText = "";
@@ -250,6 +251,154 @@ angular.module("uDispatch")
                 ];
             }
 
+            // Layouts
+            function initLayoutSystem($scope, ContactID) {
+                // Initialize base layout
+                $scope.layouts = [];
+                $scope.defaultLayout = {
+                    name: "Default",
+                    layout: {
+                        columns: [{
+                            id: "col1",
+                            width: "65%",
+                            boxes: [
+                                {name: "jobsList", height: "50%"},
+                                {name: "jobDetail", height: "50%"}
+                            ]
+                        }, {
+                            id: "col2",
+                            width: "17.5%",
+                            boxes: [
+                                {name: "currentWork", height: "40%"},
+                                {name: "potentialCouriers", height: "30%"},
+                                {name: "supports", height: "30%"}
+                            ]
+                        }, {
+                            id: "col3",
+                            width: "17.5%",
+                            boxes: [
+                                {name: "driverLocations", height: "50%"},
+                                {name: "map", height: "50%"}
+                            ]
+                        }]
+                    }
+                };
+
+                // Load saved layouts or use default
+                if (Modernizr.localstorage) {
+                    try {
+                        const storedLayouts = JSON.parse(localStorage.getItem(`layouts-${ContactID}`));
+                        const lastActiveLayout = localStorage.getItem(`lastActiveLayout-${ContactID}`);
+
+                        $scope.layouts = storedLayouts || [$scope.defaultLayout];
+                        $scope.layouts[0] = $scope.defaultLayout; // Ensure default is always up-to-date
+
+                        // Load last active layout or default
+                        const layoutToLoad = lastActiveLayout ?
+                            $scope.layouts.findIndex(l => l.name === lastActiveLayout) : 0;
+                        loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
+                    } catch (error) {
+                        $scope.layouts = [$scope.defaultLayout];
+                        loadLayout(0);
+                    }
+                } else {
+                    $scope.layouts = [$scope.defaultLayout];
+                    loadLayout(0);
+                }
+
+                // Core layout functions
+                function loadLayout(index) {
+                    const layout = $scope.layouts[index] || $scope.layouts[0];
+                    $scope.currentLayoutName = layout.name;
+                    $scope.layout = angular.copy(layout.layout);
+
+                    // Apply dimensions
+                    $scope.layout.columns.forEach(column => {
+                        const columnEl = angular.element(`#co-${column.id}`);
+                        if (columnEl.length) {
+                            columnEl.css('flex-basis', column.width);
+                            column.boxes.forEach(box => {
+                                const boxEl = angular.element(`#box-${box.name}`);
+                                if (boxEl.length) {
+                                    boxEl.css('flex-basis', box.height);
+                                }
+                            });
+                        }
+                    });
+
+                    if (Modernizr.localstorage) {
+                        localStorage.setItem(`lastActiveLayout-${ContactID}`, layout.name);
+                    }
+                }
+
+                // Public interface
+                $scope.loadLayout = loadLayout;
+
+                $scope.saveLayout = () => {
+                    $mdDialog.show($mdDialog.prompt()
+                        .title('Save Layout')
+                        .textContent('Please enter a name for this layout.')
+                        .required(true)
+                        .ok('Save')
+                        .cancel('Cancel'))
+                        .then(name => {
+                            if (!name) return;
+
+                            const currentLayout = {
+                                name: name,
+                                layout: {
+                                    columns: $scope.layout.columns.map(col => ({
+                                        ...col,
+                                        width: angular.element(`#co-${col.id}`).css('flex-basis'),
+                                        boxes: col.boxes.map(box => ({
+                                            ...box,
+                                            height: angular.element(`#box-${box.name}`).css('flex-basis')
+                                        }))
+                                    }))
+                                }
+                            };
+
+                            $scope.layouts.push(currentLayout);
+
+                            if (Modernizr.localstorage) {
+                                localStorage.setItem(`layouts-${ContactID}`, JSON.stringify($scope.layouts));
+                                localStorage.setItem(`lastActiveLayout-${ContactID}`, name);
+                            }
+                        });
+                };
+
+                $scope.deleteLayout = (index) => {
+                    if (index === 0) return; // Prevent deleting default layout
+
+                    $mdDialog.show($mdDialog.confirm()
+                        .title('Delete Layout?')
+                        .textContent('Are you sure you want to delete this layout?')
+                        .ok('Delete')
+                        .cancel('Cancel'))
+                        .then(() => {
+                            $scope.layouts.splice(index, 1);
+                            if (Modernizr.localstorage) {
+                                localStorage.setItem(`layouts-${ContactID}`, JSON.stringify($scope.layouts));
+                            }
+                            loadLayout(0);
+                            toastrService.showSuccessToast("Layout deleted successfully");
+                        });
+                };
+
+                // Auto-save changes
+                $scope.$watch('layout', (newValue, oldValue) => {
+                    if (newValue !== oldValue && $scope.currentLayoutName) {
+                        const index = $scope.layouts.findIndex(l => l.name === $scope.currentLayoutName);
+                        if (index !== -1) {
+                            $scope.layouts[index].layout = angular.copy(newValue);
+                            if (Modernizr.localstorage) {
+                                localStorage.setItem(`layouts-${ContactID}`, JSON.stringify($scope.layouts));
+                            }
+                        }
+                    }
+                }, true);
+            }
+
             /**
              * Object containing helper functions for the application.
              * @type {Object}
@@ -365,36 +514,6 @@ angular.module("uDispatch")
                 });
             };
 
-            function init() {
-                if (Modernizr.localstorage) {
-                    const storedLayouts = localStorage.getItem("layouts-" + ContactID);
-                    const lastActiveLayoutName = localStorage.getItem("lastActiveLayout-" + ContactID);
-
-                    if (storedLayouts) {
-                        $scope.layouts = JSON.parse(storedLayouts);
-
-                        if (lastActiveLayoutName) {
-                            const lastActiveLayoutIndex = $scope.layouts.findIndex(l => l.name === lastActiveLayoutName);
-
-                            if (lastActiveLayoutIndex !== -1) {
-                                $timeout(() => {
-                                    $scope.loadLayout(lastActiveLayoutIndex);
-                                }, 0);
-                            }
-                        }
-                    }
-                }
-
-                initializeVariables();
-                loadPageViews().then(() => {
-                    console.log('Loaded Page Views and Data!');
-                });
-            }
-
-            // Start the controller
-            init();
-
-
             JobDetailService.setSelectJobDetail(async () => {
                 const currentJob = $scope.currentJob;
                 await JobDetailService.setJob($scope.currentJob);
@@ -484,46 +603,7 @@ angular.module("uDispatch")
                 $scope.$apply();
             });
 
-///////////////////////////////
-// LAYOUT
-///////////////////////////////
-            let layoutsObject = null;
-            if (Modernizr.localstorage) {
-                layoutsObject = JSON.parse(localStorage.getItem("layouts-" + ContactID));
-                $scope.mapZoom = JSON.parse(localStorage.getItem("mapZoom-" + ContactID)) || {display: true};
-            }
-            const defaultLayout = [{
-                name: "Default", layout: {
-                    "columns": [{
-                        "id": "col1", "width": "65%", "boxes": [{
-                            "name": "jobsList", "height": "50%"
-                        }, {
-                            "name": "jobDetail", "height": "50%"
-                        }]
-                    }, {
-                        "id": "col2", "width": "17.5%", "boxes": [{
-                            "name": "currentWork", "height": "40%"
-                        }, {
-                            "name": "potentialCouriers", "height": "30%"
-                        }, {
-                            "name": "supports", "height": "30%"
-                        }]
-                    }, {
-                        "id": "col3", "width": "17.5%", "boxes": [{
-                            "name": "driverLocations", "height": "50%"
-                        }, {
-                            "name": "map", "height": "50%"
-                        }]
-                    }]
-                }
-            }];
 
-            if (layoutsObject !== null) {
-                layoutsObject[0] = defaultLayout[0];
-            }
-
-            $scope.layouts = layoutsObject || defaultLayout;
-            $scope.currentLayoutName = "default";
             $scope.truckMode = "On";
             $scope.supportChannel = JSON.parse(localStorage.getItem("support-channel-" + ContactID)) || "All";
 
@@ -536,9 +616,6 @@ angular.module("uDispatch")
                     localStorage.setItem("mapZoom-" + ContactID, JSON.stringify({display: $scope.autoZoomEnabled}));
                 }
             };
-
-            $scope.layout = angular.copy($scope.layouts[0].layout);
-            $scope.currentLayoutName = $scope.layouts[0].name;
 
             /**
              * @param {number} index
@@ -565,72 +642,6 @@ angular.module("uDispatch")
                 } catch (error) {
                     // This will catch if the user cancels the dialog
                     console.log("Delete layout canceled!");
-                }
-            };
-
-            /**
-             * @param {string} layoutName
-             */
-            $scope.setLastActiveLayoutName = layoutName => {
-                if (Modernizr.localstorage) {
-                    localStorage.setItem("lastActiveLayout-" + ContactID, layoutName);
-                }
-            };
-
-            /**
-             * @param {number} index
-             */
-            $scope.loadLayout = (index) => {
-                try {
-                    $scope.currentLayoutName = $scope.layouts[index].name;
-                    $scope.layout = angular.copy($scope.layouts[index].layout);
-
-                    // save layout as last active
-                    $scope.setLastActiveLayoutName($scope.currentLayoutName);
-
-                    $timeout($scope.getData, 1000);
-                } catch (error) {
-                    console.log('Error in loadLayout:', error);
-                }
-            };
-
-            $scope.saveLayout = async () => {
-                try {
-                    angular.forEach($scope.layout.columns, (column) => {
-                        column.width = angular.element("#co-" + column.id).css("flex-basis");
-                        angular.forEach(column.boxes, (box) => {
-                            box.height = angular.element("#box-" + box.name).css("flex-basis");
-                        });
-                    });
-
-                    const saveLayoutPrompt = $mdDialog.prompt()
-                        .title('Save Layout')
-                        .textContent('Please enter a name for this layout.')
-                        .ariaLabel('Layout name')
-                        .required(true)
-                        .ok('Save')
-                        .cancel('Cancel');
-
-                    const layoutName = await $mdDialog.show(saveLayoutPrompt);
-
-                    if (Modernizr.localstorage) {
-                        $scope.layouts = $scope.layouts.concat({
-                            name: layoutName, layout: angular.copy($scope.layout)
-                        });
-                        localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
-
-                        // save last active layout
-                        $scope.setLastActiveLayoutName(layoutName);
-                        toastrService.showSuccessToast("Layout saved successfully");
-                    }
-
-                    return {data: "OK"};
-                } catch (error) {
-                    if (error) {
-                        console.log('Error in saveLayout:', error);
-                    } else {
-                        console.log("Save Layout Cancelled!");
-                    }
                 }
             };
 
@@ -3285,16 +3296,17 @@ angular.module("uDispatch")
                 }
             };
 
-            function resetLoadingAfterTimeout() {
-                setTimeout(() => {
-                    if ($scope.jobsLoading) {
-                        $scope.jobsLoading = false;
-                        if (!$scope.$$phase) {
-                            $scope.$apply();
-                        }
-                    }
-                }, 30000); // 30 second timeout
+//Init the controller
+            function init() {
+                initializeVariables();
+                initLayoutSystem($scope, ContactID);
+
+                loadPageViews().then(() => {
+                    console.log('Loaded Page Views and Data!');
+                });
             }
+
+            init();
         }]);
 
 /**
