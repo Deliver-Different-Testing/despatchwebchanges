@@ -466,11 +466,46 @@ public class JobRepository : BaseJobRepository, IJobRepository
         return Tuple.Create(total, jobs);
     }
 
-    public async Task<List<JobDownloadModel>> GetJobDownloadsByIds(IdsRequest request)
+    public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(int? courierId, string wild, string job,
+        DateTime fromDate,
+        DateTime toDate, int? clientId)
     {
-        var ids = request.Ids
-            .Distinct()
+        var clientSet = clientId.HasValue;
+        var courierSet = courierId.HasValue;
+        var jobParam = $"%{job}%";
+        var wildParam = $"%{wild}%";
+
+        var jobsQuery = from x in _context.TblJobs
+                        join y in _context.TucSuburbs on x.FromSuburbId equals y.UcsuId into fromJoin
+                        from yo in fromJoin.DefaultIfEmpty()
+                        join z in _context.TucSuburbs on x.ToSuburbId equals z.UcsuId into toJoin
+                        from zo in toJoin.DefaultIfEmpty()
+                        join nw in _context.TucJobNationwides on x.JobId equals nw.UcnwJobId into nationwideJoin
+                        from nationwide in nationwideJoin.DefaultIfEmpty()
+                        where x.Date >= fromDate && x.Date <= toDate && (!clientSet || x.ClientId == clientId) &&
+                              (!courierSet || x.CourierId == courierId) &&
+                              (job == "" || EF.Functions.Like(x.Number.ToLower(), jobParam)) &&
+                              (wild == "" || EF.Functions.Like(nationwide.UcnwConNote, wildParam) || EF.Functions.Like(
+                                  x.FromAddress + " " + x.PickupFromContact + " " + yo.UcsuName + " " + x.ToAddress + " " +
+                                  x.DeliverToContact + " " + zo.UcsuName + " " + (x.ClientReferenceA ?? "") + " " +
+                                  (x.ClientReferenceB ?? "") + " " + (x.OurRef ?? "") + " " + x.Number.ToLower(), wildParam))
+                        select new { x.JobId, x.ParentId };
+
+        var jobIds = await jobsQuery.ToListAsync();
+        
+        var ids = jobIds
+            .Select( j=> j.JobId)
             .ToList();
+
+        var parentIds = jobIds
+            .Where(j => j.ParentId.HasValue)
+            .Select(j => j.ParentId.Value)
+            .ToList();
+
+        if (parentIds.Any())
+            ids.AddRange(parentIds);
+
+        ids = ids.Distinct().ToList();
 
         if (ids == null || !ids.Any())
             return new List<JobDownloadModel>();
@@ -490,6 +525,17 @@ public class JobRepository : BaseJobRepository, IJobRepository
                             CourierPayment = j.CourierPayment,
                             CourierFuel = j.CourierFuel,
                             CourierBonus = j.CourierBonus,
+                            Quantity = j.Quantity,
+                            Weight = j.Weight,
+                            Size = j.Size,
+                            PickupAddressLine1 = j.PickupAddressLine1,
+                            PickupAddressLine2 = j.PickupAddressLine2,
+                            PickupAddressLine3 = j.PickupAddressLine3,
+                            PickupAddressLine4 = j.PickupAddressLine4,
+                            PickupAddressLine5 = j.PickupAddressLine5,
+                            PickupAddressLine6 = j.PickupAddressLine6,
+                            PickupAddressLine7 = j.PickupAddressLine7,
+                            PickupAddressLine8 = j.PickupAddressLine8,
                             DeliveryAddressLine1 = j.DeliveryAddressLine1,
                             DeliveryAddressLine2 = j.DeliveryAddressLine2,
                             DeliveryAddressLine3 = j.DeliveryAddressLine3,

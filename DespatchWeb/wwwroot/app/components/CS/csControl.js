@@ -776,14 +776,15 @@ angular.module('uDispatch').controller('CSControl', [
         };
 
         $scope.downloadJobList = async () => {
-            await uCSData.downloadJobs({
-                data: {
-                    ids: $scope.jobList
-                        ?.filter(j => j.id)
-                        ?.map(j => j.id)
-                        ?? []
-                }
-            })
+            await uCSData.podJobsDownload(
+                $scope.pickDateService.courier,
+                $scope.pickDateService.client,
+                ($scope.pickDateService.wild || ""),
+                ($scope.pickDateService.job || ""),
+                moment($scope.pickDateService.from_date),
+                moment($scope.pickDateService.to_date),
+                $scope.jobQuery.page,
+                $scope.jobQuery.limit)
                 .then(response => {
                     if (response.status === 200) {
                         var filename = response.headers()["content-disposition"]
