@@ -617,34 +617,6 @@ angular.module("uDispatch")
                 }
             };
 
-            /**
-             * @param {number} index
-             */
-            $scope.deleteLayout = async (index) => {
-                const deleteConfirm = $mdDialog.confirm()
-                    .title('Delete Layout?')
-                    .textContent('Are you sure you would like to delete this layout?')
-                    .ariaLabel('delete layout')
-                    .ok('Delete')
-                    .cancel('Cancel');
-
-                try {
-                    await $mdDialog.show(deleteConfirm);
-
-                    $scope.layouts.splice(index, 1);
-
-                    if (Modernizr.localstorage) {
-                        localStorage.setItem("layouts-" + ContactID, JSON.stringify($scope.layouts));
-                    }
-
-                    toastrService.showSuccessToast("Layout deleted successfully");
-                    console.log("Layout deleted successfully");
-                } catch (error) {
-                    // This will catch if the user cancels the dialog
-                    console.log("Delete layout canceled!");
-                }
-            };
-
             $scope.supportChannelChanged = () => {
                 console.log($scope.pickService.channel);
             };
