@@ -164,214 +164,6 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return job;
     }
 
-/* Job Detail */
-    public async Task<JobViewModel> JobDetailAsync(int jobId)
-    {
-        var jobQuery = from tblJob in Context.TblJobs
-            join c in Context.TblCouriers on tblJob.CourierId equals c.CourierId into courierJoin
-            from courier in courierJoin.DefaultIfEmpty()
-            join y in Context.TucSuburbs on tblJob.FromSuburbId equals y.UcsuId into fromJoin
-            from fromSuburb in fromJoin.DefaultIfEmpty()
-            join z in Context.TucSuburbs on tblJob.ToSuburbId equals z.UcsuId into toJoin
-            from toSuburb in toJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on tblJob.Speed equals t.UcjtId into speedJoin
-            from speed in speedJoin.DefaultIfEmpty()
-            join n in Context.TucJobTypes on tblJob.NotifiedJobTypeId equals n.UcjtId into notifiedSpeedJoin
-            from notifiedSpeed in notifiedSpeedJoin.DefaultIfEmpty()
-            join o in Context.TucJobTypes on tblJob.AcceptedJobTypeId equals o.UcjtId into originalSpeedJoin
-            from originalSpeed in originalSpeedJoin.DefaultIfEmpty()
-            join cl in Context.TblClients on tblJob.ClientId equals cl.ClientId into clientJoin
-            from client in clientJoin.DefaultIfEmpty()
-            join s in Context.TucJobStatuses on tblJob.Status equals s.UcjsId into statusJoin
-            from status in statusJoin.DefaultIfEmpty()
-            join l in Context.TblJobLeaveNotHomes on tblJob.LeaveNotHomeId equals l.LeaveNotHomeId into
-                leaveNotHomeJoin
-            from leave in leaveNotHomeJoin.DefaultIfEmpty()
-            join u in Context.TblUndeliverableLocations on tblJob.UndeliverableLocationId equals
-                u.UndeliverableLocationId into undeliverableLocationJoin
-            from undeliverableLocation in undeliverableLocationJoin.DefaultIfEmpty()
-            join b in Context.TblBulkJobs on tblJob.JobId equals b.JobId into bulkJoin
-            from bulkJob in bulkJoin.DefaultIfEmpty()
-            join sc in Context.TblBulkRunSchedules on bulkJob.ScheduleId equals sc.BulkRunScheduleId into scheduleJoin
-            from schedule in scheduleJoin.DefaultIfEmpty()
-            join nationwide in Context.TucJobNationwides on tblJob.JobId equals nationwide.UcnwJobId into
-                nationwideJoin
-            from nationwide in nationwideJoin.DefaultIfEmpty()
-            join con in Context.TblContacts on tblJob.LoggedInContactId equals con.ContactId into contactJoin
-            from contact in contactJoin.DefaultIfEmpty()
-            join sou in Context.TucSources on tblJob.SourceId equals sou.SourceId into sourceJoin
-            from source in sourceJoin.DefaultIfEmpty()
-            join st in Context.TucStaffs on tblJob.DispatcherId equals st.UcstId into staffJoin
-            from staff in staffJoin.DefaultIfEmpty()
-            join jn in Context.TucJobNationwides on tblJob.JobId equals jn.UcnwJobId into nwJoin
-            from flightInfo in nwJoin.DefaultIfEmpty()
-            join ag in Context.TucAgents on tblJob.AgentId equals ag.UcagId into agJoin
-            from agentInfo in agJoin.DefaultIfEmpty()
-            where tblJob.JobId == jobId
-            select new JobViewModel
-            {
-                Id = tblJob.JobId,
-                JobRelationshipTypeId = tblJob.JobRelationshipTypeId,
-                Time = tblJob.Time,
-                BookedDate = tblJob.Date,
-                Direct = tblJob.Direct,
-                SizeId = tblJob.Size,
-                Van = tblJob.Van,
-                VanOk = tblJob.VanOk,
-                Truck = tblJob.Truck,
-                Attention = tblJob.Attention,
-                SaturdayDelivery = tblJob.SaturdayDelivery,
-                Return = tblJob.Return,
-                Done = tblJob.JobDone,
-                Void = tblJob.Void,
-                PickupFrom = tblJob.PickupFrom,
-                JobNo = tblJob.Number,
-                Speed = speed.ShortName,
-                SpeedId = tblJob.Speed,
-                Notify = notifiedSpeed.ShortName,
-                Source = source.Name,
-                SpeedName = speed.UcjtName,
-                AcceptedJobTypeId = tblJob.AcceptedJobTypeId,
-                NotifiedJobTypeId = tblJob.NotifiedJobTypeId,
-                Client = tblJob.ClientCode,
-                ClientId = tblJob.ClientId,
-                ClientName = client.Name,
-                JobType = tblJob.Type.HasValue ? (int)tblJob.Type : 0,
-                PickupAddress = new AddressViewModel
-                {
-                    AddressLine1 = tblJob.PickupAddressLine1,
-                    AddressLine2 = tblJob.PickupAddressLine2,
-                    AddressLine3 = tblJob.PickupAddressLine3,
-                    AddressLine4 = tblJob.PickupAddressLine4,
-                    AddressLine5 = tblJob.PickupAddressLine5,
-                    AddressLine6 = tblJob.PickupAddressLine6,
-                    AddressLine7 = tblJob.PickupAddressLine7,
-                    AddressLine8 = tblJob.PickupAddressLine8,
-                    Latitude = tblJob.PickUpLatitude,
-                    Longitude = tblJob.PickUpLongitude,
-                },
-                FromContactName = tblJob.PickupFromContact,
-                FromContactNumber = tblJob.PickupFromPhone,
-                DeliveryAddress = new AddressViewModel
-                {
-                    AddressLine1 = tblJob.DeliveryAddressLine1,
-                    AddressLine2 = tblJob.DeliveryAddressLine2,
-                    AddressLine3 = tblJob.DeliveryAddressLine3,
-                    AddressLine4 = tblJob.DeliveryAddressLine4,
-                    AddressLine5 = tblJob.DeliveryAddressLine5,
-                    AddressLine6 = tblJob.DeliveryAddressLine6,
-                    AddressLine7 = tblJob.DeliveryAddressLine7,
-                    AddressLine8 = tblJob.DeliveryAddressLine8,
-                    Latitude = tblJob.DeliveryLatitude,
-                    Longitude = tblJob.DeliveryLongitude,
-                },
-                From = fromSuburb.UcsuName,
-                FromSuburbId = tblJob.FromSuburbId,
-                FromSuburbName = fromSuburb.UcsuName,
-                FromPostCode = fromSuburb.PostCode,
-                FromAddress = tblJob.FromAddress,
-                To = toSuburb.UcsuName,
-                ToSuburbId = tblJob.ToSuburbId,
-                ToSuburbName = toSuburb.UcsuName,
-                ToCity = toSuburb.City,
-                ToPostCode = toSuburb.PostCode,
-                ToAddress = tblJob.ToAddress,
-                Courier = courier.Code,
-                StatusId = tblJob.Status,
-                Status = status.UcjsCode,
-                Lp = tblJob.LatePickUp,
-                Ld = tblJob.LateDelivery,
-                ContactName = tblJob.Contact,
-                LoggedInContactName = $"{contact.Firstname ?? ""} {contact.Surname ?? ""}",
-                Phone = tblJob.DeliverToPhone,
-                Weight = tblJob.Weight,
-                Items = tblJob.Quantity,
-                RefA = tblJob.ClientReferenceA,
-                RefB = tblJob.ClientReferenceB,
-                OurRef = tblJob.OurRef,
-                SigNotRequired = leave.Name ?? "",
-                Charge = $"{tblJob.Amount:C}",
-                DispatchTime = tblJob.DispatchDate.HasValue
-                    ? DateTime.Parse(tblJob.DispatchDate.Value.ToString("yyyy-MM-dd") + " " +
-                                     tblJob.DispatchTime.Value.ToString("HH:mm:ss"))
-                    : tblJob.DispatchDate,
-                PuTime = tblJob.PickUpTime,
-                ClientNotes = client.UcclNotes,
-                InternalNotes = tblJob.Notes,
-                RunName = tblJob.RunName,
-                CourierData = new CourierData
-                {
-                    Courier = courier.Code + " " + courier.FirstName + " " + courier.Surname,
-                    CourierId = courier.CourierId,
-                    CourierName = courier.FirstName + " " + courier.Surname,
-                    CourierMobile = courier.Mobile
-                },
-                DgClass = tblJob.Dgclass,
-                DgDocumentation = tblJob.Dgdocument,
-                CompletedTime = tblJob.CompletedTime,
-                DeliverToContact = tblJob.DeliverToContact,
-                PodPhoto = tblJob.DeliveryPhoto,
-                DeliverySignature = tblJob.DeliverySignature,
-                PodName = tblJob.Podname,
-                TrackingMethod = tblJob.TrackingMethod,
-                TrackingMobile = tblJob.TrackingMobile,
-                TrackingEmail = tblJob.TrackingEmail,
-                UdStatus = undeliverableLocation.Name,
-                RatedManually = tblJob.RatedManually,
-                Locked = (tblJob.Locked ?? 0) == 1,
-                Invoiced = tblJob.InvoiceNo.HasValue && tblJob.InvoiceNo.Value > 0,
-                PreBook = false,
-                Pedal = tblJob.Cbd,
-                InternalStatusId = tblJob.InternalStatus,
-                FollowupTime = tblJob.FollowupTime,
-                Reprice = tblJob.Reprice,
-                GstRate = tblJob.Gstrate,
-                RootParentId = tblJob.RootParentId,
-                ScheduleName = schedule.Name,
-                ConNote = nationwide.UcnwConNote,
-                AirportOnly = nationwide.UcnwAirportOnly,
-                HasNationwide = nationwide.UcnwJobId.HasValue,
-                StatusName = status.UcjsName,
-                DispatcherName = $"{staff.UcstFirstName ?? string.Empty} {staff.UcstLastName ?? string.Empty}",
-                CreatedDate = tblJob.Date,
-                AssignedFlight = new AssignedFlight
-                {
-                    ExpectedArrival = flightInfo.UcnwEta,
-                    ExpectedDeparture = flightInfo.UcnwEtd,
-                    FlightNumber = flightInfo.UcnwFlightNo,
-                    Notes = flightInfo.UcnwNotes
-                },
-                AssignedAgent = new AgentViewModel
-                {
-                    AgentId = agentInfo.UcagId,
-                    AgentName = agentInfo.UcagName,
-                }
-            };
-
-        var job = await jobQuery.FirstOrDefaultAsync();
-        if (job == null) return null;
-
-        job.Vehicle = new Vehicle
-        {
-            Id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeId,
-            Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? 2)
-        };
-
-        job.RelatedJobs = await GetRelatedJobsAsync(job.RootParentId, job.ClientId ??= 0);
-        job.PodPhotos = await GetPodPhotosAsync(job.Id, job.PodPhoto,
-            job.DeliverySignature);
-
-        job.Size = job.Vehicle;
-
-        if (job.BookedDate == null) return job;
-        job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
-
-        if (job.Time != null)
-            job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
-                                        job.Time.Value.ToString("HH:mm:ss"));
-
-        return job;
-    }
 
     public async Task<List<Size>> RelatedJobs(int parentId, int clientId)
     {
@@ -661,6 +453,43 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ToListAsync();
 
         return Tuple.Create(total, jobs);
+    }
+
+    public async Task<List<JobDownloadModel>> GetJobDownloadsByIds(IdsRequest request)
+    {
+        var ids = request.Ids
+            .Distinct()
+            .ToList();
+
+        if (ids == null || !ids.Any())
+            return new List<JobDownloadModel>();
+
+        var query = from j in Context.TblJobs
+                        where ids.Contains(j.JobId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value))
+                        orderby j.Number
+                        select new JobDownloadModel
+                        {
+                            Id = j.JobId,
+                            ParentId = j.ParentId,
+                            JobNumber = j.Number,
+                            BookDate = DateTime.Parse($"{j.Date.Value.ToString("yyyy-MM-dd")} {j.Time.Value.ToString("HH:mm:ss")}"),
+                            Amount = j.Amount,
+                            FuelSurcharge = j.FuelSurchargeAmount,
+                            Ppd = j.Ppdexclusiveamount,
+                            CourierPayment = j.CourierPayment,
+                            CourierFuel = j.CourierFuel,
+                            CourierBonus = j.CourierBonus,
+                            DeliveryAddressLine1 = j.DeliveryAddressLine1,
+                            DeliveryAddressLine2 = j.DeliveryAddressLine2,
+                            DeliveryAddressLine3 = j.DeliveryAddressLine3,
+                            DeliveryAddressLine4 = j.DeliveryAddressLine4,
+                            DeliveryAddressLine5 = j.DeliveryAddressLine5,
+                            DeliveryAddressLine6 = j.DeliveryAddressLine6,
+                            DeliveryAddressLine7 = j.DeliveryAddressLine7,
+                            DeliveryAddressLine8 = j.DeliveryAddressLine8
+                        };
+
+        return await query.ToListAsync();
     }
 
     public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
@@ -1320,9 +1149,10 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .ToListAsync();
     }
 
-    public async Task<List<InternalStatus>> InternalStatusListAsync()
+    public async Task<List<InternalStatus>> GetInternalStatusListAsync()
     {
         return await Context.TucJobInternalStatuses
+            .Where(x => x.Tcis != 5) // Ignore Overnight CP. Better solution is needed
             .OrderBy(u => u.Tcis)
             .Select(x => new InternalStatus
             {

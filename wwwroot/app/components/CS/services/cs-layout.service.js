@@ -104,7 +104,7 @@ class CSLayoutService {
                     this.currentLayouts = JSON.parse(storedLayouts);
                     // Ensure currentLayouts is an array and has at least one item
                     if (!Array.isArray(this.currentLayouts) || this.currentLayouts.length === 0) {
-                        throw new Error('Invalid stored layouts');
+                        throw Error('Invalid stored layouts');
                     }
                     this.currentLayouts[0] = this.defaultLayout[0]; // Always use the latest default layout
                 } catch (error) {

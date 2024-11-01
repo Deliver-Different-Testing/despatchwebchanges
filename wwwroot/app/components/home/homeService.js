@@ -22,7 +22,7 @@ class DispatchData {
      */
     async addNote(jobId, note, despatcherName, preBook) {
         const method = preBook ? 'job/AddJobBookingNote' : 'job/AddNote';
-        return this._$http.post(method + '?jobId=' + jobId + '&note=' + note + '&despatcher=' + despatcherName);
+        await this._$http.post(method + '?jobId=' + jobId + '&note=' + note + '&despatcher=' + despatcherName);
     }
 
     /**
@@ -32,7 +32,7 @@ class DispatchData {
      * @param {boolean} preBook
      */
     async addBulkJobNote(bulkJobId, note, despatcherName, preBook) {
-        return this._$http.post('job/AddBulkJobNote?BulkJobId=' + bulkJobId + '&note=' + note + '&despatcher=' + despatcherName);
+        await this._$http.post('job/AddBulkJobNote?BulkJobId=' + bulkJobId + '&note=' + note + '&despatcher=' + despatcherName);
     }
 
     /**
@@ -41,9 +41,13 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async addPallet(pallet, preBook, despatcherName) {
-        const response = await this._$http({
-            url: 'job/AddPallet?preBook=' + preBook + '&despatcher=' + despatcherName, method: 'POST', data: pallet
+        const response = await this._$http.post('job/AddPallet', pallet, {
+            params: {
+                preBook,
+                despatcher: despatcherName
+            }
         });
+
         return response.data;
     }
 
@@ -53,9 +57,13 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async editPallet(pallet, preBook, despatcherName) {
-        const response = await this._$http({
-            url: 'job/EditPallet?preBook=' + preBook + '&despatcher=' + despatcherName, method: 'POST', data: pallet
+        const response = await this._$http.post('job/EditPallet', pallet, {
+            params: {
+                preBook,
+                despatcher: despatcherName
+            }
         });
+
         return response.data;
     }
 
@@ -65,9 +73,13 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async deletePallet(pallet, preBook, despatcherName) {
-        const response = await this._$http({
-            url: 'job/DeletePallet?preBook=' + preBook + '&despatcher=' + despatcherName, method: 'POST', data: pallet
+        const response = await this._$http.post('job/DeletePallet', pallet, {
+            params: {
+                preBook,
+                despatcher: despatcherName
+            }
         });
+
         return response.data;
     }
 
@@ -82,8 +94,21 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async addFollowupEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        const response = await this._$http.post('courier/AddFollowupEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName);
-        return response.data;
+        return;
+
+        /* const response = await this._$http.post('courier/AddFollowupEvent', null, {
+             params: {
+                 jobNo,
+                 clientId,
+                 contact,
+                 staffId,
+                 courierId,
+                 jobId,
+                 jobType,
+                 despatcherName
+             }
+         });
+         return response.data;*/
     }
 
     /**
@@ -99,16 +124,34 @@ class DispatchData {
      * @param {string} despatcherName - The name of the despatcher.
      */
     async addRestoreEvent(jobNo, clientId, contact, staffId, courierId, jobId, jobType, despatcherName) {
-        const response = await this._$http.post('job/AddRestoreEvent?jobNo=' + jobNo + '&clientId=' + clientId + '&contact=' + contact + '&staffId=' + staffId + '&courierId=' + courierId + '&jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName);
+        const response = await this._$http.post('job/AddRestoreEvent', null, {
+            params: {
+                jobNo,
+                clientId,
+                contact,
+                staffId,
+                courierId,
+                jobId,
+                jobType,
+                despatcherName
+            }
+        });
         return response.data;
     }
+
     /**
      * @param {number} courierId
      * @param {number} dispatcherId
      * @param {Number[]} jobIds
      */
     async allocateJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post('job/Allocate?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
+        await this._$http.post('job/Allocate', null, {
+            params: {
+                courierId,
+                dispId: dispatcherId,
+                jobIds
+            }
+        });
     }
 
     /**
@@ -117,7 +160,13 @@ class DispatchData {
      * @param {Number[]} jobIds
      */
     async reAllocateJobs(courierId, dispatcherId, jobIds) {
-        return this._$http.post('job/ReAllocate?courierId=' + courierId + '&dispId=' + dispatcherId + '&jobIds=' + jobIds);
+        await this._$http.post('job/ReAllocate', null, {
+            params: {
+                courierId,
+                dispId: dispatcherId,
+                jobIds
+            }
+        });
     }
 
     /**
@@ -125,14 +174,19 @@ class DispatchData {
      * @param {number} courierId
      */
     async setFirstJob(jobId, courierId) {
-        return this._$http.post('job/SetFirstJob?jobId=' + jobId + '&courierId=' + courierId);
+        await this._$http.post('job/SetFirstJob', null, {
+            params: {
+                jobId,
+                courierId
+            }
+        });
     }
 
     /**
      * @param {number} courierId
      */
     async truckCourierStatus(courierId) {
-        return this._$http.post('courier/TruckCourierStatus?courierId=' + courierId);
+        await this._$http.post('courier/TruckCourierStatus?courierId=' + courierId);
     }
 
     /**
@@ -156,7 +210,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async voidJob(jobId) {
-        return this._$http.post('job/Void?jobId=' + jobId);
+        await this._$http.post('job/Void?jobId=' + jobId);
     }
 
     /**
@@ -272,7 +326,7 @@ class DispatchData {
      * @param {number} staffId - The unique identifier of the staff member marking the request as closed.
      */
     async closeSupport(supportId, staffId) {
-        return this._$http.post('job/CloseSupport?supportId=' + supportId + '&staffId=' + staffId);
+        await this._$http.post('job/CloseSupport?supportId=' + supportId + '&staffId=' + staffId);
     }
 
     /**
@@ -282,7 +336,7 @@ class DispatchData {
      * @param {string} dispatcherName - The unique identifier of the dispatcher locking the request.
      */
     async lockSupport(supportId, dispatcherName) {
-        return this._$http.post('job/LockSupport?id=' + supportId + '&dispatcher=' + dispatcherName);
+        await this._$http.post('job/LockSupport?id=' + supportId + '&dispatcher=' + dispatcherName);
     }
 
     /**
@@ -292,7 +346,7 @@ class DispatchData {
      * @param {string} dispatcherName - The unique identifier of the dispatcher unlocking the request.
      */
     async unLockSupport(supportId, dispatcherName) {
-        return this._$http.post('job/UnLockSupport?id=' + supportId + '&dispatcher=' + dispatcherName);
+        await this._$http.post('job/UnLockSupport?id=' + supportId + '&dispatcher=' + dispatcherName);
     }
 
     /**
@@ -605,7 +659,7 @@ class DispatchData {
     async addServicesToJob(jobId, serviceIds, totalCost) {
         const url = 'job/AddClientItemsToJob'
 
-        return this._$http({
+        await this._$http({
             method: 'POST', url: url + '?jobId=' + jobId, data: {serviceIds, totalCost}
         });
     }
@@ -615,7 +669,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async splitJob(jobId, despatcherName) {
-        return this._$http.post('job/splitJob?jobId=' + jobId + '&despatcherName=' + despatcherName);
+        await this._$http.post('job/splitJob?jobId=' + jobId + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -623,7 +677,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async finishSplitJobProcess(jobId, despatcherName) {
-        return this._$http.post('job/finishSplitJobProcess?jobId=' + jobId + '&despatcherName=' + despatcherName);
+        await this._$http.post('job/finishSplitJobProcess?jobId=' + jobId + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -633,7 +687,7 @@ class DispatchData {
      * @param {Date} podTime
      */
     async updatePODDetail(jobNumber, jobStatus, podName, podTime) {
-        return this._$http.post('job/UpdatePODDetails?jobNumber=' + jobNumber + '&jobStatus=' + jobStatus + '&podName=' + podName + '&podTime=' + podTime);
+        await this._$http.post('job/UpdatePODDetails?jobNumber=' + jobNumber + '&jobStatus=' + jobStatus + '&podName=' + podName + '&podTime=' + podTime);
     }
 
     /**
@@ -651,7 +705,7 @@ class DispatchData {
      * @param {number} jobId
      */
     async reRateSplitJob(jobId) {
-        return this._$http.post('job/ReRateSplitJob?jobId=' + jobId);
+        await this._$http.post('job/ReRateSplitJob?jobId=' + jobId);
     }
 
     /**
@@ -667,7 +721,7 @@ class DispatchData {
      */
     async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? 'job/UpdateBookingDeliveryAddress' : 'job/UpdateDeliveryAddress';
-        return this._$http.post(method + '?jobId=' + jobId + '&toSuburbId=' + toSuburbId + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
+        await this._$http.post(method + '?jobId=' + jobId + '&toSuburbId=' + toSuburbId + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -680,7 +734,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateBulkDeliveryAddress(bulkJobId, toSuburb, toPostCode, address, lat, lng, despatcherName) {
-        return this._$http.post('job/UpdateBulkDeliveryAddress?bulkJobId=' + bulkJobId + '&toSuburb=' + toSuburb + '&toPostCode=' + toPostCode + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng + '&despatcherName=' + despatcherName);
+        await this._$http.post('job/UpdateBulkDeliveryAddress?bulkJobId=' + bulkJobId + '&toSuburb=' + toSuburb + '&toPostCode=' + toPostCode + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -696,7 +750,7 @@ class DispatchData {
      */
     async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
         const method = prebook ? 'job/UpdateBookingPickupAddress' : 'job/UpdatePickupAddress';
-        return this._$http.post(method + '?jobId=' + jobId + '&fromSuburbId=' + fromSuburbId + '&address=' + address + '&pickupLat=' + lat + '&pickupLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
+        await this._$http.post(method + '?jobId=' + jobId + '&fromSuburbId=' + fromSuburbId + '&address=' + address + '&pickupLat=' + lat + '&pickupLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -709,7 +763,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateBulkPickupAddress(bulkJobId, fromSuburb, fromPostCode, address, lat, lng, despatcherName) {
-        return this._$http.post('job/UpdateBulkPickupAddress?bulkJobId=' + bulkJobId + '&fromSuburb=' + fromSuburb + '&fromPostCode=' + fromPostCode + '&address=' + address + '&pickupLat=' + lat + '&pickupLng=' + lng + '&despatcherName=' + despatcherName);
+        await this._$http.post('job/UpdateBulkPickupAddress?bulkJobId=' + bulkJobId + '&fromSuburb=' + fromSuburb + '&fromPostCode=' + fromPostCode + '&address=' + address + '&pickupLat=' + lat + '&pickupLng=' + lng + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -718,7 +772,7 @@ class DispatchData {
      * @param {string} despatcherName
      */
     async updateJobType(jobId, jobType, despatcherName) {
-        return this._$http.post('job/UpdateJobType?jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName);
+        await this._$http.post('job/UpdateJobType?jobId=' + jobId + '&jobType=' + jobType + '&despatcherName=' + despatcherName);
     }
 
     /**
@@ -729,7 +783,7 @@ class DispatchData {
      * @param {number} lng
      */
     async updateSplitJobAddress(jobId, toSuburbId, address, lat, lng) {
-        return this._$http.post('job/UpdateSplitJobAddress?jobId=' + jobId + '&toSuburbId=' + toSuburbId + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng);
+        await this._$http.post('job/UpdateSplitJobAddress?jobId=' + jobId + '&toSuburbId=' + toSuburbId + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng);
     }
 
     /**
@@ -738,7 +792,7 @@ class DispatchData {
      */
     async releaseBulkJob(jobNumber, bookDate) {
         const formattedBookDate = this._moment(bookDate).format('YYYY-MM-DD');
-        return this._$http.post('job/ReleaseBulkJob?jobNumber=' + jobNumber + '&bookDate=' + formattedBookDate);
+        await this._$http.post('job/ReleaseBulkJob?jobNumber=' + jobNumber + '&bookDate=' + formattedBookDate);
     }
 
     /**
@@ -790,7 +844,7 @@ class DispatchData {
         if (field === 'Date' || field === 'StopDate' || field === 'RestartDate' || field === 'InActiveDate' || field === 'FirstDue' || field === 'LastDone' || field === 'NextDue') {
             value = this._moment(value).format('YYYY-MM-DD');
         }
-        return this._$http.post('job/UpdateBulkJob?bulkJobId=' + bulkJobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        await this._$http.post('job/UpdateBulkJob?bulkJobId=' + bulkJobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
     }
 
     /**

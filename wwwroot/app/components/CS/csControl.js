@@ -775,6 +775,55 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
+        $scope.downloadJobList = async () => {
+            await uCSData.downloadJobs({
+                data: {
+                    ids: $scope.jobList
+                        ?.filter(j => j.id)
+                        ?.map(j => j.id)
+                        ?? []
+                }
+            })
+                .then(response => {
+                    if (response.status === 200) {
+                        var filename = response.headers()["content-disposition"]
+                            ?.split(";")
+                            ?.find(s => s.includes("filename=\""));
+                        filename = filename
+                            ?.substring(filename.indexOf("\"") + 1, filename.length - 1);
+
+                        var objectUrl = (URL || webkitURL).createObjectURL(response.data);
+                        var link = document.createElement("A");
+                        link.href = objectUrl;
+                        link.target = "_blank";
+                        link.download = filename;
+                        link.click();
+                        setTimeout(() => (URL || webkitURL).revokeObjectURL(objectUrl), 100);
+                    } else {
+                        console.error("Error downloading");
+                    }
+                })
+                //.success(function (data, status, headers) {
+                //    if (status === 200) {
+                //        var filename = headers()["content-disposition"]
+                //            ?.split(";")
+                //            ?.find(s => s.includes("filename=\""));
+                //        filename = filename
+                //            ?.substring(filename.indexOf("\"") + 1, filename.length - 1);
+
+                //        var objectUrl = (URL || webkitURL).createObjectURL(data);
+                //        var link = document.createElement("A");
+                //        link.href = objectUrl;
+                //        link.target = "_blank";
+                //        link.download = filename;
+                //        link.click();
+                //        setTimeout(() => (URL || webkitURL).revokeObjectURL(objectUrl), 100);
+                //    } else {
+                //        console.error("Error downloading");
+                //    }
+                //});
+        };
+
         /**
          * @param {number} lat
          * @param {number} lng

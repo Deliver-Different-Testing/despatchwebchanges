@@ -44,7 +44,6 @@
                             </div>
                         </div>
 
-
                         <div class="field"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.editFromJobContact($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">From Contact:</label>
@@ -572,7 +571,7 @@ jdSvc.currentJob.completedTime
                                 </div>
                             </div>
 
-                            <div class="field" ng-if="name=='POD'">
+                            <div class="field">
                                 <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Void</label>
                                 <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
                                     <md-checkbox ng-click="jdSvc.voidClick(jdSvc.currentJob)"
@@ -582,7 +581,7 @@ jdSvc.currentJob.completedTime
                                 </div>
                             </div>
 
-                            <div class="field" ng-if="name=='POD' && !jdSvc.currentJob.bulkJob">
+                            <div class="field" ng-if="!jdSvc.currentJob.bulkJob">
                                 <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Done</label>
                                 <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
                                     <md-checkbox ng-click="jdSvc.doneClick($event, jdSvc.currentJob)"

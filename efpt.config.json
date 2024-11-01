@@ -47,6 +47,10 @@
          "ObjectType": 0
       },
       {
+        "Name": "[dbo].[DFRNTUserPageLayouts]",
+        "ObjectType": 0
+      },
+     {
          "Name": "[dbo].[GlobalAddressMapping]",
          "ObjectType": 0
       },

@@ -35,6 +35,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             ? await Context.TblDespatchViews
                 .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
                 .Select(dv => dv.WhereCondition)
+                .AsNoTracking()
                 .ToListAsync()
             : new List<string>();
 
@@ -42,7 +43,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             viewFilters, windowPane);
     }
 
-    public async Task<bool> AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
+    public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)
     {
         try
         {
@@ -76,19 +77,15 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 WebhookAlertId = webhookAlertId
             };
 
-            // First operation - Update job status
+            // Move job to POD
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
-            await Context.SaveChangesAsync();
 
-            // Second operation - Add nationwide job
             Context.TucJobNationwides.Add(jobNationwide);
             await Context.SaveChangesAsync();
-            return true;
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Log.Error(ex, $"AddJobNationwideAsync Error: {ex.Message}");
-            return false;
+            Log.Error(e, $"An error occured adding Flight {flight.FlightNumber} to job {jobId}");
         }
     }
 
@@ -101,6 +98,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 ToAirport = j.ToAirport.AirportCode,
                 FromAirport = j.FromAirport.AirportCode
             })
+            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
@@ -156,6 +154,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 DangerousGoods = j.Dgdocument,
                 DryIceWeight = j.DryIceWeight
             })
+            .AsNoTracking()
             .FirstOrDefaultAsync();
     }
 
@@ -170,6 +169,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 AgentRanking = a.Agent.Ranking.AgentRankingName,
                 DistanceRateId = a.DistanceRateId
             })
+            .AsNoTracking()
             .ToListAsync();
     }
 
