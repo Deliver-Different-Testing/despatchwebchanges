@@ -44,6 +44,10 @@ class CsService {
         return response.data;
     }
 
+    podJobsDownload(courierId, clientId, wild, job, fromDate, toDate) {
+        return this._$http.get('/Job/PODSearchDownload?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString(), { responseType: "blob" });
+    }
+
     /**
      * @param {number} courierId
      * @param {number} clientId
@@ -274,10 +278,6 @@ class CsService {
         });
 
         return response.data;
-    }
-
-    downloadJobs(params) {
-        return this._$http.post('/Job/Download', params.data, { responseType: "blob" });
     }
 }
 
