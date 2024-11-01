@@ -2172,15 +2172,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         $scope.loadRelatedJobDetail = async (jobId, jobNumber) => {
             try {
-                const $boxJobDetail = angular.element("#box-jobDetail");
-                $boxJobDetail.find(".loading").show();
+                const currentJob = await DispatchData.getJobDetail(jobId);
 
-                $scope.currentJob = await NWData.getJobDetail(jobId);
-                $boxJobDetail.find(".loading").hide();
-                $scope.currentSelection = " for Job " + jobNumber;
+                await $scope.selectJob(currentJob);
+                $scope.currentSelection = ` for Job ${jobNumber}`;
             } catch (error) {
                 console.error("Error in loadRelatedJobDetail:", error);
-                angular.element("#box-jobDetail").find(".loading").hide();
             }
         };
 
