@@ -2562,7 +2562,10 @@ angular.module("uDispatch")
                 return false;
             };
 
-            $scope.setEventsMenu = $event => [{
+            /**
+             * @param {Object} $event
+             */
+            $scope.setEventsMenu = ($event) => [{
                 text: "Void Job", click: () => $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
                     .then(() => {
                         console.log('Void Job completed successfully');

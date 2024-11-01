@@ -2643,19 +2643,38 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             return false;
         };
 
-        $scope.setEventsMenu = () => {
-            return [{
-                text: "Void Job", click: () => {
-                    $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id);
-                }
-            },
-
-                {
-                    text: "Add Event - Other", click: () => {
-                        $scope.otherEventForm($scope.currentJob.jobNo);
-                    }
-                }];
-        };
+        /**
+         * @param {Object} $event
+         */
+        $scope.setEventsMenu = ($event) => [{
+            text: "Void Job", click: () => $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
+                .then(() => {
+                    console.log('Void Job completed successfully');
+                })
+                .catch(error => {
+                    console.log('Error in Void Job:', error);
+                })
+        }, {
+            text: "Add Event - Other", click: () => {
+                $scope.otherEventForm($event, $scope.currentJob);
+            }
+        }, {
+            text: "Split Job", click: () => $scope.splitJob($event, $scope.currentJob)
+                .then(() => {
+                    console.log('Split Job completed successfully');
+                })
+                .catch(error => {
+                    console.log('Error in Split Job:', error);
+                }), enabled: $itemScope => $itemScope.job.allowSplit
+        }, {
+            text: "Set First Job", click: () => $scope.setFirstJob($scope.currentJob)
+                .then(() => {
+                    console.log('Set First Job completed successfully');
+                })
+                .catch(error => {
+                    console.log('Error in Set First Job:', error);
+                })
+        }];
 
         $scope.setJobsMenu = async () => {
             const multiple = angular.element(".activeTable .active").length > 1;

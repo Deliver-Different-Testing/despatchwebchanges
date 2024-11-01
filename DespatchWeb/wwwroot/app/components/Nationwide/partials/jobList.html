@@ -44,7 +44,7 @@
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="(job.assignedAgent)">engineering</i>
                 </td>
-                <td ng-contextmenu="setEventsMenu($event)">{{job.jobNo}}</td>
+                <td context-menu="setEventsMenu($event)">{{job.jobNo}}</td>
                 <td ng-click="clientColumnClick($event)"
                     ng-contextmenu="clientColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">{{job.client}}
