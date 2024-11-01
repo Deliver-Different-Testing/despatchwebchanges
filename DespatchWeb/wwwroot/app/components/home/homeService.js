@@ -186,7 +186,7 @@ class DispatchData {
      * @param {number} courierId
      */
     async truckCourierStatus(courierId) {
-        await this._$http.post('courier/TruckCourierStatus?courierId=' + courierId);
+        await this._$http.get('courier/TruckCourierStatus?courierId=' + courierId);
     }
 
     /**

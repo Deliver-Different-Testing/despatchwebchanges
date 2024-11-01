@@ -886,23 +886,19 @@ input.pod-DispatchField {
 #currentWork .doing {
   background-color: #d7f3ce;
 }
-
 #currentWork md-autocomplete {
     margin: 0;
     height: 30px;
     width: 40px;
 }
-
 #currentWork md-autocomplete .md-whiteframe-z1 {
     box-shadow: none;
 }
-
 #currentWork md-autocomplete input {
     height: 28px !important;
     line-height: 28px !important;
     padding: 2px 4px !important;
 }
-
 #currentWork input.dispatchField,
 #currentWork input.lateCallField {
     width: 40px;
@@ -933,23 +929,19 @@ input.pod-DispatchField {
 #jobList .doing {
   background-color: #d7f3ce;
 }
-
 #jobList md-autocomplete {
     margin: 0;
     height: 30px;
     width: 40px;
 }
-
 #jobList md-autocomplete .md-whiteframe-z1 {
     box-shadow: none;
 }
-
 #jobList md-autocomplete input {
     height: 28px !important;
     line-height: 28px !important;
     padding: 2px 4px !important;
 }
-
 #jobList input.dispatchField,
 #jobList input.lateCallField {
     width: 40px;
@@ -980,23 +972,19 @@ input.pod-DispatchField {
 #pbList .doing {
   background-color: #d7f3ce;
 }
-
 #pbList md-autocomplete {
     margin: 0;
     height: 30px;
     width: 40px;
 }
-
 #pbList md-autocomplete .md-whiteframe-z1 {
     box-shadow: none;
 }
-
 #pbList md-autocomplete input {
     height: 28px !important;
     line-height: 28px !important;
     padding: 2px 4px !important;
 }
-
 #pbList input.dispatchField,
 #pbList input.lateCallField {
     width: 40px;
@@ -1027,23 +1015,19 @@ input.pod-DispatchField {
 #jobListPOD .doing {
   background-color: #d7f3ce;
 }
-
 #jobListPOD md-autocomplete {
     margin: 0;
     height: 30px;
     width: 40px;
 }
-
 #jobListPOD md-autocomplete .md-whiteframe-z1 {
     box-shadow: none;
 }
-
 #jobListPOD md-autocomplete input {
     height: 28px !important;
     line-height: 28px !important;
     padding: 2px 4px !important;
 }
-
 #jobListPOD input.dispatchField,
 #jobListPOD input.lateCallField {
     width: 40px;
@@ -1074,23 +1058,19 @@ input.pod-DispatchField {
 #jobListDelivery .doing {
   background-color: #d7f3ce;
 }
-
 #jobListDelivery md-autocomplete {
     margin: 0;
     height: 30px;
     width: 40px;
 }
-
 #jobListDelivery md-autocomplete .md-whiteframe-z1 {
     box-shadow: none;
 }
-
 #jobListDelivery md-autocomplete input {
     height: 28px !important;
     line-height: 28px !important;
     padding: 2px 4px !important;
 }
-
 #jobListDelivery input.dispatchField,
 #jobListDelivery input.lateCallField {
     width: 40px;
@@ -1121,23 +1101,19 @@ input.pod-DispatchField {
 #jobListReprice .doing {
   background-color: #d7f3ce;
 }
-
 #jobListReprice md-autocomplete {
     margin: 0;
     height: 30px;
     width: 40px;
 }
-
 #jobListReprice md-autocomplete .md-whiteframe-z1 {
     box-shadow: none;
 }
-
 #jobListReprice md-autocomplete input {
     height: 28px !important;
     line-height: 28px !important;
     padding: 2px 4px !important;
 }
-
 #jobListReprice input.dispatchField,
 #jobListReprice input.lateCallField {
     width: 40px;

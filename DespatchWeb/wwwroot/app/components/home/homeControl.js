@@ -1894,17 +1894,17 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {number} courierID
+             * @param {number} courierId
              * @param {string} courierName
              */
-            $scope.updateCourierData = async (courierID, courierName) => {
-                $scope.currentWorkSelection = ` for Courier ${courierID} ${courierName}`;
-                $scope.currentCourier = {courierID, courier: courierName};
-                $scope.currentSelection = ` for Courier ${courierID} ${courierName}`;
+            $scope.updateCourierData = async (courierId, courierName) => {
+                $scope.currentWorkSelection = ` for Courier ${courierId} ${courierName}`;
+                $scope.currentCourier = {courierID: courierId, courier: courierName};
+                $scope.currentSelection = ` for Courier ${courierId} ${courierName}`;
 
-                await getCurrentJobs(courierID);
+                await getCurrentJobs(courierId);
                 try {
-                    const result = await DispatchData.truckCourierStatus(courierID);
+                    const result = await DispatchData.truckCourierStatus(courierId);
                     $scope.truckCourierStatus = result.data;
                 } catch (error) {
                     console.error('Error fetching truck courier status:', error);
@@ -1986,7 +1986,16 @@ angular.module("uDispatch")
             }
 
             async function fetchTruckCourierStatus(courier) {
+                if (!courier) {
+                    return;
+                }
+
                 const result = await DispatchData.truckCourierStatus(courier.courierID);
+                if (!result || !result.data) {
+                    return;
+                }
+
+                // Save truck courier status if exists
                 $scope.truckCourierStatus = result.data;
             }
 
@@ -2311,7 +2320,7 @@ angular.module("uDispatch")
                     try {
                         if (job.courier === null) {
                             await handleUndispatchedJob(job);
-                        } else if (job.courierData) {
+                        } else if (job.assignedCourier) {
                             $scope.potentialCouriers = false;
                             await $scope.selectCourier(job.courierData);
                         } else {
