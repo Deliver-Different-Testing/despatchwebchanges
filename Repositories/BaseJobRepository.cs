@@ -716,7 +716,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            var job = await _context.TucJobs
+            var job = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => new JobViewModel
                 {
@@ -931,7 +931,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
+            Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
             throw;
         }
     }

@@ -3,19 +3,25 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
-{
-    public partial class DfrntuserPageLayout
-    {
-        public int LayoutId { get; set; }
-        public int PageId { get; set; }
-        public int UserId { get; set; }
-        public string Layout { get; set; }
-        public DateTime? CreatedDate { get; set; }
-        public DateTime? LastModifiedDate { get; set; }
-        public string LayoutName { get; set; }
+namespace DespatchWeb.EntityClasses;
 
-        public virtual DfrntappPage Page { get; set; }
-        public virtual TucStaff User { get; set; }
-    }
+public partial class DfrntuserPageLayout
+{
+    public int LayoutId { get; set; }
+
+    public int PageId { get; set; }
+
+    public int UserId { get; set; }
+
+    public string Layout { get; set; }
+
+    public DateTime? CreatedDate { get; set; }
+
+    public DateTime? LastModifiedDate { get; set; }
+
+    public string LayoutName { get; set; }
+
+    public virtual DfrntappPage Page { get; set; }
+
+    public virtual TucStaff User { get; set; }
 }

@@ -89,7 +89,9 @@ public partial class TucJobType
 
     public virtual ICollection<TblUndeliverableLocation> TblUndeliverableLocations { get; set; } = new List<TblUndeliverableLocation>();
 
-    public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
+    public virtual ICollection<TucEvent> TucEventSpeeds { get; set; } = new List<TucEvent>();
+
+    public virtual ICollection<TucEvent> TucEventUcevJobTypeNavigations { get; set; } = new List<TucEvent>();
 
     public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; } = new List<TucJob>();
 

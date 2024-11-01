@@ -94,7 +94,7 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
     {
         try
         {
-            return await _context.TucStaffs
+            return await Context.TucStaffs
                 .Where(s => s.UcstId == staffId)
                 .SelectMany(s => s.DfrntuserPageLayouts)
                 .Where(l => l.PageId == (int)page)
@@ -125,7 +125,7 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
                 CreatedDate = DateTime.Now
             };
 
-            await _context.DfrntuserPageLayouts.AddAsync(layout);
+            await Context.DfrntuserPageLayouts.AddAsync(layout);
         }
         catch (Exception e)
         {

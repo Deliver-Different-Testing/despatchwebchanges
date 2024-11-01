@@ -21,6 +21,7 @@ using DespatchWeb.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Serilog;
+using static Azure.Core.HttpHeader;
 
 namespace DespatchWeb.Controllers;
 
@@ -174,56 +175,72 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
     {
         try
         {
-            var data = await _jobRepo.GetJobDownloadsByIds(request);
+            var data = await jobRepository.GetJobDownloadsByIds(request);
 
-            var formatField = (object x) =>
+            string FormatField(object x)
             {
-                string formatted = x
-                    ?.ToString()
+                var formatted = x?.ToString()
                     ?.Replace("\"", "\"\"")
-                    ?.Replace("\n", "\\n") 
-                    ?? string.Empty;
+                    ?.Replace("\n", "\\n") ?? string.Empty;
 
-                return formatted.Contains("\"") || formatted.Contains(",")
+                return formatted.Contains("\"") || formatted.Contains(',')
                     ? $"\"{formatted}\""
                     : formatted;
-
-            };
-
-            string folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["DownloadDirectory"]);
-            folderPath = Path.Combine(folderPath, DateTime.Now.ToString("yyyyMM"));
-            // Create the folder if it doesn't exist
-            if (!Directory.Exists(folderPath))
-                Directory.CreateDirectory(folderPath);
-
-            var filename = $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}.csv";
-            string filePath = Path.Combine(folderPath, filename);
-
-
-            using (var stream = new MemoryStream())
-            {
-                using (var writer = new StreamWriter(stream, Encoding.UTF8))
-                {
-                    writer.WriteLine("Id,ParentId,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8");
-                    foreach (var x in data)
-                    {
-                        writer.WriteLine($"{x.Id},{x.ParentId},{formatField(x.JobNumber)},{x.BookDate.ToString("yyyy-MM-dd HH:mm:ss")},{x.Amount},{x.FuelSurcharge},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)}");
-                    }
-                }
-
-                var bytes = stream.ToArray();
-                //stream.Position = 0;
-                System.IO.File.WriteAllBytes(filePath, bytes);
-
-                //stream.Position = 0;
-                return File(bytes, "text/csv", filename);
             }
+
+            using var stream = new MemoryStream();
+            await using (var writer = new StreamWriter(stream, Encoding.UTF8))
+            {
+                await writer.WriteLineAsync(
+                    "Id,ParentId,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8");
+                foreach (var x in data)
+                {
+                    await writer.WriteLineAsync(
+                        $"{x.Id},{x.ParentId},{FormatField(x.JobNumber)},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.Amount},{x.FuelSurcharge},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{FormatField(x.DeliveryAddressLine1)},{FormatField(x.DeliveryAddressLine2)},{FormatField(x.DeliveryAddressLine3)},{FormatField(x.DeliveryAddressLine4)},{FormatField(x.DeliveryAddressLine5)},{FormatField(x.DeliveryAddressLine6)},{FormatField(x.DeliveryAddressLine7)},{FormatField(x.DeliveryAddressLine8)}");
+                }
+            }
+
+            var bytes = stream.ToArray();
+            var filename = $"Jobs {DateTime.Now:yyyyMMddHHmmssfff}.csv";
+            
+            var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var key = $"{tenantId}-Jobs-{timestamp}";
+
+            using var ms = new MemoryStream(bytes);
+            try
+            {
+                var putRequest = new PutObjectRequest
+                {
+                    BucketName = Environment.GetEnvironmentVariable("S3Bucket"),
+                    Key = key,
+                    ContentType = "text/csv",
+                    InputStream = ms
+                };
+                await s3Client.PutObjectAsync(putRequest);
+
+            }
+            catch (AmazonS3Exception e)
+            {
+                Log.Error(e, $"{nameof(Download)} Error encountered when writing jobs download object to S3: ");
+
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"{nameof(Download)} Error encountered when writing jobs download object to S3: ");
+
+            }
+
+
+            return File(bytes, "text/csv", filename);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
+            Log.Error(ex, $"Download error: {ex.Message}");
             throw;
         }
     }
+
 
     public async Task<IActionResult> ValidateSwapPod(string job)
     {

@@ -35,6 +35,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<DfrntpageView> DfrntpageViews { get; set; }
 
+    public virtual DbSet<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; }
+
     public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
 
     public virtual DbSet<TblAirport> TblAirports { get; set; }
@@ -635,6 +637,38 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.ViewId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__DFRNTPage__ViewI__3EB30215");
+        });
+
+        modelBuilder.Entity<DfrntuserPageLayout>(entity =>
+        {
+            entity.HasKey(e => e.LayoutId).HasName("PK__DFRNTUse__2035851542A27913");
+
+            entity.ToTable("DFRNTUserPageLayouts");
+
+            entity.HasIndex(e => e.UserId, "IX_DFRNTUserPageLayouts_UserId");
+
+            entity.HasIndex(e => e.LayoutName, "IX_UserPageLayouts_Name");
+
+            entity.HasIndex(e => new { e.PageId, e.UserId }, "IX_UserPageLayouts_PageUser");
+
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Layout).IsRequired();
+            entity.Property(e => e.LayoutName).HasMaxLength(100);
+
+            entity.HasOne(d => d.Page).WithMany(p => p.DfrntuserPageLayouts)
+                .HasForeignKey(d => d.PageId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UserPageLayouts_Pages");
+
+            entity.HasOne(d => d.User).WithMany(p => p.DfrntuserPageLayouts)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UserPageLayouts_Users");
         });
 
         modelBuilder.Entity<GlobalAddressMapping>(entity =>
@@ -3139,6 +3173,14 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucEvent");
 
+            entity.HasIndex(e => e.UcevClientId, "IX_tucEvent_ClientID");
+
+            entity.HasIndex(e => e.UcevCourierId, "IX_tucEvent_CourierID");
+
+            entity.HasIndex(e => e.UcevJobId, "IX_tucEvent_JobID");
+
+            entity.HasIndex(e => e.UcevJobType, "IX_tucEvent_JobType");
+
             entity.HasIndex(e => e.SpeedId, "SpeedID");
 
             entity.HasIndex(e => e.UcevClientId, "ucevClientID").HasFillFactor(80);
@@ -3197,17 +3239,25 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucevTime");
             entity.Property(e => e.UcevType).HasColumnName("ucevType");
 
-            entity.HasOne(d => d.Speed).WithMany(p => p.TucEvents)
+            entity.HasOne(d => d.Speed).WithMany(p => p.TucEventSpeeds)
                 .HasForeignKey(d => d.SpeedId)
                 .HasConstraintName("FK_tucEvent_tucJobType");
 
             entity.HasOne(d => d.UcevClient).WithMany(p => p.TucEvents)
                 .HasForeignKey(d => d.UcevClientId)
-                .HasConstraintName("FK_tucEvent_tucClient");
+                .HasConstraintName("FK_tucEvent_Client");
 
             entity.HasOne(d => d.UcevCourier).WithMany(p => p.TucEvents)
                 .HasForeignKey(d => d.UcevCourierId)
-                .HasConstraintName("FK_tucEvent_tucCourier");
+                .HasConstraintName("FK_tucEvent_Courier");
+
+            entity.HasOne(d => d.UcevJob).WithMany(p => p.TucEvents)
+                .HasForeignKey(d => d.UcevJobId)
+                .HasConstraintName("FK_tucEvent_Job");
+
+            entity.HasOne(d => d.UcevJobTypeNavigation).WithMany(p => p.TucEventUcevJobTypeNavigations)
+                .HasForeignKey(d => d.UcevJobType)
+                .HasConstraintName("FK_tucEvent_JobType");
         });
 
         modelBuilder.Entity<TucEventType>(entity =>
@@ -3278,6 +3328,10 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => new { e.UcjbClientId, e.UcjbDate }, "IX_Client_Date");
 
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
+
+            entity.HasIndex(e => e.ContactId, "IX_TucJob_ContactID");
+
+            entity.HasIndex(e => e.UcjbSpeed, "IX_TucJob_Speed");
 
             entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
 

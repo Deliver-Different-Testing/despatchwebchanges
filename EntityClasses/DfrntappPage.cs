@@ -20,4 +20,6 @@ public partial class DfrntappPage
     public virtual Dfrntapp App { get; set; }
 
     public virtual ICollection<DfrntpageView> DfrntpageViews { get; set; } = new List<DfrntpageView>();
+
+    public virtual ICollection<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; } = new List<DfrntuserPageLayout>();
 }

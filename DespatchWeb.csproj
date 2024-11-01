@@ -11,6 +11,7 @@
     <Content Remove="bundleconfig.json" />
     <Content Remove="compilerconfig.json" />
     <Content Remove="wwwroot\app\materialTheme.js" />
+    <Content Remove="wwwroot\css\udispatch.less" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="appsettings.json">
@@ -213,6 +214,7 @@
     <None Include="efpt.config.json.user" />
     <None Include="wwwroot\app\materialTheme.js" />
     <None Include="wwwroot\app\version.js" />
+    <None Include="wwwroot\css\udispatch.less" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.css" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.js" />
     <None Include="wwwroot\lib\material-time-picker\md-time-picker.min.css" />

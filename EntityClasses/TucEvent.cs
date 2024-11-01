@@ -56,4 +56,8 @@ public partial class TucEvent
     public virtual TucClient UcevClient { get; set; }
 
     public virtual TucCourier UcevCourier { get; set; }
+
+    public virtual TucJob UcevJob { get; set; }
+
+    public virtual TucJobType UcevJobTypeNavigation { get; set; }
 }

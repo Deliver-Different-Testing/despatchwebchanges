@@ -108,9 +108,9 @@ angular.module('uDispatch').controller('CSControl', [
                         const box = angular.element("#" + ui.item.context.id);
                         const parent = box.parent();
                         parent.find(".box").each(function () {
-                            angular.element(this).css({"flex-basis": angular.element(this).attr("data-height")});
+                            angular.element(this).css({ "flex-basis": angular.element(this).attr("data-height") });
                         });
-                        parent.find(".box").last().css({"flex-basis": "0"});
+                        parent.find(".box").last().css({ "flex-basis": "0" });
                     }, 0);
                 }
             };
@@ -139,14 +139,14 @@ angular.module('uDispatch').controller('CSControl', [
             $scope.preBookPromise = null;
 
             $scope.jobHeaders = [
-                {key: 'booked', label: 'Booked'},
-                {key: 'status', label: 'Status'},
-                {key: 'speed', label: 'Speed'},
-                {key: 'jobNo', label: 'Job'},
-                {key: 'client', label: 'Client'},
-                {key: 'from', label: 'From'},
-                {key: 'to', label: 'To'},
-                {key: 'street', label: 'Street'}
+                { key: 'booked', label: 'Booked' },
+                { key: 'status', label: 'Status' },
+                { key: 'speed', label: 'Speed' },
+                { key: 'jobNo', label: 'Job' },
+                { key: 'client', label: 'Client' },
+                { key: 'from', label: 'From' },
+                { key: 'to', label: 'To' },
+                { key: 'street', label: 'Street' }
             ];
 
             $scope.options = {
@@ -490,7 +490,7 @@ angular.module('uDispatch').controller('CSControl', [
         $scope.jobRecordSearch = searchText => {
             return $scope.jobList
                 .filter(job => job.jobNo.toLowerCase().includes(searchText.toLowerCase()))
-                .map(job => ({id: job.id, text: job.jobNo}));
+                .map(job => ({ id: job.id, text: job.jobNo }));
         }
 
         /**
@@ -776,52 +776,43 @@ angular.module('uDispatch').controller('CSControl', [
         };
 
         $scope.downloadJobList = async () => {
-            await uCSData.downloadJobs({
-                data: {
-                    ids: $scope.jobList
-                        ?.filter(j => j.id)
-                        ?.map(j => j.id)
-                        ?? []
-                }
-            })
-                .then(response => {
-                    if (response.status === 200) {
-                        var filename = response.headers()["content-disposition"]
-                            ?.split(";")
-                            ?.find(s => s.includes("filename=\""));
-                        filename = filename
-                            ?.substring(filename.indexOf("\"") + 1, filename.length - 1);
-
-                        var objectUrl = (URL || webkitURL).createObjectURL(response.data);
-                        var link = document.createElement("A");
-                        link.href = objectUrl;
-                        link.target = "_blank";
-                        link.download = filename;
-                        link.click();
-                        setTimeout(() => (URL || webkitURL).revokeObjectURL(objectUrl), 100);
-                    } else {
-                        console.error("Error downloading");
+            try {
+                const response = await uCSData.downloadJobs({
+                    data: {
+                        ids: $scope.jobList
+                            ?.filter(j => j.id)
+                            ?.map(j => j.id)
+                            ?? []
                     }
-                })
-                //.success(function (data, status, headers) {
-                //    if (status === 200) {
-                //        var filename = headers()["content-disposition"]
-                //            ?.split(";")
-                //            ?.find(s => s.includes("filename=\""));
-                //        filename = filename
-                //            ?.substring(filename.indexOf("\"") + 1, filename.length - 1);
+                });
 
-                //        var objectUrl = (URL || webkitURL).createObjectURL(data);
-                //        var link = document.createElement("A");
-                //        link.href = objectUrl;
-                //        link.target = "_blank";
-                //        link.download = filename;
-                //        link.click();
-                //        setTimeout(() => (URL || webkitURL).revokeObjectURL(objectUrl), 100);
-                //    } else {
-                //        console.error("Error downloading");
-                //    }
-                //});
+                if (response.status === 200) {
+                    let filename = "jobs.csv";  // default filename
+                    const contentDisposition = response.headers()["content-disposition"];
+
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.split(';')
+                            .find(part => part.trim().startsWith('filename='));
+                        if (filenameMatch) {
+                            filename = filenameMatch.split('=')[1].trim().replace(/"/g, '');
+                        }
+                    }
+
+                    const blob = new Blob([response.data], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    console.error("Error downloading jobs");
+                }
+            } catch (error) {
+                console.error("Failed to download jobs:", error);
+            }
         };
 
         /**
@@ -1228,7 +1219,7 @@ angular.module('uDispatch').controller('CSControl', [
             }
 
             $mdDialog.show({
-                locals: {dataToPass: currentEvent},
+                locals: { dataToPass: currentEvent },
                 controller: $scope.eventDialogController,
                 scope: $scope,
                 preserveScope: true,
@@ -1245,7 +1236,7 @@ angular.module('uDispatch').controller('CSControl', [
         $scope.createJobEvent = (job) => {
             $scope.currentJob = job;
             $mdDialog.show({
-                locals: {dataToPass: undefined},
+                locals: { dataToPass: undefined },
                 controller: $scope.eventDialogController,
                 scope: $scope,
                 preserveScope: true,

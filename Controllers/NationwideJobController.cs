@@ -10,6 +10,7 @@ using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace DespatchWeb.Controllers;
 
@@ -131,7 +132,7 @@ public class NationwideJobController(
             ScheduledFlight flight;
             try
             {
-                flight = await _flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber,
+                flight = await flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber,
                     request.DepartureDate);
                 if (flight == null)
                     return NotFound(
@@ -143,16 +144,40 @@ public class NationwideJobController(
                 return StatusCode(500, "Unable to retrieve flight information");
             }
 
-        // Set up webhook to receive alerts
-        var webhookId = await _flightService.CreateFlightRuleByDepartureAsync(request.FlightNumber,
-            request.DepartureDate,
-            departureAirportCode) ?? string.Empty;
+            // Get airport codes
+            string departureAirportCode;
+            try
+            {
+                var (_, depCode) = await repository.GetAirportCodesByJobIdAsync(request.JobId);
+                departureAirportCode = depCode;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error retrieving airport codes for JobId: {JobId}", request.JobId);
+                return StatusCode(500, "Unable to retrieve airport information");
+            }
 
-        var addToDb = await repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
-        if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
+            // Create webhook
+            string webhookId;
+            try
+            {
+                webhookId = await flightService.CreateFlightRuleByDepartureAsync(
+                    request.FlightNumber,
+                    request.DepartureDate,
+                    departureAirportCode) ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error creating flight rule webhook for flight {FlightNumber}",
+                    request.FlightNumber);
+                return StatusCode(500, "Unable to set up flight tracking");
+            }
 
-            return Ok();
-        }
+            // Add job
+            try
+            {
+                await repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
+            }
             catch (DbUpdateException ex)
             {
                 Log.Error(ex, "Database error while adding job {JobId}", request.JobId);
@@ -176,11 +201,11 @@ public class NationwideJobController(
     [HttpGet]
     public async Task<IActionResult> GetAgentsForJob(int jobId)
     {
-        var agents = await repository.GetAgentsAsync(jobId);
-        return Json(agents);
-    }
-
-    [HttpPost]
+        try
+        {
+            var agents = await repository.GetAgentsAsync(jobId);
+            if (agents == null || !agents.Any())
+                return NotFound($"No agents found for job {jobId}");
 
             return Json(agents);
         }
@@ -199,11 +224,11 @@ public class NationwideJobController(
             if (model?.AgentId == null || model.JobId == null)
                 return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
 
-        var addToDb = await repository.AddAgentToJobAsync(model.AgentId.Value, model.JobId.Value);
-        if (!addToDb) return BadRequest("An error occurred while assigning the agent to the job.");
-
-                return Ok();
-            }
+            try
+            {
+                var addToDb = await repository.AddAgentToJobAsync(model.AgentId.Value, model.JobId.Value);
+                if (!addToDb)
+                    return BadRequest("An error occurred while assigning the agent to the job.");
 
                 return Ok();
             }
