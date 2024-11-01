@@ -9,7 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public int ClearListAreaPolygonId { get; set; }
         public int ClearListAreaId { get; set; }
-        public int PolygonId { get; set; }
+        public int? PolygonId { get; set; }
         public DateTime Created { get; set; }
         public string CreatedBy { get; set; }
         public DateTime LastModified { get; set; }

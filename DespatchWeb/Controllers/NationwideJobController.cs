@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.FlightStats;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace DespatchWeb.Controllers;
 
@@ -13,14 +17,17 @@ public class NationwideJobController : Controller
 {
     private readonly IClientAccessValidatorService _clientAccessValidator;
     private readonly IFlightStatsService _flightService;
+    private readonly ILogger<NationwideJobController> _logger;
     private readonly INationwideJobRepository _repository;
 
     public NationwideJobController(INationwideJobRepository repository,
-        IFlightStatsService flightService, IClientAccessValidatorService clientAccessValidator)
+        IFlightStatsService flightService, IClientAccessValidatorService clientAccessValidator,
+        ILogger<NationwideJobController> logger)
     {
         _repository = repository;
         _flightService = flightService;
         _clientAccessValidator = clientAccessValidator;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -37,8 +44,8 @@ public class NationwideJobController : Controller
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            _logger.LogError(e, "An error occured getting the new Nationwide job list");
+            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
         }
     }
 
@@ -46,11 +53,19 @@ public class NationwideJobController : Controller
     public async Task<IActionResult> NationwideJobListPod([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        try
+        {
+            if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-        var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Pod, despatchViewIds);
-        return Json(result);
+            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+                queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Pod, despatchViewIds);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occured getting the pod Nationwide job list");
+            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+        }
     }
 
     [HttpGet]
@@ -58,79 +73,192 @@ public class NationwideJobController : Controller
         bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        try
+        {
+            if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-        var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.ActionRequired, despatchViewIds);
-        return Json(result);
+            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+                queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.ActionRequired, despatchViewIds);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occured getting the delivery Nationwide job list");
+            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+        }
     }
 
     [HttpGet]
     public async Task<IActionResult> NationwideJobListReprice([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        try
+        {
+            if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-        var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-            queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Reprice, despatchViewIds);
-        return Json(result);
+            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
+                queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Reprice, despatchViewIds);
+            return Json(result);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occured getting the reprice Nationwide job list");
+            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+        }
     }
 
     [HttpGet]
     public async Task<IActionResult> GetScheduledFlightOptions(DateTime departureDate, int jobId)
     {
-        var (toAirport, fromAirport) = await _repository.GetAirportCodesByJobIdAsync(jobId);
+        try
+        {
+            var (toAirport, fromAirport) = await _repository.GetAirportCodesByJobIdAsync(jobId);
 
-        if (string.IsNullOrEmpty(toAirport) || string.IsNullOrEmpty(fromAirport))
-            return BadRequest("Invalid airport ID(s) provided.");
+            if (string.IsNullOrEmpty(toAirport) || string.IsNullOrEmpty(fromAirport))
+                return BadRequest("Invalid airport ID(s) provided.");
 
-        var flightOptions =
-            await _flightService.GetFlightsAsync(fromAirport, toAirport, departureDate);
+            var flightOptions =
+                await _flightService.GetFlightsAsync(fromAirport, toAirport, departureDate);
 
-        return Json(flightOptions ?? new List<FlightViewModel>());
+            return Json(flightOptions ?? new List<FlightViewModel>());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occured getting scheduled flight options");
+            return StatusCode(500, "An unexpected error occurred while retrieving the job list");
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobRequest request)
     {
-        if (request is null)
-            return BadRequest("Oops, no flight data was provided. Unable to assign to job.");
+        try
+        {
+            if (request is null)
+                return BadRequest("Oops, no flight data was provided. Unable to assign to job.");
 
-        var flight =
-            await _flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber, request.DepartureDate);
-        var (_, departureAirportCode) = await _repository.GetAirportCodesByJobIdAsync(request.JobId);
 
-        if (flight == null)
-            return NotFound(
-                $"Flight with number {request.FlightNumber} and departure date {request.DepartureDate:yyyy-MM-dd} not found.");
+            // Get flight details
+            ScheduledFlight flight;
+            try
+            {
+                flight = await _flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber,
+                    request.DepartureDate);
+                if (flight == null)
+                    return NotFound(
+                        $"Flight with number {request.FlightNumber} and departure date {request.DepartureDate:yyyy-MM-dd} not found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving flight details for flight {FlightNumber}", request.FlightNumber);
+                return StatusCode(500, "Unable to retrieve flight information");
+            }
 
-        // Set up webhook to receive alerts
-        var webhookId = await _flightService.CreateFlightRuleByDepartureAsync(request.FlightNumber,
-            request.DepartureDate,
-            departureAirportCode) ?? string.Empty;
+            // Get airport codes
+            string departureAirportCode;
+            try
+            {
+                var (_, depCode) = await _repository.GetAirportCodesByJobIdAsync(request.JobId);
+                departureAirportCode = depCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving airport codes for JobId: {JobId}", request.JobId);
+                return StatusCode(500, "Unable to retrieve airport information");
+            }
 
-        var addToDb = await _repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
-        if (!addToDb) return BadRequest("An error occurred while assigning the flight to the job.");
+            // Create webhook
+            string webhookId;
+            try
+            {
+                webhookId = await _flightService.CreateFlightRuleByDepartureAsync(
+                    request.FlightNumber,
+                    request.DepartureDate,
+                    departureAirportCode) ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating flight rule webhook for flight {FlightNumber}",
+                    request.FlightNumber);
+                return StatusCode(500, "Unable to set up flight tracking");
+            }
 
-        return Ok();
+            // Add job
+            try
+            {
+                await _repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while adding job {JobId}", request.JobId);
+                return StatusCode(500, "Unable to save job information");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding nationwide job for JobId: {JobId}", request.JobId);
+                return StatusCode(500, "Unable to complete job assignment");
+            }
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in AssignFlightToJob");
+            return StatusCode(500, "An unexpected error occurred while processing your request");
+        }
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAgentsForJob(int jobId)
     {
-        var agents = await _repository.GetAgentsAsync(jobId);
-        return Json(agents);
+        try
+        {
+            var agents = await _repository.GetAgentsAsync(jobId);
+            if (agents == null || !agents.Any())
+                return NotFound($"No agents found for job {jobId}");
+
+            return Json(agents);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving agents for JobId: {JobId}", jobId);
+            return StatusCode(500, "An error occurred while retrieving agent information");
+        }
     }
 
     [HttpPost]
     public async Task<IActionResult> AssignAgentToJob([FromBody] AssignAgentModel model)
     {
-        if (model?.AgentId == null || model.JobId == null)
-            return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
+        try
+        {
+            if (model?.AgentId == null || model.JobId == null)
+                return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
 
-        var addToDb = await _repository.AddAgentToJobAsync(model.AgentId.Value, model.JobId.Value);
-        if (!addToDb) return BadRequest("An error occurred while assigning the agent to the job.");
+            try
+            {
+                var addToDb = await _repository.AddAgentToJobAsync(model.AgentId.Value, model.JobId.Value);
+                if (!addToDb)
+                    return BadRequest("An error occurred while assigning the agent to the job.");
 
-        return Ok();
+                return Ok();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while assigning agent {AgentId} to job {JobId}",
+                    model.AgentId, model.JobId);
+                return StatusCode(500, "Unable to save agent assignment");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assigning agent {AgentId} to job {JobId}",
+                    model.AgentId, model.JobId);
+                return StatusCode(500, "Unable to complete agent assignment");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in AssignAgentToJob");
+            return StatusCode(500, "An unexpected error occurred while processing your request");
+        }
     }
 }

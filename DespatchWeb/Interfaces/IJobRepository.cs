@@ -9,7 +9,7 @@ namespace DespatchWeb.Interfaces;
 public interface IJobRepository
 {
     Task<JobViewModel> PreBookDetailAsync(int prebookId);
-    Task<JobViewModel> JobDetailAsync(int jobId);
+    Task<JobViewModel> GetJobByIdAsync(int jobId);
     Task<List<Size>> RelatedJobs(int parentId, int clientId);
     Task<JobViewModel> BulkJobDetail(int bulkJobId);
 
@@ -19,6 +19,8 @@ public interface IJobRepository
 
     Task<Tuple<int, List<JobViewModel>>> PodSearch(int? courierId, string wild, string job, DateTime fromDate,
         DateTime toDate, int? clientId, int pageIndex, int pageSize);
+
+    Task<List<JobDownloadModel>> GetJobDownloadsByIds(IdsRequest request);
 
     Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
         DateTime fromDate, DateTime toDate, int? clientId, int pageIndex, int pageSize);
@@ -77,7 +79,7 @@ public interface IJobRepository
     Task<List<ClientContactDetailViewModel>> ContactDetailList(int clientId);
     Task<List<Lookup>> LeaveParcelLocationsAsync();
     Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
-    Task<List<InternalStatus>> InternalStatusListAsync();
+    Task<List<InternalStatus>> GetInternalStatusListAsync();
     Task<List<Lookup>> EventTypeListAsync();
 
     Task<decimal> RateTruckJob(int clientId, int fromId, int toId, double weight, int size, int speed,
