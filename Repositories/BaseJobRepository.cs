@@ -61,11 +61,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-                     var query = Context.TucJobs
+            var query = Context.TucJobs
                 .Where(j => !j.UcjbVoid
                             && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
-                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
-                            && string.IsNullOrEmpty(j.UcjbPodname) && j.UcjbComplTime < DateTime.Now);
+                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true));
 
             switch (page)
             {
