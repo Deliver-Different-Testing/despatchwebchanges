@@ -1107,7 +1107,7 @@ angular.module("uDispatch")
 
             /**
              * @param {Date} minsAway
-             * @param {{id: number, rootParentId: (number|null), time: (string|null), bookedDate: (string|null), direct: boolean, van: boolean, jobRelationshipTypeId: (number|null), vanOk: (boolean|null), done: (boolean|null), void: boolean, truck: (boolean|null), saturdayDelivery: boolean, return: boolean, pedal: (boolean|null), reprice: (boolean|null), attention: boolean, pickupFrom: (number|null), jobNo: string, speed: string, speedName: string, source: string, notifiedName: string, acceptedName: string, speedId: (number|null), notify: string, vehicle: Vehicle, clientId: (number|null), jobType: number, client: string, clientName: string, from: string, fromSuburbId: (number|null), fromSuburbName: string, fromPostCode: string, fromAddress: string, to: string, toSuburbId: (number|null), toSuburbName: string, toPostCode: string, toAddress: string, toCity: string, courier: string, gstRate: (number|null), remain: (number|null), pickupTime: (number|null), deliveryTime: (number|null), alertLatePickup: number, alertLateDelivery: number, minutes: (number|null), statusId: (number|null), status: string, statusName: string, lp: (number|null), ld: (number|null), contactName: string, loggedInContactName: string, deliverToContact: string, trackingMethod: (number|null), trackingMobile: string, trackingEmail: string, udStatus: string, podPhoto: Uint8Array, deliverySignature: Uint8Array, podPhotos: Uint8Array[], podName: string, phone: string, speedAccepted: string, acceptedJobTypeId: (number|null), notifiedJobTypeId: (number|null), size: Vehicle, weight: (number|null), items: (number|null), refA: string, refB: string, ourRef: string, sigNotRequired: string, charge: string, date: string, dispatchTime: (string|null), booked: string, puTime: (string|null), clientNotes: string, internalNotes: string, followupTime: (string|null), internalStatusId: (number|null), childNotes: string, locked: boolean, invoiced: boolean, pickUpLongitude: (number|null), pickUpLatitude: (number|null), deliveryLongitude: (number|null), deliveryLatitude: (number|null), palletInfo: Pallet[], relatedJobs: Size[], courierLatitude: (number|null), courierLongitude: (number|null), runOrder: (number|null), courierData: CourierData, allowDispatch: (boolean|null), dgDocumentation: (boolean|null), dgClass: (number|null), displaySplitJobDetail: (boolean|null), truckWeightLimit: (number|null), truckStartTime: (string|null), truckHours: (number|null), privateRes: boolean, allowSplit: (boolean|null), completedTime: (string|null), fromContactName: string, fromContactNumber: string, ratedManually: boolean, sizeId: (number|null), active: (boolean|null), oneOff: (boolean|null), inActiveBy: string, inActiveDate: (string|null), firstDue: (string|null), nextDue: (string|null), lastDone: (string|null), stopDate: (string|null), restartDate: (string|null), days: string, preBook: boolean, bulkJob: boolean, runName: string, scheduleName: string, conNote: string, airportOnly: (boolean|null), hasNationwide: boolean, dispatcherName: (string|null), createdDate: (string|null), pickupAddress: AddressDetails, deliveryAddress: AddressDetails, toAirportId: number, fromAirportId: number, assignedFlight: AssignedFlight, assignedAgent: Agent, assignedCourier: Suggestion}} job
+             * @param{Job} job
              * @param {*} obj
              * @param {boolean} isPickup
              */
@@ -1271,8 +1271,6 @@ angular.module("uDispatch")
                     // Clear selection state
                     $scope.dispatchState.selectedJobs.clear();
 
-                    // Refresh data
-
                     // If we have a current courier, update their job list
                     if ($scope.currentCourier) {
                         await getCurrentJobs($scope.currentCourier.courierID);
@@ -1358,6 +1356,10 @@ angular.module("uDispatch")
                 }
             }
 
+            /**
+             * @param {Job} job
+             * @param {{call: string, splitJobs: *[], jobs: *[], courierID: null, jobNos: *[]}} callData
+             */
             function findCourierForJob(job, callData) {
                 return $scope.pickCouriers.find(c => c.courierID === callData.courierID) || $scope.pickAllCouriers.find(c => c.courierID === callData.courierID);
             }
