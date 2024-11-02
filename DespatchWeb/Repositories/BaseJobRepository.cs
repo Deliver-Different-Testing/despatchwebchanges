@@ -747,7 +747,9 @@ public class BaseJobRepository
                             Courier = string.IsNullOrEmpty(j.UcjbCourier.Code)
                                 ? string.Empty
                                 : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
-                            CourierId = j.UcjbCourierId
+                            CourierId = j.UcjbCourierId,
+                            CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
+                            CourierMobile = j.UcjbCourier.UccrMobile
                         }
                         : null,
                     AssignedCourier = j.UcjbCourier != null
