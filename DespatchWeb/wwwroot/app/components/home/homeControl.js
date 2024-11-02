@@ -1032,6 +1032,12 @@ angular.module("uDispatch")
                 return $scope.getAvailableCourierLocation();
             }
 
+            /**
+             * @param {number} lat
+             * @param {number} lng
+             * @param {Object} flags
+             * @param {*} carMarker
+             */
             function findClosestCourier(lat, lng, flags, carMarker) {
                 const toCompare = flags.map((f, key) => [key, f.position.lat(), f.position.lng()]);
                 if (carMarker !== null) {
@@ -1042,6 +1048,11 @@ angular.module("uDispatch")
                 return closestIndex[0] === 9999 ? carMarker : flags[closestIndex[0]];
             }
 
+            /**
+             * @param {number} jobNumber
+             * @param {*} closestCourier
+             * @param {*} foundCourier
+             */
             async function confirmDispatch(jobNumber, closestCourier, foundCourier) {
                 let dispatchToCourierCode = closestCourier.code;
                 if (foundCourier !== undefined) {
@@ -1070,6 +1081,10 @@ angular.module("uDispatch")
                 }
             }
 
+            /**
+             * @param {*} foundCourier
+             * @param {number} jobNumber
+             */
             async function dispatchJob(foundCourier, jobNumber) {
                 const job = $scope.jobList.find(jo => jo.jobNo === jobNumber);
                 const jobs = [job.id];
@@ -1090,6 +1105,12 @@ angular.module("uDispatch")
                 $event.target.select();
             };
 
+            /**
+             * @param {Date} minsAway
+             * @param {{id: number, rootParentId: (number|null), time: (string|null), bookedDate: (string|null), direct: boolean, van: boolean, jobRelationshipTypeId: (number|null), vanOk: (boolean|null), done: (boolean|null), void: boolean, truck: (boolean|null), saturdayDelivery: boolean, return: boolean, pedal: (boolean|null), reprice: (boolean|null), attention: boolean, pickupFrom: (number|null), jobNo: string, speed: string, speedName: string, source: string, notifiedName: string, acceptedName: string, speedId: (number|null), notify: string, vehicle: Vehicle, clientId: (number|null), jobType: number, client: string, clientName: string, from: string, fromSuburbId: (number|null), fromSuburbName: string, fromPostCode: string, fromAddress: string, to: string, toSuburbId: (number|null), toSuburbName: string, toPostCode: string, toAddress: string, toCity: string, courier: string, gstRate: (number|null), remain: (number|null), pickupTime: (number|null), deliveryTime: (number|null), alertLatePickup: number, alertLateDelivery: number, minutes: (number|null), statusId: (number|null), status: string, statusName: string, lp: (number|null), ld: (number|null), contactName: string, loggedInContactName: string, deliverToContact: string, trackingMethod: (number|null), trackingMobile: string, trackingEmail: string, udStatus: string, podPhoto: Uint8Array, deliverySignature: Uint8Array, podPhotos: Uint8Array[], podName: string, phone: string, speedAccepted: string, acceptedJobTypeId: (number|null), notifiedJobTypeId: (number|null), size: Vehicle, weight: (number|null), items: (number|null), refA: string, refB: string, ourRef: string, sigNotRequired: string, charge: string, date: string, dispatchTime: (string|null), booked: string, puTime: (string|null), clientNotes: string, internalNotes: string, followupTime: (string|null), internalStatusId: (number|null), childNotes: string, locked: boolean, invoiced: boolean, pickUpLongitude: (number|null), pickUpLatitude: (number|null), deliveryLongitude: (number|null), deliveryLatitude: (number|null), palletInfo: Pallet[], relatedJobs: Size[], courierLatitude: (number|null), courierLongitude: (number|null), runOrder: (number|null), courierData: CourierData, allowDispatch: (boolean|null), dgDocumentation: (boolean|null), dgClass: (number|null), displaySplitJobDetail: (boolean|null), truckWeightLimit: (number|null), truckStartTime: (string|null), truckHours: (number|null), privateRes: boolean, allowSplit: (boolean|null), completedTime: (string|null), fromContactName: string, fromContactNumber: string, ratedManually: boolean, sizeId: (number|null), active: (boolean|null), oneOff: (boolean|null), inActiveBy: string, inActiveDate: (string|null), firstDue: (string|null), nextDue: (string|null), lastDone: (string|null), stopDate: (string|null), restartDate: (string|null), days: string, preBook: boolean, bulkJob: boolean, runName: string, scheduleName: string, conNote: string, airportOnly: (boolean|null), hasNationwide: boolean, dispatcherName: (string|null), createdDate: (string|null), pickupAddress: AddressDetails, deliveryAddress: AddressDetails, toAirportId: number, fromAirportId: number, assignedFlight: AssignedFlight, assignedAgent: Agent, assignedCourier: Suggestion}} job
+             * @param {*} obj
+             * @param {boolean} isPickup
+             */
             $scope.lateOperation = (minsAway, job, obj, isPickup) => {
                 const operationType = isPickup ? 'pickup' : 'delivery';
                 const currentValue = isPickup ? job.lp : job.ld;
@@ -1108,8 +1129,18 @@ angular.module("uDispatch")
                     });
             };
 
-            $scope.latePickup = (minsAway, j, obj) => $scope.lateOperation(minsAway, j, obj, true);
-            $scope.lateDelivery = (minsAway, j, obj) => $scope.lateOperation(minsAway, j, obj, false);
+            /**
+             * @param {Date} minsAway
+             * @param {Job} job
+             * @param {*} obj
+             */
+            $scope.latePickup = (minsAway, job, obj) => $scope.lateOperation(minsAway, job, obj, true);
+            /**
+             * @param {Date} minsAway
+             * @param {Job} job
+             * @param {*} obj
+             */
+            $scope.lateDelivery = (minsAway, job, obj) => $scope.lateOperation(minsAway, job, obj, false);
 
             /**
              * @param {Date} lateTime
