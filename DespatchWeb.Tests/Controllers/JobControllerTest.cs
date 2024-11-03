@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -23,15 +24,17 @@ public class JobControllerTest
         _mockCourierRepo = new Mock<ICourierRepository>();
         _mockClientAccessValidator = new Mock<IClientAccessValidatorService>();
         _mockConfig = new Mock<IConfiguration>();
+        _mockWebHostEnvironment = new Mock<IWebHostEnvironment>();
 
         _controller = new JobController(_mockJobRepo.Object, _mockCourierRepo.Object, _mockClientAccessValidator.Object,
-            _mockConfig.Object);
+            _mockConfig.Object, _mockWebHostEnvironment.Object);
     }
 
     private Mock<IJobRepository> _mockJobRepo;
     private Mock<ICourierRepository> _mockCourierRepo;
     private Mock<IClientAccessValidatorService> _mockClientAccessValidator;
     private Mock<IConfiguration> _mockConfig;
+    private Mock<IWebHostEnvironment> _mockWebHostEnvironment;
     private JobController _controller;
 
     [Test]
