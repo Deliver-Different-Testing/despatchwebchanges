@@ -208,46 +208,34 @@ class DispatchJobService {
      * @returns {Promise<void>} A promise that resolves when all jobs are processed
      */
     async dispatchJobsContinue(courier, jobs) {
-        const validJobs = jobs.filter(job => this.validateJob(job, courier));
+        // First validate all jobs
+        const validationResults = await Promise.all(
+            jobs.map(job => this.validateJob(job, courier))
+        );
 
-        if (validJobs.length === 0) {
-            return;
+        // Filter out invalid jobs and collect error messages
+        const validJobs = [];
+        const errorMessages = [];
+
+        jobs.forEach((job, index) => {
+            if (validationResults[index].isValid) {
+                validJobs.push(job);
+            } else {
+                errorMessages.push(validationResults[index].message);
+            }
+        });
+
+        // If there are any error messages, show them
+        if (errorMessages.length > 0) {
+            await this.showAlertMessage(errorMessages.join('\n'));
+            // If all jobs are invalid, return early
+            if (validJobs.length === 0) {
+                return;
+            }
         }
 
+        // Process valid jobs
         await this.processValidJobs(courier, validJobs);
-    }
-
-    /**
-     * Process a batch of valid jobs for dispatch
-     * @private
-     * @param {Object} courier - The courier object
-     * @param {Job[]} jobs - Array of validated jobs
-     * @returns {Promise<void>}
-     */
-    async processValidJobs(courier, jobs) {
-        const jobsRequiringFollowup = jobs.filter(job => this.requiresFollowupEvent(job));
-
-        // Process followup events first
-        await Promise.all(jobsRequiringFollowup.map(job =>
-            this.dispatchData.addFollowupEvent(
-                job.jobNo,
-                job.clientId,
-                job.contactName,
-                ContactID,
-                courier.courierID,
-                job.id,
-                job.jobType,
-                FirstName
-            )
-        ));
-
-        // Allocate all valid jobs
-        const jobIds = jobs.map(job => job.id);
-        await this.dispatchData.allocateJobs(
-            courier.courierID,
-            ContactID,
-            jobIds
-        );
     }
 
     /**
@@ -264,27 +252,74 @@ class DispatchJobService {
      * Validate a job before dispatching.
      * @param {Job} job - The job object to validate.
      * @param {Object} courier - The courier object to validate against.
-     * @returns {boolean} True if the job is valid for dispatching, false otherwise.
+     * @returns {Promise<{isValid: boolean, message: string}>} Validation result and error message if invalid
      */
     async validateJob(job, courier) {
         if (job.courierData && job.courierData.courierID !== null) {
-            await this.showAlertMessage(`Restore ${job.jobNo} prior to dispatching to another courier`);
-            return false;
+            return {
+                isValid: false,
+                message: `Restore ${job.jobNo} prior to dispatching to another courier`
+            };
         }
 
         if (job.dgClass !== null && job.dgClass > 0) {
             if (!courier.dangerousGoods) {
-                await this.showAlertMessage(`DG job ${job.jobNo} can not be dispatched to courier ${courier.id} - doesn't have DGLicense.`);
-                return false;
+                return {
+                    isValid: false,
+                    message: `DG job ${job.jobNo} can not be dispatched to courier ${courier.id} - doesn't have DGLicense.`
+                };
             }
 
             if (job.DGLicenseExpiry === null || this.moment(courier.dgLicenseExpiry) < this.moment().add(1, 'days')) {
-                await this.showAlertMessage(`Courier ${courier.id} doesn't have a DGLicense or license has expired.`);
-                return false;
+                return {
+                    isValid: false,
+                    message: `Courier ${courier.id} doesn't have a DGLicense or license has expired.`
+                };
             }
         }
 
-        return true;
+        return {
+            isValid: true,
+            message: ''
+        };
+    }
+
+    /**
+     * Process a batch of valid jobs for dispatch
+     * @private
+     * @param {Object} courier - The courier object
+     * @param {Job[]} jobs - Array of validated jobs
+     * @returns {Promise<void>}
+     */
+    async processValidJobs(courier, jobs) {
+        try {
+            // Process followup events first
+            const jobsRequiringFollowup = jobs.filter(job => this.requiresFollowupEvent(job));
+
+            await Promise.all(jobsRequiringFollowup.map(job =>
+                this.dispatchData.addFollowupEvent(
+                    job.jobNo,
+                    job.clientId,
+                    job.contactName,
+                    ContactID,
+                    courier.courierID,
+                    job.id,
+                    job.jobType,
+                    FirstName
+                )
+            ));
+
+            // Allocate all valid jobs
+            const jobIds = jobs.map(job => job.id);
+            await this.dispatchData.allocateJobs(
+                courier.courierID,
+                ContactID,
+                jobIds
+            );
+        } catch (error) {
+            await this.showAlertMessage(`Failed to dispatch jobs: ${error.message}`);
+            throw error;
+        }
     }
 
     /**

@@ -401,22 +401,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         }
 
-        $scope.updateFilters = async () => {
-            try {
-                // Handle status filters
-                const activeFilter = Object.keys($scope.filters).find(key => $scope.filters[key] && key !== 'all');
-                const statusFilter = activeFilter || (($scope.filters.all) ? 'all' : '');
-
-                // Call setFilters with area and status filters
-                await $scope.setFilters({
-                    'status': statusFilter
-                });
-            } catch (error) {
-                console.error('Error updating filters:', error);
-                console.log("Failed to update filters. Please try again.");
-            }
-        };
-
         /**
          * Updates filters based on the selected filter option.
          * @param {string} selectedFilter - The selected filter option.
@@ -2991,9 +2975,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         $scope.getData = async () => {
-            ///////////////////////////////
-            // JOB LIST
-            ///////////////////////////////
             angular.element("#box-jobsList").find(".loading").show();
 
             $scope.jobList = [];
