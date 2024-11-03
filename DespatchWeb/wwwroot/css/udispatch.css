@@ -806,15 +806,38 @@ table.table tr.active td {
 }
 table.table tr.direct {
   color: red;
+    background-color: rgba(255, 0, 0, 0.05);
 }
 table.table tr.direct td {
   color: red;
 }
+
+table.table tr.direct:hover {
+    background-color: rgba(255, 0, 0, 0.08);
+}
 table.table tr.chilled {
   color: dodgerblue;
+    background-color: rgba(30, 144, 255, 0.05);
 }
 table.table tr.chilled td {
   color: dodgerblue;
+}
+
+table.table tr.chilled:hover {
+    background-color: rgba(30, 144, 255, 0.08);
+}
+
+table.table tr.chilled.direct {
+    color: purple;
+    background-color: rgba(128, 0, 128, 0.05);
+}
+
+table.table tr.chilled.direct td {
+    color: purple;
+}
+
+table.table tr.chilled.direct:hover {
+    background-color: rgba(128, 0, 128, 0.08);
 }
 table.table tr .fa-exclamation {
   color: red;

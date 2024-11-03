@@ -878,26 +878,53 @@ table.table {
       }
     }
 
+    // Updated direct class styling
     &.direct {
       color: red;
+      background-color: rgba(255, 0, 0, 0.05);
 
       td {
         color: red;
       }
+
+      // Handle hover state for direct
+      &:hover {
+        background-color: rgba(255, 0, 0, 0.08);
+      }
     }
 
+    // Updated chilled class styling
     &.chilled {
       color: dodgerblue;
+      background-color: rgba(30, 144, 255, 0.05);
 
       td {
         color: dodgerblue;
+      }
+
+      // Handle hover state for chilled
+      &:hover {
+        background-color: rgba(30, 144, 255, 0.08);
+      }
+
+      // When both direct and chilled are applied
+      &.direct {
+        color: purple;
+        background-color: rgba(128, 0, 128, 0.05);
+
+        td {
+          color: purple;
+        }
+
+        &:hover {
+          background-color: rgba(128, 0, 128, 0.08);
+        }
       }
     }
 
     .fa-exclamation {
       color: red;
     }
-
 
     .status {
       font-weight: 600;
@@ -951,6 +978,7 @@ table.table {
     }
   }
 }
+
 input.pod-DispatchField {
   color: black;
   width: 60px;
