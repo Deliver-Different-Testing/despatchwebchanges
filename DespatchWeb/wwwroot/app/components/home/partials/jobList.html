@@ -39,7 +39,7 @@
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
                 ng-class="jobClass(job)"
-                ng-mousedown="handleRowClick($event, job)"
+                ng-mousedown="selectJob(job)"
                 ng-repeat="job in jobList | filter: box.searchBox">
 
                 <td>{{job.time | date: "HH:mm"}}</td>
@@ -66,22 +66,22 @@
                 </td>
                 <td>
                     <md-autocomplete
-                            md-input-id="input_{{job.id}}"
-                            md-escape-options="clear"
+                            md-autoselect
+                            md-clear-button="false"
+                            md-input-name="dispatchCourierSearch"
+                            md-select-on-focus
                             md-item-text="item.text"
                             md-items="item in courierSearch(dispatchCourierSearchTest)"
                             md-min-length="2"
                             md-search-text="dispatchCourierSearchTest"
                             md-selected-item="job.assignedCourier"
                             md-selected-item-change="handleDispatchSelection(item, job)"
-                            md-escape-options="none"
-                            md-match-case-insensitive="true"
-                            md-select-on-match="true"
                             ng-click="handleDispatchFieldClick($event, job)"
-                            ng-readonly="job.assignedCourier"
+                            ng-disabled="job.assignedCourier"
                             placeholder="Dispatch to Courier...">
                         <md-item-template>
-                            <span md-highlight-flags="^i" md-highlight-text="courierSearchText">{{item.text}}</span>
+                            <span md-highlight-flags="^i"
+                                  md-highlight-text="dispatchCourierSearchTest">{{item.text}}</span>
                         </md-item-template>
                         <md-not-found>
                             No couriers matching "{{dispatchCourierSearchTest}}" were found.
