@@ -38,8 +38,8 @@
     </table>
 </div>
 
-
-<div class="no-data" ng-if="!supportsLoading && (!supports || supports === 0)">
+<!-- No Data Message -->
+<div class="no-data" ng-if="!supportsLoading && (!supports || supports.length === 0)">
     <div class="content">
         <div class="icon">
             <md-icon md-font-set="material-symbols-outlined">support</md-icon>
