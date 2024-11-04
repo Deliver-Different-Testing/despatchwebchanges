@@ -279,6 +279,10 @@ class CsService {
 
         return response.data;
     }
+
+    downloadJobs(params) {
+        return this._$http.post('/Job/Download', params.data, { responseType: "blob" });
+    }
 }
 
 angular.module('uDispatch').service('uCSData', [
