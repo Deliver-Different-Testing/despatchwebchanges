@@ -55,6 +55,54 @@ class DispatchJobService {
     }
 
     /**
+     * Get job list with courier data
+     * @param {Object} queryParams - Query parameters for filtering jobs
+     * @param {Array} selectedClients - List of selected client IDs
+     * @param {boolean} isInternal - Whether this is an internal request
+     * @param {Array} selectedAreas - List of selected areas
+     * @returns {Promise<{jobs: Array, undispatchedJobs: Array}>}
+     */
+    async getJobListWithCourierData(queryParams, selectedClients, isInternal, selectedAreas) {
+        console.log('Getting job list with courier data:', {
+            queryParams,
+            clientCount: selectedClients?.length,
+            isInternal,
+            selectedAreas
+        });
+
+        try {
+            await this.fetchCouriersData();
+
+            const jobs = await this.dispatchData.getJobsWithFilters(
+                queryParams,
+                selectedClients,
+                isInternal,
+                selectedAreas
+            );
+
+            console.log(`Retrieved ${jobs.length} jobs`);
+
+            // Get undispatched jobs (safely handle null courierData)
+            const undispatchedJobs = jobs.filter(job =>
+                !job?.courierData?.courierID
+            );
+
+            console.log(`Found ${undispatchedJobs.length} undispatched jobs`);
+
+            return {
+                jobs,
+                undispatchedJobs,
+                activeCouriers: this.pickCouriers,
+                allCouriers: this.pickAllCouriers
+            };
+
+        } catch (error) {
+            console.error('Error in getJobListWithCourierData:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Get current jobs for a courier with full courier details
      * @param {number} courierId - The courier ID
      * @param {boolean} isDone - Whether to get completed jobs

@@ -2614,6 +2614,10 @@ angular.module("uDispatch")
                 return false;
             };
 
+            /**
+             * @param {Object} $event
+             * @param {Job} job
+             */
             $scope.notifyColumnClick = ($event, job) => {
                 switch ($event.which) {
                     case 1:
@@ -2811,34 +2815,44 @@ angular.module("uDispatch")
                 $scope.jobsLoading = true;
 
                 try {
+                    // Save filters to local storage if available
                     if (Modernizr.localstorage) {
-                        localStorage.setItem("disp-filters-" + ContactID, JSON.stringify($scope.queryParams));
+                        localStorage.setItem(
+                            "disp-filters-" + ContactID,
+                            JSON.stringify($scope.queryParams)
+                        );
                     }
 
                     const selectedClients = $scope.pickService.clients.map(a => a.id);
-                    const newJobList = await DispatchData.getJobsWithFilters(
+
+                    // Get job list and courier data from service
+                    const result = await dispatchJobService.getJobListWithCourierData(
                         $scope.queryParams,
                         selectedClients,
                         $scope.isInternal,
                         $scope.selectedAreas
                     );
 
-                    // Only update if we have new data
-                    if (newJobList && newJobList.length > 0) {
-                        $scope.jobList = newJobList;
-
-                        // Defer UI updates
+                    // Update scope with new data
+                    if (result.jobs?.length > 0) {
                         await $timeout(async () => {
+                            $scope.jobList = result.jobs;
+
+                            // Update UI elements
                             sizeHeadings();
-                            const unDispatchedData = $scope.jobList.filter(x => x.courierData.courierID === null);
-                            displayPickupPoints(unDispatchedData, true, null);
+
+                            // Only display pickup points if we have undispatched jobs
+                            if (result.undispatchedJobs.length > 0) {
+                                displayPickupPoints(result.undispatchedJobs, true, null);
+                            }
+
                             await $scope.getAvailableCourierLocation();
                         }, 200);
                     }
 
                 } catch (error) {
                     console.error('Error getting job list:', error);
-                    console.log("Failed to get job list. Please try again.");
+                    toastrService.showErrorToast('Failed to get job list. Please try again.');
                 } finally {
                     $scope.jobsLoading = false;
                     if (!$scope.$$phase) {
