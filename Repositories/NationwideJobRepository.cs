@@ -76,11 +76,14 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 WebhookAlertId = webhookAlertId
             };
 
-            // Move job to POD
+            // First operation - Update job status
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+            await Context.SaveChangesAsync();
 
+            // Second operation - Add nationwide job
             await Context.TucJobNationwides.AddAsync(jobNationwide);
             await Context.SaveChangesAsync();
+            
         }
         catch (Exception e)
         {
