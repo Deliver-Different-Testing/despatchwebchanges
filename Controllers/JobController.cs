@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
 using System.Net.Mail;
@@ -27,6 +26,7 @@ namespace DespatchWeb.Controllers;
 
 public class JobController(IJobRepository jobRepository, ICourierRepository courierRepo, IClientAccessValidatorService clientAccessValidator, IAmazonS3 s3Client, HttpClient httpClient) : Controller
 {
+    private readonly ILogger<JobController> _logger;
 
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
@@ -84,8 +84,9 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            var message = $"An error occured getting current jobs courier {courierId}";
+            _logger.LogError(e, message);
+            return StatusCode(StatusCodes.Status500InternalServerError, message);
         }
     }
 
@@ -170,12 +171,15 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         return Json(result);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Download([FromBody] IdsRequest request)
+    public async Task<IActionResult> PodSearchDownload(int? courierId, int? clientId, string wild, string job,
+        DateTime fromDate,
+        DateTime toDate)
     {
         try
         {
-            var data = await jobRepository.GetJobDownloadsByIds(request);
+            var data = await jobRepository.PodSearchDownloadAsync(courierId, wild ?? "", job ?? "",
+                fromDate.ResetTimeToStartOfDay(),
+                toDate.ResetTimeToEndOfDay(), clientId);
 
             string FormatField(object x)
             {
@@ -192,11 +196,11 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             await using (var writer = new StreamWriter(stream, Encoding.UTF8))
             {
                 await writer.WriteLineAsync(
-                    "Id,ParentId,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8");
+                    "Id,ParentId,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,Quantity,Weight,Size,PickupAddressLine1,PickupAddressLine2,PickupAddressLine3,PickupAddressLine4,PickupAddressLine5,PickupAddressLine6,PickupAddressLine7,PickupAddressLine8,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8");
                 foreach (var x in data)
                 {
                     await writer.WriteLineAsync(
-                        $"{x.Id},{x.ParentId},{FormatField(x.JobNumber)},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.Amount},{x.FuelSurcharge},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{FormatField(x.DeliveryAddressLine1)},{FormatField(x.DeliveryAddressLine2)},{FormatField(x.DeliveryAddressLine3)},{FormatField(x.DeliveryAddressLine4)},{FormatField(x.DeliveryAddressLine5)},{FormatField(x.DeliveryAddressLine6)},{FormatField(x.DeliveryAddressLine7)},{FormatField(x.DeliveryAddressLine8)}");
+                        $"{x.Id},{x.ParentId},{formatField(x.JobNumber)},{x.BookDate.ToString("yyyy-MM-dd HH:mm:ss")},{x.Amount},{x.FuelSurcharge},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)}");
                 }
             }
 

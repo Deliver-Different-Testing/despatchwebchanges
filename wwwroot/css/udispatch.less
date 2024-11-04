@@ -878,26 +878,53 @@ table.table {
       }
     }
 
+    // Updated direct class styling
     &.direct {
       color: red;
+      background-color: rgba(255, 0, 0, 0.05);
 
       td {
         color: red;
       }
+
+      // Handle hover state for direct
+      &:hover {
+        background-color: rgba(255, 0, 0, 0.08);
+      }
     }
 
+    // Updated chilled class styling
     &.chilled {
       color: dodgerblue;
+      background-color: rgba(30, 144, 255, 0.05);
 
       td {
         color: dodgerblue;
+      }
+
+      // Handle hover state for chilled
+      &:hover {
+        background-color: rgba(30, 144, 255, 0.08);
+      }
+
+      // When both direct and chilled are applied
+      &.direct {
+        color: purple;
+        background-color: rgba(128, 0, 128, 0.05);
+
+        td {
+          color: purple;
+        }
+
+        &:hover {
+          background-color: rgba(128, 0, 128, 0.08);
+        }
       }
     }
 
     .fa-exclamation {
       color: red;
     }
-
 
     .status {
       font-weight: 600;
@@ -951,6 +978,7 @@ table.table {
     }
   }
 }
+
 input.pod-DispatchField {
   color: black;
   width: 60px;
@@ -984,6 +1012,30 @@ input.pod-DispatchField {
   td {
     padding: 4px 8px;
     border: 1px solid rgba(0, 0, 0, 0.5);
+
+    &.address-cell {
+      max-width: 250px; // Adjust this value as needed
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+
+      // Add hover tooltip
+      &:hover::after {
+        content: attr(title);
+        position: absolute;
+        left: 0;
+        top: 100%;
+        z-index: 1000;
+        background: #fff;
+        padding: 5px;
+        border: 1px solid #ddd;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        white-space: normal;
+        max-width: 300px;
+        word-wrap: break-word;
+      }
+    }
   }
 
   .doing {
@@ -1667,5 +1719,55 @@ md-list-item {
 
   td {
     white-space: nowrap;
+  }
+}
+
+// Variables
+@border-color: #e0e0e0;
+@text-color: rgba(0, 0, 0, 0.87);
+@secondary-text: rgba(0, 0, 0, 0.54);
+
+// Drop box styles
+.drop-box {
+  border: 2px dashed @border-color;
+  border-radius: 4px;
+  padding: 32px;
+  text-align: center;
+  margin: 16px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: @primary-color;
+    background-color: rgba(33, 150, 243, 0.04);
+  }
+
+  md-icon {
+    color: @primary-color;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 8px 0;
+    color: @text-color;
+
+    &.md-caption {
+      color: @secondary-text;
+      font-size: 12px;
+    }
+  }
+
+  // Drag over state
+  &.dragover {
+    border-color: @primary-color;
+    background-color: rgba(33, 150, 243, 0.08);
+    transform: scale(1.01);
+  }
+}
+
+// Mobile responsiveness
+@media (max-width: 600px) {
+  .drop-box {
+    padding: 16px;
   }
 }

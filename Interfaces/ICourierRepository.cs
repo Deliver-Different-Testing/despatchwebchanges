@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 
 namespace DespatchWeb.Interfaces;
 
 public interface ICourierRepository
 {
-    Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatusAsync(string courierId);
+    Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId);
 
     Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId, int jobId, int jobType,
         string despatcherName, string notes, int eventType, float? lateTime = null, DateTime? etaTime = null,

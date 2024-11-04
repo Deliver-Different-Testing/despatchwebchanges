@@ -14,6 +14,17 @@ public class JobDownloadModel
     public decimal? CourierPayment { get; set; }
     public decimal? CourierFuel { get; set; }
     public decimal? CourierBonus { get; set; }
+    public short? Quantity { get; set; }
+    public double? Weight { get; set; }
+    public short? Size { get; set; }
+    public string PickupAddressLine1 { get; set; }
+    public string PickupAddressLine2 { get; set; }
+    public string PickupAddressLine3 { get; set; }
+    public string PickupAddressLine4 { get; set; }
+    public string PickupAddressLine5 { get; set; }
+    public string PickupAddressLine6 { get; set; }
+    public string PickupAddressLine7 { get; set; }
+    public string PickupAddressLine8 { get; set; }
     public string DeliveryAddressLine1 { get; set; }
     public string DeliveryAddressLine2 { get; set; }
     public string DeliveryAddressLine3 { get; set; }

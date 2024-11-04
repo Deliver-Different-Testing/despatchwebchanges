@@ -140,6 +140,7 @@
  * @property {number} fromAirportId
  * @property {AssignedFlight} assignedFlight
  * @property {Agent} assignedAgent
+ * @property {Suggestion} assignedCourier
  */
 
 /**

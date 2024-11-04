@@ -8,6 +8,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -19,10 +20,48 @@ namespace DespatchWeb.Repositories;
 public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseRepository(contextFactory), ICourierRepository
 {
     private readonly DbContextWrapper _dbContextWrapper = new DbContextWrapper(contextFactory);
-    public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatusAsync(string courierId)
+
+    public async Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId)
     {
-        var result = await Context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
-        return result;
+        try
+        {
+            return await Context.TucCouriers
+                .Where(c => c.Active == true
+                            && c.UccrVehicle == "Truck"
+                            && (courierId == null || c.UccrId.ToString().Contains(courierId)))
+                .Select(c => new TruckCourierStatusViewModel
+                {
+                    CourierId = c.UccrId,
+                    CourierCode = c.Code,
+                    FirstName = c.UccrName,
+                    MaxPallets = c.MaxPallets,
+                    MaxPayLoad = c.MaxPayload,
+                    CurrentPallets = c.TucJobUcjbCouriers
+                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                        .SelectMany(d => d.TucJobItems)
+                        .Sum(i => i.Items),
+                    CurrentWeight = c.TucJobUcjbCouriers
+                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                        .SelectMany(d => d.TucJobItems)
+                        .Sum(i => i.Items * i.Weight),
+                    AvailablePallets = c.MaxPallets * c.TucJobUcjbCouriers
+                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                        .SelectMany(d => d.TucJobItems)
+                        .Sum(i => i.Items),
+                    AvailablePalletCapacity = c.MaxPayload * c.TucJobUcjbCouriers
+                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                        .SelectMany(d => d.TucJobItems)
+                        .Sum(i => i.Items * i.Weight),
+                })
+                .OrderBy(c => c.CourierCode)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, $"An error occured getting truck status for {courierId}");
+            throw;
+        }
     }
 
     public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId,
@@ -114,6 +153,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                     Id = c.UccrId,
                     Text = c.UccrName + " " + c.UccrSurname
                 })
+                .AsNoTracking()
                 .ToListAsync();
 
             Log.Information("AllActiveCouriersAsync completed. Found {Count} active couriers", results.Count);
@@ -209,6 +249,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             var airportCode = await Context.TblAirports
                 .Where(a => a.AirportId == airportId)
                 .Select(a => a.AirportCode)
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             if (airportCode != null)
@@ -282,6 +323,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
                 .Where(cla => cla != null)
                 .Distinct()
                 .Select(cl => new { cl.ClearListAreaId, cl.Name, cl.Order })
+                .AsNoTracking()
                 .ToListAsync();
 
             // Process each clear list sequentially to avoid DbContext threading issues
