@@ -137,7 +137,6 @@ public class NationwideJobController : Controller
             if (request is null)
                 return BadRequest("Oops, no flight data was provided. Unable to assign to job.");
 
-
             // Get flight details
             ScheduledFlight flight;
             try
