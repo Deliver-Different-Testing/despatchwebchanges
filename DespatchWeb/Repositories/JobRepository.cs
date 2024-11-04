@@ -357,7 +357,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
 
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        var total = await jobsQuery.CountWithNoLockAsync();
+        var total = await jobsQuery.CountAsync();
         stopwatch.Stop();
         Console.WriteLine(stopwatch.ElapsedMilliseconds);
         stopwatch.Reset();
@@ -597,7 +597,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
             };
         var stopwatch = new Stopwatch();
         stopwatch.Start();
-        var total = await jobsQuery.CountWithNoLockAsync();
+        var total = await jobsQuery.CountAsync();
         stopwatch.Stop();
         Console.WriteLine(stopwatch.ElapsedMilliseconds);
         stopwatch.Reset();
