@@ -236,15 +236,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }).ToList()
     };
 
-    private readonly DespatchContext _context;
-    private readonly ILogger<BaseJobRepository> _logger;
-
-    public BaseJobRepository(DespatchContext context, ILogger<BaseJobRepository> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
-
+    
     // Create
     public async Task<T> Add<T>(T entity) where T : class
     {

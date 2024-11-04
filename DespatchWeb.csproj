@@ -212,6 +212,10 @@
     <None Include="bundleconfig.json" />
     <None Include="compilerconfig.json" />
     <None Include="efpt.config.json.user" />
+    <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.js" />
+    <None Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.html" />
+    <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.js" />
+    <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
     <None Include="wwwroot\app\materialTheme.js" />
     <None Include="wwwroot\app\version.js" />
     <None Include="wwwroot\css\udispatch.less" />
