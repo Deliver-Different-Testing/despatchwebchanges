@@ -390,13 +390,13 @@ class DispatchJobService {
             hasDG: job?.dgClass > 0
         });
 
-        if (job?.courierData?.courierID !== null) {
+        if (job.courierData !== null) {
             const message = `Restore ${job.jobNo} prior to dispatching to another courier`;
             console.warn('Job validation failed:', message);
             return {isValid: false, message};
         }
 
-        if (job?.dgClass !== null && job.dgClass > 0) {
+        if (job.dgClass !== null && job.dgClass > 0) {
             if (!courier.dangerousGoods) {
                 const message = `DG job ${job.jobNo} can not be dispatched to courier ${courier.id} - doesn't have DGLicense.`;
                 console.warn('Job validation failed:', message);

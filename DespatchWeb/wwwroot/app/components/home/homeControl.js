@@ -2812,7 +2812,9 @@ angular.module("uDispatch")
                     return; // Prevent concurrent loads
                 }
 
-                $scope.jobsLoading = true;
+                await $timeout(() => {
+                    $scope.jobsLoading = true;
+                });
 
                 try {
                     // Save filters to local storage if available
@@ -2825,7 +2827,6 @@ angular.module("uDispatch")
 
                     const selectedClients = $scope.pickService.clients.map(a => a.id);
 
-                    // Get job list and courier data from service
                     const result = await dispatchJobService.getJobListWithCourierData(
                         $scope.queryParams,
                         selectedClients,
@@ -2834,11 +2835,10 @@ angular.module("uDispatch")
                     );
 
                     // Update scope with new data
-                    if (result.jobs?.length > 0) {
-                        await $timeout(async () => {
+                    await $timeout(async () => {
+                        if (result.jobs?.length > 0) {
                             $scope.jobList = result.jobs;
 
-                            // Update UI elements
                             sizeHeadings();
 
                             // Only display pickup points if we have undispatched jobs
@@ -2847,17 +2847,22 @@ angular.module("uDispatch")
                             }
 
                             await $scope.getAvailableCourierLocation();
-                        }, 200);
-                    }
+                        } else {
+                            $scope.jobList = [];
+                        }
+                    });
 
                 } catch (error) {
                     console.error('Error getting job list:', error);
                     toastrService.showErrorToast('Failed to get job list. Please try again.');
+
+                    await $timeout(() => {
+                        $scope.jobList = [];
+                    });
                 } finally {
-                    $scope.jobsLoading = false;
-                    if (!$scope.$$phase) {
-                        $scope.$apply();
-                    }
+                    await $timeout(() => {
+                        $scope.jobsLoading = false;
+                    });
                 }
             }
 
