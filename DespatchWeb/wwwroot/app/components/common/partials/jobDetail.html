@@ -426,7 +426,7 @@
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Date</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{jdSvc.currentJob.date | date:
-                                    "dd/MM/yyyy"}}
+                                    (isUsCustomer ? "MM/dd/yyyy" : "dd/MM/yyyy")}}
                             </div>
                         </div>
 
@@ -434,7 +434,7 @@
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Created Date</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
                                 {{jdSvc.currentJob.createdDate | date:
-                                    "dd/MM/yyyy"}}
+                                    (isUsCustomer ? "MM/dd/yyyy" : "dd/MM/yyyy")}}
                             </div>
                         </div>
 
