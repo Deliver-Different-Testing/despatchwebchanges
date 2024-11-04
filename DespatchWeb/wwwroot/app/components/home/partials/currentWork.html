@@ -1,7 +1,14 @@
-<!-- Current Job List Component -->
 <div class="job-list-container">
+    <!-- Loading Indicator -->
+    <div class="loading" ng-if="currentListLoading">
+        <div class="text">
+            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
     <!-- Current Job List Table -->
-    <div class="job-list-table" ng-if="!currentListLoading && jobsCurrentList.length > 0">
+    <div class="job-list-table" ng-if="!currentListLoading && jobsCurrentList && jobsCurrentList.length > 0">
         <!-- Table Headers -->
         <div class="table-headings sticky-header">
             <table>
@@ -23,7 +30,7 @@
         <!-- Current Jobs List-->
         <table class="table table-striped table-responsive table-rows" data-group="currentWork" id="currentWork">
             <tbody>
-            <tr class="clickable-row noselect status"
+            <tr class="clickable-row noselect status md-truncate"
                 data-courier="{{job.courier}}"
                 data-jobNo="{{job.jobNo}}"
                 data-jobid="{{job.id}}"
@@ -41,12 +48,12 @@
                 </td>
                 <td context-menu="setEventsMenu">{{job.jobNo}}</td>
                 <td action="clientColumnClick(event)" right-click>{{job.client}}</td>
-                <td action="fromColumnClick($event, job)" class="address-cell" right-click>
+                <td action="fromColumnClick($event, job)" right-click>
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                     <i class="material-symbols-outlined job-table-icon" ng-if="!job.pickUpLongitude">exclamation</i>
                 </td>
                 <td colspan="2" context-menu="setCurrentWorkMenu">
-                    <div action="toColumnClick($event, job)" class="address-cell" right-click>
+                    <div action="toColumnClick($event, job)" right-click>
                         {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
                         <i class="material-symbols-outlined colum-table-icon"
                            ng-if="!job.deliveryLongitude">exclamation</i>
@@ -83,7 +90,7 @@
     </div>
 
     <!-- List empty indicator-->
-    <div class="no-data" ng-if="jobsCurrentList === 0">
+    <div class="no-data" ng-if="jobsCurrentList && jobsCurrentList.length === 0">
         <div class="content">
             <div class="icon">
                 <md-icon md-font-set="material-symbols-outlined">work_history</md-icon>
@@ -103,14 +110,6 @@
             <div class="text">
                 Please Select a Courier
             </div>
-        </div>
-    </div>
-
-    <!-- Loading Indicator -->
-    <div class="loading">
-        <div class="text">
-            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
-            <span class="sr-only">Loading...</span>
         </div>
     </div>
 </div>

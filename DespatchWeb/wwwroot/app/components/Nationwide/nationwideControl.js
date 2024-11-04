@@ -35,6 +35,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
     ($scope, jdSvc, NWData, $state, $filter, $parse, hotkeys, NgMap, $q, $timeout, greetingService, $mdDialog, $document, $window, toastrService, DispatchData, moment, versionUrl, materialSidenavService, AppPages, APP_CONFIG, $mdEditDialog, LayoutService, $mdMenu) => {
         $scope.jdSvc = jdSvc;
 
+        const JOB_DATA_TYPE = {
+            NEW: 'new',
+            POD: 'pod',
+            REPRICE: 'reprice',
+            DELIVERY: 'delivery',
+            ALL: 'all'
+        };
+
         // Variables
         function initializeVariables() {
             $scope.name = "Nationwide";
@@ -50,13 +58,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
              * @type {JobDataType}
              * @constant
              */
-            $scope.jobDataType = {
-                NEW: 'new',
-                POD: 'pod',
-                REPRICE: 'reprice',
-                DELIVERY: 'delivery',
-                ALL: 'all'
-            };
+            $scope.jobDataType = JOB_DATA_TYPE;
+
 
             $scope.sort = [];
             /** @type {FlightOptions[]} */
@@ -328,6 +331,41 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             };
         }
 
+        function init() {
+            initializeVariables();
+
+            // Initialize layouts through the service
+            $scope.layouts = LayoutService.getLayouts();
+            $scope.currentLayoutName = "default";
+            $scope.layout = LayoutService.getCurrentLayout();
+
+            // Add layout watchers
+            $scope.$watch('layout', (newValue, oldValue) => {
+                if (newValue !== oldValue && $scope.currentLayoutName) {
+                    const currentLayoutIndex = $scope.layouts.findIndex(l => l.name === $scope.currentLayoutName);
+                    if (currentLayoutIndex !== -1) {
+                        $scope.layouts[currentLayoutIndex].layout = angular.copy(newValue);
+                        if (Modernizr.localstorage) {
+                            localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify($scope.layouts));
+                        }
+                    }
+                }
+            }, true);
+
+            // Watch for layout updates from service
+            $scope.$on('layoutUpdated', () => {
+                $scope.layouts = LayoutService.getLayouts();
+                $scope.layout = LayoutService.getCurrentLayout();
+                $scope.$apply();
+            });
+
+            // Start loading data
+            loadPageViews().then(() => {
+                console.log('Loaded Page Views and Data!');
+            });
+        }
+
+        init();
         $scope.toggleSidenav = () => {
             materialSidenavService.toggle();
         };
@@ -363,33 +401,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         }
 
-        // Load custom layout
-        function init() {
-            initializeVariables();
-            loadPageViews().then(() => {
-                console.log('Loaded Page Views!');
-            });
-        }
-
-        // Call the init function when the controller loads
-        init();
-
-        $scope.updateFilters = async () => {
-            try {
-                // Handle status filters
-                const activeFilter = Object.keys($scope.filters).find(key => $scope.filters[key] && key !== 'all');
-                const statusFilter = activeFilter || (($scope.filters.all) ? 'all' : '');
-
-                // Call setFilters with area and status filters
-                await $scope.setFilters({
-                    'status': statusFilter
-                });
-            } catch (error) {
-                console.error('Error updating filters:', error);
-                console.log("Failed to update filters. Please try again.");
-            }
-        };
-
         /**
          * Updates filters based on the selected filter option.
          * @param {string} selectedFilter - The selected filter option.
@@ -408,7 +419,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     selectedFilterObj.active = true;
                 }
 
-                await setFilters({'status': selectedFilter});
+                await $scope.setFilters({'status': selectedFilter});
 
                 // Ensure Angular updates the UI
                 if (!$scope.$$phase) {
@@ -417,6 +428,44 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             } catch (error) {
                 console.error('Error updating filters:', error);
             }
+        };
+
+        /**
+         * @param {*} data
+         */
+        $scope.setFilters = async (data) => {
+            await $timeout(async () => {
+                if (data.status) {
+                    $scope.jobFilters.status = data.status;
+                } else {
+                    const selectedStatus = Object.entries($scope.filters)
+                        .filter(([key, value]) => value && key !== 'all')
+                        .map(([key]) => key);
+
+                    if (selectedStatus.length > 0) {
+                        $scope.jobFilters.status = selectedStatus.join(',');
+                    } else if ($scope.filters.all) {
+                        $scope.jobFilters.status = 'all';
+                    } else {
+                        delete $scope.jobFilters.status;
+                    }
+                }
+
+                if (data.area) {
+                    let selected = angular.element("#area-group > .btn.topBarActive").length;
+                    if (selected > 1) {
+                        $scope.jobFilters.area += "," + data.area;
+                    } else {
+                        $scope.jobFilters.area = data.area;
+                    }
+                }
+
+                if (data.order) {
+                    $scope.jobFilters.order = data.order;
+                }
+
+                await $scope.getData();
+            }, 300);
         };
 
         $scope.setActiveArea = selectedArea => {
@@ -546,37 +595,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             await $scope.editCourier($event, job, $scope.dispatchJobsFromPOD);
         };
 
-        ///////////////////////////////
-        // LAYOUT
-        ///////////////////////////////
-        let layoutsObject = null;
-        if (Modernizr.localstorage) {
-            layoutsObject = JSON.parse(localStorage.getItem("layoutsNW-" + ContactID));
-            $scope.mapZoom = JSON.parse(localStorage.getItem("mapZoomNW-" + ContactID)) || {display: true};
-        }
-
-        const defaultLayout = LayoutService.getDefaultLayout();
-
-        if (layoutsObject !== null) {
-            layoutsObject[0] = defaultLayout[0];
-        }
-
-        $scope.layouts = LayoutService.getLayouts();
-        $scope.mapZoom = LayoutService.getMapZoom();
-        $scope.userName = LayoutService.getUserName();
-        $scope.currentLayoutName = "default";
-        $scope.truckMode = "On";
-        $scope.supportChannel = "All";
-
-        $scope.groupJobsSelection = "";
-        $scope.currentWorkSelection = "";
-        $scope.potentialCouriersSelection = "";
-
-        $scope.storeMapZoomDisplay = () => {
-            LayoutService.setMapZoom($scope.mapZoom);
-        };
-
-        $scope.layout = LayoutService.getCurrentLayout();
 
         $scope.$on('layoutUpdated', () => {
             $scope.layout = LayoutService.getCurrentLayout();
@@ -586,40 +604,55 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         /**
          * @param {number} index
          */
-        $scope.deleteLayout = async (index) => {
-            await LayoutService.deleteLayout(index);
-            $scope.layouts = LayoutService.getLayouts();
-            $scope.$apply();
+        $scope.loadLayout = (index) => {
+            const layout = LayoutService.loadLayout(index);
+            $scope.layout = angular.copy(layout);
+            $scope.currentLayoutName = LayoutService.getCurrentLayoutName();
+
+            // Ensure dimensions are applied
+            $timeout(async () => {
+                layout.columns.forEach(column => {
+                    const columnEl = angular.element(`#co-${column.id}`);
+                    columnEl.css('flex-basis', column.width);
+
+                    column.boxes.forEach(box => {
+                        const boxEl = angular.element(`#box-${box.name}`);
+                        boxEl.css('flex-basis', box.height);
+                    });
+                });
+
+                // Refresh data after layout is properly applied
+                await $scope.getData();
+            });
+        };
+
+        $scope.saveLayout = async () => {
+            try {
+                const result = await LayoutService.saveLayout($scope.layout);
+                $scope.layouts = LayoutService.getLayouts();
+                $scope.currentLayoutName = result.name;
+                $scope.layout = result.layout;
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
+                return result;
+            } catch (error) {
+                console.error("Error saving layout:", error);
+            }
         };
 
         /**
          * @param {number} index
          */
-        $scope.loadLayout = (index) => {
-            const loadedLayout = LayoutService.loadLayout(index);
-            $scope.currentLayoutName = loadedLayout.name;
-            $scope.layout = loadedLayout.layout;
-
-            $timeout($scope.getData, 1000);
-        };
-
-        $scope.saveLayout = async () => {
-            // Update layout dimensions
-            angular.forEach($scope.layout.columns, (column) => {
-                column.width = angular.element("#co-" + column.id).css("flex-basis");
-                angular.forEach(column.boxes, (box) => {
-                    box.height = angular.element("#box-" + box.name).css("flex-basis");
-                });
-            });
-
+        $scope.deleteLayout = async (index) => {
             try {
-                const result = await LayoutService.saveLayout($scope.layout);
+                await LayoutService.deleteLayout(index);
                 $scope.layouts = LayoutService.getLayouts();
-                $scope.currentLayoutName = result.name;
-                $scope.$apply();
-                return result;
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
             } catch (error) {
-                console.error("Save Layout Cancelled!");
+                console.error("Error deleting layout:", error);
             }
         };
 
@@ -2070,67 +2103,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        /**
-         * Updates filters and refreshes job lists
-         * @param {string} list - The name of the list being filtered ('jobList', 'jobListPOD', etc)
-         * @param {Object} data - Filter data to apply
-         * @param {string} [data.status] - Status filter value
-         * @param {string} [data.area] - Area filter value
-         * @param {string} [data.order] - Order/sort filter value
-         * @returns {Promise<void>}
-         */
-        $scope.setFilters = async (list, data) => {
-            try {
-                // Debounce filter changes
-                await new Promise(resolve => $timeout(resolve, 300));
-
-                // Update status filter if provided
-                if (data.status) {
-                    $scope.jobFilters.status = data.status;
-                }
-
-                // Handle area filter updates
-                if (data.area) {
-                    const selected = angular.element("#area-group > .btn.topBarActive").length;
-                    $scope.jobFilters.area = selected > 1
-                        ? $scope.jobFilters.area + "," + data.area
-                        : data.area;
-                }
-
-                // Update sort order if provided
-                if (data.order) {
-                    $scope.jobFilters.order = data.order;
-                }
-
-                // Map list names to corresponding JobDataType
-                const listToDataType = {
-                    'jobList': $scope.jobDataType.NEW,
-                    'jobListPOD': $scope.jobDataType.POD,
-                    'jobListReprice': $scope.jobDataType.REPRICE,
-                    'jobListDelivery': $scope.jobDataType.DELIVERY
-                };
-
-                // Determine which list(s) to refresh
-                let dataTypesToRefresh;
-
-                if (data.status || data.area) {
-                    // Status and area filters affect all lists
-                    dataTypesToRefresh = $scope.jobDataType.ALL;
-                } else if (data.order) {
-                    // Order/sort only affects the current list
-                    dataTypesToRefresh = listToDataType[list] || $scope.jobDataType.NEW;
-                } else {
-                    // Default to refreshing just the current list
-                    dataTypesToRefresh = listToDataType[list] || $scope.jobDataType.NEW;
-                }
-
-                // Refresh the appropriate lists
-                await getJobList(dataTypesToRefresh);
-            } catch (error) {
-                console.error("Error in setFilters:", error);
-            }
-        };
-
         $scope.selectJobDetail = job => {
             $scope.currentJob = job;
             $scope.currentSupport = null;
@@ -3003,9 +2975,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         $scope.getData = async () => {
-            ///////////////////////////////
-            // JOB LIST
-            ///////////////////////////////
             angular.element("#box-jobsList").find(".loading").show();
 
             $scope.jobList = [];

@@ -69,7 +69,8 @@ public class BaseJobRepository
                 .Where(j => !j.UcjbVoid
                             && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
                             && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
-                            && string.IsNullOrEmpty(j.UcjbPodname) && j.UcjbComplTime < DateTime.Now);
+                            && string.IsNullOrEmpty(j.UcjbPodname)
+                            && (j.UcjbComplTime == null || j.UcjbComplTime < DateTime.Now));
 
             switch (page)
             {
@@ -111,7 +112,9 @@ public class BaseJobRepository
                         Courier = string.IsNullOrEmpty(j.UcjbCourier.Code)
                             ? string.Empty
                             : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
-                        CourierId = j.UcjbCourierId
+                        CourierId = j.UcjbCourierId,
+                        CourierMobile = j.UcjbCourier.UccrMobile,
+                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     }
                     : null,
                 AssignedCourier = j.UcjbCourier != null
@@ -747,7 +750,9 @@ public class BaseJobRepository
                             Courier = string.IsNullOrEmpty(j.UcjbCourier.Code)
                                 ? string.Empty
                                 : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
-                            CourierId = j.UcjbCourierId
+                            CourierId = j.UcjbCourierId,
+                            CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname,
+                            CourierMobile = j.UcjbCourier.UccrMobile
                         }
                         : null,
                     AssignedCourier = j.UcjbCourier != null

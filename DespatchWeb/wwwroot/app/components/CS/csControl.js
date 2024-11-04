@@ -364,6 +364,35 @@ angular.module('uDispatch').controller('CSControl', [
         };
 
         /**
+         * @param {Object} $event
+         * @param {Job} job
+         */
+        $scope.openFileAttachmentDialog = async ($event, job) => {
+            try {
+                await $mdDialog.show({
+                    controller: 'JobFileUploadController',
+                    controllerAs: 'ctrl',
+                    parent: angular.element($document.body),
+                    templateUrl: versionUrl("app/components/dialogs/job-file-upload-dialog/job-file-upload-dialog.html"),
+                    clickOutsideToClose: false,
+                    fullscreen: true,
+                    locals: {
+                        jobId: job.id
+                    },
+                    bindToController: true
+                });
+
+                console.log('Job File Upload Dialog Closed!');
+            } catch (error) {
+                if (error === undefined) {
+                    console.log('User canceled!');
+                } else {
+                    throw error;
+                }
+            }
+        };
+
+        /**
          * @param  {Object}  $event
          */
         $scope.interCourierCharge = async ($event) => {
@@ -776,14 +805,15 @@ angular.module('uDispatch').controller('CSControl', [
         };
 
         $scope.downloadJobList = async () => {
-            await uCSData.downloadJobs({
-                data: {
-                    ids: $scope.jobList
-                        ?.filter(j => j.id)
-                        ?.map(j => j.id)
-                        ?? []
-                }
-            })
+            await uCSData.podJobsDownload(
+                $scope.pickDateService.courier,
+                $scope.pickDateService.client,
+                ($scope.pickDateService.wild || ""),
+                ($scope.pickDateService.job || ""),
+                moment($scope.pickDateService.from_date),
+                moment($scope.pickDateService.to_date),
+                $scope.jobQuery.page,
+                $scope.jobQuery.limit)
                 .then(response => {
                     if (response.status === 200) {
                         var filename = response.headers()["content-disposition"]

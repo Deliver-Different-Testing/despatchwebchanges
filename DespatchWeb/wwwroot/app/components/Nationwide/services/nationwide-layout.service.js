@@ -83,43 +83,41 @@ class NationwideLayoutService {
         /** @type {string} Current layout name */
         this.currentLayoutName = "default";
 
-        this.init();
+        this._initializeLayouts();
     }
 
     /**
      * Initialize the service.
+     * @private
      */
-    init() {
+    _initializeLayouts() {
         if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            const storedLayouts = this._$window.localStorage.getItem(`layoutsNW-${this._$window.ContactID}`);
-            const storedMapZoom = this._$window.localStorage.getItem(`mapZoomNW-${this._$window.ContactID}`);
+            try {
+                const storedLayouts = JSON.parse(this._$window.localStorage.getItem(`layoutsNW-${this._$window.ContactID}`));
+                const lastActiveLayoutName = this._$window.localStorage.getItem(`lastActiveLayoutNW-${this._$window.ContactID}`);
 
-            if (storedLayouts) {
-                try {
-                    this.currentLayouts = JSON.parse(storedLayouts);
-                    // Ensure currentLayouts is an array and has at least one item
-                    if (!Array.isArray(this.currentLayouts) || this.currentLayouts.length === 0) {
-                        throw new Error('Invalid stored layouts');
+                // Initialize layouts with at least the default layout
+                this.currentLayouts = storedLayouts || [this.defaultLayout[0]];
+
+                // Ensure default layout is always first and up to date
+                this.currentLayouts[0] = this.defaultLayout[0];
+
+                // Try to load the last active layout
+                if (lastActiveLayoutName) {
+                    const lastActiveLayout = this.currentLayouts.find(l => l.name === lastActiveLayoutName);
+                    if (lastActiveLayout) {
+                        this.loadLayout(this.currentLayouts.indexOf(lastActiveLayout));
+                    } else {
+                        this.loadLayout(0);
                     }
-                    this.currentLayouts[0] = this.defaultLayout[0]; // Always use the latest default layout
-                } catch (error) {
-                    console.error('Error parsing stored layouts:', error);
-                    this.currentLayouts = this.defaultLayout;
+                } else {
+                    this.loadLayout(0);
                 }
+            } catch (error) {
+                console.error('Error loading stored layouts:', error);
+                this.currentLayouts = this.defaultLayout;
+                this.loadLayout(0);
             }
-
-            if (storedMapZoom) {
-                try {
-                    this.mapZoom = JSON.parse(storedMapZoom);
-                } catch (error) {
-                    console.error('Error parsing stored map zoom:', error);
-                    this.mapZoom = {display: true}; // Default value
-                }
-            }
-        }
-
-        if (!this.currentLayouts) {
-            this.currentLayouts = this.defaultLayout;
         }
     }
 
@@ -237,77 +235,149 @@ class NationwideLayoutService {
     }
 
     /**
-     * Delete a layout.
-     * @param {number} index - The index of the layout to delete.
-     * @returns {Promise<void>}
-     */
-    async deleteLayout(index) {
-        const deleteConfirm = this._$mdDialog.confirm()
-            .title('Delete Layout?')
-            .textContent('Are you sure you would like to delete this layout?')
-            .ariaLabel('delete layout')
-            .ok('Delete')
-            .cancel('Cancel');
-
-        try {
-            await this._$mdDialog.show(deleteConfirm);
-
-            this.layoutsObject.splice(index, 1);
-            if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-                this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.Stringify(this.layoutsObject));
-            }
-        } catch (error) {
-            console.log("Delete layout canceled!");
-        }
-    }
-
-    /**
      * Load a layout.
      * @param {number} index - The index of the layout to load.
      * @returns {Object} The loaded layout.
      */
     loadLayout(index) {
-        this.currentLayoutName = this.layoutsObject[index].name;
-        const loadedLayout = angular.copy(this.layoutsObject[index].layout);
+        if (!this.currentLayouts[index]) {
+            console.warn('Invalid layout index, loading default');
+            index = 0;
+        }
 
-        this.setLastActiveLayoutName(this.currentLayoutName);
+        this.currentLayoutName = this.currentLayouts[index].name;
+        this.currentLayout = angular.copy(this.currentLayouts[index].layout);
 
-        return {
-            name: this.currentLayoutName, layout: loadedLayout
-        };
+        // Save as last active layout
+        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
+            this._$window.localStorage.setItem(`lastActiveLayoutNW-${this._$window.ContactID}`, this.currentLayoutName);
+        }
+
+        // Apply the layout dimensions
+        this._applyLayoutDimensions(this.currentLayout);
+
+        return this.currentLayout;
+    }
+
+    /**
+     * Load a layout.
+     * @param {Object} layout - The index of the layout to load.
+     * @private
+     */
+    _applyLayoutDimensions(layout) {
+        if (!layout || !layout.columns) return;
+
+        layout.columns.forEach(column => {
+            const columnElement = angular.element(`#co-${column.id}`);
+            if (columnElement.length) {
+                columnElement.css('flex-basis', column.width);
+
+                column.boxes.forEach(box => {
+                    const boxElement = angular.element(`#box-${box.name}`);
+                    if (boxElement.length) {
+                        boxElement.css('flex-basis', box.height);
+                    }
+                });
+            }
+        });
     }
 
     /**
      * Save a layout.
-     * @param {Object} currentLayout - The current layout to save.
+     * @param {Object} layout - The current layout to save.
      * @returns {Promise<Object>} A promise that resolves with the saved layout information.
      */
-    async saveLayout(currentLayout) {
-        const saveLayoutPrompt = this._$mdDialog.prompt()
-            .title('Save Layout')
-            .textContent('Please enter a name for this layout.')
-            .ariaLabel('Layout name')
-            .required(true)
-            .ok('Save')
-            .cancel('Cancel');
-
+    async saveLayout(layout) {
         try {
-            const layoutName = await this._$mdDialog.show(saveLayoutPrompt);
+            // Capture the current layout state
+            const capturedLayout = {
+                columns: layout.columns.map(column => ({
+                    ...column,
+                    width: angular.element(`#co-${column.id}`).css('flex-basis'),
+                    boxes: column.boxes.map(box => ({
+                        ...box,
+                        height: angular.element(`#box-${box.name}`).css('flex-basis')
+                    }))
+                }))
+            };
 
-            if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-                this.layoutsObject = this.layoutsObject.concat({
-                    name: layoutName, layout: angular.copy(currentLayout)
-                });
+            const layoutName = await this._$mdDialog.show(this._$mdDialog.prompt()
+                .title('Save Layout')
+                .textContent('Please enter a name for this layout.')
+                .ariaLabel('Layout name')
+                .required(true)
+                .ok('Save')
+                .cancel('Cancel'));
 
-                this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.Stringify(this.layoutsObject));
+            const newLayout = {
+                name: layoutName,
+                layout: capturedLayout
+            };
 
-                this.setLastActiveLayoutName(layoutName);
+            // Make sure we have currentLayouts
+            if (!this.currentLayouts) {
+                this.currentLayouts = [this.defaultLayout[0]];
             }
 
-            return {data: "OK", name: layoutName};
+            this.currentLayouts.push(newLayout);
+            this.currentLayoutName = layoutName;
+            this.currentLayout = capturedLayout;
+
+            if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
+                this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.stringify(this.currentLayouts));
+                this._$window.localStorage.setItem(`lastActiveLayoutNW-${this._$window.ContactID}`, layoutName);
+            }
+
+            this._$rootScope.$broadcast('layoutUpdated');
+            return {name: layoutName, layout: capturedLayout};
         } catch (error) {
-            console.log("Save Layout Cancelled!");
-            throw error;
+            if (error === undefined) {
+                console.log("Save Layout Cancelled!");
+            } else {
+                console.error("Unable to save layout");
+            }
+        }
+    }
+
+
+    /**
+     * Delete a layout.
+     * @param {number} index - The index of the layout to delete.
+     * @returns {Promise<void>}
+     */
+    async deleteLayout(index) {
+        if (index === 0) return; // Prevent deleting default layout
+
+        try {
+            await this._$mdDialog.show(this._$mdDialog.confirm()
+                .title('Delete Layout?')
+                .textContent('Are you sure you would like to delete this layout?')
+                .ok('Delete')
+                .cancel('Cancel'));
+
+            // Make sure we have currentLayouts
+            if (!this.currentLayouts) {
+                this.currentLayouts = [this.defaultLayout[0]];
+            }
+
+            this.currentLayouts.splice(index, 1);
+
+            if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
+                this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.stringify(this.currentLayouts));
+            }
+
+            // Load default if we deleted the current layout
+            if (this.currentLayoutName === this.currentLayouts[index]?.name) {
+                this.loadLayout(0);
+            }
+
+            this._$rootScope.$broadcast('layoutUpdated');
+        } catch (error) {
+            if (error === undefined) {
+                console.log("Save Layout Cancelled!");
+            } else {
+                console.error("Unable to delete layout");
+            }
         }
     }
 

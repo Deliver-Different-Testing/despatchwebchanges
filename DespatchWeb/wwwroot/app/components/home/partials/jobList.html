@@ -1,11 +1,12 @@
 <!-- Job List Component -->
 <div class="job-list-container">
     <!-- Loading Indicator -->
-    <div class="loading" ng-if="jobsLoading">
-        <div class="text">
+    <div class="loading" ng-show="jobsLoading">
+        <div class="text"
+             style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
             <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
             <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
-            <span class="sr-only">Loading...</span>
+            <span>Loading...</span>
         </div>
     </div>
 
@@ -32,14 +33,14 @@
         <!-- Job List Table -->
         <table class="table table-responsive table-rows" id="jobList">
             <tbody>
-            <tr class="clickable-row draggable-row noselect"
+            <tr class="clickable-row noselect"
                 data-allowDispatch="{{job.allowDispatch}}"
                 data-courier="{{job.courier}}"
                 data-index="{{$index}}"
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
                 ng-class="jobClass(job)"
-                ng-mousedown="handleRowClick($event, job)"
+                ng-mousedown="selectJob(job)"
                 ng-repeat="job in jobList | filter: box.searchBox">
 
                 <td>{{job.time | date: "HH:mm"}}</td>
@@ -53,12 +54,12 @@
                 </td>
                 <td context-menu="setEventsMenu($event)">{{job.jobNo}}</td>
                 <td action="clientColumnClick($event, job)" right-click>{{job.client}}</td>
-                <td action="fromColumnClick($event, job)" class="address-cell" right-click>
+                <td action="fromColumnClick($event, job)" right-click>
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                     <i class="material-symbols-outlined job-table-icon" ng-if="!job.pickUpLongitude">exclamation</i>
                 </td>
                 <td colspan="2">
-                    <div action="toColumnClick($event, job)" class="address-cell" right-click>
+                    <div action="toColumnClick($event, job)" right-click>
                         {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
                         <i class="material-symbols-outlined colum-table-icon"
                            ng-if="!job.deliveryLongitude">exclamation</i>
@@ -66,22 +67,22 @@
                 </td>
                 <td>
                     <md-autocomplete
-                            md-input-id="input_{{job.id}}"
-                            md-escape-options="clear"
+                            md-autoselect
+                            md-clear-button="false"
+                            md-input-name="dispatchCourierSearch"
+                            md-select-on-focus
                             md-item-text="item.text"
                             md-items="item in courierSearch(dispatchCourierSearchTest)"
                             md-min-length="2"
                             md-search-text="dispatchCourierSearchTest"
                             md-selected-item="job.assignedCourier"
                             md-selected-item-change="handleDispatchSelection(item, job)"
-                            md-escape-options="none"
-                            md-match-case-insensitive="true"
-                            md-select-on-match="true"
                             ng-click="handleDispatchFieldClick($event, job)"
-                            ng-readonly="job.assignedCourier"
+                            ng-disabled="job.assignedCourier"
                             placeholder="Dispatch to Courier...">
                         <md-item-template>
-                            <span md-highlight-flags="^i" md-highlight-text="courierSearchText">{{item.text}}</span>
+                            <span md-highlight-flags="^i"
+                                  md-highlight-text="dispatchCourierSearchTest">{{item.text}}</span>
                         </md-item-template>
                         <md-not-found>
                             No couriers matching "{{dispatchCourierSearchTest}}" were found.

@@ -8,6 +8,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -27,10 +28,47 @@ public class CourierRepository : ICourierRepository
         _logger = logger;
     }
 
-    public async Task<List<DES_qryTruckCourierStatusResult>> TruckCourierStatusAsync(string courierId)
+    public async Task<List<TruckCourierStatusViewModel>> TruckCourierStatusAsync(string courierId)
     {
-        var result = await _context.Procedures.DES_qryTruckCourierStatusAsync(courierId);
-        return result;
+        try
+        {
+            return await _context.TucCouriers
+                .Where(c => c.Active == true
+                            && c.UccrVehicle == "Truck"
+                            && (courierId == null || c.UccrId.ToString().Contains(courierId)))
+                .Select(c => new TruckCourierStatusViewModel
+                {
+                    CourierId = c.UccrId,
+                    CourierCode = c.Code,
+                    FirstName = c.UccrName,
+                    MaxPallets = c.MaxPallets,
+                    MaxPayLoad = c.MaxPayload,
+                    CurrentPallets = c.TucJobUcjbCouriers
+                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                        .SelectMany(d => d.TucJobItems)
+                        .Sum(i => i.Items),
+                    CurrentWeight = c.TucJobUcjbCouriers
+                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                        .SelectMany(d => d.TucJobItems)
+                        .Sum(i => i.Items * i.Weight),
+                    AvailablePallets = c.MaxPallets * c.TucJobUcjbCouriers
+                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                        .SelectMany(d => d.TucJobItems)
+                        .Sum(i => i.Items),
+                    AvailablePalletCapacity = c.MaxPayload * c.TucJobUcjbCouriers
+                        .Where(d => !d.UcjbJobDone && !d.UcjbVoid)
+                        .SelectMany(d => d.TucJobItems)
+                        .Sum(i => i.Items * i.Weight),
+                })
+                .OrderBy(c => c.CourierCode)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured getting truck status for {courierId}");
+            throw;
+        }
     }
 
     public async Task AddEventAsync(string jobNo, int clientId, string contact, int staffId, int? courierId,
@@ -123,6 +161,7 @@ public class CourierRepository : ICourierRepository
                     Id = c.UccrId,
                     Text = c.UccrName + " " + c.UccrSurname
                 })
+                .AsNoTracking()
                 .ToListAsync();
 
             _logger.LogInformation("AllActiveCouriersAsync completed. Found {Count} active couriers", results.Count);
@@ -217,6 +256,7 @@ public class CourierRepository : ICourierRepository
             var airportCode = await _context.TblAirports
                 .Where(a => a.AirportId == airportId)
                 .Select(a => a.AirportCode)
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             if (airportCode != null)
@@ -289,6 +329,7 @@ public class CourierRepository : ICourierRepository
                 .Where(cla => cla != null)
                 .Distinct()
                 .Select(cl => new { cl.ClearListAreaId, cl.Name, cl.Order })
+                .AsNoTracking()
                 .ToListAsync();
 
             // Process each clear list sequentially to avoid DbContext threading issues
