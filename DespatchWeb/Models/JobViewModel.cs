@@ -193,6 +193,14 @@ public class JobViewModel
     public AgentViewModel AssignedAgent { get; set; }
 
     public Suggestion AssignedCourier { get; set; }
+
+    public ParcelDimensions ParcelDimensions { get; set; }
+}
+
+public class ParcelDimensions
+{
+    public string ItemName { get; set; }
+    public string Dimensions { get; set; }
 }
 
 public class AssignedFlight
