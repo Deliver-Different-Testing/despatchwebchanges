@@ -60,16 +60,19 @@
                         <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
-                                <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($index)"
-                                         ng-if="lo.name != 'Default'">
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-click="deleteLayout($index)"
+                                         ng-if="lo.name !== 'Default'">
                                     delete
                                 </md-icon>
                                 <md-icon md-font-set="material-symbols-outlined"
-                                         ng-if="lo.name == 'Default'">
+                                         ng-if="lo.name === 'Default'">
                                     tune
                                 </md-icon>
                                 <span ng-click="loadLayout($index)"
-                                      ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                                      ng-style="(lo.name === currentLayoutName || ($index === currentLayoutIndex)) ? {'font-weight':'bold'} : {}">
+                    {{lo.name}}
+                </span>
                             </md-button>
                         </md-menu-item>
                     </md-menu-content>

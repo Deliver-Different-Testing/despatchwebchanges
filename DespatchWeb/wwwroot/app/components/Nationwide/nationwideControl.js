@@ -335,29 +335,43 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             initializeVariables();
 
             // Initialize layouts through the service
-            $scope.layouts = LayoutService.getLayouts();
-            $scope.currentLayoutName = "default";
-            $scope.layout = LayoutService.getCurrentLayout();
+            try {
+                $scope.layouts = LayoutService.getLayouts() || [LayoutService.getDefaultLayout()[0]];
+                $scope.currentLayoutIndex = LayoutService.getCurrentLayoutIndex() || 0;
+                $scope.currentLayoutName = LayoutService.getCurrentLayoutName() || 'Default';
+                $scope.layout = LayoutService.getCurrentLayout() || LayoutService.getDefaultLayout()[0].layout;
 
-            // Add layout watchers
-            $scope.$watch('layout', (newValue, oldValue) => {
-                if (newValue !== oldValue && $scope.currentLayoutName) {
-                    const currentLayoutIndex = $scope.layouts.findIndex(l => l.name === $scope.currentLayoutName);
-                    if (currentLayoutIndex !== -1) {
-                        $scope.layouts[currentLayoutIndex].layout = angular.copy(newValue);
-                        if (Modernizr.localstorage) {
-                            localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify($scope.layouts));
+                // Add layout watchers
+                $scope.$watch('layout', (newValue, oldValue) => {
+                    if (newValue !== oldValue && $scope.currentLayoutName) {
+                        const currentLayoutIndex = $scope.layouts.findIndex(l => l.name === $scope.currentLayoutName);
+                        if (currentLayoutIndex !== -1) {
+                            $scope.layouts[currentLayoutIndex].layout = angular.copy(newValue);
+                            if (Modernizr.localstorage) {
+                                localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify($scope.layouts));
+                            }
                         }
                     }
-                }
-            }, true);
+                }, true);
 
-            // Watch for layout updates from service
-            $scope.$on('layoutUpdated', () => {
-                $scope.layouts = LayoutService.getLayouts();
-                $scope.layout = LayoutService.getCurrentLayout();
-                $scope.$apply();
-            });
+                // Watch for layout updates from service
+                $scope.$on('layoutUpdated', (event, data) => {
+                    $scope.layouts = LayoutService.getLayouts();
+                    $scope.layout = LayoutService.getCurrentLayout();
+                    if (data) {
+                        $scope.currentLayoutIndex = data.currentLayoutIndex;
+                        $scope.currentLayoutName = data.currentLayoutName;
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error initializing layouts:', error);
+                // Set defaults if initialization fails
+                $scope.layouts = [LayoutService.getDefaultLayout()[0]];
+                $scope.currentLayoutIndex = 0;
+                $scope.currentLayoutName = 'Default';
+                $scope.layout = LayoutService.getDefaultLayout()[0].layout;
+            }
 
             // Start loading data
             loadPageViews().then(() => {
@@ -608,6 +622,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             const layout = LayoutService.loadLayout(index);
             $scope.layout = angular.copy(layout);
             $scope.currentLayoutName = LayoutService.getCurrentLayoutName();
+            $scope.currentLayoutIndex = index;
 
             // Ensure dimensions are applied
             $timeout(async () => {
