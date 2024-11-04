@@ -38,7 +38,6 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
             ? await _context.TblDespatchViews
                 .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
                 .Select(dv => dv.WhereCondition)
-                .AsNoTracking()
                 .ToListAsync()
             : new List<string>();
 
@@ -83,12 +82,13 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
             // Move job to POD
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
 
-            _context.TucJobNationwides.Add(jobNationwide);
+            await _context.TucJobNationwides.AddAsync(jobNationwide);
             await _context.SaveChangesAsync();
         }
         catch (Exception e)
         {
             _logger.LogError(e, $"An error occured adding Flight {flight.FlightNumber} to job {jobId}");
+            throw;
         }
     }
 
@@ -101,7 +101,6 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 ToAirport = j.ToAirport.AirportCode,
                 FromAirport = j.FromAirport.AirportCode
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
@@ -157,7 +156,6 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 DangerousGoods = j.Dgdocument,
                 DryIceWeight = j.DryIceWeight
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
     }
 
@@ -172,7 +170,6 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 AgentRanking = a.Agent.Ranking.AgentRankingName,
                 DistanceRateId = a.DistanceRateId
             })
-            .AsNoTracking()
             .ToListAsync();
     }
 
