@@ -26,7 +26,6 @@ namespace DespatchWeb.Controllers;
 
 public class JobController(IJobRepository jobRepository, ICourierRepository courierRepo, IClientAccessValidatorService clientAccessValidator, IAmazonS3 s3Client, HttpClient httpClient) : Controller
 {
-    private readonly ILogger<JobController> _logger;
 
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
@@ -85,7 +84,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         catch (Exception e)
         {
             var message = $"An error occured getting current jobs courier {courierId}";
-            _logger.LogError(e, message);
+            Log.Error(e, message);
             return StatusCode(StatusCodes.Status500InternalServerError, message);
         }
     }
@@ -181,7 +180,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
                 fromDate.ResetTimeToStartOfDay(),
                 toDate.ResetTimeToEndOfDay(), clientId);
 
-            string FormatField(object x)
+            static string FormatField(object x)
             {
                 var formatted = x?.ToString()
                     ?.Replace("\"", "\"\"")
@@ -200,7 +199,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
                 foreach (var x in data)
                 {
                     await writer.WriteLineAsync(
-                        $"{x.Id},{x.ParentId},{formatField(x.JobNumber)},{x.BookDate.ToString("yyyy-MM-dd HH:mm:ss")},{x.Amount},{x.FuelSurcharge},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)}");
+                        $"{x.Id},{x.ParentId},{FormatField(x.JobNumber)},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.Amount},{x.FuelSurcharge},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{FormatField(x.PickupAddressLine1)},{FormatField(x.PickupAddressLine2)},{FormatField(x.PickupAddressLine3)},{FormatField(x.PickupAddressLine4)},{FormatField(x.PickupAddressLine5)},{FormatField(x.PickupAddressLine6)},{FormatField(x.PickupAddressLine7)},{FormatField(x.PickupAddressLine8)},{FormatField(x.DeliveryAddressLine1)},{FormatField(x.DeliveryAddressLine2)},{FormatField(x.DeliveryAddressLine3)},{FormatField(x.DeliveryAddressLine4)},{FormatField(x.DeliveryAddressLine5)},{FormatField(x.DeliveryAddressLine6)},{FormatField(x.DeliveryAddressLine7)},{FormatField(x.DeliveryAddressLine8)}");
                 }
             }
 
@@ -226,12 +225,12 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             }
             catch (AmazonS3Exception e)
             {
-                Log.Error(e, $"{nameof(Download)} Error encountered when writing jobs download object to S3: ");
+                Log.Error(e, $"{nameof(PodSearchDownload)} Error encountered when writing jobs download object to S3: ");
 
             }
             catch (Exception e)
             {
-                Log.Error(e, $"{nameof(Download)} Error encountered when writing jobs download object to S3: ");
+                Log.Error(e, $"{nameof(PodSearchDownload)} Error encountered when writing jobs download object to S3: ");
 
             }
 

@@ -660,28 +660,61 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 CreatedDate = j.UcjbDate,
                 ScheduleName = j.ScheduleName,
 
-        var jobIds = jobViewModels.Select(j => j.Id).ToList();
-        var palletInfoItems = await Context.TucJobItems
-            .Where(p => jobIds.Contains(p.JobId))
-            .Select(p => new
-            {
-                p.JobId,
-                PalletInfo = new PalletInfo
+                PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
+                DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
+
+                // Courier
+                Courier = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
+                CourierData = j.UcjbCourier != null
+                    ? new CourierData
+                    {
+                        Courier = string.IsNullOrEmpty(j.UcjbCourier.Code)
+                            ? string.Empty
+                            : j.UcjbCourier.Code + " " + j.UcjbCourier.UccrName,
+                        CourierId = j.UcjbCourierId,
+                        CourierMobile = j.UcjbCourier.UccrMobile,
+                        CourierName = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                    }
+                    : null,
+                AssignedCourier = j.UcjbCourier != null
+                    ? new Suggestion
+                    {
+                        Id = j.UcjbCourier.UccrId,
+                        Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
+                    }
+                    : null,
+
+                // Address information
+                PickupAddress = new AddressViewModel
                 {
-                    Id = p.JobId,
-                    Quantity = p.Items,
-                    ItemId = p.ItemId,
-                    Weight = p.Weight,
-                    Length = p.Length,
-                    Depth = p.Depth,
-                    Height = p.Height,
-                    Pu = p.Pu,
-                    Do = p.Do,
-                    DgClass = p.Dgclass,
-                    Notes = p.Notes
-                }
-            })
-            .ToListAsync();
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8,
+                    Latitude = j.PickUpLatitude,
+                    Longitude = j.PickUpLongitude,
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8,
+                    Latitude = j.DeliveryLatitude,
+                    Longitude = j.DeliveryLongitude,
+                },
+
+                // Airport information
+                ToAirportId = j.ToAirportId,
+                FromAirportId = j.FromAirportId,
 
                 // Assigned flight information
                 AssignedFlight = j.TucJobNationwides.Select(nj => new AssignedFlight
