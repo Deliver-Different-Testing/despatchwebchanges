@@ -144,6 +144,7 @@
                             <label class="disabled">Status</label>
                             <div class="disabled value">{{jdSvc.currentJob.statusName}}</div>
                         </div>
+
                         <div class="field" ng-disabled="true"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.contactClick($event, jdSvc.currentJob)"
                              ng-if="!jdSvc.currentJob.bulkJob">

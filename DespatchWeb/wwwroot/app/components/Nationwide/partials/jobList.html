@@ -32,6 +32,7 @@
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
                 ng-mouseup="selectJob(job)"
+                ng-class="jobClass(job)"
                 ng-repeat="job in jobList | filter: box.searchBox">
 
                 <td>{{job.time | date: "HH:mm"}}</td>

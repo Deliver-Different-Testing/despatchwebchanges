@@ -3192,6 +3192,35 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 this.updateCourierData(courier.id, courier.text);
             }
         };
+
+        /**
+         * Determines the CSS classes to apply to a job row
+         * @param {Job} job - The job object
+         * @returns {string} Space-separated list of CSS classes
+         */
+        $scope.jobClass = (job) => {
+            if (!job) return '';
+
+            const classes = [];
+
+            // Add direct class if job is direct
+            if (job.direct) {
+                classes.push('direct');
+            }
+
+            // Add chilled class for specific speed types
+            const chilledSpeedTypes = ['CT', 'CTHIRE', 'FT', 'FTHIRE', 'HC', 'TC'];
+            if (chilledSpeedTypes.includes(job.speed)) {
+                classes.push('chilled');
+            }
+
+            // Add G class if job is dispatched (has a courier assigned)
+            if (job.courier || job.assignedCourier) {
+                classes.push('G');
+            }
+
+            return classes.join(' ');
+        };
     }]);
 
 
