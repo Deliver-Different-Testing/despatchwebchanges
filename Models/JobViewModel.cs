@@ -192,6 +192,31 @@ public class JobViewModel
     public AgentViewModel AssignedAgent { get; set; }
 
     public Suggestion AssignedCourier { get; set; }
+
+    public ParcelDimensions ParcelDimensions { get; set; }
+}
+
+public class ParcelDimensions
+{
+    private string _dimensions;
+    public string ItemName { get; set; }
+    public double? Height { get; set; }
+    public double? Length { get; set; }
+    public double? Depth { get; set; }
+
+    public string Dimensions
+    {
+        get
+        {
+            if (Height.HasValue && Length.HasValue && Depth.HasValue)
+            {
+                return $"{Length.Value:0.#}x{Depth.Value:0.#}x{Height.Value:0.#}";
+            }
+
+            return _dimensions;
+        }
+        set => _dimensions = value;
+    }
 }
 
 public class AssignedFlight

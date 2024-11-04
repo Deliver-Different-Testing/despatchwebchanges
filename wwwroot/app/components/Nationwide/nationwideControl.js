@@ -2359,16 +2359,34 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await $mdDialog.show(confirm);
                 console.log('Assigning to job');
 
+                // Store the previous internal status ID before updating
+                const previousInternalStatusId = job.internalStatusId;
+
+                // Determine which lists need to be refreshed based on previous status
+                const listsToRefresh = new Set([$scope.jobDataType.POD]); // Always refresh POD list
+
+                // Map internal status IDs to job data types using the STATUS_TO_LIST_MAP
+                if (STATUS_TO_LIST_MAP[previousInternalStatusId]) {
+                    STATUS_TO_LIST_MAP[previousInternalStatusId].forEach(type => listsToRefresh.add(type));
+                }
+
+                // Assign the flight
                 await NWData.assignFlightToJob(job.id, flight.flightNumber, flight.departureTime);
 
-                // Refresh both new jobs and POD lists since flight assignment can affect both
-                await getJobList([
-                    $scope.jobDataType.NEW,
-                    $scope.jobDataType.POD
-                ]);
+                // Refresh the determined lists
+                await getJobList(Array.from(listsToRefresh));
 
-                const successMessage = (`Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`)
-                toastrService.showSuccessToast(successMessage)
+                // Find the updated job in either the new jobs list or POD list
+                let updatedJob = $scope.jobList?.find(j => j.id === job.id) ||
+                    $scope.jobListPOD?.find(j => j.id === job.id);
+
+                if (updatedJob) {
+                    await $scope.selectJob(updatedJob);
+                }
+
+                const successMessage = `Successfully assigned flight ${flight.flightNumber} to job ${job.jobNo}`;
+                toastrService.showSuccessToast(successMessage);
+
             } catch (error) {
                 if (error === undefined) {
                     console.log('User canceled!');

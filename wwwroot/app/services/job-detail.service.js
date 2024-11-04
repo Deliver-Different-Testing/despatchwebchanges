@@ -663,6 +663,40 @@ class JobDetailService {
     }
 
     /**
+     * @param {Object} $event
+     * @param {Job} currentJob
+     */
+    async editJobDimensions($event, currentJob) {
+        const dimensions = currentJob.parcelDimensions;
+        const jobId = currentJob.id;
+
+        await this._$mdDialog.show({
+            controller: 'EditParcelDimensionsDialogController',
+            controllerAs: 'ctrl',
+            parent: angular.element(this._$document.body),
+            targetEvent: $event,
+            templateUrl: this._versionUrl("app/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.html"),
+            clickOutsideToClose: false,
+            fullscreen: true,
+            locals: {
+                jobId,
+                dimensions
+            },
+            bindToController: true
+        });
+
+        // Show feature in development dialog
+        await this._$mdDialog.show({
+            controller: 'FeatureInDevelopmentDialogController',
+            controllerAs: 'ctrl',
+            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
+            parent: angular.element(this._$document.body),
+            clickOutsideToClose: true,
+            bindToController: true
+        });
+    }
+
+    /**
      * @param reRate
      * @param {Job} job
      * @param callData
@@ -718,6 +752,7 @@ class JobDetailService {
             }
         } catch (error) {
             console.error('Error updating job:', error);
+            this._toastrService.showErrorToast('Failed to update job. Please try again.');
             this._toastrService.showErrorToast('Failed to update job. Please try again.');
             throw error;
         }

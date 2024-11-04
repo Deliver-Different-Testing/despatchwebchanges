@@ -192,6 +192,13 @@
                             </div>
                         </div>
                         <div class="field"
+                             ng-click="!jdSvc.currentJob.locked && jdSvc.editJobDimensions($event, jdSvc.currentJob)">
+                            <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Dimensions</label>
+                            <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
+                                {{(jdSvc.currentJob.parcelDimensions.itemName ? jdSvc.currentJob.parcelDimensions.itemName + ' ' : '') + jdSvc.currentJob.parcelDimensions.dimensions}}
+                            </div>
+                        </div>
+                        <div class="field"
                              ng-click="!jdSvc.currentJob.locked && jdSvc.editRef($event, jdSvc.currentJob, true)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Ref A</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">

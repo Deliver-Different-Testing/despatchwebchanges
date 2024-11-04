@@ -1,12 +1,12 @@
 <!-- Job List Component -->
 <div class="job-list-container">
     <!-- Loading Indicator -->
-    <div class="loading" ng-show="jobsLoading">
-        <div class="text"
-             style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
-            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-            <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
-            <span>Loading...</span>
+    <div class="loader-container" ng-if="jobsLoading">
+        <div class="full-height" layout="row" layout-align="center center">
+            <div class="material-icon-loader">
+                <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
+            </div>
         </div>
     </div>
 
