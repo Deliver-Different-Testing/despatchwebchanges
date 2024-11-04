@@ -1,0 +1,73 @@
+<md-dialog aria-label="Edit Dimensions" id="edit-dimensions-dialog">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <h2>Edit Dimensions</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-tooltip md-direction="bottom">Cancel</md-tooltip>
+                <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">
+                    close
+                </md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <form ng-submit="ctrl.submit(ctrl.dimensions)">
+                <!-- Item Name -->
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label>Item Name</label>
+                    <input ng-model="ctrl.dimensions.itemName" type="text">
+                </md-input-container>
+
+                <!-- Dimensions Input Group -->
+                <div layout="row" layout-align="start center">
+                    <md-input-container flex>
+                        <label>Length</label>
+                        <input min="0" ng-model="ctrl.dimensions.length" step="0.1" type="number">
+                    </md-input-container>
+
+                    <span class="dimension-separator" style="margin: 0 10px; padding-top: 15px;">x</span>
+
+                    <md-input-container flex>
+                        <label>Width</label>
+                        <input min="0" ng-model="ctrl.dimensions.depth" step="0.1" type="number">
+                    </md-input-container>
+
+                    <span class="dimension-separator" style="margin: 0 10px; padding-top: 15px;">x</span>
+
+                    <md-input-container flex>
+                        <label>Height</label>
+                        <input min="0" ng-model="ctrl.dimensions.height" step="0.1" type="number">
+                    </md-input-container>
+                </div>
+            </form>
+        </div>
+    </md-dialog-content>
+
+    <md-dialog-actions>
+        <md-progress-circular
+                class="md-primary"
+                md-diameter="40"
+                md-mode="indeterminate"
+                ng-disabled="!ctrl.isValid()"
+                ng-show="ctrl.isLoading">
+        </md-progress-circular>
+
+        <md-button
+                class="md-raised md-primary"
+                ng-click="ctrl.submit(ctrl.dimensions)"
+                ng-disabled="!ctrl.isValid()"
+                ng-show="!ctrl.isLoading">
+            Save
+        </md-button>
+    </md-dialog-actions>
+</md-dialog>
+
+<style>
+    .dimension-separator {
+        font-weight: bold;
+        color: rgba(0, 0, 0, 0.54);
+    }
+</style>

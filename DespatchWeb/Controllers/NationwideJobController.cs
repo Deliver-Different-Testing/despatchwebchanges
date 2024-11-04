@@ -137,7 +137,6 @@ public class NationwideJobController : Controller
             if (request is null)
                 return BadRequest("Oops, no flight data was provided. Unable to assign to job.");
 
-
             // Get flight details
             ScheduledFlight flight;
             try
@@ -214,10 +213,10 @@ public class NationwideJobController : Controller
         try
         {
             var agents = await _repository.GetAgentsAsync(jobId);
-            if (agents == null || !agents.Any())
-                return NotFound($"No agents found for job {jobId}");
+            if (agents != null && agents.Any()) Json(agents);
 
-            return Json(agents);
+            _logger.LogInformation($"No agents found for job {jobId}");
+            return Json(new List<AgentViewModel>());
         }
         catch (Exception ex)
         {
