@@ -119,6 +119,13 @@
                                                 </md-icon>
                                             </md-button>
 
+                                            <md-button class="md-fab md-raised md-mini"
+                                                       ng-click="openFileAttachmentDialog($event, currentJob)">
+                                                <md-tooltip md-direction="bottom">Attachments</md-tooltip>
+                                                <md-icon md-font-set="material-symbols-outlined">cloud_upload
+                                                </md-icon>
+                                            </md-button>
+
                                             <md-button aria-label="Dispatch to Courier"
                                                        class="md-fab md-raised md-mini"
                                                        ng-click="selectAndDispatchJob($event, currentJob)"

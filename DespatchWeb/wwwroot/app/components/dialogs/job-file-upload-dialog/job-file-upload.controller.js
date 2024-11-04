@@ -3,6 +3,20 @@
  * @description Controller for handling file uploads related to a specific job.
  */
 class JobFileUploadController {
+
+    /**
+     * @type {string[]}
+     * @static
+     * @description List of dependencies to be injected.
+     */
+    static $inject = [
+        '$http',
+        '$mdDialog',
+        '$document',
+        '$window',
+        'toastrService',
+        'jobId'
+    ];
     /**
      * @constructor
      * @param {object} $http - Angular's $http service for making HTTP requests.
@@ -160,3 +174,5 @@ class JobFileUploadController {
         this._$mdDialog.cancel();
     }
 }
+
+angular.module('uDispatch').controller('JobFileUploadController', JobFileUploadController);

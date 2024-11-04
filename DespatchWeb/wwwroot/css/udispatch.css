@@ -1768,4 +1768,39 @@ md-list-item:not(.selected):hover {
 .table-body-container td {
   white-space: nowrap;
 }
+.drop-box {
+  border: 2px dashed #e0e0e0;
+  border-radius: 4px;
+  padding: 32px;
+  text-align: center;
+  margin: 16px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.drop-box:hover {
+  border-color: #3EAFC2;
+  background-color: rgba(33, 150, 243, 0.04);
+}
+.drop-box md-icon {
+  color: #3EAFC2;
+  margin-bottom: 16px;
+}
+.drop-box p {
+  margin: 8px 0;
+  color: rgba(0, 0, 0, 0.87);
+}
+.drop-box p.md-caption {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 12px;
+}
+.drop-box.dragover {
+  border-color: #3EAFC2;
+  background-color: rgba(33, 150, 243, 0.08);
+  transform: scale(1.01);
+}
+@media (max-width: 600px) {
+  .drop-box {
+    padding: 16px;
+  }
+}
 /*# sourceMappingURL=udispatch.css.map */
