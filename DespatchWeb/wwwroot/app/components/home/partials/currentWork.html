@@ -1,7 +1,14 @@
-<!-- Current Job List Component -->
 <div class="job-list-container">
+    <!-- Loading Indicator -->
+    <div class="loading" ng-if="currentListLoading">
+        <div class="text">
+            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
     <!-- Current Job List Table -->
-    <div class="job-list-table" ng-if="!currentListLoading && jobsCurrentList.length > 0">
+    <div class="job-list-table" ng-if="!currentListLoading && jobsCurrentList && jobsCurrentList.length > 0">
         <!-- Table Headers -->
         <div class="table-headings sticky-header">
             <table>
@@ -83,7 +90,7 @@
     </div>
 
     <!-- List empty indicator-->
-    <div class="no-data" ng-if="jobsCurrentList === 0">
+    <div class="no-data" ng-if="jobsCurrentList && jobsCurrentList.length === 0">
         <div class="content">
             <div class="icon">
                 <md-icon md-font-set="material-symbols-outlined">work_history</md-icon>
@@ -103,14 +110,6 @@
             <div class="text">
                 Please Select a Courier
             </div>
-        </div>
-    </div>
-
-    <!-- Loading Indicator -->
-    <div class="loading">
-        <div class="text">
-            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
-            <span class="sr-only">Loading...</span>
         </div>
     </div>
 </div>
