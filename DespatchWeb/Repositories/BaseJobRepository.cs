@@ -156,7 +156,9 @@ public class BaseJobRepository
         ParcelDimensions = j.TucJobItems.Select(p => new ParcelDimensions
         {
             ItemName = p.Notes,
-            Dimensions = $"{p.Height} x {p.Length} x {p.Depth}in"
+            Height = p.Height,
+            Depth = p.Depth,
+            Length = p.Length
         }).FirstOrDefault(),
 
         // Job status and details

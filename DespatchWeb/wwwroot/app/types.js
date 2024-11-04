@@ -141,6 +141,7 @@
  * @property {AssignedFlight} assignedFlight
  * @property {Agent} assignedAgent
  * @property {Suggestion} assignedCourier
+ * @property {ParcelDimensions} parcelDimensions
  */
 
 /**
@@ -426,4 +427,16 @@
  * @property {string} REPRICE - Represents jobs requiring repricing
  * @property {string} DELIVERY - Represents delivery booking jobs
  * @property {string} ALL - Special value to indicate all job types should be fetched
+ */
+
+
+/**
+ * Represents parcel dimensions with optional measurements
+ * @typedef {Object} ParcelDimensions
+ *
+ * @property {string} [itemName] - Name of the item being measured
+ * @property {number} [height] - Height of the parcel in the specified unit
+ * @property {number} [length] - Length of the parcel in the specified unit
+ * @property {number} [depth] - Depth of the parcel in the specified unit
+ * @property {string} [dimensions] - Formatted string of dimensions in 'LxDxH' format
  */
