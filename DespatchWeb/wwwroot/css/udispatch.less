@@ -1012,6 +1012,30 @@ input.pod-DispatchField {
   td {
     padding: 4px 8px;
     border: 1px solid rgba(0, 0, 0, 0.5);
+
+    &.address-cell {
+      max-width: 250px; // Adjust this value as needed
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+
+      // Add hover tooltip
+      &:hover::after {
+        content: attr(title);
+        position: absolute;
+        left: 0;
+        top: 100%;
+        z-index: 1000;
+        background: #fff;
+        padding: 5px;
+        border: 1px solid #ddd;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        white-space: normal;
+        max-width: 300px;
+        word-wrap: break-word;
+      }
+    }
   }
 
   .doing {
