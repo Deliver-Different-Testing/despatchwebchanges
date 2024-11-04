@@ -2377,8 +2377,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 await getJobList(Array.from(listsToRefresh));
 
                 // Find the updated job in either the new jobs list or POD list
-                let updatedJob = $scope.jobList?.find(j => j.id === job.id) ||
-                    $scope.jobListPOD?.find(j => j.id === job.id);
+                let updatedJob = $scope.jobListPOD?.find(j => j.id === job.id);
 
                 if (updatedJob) {
                     await $scope.selectJob(updatedJob);
@@ -2815,80 +2814,98 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         async function getJobList(dataTypes = $scope.jobDataType.ALL) {
             const selectedClients = $scope.pickService.clients.map(a => a.id);
             const types = Array.isArray(dataTypes) ? dataTypes : [dataTypes];
+            const requestedTypes = types.includes($scope.jobDataType.ALL)
+                ? Object.values($scope.jobDataType).filter(type => type !== $scope.jobDataType.ALL)
+                : types;
 
             try {
-                // Set loading state for requested types
-                if (types.includes($scope.jobDataType.ALL)) {
-                    $scope.jobListLoading = true;
-                    $scope.deliveryListLoading = true;
-                    $scope.podListLoading = true;
-                    $scope.repriceListLoading = true;
-                } else {
-                    if (types.includes($scope.jobDataType.NEW)) $scope.jobListLoading = true;
-                    if (types.includes($scope.jobDataType.DELIVERY)) $scope.deliveryListLoading = true;
-                    if (types.includes($scope.jobDataType.POD)) $scope.podListLoading = true;
-                    if (types.includes($scope.jobDataType.REPRICE)) $scope.repriceListLoading = true;
-                }
+                // Set loading states
+                requestedTypes.forEach(type => {
+                    switch (type) {
+                        case $scope.jobDataType.NEW:
+                            $scope.jobListLoading = true;
+                            break;
+                        case $scope.jobDataType.DELIVERY:
+                            $scope.deliveryListLoading = true;
+                            break;
+                        case $scope.jobDataType.POD:
+                            $scope.podListLoading = true;
+                            break;
+                        case $scope.jobDataType.REPRICE:
+                            $scope.repriceListLoading = true;
+                            break;
+                    }
+                });
 
-                // Create a map of fetch promises based on requested data types
+                // Define fetch functions for each type
                 const fetchMap = {
-                    [$scope.jobDataType.NEW]: () => NWData.getNationwideJobsNew(
-                        $scope.jobFilters,
-                        selectedClients,
-                        $scope.isInternal,
-                        $scope.selectedAreas
-                    ),
-                    [$scope.jobDataType.POD]: () => NWData.getNationwideJobsPOD(
-                        $scope.jobFilters,
-                        selectedClients,
-                        $scope.isInternal,
-                        $scope.selectedAreas
-                    ),
-                    [$scope.jobDataType.REPRICE]: () => NWData.getNationwideJobsReprice(
-                        $scope.jobFilters,
-                        selectedClients,
-                        $scope.isInternal,
-                        $scope.selectedAreas
-                    ),
-                    [$scope.jobDataType.DELIVERY]: () => NWData.getNationwideJobsBookDelivery(
-                        $scope.jobDeliveryFilters,
-                        selectedClients,
-                        $scope.isInternal,
-                        $scope.selectedAreas
-                    )
+                    [$scope.jobDataType.NEW]: {
+                        fetch: () => NWData.getNationwideJobsNew(
+                            $scope.jobFilters,
+                            selectedClients,
+                            $scope.isInternal,
+                            $scope.selectedAreas
+                        ),
+                        updateScope: (data) => {
+                            $scope.jobList = data;
+                            $scope.jobListLoading = false;
+                        }
+                    },
+                    [$scope.jobDataType.POD]: {
+                        fetch: () => NWData.getNationwideJobsPOD(
+                            $scope.jobFilters,
+                            selectedClients,
+                            $scope.isInternal,
+                            $scope.selectedAreas
+                        ),
+                        updateScope: (data) => {
+                            $scope.jobListPOD = data;
+                            $scope.podListLoading = false;
+                        }
+                    },
+                    [$scope.jobDataType.REPRICE]: {
+                        fetch: () => NWData.getNationwideJobsReprice(
+                            $scope.jobFilters,
+                            selectedClients,
+                            $scope.isInternal,
+                            $scope.selectedAreas
+                        ),
+                        updateScope: (data) => {
+                            $scope.jobListReprice = data;
+                            $scope.repriceListLoading = false;
+                        }
+                    },
+                    [$scope.jobDataType.DELIVERY]: {
+                        fetch: () => NWData.getNationwideJobsBookDelivery(
+                            $scope.jobDeliveryFilters,
+                            selectedClients,
+                            $scope.isInternal,
+                            $scope.selectedAreas
+                        ),
+                        updateScope: (data) => {
+                            $scope.jobListDelivery = data;
+                            $scope.deliveryListLoading = false;
+                        }
+                    }
                 };
 
-                // Determine which promises to execute
-                const promisesToExecute = types.includes($scope.jobDataType.ALL)
-                    ? Object.values(fetchMap).map(fn => fn())
-                    : types.map(type => fetchMap[type]());
+                // Execute promises and store results with their types
+                const promises = requestedTypes.map(async type => ({
+                    type,
+                    data: await fetchMap[type].fetch()
+                }));
 
-                // Execute selected promises
-                const results = await Promise.all(promisesToExecute);
+                const results = await Promise.all(promises);
 
-                // Update scope based on which data types were requested
-                let resultIndex = 0;
-                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.NEW)) {
-                    $scope.jobList = results[resultIndex++];
-                    $scope.jobListLoading = false;
-                }
-                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.POD)) {
-                    $scope.jobListPOD = results[resultIndex++];
-                    $scope.podListLoading = false;
-                }
-                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.REPRICE)) {
-                    $scope.jobListReprice = results[resultIndex++];
-                    $scope.repriceListLoading = false;
-                }
-                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.DELIVERY)) {
-                    $scope.jobListDelivery = results[resultIndex++];
-                    $scope.deliveryListLoading = false;
-                }
+                // Update scope with results
+                results.forEach(({type, data}) => {
+                    fetchMap[type].updateScope(data);
+                });
 
                 $scope.$apply();
 
-                // Only fetch courier locations if we're getting delivery data
-                if (types.includes($scope.jobDataType.ALL) || types.includes($scope.jobDataType.DELIVERY)) {
+                // Handle additional tasks for delivery data
+                if (requestedTypes.includes($scope.jobDataType.DELIVERY)) {
                     await $scope.getAvailableCourierLocation();
                 }
 
@@ -2899,18 +2916,25 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
             } catch (error) {
                 console.error("Error fetching job data:", error);
-                // Reset all loading states that were set
-                if (types.includes($scope.jobDataType.ALL)) {
-                    $scope.jobListLoading = false;
-                    $scope.deliveryListLoading = false;
-                    $scope.podListLoading = false;
-                    $scope.repriceListLoading = false;
-                } else {
-                    if (types.includes($scope.jobDataType.NEW)) $scope.jobListLoading = false;
-                    if (types.includes($scope.jobDataType.DELIVERY)) $scope.deliveryListLoading = false;
-                    if (types.includes($scope.jobDataType.POD)) $scope.podListLoading = false;
-                    if (types.includes($scope.jobDataType.REPRICE)) $scope.repriceListLoading = false;
-                }
+
+                // Reset loading states
+                requestedTypes.forEach(type => {
+                    switch (type) {
+                        case $scope.jobDataType.NEW:
+                            $scope.jobListLoading = false;
+                            break;
+                        case $scope.jobDataType.DELIVERY:
+                            $scope.deliveryListLoading = false;
+                            break;
+                        case $scope.jobDataType.POD:
+                            $scope.podListLoading = false;
+                            break;
+                        case $scope.jobDataType.REPRICE:
+                            $scope.repriceListLoading = false;
+                            break;
+                    }
+                });
+
                 $scope.$apply();
             }
         }
