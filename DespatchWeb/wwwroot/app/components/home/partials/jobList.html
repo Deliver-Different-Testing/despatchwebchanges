@@ -53,12 +53,12 @@
                 </td>
                 <td context-menu="setEventsMenu($event)">{{job.jobNo}}</td>
                 <td action="clientColumnClick($event, job)" right-click>{{job.client}}</td>
-                <td action="fromColumnClick($event, job)" class="address-cell" right-click>
+                <td action="fromColumnClick($event, job)" right-click>
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                     <i class="material-symbols-outlined job-table-icon" ng-if="!job.pickUpLongitude">exclamation</i>
                 </td>
                 <td colspan="2">
-                    <div action="toColumnClick($event, job)" class="address-cell" right-click>
+                    <div action="toColumnClick($event, job)" right-click>
                         {{isUsCustomer ? job.deliveryAddress.fullAddress : job.toAddress}}
                         <i class="material-symbols-outlined colum-table-icon"
                            ng-if="!job.deliveryLongitude">exclamation</i>
