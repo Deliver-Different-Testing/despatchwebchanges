@@ -2633,37 +2633,69 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {Object} $event
+         * Creates and returns the context menu items for job events
+         * @param {Event} $event - The triggering event object
+         * @param {Job} job - The job object associated with the menu
+         * @returns {Promise<Array<Object>>} Array of menu items
          */
-        $scope.setEventsMenu = ($event) => [{
-            text: "Void Job", click: () => $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
-                .then(() => {
-                    console.log('Void Job completed successfully');
-                })
-                .catch(error => {
-                    console.log('Error in Void Job:', error);
-                })
-        }, {
-            text: "Add Event - Other", click: () => {
-                $scope.otherEventForm($event, $scope.currentJob);
+        $scope.setEventsMenu = async ($event, job) => {
+            try {
+                $event.preventDefault();
+                $event.stopPropagation();
+
+                // Update current job before showing menu
+                $scope.currentJob = job;
+
+                return [{
+                    text: "Void Job",
+                    click: async () => {
+                        try {
+                            $event.stopPropagation();
+                            await $scope.voidJobForm(job.jobNo, job.id);
+                            console.log('Void Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Void Job:', error);
+                        }
+                    }
+                }, {
+                    text: "Add Event - Other",
+                    click: async () => {
+                        try {
+                            $event.stopPropagation();
+                            await $scope.otherEventForm($event, job);
+                        } catch (error) {
+                            console.error('Error in Add Event:', error);
+                        }
+                    }
+                }, {
+                    text: "Split Job",
+                    click: async () => {
+                        try {
+                            $event.stopPropagation();
+                            await $scope.splitJob($event, job);
+                            console.log('Split Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Split Job:', error);
+                        }
+                    },
+                    enabled: () => job.allowSplit
+                }, {
+                    text: "Set First Job",
+                    click: async () => {
+                        try {
+                            $event.stopPropagation();
+                            await $scope.setFirstJob(job);
+                            console.log('Set First Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Set First Job:', error);
+                        }
+                    }
+                }];
+            } catch (error) {
+                console.error('Error setting up context menu:', error);
+                return [];
             }
-        }, {
-            text: "Split Job", click: () => $scope.splitJob($event, $scope.currentJob)
-                .then(() => {
-                    console.log('Split Job completed successfully');
-                })
-                .catch(error => {
-                    console.log('Error in Split Job:', error);
-                }), enabled: $itemScope => $itemScope.job.allowSplit
-        }, {
-            text: "Set First Job", click: () => $scope.setFirstJob($scope.currentJob)
-                .then(() => {
-                    console.log('Set First Job completed successfully');
-                })
-                .catch(error => {
-                    console.log('Error in Set First Job:', error);
-                })
-        }];
+        };
 
         $scope.setJobsMenu = async () => {
             const multiple = angular.element(".activeTable .active").length > 1;
