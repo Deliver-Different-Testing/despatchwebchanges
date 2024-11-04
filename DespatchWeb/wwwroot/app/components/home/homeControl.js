@@ -196,6 +196,7 @@ angular.module("uDispatch")
 
             function initWidgetLoadingStates() {
                 $scope.jobsLoading = false;
+                $scope.driverLocationsLoading = true;
                 $scope.supportsLoading = false;
                 $scope.potentialCouriersLoading = false;
                 $scope.currentListLoading = false;
@@ -2995,6 +2996,8 @@ angular.module("uDispatch")
             };
 
             async function fetchDriverLocations() {
+                $scope.driverLocationsLoading = true;
+
                 $scope.getClearListEnvelope = async (clearListId) => {
                     try {
                         const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
@@ -3019,6 +3022,8 @@ angular.module("uDispatch")
                 };
 
                 await $scope.getDriverLocationsData();
+                $scope.driverLocationsLoading = false;
+                $scope.$apply();
             }
 
             /**
