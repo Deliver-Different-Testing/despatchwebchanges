@@ -1,117 +1,5 @@
 <div class="box-content">
-    <div ng-if="currentJob">
-        <div ng-if="currentJob.toAirportId && currentJob.fromAirportId">
-            <div ng-if="!flightsLoading">
-
-                <div class="job-list-container">
-
-                    <div class="table-headings sticky-header">
-                        <table>
-                            <thead class="thead-dark no select">
-                            <tr>
-                                <th ng-click="orderList('flightList','airline')" scope="col">
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'airline'">arrow_drop_down</i>
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-airline'">arrow_drop_up</i>Airline
-                                </th>
-                                <th ng-click="orderList('flightList','flightNumber')" scope="col">
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'flightNumber'">arrow_drop_down</i>
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-flightNumber'">arrow_drop_up</i>Flight
-                                    No
-                                </th>
-                                <th ng-click="orderList('flightList', 'departureTime')" scope="col">
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'departureTime'">arrow_drop_down</i>
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-departureTime'">arrow_drop_up</i>Departure
-                                </th>
-                                <th ng-click="orderList('flightList','arrivalTime')" scope="col">
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'arrivalTime'">arrow_drop_down</i>
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-arrivalTime'">arrow_drop_up</i>Arrival
-                                </th>
-                                <th ng-click="orderList('flightList','duration')" scope="col">
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'duration'">arrow_drop_down</i>
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-duration'">arrow_drop_up</i>Duration
-                                </th>
-                                <th ng-click="orderList('flightList','aircraft')" scope="col">
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'aircraft'">arrow_drop_down</i>
-                                    <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-aircraft'">arrow_drop_up</i>Aircraft
-                                </th>
-                            </tr>
-                            </thead>
-                        </table>
-                    </div>
-
-                    <table class="table table-responsive table-rows" data-group="flightsGroup" id="flightList">
-                        <tbody>
-                        <tr class="clickable-row noselect"
-                            ng-click="addFlightToJob($event, flight, currentJob)"
-                            ng-repeat="flight in flightOptions | filter: box.searchBox">
-                            <td>{{flight.airline}}</td>
-                            <td>{{flight.flightNumber}}</td>
-                            <td>{{flight.departureTime | date: "HH:mm"}}</td>
-                            <td>{{flight.arrivalTime | date: "HH:mm"}}</td>
-                            <td>{{flight.duration | date: "H:mm"}}</td>
-                            <td>{{flight.aircraft}}</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="no-data" ng-if="!flightsLoading && flightOptions.length === 0">
-                    <div class="content">
-                        <div class="icon">
-                            <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-                        </div>
-                        <div class="text">
-                            {{flightMessage || 'No flights available for the specified criteria.'}}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="no-data" ng-if="flightError">
-                    <div class="content">
-                        <div class="icon">
-                            <md-icon md-font-set="material-symbols-outlined">error</md-icon>
-                        </div>
-                        <div class="text">
-                            {{flightError}}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="loader-container" ng-if="flightsLoading">
-                <div class="full-height" layout="row" layout-align="center center">
-                    <div class="material-icon-loader">
-                        <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                        <md-icon class="loader-icon" md-font-set="material-symbols-outlined">flight</md-icon>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="no-data" ng-if="!currentJob.toAirportId || !currentJob.fromAirportId">
-            <div class="content">
-                <div class="icon">
-                    <md-icon md-font-set="material-symbols-outlined">local_airport</md-icon>
-                </div>
-                <div class="text">
-                    Airport information not applicable or not provided for this job. If needed, please update the job
-                    details with relevant airport data.
-                </div>
-            </div>
-        </div>
-
-        <div class="no-data" ng-if="currentJob.assignedFlight">
-            <div class="content">
-                <div class="icon">
-                    <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
-                </div>
-                <div class="text">
-                    A flight has already been assigned to this job. This can be found in the job details widget.
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- State 1: No Current Job Selected -->
     <div class="no-data" ng-if="!currentJob">
         <div class="content">
             <div class="icon">
@@ -120,6 +8,129 @@
             <div class="text">
                 Please select a job to view available flights.
             </div>
+        </div>
+    </div>
+
+    <!-- State 2: Job Has Assigned Flight -->
+    <div class="no-data" ng-if="currentJob && currentJob.assignedFlight">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+            </div>
+            <div class="text">
+                A flight has already been assigned to this job. This can be found in the job details widget.
+            </div>
+        </div>
+    </div>
+
+    <!-- State 3: Missing Airport Information -->
+    <div class="no-data"
+         ng-if="currentJob && !currentJob.assignedFlight && (!currentJob.toAirportId || !currentJob.fromAirportId)">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">local_airport</md-icon>
+            </div>
+            <div class="text">
+                Airport information not applicable or not provided for this job. If needed, please update the job
+                details with relevant airport data.
+            </div>
+        </div>
+    </div>
+
+    <!-- State 4: Loading Flights -->
+    <div class="loader-container"
+         ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && flightsLoading">
+        <div class="full-height" layout="row" layout-align="center center">
+            <div class="material-icon-loader">
+                <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">flight</md-icon>
+            </div>
+        </div>
+    </div>
+
+    <!-- State 5: Flight Error -->
+    <div class="no-data"
+         ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && flightError">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+            </div>
+            <div class="text">
+                {{flightError}}
+            </div>
+        </div>
+    </div>
+
+    <!-- State 6: No Flights Available -->
+    <div class="no-data"
+         ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && !flightError && flightOptions.length === 0">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">flight_takeoff</md-icon>
+            </div>
+            <div class="text">
+                {{flightMessage || 'No flights available for the specified criteria.'}}
+            </div>
+        </div>
+    </div>
+
+    <!-- State 7: Flight List -->
+    <div ng-if="currentJob && !currentJob.assignedFlight && currentJob.toAirportId && currentJob.fromAirportId && !flightsLoading && !flightError && flightOptions.length > 0">
+        <div class="job-list-container">
+            <div class="table-headings sticky-header">
+                <table>
+                    <thead class="thead-dark no select">
+                    <tr>
+                        <th ng-click="orderList('flightList','airline')" scope="col">
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.flightList == 'airline'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.flightList == 'd-airline'">arrow_drop_up</i>Airline
+                        </th>
+                        <th ng-click="orderList('flightList','flightNumber')" scope="col">
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'flightNumber'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-flightNumber'">arrow_drop_up</i>Flight
+                            No
+                        </th>
+                        <th ng-click="orderList('flightList', 'departureTime')" scope="col">
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'departureTime'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-departureTime'">arrow_drop_up</i>Departure
+                        </th>
+                        <th ng-click="orderList('flightList','arrivalTime')" scope="col">
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'arrivalTime'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-arrivalTime'">arrow_drop_up</i>Arrival
+                        </th>
+                        <th ng-click="orderList('flightList','duration')" scope="col">
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.flightList == 'duration'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.flightList == 'd-duration'">arrow_drop_up</i>Duration
+                        </th>
+                        <th ng-click="orderList('flightList','aircraft')" scope="col">
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.flightList == 'aircraft'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.flightList == 'd-aircraft'">arrow_drop_up</i>Aircraft
+                        </th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+
+            <table class="table table-responsive table-rows" data-group="flightsGroup" id="flightList">
+                <tbody>
+                <tr class="clickable-row noselect"
+                    ng-click="addFlightToJob($event, flight, currentJob)"
+                    ng-repeat="flight in flightOptions | filter: box.searchBox">
+                    <td>{{flight.airline}}</td>
+                    <td>{{flight.flightNumber}}</td>
+                    <td>{{flight.departureTime | date: "HH:mm"}}</td>
+                    <td>{{flight.arrivalTime | date: "HH:mm"}}</td>
+                    <td>{{flight.duration | date: "H:mm"}}</td>
+                    <td>{{flight.aircraft}}</td>
+                </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
