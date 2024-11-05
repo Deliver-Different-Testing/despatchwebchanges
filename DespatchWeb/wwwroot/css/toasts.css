@@ -1,0 +1,16 @@
+md-toast .md-toast-content.md-success-toast-theme {
+    background-color: #4CAF50 !important;
+    color: white !important;
+}
+
+md-toast .md-toast-content.md-error-toast-theme {
+    background-color: #F44336 !important;
+    color: white !important;
+}
+
+md-toast .md-toast-content.md-warning-toast-theme {
+    background-color: #FF9800 !important;
+    color: white !important;
+}
+
+/*# sourceMappingURL=toasts.css.map */
