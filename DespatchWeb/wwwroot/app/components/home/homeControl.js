@@ -2453,7 +2453,6 @@ angular.module("uDispatch")
                     Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
             }
 
-
             function clearActiveJobs() {
                 angular.element(".activeTable .active").each((_, el) => {
                     const jobRowElement = angular.element(el).find(".selectjob");

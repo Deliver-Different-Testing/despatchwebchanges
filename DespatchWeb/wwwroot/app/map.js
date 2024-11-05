@@ -370,9 +370,8 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
 /**
  * @param {Job[]} jobs
  * @param {boolean} clear
- * @param {Job} currentJob
  */
-function displayPickupPoints(jobs, clear, currentJob) {
+function displayPickupPoints(jobs, clear) {
     if (clear === true) {
         if (map.markers.length) {
             map.clearMarkers();

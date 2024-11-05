@@ -2195,6 +2195,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     await _processAgents(job);
                 }
 
+                _displayJobOnMap(job);
+
                 _maintainJobHighlight(); // Ensure highlight persists after any DOM updates
 
                 $scope.$apply();
@@ -2203,6 +2205,53 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 console.error("Error in selectJob:", error);
             }
         };
+
+        /**
+         * @param {Job} job
+         * @private
+         */
+        function _displayJobOnMap(job) {
+            // Verify we have valid coordinates before displaying
+            if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
+                // Create array with single job
+                const jobsToDisplay = [job];
+
+                // Display the pickup point
+                displayPickupPoints(jobsToDisplay, true, job);
+
+                // Set bounds for pickup point
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
+
+                // If delivery coordinates are valid, include them too
+                if (isValidCoordinates(job.deliveryLatitude, job.deliveryAddress.longitude)) {
+                    bounds.extend(new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
+                }
+
+                map.fitBounds(bounds);
+
+                // Adjust zoom if too close
+                const listener = google.maps.event.addListener(map, "idle", () => {
+                    if (map.getZoom() > 16) {
+                        map.setZoom(16);
+                    }
+                    google.maps.event.removeListener(listener);
+                });
+            } else {
+                console.warn('Invalid pickup coordinates for job:', job);
+            }
+        }
+
+        /**
+         * @param {number|null} lat
+         * @param {number} lng
+         */
+        function isValidCoordinates(lat, lng) {
+            return lat !== null && lng !== null &&
+                !isNaN(lat) && !isNaN(lng) &&
+                lat !== 0 && lng !== 0 &&
+                Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+        }
 
         /**
          * Maintains the highlight state of the selected job
