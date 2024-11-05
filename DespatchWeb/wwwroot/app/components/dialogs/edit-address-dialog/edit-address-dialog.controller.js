@@ -69,8 +69,6 @@ class EditAddressDialogController {
             this.addressDetails.lat = addressDetails.latitude;
             this.addressDetails.long = addressDetails.longitude;
             this.addressDetails.address = addressDetails.fullAddress;
-
-            this.UsStates = UsStatesService.getStates();
         }
 
         this._initializeMap($timeout, NgMap);
@@ -259,33 +257,71 @@ class EditAddressDialogController {
     async submit(addressDetails) {
         this.isLoading = true;
 
-        if (!this.useUsFormat) {
-            if (this.ourSuburbSelectedItem.id !== undefined) {
-                addressDetails.our_suburb = this.ourSuburbSelectedItem.id;
+        try {
+            let addressData;
+
+            if (this.useUsFormat) {
+                if (!this.validateUsAddress(addressDetails)) {
+                    this.isLoading = false;
+                    return;
+                }
+
+                // Get the full state name from the abbreviation
+                const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.stateAbbrev);
+                addressDetails.addressLine6 = stateObj.name;
+                addressDetails.state = stateObj;
+
+                // Format data for US addresses
+                addressData = {
+                    addressLine1: addressDetails.addressLine1,
+                    addressLine2: addressDetails.addressLine2,
+                    addressLine3: addressDetails.addressLine3,
+                    addressLine4: addressDetails.addressLine4,
+                    addressLine5: addressDetails.addressLine5,
+                    addressLine6: addressDetails.addressLine6,
+                    addressLine7: addressDetails.addressLine7,
+                    lat: addressDetails.lat,
+                    lng: addressDetails.long
+                };
+
+                // Ensure fullAddress is up-to-date
+                addressDetails.fullAddress = this.constructFullAddress(addressDetails);
+
+            } else {
+                // Validate NZ specific requirements
+                if (this.ourSuburbSelectedItem.id === undefined) {
+                    alert("You must pick one of our suburbs to map this address to");
+                    this.isLoading = false;
+                    return;
+                }
+
+                // Format data for NZ addresses
+                addressData = {
+                    address: addressDetails.address,
+                    toSuburbId: this.ourSuburbSelectedItem.id,
+                    cbd: addressDetails.cbd || false,
+                    lat: addressDetails.lat,
+                    lng: addressDetails.long
+                };
             }
 
-            if (addressDetails.our_suburb === undefined) {
-                alert("You must pick one of our suburbs to map this address to");
-                this.isLoading = false;
-                return;
-            }
-        } else {
-            if (!this.validateUsAddress(addressDetails)) {
-                this.isLoading = false;
-                return;
-            }
-            // Update the addressLine6 with the state abbreviation before submitting
-            addressDetails.addressLine6 = addressDetails.stateAbbrev;
-            // Update the state object
-            addressDetails.state = this.UsStatesService.getStateByAbbreviation(addressDetails.stateAbbrev);
+            // Pass back formatted address data along with other required fields
+            const result = {
+                addressData: addressData,
+                rate: addressDetails.rate,
+                jobId: addressDetails.jobId,
+                despatcherName: addressDetails.despatcherName,
+                prebook: addressDetails.prebook || false,
+                country: this.useUsFormat ? 'US' : 'NZ'
+            };
+
+            this.isLoading = false;
+            this._$mdDialog.hide(result);
+        } catch (error) {
+            this.isLoading = false;
+            console.error(error);
+            this._toastrService.showErrorToast('Error updating address. Please try again or contact support');
         }
-
-        // Ensure fullAddress is up-to-date
-        addressDetails.fullAddress = this.constructFullAddress(addressDetails);
-
-        // Pass back to function that called dialog for processing
-        this.isLoading = false;
-        this._$mdDialog.hide(addressDetails);
     }
 
     /**
