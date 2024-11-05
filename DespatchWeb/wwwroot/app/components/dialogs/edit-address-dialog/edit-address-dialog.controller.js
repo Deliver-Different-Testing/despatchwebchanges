@@ -63,12 +63,14 @@ class EditAddressDialogController {
         // Initialize US-specific fields if using US format
         if (this.useUsFormat) {
             this.addressDetails.city = addressDetails.addressLine5;
-            this.addressDetails.state = UsStatesService.getStateByName(addressDetails.addressLine6);
+            this.addressDetails.stateAbbrev = UsStatesService.getStateByName(addressDetails.addressLine6).abbreviation;
+            this.addressDetails.state = addressDetails.addressLine6;
             this.addressDetails.zipCode = addressDetails.addressLine7;
-            this.UsStates = UsStatesService.getStates();
             this.addressDetails.lat = addressDetails.latitude;
             this.addressDetails.long = addressDetails.longitude;
             this.addressDetails.address = addressDetails.fullAddress;
+
+            this.UsStates = UsStatesService.getStates();
         }
 
         this._initializeMap($timeout, NgMap);
@@ -272,6 +274,10 @@ class EditAddressDialogController {
                 this.isLoading = false;
                 return;
             }
+            // Update the addressLine6 with the state abbreviation before submitting
+            addressDetails.addressLine6 = addressDetails.stateAbbrev;
+            // Update the state object
+            addressDetails.state = this.UsStatesService.getStateByAbbreviation(addressDetails.stateAbbrev);
         }
 
         // Ensure fullAddress is up-to-date
@@ -288,14 +294,14 @@ class EditAddressDialogController {
      * @returns {boolean} True if the address is valid, false otherwise.
      */
     validateUsAddress(addressDetails) {
-        if (!addressDetails.addressLine4 || !addressDetails.addressLine5 || !addressDetails.addressLine6) {
-            alert("Please fill in all required fields (City, State, and ZIP Code)");
+        if (!addressDetails.addressLine4 || !addressDetails.addressLine5 || !addressDetails.stateAbbrev) {
+            alert("Please fill in all required fields (Street, City, and State)");
             return false;
         }
 
-        const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.addressLine5);
+        const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.stateAbbrev);
         if (!stateObj) {
-            alert("Please enter a valid US state abbreviation");
+            alert("Please select a valid US state");
             return false;
         }
 
