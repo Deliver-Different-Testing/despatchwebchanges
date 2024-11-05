@@ -3192,13 +3192,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          * @returns {string} Space-separated list of CSS classes
          */
         $scope.jobClass = (job) => {
-            if (!job) return '';
-
-            const classes = [];
-
-            // Add direct class if job is direct
-            if (job.direct) {
-                classes.push('direct');
+            if (!job || !job.followupTime) {
+                return '';
             }
 
             // Add time-based status class
@@ -3207,14 +3202,12 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             const diffMinutes = followupTime.diff(now, 'minutes');
 
             if (diffMinutes > 30) {
-                classes.push('status-future');
+                return 'status-future';
             } else if (diffMinutes < -30) {
-                classes.push('status-past');
+                return 'status-past';
             } else {
-                classes.push('status-current');
+                return 'status-current';
             }
-
-            return classes.join(' ');
         };
     }]);
 
