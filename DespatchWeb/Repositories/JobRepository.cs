@@ -10,6 +10,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -1646,12 +1647,66 @@ public class JobRepository : BaseJobRepository, IJobRepository
             .FirstOrDefault() ?? new TruckItemsSummary();
     }
 
-    public async Task UpdateDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
-        decimal deliveryLng, bool cbd, decimal rate, string despatcher)
+    public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobDeliveryAddressAsync(jobId, toSuburbId,
-            address, deliveryLat,
-            deliveryLng, cbd, rate, despatcher);
+        try
+        {
+            var job = await Get<TucJob>(request.JobId);
+
+            job.DeliveryLatitude = request.Latitude;
+            job.DeliveryLongitude = request.Longitude;
+            job.UcjbToAddr = request.Address;
+            job.UcjbTo = request.SuburbId;
+            job.UcjbAmount = request.Rate;
+            job.UcjbCbd = request.Cbd;
+
+            await _context.SaveChangesAsync();
+
+            // Record change in note
+            var note = $" Changed Delivery Address to {request.Address}";
+            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating the delivery address for job {request.JobId}");
+            throw;
+        }
+    }
+
+    public async Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request)
+    {
+        try
+        {
+            var address = request.Address;
+            var job = await Get<TucJob>(request.JobId);
+
+            // Coordinates
+            job.DeliveryLatitude = address.Latitude;
+            job.DeliveryLongitude = address.Longitude;
+
+            // Address Lines
+            job.DeliveryAddressLine1 = address.AddressLine1;
+            job.DeliveryAddressLine2 = address.AddressLine2;
+            job.DeliveryAddressLine3 = address.AddressLine3;
+            job.DeliveryAddressLine4 = address.AddressLine4;
+            job.DeliveryAddressLine5 = address.AddressLine5;
+            job.DeliveryAddressLine6 = address.AddressLine6;
+            job.DeliveryAddressLine7 = address.AddressLine7;
+
+            // Amount
+            job.UcjbAmount = request.Rate;
+
+            await _context.SaveChangesAsync();
+
+            // Record change in note
+            var note = $" Changed Delivery Address to {request.Address}";
+            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating the delivery address for job {request.JobId}");
+            throw;
+        }
     }
 
     public async Task UpdateBulkDeliveryAddressAsync(int bulkJobId, string toSuburb, int toPostCode, string address,

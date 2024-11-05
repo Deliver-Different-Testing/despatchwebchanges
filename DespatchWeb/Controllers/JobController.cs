@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -723,11 +724,15 @@ public class JobController : Controller
         return Json(summary);
     }
 
-    public async Task<IActionResult> UpdateDeliveryAddress(int jobId, int toSuburbId, string address,
-        decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcherName)
+    public async Task<IActionResult> UpdateDeliveryAddressNz(UpdateAddressRequestNz request)
     {
-        await _jobRepo.UpdateDeliveryAddressAsync(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
-            despatcherName);
+        await _jobRepo.UpdateDeliveryAddressNzAsync(request);
+        return Json("OK");
+    }
+
+    public async Task<IActionResult> UpdateDeliveryAddressUs(UpdateAddressRequestUs request)
+    {
+        await _jobRepo.UpdateDeliveryAddressUsAsync(request);
         return Json("OK");
     }
 
