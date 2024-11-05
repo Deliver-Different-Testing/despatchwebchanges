@@ -14,9 +14,6 @@ class NationwideLayoutService {
         this._$mdDialog = $mdDialog;
         this._$rootScope = $rootScope;
 
-        /** @type {boolean} */
-        this.shouldDisplayFlightTable = true;
-
         // Column width options
         /** @type {string} */
         this.COL_WIDTH_LARGE = "35%";
@@ -43,17 +40,21 @@ class NationwideLayoutService {
         /** @type {Box} */
         this.jobsListRepriceBox = {name: "jobsListReprice", height: this.BOX_HEIGHT_MEDIUM};
         /** @type {Box} */
-        this.flightDataTableBox = {name: "flightDataTable", height: this.BOX_HEIGHT_XSMALL};
-        /** @type {Box} */
         this.mapTableBox = {name: "map", height: this.BOX_HEIGHT_XSMALL};
         /** @type {Box} */
         this.jobDetailBox = {name: "jobDetail", height: this.BOX_HEIGHT_LARGE};
         /** @type {Box} */
-        this.agentDataTableBox = {name: "agentDataTable", height: this.BOX_HEIGHT_XSMALL};
+        this.flightAgentDataTableBox = {name: "flightAgentDataTable", height: this.BOX_HEIGHT_XSMALL};
 
         // Define columns
-        this.column1 = {};
-        this.updateColumn1Layout();
+        this.column1 = {
+            id: "col1",
+            width: this.COL_WIDTH_LARGE,
+            boxes: [
+                this.jobsListBox,
+                this.flightAgentDataTableBox
+            ]
+        };
 
         /** @type {Column} */
         this.column2 = {
@@ -93,14 +94,7 @@ class NationwideLayoutService {
      */
     updateColumn1Layout() {
         /** @type {Column} */
-        this.column1 = {
-            id: "col1",
-            width: this.COL_WIDTH_LARGE,
-            boxes: [
-                this.jobsListBox,
-                this.shouldDisplayFlightTable ? this.flightDataTableBox : this.agentDataTableBox
-            ]
-        };
+
 
         // Update the current layout
         if (this.currentLayouts && this.currentLayouts.length > 0) {
@@ -147,22 +141,6 @@ class NationwideLayoutService {
      */
     getCurrentLayout() {
         return this.currentLayout ? angular.copy(this.currentLayout) : this.defaultLayout[0].layout;
-    }
-
-    /**
-     * Show the flight table
-     */
-    showFlightTable() {
-        this.shouldDisplayFlightTable = true;
-        this.updateColumn1Layout();
-    }
-
-    /**
-     * Show the flight table
-     */
-    showAgentTable() {
-        this.shouldDisplayFlightTable = false;
-        this.updateColumn1Layout();
     }
 
     /**

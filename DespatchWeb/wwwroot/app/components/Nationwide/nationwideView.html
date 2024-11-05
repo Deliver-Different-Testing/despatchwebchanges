@@ -125,6 +125,9 @@
                                         {{jo.label}}
                                     </span>
                                     </span>
+                                    <span ng-if="box.name == 'flightAgentDataTable'">
+                                        {{isDeliveryJob() ? 'Agents' : 'Flights'}}
+                                    </span>
                                 </span>
 
                                 <div ng-if="currentJob && box.name == 'jobDetail'">

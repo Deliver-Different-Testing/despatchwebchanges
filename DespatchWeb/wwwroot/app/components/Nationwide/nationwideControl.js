@@ -278,14 +278,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     "templateUrl": versionUrl("app/components/Nationwide/partials/map.html"),
                     "showSearch": 0,
                     "showRefresh": 1
-                }, "flightDataTable": {
-                    "title": "Flight Options",
-                    "templateUrl": versionUrl("app/components/Nationwide/partials/flightDataTableBox.html"),
-                    "showSearch": 0,
-                    "showRefresh": 1
-                }, "agentDataTable": {
-                    "title": "Available Agents",
-                    "templateUrl": versionUrl("app/components/Nationwide/partials/agentDataTableBox.html"),
+                }, "flightAgentDataTable": {
+                    "title": "Available",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/flightAgentDataTableBox.html"),
                     "showSearch": 0,
                     "showRefresh": 1
                 }
@@ -2272,7 +2267,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         async function _processFlights(job) {
             console.log('Getting flights');
-            LayoutService.showFlightTable();
 
             $scope.flightsLoading = true;
 
@@ -2309,7 +2303,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         async function _processAgents(job) {
             console.log('Getting agents');
-            LayoutService.showAgentTable();
 
             $scope.agentsLoading = true;
 
