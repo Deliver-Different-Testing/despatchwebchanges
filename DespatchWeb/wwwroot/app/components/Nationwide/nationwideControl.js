@@ -3208,15 +3208,17 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 classes.push('direct');
             }
 
-            // Add chilled class for specific speed types
-            const chilledSpeedTypes = ['CT', 'CTHIRE', 'FT', 'FTHIRE', 'HC', 'TC'];
-            if (chilledSpeedTypes.includes(job.speed)) {
-                classes.push('chilled');
-            }
+            // Add time-based status class
+            const followupTime = moment(job.followupTime);
+            const now = moment();
+            const diffMinutes = followupTime.diff(now, 'minutes');
 
-            // Add G class if job is dispatched (has a courier assigned)
-            if (job.courier || job.assignedCourier) {
-                classes.push('G');
+            if (diffMinutes > 30) {
+                classes.push('status-future');
+            } else if (diffMinutes < -30) {
+                classes.push('status-past');
+            } else {
+                classes.push('status-current');
             }
 
             return classes.join(' ');
