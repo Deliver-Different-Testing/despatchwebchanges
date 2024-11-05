@@ -25,6 +25,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +36,53 @@ builder.Services.AddControllersWithViews();
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 Log.Logger =  new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).WriteTo.Console().CreateLogger();
 
-builder.Services.AddDataProtection().PersistKeysToAWSSystemsManager("/Hub/DataProtection").SetApplicationName("DeliverDifferent");
+if (builder.Environment.IsDevelopment())
+{
+    var keyDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "DeliverDifferent", "DataProtection-Keys");
+
+
+    // Ensure directory exists with proper permissions
+    if (!Directory.Exists(keyDirectory))
+    {
+        var dirInfo = Directory.CreateDirectory(keyDirectory);
+
+        if (OperatingSystem.IsWindows())
+        {
+            // Get current user's identity
+            var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var fileSystemRights = System.Security.AccessControl.FileSystemRights.FullControl;
+            var inheritanceFlags = System.Security.AccessControl.InheritanceFlags.ContainerInherit |
+                                   System.Security.AccessControl.InheritanceFlags.ObjectInherit;
+            var propagationFlags = System.Security.AccessControl.PropagationFlags.None;
+            var accessControlType = System.Security.AccessControl.AccessControlType.Allow;
+
+            var accessRule = new System.Security.AccessControl.FileSystemAccessRule(
+                currentUser.Name,
+                fileSystemRights,
+                inheritanceFlags,
+                propagationFlags,
+                accessControlType);
+
+            var security = dirInfo.GetAccessControl();
+            security.AddAccessRule(accessRule);
+            dirInfo.SetAccessControl(security);
+        }
+    }
+
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(keyDirectory))
+        .SetApplicationName("DeliverDifferent")
+        .ProtectKeysWithDpapi();
+
+    Log.Information($"DataProtection configured to use directory: {keyDirectory}");
+
+}
+else
+{
+    builder.Services.AddDataProtection().PersistKeysToAWSSystemsManager("/Hub/DataProtection").SetApplicationName("DeliverDifferent");
+}
+
 
 builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
 

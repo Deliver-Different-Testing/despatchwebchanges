@@ -114,11 +114,11 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
             jobId, job?.AirPortId, job?.VehicleSizeId);
 
         var agents = await GetEligibleAgentsAsync(job.AirPortId, job.VehicleSizeId);
-        _logger.LogInformation("Found {AgentCount} eligible agents for job {JobId}",
+        Log.Information("Found {AgentCount} eligible agents for job {JobId}",
             agents?.Count ?? 0, jobId);
 
         var results = await ProcessAgentsInParallelAsync(job, agents);
-        _logger.LogInformation("Processed {ResultCount} agents with rates for job {JobId}",
+        Log.Information("Processed {ResultCount} agents with rates for job {JobId}",
             results?.Count ?? 0, jobId);
 
         return results;

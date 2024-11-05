@@ -761,7 +761,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         catch (Exception e)
         {
             var message = $"An error occured updating pickup address for Job {jobId}";
-            _logger.LogError(e, message);
+            Log.Error(e, message);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message });
         }
     }

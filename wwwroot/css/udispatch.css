@@ -836,15 +836,33 @@ table.table tr.status-past.chilled {
 }
 table.table tr.direct {
   color: red;
+  background-color: rgba(255, 0, 0, 0.05);
 }
 table.table tr.direct td {
   color: red;
 }
+table.table tr.direct:hover {
+  background-color: rgba(255, 0, 0, 0.08);
+}
 table.table tr.chilled {
   color: dodgerblue;
+  background-color: rgba(30, 144, 255, 0.05);
 }
 table.table tr.chilled td {
   color: dodgerblue;
+}
+table.table tr.chilled:hover {
+  background-color: rgba(30, 144, 255, 0.08);
+}
+table.table tr.chilled.direct {
+  color: purple;
+  background-color: rgba(128, 0, 128, 0.05);
+}
+table.table tr.chilled.direct td {
+  color: purple;
+}
+table.table tr.chilled.direct:hover {
+  background-color: rgba(128, 0, 128, 0.08);
 }
 table.table tr .fa-exclamation {
   color: red;
@@ -910,20 +928,52 @@ input.pod-DispatchField {
   background-color: #b0f57b;
 }
 #currentWork td {
+  padding: 4px 8px;
   border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#currentWork td.address-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+#currentWork td.address-cell:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 1000;
+  background: #fff;
+  padding: 5px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: normal;
+  max-width: 300px;
+  word-wrap: break-word;
 }
 #currentWork .doing {
   background-color: #d7f3ce;
 }
-#currentWork input.dispatchField {
+#currentWork md-autocomplete {
+  margin: 0;
+  height: 30px;
   width: 40px;
-  height: 20px;
-  text-align: center;
 }
+#currentWork md-autocomplete .md-whiteframe-z1 {
+  box-shadow: none;
+}
+#currentWork md-autocomplete input {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 2px 4px !important;
+}
+#currentWork input.dispatchField,
 #currentWork input.lateCallField {
   width: 40px;
-  height: 20px;
+  height: 30px;
   text-align: center;
+  padding: 2px 4px;
 }
 #jobList th {
   white-space: nowrap;
@@ -942,20 +992,52 @@ input.pod-DispatchField {
   background-color: #b0f57b;
 }
 #jobList td {
+  padding: 4px 8px;
   border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobList td.address-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+#jobList td.address-cell:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 1000;
+  background: #fff;
+  padding: 5px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: normal;
+  max-width: 300px;
+  word-wrap: break-word;
 }
 #jobList .doing {
   background-color: #d7f3ce;
 }
-#jobList input.dispatchField {
+#jobList md-autocomplete {
+  margin: 0;
+  height: 30px;
   width: 40px;
-  height: 20px;
-  text-align: center;
 }
+#jobList md-autocomplete .md-whiteframe-z1 {
+  box-shadow: none;
+}
+#jobList md-autocomplete input {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 2px 4px !important;
+}
+#jobList input.dispatchField,
 #jobList input.lateCallField {
   width: 40px;
-  height: 20px;
+  height: 30px;
   text-align: center;
+  padding: 2px 4px;
 }
 #pbList th {
   white-space: nowrap;
@@ -974,20 +1056,52 @@ input.pod-DispatchField {
   background-color: #b0f57b;
 }
 #pbList td {
+  padding: 4px 8px;
   border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#pbList td.address-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+#pbList td.address-cell:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 1000;
+  background: #fff;
+  padding: 5px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: normal;
+  max-width: 300px;
+  word-wrap: break-word;
 }
 #pbList .doing {
   background-color: #d7f3ce;
 }
-#pbList input.dispatchField {
+#pbList md-autocomplete {
+  margin: 0;
+  height: 30px;
   width: 40px;
-  height: 20px;
-  text-align: center;
 }
+#pbList md-autocomplete .md-whiteframe-z1 {
+  box-shadow: none;
+}
+#pbList md-autocomplete input {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 2px 4px !important;
+}
+#pbList input.dispatchField,
 #pbList input.lateCallField {
   width: 40px;
-  height: 20px;
+  height: 30px;
   text-align: center;
+  padding: 2px 4px;
 }
 #jobListPOD th {
   white-space: nowrap;
@@ -1006,20 +1120,52 @@ input.pod-DispatchField {
   background-color: #b0f57b;
 }
 #jobListPOD td {
+  padding: 4px 8px;
   border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListPOD td.address-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+#jobListPOD td.address-cell:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 1000;
+  background: #fff;
+  padding: 5px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: normal;
+  max-width: 300px;
+  word-wrap: break-word;
 }
 #jobListPOD .doing {
   background-color: #d7f3ce;
 }
-#jobListPOD input.dispatchField {
+#jobListPOD md-autocomplete {
+  margin: 0;
+  height: 30px;
   width: 40px;
-  height: 20px;
-  text-align: center;
 }
+#jobListPOD md-autocomplete .md-whiteframe-z1 {
+  box-shadow: none;
+}
+#jobListPOD md-autocomplete input {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 2px 4px !important;
+}
+#jobListPOD input.dispatchField,
 #jobListPOD input.lateCallField {
   width: 40px;
-  height: 20px;
+  height: 30px;
   text-align: center;
+  padding: 2px 4px;
 }
 #jobListDelivery th {
   white-space: nowrap;
@@ -1038,20 +1184,52 @@ input.pod-DispatchField {
   background-color: #b0f57b;
 }
 #jobListDelivery td {
+  padding: 4px 8px;
   border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListDelivery td.address-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+#jobListDelivery td.address-cell:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 1000;
+  background: #fff;
+  padding: 5px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: normal;
+  max-width: 300px;
+  word-wrap: break-word;
 }
 #jobListDelivery .doing {
   background-color: #d7f3ce;
 }
-#jobListDelivery input.dispatchField {
+#jobListDelivery md-autocomplete {
+  margin: 0;
+  height: 30px;
   width: 40px;
-  height: 20px;
-  text-align: center;
 }
+#jobListDelivery md-autocomplete .md-whiteframe-z1 {
+  box-shadow: none;
+}
+#jobListDelivery md-autocomplete input {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 2px 4px !important;
+}
+#jobListDelivery input.dispatchField,
 #jobListDelivery input.lateCallField {
   width: 40px;
-  height: 20px;
+  height: 30px;
   text-align: center;
+  padding: 2px 4px;
 }
 #jobListReprice th {
   white-space: nowrap;
@@ -1070,20 +1248,52 @@ input.pod-DispatchField {
   background-color: #b0f57b;
 }
 #jobListReprice td {
+  padding: 4px 8px;
   border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#jobListReprice td.address-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+#jobListReprice td.address-cell:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 1000;
+  background: #fff;
+  padding: 5px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: normal;
+  max-width: 300px;
+  word-wrap: break-word;
 }
 #jobListReprice .doing {
   background-color: #d7f3ce;
 }
-#jobListReprice input.dispatchField {
+#jobListReprice md-autocomplete {
+  margin: 0;
+  height: 30px;
   width: 40px;
-  height: 20px;
-  text-align: center;
 }
+#jobListReprice md-autocomplete .md-whiteframe-z1 {
+  box-shadow: none;
+}
+#jobListReprice md-autocomplete input {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 2px 4px !important;
+}
+#jobListReprice input.dispatchField,
 #jobListReprice input.lateCallField {
   width: 40px;
-  height: 20px;
+  height: 30px;
   text-align: center;
+  padding: 2px 4px;
 }
 #map_canvas_container {
   position: relative;
@@ -1587,4 +1797,39 @@ md-list-item:not(.selected):hover {
 }
 .table-body-container td {
   white-space: nowrap;
+}
+.drop-box {
+  border: 2px dashed #e0e0e0;
+  border-radius: 4px;
+  padding: 32px;
+  text-align: center;
+  margin: 16px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.drop-box:hover {
+  border-color: #3EAFC2;
+  background-color: rgba(33, 150, 243, 0.04);
+}
+.drop-box md-icon {
+  color: #3EAFC2;
+  margin-bottom: 16px;
+}
+.drop-box p {
+  margin: 8px 0;
+  color: rgba(0, 0, 0, 0.87);
+}
+.drop-box p.md-caption {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 12px;
+}
+.drop-box.dragover {
+  border-color: #3EAFC2;
+  background-color: rgba(33, 150, 243, 0.08);
+  transform: scale(1.01);
+}
+@media (max-width: 600px) {
+  .drop-box {
+    padding: 16px;
+  }
 }
