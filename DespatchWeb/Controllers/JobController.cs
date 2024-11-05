@@ -753,9 +753,18 @@ public class JobController : Controller
     public async Task<IActionResult> UpdatePickupAddress(int jobId, int fromSuburbId, string address,
         decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
     {
-        await _jobRepo.UpdatePickupAddressAsync(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
-            despatcherName);
-        return Json("OK");
+        try
+        {
+            await _jobRepo.UpdatePickupAddressAsync(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
+                despatcherName);
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            var message = $"An error occured updating pickup address for Job {jobId}";
+            _logger.LogError(e, message);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message });
+        }
     }
 
     public async Task<IActionResult> UpdateJobType(int jobId, int jobType, string despatcherName)
