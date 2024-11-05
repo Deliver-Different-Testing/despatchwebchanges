@@ -77,8 +77,6 @@ class NationwideLayoutService {
 
         /** @type {Layout[]|null} Current layouts */
         this.currentLayouts = null;
-        /** @type {Layout[]|null} Layouts object */
-        this.layoutsObject = null;
         /** @type {Object} Map zoom configuration */
         this.mapZoom = {display: true};
         /** @type {string} Current layout name */
@@ -87,20 +85,6 @@ class NationwideLayoutService {
         this.currentLayoutIndex = 0;
 
         this._initializeLayouts();
-    }
-
-    /**
-     * Update the column1 layout based on the current showFlightTable value
-     */
-    updateColumn1Layout() {
-        /** @type {Column} */
-
-
-        // Update the current layout
-        if (this.currentLayouts && this.currentLayouts.length > 0) {
-            this.currentLayouts[0].layout.columns[0] = this.column1;
-            this.updateLayouts(this.currentLayouts);
-        }
     }
 
     /**
@@ -144,24 +128,6 @@ class NationwideLayoutService {
     }
 
     /**
-     * Set the last active layout name.
-     * @param {string} layoutName - The name of the layout to set as last active.
-     */
-    setLastActiveLayoutName(layoutName) {
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`lastActiveLayoutNW-${this._$window.ContactID}`, layoutName);
-        }
-    }
-
-    /**
-     * Get the current map zoom configuration.
-     * @returns {Object} A copy of the current map zoom configuration.
-     */
-    getMapZoom() {
-        return angular.copy(this.mapZoom);
-    }
-
-    /**
      * Set the map zoom configuration.
      * @param {Object} newMapZoom - The new map zoom configuration to set.
      */
@@ -179,22 +145,6 @@ class NationwideLayoutService {
     getUserName() {
         return this._$window.FirstName;
     }
-
-    /**
-     * Update the current layouts.
-     * @param {Layout[]} newLayouts - The new layouts to set.
-     */
-    updateLayouts(newLayouts) {
-        this.currentLayouts = newLayouts;
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.stringify(this.currentLayouts));
-        }
-        // Notify any listeners that the layout has changed
-        if (this._$rootScope) {
-            this._$rootScope.$broadcast('layoutUpdated');
-        }
-    }
-
     /**
      * Initialize the service.
      * @private
