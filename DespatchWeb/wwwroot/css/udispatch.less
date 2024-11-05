@@ -883,10 +883,10 @@ table.table {
     }
 
     &.status-future {
-      background-color: @status-future-bg;
+      background-color: @s-green;
 
       &:hover {
-        background-color: fadeout(@s-green, 60%);
+        background-color: fadeout(@status-future-bg, 60%);
       }
 
       &.direct, &.chilled {
@@ -895,10 +895,10 @@ table.table {
     }
 
     &.status-current {
-      background-color: @status-current-bg;
+      background-color: @s-orange;
 
       &:hover {
-        background-color: fadeout(@s-orange, 60%);
+        background-color: fadeout(@status-current-bg, 60%);
       }
 
       &.direct, &.chilled {
@@ -907,10 +907,10 @@ table.table {
     }
 
     &.status-past {
-      background-color: @status-past-bg;
+      background-color: @s-red;
 
       &:hover {
-        background-color: fadeout(@s-red, 60%);
+        background-color: fadeout(@status-past-bg, 60%);
       }
 
       &.direct, &.chilled {
