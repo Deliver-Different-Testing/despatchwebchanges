@@ -196,6 +196,7 @@ angular.module("uDispatch")
 
             function initWidgetLoadingStates() {
                 $scope.jobsLoading = false;
+                $scope.driverLocationsLoading = true;
                 $scope.supportsLoading = false;
                 $scope.potentialCouriersLoading = false;
                 $scope.currentListLoading = false;
@@ -2385,21 +2386,72 @@ angular.module("uDispatch")
                     }
 
                     try {
-                        if (job.courier === null) {
+                        if (!job.courier && !job.assignedCourier) {
+                            // Job is undispatched
                             await handleUndispatchedJob(job);
-                        } else if (job.assignedCourier) {
-                            $scope.potentialCouriers = false;
-                            await $scope.selectCourier(job.courierData);
                         } else {
-                            console.warn('Missing courier data for job:', job);
+                            // Job is dispatched
+                            $scope.potentialCouriers = false;
+                            if (job.courierData) {
+                                await $scope.selectCourier(job.courierData);
+
+                                // Display route points for the single job
+                                const jobs = [job];
+                                if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude) &&
+                                    isValidCoordinates(job.deliveryAddress.latitude, job.deliveryAddress.longitude)) {
+                                    displayRoutePointsOnly(jobs, true, $scope.mapZoom.display);
+
+                                    // Create bounds that include pickup and delivery points
+                                    const bounds = new google.maps.LatLngBounds();
+                                    bounds.extend(new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
+                                    bounds.extend(new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
+
+                                    // If courier position is available, include it
+                                    if (isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
+                                        bounds.extend(new google.maps.LatLng(job.courierData.latitude, job.courierData.longitude));
+                                    }
+
+                                    map.fitBounds(bounds);
+
+                                    // Adjust zoom if too close
+                                    const listener = google.maps.event.addListener(map, "idle", () => {
+                                        if (map.getZoom() > 16) map.setZoom(16);
+                                        google.maps.event.removeListener(listener);
+                                    });
+                                } else {
+                                    console.warn('Invalid coordinates for job:', job);
+                                    // Fallback to courier position if available
+                                    if (isValidCoordinates(job.courierData.latitude, job.courierData.longitude)) {
+                                        displayCourierPositionOnly(job.courierData.latitude, job.courierData.longitude);
+                                    }
+                                }
+                            } else {
+                                console.warn('Missing courier data for job:', job);
+                            }
                         }
+
+                        // Always update available courier locations after handling the job
+                        await $scope.getAvailableCourierLocation();
                     } catch (error) {
-                        console.error('An error occured finding and couriers');
+                        console.error('An error occurred finding couriers:', error);
                     }
 
                     focusDispatchField();
                 }, 0);
             };
+
+            /**
+             * Validates if coordinates are valid numbers and within reasonable bounds
+             * @param {number} lat
+             * @param {number} lng
+             * @returns {boolean}
+             */
+            function isValidCoordinates(lat, lng) {
+                return lat !== null && lng !== null &&
+                    !isNaN(lat) && !isNaN(lng) &&
+                    lat !== 0 && lng !== 0 &&
+                    Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+            }
 
             function clearActiveJobs() {
                 angular.element(".activeTable .active").each((_, el) => {
@@ -2412,6 +2464,9 @@ angular.module("uDispatch")
                 });
             }
 
+            /**
+             * @param {Job} job
+             */
             async function handleUndispatchedJob(job) {
                 $scope.jobGroups = false;
                 await $scope.getPotentialCouriers(job.id);
@@ -2420,7 +2475,30 @@ angular.module("uDispatch")
                 $scope.currentSelection = ` for Job ${job.jobNo}`;
 
                 const unDispatchedData = $scope.jobList.filter(x => !x?.courierData?.courierID);
-                displayPickupPoints(unDispatchedData, true, job);
+
+                // Verify we have valid coordinates before displaying
+                if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
+                    displayPickupPoints(unDispatchedData, true, job);
+
+                    // Set bounds for pickup point
+                    const bounds = new google.maps.LatLngBounds();
+                    bounds.extend(new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
+
+                    // If delivery coordinates are valid, include them too
+                    if (isValidCoordinates(job.deliveryLatitude, job.deliveryAddress.longitude)) {
+                        bounds.extend(new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
+                    }
+
+                    map.fitBounds(bounds);
+
+                    // Adjust zoom if too close
+                    const listener = google.maps.event.addListener(map, "idle", () => {
+                        if (map.getZoom() > 16) map.setZoom(16);
+                        google.maps.event.removeListener(listener);
+                    });
+                } else {
+                    console.warn('Invalid pickup coordinates for job:', job);
+                }
             }
 
             function focusDispatchField() {
@@ -2995,6 +3073,8 @@ angular.module("uDispatch")
             };
 
             async function fetchDriverLocations() {
+                $scope.driverLocationsLoading = true;
+
                 $scope.getClearListEnvelope = async (clearListId) => {
                     try {
                         const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
@@ -3019,6 +3099,8 @@ angular.module("uDispatch")
                 };
 
                 await $scope.getDriverLocationsData();
+                $scope.driverLocationsLoading = false;
+                $scope.$apply();
             }
 
             /**

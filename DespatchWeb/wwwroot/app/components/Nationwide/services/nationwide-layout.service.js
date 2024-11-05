@@ -14,9 +14,6 @@ class NationwideLayoutService {
         this._$mdDialog = $mdDialog;
         this._$rootScope = $rootScope;
 
-        /** @type {boolean} */
-        this.shouldDisplayFlightTable = true;
-
         // Column width options
         /** @type {string} */
         this.COL_WIDTH_LARGE = "35%";
@@ -43,17 +40,21 @@ class NationwideLayoutService {
         /** @type {Box} */
         this.jobsListRepriceBox = {name: "jobsListReprice", height: this.BOX_HEIGHT_MEDIUM};
         /** @type {Box} */
-        this.flightDataTableBox = {name: "flightDataTable", height: this.BOX_HEIGHT_XSMALL};
-        /** @type {Box} */
         this.mapTableBox = {name: "map", height: this.BOX_HEIGHT_XSMALL};
         /** @type {Box} */
         this.jobDetailBox = {name: "jobDetail", height: this.BOX_HEIGHT_LARGE};
         /** @type {Box} */
-        this.agentDataTableBox = {name: "agentDataTable", height: this.BOX_HEIGHT_XSMALL};
+        this.flightAgentDataTableBox = {name: "flightAgentDataTable", height: this.BOX_HEIGHT_XSMALL};
 
         // Define columns
-        this.column1 = {};
-        this.updateColumn1Layout();
+        this.column1 = {
+            id: "col1",
+            width: this.COL_WIDTH_LARGE,
+            boxes: [
+                this.jobsListBox,
+                this.flightAgentDataTableBox
+            ]
+        };
 
         /** @type {Column} */
         this.column2 = {
@@ -76,104 +77,14 @@ class NationwideLayoutService {
 
         /** @type {Layout[]|null} Current layouts */
         this.currentLayouts = null;
-        /** @type {Layout[]|null} Layouts object */
-        this.layoutsObject = null;
         /** @type {Object} Map zoom configuration */
         this.mapZoom = {display: true};
         /** @type {string} Current layout name */
-        this.currentLayoutName = "default";
+        this.currentLayoutName = "Default";
+        /** @type {number} Current layout index */
+        this.currentLayoutIndex = 0;
 
         this._initializeLayouts();
-    }
-
-    /**
-     * Initialize the service.
-     * @private
-     */
-    _initializeLayouts() {
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            try {
-                const storedLayouts = JSON.parse(this._$window.localStorage.getItem(`layoutsNW-${this._$window.ContactID}`));
-                const lastActiveLayoutName = this._$window.localStorage.getItem(`lastActiveLayoutNW-${this._$window.ContactID}`);
-
-                // Initialize layouts with at least the default layout
-                this.currentLayouts = storedLayouts || [this.defaultLayout[0]];
-
-                // Ensure default layout is always first and up to date
-                this.currentLayouts[0] = this.defaultLayout[0];
-
-                // Try to load the last active layout
-                if (lastActiveLayoutName) {
-                    const lastActiveLayout = this.currentLayouts.find(l => l.name === lastActiveLayoutName);
-                    if (lastActiveLayout) {
-                        this.loadLayout(this.currentLayouts.indexOf(lastActiveLayout));
-                    } else {
-                        this.loadLayout(0);
-                    }
-                } else {
-                    this.loadLayout(0);
-                }
-            } catch (error) {
-                console.error('Error loading stored layouts:', error);
-                this.currentLayouts = this.defaultLayout;
-                this.loadLayout(0);
-            }
-        }
-    }
-
-    /**
-     * Update the column1 layout based on the current showFlightTable value
-     */
-    updateColumn1Layout() {
-        /** @type {Column} */
-        this.column1 = {
-            id: "col1",
-            width: this.COL_WIDTH_LARGE,
-            boxes: [
-                this.jobsListBox,
-                this.shouldDisplayFlightTable ? this.flightDataTableBox : this.agentDataTableBox
-            ]
-        };
-
-        // Update the current layout
-        if (this.currentLayouts && this.currentLayouts.length > 0) {
-            this.currentLayouts[0].layout.columns[0] = this.column1;
-            this.updateLayouts(this.currentLayouts);
-        }
-    }
-
-    /**
-     * Show the flight table
-     */
-    showFlightTable() {
-        this.shouldDisplayFlightTable = true;
-        this.updateColumn1Layout();
-    }
-
-    /**
-     * Show the flight table
-     */
-    showAgentTable() {
-        this.shouldDisplayFlightTable = false;
-        this.updateColumn1Layout();
-    }
-
-    /**
-     * Set the last active layout name.
-     * @param {string} layoutName - The name of the layout to set as last active.
-     */
-    setLastActiveLayoutName(layoutName) {
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`lastActiveLayoutNW-${this._$window.ContactID}`, layoutName);
-        }
-    }
-
-    /**
-     * Get the default layout.
-     * @returns {Layout[]} A copy of the default layout.
-     */
-    getDefaultLayout() {
-        return angular.copy(this.defaultLayout);
     }
 
     /**
@@ -185,19 +96,35 @@ class NationwideLayoutService {
     }
 
     /**
+     * Get the default layout.
+     * @returns {Layout[]} A copy of the default layout.
+     */
+    getDefaultLayout() {
+        return angular.copy(this.defaultLayout);
+    }
+
+    /**
+     * Get the current layout index.
+     * @returns {number} The index of the current layout.
+     */
+    getCurrentLayoutIndex() {
+        return this.currentLayoutIndex;
+    }
+
+    /**
+     * Get the current layout name.
+     * @returns {string} The name of the current layout.
+     */
+    getCurrentLayoutName() {
+        return this.currentLayoutName;
+    }
+
+    /**
      * Get the current active layout.
      * @returns {Object} A copy of the current active layout configuration.
      */
     getCurrentLayout() {
-        return angular.copy(this.currentLayouts[0].layout);
-    }
-
-    /**
-     * Get the current map zoom configuration.
-     * @returns {Object} A copy of the current map zoom configuration.
-     */
-    getMapZoom() {
-        return angular.copy(this.mapZoom);
+        return this.currentLayout ? angular.copy(this.currentLayout) : this.defaultLayout[0].layout;
     }
 
     /**
@@ -218,68 +145,46 @@ class NationwideLayoutService {
     getUserName() {
         return this._$window.FirstName;
     }
-
     /**
-     * Update the current layouts.
-     * @param {Layout[]} newLayouts - The new layouts to set.
-     */
-    updateLayouts(newLayouts) {
-        this.currentLayouts = newLayouts;
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`layoutsNW-${this._$window.ContactID}`, JSON.stringify(this.currentLayouts));
-        }
-        // Notify any listeners that the layout has changed
-        if (this._$rootScope) {
-            this._$rootScope.$broadcast('layoutUpdated');
-        }
-    }
-
-    /**
-     * Load a layout.
-     * @param {number} index - The index of the layout to load.
-     * @returns {Object} The loaded layout.
-     */
-    loadLayout(index) {
-        if (!this.currentLayouts[index]) {
-            console.warn('Invalid layout index, loading default');
-            index = 0;
-        }
-
-        this.currentLayoutName = this.currentLayouts[index].name;
-        this.currentLayout = angular.copy(this.currentLayouts[index].layout);
-
-        // Save as last active layout
-        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
-            this._$window.localStorage.setItem(`lastActiveLayoutNW-${this._$window.ContactID}`, this.currentLayoutName);
-        }
-
-        // Apply the layout dimensions
-        this._applyLayoutDimensions(this.currentLayout);
-
-        return this.currentLayout;
-    }
-
-    /**
-     * Load a layout.
-     * @param {Object} layout - The index of the layout to load.
+     * Initialize the service.
      * @private
      */
-    _applyLayoutDimensions(layout) {
-        if (!layout || !layout.columns) return;
+    _initializeLayouts() {
+        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
+            try {
+                // Load stored layouts
+                const storedLayouts = JSON.parse(this._$window.localStorage.getItem(`layoutsNW-${this._$window.ContactID}`)) || [this.defaultLayout[0]];
+                const lastActiveLayoutName = this._$window.localStorage.getItem(`lastActiveLayoutNW-${this._$window.ContactID}`);
 
-        layout.columns.forEach(column => {
-            const columnElement = angular.element(`#co-${column.id}`);
-            if (columnElement.length) {
-                columnElement.css('flex-basis', column.width);
+                // Ensure default layout is always first and up to date
+                this.currentLayouts = storedLayouts;
+                this.currentLayouts[0] = this.defaultLayout[0];
 
-                column.boxes.forEach(box => {
-                    const boxElement = angular.element(`#box-${box.name}`);
-                    if (boxElement.length) {
-                        boxElement.css('flex-basis', box.height);
+                // Find the index of the last active layout
+                let layoutIndex = 0;
+                if (lastActiveLayoutName) {
+                    const lastActiveLayoutIndex = this.currentLayouts.findIndex(l => l.name === lastActiveLayoutName);
+                    if (lastActiveLayoutIndex !== -1) {
+                        layoutIndex = lastActiveLayoutIndex;
                     }
-                });
+                }
+
+                // Load the appropriate layout
+                this.loadLayout(layoutIndex);
+
+                // Broadcast layout update with current index
+                if (this._$rootScope) {
+                    this._$rootScope.$broadcast('layoutUpdated', {
+                        currentLayoutIndex: layoutIndex,
+                        currentLayoutName: this.currentLayoutName
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading stored layouts:', error);
+                this.currentLayouts = [this.defaultLayout[0]];
+                this.loadLayout(0);
             }
-        });
+        }
     }
 
     /**
@@ -339,7 +244,6 @@ class NationwideLayoutService {
         }
     }
 
-
     /**
      * Delete a layout.
      * @param {number} index - The index of the layout to delete.
@@ -382,11 +286,61 @@ class NationwideLayoutService {
     }
 
     /**
-     * Get the name of the current layout.
-     * @returns {string} The name of the current layout.
+     * Load a layout.
+     * @param {number} index - The index of the layout to load.
+     * @returns {Object} The loaded layout.
      */
-    getCurrentLayoutName() {
-        return this.currentLayoutName;
+    loadLayout(index) {
+        if (!this.currentLayouts[index]) {
+            console.warn('Invalid layout index, loading default');
+            index = 0;
+        }
+
+        this.currentLayoutIndex = index;
+        this.currentLayoutName = this.currentLayouts[index].name;
+        this.currentLayout = angular.copy(this.currentLayouts[index].layout);
+
+        // Save as last active layout
+        if (this._$window.Modernizr && this._$window.Modernizr.localstorage) {
+            this._$window.localStorage.setItem(`lastActiveLayoutNW-${this._$window.ContactID}`, this.currentLayoutName);
+        }
+
+        // Apply the layout dimensions
+        this._applyLayoutDimensions(this.currentLayout);
+
+        // Broadcast layout update
+        if (this._$rootScope) {
+            this._$rootScope.$broadcast('layoutUpdated', {
+                currentLayoutIndex: index,
+                currentLayoutName: this.currentLayoutName
+            });
+        }
+
+        return this.currentLayout;
+    }
+
+
+    /**
+     * Load a layout.
+     * @param {Object} layout - The index of the layout to load.
+     * @private
+     */
+    _applyLayoutDimensions(layout) {
+        if (!layout || !layout.columns) return;
+
+        layout.columns.forEach(column => {
+            const columnElement = angular.element(`#co-${column.id}`);
+            if (columnElement.length) {
+                columnElement.css('flex-basis', column.width);
+
+                column.boxes.forEach(box => {
+                    const boxElement = angular.element(`#box-${box.name}`);
+                    if (boxElement.length) {
+                        boxElement.css('flex-basis', box.height);
+                    }
+                });
+            }
+        });
     }
 }
 

@@ -31,7 +31,7 @@
                 data-index="{{$index}}"
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
-                ng-class="job.direct ? 'direct' : ''"
+                ng-class="jobClass(job)"
                 ng-mouseup="selectJob(job)"
                 ng-repeat="job in jobListReprice | filter: box.searchBox">
 
@@ -108,7 +108,7 @@
     <div class="no-data" ng-if="!repriceListLoading && jobListReprice.length === 0">
         <div class="content">
             <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                <md-icon md-font-set="material-symbols-outlined">price_change</md-icon>
             </div>
             <div class="text">No Repricing Jobs Found</div>
         </div>
@@ -119,7 +119,7 @@
         <div class="full-height" layout="row" layout-align="center center">
             <div class="material-icon-loader">
                 <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">price_change</md-icon>
             </div>
         </div>
     </div>

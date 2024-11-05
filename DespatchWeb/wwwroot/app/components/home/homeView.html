@@ -28,7 +28,7 @@
 
                 <md-menu ng-if="isInternal">
                     <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">view_quilt</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
                         <md-progress-circular md-diameter="18" md-mode="indeterminate"
                                               ng-if="!areas"></md-progress-circular>
@@ -47,7 +47,7 @@
                 <md-menu>
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
                         <md-tooltip md-direction="bottom">Layouts</md-tooltip>
                     </md-button>
                     <md-menu-content width="2">

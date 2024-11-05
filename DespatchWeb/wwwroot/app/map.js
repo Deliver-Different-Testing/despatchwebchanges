@@ -105,25 +105,41 @@ window.onkeyup = e => {
     isCtrl = false;
 };
 
-function addClickHandler(m, iw) {
-    if (iw !== null) {
-        google.maps.event.addListener(m, 'spider_click', e => {  // 'spider_click', not plain 'click'
-            iw.open(map, m);
-            console.log(m.jobNumber || '');
-            const $columns = angular.element(".columns");
-            const sel = $columns.scope().jobList.filter(x => x.jobNo === m.jobNumber);
-            if (sel.length > 0) {
-                angular.element("#jobList tr").removeClass("active");
-                angular.element("#jobList tr[data-jobid='" + sel[0].id + "']").addClass("active");
-                $columns.scope().selectForDispatch(sel[0]);
-                $columns.scope().selectJob(sel[0], true);
+function addClickHandler(marker, infoWindow) {
+    if (!marker) {
+        console.error('Invalid marker in addClickHandler');
+        return;
+    }
+
+    if (infoWindow) {
+        google.maps.event.addListener(marker, 'spider_click', () => {
+            infoWindow.open(map, marker);
+
+            if (marker.jobNumber) {
+                console.log('Job Number:', marker.jobNumber);
+                const $columns = angular.element(".columns");
+                const scope = $columns.scope();
+
+                if (scope && scope.jobList) {
+                    const selectedJobs = scope.jobList.filter(x => x.jobNo === marker.jobNumber);
+                    if (selectedJobs.length > 0) {
+                        angular.element("#jobList tr").removeClass("active");
+                        angular.element("#jobList tr[data-jobid='" + selectedJobs[0].id + "']").addClass("active");
+                        scope.selectForDispatch(selectedJobs[0]);
+                        scope.selectJob(selectedJobs[0], true);
+                    }
+                }
             }
         });
 
-        oms.addMarker(m);
+        if (window.oms) {
+            window.oms.addMarker(marker);
+        }
     } else {
-        google.maps.event.addListener(m, 'click', () => {
-            console.log(m.jobNumber || '');
+        google.maps.event.addListener(marker, 'click', () => {
+            if (marker.jobNumber) {
+                console.log('Job Number:', marker.jobNumber);
+            }
         });
     }
 }
@@ -168,19 +184,91 @@ function highlightPin(job) {
 }
 
 function displayDeliveryPoint(location) {
-    let pinColor = "red";
-    if (run[i].jobStatus === "C") {
-        pinColor = "grey";
-    }
-    if (run[i].jobStatus === "V") {
-        pinColor = "yellow";
+    // Validate location data
+    if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
+        console.error('Invalid location data:', location);
+        return null;
     }
 
-    const pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (run[i].ro || '').toString() + ".png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
-    const marker = new google.maps.Marker({
-        position: run[i], map: map, icon: pinImage
-    });
+    try {
+        // Create marker position
+        const position = new google.maps.LatLng(location.latitude, location.longitude);
+
+        // Determine pin color based on job status
+        let pinColor = "red"; // default color
+        if (location.jobStatus === "C") {
+            pinColor = "grey";
+        } else if (location.jobStatus === "V") {
+            pinColor = "yellow";
+        } else if (location.jobStatus === "D") {
+            pinColor = "green";
+        } else if (location.jobStatus === "P") {
+            pinColor = "red";
+        } else if (location.jobStatus === "A") {
+            pinColor = "blue";
+        }
+
+        // Create marker image
+        const pinImage = new google.maps.MarkerImage(
+            `https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_${pinColor}${(location.runOrder || '').toString()}.png`,
+            new google.maps.Size(131, 154),
+            new google.maps.Point(0, 0),
+            new google.maps.Point(10, 34)
+        );
+
+        // Create marker
+        const marker = new google.maps.Marker({
+            position: position,
+            map: map,
+            icon: pinImage,
+            visible: true,
+            optimized: false,
+            jobNumber: location.jobNo || '',
+            title: location.jobNo || 'Delivery Point'
+        });
+
+        // Create info window content
+        const contentString = `
+            <div id="content">
+                <div id="bodyContent">
+                    <p><b>${location.jobNo || ''}</b></p>
+                    <p><b>${location.type === 'pickup' ? 'Pickup' : 'Delivery'}</b></p>
+                    ${location.status ? `<p><b>Status:</b> ${location.status}</p>` : ''}
+                </div>
+            </div>`;
+
+        const infoWindow = new google.maps.InfoWindow({
+            content: contentString,
+            pixelOffset: new google.maps.Size(-55, 0)
+        });
+
+        // Add click handler and marker to management systems
+        addClickHandler(marker, infoWindow);
+        map.addMarker(marker);
+
+        console.log('Marker created successfully at:', position.lat(), position.lng());
+
+        return marker;
+    } catch (error) {
+        console.error('Error creating marker:', error);
+        return null;
+    }
 }
+
+function isValidCoordinate(coord) {
+    return typeof coord === 'number' && !isNaN(coord) && coord !== 0;
+}
+
+function getValidCoordinates(location) {
+    const lat = location?.latitude;
+    const lng = location?.longitude;
+
+    if (isValidCoordinate(lat) && isValidCoordinate(lng)) {
+        return {lat, lng};
+    }
+    return null;
+}
+
 
 function displayAllRoutePoints() {
     if (map.markers.length) {
@@ -282,9 +370,8 @@ function displayAvailableCouriers(ac, courierCode, channels, truckChannel, truck
 /**
  * @param {Job[]} jobs
  * @param {boolean} clear
- * @param {Job} currentJob
  */
-function displayPickupPoints(jobs, clear, currentJob) {
+function displayPickupPoints(jobs, clear) {
     if (clear === true) {
         if (map.markers.length) {
             map.clearMarkers();
@@ -297,51 +384,35 @@ function displayPickupPoints(jobs, clear, currentJob) {
     }
 
     for (let i = 0; i < jobs.length; i++) {
-        let pinColor = "purple";
+        const job = jobs[i];
 
-        if (jobs[i].status === "C") {
-            pinColor = "grey";
-        }
-        if (jobs[i].status === "N") {
-            pinColor = "grey";
-        }
-        if (jobs[i].status === "D") {
-            pinColor = "green";
-        }
-        if (jobs[i].status === "P") {
-            pinColor = "red";
-        }
-        if (jobs[i].status === "A") {
-            pinColor = "blue";
-        }
-        if (jobs[i].status === "V") {
-            pinColor = "yellow";
-        }
-        if ((currentJob !== null) && (jobs[i].jobNo === currentJob.jobNo)) {
-            pinColor = "black";
+        // Create location object for pickup point
+        const pickupLocation = {
+            latitude: job.pickupAddress.latitude,
+            longitude: job.pickupAddress.longitude,
+            jobStatus: job.status,
+            jobNo: job.jobNo,
+            runOrder: job.runOrder || "",
+            type: "pickup"
+        };
+
+        // Create location object for delivery point
+        const deliveryLocation = {
+            latitude: job.deliveryAddress.latitude,
+            longitude: job.deliveryAddress.longitude,
+            jobStatus: job.status,
+            jobNo: job.jobNo,
+            runOrder: job.runOrder || "",
+            type: "delivery"
+        };
+
+        // Only show pickup marker if statusID < 5
+        if (job.statusID < 5) {
+            displayDeliveryPoint(pickupLocation);
         }
 
-
-        const pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (jobs[i].runOrder || "").toString() + ".png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
-
-        if (jobs[i].statusID < 5) {
-            const pickupMarker = new google.maps.Marker({
-                position: new google.maps.LatLng(jobs[i].pickupAddress.latitude, jobs[i].pickupAddress.longitude),
-                draggable: false,
-                map: map,
-                icon: pinImage,
-                jobNumber: jobs[i].jobNo,
-                optimized: true
-            })
-
-            const contentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + jobs[i].jobNo + '</b></p>' + "<p><b>Pickup</b></p>" + "</div>" + "</div>";
-
-            const infoWindow = new google.maps.InfoWindow({
-                content: contentString, pixelOffset: new google.maps.Size(-55, 0)
-            });
-
-            addClickHandler(pickupMarker, infoWindow);
-        }
+        // Always show delivery marker
+        displayDeliveryPoint(deliveryLocation);
     }
 }
 
@@ -375,7 +446,6 @@ function displayRoutePointsOnly(courierJobs, clear) {
     if (clear === true) {
         if (map.markers.length) {
             map.clearMarkers();
-
         }
         oms.removeAllMarkers();
         if (carMarker !== null) {
@@ -384,63 +454,37 @@ function displayRoutePointsOnly(courierJobs, clear) {
     }
 
     for (let i = 0; i < courierJobs.length; i++) {
-        let pinColor = "purple";
+        const job = courierJobs[i];
 
-        if (courierJobs[i].status === "C") {
-            pinColor = "grey";
-        }
-        if (courierJobs[i].status === "N") {
-            pinColor = "grey";
-        }
-        if (courierJobs[i].status === "D") {
-            pinColor = "green";
-        }
-        if (courierJobs[i].status === "P") {
-            pinColor = "red";
-        }
-        if (courierJobs[i].status === "A") {
-            pinColor = "blue";
-        }
-        if (courierJobs[i].status === "V") {
-            pinColor = "yellow";
-        }
+        // Create location object for pickup point
+        const pickupLocation = {
+            latitude: job.pickupAddress.latitude,
+            longitude: job.pickupAddress.longitude,
+            jobStatus: job.status,
+            jobNo: job.jobNo,
+            runOrder: job.runOrder || "",
+            type: "pickup"
+        };
 
-        const pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (courierJobs[i].runOrder || "").toString() + ".png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
+        // Create location object for delivery point
+        const deliveryLocation = {
+            latitude: job.deliveryAddress.latitude,
+            longitude: job.deliveryAddress.longitude,
+            jobStatus: job.status,
+            jobNo: job.jobNo,
+            runOrder: job.runOrder || "",
+            type: "delivery"
+        };
 
-        if (courierJobs[i].statusID < 5) {
-            const pickupMarker = new google.maps.Marker({
-                position: new google.maps.LatLng(courierJobs[i].pickupAddress.latitude, courierJobs[i].pickupAddress.longitude),
-                map: map,
-                icon: pinImage,
-                jobNumber: courierJobs[i].jobNo
-            });
-
-            const contentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + courierJobs[i].jobNo + '</b></p>' + "<p><b>Pickup</b></p>" + "</div>" + "</div>";
-
-            const infoWindow = new google.maps.InfoWindow({
-                content: contentString, pixelOffset: new google.maps.Size(-55, 0)
-            });
-
-            addClickHandler(pickupMarker, infoWindow);
+        // Only show pickup marker if statusID < 5
+        if (job.statusID < 5) {
+            displayDeliveryPoint(pickupLocation);
         }
 
-        const deliveryMarker = new google.maps.Marker({
-            position: new google.maps.LatLng(courierJobs[i].deliveryLatitude, courierJobs[i].deliveryLongitude),
-            map: map,
-            icon: pinImage,
-            jobNumber: courierJobs[i].jobNo
-        });
-
-        const deliveryContentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + courierJobs[i].jobNo + '</b></p>' + "<p><b>Delivery</b></p>" + "</div>" + "</div>";
-
-        const deliveryInfoWindow = new google.maps.InfoWindow({
-            content: deliveryContentString, pixelOffset: new google.maps.Size(-55, 0)
-        });
-
-        addClickHandler(deliveryMarker, deliveryInfoWindow);
+        // Always show delivery marker
+        displayDeliveryPoint(deliveryLocation);
     }
 }
-
 /**
  * @param {Job[]} courierJobs
  * @param {boolean} clear
@@ -461,114 +505,78 @@ function displayRoutePoints(courierJobs, clear, zoom) {
     const zoomMarkers = [];
 
     for (let i = 0; i < courierJobs.length; i++) {
-        let pinColor = "purple";
+        const job = courierJobs[i];
 
-        if (courierJobs[i].status === "C") {
-            pinColor = "grey";
-        }
-        if (courierJobs[i].status === "N") {
-            pinColor = "grey";
-        }
-        if (courierJobs[i].status === "D") {
-            pinColor = "green";
-        }
-        if (courierJobs[i].status === "P") {
-            pinColor = "red";
-        }
-        if (courierJobs[i].status === "A") {
-            pinColor = "blue";
-        }
-        if (courierJobs[i].status === "V") {
-            pinColor = "yellow";
-        }
+        // Create location object for pickup point
+        const pickupLocation = {
+            latitude: job.pickupAddress.latitude,
+            longitude: job.pickupAddress.longitude,
+            jobStatus: job.status,
+            jobNo: job.jobNo,
+            runOrder: job.runOrder || "",
+            type: "pickup"
+        };
 
-        const pinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_" + pinColor + (courierJobs[i].runOrder || "").toString() + ".png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
-        const deliveryPinImage = new google.maps.MarkerImage("https://raw.githubusercontent.com/Concept211/Google-Maps-Markers/master/images/marker_red" + (courierJobs[i].runOrder || "").toString() + ".png", new google.maps.Size(131, 154), new google.maps.Point(0, 0), new google.maps.Point(10, 34));
+        // Create location object for delivery point
+        const deliveryLocation = {
+            latitude: job.deliveryAddress.latitude,
+            longitude: job.deliveryAddress.longitude,
+            jobStatus: job.status,
+            jobNo: job.jobNo,
+            runOrder: job.runOrder || "",
+            type: "delivery"
+        };
 
-        if (courierJobs[i].statusID < 5) {
-            const pickupMarker = new google.maps.Marker({
-                position: new google.maps.LatLng(courierJobs[i].pickupAddress.latitude, courierJobs[i].pickupAddress.longitude),
-                map: map,
-                icon: pinImage,
-                jobNumber: courierJobs[i].jobNo
-            });
-
-            const contentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + courierJobs[i].jobNo + '</b></p>' + "<p><b>Pickup</b></p>" + "</div>" + "</div>";
-
-            const infoWindow = new google.maps.InfoWindow({
-                content: contentString, pixelOffset: new google.maps.Size(-55, 0)
-            });
-
-            addClickHandler(pickupMarker, infoWindow);
-            zoomMarkers.push(pickupMarker);
-        }
-
-        const deliveryMarker = new google.maps.Marker({
-            position: new google.maps.LatLng(courierJobs[i].deliveryAddress.latitude, courierJobs[i].deliveryAddress.longitude),
-            map: map,
-            icon: deliveryPinImage,
-            jobNumber: courierJobs[i].jobNo
-        });
-
-        const deliveryContentString = '<div id="content">' + '<div id="bodyContent">' + "<p><b>" + courierJobs[i].jobNo + '</b></p>' + "<p><b>Delivery</b></p>" + "</div>" + "</div>";
-
-        const deliveryInfoWindow = new google.maps.InfoWindow({
-            content: deliveryContentString, pixelOffset: new google.maps.Size(-55, 0)
-        });
-
-        addClickHandler(deliveryMarker, deliveryInfoWindow);
-        zoomMarkers.push(deliveryMarker);
-    }
-
-    const bounds = new google.maps.LatLngBounds();
-    for (let x = 0; x < zoomMarkers.length; x++) {
-        bounds.extend(zoomMarkers[x].getPosition());
-    }
-
-    if (zoom) {
-        map.fitBounds(bounds);
-    } else {
-        map.panToBounds(bounds);
-    }
-
-    for (let y = 0; y < zoomMarkers.length; y++) {
-        const thisMarker = zoomMarkers[y];
-        thisMarker.setAnimation(google.maps.Animation.BOUNCE);
-    }
-
-    window.setTimeout(() => {
-        for (let y = 0; y < zoomMarkers.length; y++) {
-            const bounceMarker = zoomMarkers[y];
-            if (bounceMarker.getAnimation() !== null) {
-                bounceMarker.setAnimation(null);
+        // Only show pickup marker if statusID < 5
+        if (job.statusID < 5) {
+            const pickupMarker = displayDeliveryPoint(pickupLocation);
+            if (pickupMarker) {
+                zoomMarkers.push(pickupMarker);
             }
         }
-    }, 2000);
 
-
-    if (courierJobs.length === 0) return;
-
-    if (courierJobs[0].courierLatitude === null || courierJobs[0].courierLatitude === 0) {
-        return;
+        // Always show delivery marker
+        const deliveryMarker = displayDeliveryPoint(deliveryLocation);
+        if (deliveryMarker) {
+            zoomMarkers.push(deliveryMarker);
+        }
     }
 
-    const gl1 = new google.maps.LatLng(courierJobs[0].courierLatitude, courierJobs[0].courierLongitude);
-    carPos = gl1;
+    // Handle map bounds and zoom
+    if (zoomMarkers.length > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        zoomMarkers.forEach(marker => {
+            bounds.extend(marker.getPosition());
+        });
 
-    if (carMarker !== null) {
-        carMarker.setMap(null);
+        if (zoom) {
+            map.fitBounds(bounds);
+        } else {
+            map.panToBounds(bounds);
+        }
     }
-    carMarker = new google.maps.Marker({
-        position: gl1,
-        map: map,
-        icon: "/images/car3.png",
-        code: courierJobs[0].courierData.courier,
-        courierId: courierJobs[0].courierData.courierID
-    });
 
-    map.setCenter(gl1);
-    if (zoom) {
-        map.setZoom(13);
+    // Add courier marker if available
+    if (courierJobs.length > 0 && courierJobs[0].courierLatitude && courierJobs[0].courierLongitude) {
+        const gl1 = new google.maps.LatLng(courierJobs[0].courierLatitude, courierJobs[0].courierLongitude);
+        carPos = gl1;
+
+        if (carMarker !== null) {
+            carMarker.setMap(null);
+        }
+
+        carMarker = new google.maps.Marker({
+            position: gl1,
+            map: map,
+            icon: "/images/car3.png",
+            code: courierJobs[0].courierData.courier,
+            courierId: courierJobs[0].courierData.courierID
+        });
+
+        map.setCenter(gl1);
+        if (zoom) {
+            map.setZoom(13);
+        }
     }
 }
 

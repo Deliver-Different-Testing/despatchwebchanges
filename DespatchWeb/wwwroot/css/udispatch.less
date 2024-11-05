@@ -856,6 +856,10 @@ md-divider {
 @s-grey: #DDD;
 @s-purple: #f1cbff;
 
+@status-future-bg: fadeout(@s-green, 70%);
+@status-current-bg: fadeout(@s-orange, 70%);
+@status-past-bg: fadeout(@s-red, 70%);
+
 .table-striped > tbody > tr:nth-child(2n+1) {
   background-color: #d9d9d9;
 }
@@ -875,6 +879,42 @@ table.table {
 
       td {
         background-color: transparent;
+      }
+    }
+
+    &.status-future {
+      background-color: @s-green;
+
+      &:hover {
+        background-color: fadeout(@status-future-bg, 60%);
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(@status-future-bg, rgba(255, 0, 0, 0.05), 80%);
+      }
+    }
+
+    &.status-current {
+      background-color: @s-orange;
+
+      &:hover {
+        background-color: fadeout(@status-current-bg, 60%);
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(@status-current-bg, rgba(255, 0, 0, 0.05), 80%);
+      }
+    }
+
+    &.status-past {
+      background-color: @s-red;
+
+      &:hover {
+        background-color: fadeout(@status-past-bg, 60%);
+      }
+
+      &.direct, &.chilled {
+        background-color: mix(@status-past-bg, rgba(255, 0, 0, 0.05), 80%);
       }
     }
 

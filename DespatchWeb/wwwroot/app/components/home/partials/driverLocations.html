@@ -1,4 +1,14 @@
-<div id="driverLocations" ng-if="driverLocations.areas.length > 0">
+<!-- Loading Indicator -->
+<div class="loader-container" ng-if="driverLocationsLoading">
+    <div class="full-height" layout="row" layout-align="center center">
+        <div class="material-icon-loader">
+            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+            <md-icon class="loader-icon" md-font-set="material-symbols-outlined">person_pin_circle</md-icon>
+        </div>
+    </div>
+</div>
+
+<div id="driverLocations" ng-if="!driverLocationsLoading && driverLocations && driverLocations.areas.length > 0">
     <div class="container-fluid">
         <div class="row">
             <div class="col-xs-3" ng-repeat="area in driverLocations.areas">
@@ -61,23 +71,15 @@
             </div>
         </div>
     </div>
-
-
-    <div class="loading">
-        <div class="text">
-            <md-progress-circular md-mode="indeterminate"></md-progress-circular>
-            <span class="sr-only">Loading...</span>
-        </div>
-    </div>
 </div>
 
-<div class="no-data" ng-if="driverLocations.areas.length === 0 || !driverLocations">
+<div class="no-data" ng-if="!driverLocations || driverLocations.areas.length === 0">
     <div class="content">
         <div class="icon">
-            <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+            <md-icon md-font-set="material-symbols-outlined">person_pin_circle</md-icon>
         </div>
         <div class="text">
-            Driver locations not configured. Please set up in Admin Manager
+            Please configure driver locations in Admin Manager to continue.
         </div>
     </div>
 </div>

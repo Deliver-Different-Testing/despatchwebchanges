@@ -81,6 +81,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
 
             // Move job to POD
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+            await _context.SaveChangesAsync();
 
             await _context.TucJobNationwides.AddAsync(jobNationwide);
             await _context.SaveChangesAsync();
@@ -106,11 +107,22 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);
     }
 
-    public async Task<IEnumerable<AgentViewModel>> GetAgentsAsync(int jobId)
+    public async Task<List<AgentViewModel>> GetAgentsAsync(int jobId)
     {
         var job = await GetJobDetailsAsync(jobId);
+        _logger.LogInformation(
+            "Job details retrieved for {JobId}: AirportId={AirportId}, VehicleSizeId={VehicleSizeId}",
+            jobId, job?.AirPortId, job?.VehicleSizeId);
+
         var agents = await GetEligibleAgentsAsync(job.AirPortId, job.VehicleSizeId);
-        return await ProcessAgentsInParallelAsync(job, agents);
+        _logger.LogInformation("Found {AgentCount} eligible agents for job {JobId}",
+            agents?.Count ?? 0, jobId);
+
+        var results = await ProcessAgentsInParallelAsync(job, agents);
+        _logger.LogInformation("Processed {ResultCount} agents with rates for job {JobId}",
+            results?.Count ?? 0, jobId);
+
+        return results;
     }
 
     public async Task<bool> AddAgentToJobAsync(int agentId, int jobId)
@@ -173,7 +185,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
             .ToListAsync();
     }
 
-    private async Task<IEnumerable<AgentViewModel>> ProcessAgentsInParallelAsync(JobDetails job,
+    private async Task<List<AgentViewModel>> ProcessAgentsInParallelAsync(JobDetails job,
         List<AgentInfo> agents)
     {
         const int batchSize = 100;
@@ -199,7 +211,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 }
             });
 
-        return agentResults;
+        return agentResults.ToList();
     }
 
     private async Task<decimal?> GetAgentRatesAsync(JobDetails job,

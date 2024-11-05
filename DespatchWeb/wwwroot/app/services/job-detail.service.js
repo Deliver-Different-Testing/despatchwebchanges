@@ -12,6 +12,7 @@ class JobDetailService {
         this._$rootScope = $rootScope;
 
         this.isUsCustomer = APP_CONFIG.US_Customer;
+        this.jobDetailLoading = false;
         this.options = {
             "detail": {
                 "size": [{
