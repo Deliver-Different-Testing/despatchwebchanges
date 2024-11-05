@@ -278,14 +278,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     "templateUrl": versionUrl("app/components/Nationwide/partials/map.html"),
                     "showSearch": 0,
                     "showRefresh": 1
-                }, "flightDataTable": {
-                    "title": "Flight Options",
-                    "templateUrl": versionUrl("app/components/Nationwide/partials/flightDataTableBox.html"),
-                    "showSearch": 0,
-                    "showRefresh": 1
-                }, "agentDataTable": {
-                    "title": "Available Agents",
-                    "templateUrl": versionUrl("app/components/Nationwide/partials/agentDataTableBox.html"),
+                }, "flightAgentDataTable": {
+                    "title": "Available",
+                    "templateUrl": versionUrl("app/components/Nationwide/partials/flightAgentDataTableBox.html"),
                     "showSearch": 0,
                     "showRefresh": 1
                 }
@@ -335,29 +330,43 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             initializeVariables();
 
             // Initialize layouts through the service
-            $scope.layouts = LayoutService.getLayouts();
-            $scope.currentLayoutName = "default";
-            $scope.layout = LayoutService.getCurrentLayout();
+            try {
+                $scope.layouts = LayoutService.getLayouts() || [LayoutService.getDefaultLayout()[0]];
+                $scope.currentLayoutIndex = LayoutService.getCurrentLayoutIndex() || 0;
+                $scope.currentLayoutName = LayoutService.getCurrentLayoutName() || 'Default';
+                $scope.layout = LayoutService.getCurrentLayout() || LayoutService.getDefaultLayout()[0].layout;
 
-            // Add layout watchers
-            $scope.$watch('layout', (newValue, oldValue) => {
-                if (newValue !== oldValue && $scope.currentLayoutName) {
-                    const currentLayoutIndex = $scope.layouts.findIndex(l => l.name === $scope.currentLayoutName);
-                    if (currentLayoutIndex !== -1) {
-                        $scope.layouts[currentLayoutIndex].layout = angular.copy(newValue);
-                        if (Modernizr.localstorage) {
-                            localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify($scope.layouts));
+                // Add layout watchers
+                $scope.$watch('layout', (newValue, oldValue) => {
+                    if (newValue !== oldValue && $scope.currentLayoutName) {
+                        const currentLayoutIndex = $scope.layouts.findIndex(l => l.name === $scope.currentLayoutName);
+                        if (currentLayoutIndex !== -1) {
+                            $scope.layouts[currentLayoutIndex].layout = angular.copy(newValue);
+                            if (Modernizr.localstorage) {
+                                localStorage.setItem(`layoutsNW-${ContactID}`, JSON.stringify($scope.layouts));
+                            }
                         }
                     }
-                }
-            }, true);
+                }, true);
 
-            // Watch for layout updates from service
-            $scope.$on('layoutUpdated', () => {
-                $scope.layouts = LayoutService.getLayouts();
-                $scope.layout = LayoutService.getCurrentLayout();
-                $scope.$apply();
-            });
+                // Watch for layout updates from service
+                $scope.$on('layoutUpdated', (event, data) => {
+                    $scope.layouts = LayoutService.getLayouts();
+                    $scope.layout = LayoutService.getCurrentLayout();
+                    if (data) {
+                        $scope.currentLayoutIndex = data.currentLayoutIndex;
+                        $scope.currentLayoutName = data.currentLayoutName;
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error initializing layouts:', error);
+                // Set defaults if initialization fails
+                $scope.layouts = [LayoutService.getDefaultLayout()[0]];
+                $scope.currentLayoutIndex = 0;
+                $scope.currentLayoutName = 'Default';
+                $scope.layout = LayoutService.getDefaultLayout()[0].layout;
+            }
 
             // Start loading data
             loadPageViews().then(() => {
@@ -608,6 +617,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             const layout = LayoutService.loadLayout(index);
             $scope.layout = angular.copy(layout);
             $scope.currentLayoutName = LayoutService.getCurrentLayoutName();
+            $scope.currentLayoutIndex = index;
 
             // Ensure dimensions are applied
             $timeout(async () => {
@@ -1376,7 +1386,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await $scope.getData();
 
-                //angular.element("#box-jobDetail").find(".loading").show();
                 angular.element("#box-map").find(".loading").show();
 
                 $scope.courier = {gpsCourier: foundCourier.id};
@@ -1927,7 +1936,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         // Select the courier
         $scope.selectCourier = async (courier) => {
-            angular.element("#box-jobDetail").find(".loading").show();
+            jdSvc.jobDetailLoading = true;
             angular.element("#box-map").find(".loading").show();
             if (courier.courier === undefined) {
                 courier.courier = courier.code + ' ' + courier.firstName;
@@ -1941,7 +1950,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             await new Promise(resolve => $timeout(resolve, 100));
             $document.ready(() => {
-                angular.element("#box-jobDetail").find(".loading").fadeOut();
+                jdSvc.jobDetailLoading = false;
                 angular.element("#box-map").find(".loading").fadeOut();
             });
 
@@ -1965,7 +1974,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         $scope.selectMapCourier = async (courier) => {
-            angular.element("#box-jobDetail").find(".loading").show();
+            jdSvc.jobDetailLoading = true;
             angular.element("#box-map").find(".loading").show();
 
             angular.element("#box-currentWork").find(".loading").show();
@@ -1984,9 +1993,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
                 $scope.activateDrop();
                 await new Promise(resolve => $timeout(resolve, 1000));
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
                 await new Promise(resolve => $timeout(resolve, 1000));
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
             } catch (error) {
                 console.error("Error in selectMapCourier:", error);
                 // Handle the error appropriately
@@ -1996,7 +2003,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             await new Promise(resolve => $timeout(resolve, 100));
             $document.ready(() => {
-                angular.element("#box-jobDetail").find(".loading").fadeOut();
+                jdSvc.jobDetailLoading = false;
                 angular.element("#box-map").find(".loading").fadeOut();
             });
 
@@ -2011,7 +2018,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
         $scope.selectPotentialCourier = async (courier) => {
-            angular.element("#box-jobDetail").find(".loading").show();
+            jdSvc.jobDetailLoading = true;
             angular.element("#box-map").find(".loading").show();
             if (courier.courier === undefined) {
                 courier.courier = courier.code + ' ' + courier.firstName;
@@ -2042,13 +2049,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
                 $scope.activateDrop();
                 await new Promise(resolve => $timeout(resolve, 1000));
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
                 await new Promise(resolve => $timeout(resolve, 1000));
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
                 await $scope.getAvailableCourierLocation();
             } catch (error) {
                 console.error("Error in selectPotentialCourier:", error);
-                // Handle the error appropriately
             }
 
             $scope.currentWorkSelection = " for Courier " + courier.courier;
@@ -2056,7 +2060,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             await new Promise(resolve => $timeout(resolve, 100));
             $document.ready(() => {
-                angular.element("#box-jobDetail").find(".loading").fadeOut();
+                jdSvc.jobDetailLoading = false;
                 angular.element("#box-map").find(".loading").fadeOut();
             });
         };
@@ -2115,11 +2119,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 console.log("select Job  " + support.jobId);
 
                 $scope.currentSupport = support;
-                const $boxJobDetail = angular.element("#box-jobDetail");
-                $boxJobDetail.find(".loading").show();
+                jdSvc.jobDetailLoading = true;
+
 
                 $scope.currentJob = await NWData.getJobDetail(support.jobId);
-                $boxJobDetail.find(".loading").hide();
+                jdSvc.jobDetailLoading = false;
                 $scope.currentSelection = " for Job " + support.jobNumber;
 
                 const jobs = [$scope.currentJob];
@@ -2186,15 +2190,63 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     await _processAgents(job);
                 }
 
+                _displayJobOnMap(job);
+
                 _maintainJobHighlight(); // Ensure highlight persists after any DOM updates
 
                 $scope.$apply();
-                angular.element("#box-jobDetail .loading").css('display', 'none');
-                $timeout(() => sizeHeadings(), 200);
+                jdSvc.jobDetailLoading = false;
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
         };
+
+        /**
+         * @param {Job} job
+         * @private
+         */
+        function _displayJobOnMap(job) {
+            // Verify we have valid coordinates before displaying
+            if (isValidCoordinates(job.pickupAddress.latitude, job.pickupAddress.longitude)) {
+                // Create array with single job
+                const jobsToDisplay = [job];
+
+                // Display the pickup point
+                displayPickupPoints(jobsToDisplay, true, job);
+
+                // Set bounds for pickup point
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(new google.maps.LatLng(job.pickupAddress.latitude, job.pickupAddress.longitude));
+
+                // If delivery coordinates are valid, include them too
+                if (isValidCoordinates(job.deliveryLatitude, job.deliveryAddress.longitude)) {
+                    bounds.extend(new google.maps.LatLng(job.deliveryAddress.latitude, job.deliveryAddress.longitude));
+                }
+
+                map.fitBounds(bounds);
+
+                // Adjust zoom if too close
+                const listener = google.maps.event.addListener(map, "idle", () => {
+                    if (map.getZoom() > 16) {
+                        map.setZoom(16);
+                    }
+                    google.maps.event.removeListener(listener);
+                });
+            } else {
+                console.warn('Invalid pickup coordinates for job:', job);
+            }
+        }
+
+        /**
+         * @param {number|null} lat
+         * @param {number} lng
+         */
+        function isValidCoordinates(lat, lng) {
+            return lat !== null && lng !== null &&
+                !isNaN(lat) && !isNaN(lng) &&
+                lat !== 0 && lng !== 0 &&
+                Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+        }
 
         /**
          * Maintains the highlight state of the selected job
@@ -2215,7 +2267,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         async function _processFlights(job) {
             console.log('Getting flights');
-            LayoutService.showFlightTable();
 
             $scope.flightsLoading = true;
 
@@ -2252,7 +2303,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
          */
         async function _processAgents(job) {
             console.log('Getting agents');
-            LayoutService.showAgentTable();
 
             $scope.agentsLoading = true;
 
@@ -2633,37 +2683,69 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         /**
-         * @param {Object} $event
+         * Creates and returns the context menu items for job events
+         * @param {Event} $event - The triggering event object
+         * @param {Job} job - The job object associated with the menu
+         * @returns {Promise<Array<Object>>} Array of menu items
          */
-        $scope.setEventsMenu = ($event) => [{
-            text: "Void Job", click: () => $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
-                .then(() => {
-                    console.log('Void Job completed successfully');
-                })
-                .catch(error => {
-                    console.log('Error in Void Job:', error);
-                })
-        }, {
-            text: "Add Event - Other", click: () => {
-                $scope.otherEventForm($event, $scope.currentJob);
+        $scope.setEventsMenu = async ($event, job) => {
+            try {
+                $event.preventDefault();
+                $event.stopPropagation();
+
+                // Update current job before showing menu
+                $scope.currentJob = job;
+
+                return [{
+                    text: "Void Job",
+                    click: async () => {
+                        try {
+                            $event.stopPropagation();
+                            await $scope.voidJobForm(job.jobNo, job.id);
+                            console.log('Void Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Void Job:', error);
+                        }
+                    }
+                }, {
+                    text: "Add Event - Other",
+                    click: async () => {
+                        try {
+                            $event.stopPropagation();
+                            await $scope.otherEventForm($event, job);
+                        } catch (error) {
+                            console.error('Error in Add Event:', error);
+                        }
+                    }
+                }, {
+                    text: "Split Job",
+                    click: async () => {
+                        try {
+                            $event.stopPropagation();
+                            await $scope.splitJob($event, job);
+                            console.log('Split Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Split Job:', error);
+                        }
+                    },
+                    enabled: () => job.allowSplit
+                }, {
+                    text: "Set First Job",
+                    click: async () => {
+                        try {
+                            $event.stopPropagation();
+                            await $scope.setFirstJob(job);
+                            console.log('Set First Job completed successfully');
+                        } catch (error) {
+                            console.error('Error in Set First Job:', error);
+                        }
+                    }
+                }];
+            } catch (error) {
+                console.error('Error setting up context menu:', error);
+                return [];
             }
-        }, {
-            text: "Split Job", click: () => $scope.splitJob($event, $scope.currentJob)
-                .then(() => {
-                    console.log('Split Job completed successfully');
-                })
-                .catch(error => {
-                    console.log('Error in Split Job:', error);
-                }), enabled: $itemScope => $itemScope.job.allowSplit
-        }, {
-            text: "Set First Job", click: () => $scope.setFirstJob($scope.currentJob)
-                .then(() => {
-                    console.log('Set First Job completed successfully');
-                })
-                .catch(error => {
-                    console.log('Error in Set First Job:', error);
-                })
-        }];
+        };
 
         $scope.setJobsMenu = async () => {
             const multiple = angular.element(".activeTable .active").length > 1;
@@ -3143,6 +3225,30 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.currentCourier = null;
             } else {
                 this.updateCourierData(courier.id, courier.text);
+            }
+        };
+
+        /**
+         * Determines the CSS classes to apply to a job row
+         * @param {Job} job - The job object
+         * @returns {string} Space-separated list of CSS classes
+         */
+        $scope.jobClass = (job) => {
+            if (!job || !job.followupTime) {
+                return '';
+            }
+
+            // Add time-based status class
+            const followupTime = moment(job.followupTime);
+            const now = moment();
+            const diffMinutes = followupTime.diff(now, 'minutes');
+
+            if (diffMinutes > 30) {
+                return 'status-future';
+            } else if (diffMinutes < -30) {
+                return 'status-past';
+            } else {
+                return 'status-current';
             }
         };
     }]);

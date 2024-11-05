@@ -387,8 +387,8 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
             .Select(polygon => polygon.ZipPolygon)
             .Select(zipPolygon => new EnvelopeCoordinate
             {
-                Longitude = Convert.ToDecimal(zipPolygon.Longitude),
-                Latitude = Convert.ToDecimal(zipPolygon.Latitude)
+                Longitude = (decimal)zipPolygon.Longitude,
+                Latitude = (decimal)zipPolygon.Latitude
             });
     }
 

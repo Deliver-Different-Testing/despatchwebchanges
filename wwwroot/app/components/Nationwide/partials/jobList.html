@@ -32,11 +32,12 @@
                 data-jobid="{{job.id}}"
                 data-jobno="{{job.jobNo}}"
                 ng-mouseup="selectJob(job)"
+                ng-class="jobClass(job)"
                 ng-repeat="job in jobList | filter: box.searchBox">
 
                 <td>{{job.time | date: "HH:mm"}}</td>
                 <td ng-click="speedColumnClick($event)"
-                    ng-contextmenu="speedColumnClick($event)"
+                    context-menu="speedColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{job.speed}}
                     <i class="material-symbols-outlined job-table-icon"
@@ -44,20 +45,24 @@
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="(job.assignedAgent)">engineering</i>
                 </td>
-                <td context-menu="setEventsMenu($event)">{{job.jobNo}}</td>
+                <td context-menu="setEventsMenu($event, job)"
+                    ng-click="$event.stopPropagation()"
+                    ng-mousedown="$event.preventDefault(); $event.stopPropagation();">
+                    {{job.jobNo}}
+                </td>
                 <td ng-click="clientColumnClick($event)"
-                    ng-contextmenu="clientColumnClick($event)"
+                    context-menu="clientColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">{{job.client}}
                 </td>
                 <td class="address-cell"
                     ng-click="fromColumnClick($event)"
-                    ng-contextmenu="fromColumnClick($event)"
+                    context-menu="fromColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                 </td>
                 <td class="address-cell"
                     ng-click="toColumnClick($event)"
-                    ng-contextmenu="toColumnClick($event)"
+                    context-menu="toColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}
                 </td>
@@ -107,7 +112,7 @@
     <div class="no-data" ng-if="!jobListLoading && jobList.length === 0">
         <div class="content">
             <div class="icon">
-                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                <md-icon md-font-set="material-symbols-outlined">new_releases</md-icon>
             </div>
             <div class="text">No New Jobs Found</div>
         </div>
@@ -118,7 +123,7 @@
         <div class="full-height" layout="row" layout-align="center center">
             <div class="material-icon-loader">
                 <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
-                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">local_shipping</md-icon>
+                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">new_releases</md-icon>
             </div>
         </div>
     </div>

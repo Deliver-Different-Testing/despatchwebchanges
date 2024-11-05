@@ -804,6 +804,36 @@ table.table tr.active {
 table.table tr.active td {
   background-color: transparent;
 }
+table.table tr.status-future {
+  background-color: #b0f57b;
+}
+table.table tr.status-future:hover {
+  background-color: rgba(176, 245, 123, 0);
+}
+table.table tr.status-future.direct,
+table.table tr.status-future.chilled {
+  background-color: rgba(186, 213, 107, 0.25);
+}
+table.table tr.status-current {
+  background-color: #ffdfba;
+}
+table.table tr.status-current:hover {
+  background-color: rgba(255, 223, 186, 0);
+}
+table.table tr.status-current.direct,
+table.table tr.status-current.chilled {
+  background-color: rgba(255, 194, 162, 0.25);
+}
+table.table tr.status-past {
+  background-color: #ffb3ba;
+}
+table.table tr.status-past:hover {
+  background-color: rgba(255, 179, 186, 0);
+}
+table.table tr.status-past.direct,
+table.table tr.status-past.chilled {
+  background-color: rgba(255, 156, 162, 0.25);
+}
 table.table tr.direct {
   color: red;
 }

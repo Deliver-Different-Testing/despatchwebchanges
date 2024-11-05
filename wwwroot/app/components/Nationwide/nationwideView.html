@@ -28,7 +28,7 @@
 
                 <md-menu ng-if="isInternal">
                     <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">view_quilt</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
                         <md-progress-circular md-diameter="18" md-mode="indeterminate"
                                               ng-if="!areas"></md-progress-circular>
@@ -47,7 +47,7 @@
                 <md-menu>
                     <md-button aria-label="Open layout options menu" class="md-icon-button"
                                ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined">widgets</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">grid_view</md-icon>
                         <md-tooltip md-direction="bottom">Layouts</md-tooltip>
                     </md-button>
                     <md-menu-content width="2">
@@ -60,16 +60,19 @@
                         <md-divider></md-divider>
                         <md-menu-item ng-repeat="lo in layouts track by $index">
                             <md-button>
-                                <md-icon md-font-set="material-symbols-outlined" ng-click="deleteLayout($index)"
-                                         ng-if="lo.name != 'Default'">
+                                <md-icon md-font-set="material-symbols-outlined"
+                                         ng-click="deleteLayout($index)"
+                                         ng-if="lo.name !== 'Default'">
                                     delete
                                 </md-icon>
                                 <md-icon md-font-set="material-symbols-outlined"
-                                         ng-if="lo.name == 'Default'">
+                                         ng-if="lo.name === 'Default'">
                                     tune
                                 </md-icon>
                                 <span ng-click="loadLayout($index)"
-                                      ng-style="lo.name == currentLayoutName ? {'font-weight':'bold'} : {}">{{lo.name}}</span>
+                                      ng-style="(lo.name === currentLayoutName || ($index === currentLayoutIndex)) ? {'font-weight':'bold'} : {}">
+                    {{lo.name}}
+                </span>
                             </md-button>
                         </md-menu-item>
                     </md-menu-content>
@@ -125,13 +128,17 @@
                                             {{jo.label}}
                                         </span>
                                     </span>
+                                    <span ng-if="box.name == 'flightAgentDataTable'">
+                                        {{isDeliveryJob() ? 'Agents' : 'Flights'}}
+                                    </span>
                                 </span>
                                 <div ng-if="currentJob && box.name == 'jobDetail'">
                                     <md-menu>
                                         <md-button aria-label="internal stage" class="md-raised md-primary"
                                                    ng-click="$mdMenu.open($event)">
+                                            <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
                                             <span>{{getSelectedStatusText()}}
-                                            <md-icon md-font-set="material-symbols-outlined">monitoring</md-icon>
+                                            <md-icon md-font-set="material-symbols-outlined">swap_horiz</md-icon>
                                             </span>
                                         </md-button>
                                         <md-menu-content class="md-dense">
@@ -147,6 +154,7 @@
                              && currentJob.internalStatusID !=4
                              && jdSvc.editFollowUpTime($event, currentJob)">
                                         <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                        <md-tooltip md-direction="bottom">Follow Up</md-tooltip>
                                     </md-button>
                                 </div>
                                 <md-button class="md-icon-button md-primary" ng-click="getData()"

@@ -1,4 +1,4 @@
-<div class="box-content">
+<div class="box-content" ng-if="!isDeliveryJob()">
     <!-- State 1: No Current Job Selected -->
     <div class="no-data" ng-if="!currentJob">
         <div class="content">
@@ -128,6 +128,130 @@
                     <td>{{flight.arrivalTime | date: "HH:mm"}}</td>
                     <td>{{flight.duration | date: "H:mm"}}</td>
                     <td>{{flight.aircraft}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<div class="box-content" ng-if="isDeliveryJob()">
+    <!-- State 1: No Current Job Selected -->
+    <div class="no-data" ng-if="!currentJob">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+            </div>
+            <div class="text">
+                Please select a job to view available agents.
+            </div>
+        </div>
+    </div>
+
+    <!-- State 2: Job Has Assigned Agent -->
+    <div class="no-data" ng-if="currentJob && currentJob.assignedAgent">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+            </div>
+            <div class="text">
+                An agent has already been assigned to this job. This can be found in the job details widget.
+            </div>
+        </div>
+    </div>
+
+    <!-- State 3: Not a Delivery Job -->
+    <div class="no-data" ng-if="currentJob && !currentJob.assignedAgent && !isDeliveryJob()">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+            </div>
+            <div class="text">
+                Agent information is not applicable for this job. This section is only relevant for delivery jobs.
+            </div>
+        </div>
+    </div>
+
+    <!-- State 4: Loading Agents -->
+    <div class="loader-container" ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && agentsLoading">
+        <div class="full-height" layout="row" layout-align="center center">
+            <div class="material-icon-loader">
+                <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+                <md-icon class="loader-icon" md-font-set="material-symbols-outlined">handyman</md-icon>
+            </div>
+        </div>
+    </div>
+
+    <!-- State 5: Agent Error -->
+    <div class="no-data"
+         ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && agentError">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">error</md-icon>
+            </div>
+            <div class="text">
+                {{agentError}}
+            </div>
+        </div>
+    </div>
+
+    <!-- State 6: No Agents Available -->
+    <div class="no-data"
+         ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && !agentError && agentOptions.length === 0">
+        <div class="content">
+            <div class="icon">
+                <md-icon md-font-set="material-symbols-outlined">engineering</md-icon>
+            </div>
+            <div class="text">
+                {{agentMessage || 'No agents available for the specified criteria.'}}
+            </div>
+        </div>
+    </div>
+
+    <!-- State 7: Agent List -->
+    <div ng-if="currentJob && !currentJob.assignedAgent && isDeliveryJob() && !agentsLoading && !agentError && agentOptions.length > 0">
+        <div class="job-list-container">
+            <div class="table-headings sticky-header">
+                <table>
+                    <thead class="thead-dark no select">
+                    <tr>
+                        <th ng-click="orderList('agentList','agentName')" scope="col">
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.agentList == 'agentName'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.agentList == 'd-agentName'">arrow_drop_up</i>Agent Name
+                        </th>
+                        <th ng-click="orderList('agentList','agentRate')" scope="col">
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.agentList == 'agentRate'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined"
+                               ng-if="sort.agentList == 'd-agentRate'">arrow_drop_up</i>Rate
+                        </th>
+                        <th ng-click="orderList('agentList', 'agentRanking')" scope="col">
+                            <i class="material-symbols-outlined" ng-if="sort.agentList == 'agentRanking'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined" ng-if="sort.agentList == 'd-agentRanking'">arrow_drop_up</i>Ranking
+                        </th>
+                        <th scope="col"></th>
+                        <th scope="col"></th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+
+            <table class="table table-responsive table-rows" data-group="agentGroup" id="agentList">
+                <tbody>
+                <tr class="clickable-row draggable-row noselect status"
+                    ng-repeat="agent in agentOptions | filter: box.searchBox">
+                    <td>{{agent.agentName}}</td>
+                    <td>{{agent.agentRate}}</td>
+                    <td>{{agent.agentRanking}}</td>
+                    <td ng-click="" style="width:20px;" title="Send Quote Request">
+                        <i class="material-symbols-outlined job-table-icon">request_quote</i>
+                    </td>
+                    <td ng-click="addAgentToJob($event, agent, currentJob)" style="width:20px;" title="Assign Job">
+                        <i class="material-symbols-outlined job-table-icon">add</i>
+                    </td>
                 </tr>
                 </tbody>
             </table>

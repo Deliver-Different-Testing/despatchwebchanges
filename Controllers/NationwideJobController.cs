@@ -203,7 +203,10 @@ public class NationwideJobController(
         try
         {
             var agents = await repository.GetAgentsAsync(jobId);
-            if (agents != null && agents.Any()) return Json(agents);
+            if (agents != null && agents.Any())
+            {
+                return Json(agents);
+            }
 
             Log.Information($"No agents found for job {jobId}");
             return Json(new List<AgentViewModel>());
