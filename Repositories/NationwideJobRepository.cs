@@ -109,6 +109,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
     public async Task<IEnumerable<AgentViewModel>> GetAgentsAsync(int jobId)
     {
         var job = await GetJobDetailsAsync(jobId);
+        Log.Debug($"AirportId: {job.AirPortId}, VehicleSizeID: {job.VehicleSizeId}");
         var agents = await GetEligibleAgentsAsync(job.AirPortId, job.VehicleSizeId);
         return await ProcessAgentsInParallelAsync(job, agents);
     }
