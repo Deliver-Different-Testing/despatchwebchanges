@@ -1165,10 +1165,20 @@
 <div class="no-data" ng-if="!jdSvc.currentJob && !currentCourier">
     <div class="content">
         <div class="icon">
-            <md-icon md-font-set="material-symbols-outlined">work</md-icon>
+            <md-icon md-font-set="material-symbols-outlined">assignment</md-icon>
         </div>
         <div class="text">
             Please Select a Job or Courier
+        </div>
+    </div>
+</div>
+
+<!-- Loading Indicator -->
+<div class="loader-container" ng-if="jdSvc.jobDetailLoading">
+    <div class="full-height" layout="row" layout-align="center center">
+        <div class="material-icon-loader">
+            <md-progress-circular md-diameter="60" md-mode="indeterminate"></md-progress-circular>
+            <md-icon class="loader-icon" md-font-set="material-symbols-outlined">assignment</md-icon>
         </div>
     </div>
 </div>

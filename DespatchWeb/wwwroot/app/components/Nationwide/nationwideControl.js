@@ -1391,7 +1391,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 await $scope.getData();
 
-                //angular.element("#box-jobDetail").find(".loading").show();
                 angular.element("#box-map").find(".loading").show();
 
                 $scope.courier = {gpsCourier: foundCourier.id};
@@ -1942,7 +1941,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         // Select the courier
         $scope.selectCourier = async (courier) => {
-            angular.element("#box-jobDetail").find(".loading").show();
+            jdSvc.jobDetailLoading = true;
             angular.element("#box-map").find(".loading").show();
             if (courier.courier === undefined) {
                 courier.courier = courier.code + ' ' + courier.firstName;
@@ -1956,7 +1955,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             await new Promise(resolve => $timeout(resolve, 100));
             $document.ready(() => {
-                angular.element("#box-jobDetail").find(".loading").fadeOut();
+                jdSvc.jobDetailLoading = false;
                 angular.element("#box-map").find(".loading").fadeOut();
             });
 
@@ -1980,7 +1979,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         $scope.selectMapCourier = async (courier) => {
-            angular.element("#box-jobDetail").find(".loading").show();
+            jdSvc.jobDetailLoading = true;
             angular.element("#box-map").find(".loading").show();
 
             angular.element("#box-currentWork").find(".loading").show();
@@ -1999,9 +1998,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
                 $scope.activateDrop();
                 await new Promise(resolve => $timeout(resolve, 1000));
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
                 await new Promise(resolve => $timeout(resolve, 1000));
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
             } catch (error) {
                 console.error("Error in selectMapCourier:", error);
                 // Handle the error appropriately
@@ -2011,7 +2008,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             await new Promise(resolve => $timeout(resolve, 100));
             $document.ready(() => {
-                angular.element("#box-jobDetail").find(".loading").fadeOut();
+                jdSvc.jobDetailLoading = false;
                 angular.element("#box-map").find(".loading").fadeOut();
             });
 
@@ -2026,7 +2023,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
         $scope.selectPotentialCourier = async (courier) => {
-            angular.element("#box-jobDetail").find(".loading").show();
+            jdSvc.jobDetailLoading = true;
             angular.element("#box-map").find(".loading").show();
             if (courier.courier === undefined) {
                 courier.courier = courier.code + ' ' + courier.firstName;
@@ -2057,13 +2054,10 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
                 $scope.activateDrop();
                 await new Promise(resolve => $timeout(resolve, 1000));
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
                 await new Promise(resolve => $timeout(resolve, 1000));
-                sizeHeadings(angular.element("#currentWork").parents(".column"));
                 await $scope.getAvailableCourierLocation();
             } catch (error) {
                 console.error("Error in selectPotentialCourier:", error);
-                // Handle the error appropriately
             }
 
             $scope.currentWorkSelection = " for Courier " + courier.courier;
@@ -2071,7 +2065,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             await new Promise(resolve => $timeout(resolve, 100));
             $document.ready(() => {
-                angular.element("#box-jobDetail").find(".loading").fadeOut();
+                jdSvc.jobDetailLoading = false;
                 angular.element("#box-map").find(".loading").fadeOut();
             });
         };
@@ -2130,11 +2124,11 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 console.log("select Job  " + support.jobId);
 
                 $scope.currentSupport = support;
-                const $boxJobDetail = angular.element("#box-jobDetail");
-                $boxJobDetail.find(".loading").show();
+                jdSvc.jobDetailLoading = true;
+
 
                 $scope.currentJob = await NWData.getJobDetail(support.jobId);
-                $boxJobDetail.find(".loading").hide();
+                jdSvc.jobDetailLoading = false;
                 $scope.currentSelection = " for Job " + support.jobNumber;
 
                 const jobs = [$scope.currentJob];
@@ -2204,8 +2198,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 _maintainJobHighlight(); // Ensure highlight persists after any DOM updates
 
                 $scope.$apply();
-                angular.element("#box-jobDetail .loading").css('display', 'none');
-                $timeout(() => sizeHeadings(), 200);
+                jdSvc.jobDetailLoading = false;
             } catch (error) {
                 console.error("Error in selectJob:", error);
             }
