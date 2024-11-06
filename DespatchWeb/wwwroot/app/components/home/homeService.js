@@ -718,6 +718,7 @@ class DispatchData {
     async updateDeliveryAddress(jobId, rate, despatcherName, prebook, addressData) {
         try {
             let endpoint = prebook ? 'job/UpdateBookingDeliveryAddress' : 'job/UpdateDeliveryAddress';
+            console.log('Using endpoint: ' + endpoint);
 
             // Create the appropriate request body based on country
             let requestBody;
@@ -729,8 +730,8 @@ class DispatchData {
                     address: addressData.address,
                     suburbId: addressData.toSuburbId,
                     cbd: addressData.cbd,
-                    latitude: addressData.lat,
-                    longitude: addressData.lng
+                    latitude: addressData.latitude,
+                    longitude: addressData.longitude
                 };
                 endpoint += 'Nz';
             } else {
@@ -753,6 +754,7 @@ class DispatchData {
                 endpoint += 'Us';
             }
 
+            console.log('Address Update Request: ' + requestBody);
             await this._$http.post(endpoint, requestBody);
         } catch (error) {
             console.error(error);

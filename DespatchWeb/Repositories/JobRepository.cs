@@ -1699,7 +1699,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
             await _context.SaveChangesAsync();
 
             // Record change in note
-            var note = $" Changed Delivery Address to {request.Address}";
+            var note = $" Changed Delivery Address to {request.Address.FullAddress}";
             await AddNoteAsync(request.JobId, note, request.DespatcherName);
         }
         catch (Exception e)

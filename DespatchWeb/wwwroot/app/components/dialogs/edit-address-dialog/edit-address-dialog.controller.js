@@ -9,8 +9,7 @@ class EditAddressDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'UsStatesService',
-        'addressDetails', 'suburbOptions', 'title', 'submitLabel'];
+    static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'UsStatesService', 'addressDetails', 'suburbOptions', 'title', 'submitLabel'];
 
     /**
      * Create an EditAddressDialogController.
@@ -27,8 +26,7 @@ class EditAddressDialogController {
      * @param {string} title - The title to display.
      * @param {string} submitLabel - The label to display on the submit button.
      */
-    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, UsStatesService,
-                addressDetails, suburbOptions, title, submitLabel) {
+    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, UsStatesService, addressDetails, suburbOptions, title, submitLabel) {
         this._$scope = $scope;
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
@@ -253,21 +251,33 @@ class EditAddressDialogController {
      * @returns {Promise<void>}
      */
     async submit(addressDetails) {
+        console.log('Starting submit with address details:', addressDetails);
         this.isLoading = true;
 
         try {
             let addressData;
+            console.log('Using US Format:', this.useUsFormat);
 
             if (this.useUsFormat) {
+                console.log('Processing US address submission');
                 if (!this.validateUsAddress(addressDetails)) {
+                    console.warn('US address validation failed');
                     this.isLoading = false;
                     return;
                 }
 
                 // Get the full state name from the abbreviation
+                console.log('Getting state info for abbreviation:', addressDetails.stateAbbrev);
                 const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.stateAbbrev);
+                console.log('Retrieved state object:', stateObj);
+
                 addressDetails.addressLine6 = stateObj.name;
                 addressDetails.state = stateObj;
+                console.log('Updated address details with full state name:', addressDetails);
+
+                // Ensure fullAddress is up-to-date
+                addressDetails.fullAddress = this.constructFullAddress(addressDetails);
+                console.log('Constructed full address:', addressDetails.fullAddress);
 
                 // Format data for US addresses
                 addressData = {
@@ -278,16 +288,19 @@ class EditAddressDialogController {
                     addressLine5: addressDetails.addressLine5,
                     addressLine6: addressDetails.addressLine6,
                     addressLine7: addressDetails.addressLine7,
-                    lat: addressDetails.lat,
-                    lng: addressDetails.long
+                    latitude: addressDetails.latitude,
+                    longitude: addressDetails.longitude,
+                    fullAddress: addressDetails.fullAddress
                 };
 
-                // Ensure fullAddress is up-to-date
-                addressDetails.fullAddress = this.constructFullAddress(addressDetails);
-
+                console.log('Formatted US address data:', addressData);
             } else {
+                console.log('Processing NZ address submission');
+                console.log('Selected suburb:', this.ourSuburbSelectedItem);
+
                 // Validate NZ specific requirements
                 if (this.ourSuburbSelectedItem.id === undefined) {
+                    console.warn('NZ suburb validation failed - no suburb selected');
                     alert("You must pick one of our suburbs to map this address to");
                     this.isLoading = false;
                     return;
@@ -296,11 +309,13 @@ class EditAddressDialogController {
                 // Format data for NZ addresses
                 addressData = {
                     address: addressDetails.address,
-                    toSuburbId: this.ourSuburbSelectedItem.id,
+                    suburbId: this.ourSuburbSelectedItem.id,
+                    suburbName: this.ourSuburbSelectedItem.text,
                     cbd: addressDetails.cbd || false,
-                    lat: addressDetails.lat,
-                    lng: addressDetails.long
+                    latitude: addressDetails.latitude,
+                    longitude: addressDetails.longitude
                 };
+                console.log('Formatted NZ address data:', addressData);
             }
 
             // Pass back formatted address data along with other required fields
@@ -310,17 +325,21 @@ class EditAddressDialogController {
                 jobId: addressDetails.jobId,
                 despatcherName: addressDetails.despatcherName,
                 prebook: addressDetails.prebook || false,
-                country: this.useUsFormat ? 'US' : 'NZ'
             };
 
-            this._toastrService.showSuccessToast('Address updated successfully!');
+            console.log('Final result object to be returned:', result);
 
             this.isLoading = false;
+            console.log('Submitting result to dialog');
             this._$mdDialog.hide(result);
+            console.log('Dialog submission complete');
         } catch (error) {
             this.isLoading = false;
-            console.error(error);
+            console.error('Error in submit function:', error);
+            console.error('Error stack:', error.stack);
+            console.error('Error occurred with address details:', addressDetails);
             this._toastrService.showErrorToast('Error updating address. Please try again or contact support');
+            throw error; // Re-throw to maintain error chain
         }
     }
 
@@ -350,16 +369,7 @@ class EditAddressDialogController {
      * @returns {string} The constructed full address.
      */
     constructFullAddress(addressDetails) {
-        return [
-            addressDetails.addressLine1,
-            addressDetails.addressLine2,
-            addressDetails.addressLine3,
-            addressDetails.addressLine4,
-            addressDetails.addressLine5,
-            addressDetails.addressLine6,
-            addressDetails.addressLine7,
-            addressDetails.addressLine8
-        ].filter(line => line && line.trim() !== '').join(', ');
+        return [addressDetails.addressLine1, addressDetails.addressLine2, addressDetails.addressLine3, addressDetails.addressLine4, addressDetails.addressLine5, addressDetails.addressLine6, addressDetails.addressLine7, addressDetails.addressLine8].filter(line => line && line.trim() !== '').join(', ');
     }
 
     /**

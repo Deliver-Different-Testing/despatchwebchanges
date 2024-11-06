@@ -724,16 +724,37 @@ public class JobController : Controller
         return Json(summary);
     }
 
-    public async Task<IActionResult> UpdateDeliveryAddressNz(UpdateAddressRequestNz request)
+    public async Task<IActionResult> UpdateDeliveryAddressNz([FromBody] UpdateAddressRequestNz request)
     {
-        await _jobRepo.UpdateDeliveryAddressNzAsync(request);
-        return Json("OK");
+        try
+        {
+            await _jobRepo.UpdateDeliveryAddressNzAsync(request);
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating address for job {request.JobId}");
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
     }
 
-    public async Task<IActionResult> UpdateDeliveryAddressUs(UpdateAddressRequestUs request)
+    public async Task<IActionResult> UpdateDeliveryAddressUs([FromBody] UpdateAddressRequestUs request)
     {
-        await _jobRepo.UpdateDeliveryAddressUsAsync(request);
-        return Json("OK");
+        try
+        {
+            if (request is null)
+            {
+                return BadRequest("Request Address Data Not Provided");
+            }
+
+            await _jobRepo.UpdateDeliveryAddressUsAsync(request);
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating address for job {request.JobId}");
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
     }
 
     public async Task<IActionResult> UpdateBulkDeliveryAddress(int bulkJobId, string toSuburb, int toPostCode,
