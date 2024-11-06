@@ -3,10 +3,6 @@
  * @class
  */
 class ToastrService {
-    /**
-     * Class to handle toast notifications
-     * @class ToastrService
-     */
     constructor($mdToast) {
         this.$mdToast = $mdToast;
     }
@@ -17,12 +13,10 @@ class ToastrService {
      */
     showErrorToast(errorMessage) {
         const defaultMessage = "An unexpected error occurred. Please try again";
-        if (!errorMessage) {
-            errorMessage = defaultMessage;
-        }
+        errorMessage = errorMessage || defaultMessage;
 
         console.log('Error:', errorMessage);
-        this._showToast(defaultMessage, "error");
+        this._showToast(errorMessage, "error");
     }
 
     /**
@@ -49,13 +43,16 @@ class ToastrService {
      * @param {string} theme - This theme is defined in the css and registred in app.js
      */
     _showToast(message, theme) {
-        this.$mdToast.show(
-            this.$mdToast.simple()
-                .textContent(message)
-                .position('top right')
-                .hideDelay(10000)
-                .theme(theme + "-toast")
-        );
+        const toastInstance = this.$mdToast.simple()
+            .textContent(message)
+            .position('top right')
+            .hideDelay(5000)
+            .toastClass('md-' + theme + '-toast-theme');
+
+        // Add theme using both methods to ensure it works
+        toastInstance.theme(theme + '-toast');
+
+        this.$mdToast.show(toastInstance);
     }
 }
 

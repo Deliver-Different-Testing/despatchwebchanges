@@ -17,6 +17,7 @@ using Amazon.S3.Model;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Serilog;
@@ -722,12 +723,38 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         return Json(summary);
     }
 
-    public async Task<IActionResult> UpdateDeliveryAddress(int jobId, int toSuburbId, string address,
-        decimal deliveryLat, decimal deliveryLng, bool cbd, decimal rate, string despatcherName)
+    public async Task<IActionResult> UpdateDeliveryAddressNz([FromBody] UpdateAddressRequestNz request)
     {
-        await jobRepository.UpdateDeliveryAddressAsync(jobId, toSuburbId, address, deliveryLat, deliveryLng, cbd, rate,
-            despatcherName);
-        return Json("OK");
+        try
+        {
+            if (request is null)
+                return BadRequest("Request Address Data Not Provided");
+
+            await _jobRepo.UpdateDeliveryAddressNzAsync(request);
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating address for job {request.JobId}");
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    public async Task<IActionResult> UpdateDeliveryAddressUs([FromBody] UpdateAddressRequestUs request)
+    {
+        try
+        {
+            if (request is null)
+                return BadRequest("Request Address Data Not Provided");
+
+            await jobRepository.UpdateDeliveryAddressUsAsync(request);
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating address for job {request.JobId}");
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
     }
 
     public async Task<IActionResult> UpdateBulkDeliveryAddress(int bulkJobId, string toSuburb, int toPostCode,
@@ -749,20 +776,37 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         return Json("OK");
     }
 
-    public async Task<IActionResult> UpdatePickupAddress(int jobId, int fromSuburbId, string address,
-        decimal pickupLat, decimal pickupLng, bool cbd, decimal rate, string despatcherName)
+    public async Task<IActionResult> UpdatePickupAddressNz([FromBody] UpdateAddressRequestNz request)
     {
         try
         {
-            await jobRepository.UpdatePickupAddressAsync(jobId, fromSuburbId, address, pickupLat, pickupLng, cbd, rate,
-                despatcherName);
+            if (request is null)
+                return BadRequest("Request Address Data Not Provided");
+
+            await _jobRepo.UpdatePickupAddressNzAsync(request);
             return Json("OK");
         }
         catch (Exception e)
         {
-            var message = $"An error occured updating pickup address for Job {jobId}";
-            Log.Error(e, message);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message });
+            _logger.LogError(e, $"An error occured updating address for job {request.JobId}");
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    public async Task<IActionResult> UpdatePickupAddressUs([FromBody] UpdateAddressRequestUs request)
+    {
+        try
+        {
+            if (request is null)
+                return BadRequest("Request Address Data Not Provided");
+
+            await jobRepository.UpdatePickupAddressUsAsync(request);
+            return Json("OK");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, $"An error occured updating address for job {request.JobId}");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 

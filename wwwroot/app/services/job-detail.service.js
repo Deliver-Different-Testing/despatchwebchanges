@@ -754,44 +754,25 @@ class JobDetailService {
         } catch (error) {
             console.error('Error updating job:', error);
             this._toastrService.showErrorToast('Failed to update job. Please try again.');
-            this._toastrService.showErrorToast('Failed to update job. Please try again.');
             throw error;
         }
     }
 
     /**
-     * @param {Job} updatedJob
-     */
-    updateJobInList(updatedJob) {
-        // Emit an event to notify the controller to update the job in the list
-        this._$rootScope.$emit('jobUpdated', updatedJob);
-    }
-
-    /**
      * Updates the GPS coordinates and address for a job
-     * @param {Object} event - The triggering event
+     * @param {Object} $event - The triggering event
      * @param {Job} currentJob - The job to update
      * @param {string} field - The field to update ('deliveryAddress' or 'pickupAddress')
      */
-    async updateGPS(event, currentJob, field) {
+    async updateAddress($event, currentJob, field) {
         const isDeliveryAddress = field === "toAddress";
-        const location = this.getJobLocation(currentJob, isDeliveryAddress);
 
         try {
-            const addressDetails = await this.showAddressDialog(event, currentJob, isDeliveryAddress);
-            return this._processAddressUpdate(currentJob, field, addressDetails);
+            const result = await this.showAddressDialog($event, currentJob, isDeliveryAddress);
+            return this._processAddressUpdate(currentJob, field, result, isDeliveryAddress);
         } catch (error) {
             console.log('Error updating GPS:', error);
         }
-    }
-
-    /**
-     * @param {Job} job
-     * @param {boolean} isDeliveryAddress
-     */
-    getJobLocation(job, isDeliveryAddress) {
-        const address = isDeliveryAddress ? job.deliveryAddress : job.pickupAddress;
-        return address.longitude ? {lat: address.latitude, long: address.longitude} : {lat: "", long: ""};
     }
 
     /**
@@ -820,13 +801,23 @@ class JobDetailService {
         });
     }
 
-    async _processAddressUpdate(job, field, addressDetails) {
-        const isDeliveryAddress = field === "deliveryAddress";
-        const updatedJob = this._updateJobAddress(job, addressDetails, isDeliveryAddress);
+    /**
+     * @param {Job} job
+     * @param {string} field
+     * @param {Object} addressResult
+     * @param {boolean} isDeliveryAddress
+     */
+    async _processAddressUpdate(job, field, addressResult, isDeliveryAddress) {
+        console.log('isDeliveryAddress: ' + isDeliveryAddress);
+
+        // Update job by address format
+        const updatedJob = this.isUsCustomer ?
+            this._updateJobAddressUs(job, addressResult, isDeliveryAddress) :
+            this._updateJobAddressNz(job, addressResult, isDeliveryAddress);
 
         try {
-            await this._updateBulkJobIfNeeded(updatedJob, addressDetails, isDeliveryAddress);
-            await this.updateJobRate(updatedJob, addressDetails, isDeliveryAddress);
+            //await this._updateBulkJobIfNeeded(updatedJob, addressData, isDeliveryAddress);
+            await this.updateJobRateAndAddress(updatedJob, addressResult, isDeliveryAddress);
             this.currentJob = updatedJob;
             this._toastrService.showSuccessToast("Address successfully updated");
         } catch (error) {
@@ -836,12 +827,33 @@ class JobDetailService {
 
     /**
      * @param {Job} job
-     * @param {AddressViewModel} addressDetails
+     * @param {Object} result
      * @param {boolean} isDeliveryAddress
      */
-    _updateJobAddress(job, addressDetails, isDeliveryAddress) {
+    _updateJobAddressNz(job, result, isDeliveryAddress) {
+        const addressField = isDeliveryAddress ? 'toAddress' : 'from';
+        const suburbIdField = isDeliveryAddress ? 'toSuburbId' : 'fromSuburbId';
+        const suburbField = isDeliveryAddress ? 'toSuburbName' : 'fromSuburbName';
+
+        job[addressField] = result.addressData.address;
+        job[suburbIdField] = result.addressData.suburbId;
+        job[suburbField] = result.addressData.suburbName;
+
+        return job;
+    }
+
+    /**
+     * @param {Job} job
+     * @param {Object} addressResult
+     * @param {boolean} isDeliveryAddress
+     *
+     * @private
+     */
+    _updateJobAddressUs(job, addressResult, isDeliveryAddress) {
         const addressField = isDeliveryAddress ? 'deliveryAddress' : 'pickupAddress';
-        job[addressField] = addressDetails;
+        console.log('Address Field: ' + addressField);
+
+        job[addressField] = addressResult.addressData;
         return job;
     }
 
@@ -851,8 +863,21 @@ class JobDetailService {
      * @param {boolean} isDeliveryAddress
      */
     async _updateBulkJobIfNeeded(job, addressDetails, isDeliveryAddress) {
-        if (!job.bulkJob) return Promise.resolve();
+        if (!job.bulkJob) {
+            return;
+        }
 
+        // Show feature in development dialog
+        return this._$mdDialog.show({
+            controller: 'FeatureInDevelopmentDialogController',
+            controllerAs: 'ctrl',
+            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
+            parent: angular.element(this._$document.body),
+            clickOutsideToClose: true,
+            bindToController: true
+        });
+
+        // Todo: Update bulk job addresses here to US
         const updateMethod = isDeliveryAddress ?
             this._dispatchData.updateBulkDeliveryAddress :
             this._dispatchData.updateBulkPickupAddress;
@@ -870,79 +895,32 @@ class JobDetailService {
 
     /**
      * @param {Job} job
-     * @param {AddressViewModel} addressDetails
+     * @param {Object} addressResult
      * @param {boolean} isDeliveryAddress
+     *
+     * @private
      */
-    async updateJobRate(job, addressDetails, isDeliveryAddress) {
-        const pedal = this.isPedalJob(job);
-
+    async updateJobRateAndAddress(job, addressResult, isDeliveryAddress) {
         job.charge = await this._rateJobService.rateJob(job);
-        const callData = this.prepareCallData(job, addressDetails, job.charge, pedal);
-        return this.callUpdateAddress(job, callData, isDeliveryAddress);
-    }
+        const rate = Number(job.charge.replace(/[^0-9.-]+/g, ""));
 
-    /**
-     * @param {Job} job
-     */
-    isPedalJob(job) {
-        return (job.pickupAddress.addressLine4 === 'CBD' && job.deliveryAddress.addressLine4 === 'CBD') ||
-            (job.pickupAddress.addressLine4 === 'North Sydney' && job.deliveryAddress.addressLine4 === 'North Sydney') ||
-            (job.pickupAddress.addressLine4 === 'Parramatta' && job.deliveryAddress.addressLine4 === 'Parramatta');
-    }
-
-    /**
-     * @param {Job} job
-     * @param {AddressViewModel} addressDetails
-     * @param {number} rate
-     * @param {number|boolean} pedal
-     */
-    prepareCallData(job, addressDetails, rate, pedal) {
-        return {
-            jobID: job.id,
-            fromSuburbId: job.pickupAddress.our_suburb,
-            toSuburbId: job.deliveryAddress.our_suburb,
-            fromAddress: job.pickupAddress.fullAddress,
-            toAddress: job.deliveryAddress.fullAddress,
-            lat: addressDetails.latitude,
-            long: addressDetails.longitude,
-            rate: rate,
-            CBD: pedal
-        };
-    }
-
-    /**
-     * @param {Job} job
-     * @param {{jobID, CBD, toSuburbId: (number|number|*), rate, fromAddress: (string|*), fromSuburbId: (number|*), toAddress: (string|*), lat, long: (string|number|*)}} callData
-     * @param {boolean} isDeliveryAddress
-     */
-    async callUpdateAddress(job, callData, isDeliveryAddress) {
-        const suburbId = isDeliveryAddress ? callData.toSuburbId : callData.fromSuburbId;
-        const address = isDeliveryAddress ? callData.toAddress : callData.fromAddress;
-        const rate = Number(callData.rate.replace(/[^0-9.-]+/g, ""));
+        console.log('Job Rate: ' + rate);
 
         if (isDeliveryAddress) {
             await this._dispatchData.updateDeliveryAddress(
-                callData.jobID,
-                suburbId,
-                address,
-                callData.lat,
-                callData.long,
-                callData.CBD,
+                job.id,
                 rate,
                 FirstName,
-                job.preBook
+                job.preBook,
+                addressResult.addressData
             );
         } else {
             await this._dispatchData.updatePickupAddress(
-                callData.jobID,
-                suburbId,
-                address,
-                callData.lat,
-                callData.long,
-                callData.CBD,
+                job.id,
                 rate,
                 FirstName,
-                job.preBook
+                job.preBook,
+                addressResult.addressData
             );
         }
     }

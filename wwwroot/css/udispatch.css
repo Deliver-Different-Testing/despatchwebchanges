@@ -1520,15 +1520,6 @@ span.courierRed {
 #SupportChannels .dropdown-menu {
   z-index: 99999;
 }
-.md-toast .md-toast-content.md-success-toast-theme {
-  background-color: #4CAF50;
-}
-.md-toast .md-toast-content.md-error-toast-theme {
-  background-color: #F44336;
-}
-.md-toast .md-toast-content.md-warning-toast-theme {
-  background-color: #FF9800;
-}
 .small-icon {
   font-size: 16px;
 }

@@ -10,6 +10,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -1325,8 +1326,12 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             where co.ClientId == clientId && s.Active == true
             select new ClientContactDetailViewModel
             {
-                ID = s.ContactId, FullName = $"{s.Firstname} {s.Surname}", Mobile = s.Mobile, DirectDial = s.DirectDial,
-                Email = s.Email, JobTitle = s.JobTitle
+                ID = s.ContactId,
+                FullName = $"{s.Firstname} {s.Surname}",
+                Mobile = s.Mobile,
+                DirectDial = s.DirectDial,
+                Email = s.Email,
+                JobTitle = s.JobTitle
             }).Distinct();
         return data.ToListAsync();
     }
@@ -1635,12 +1640,68 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .FirstOrDefault() ?? new TruckItemsSummary();
     }
 
-    public async Task UpdateDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
-        decimal deliveryLng, bool cbd, decimal rate, string despatcher)
+    public async Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request)
     {
-        await Context.Procedures.DESWEB_stpUpdateJobDeliveryAddressAsync(jobId, toSuburbId,
-            address, deliveryLat,
-            deliveryLng, cbd, rate, despatcher);
+        try
+        {
+            var job = await Get<TucJob>(request.JobId);
+
+            // Coordinates
+            job.DeliveryLatitude = request.Latitude;
+            job.DeliveryLongitude = request.Longitude;
+
+            job.UcjbToAddr = request.Address;
+            job.UcjbTo = request.SuburbId;
+            job.UcjbAmount = request.Rate;
+            job.UcjbCbd = request.Cbd;
+
+            await Context.SaveChangesAsync();
+
+            // Record change in note
+            var note = $" Changed Delivery Address to {request.Address}";
+            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating the delivery address for job {request.JobId}");
+            throw;
+        }
+    }
+
+    public async Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request)
+    {
+        try
+        {
+            var address = request.Address;
+            var job = await Get<TucJob>(request.JobId);
+
+            // Coordinates
+            job.DeliveryLatitude = address.Latitude;
+            job.DeliveryLongitude = address.Longitude;
+
+            // Address Lines
+            job.DeliveryAddressLine1 = address.AddressLine1;
+            job.DeliveryAddressLine2 = address.AddressLine2;
+            job.DeliveryAddressLine3 = address.AddressLine3;
+            job.DeliveryAddressLine4 = address.AddressLine4;
+            job.DeliveryAddressLine5 = address.AddressLine5;
+            job.DeliveryAddressLine6 = address.AddressLine6;
+            job.DeliveryAddressLine7 = address.AddressLine7;
+
+            // Amount
+            job.UcjbAmount = request.Rate;
+
+            await Context.SaveChangesAsync();
+
+            // Record change in note
+            var note = $" Changed Delivery Address to {request.Address.FullAddress}";
+            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating the delivery address for job {request.JobId}");
+            throw;
+        }
     }
 
     public async Task UpdateBulkDeliveryAddressAsync(int bulkJobId, string toSuburb, int toPostCode, string address,
@@ -1651,12 +1712,67 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             deliveryLat, deliveryLng, despatcher);
     }
 
-    public async Task UpdatePickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
-        decimal pickupLng, bool cbd, decimal rate, string despatcher)
+    public async Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request)
     {
-        await Context.Procedures.DESWEB_stpUpdateJobPickupAddressAsync(jobId, fromSuburbId,
-            address, pickupLat,
-            pickupLng, cbd, rate, despatcher);
+        try
+        {
+            var job = await Get<TucJob>(request.JobId);
+
+            // Coordinates
+            job.PickUpLatitude = request.Latitude;
+            job.PickUpLongitude = request.Longitude;
+            job.UcjbFromAddr = request.Address;
+            job.UcjbFrom = request.SuburbId;
+            job.UcjbAmount = request.Rate;
+            job.UcjbCbd = request.Cbd;
+
+            await Context.SaveChangesAsync();
+
+            // Record change in note
+            var note = $" Changed Pickup Address to {request.Address}";
+            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating the Pickup address for job {request.JobId}");
+            throw;
+        }
+    }
+
+    public async Task UpdatePickupAddressUsAsync(UpdateAddressRequestUs request)
+    {
+        try
+        {
+            var address = request.Address;
+            var job = await Get<TucJob>(request.JobId);
+
+            // Coordinates
+            job.PickUpLatitude = address.Latitude;
+            job.PickUpLongitude = address.Longitude;
+
+            // Address Lines
+            job.PickupAddressLine1 = address.AddressLine1;
+            job.PickupAddressLine2 = address.AddressLine2;
+            job.PickupAddressLine3 = address.AddressLine3;
+            job.PickupAddressLine4 = address.AddressLine4;
+            job.PickupAddressLine5 = address.AddressLine5;
+            job.PickupAddressLine6 = address.AddressLine6;
+            job.PickupAddressLine7 = address.AddressLine7;
+
+            // Amount
+            job.UcjbAmount = request.Rate;
+
+            await Context.SaveChangesAsync();
+
+            // Record change in note
+            var note = $" Changed Pickup Address to {request.Address.FullAddress}";
+            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating the Pickup address for job {request.JobId}");
+            throw;
+        }
     }
 
     public async Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher)

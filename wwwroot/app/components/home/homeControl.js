@@ -2541,7 +2541,7 @@ angular.module("uDispatch")
                     case 3:
 // this is right click
                         $timeout(async () => {
-                            await JobDetailService.updateGPS(evt, job, 'fromAddress');
+                            await JobDetailService.editAddress(evt, job, 'fromAddress');
                         }, 100);
                         break;
                     default:
@@ -2563,7 +2563,7 @@ angular.module("uDispatch")
                     case 3:
 // this is right click
                         $timeout(async () => {
-                            await JobDetailService.updateGPS($event, job, 'toAddress');
+                            await JobDetailService.editAddress($event, job, 'toAddress');
                         }, 100);
                         break;
                     default:
