@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 
 namespace DespatchWeb.Interfaces;
 
@@ -109,14 +110,16 @@ public interface IJobRepository
     Task VoidPrebookJobAsync(int jobId, string despatcher, int staffId);
     Task<TruckItemsSummary> TruckJobItemsAsync(int jobId, int truckWeightLimit);
 
-    Task UpdateDeliveryAddressAsync(int jobId, int toSuburbId, string address, decimal deliveryLat,
-        decimal deliveryLng, bool cbd, decimal rate, string despatcher);
+    Task UpdateDeliveryAddressNzAsync(UpdateAddressRequestNz request);
+
+    Task UpdateDeliveryAddressUsAsync(UpdateAddressRequestUs request);
 
     Task UpdateBulkDeliveryAddressAsync(int bulkJobId, string toSuburb, int toPostCode, string address,
         decimal deliveryLat, decimal deliveryLng, string despatcher);
 
-    Task UpdatePickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
-        decimal pickupLng, bool cbd, decimal rate, string despatcher);
+    Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request);
+
+    Task UpdatePickupAddressUsAsync(UpdateAddressRequestUs request);
 
     Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher);
 

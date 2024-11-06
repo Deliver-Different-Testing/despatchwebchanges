@@ -2,7 +2,7 @@ class DispatchData {
     constructor($http, moment, APP_CONFIG) {
         this._$http = $http;
         this._moment = moment;
-        this._useUsFormat = APP_CONFIG.US_Customer;
+        this._isUsCustomer = APP_CONFIG.US_Customer;
     }
 
     /**
@@ -369,7 +369,7 @@ class DispatchData {
      * @param {number} clearListId
      */
     async getDriverDestinationEnvelope(clearListId) {
-        const countryId = this._useUsFormat ? 2 : 1;
+        const countryId = this._isUsCustomer ? 2 : 1;
 
         const response = await this._$http.get('courier/ClearListEnvelope?clearListId=' + clearListId + '&countryId=' + countryId);
         return response.data;
@@ -710,18 +710,55 @@ class DispatchData {
 
     /**
      * @param {number} jobId
-     * @param {number} toSuburbId
-     * @param {string} address
-     * @param {number} lat
-     * @param {number} lng
-     * @param {boolean} cbd
      * @param {number} rate
      * @param {string} despatcherName
      * @param {boolean} prebook
+     * @param {Object} addressData - Contains either NZ or US specific address data
      */
-    async updateDeliveryAddress(jobId, toSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
-        const method = prebook ? 'job/UpdateBookingDeliveryAddress' : 'job/UpdateDeliveryAddress';
-        await this._$http.post(method + '?jobId=' + jobId + '&toSuburbId=' + toSuburbId + '&address=' + address + '&deliveryLat=' + lat + '&deliveryLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
+    async updateDeliveryAddress(jobId, rate, despatcherName, prebook, addressData) {
+        try {
+            let endpoint = prebook ? 'job/UpdateBookingDeliveryAddress' : 'job/UpdateDeliveryAddress';
+            console.log('Using endpoint: ' + endpoint);
+
+            // Create the appropriate request body based on country
+            let requestBody;
+            if (!this._isUsCustomer) {
+                requestBody = {
+                    jobId: jobId,
+                    rate: rate,
+                    despatcherName: despatcherName,
+                    address: addressData.address,
+                    suburbId: addressData.toSuburbId,
+                    cbd: addressData.cbd,
+                    latitude: addressData.latitude,
+                    longitude: addressData.longitude
+                };
+                endpoint += 'Nz';
+            } else {
+                requestBody = {
+                    jobId: jobId,
+                    rate: rate,
+                    despatcherName: despatcherName,
+                    address: {
+                        addressLine1: addressData.addressLine1,
+                        addressLine2: addressData.addressLine2,
+                        addressLine3: addressData.addressLine3,
+                        addressLine4: addressData.addressLine4,
+                        addressLine5: addressData.addressLine5,
+                        addressLine6: addressData.addressLine6,
+                        addressLine7: addressData.addressLine7,
+                        latitude: addressData.latitude,
+                        longitude: addressData.longitude
+                    }
+                };
+                endpoint += 'Us';
+            }
+
+            console.log('Address Update Request: ' + requestBody);
+            await this._$http.post(endpoint, requestBody);
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     /**
@@ -739,20 +776,56 @@ class DispatchData {
 
     /**
      * @param {number} jobId
-     * @param {number} fromSuburbId
-     * @param {string} address
-     * @param {number} lat
-     * @param {number} lng
-     * @param {boolean} cbd
      * @param {number} rate
      * @param {string} despatcherName
      * @param {boolean} prebook
+     * @param {Object} addressData - Contains either NZ or US specific address data
      */
-    async updatePickupAddress(jobId, fromSuburbId, address, lat, lng, cbd, rate, despatcherName, prebook) {
-        const method = prebook ? 'job/UpdateBookingPickupAddress' : 'job/UpdatePickupAddress';
-        await this._$http.post(method + '?jobId=' + jobId + '&fromSuburbId=' + fromSuburbId + '&address=' + address + '&pickupLat=' + lat + '&pickupLng=' + lng + '&cbd=' + cbd + '&rate=' + rate + '&despatcherName=' + despatcherName);
-    }
+    async updatePickupAddress(jobId, rate, despatcherName, prebook, addressData) {
+        try {
+            let endpoint = prebook ? 'job/UpdateBookingPickupAddress' : 'job/UpdatePickupAddress';
+            console.log('Using endpoint: ' + endpoint);
 
+            // Create the appropriate request body based on country
+            let requestBody;
+            if (!this._isUsCustomer) {
+                requestBody = {
+                    jobId: jobId,
+                    rate: rate,
+                    despatcherName: despatcherName,
+                    address: addressData.address,
+                    suburbId: addressData.toSuburbId,
+                    cbd: addressData.cbd,
+                    latitude: addressData.latitude,
+                    longitude: addressData.longitude
+                };
+                endpoint += 'Nz';
+            } else {
+                requestBody = {
+                    jobId: jobId,
+                    rate: rate,
+                    despatcherName: despatcherName,
+                    address: {
+                        addressLine1: addressData.addressLine1,
+                        addressLine2: addressData.addressLine2,
+                        addressLine3: addressData.addressLine3,
+                        addressLine4: addressData.addressLine4,
+                        addressLine5: addressData.addressLine5,
+                        addressLine6: addressData.addressLine6,
+                        addressLine7: addressData.addressLine7,
+                        latitude: addressData.latitude,
+                        longitude: addressData.longitude
+                    }
+                };
+                endpoint += 'Us';
+            }
+
+            console.log('Address Update Request: ' + requestBody);
+            await this._$http.post(endpoint, requestBody);
+        } catch (error) {
+            console.error(error);
+        }
+    }
     /**
      * @param {number} bulkJobId
      * @param {number} fromSuburb
@@ -885,7 +958,7 @@ class DispatchData {
                 query: text,
                 app_id: 'bBPfh2x8Cauun3ygLMAx',
                 app_code: 'yjfwTdkin_R2rGXYTrwWVg',
-                country: this._useUsFormat ? 'USA' : 'NZL'
+                country: this._isUsCustomer ? 'USA' : 'NZL'
             }
         });
         return response.data;

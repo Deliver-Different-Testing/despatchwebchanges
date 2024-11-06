@@ -3,18 +3,13 @@
  * @module EditAddressDialogController
  */
 
-/**
- * A controller which handles the GPS Form popup
- * @class
- */
 class EditAddressDialogController {
     /**
      * @type {string[]}
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'UsStatesService',
-        'addressDetails', 'suburbOptions', 'title', 'submitLabel'];
+    static $inject = ['$scope', '$timeout', '$mdDialog', 'DispatchData', 'toastrService', 'NgMap', 'APP_CONFIG', 'UsStatesService', 'addressDetails', 'suburbOptions', 'title', 'submitLabel'];
 
     /**
      * Create an EditAddressDialogController.
@@ -31,8 +26,7 @@ class EditAddressDialogController {
      * @param {string} title - The title to display.
      * @param {string} submitLabel - The label to display on the submit button.
      */
-    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, UsStatesService,
-                addressDetails, suburbOptions, title, submitLabel) {
+    constructor($scope, $timeout, $mdDialog, DispatchData, toastrService, NgMap, APP_CONFIG, UsStatesService, addressDetails, suburbOptions, title, submitLabel) {
         this._$scope = $scope;
         this._$mdDialog = $mdDialog;
         this._dispatchData = DispatchData;
@@ -66,8 +60,8 @@ class EditAddressDialogController {
             this.addressDetails.stateAbbrev = UsStatesService.getStateByName(addressDetails.addressLine6).abbreviation;
             this.addressDetails.state = addressDetails.addressLine6;
             this.addressDetails.zipCode = addressDetails.addressLine7;
-            this.addressDetails.lat = addressDetails.latitude;
-            this.addressDetails.long = addressDetails.longitude;
+            this.addressDetails.latitude = addressDetails.latitude;
+            this.addressDetails.longitude = addressDetails.longitude;
             this.addressDetails.address = addressDetails.fullAddress;
 
             this.UsStates = UsStatesService.getStates();
@@ -228,8 +222,8 @@ class EditAddressDialogController {
      */
     _updateAddressDetails(returnedLocation) {
         this.addressDetails.filledAddress = returnedLocation.Address.Label;
-        this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-        this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+        this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
+        this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
         this.addressDetails.address = returnedLocation.Address.Label;
     }
 
@@ -257,35 +251,96 @@ class EditAddressDialogController {
      * @returns {Promise<void>}
      */
     async submit(addressDetails) {
+        console.log('Starting submit with address details:', addressDetails);
         this.isLoading = true;
 
-        if (!this.useUsFormat) {
-            if (this.ourSuburbSelectedItem.id !== undefined) {
-                addressDetails.our_suburb = this.ourSuburbSelectedItem.id;
+        try {
+            let addressData;
+            console.log('Using US Format:', this.useUsFormat);
+
+            if (this.useUsFormat) {
+                console.log('Processing US address submission');
+                if (!this.validateUsAddress(addressDetails)) {
+                    console.warn('US address validation failed');
+                    this.isLoading = false;
+                    return;
+                }
+
+                // Get the full state name from the abbreviation
+                console.log('Getting state info for abbreviation:', addressDetails.stateAbbrev);
+                const stateObj = this.UsStatesService.getStateByAbbreviation(addressDetails.stateAbbrev);
+                console.log('Retrieved state object:', stateObj);
+
+                addressDetails.addressLine6 = stateObj.name;
+                addressDetails.state = stateObj;
+                console.log('Updated address details with full state name:', addressDetails);
+
+                // Ensure fullAddress is up-to-date
+                addressDetails.fullAddress = this.constructFullAddress(addressDetails);
+                console.log('Constructed full address:', addressDetails.fullAddress);
+
+                // Format data for US addresses
+                addressData = {
+                    addressLine1: addressDetails.addressLine1,
+                    addressLine2: addressDetails.addressLine2,
+                    addressLine3: addressDetails.addressLine3,
+                    addressLine4: addressDetails.addressLine4,
+                    addressLine5: addressDetails.addressLine5,
+                    addressLine6: addressDetails.addressLine6,
+                    addressLine7: addressDetails.addressLine7,
+                    latitude: addressDetails.latitude,
+                    longitude: addressDetails.longitude,
+                    fullAddress: addressDetails.fullAddress
+                };
+
+                console.log('Formatted US address data:', addressData);
+            } else {
+                console.log('Processing NZ address submission');
+                console.log('Selected suburb:', this.ourSuburbSelectedItem);
+
+                // Validate NZ specific requirements
+                if (this.ourSuburbSelectedItem.id === undefined) {
+                    console.warn('NZ suburb validation failed - no suburb selected');
+                    alert("You must pick one of our suburbs to map this address to");
+                    this.isLoading = false;
+                    return;
+                }
+
+                // Format data for NZ addresses
+                addressData = {
+                    address: addressDetails.address,
+                    suburbId: this.ourSuburbSelectedItem.id,
+                    suburbName: this.ourSuburbSelectedItem.text,
+                    cbd: addressDetails.cbd || false,
+                    latitude: addressDetails.latitude,
+                    longitude: addressDetails.longitude
+                };
+                console.log('Formatted NZ address data:', addressData);
             }
 
-            if (addressDetails.our_suburb === undefined) {
-                alert("You must pick one of our suburbs to map this address to");
-                this.isLoading = false;
-                return;
-            }
-        } else {
-            if (!this.validateUsAddress(addressDetails)) {
-                this.isLoading = false;
-                return;
-            }
-            // Update the addressLine6 with the state abbreviation before submitting
-            addressDetails.addressLine6 = addressDetails.stateAbbrev;
-            // Update the state object
-            addressDetails.state = this.UsStatesService.getStateByAbbreviation(addressDetails.stateAbbrev);
+            // Pass back formatted address data along with other required fields
+            const result = {
+                addressData: addressData,
+                rate: addressDetails.rate,
+                jobId: addressDetails.jobId,
+                despatcherName: addressDetails.despatcherName,
+                prebook: addressDetails.prebook || false,
+            };
+
+            console.log('Final result object to be returned:', result);
+
+            this.isLoading = false;
+            console.log('Submitting result to dialog');
+            this._$mdDialog.hide(result);
+            console.log('Dialog submission complete');
+        } catch (error) {
+            this.isLoading = false;
+            console.error('Error in submit function:', error);
+            console.error('Error stack:', error.stack);
+            console.error('Error occurred with address details:', addressDetails);
+            this._toastrService.showErrorToast('Error updating address. Please try again or contact support');
+            throw error; // Re-throw to maintain error chain
         }
-
-        // Ensure fullAddress is up-to-date
-        addressDetails.fullAddress = this.constructFullAddress(addressDetails);
-
-        // Pass back to function that called dialog for processing
-        this.isLoading = false;
-        this._$mdDialog.hide(addressDetails);
     }
 
     /**
@@ -314,16 +369,7 @@ class EditAddressDialogController {
      * @returns {string} The constructed full address.
      */
     constructFullAddress(addressDetails) {
-        return [
-            addressDetails.addressLine1,
-            addressDetails.addressLine2,
-            addressDetails.addressLine3,
-            addressDetails.addressLine4,
-            addressDetails.addressLine5,
-            addressDetails.addressLine6,
-            addressDetails.addressLine7,
-            addressDetails.addressLine8
-        ].filter(line => line && line.trim() !== '').join(', ');
+        return [addressDetails.addressLine1, addressDetails.addressLine2, addressDetails.addressLine3, addressDetails.addressLine4, addressDetails.addressLine5, addressDetails.addressLine6, addressDetails.addressLine7, addressDetails.addressLine8].filter(line => line && line.trim() !== '').join(', ');
     }
 
     /**
@@ -340,8 +386,8 @@ class EditAddressDialogController {
      * @param {google.maps.MouseEvent} event - A Google Maps mouse event.
      */
     moveMarker(event) {
-        this.addressDetails.lat = event.latLng.lat();
-        this.addressDetails.long = event.latLng.lng();
+        this.addressDetails.latitude = event.latLng.lat();
+        this.addressDetails.longitude = event.latLng.lng();
         this._$scope.$apply();
     };
 
@@ -360,8 +406,8 @@ class EditAddressDialogController {
                 // Updating scope variables with new data
                 this.addressDetails.address = returnedLocation.Address.Label;
                 this.addressDetails.suburb = returnedLocation.Address.District;
-                this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+                this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
+                this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
 
                 // Log output
                 console.log("Suburb = " + returnedLocation.Address.District);
@@ -389,8 +435,8 @@ class EditAddressDialogController {
      */
     placeChanged(place) {
         try {
-            this.addressDetails.lat = place.geometry.location.lat();
-            this.addressDetails.long = place.geometry.location.lng();
+            this.addressDetails.latitude = place.geometry.location.lat();
+            this.addressDetails.longitude = place.geometry.location.lng();
             if (place.address_components.find(x => x.types[0] === "postal_code")) {
                 this.addressDetails.postCode = place.address_components
                     .find(x => x.types[0] === "postal_code").long_name;
