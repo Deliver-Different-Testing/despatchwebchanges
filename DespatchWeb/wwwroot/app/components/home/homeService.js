@@ -747,8 +747,8 @@ class DispatchData {
                         addressLine5: addressData.addressLine5,
                         addressLine6: addressData.addressLine6,
                         addressLine7: addressData.addressLine7,
-                        latitude: addressData.lat,
-                        longitude: addressData.lng
+                        latitude: addressData.latitude,
+                        longitude: addressData.longitude
                     }
                 };
                 endpoint += 'Us';
@@ -813,8 +813,8 @@ class DispatchData {
                         addressLine5: addressData.addressLine5,
                         addressLine6: addressData.addressLine6,
                         addressLine7: addressData.addressLine7,
-                        latitude: addressData.lat,
-                        longitude: addressData.lng
+                        latitude: addressData.latitude,
+                        longitude: addressData.longitude
                     }
                 };
                 endpoint += 'Us';
@@ -826,8 +826,6 @@ class DispatchData {
             console.error(error);
         }
     }
-
-
     /**
      * @param {number} bulkJobId
      * @param {number} fromSuburb

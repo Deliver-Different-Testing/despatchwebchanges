@@ -60,8 +60,8 @@ class EditAddressDialogController {
             this.addressDetails.stateAbbrev = UsStatesService.getStateByName(addressDetails.addressLine6).abbreviation;
             this.addressDetails.state = addressDetails.addressLine6;
             this.addressDetails.zipCode = addressDetails.addressLine7;
-            this.addressDetails.lat = addressDetails.latitude;
-            this.addressDetails.long = addressDetails.longitude;
+            this.addressDetails.latitude = addressDetails.latitude;
+            this.addressDetails.longitude = addressDetails.longitude;
             this.addressDetails.address = addressDetails.fullAddress;
 
             this.UsStates = UsStatesService.getStates();
@@ -222,8 +222,8 @@ class EditAddressDialogController {
      */
     _updateAddressDetails(returnedLocation) {
         this.addressDetails.filledAddress = returnedLocation.Address.Label;
-        this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-        this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+        this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
+        this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
         this.addressDetails.address = returnedLocation.Address.Label;
     }
 
@@ -386,8 +386,8 @@ class EditAddressDialogController {
      * @param {google.maps.MouseEvent} event - A Google Maps mouse event.
      */
     moveMarker(event) {
-        this.addressDetails.lat = event.latLng.lat();
-        this.addressDetails.long = event.latLng.lng();
+        this.addressDetails.latitude = event.latLng.lat();
+        this.addressDetails.longitude = event.latLng.lng();
         this._$scope.$apply();
     };
 
@@ -406,8 +406,8 @@ class EditAddressDialogController {
                 // Updating scope variables with new data
                 this.addressDetails.address = returnedLocation.Address.Label;
                 this.addressDetails.suburb = returnedLocation.Address.District;
-                this.addressDetails.lat = returnedLocation.DisplayPosition.Latitude;
-                this.addressDetails.long = returnedLocation.DisplayPosition.Longitude;
+                this.addressDetails.latitude = returnedLocation.DisplayPosition.Latitude;
+                this.addressDetails.longitude = returnedLocation.DisplayPosition.Longitude;
 
                 // Log output
                 console.log("Suburb = " + returnedLocation.Address.District);
@@ -435,8 +435,8 @@ class EditAddressDialogController {
      */
     placeChanged(place) {
         try {
-            this.addressDetails.lat = place.geometry.location.lat();
-            this.addressDetails.long = place.geometry.location.lng();
+            this.addressDetails.latitude = place.geometry.location.lat();
+            this.addressDetails.longitude = place.geometry.location.lng();
             if (place.address_components.find(x => x.types[0] === "postal_code")) {
                 this.addressDetails.postCode = place.address_components
                     .find(x => x.types[0] === "postal_code").long_name;
