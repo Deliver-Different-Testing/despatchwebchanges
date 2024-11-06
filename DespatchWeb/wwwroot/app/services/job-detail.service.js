@@ -904,15 +904,11 @@ class JobDetailService {
             );
         } else {
             await this._dispatchData.updatePickupAddress(
-                callData.jobID,
-                suburbId,
-                address,
-                callData.lat,
-                callData.long,
-                callData.CBD,
+                job.id,
                 rate,
                 FirstName,
-                job.preBook
+                job.preBook,
+                addressResult.addressData
             );
         }
     }

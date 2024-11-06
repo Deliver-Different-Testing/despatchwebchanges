@@ -1337,8 +1337,12 @@ public class JobRepository : BaseJobRepository, IJobRepository
             where co.ClientId == clientId && s.Active == true
             select new ClientContactDetailViewModel
             {
-                ID = s.ContactId, FullName = $"{s.Firstname} {s.Surname}", Mobile = s.Mobile, DirectDial = s.DirectDial,
-                Email = s.Email, JobTitle = s.JobTitle
+                ID = s.ContactId,
+                FullName = $"{s.Firstname} {s.Surname}",
+                Mobile = s.Mobile,
+                DirectDial = s.DirectDial,
+                Email = s.Email,
+                JobTitle = s.JobTitle
             }).Distinct();
         return data.ToListAsync();
     }
@@ -1653,8 +1657,10 @@ public class JobRepository : BaseJobRepository, IJobRepository
         {
             var job = await Get<TucJob>(request.JobId);
 
+            // Coordinates
             job.DeliveryLatitude = request.Latitude;
             job.DeliveryLongitude = request.Longitude;
+
             job.UcjbToAddr = request.Address;
             job.UcjbTo = request.SuburbId;
             job.UcjbAmount = request.Rate;
@@ -1717,12 +1723,67 @@ public class JobRepository : BaseJobRepository, IJobRepository
             deliveryLat, deliveryLng, despatcher);
     }
 
-    public async Task UpdatePickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
-        decimal pickupLng, bool cbd, decimal rate, string despatcher)
+    public async Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request)
     {
-        await _context.Procedures.DESWEB_stpUpdateJobPickupAddressAsync(jobId, fromSuburbId,
-            address, pickupLat,
-            pickupLng, cbd, rate, despatcher);
+        try
+        {
+            var job = await Get<TucJob>(request.JobId);
+
+            // Coordinates
+            job.PickUpLatitude = request.Latitude;
+            job.PickUpLongitude = request.Longitude;
+            job.UcjbFromAddr = request.Address;
+            job.UcjbFrom = request.SuburbId;
+            job.UcjbAmount = request.Rate;
+            job.UcjbCbd = request.Cbd;
+
+            await _context.SaveChangesAsync();
+
+            // Record change in note
+            var note = $" Changed Pickup Address to {request.Address}";
+            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating the Pickup address for job {request.JobId}");
+            throw;
+        }
+    }
+
+    public async Task UpdatePickupAddressUsAsync(UpdateAddressRequestUs request)
+    {
+        try
+        {
+            var address = request.Address;
+            var job = await Get<TucJob>(request.JobId);
+
+            // Coordinates
+            job.PickUpLatitude = address.Latitude;
+            job.PickUpLongitude = address.Longitude;
+
+            // Address Lines
+            job.PickupAddressLine1 = address.AddressLine1;
+            job.PickupAddressLine2 = address.AddressLine2;
+            job.PickupAddressLine3 = address.AddressLine3;
+            job.PickupAddressLine4 = address.AddressLine4;
+            job.PickupAddressLine5 = address.AddressLine5;
+            job.PickupAddressLine6 = address.AddressLine6;
+            job.PickupAddressLine7 = address.AddressLine7;
+
+            // Amount
+            job.UcjbAmount = request.Rate;
+
+            await _context.SaveChangesAsync();
+
+            // Record change in note
+            var note = $" Changed Pickup Address to {request.Address.FullAddress}";
+            await AddNoteAsync(request.JobId, note, request.DespatcherName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"An error occured updating the Pickup address for job {request.JobId}");
+            throw;
+        }
     }
 
     public async Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher)

@@ -391,14 +391,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DESWEB_stpUpdateJobDeliveryAddress]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DESWEB_stpUpdateJobPickupAddress]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DESWEB_stpUpdateJobType]",
          "ObjectType": 1
       },

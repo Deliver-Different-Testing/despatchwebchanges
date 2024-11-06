@@ -117,8 +117,9 @@ public interface IJobRepository
     Task UpdateBulkDeliveryAddressAsync(int bulkJobId, string toSuburb, int toPostCode, string address,
         decimal deliveryLat, decimal deliveryLng, string despatcher);
 
-    Task UpdatePickupAddressAsync(int jobId, int fromSuburbId, string address, decimal pickupLat,
-        decimal pickupLng, bool cbd, decimal rate, string despatcher);
+    Task UpdatePickupAddressNzAsync(UpdateAddressRequestNz request);
+
+    Task UpdatePickupAddressUsAsync(UpdateAddressRequestUs request);
 
     Task UpdateJobTypeAsync(int jobId, int jobType, string despatcher);
 
