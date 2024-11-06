@@ -471,36 +471,44 @@ class JobDetailService {
      * @param {Date} datetime
      * @param {string} id
      */
-    showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
-        return this._$mdDialog.show({
-            controller: 'EditDateTimeDialogController',
-            controllerAs: 'ctrl',
-            parent: angular.element(this._$document.body),
-            targetEvent: $event,
-            templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                job,
-                title,
-                fieldName,
-                dateTime: datetime,
-                id,
-                showDate: true,
-                showTime: true
-            },
-            bindToController: true
-        }).then(_ => {
+    async showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
+        try {
+            await this._$mdDialog.show({
+                controller: 'EditDateTimeDialogController',
+                controllerAs: 'ctrl',
+                parent: angular.element(this._$document.body),
+                targetEvent: $event,
+                templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+                clickOutsideToClose: false,
+                fullscreen: true,
+                locals: {
+                    job,
+                    title,
+                    fieldName,
+                    dateTime: datetime,
+                    id,
+                    showDate: true,
+                    showTime: true
+                },
+                bindToController: true
+            });
+
             console.log('Dialog closed!');
-        });
+        } catch (error) {
+            if (error === undefined) {
+                console.log('Dialog canceled');
+            } else {
+                console.error('Dialog error:', error);
+            }
+        }
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editFollowUpTime($event, job) {
-        return this.showEditDateTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
+    async editFollowUpTime($event, job) {
+        await this.showEditDateTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
     }
 
 

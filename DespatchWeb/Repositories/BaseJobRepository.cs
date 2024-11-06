@@ -28,6 +28,7 @@ public class BaseJobRepository
         DispatchTime = j.UcjbDispTime,
         CreatedDate = j.UcjbDate,
         ScheduleName = j.ScheduleName,
+        FollowupTime = j.FollowupTime,
 
         PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
         DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
@@ -122,13 +123,18 @@ public class BaseJobRepository
         FromSuburbId = j.UcjbFromNavigation.UcsuId,
         ToSuburbId = j.UcjbToNavigation.UcsuId,
 
+        // Tracking info
+        TrackingMethod = j.TrackingMethod,
+        TrackingMobile = j.TrackingMobile,
+        TrackingEmail = j.TrackingEmail,
+
         // Delivery details
         PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
         Return = j.UcjbReturn,
         SaturdayDelivery = j.SaturdayDelivery,
         Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
         CompletedTime = j.UcjbComplTime,
-
+        UdStatus = j.UndeliverableLocation.Name,
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,

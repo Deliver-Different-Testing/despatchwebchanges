@@ -846,8 +846,8 @@ public class JobController : Controller
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            _logger.LogError(e, $"An error occured updating field {field} with value {value} for job {jobId}");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 

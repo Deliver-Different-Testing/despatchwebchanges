@@ -9,19 +9,7 @@ class EditDateTimeDialogController {
      * @static
      * @description List of dependencies to be injected.
      */
-    static $inject = [
-        '$mdDialog',
-        'toastrService',
-        'DispatchData',
-        'moment',
-        'job',
-        'title',
-        'fieldName',
-        'dateTime',
-        'id',
-        'showDate',
-        'showTime'
-    ];
+    static $inject = ['$mdDialog', 'toastrService', 'DispatchData', 'moment', 'job', 'title', 'fieldName', 'dateTime', 'id', 'showDate', 'showTime'];
 
     /**
      * @constructor
@@ -55,15 +43,14 @@ class EditDateTimeDialogController {
 
         this.isLoading = false;
         this.message = {
-            hour: 'Hour is required',
-            minute: 'Minute is required',
+            hour: 'Hour is required', minute: 'Minute is required',
         };
     }
 
     /**
-     * @method _initializeDateTime
      * @description Initializes the date and time fields based on the provided dateTime.
      * @param {Date} dateTime - The date and time to initialize.
+     *
      * @private
      */
     _initializeDateTime(dateTime) {
@@ -85,7 +72,6 @@ class EditDateTimeDialogController {
     }
 
     /**
-     * @method isValid
      * @description Checks if the current date/time selection is valid based on the dialog configuration.
      * @returns {boolean} True if the selection is valid (not null) according to the shown fields, false otherwise.
      */
@@ -103,7 +89,6 @@ class EditDateTimeDialogController {
     }
 
     /**
-     * @method submit
      * @description Submits the updated date/time, updates the job details, and closes the dialog.
      * @returns {Promise<void>}
      */
@@ -111,7 +96,9 @@ class EditDateTimeDialogController {
         try {
             this.isLoading = true;
             const newDateTime = this._combineDateTime();
+
             await this._updateJobDetail(newDateTime);
+
             this._updateJobField(newDateTime);
             this._showMessageAndCloseDialog();
         } catch (error) {
@@ -122,9 +109,9 @@ class EditDateTimeDialogController {
     }
 
     /**
-     * @method _combineDateTime
      * @description Combines the selected date and time into a single Date object.
      * @returns {Date|null} The combined date and time, or null if neither is selected.
+     *
      * @private
      */
     _combineDateTime() {
@@ -141,47 +128,32 @@ class EditDateTimeDialogController {
     }
 
     /**
-     * @method _updateJobDetail
      * @description Updates the job detail with the new date/time.
      * @param {Date} newDateTime - The new date and time to update.
      * @returns {Promise<void>}
+     *
      * @private
      */
     async _updateJobDetail(newDateTime) {
         const formattedDateTime = this._formatDateTime(newDateTime);
+        console.log('Formated DateTime: ' + formattedDateTime)
+
         const callData = {
-            "call": "updateDetailField",
-            "field": this.fieldName,
-            "value": formattedDateTime,
-            "jobID": this._job.id
+            "call": "updateDetailField", "field": this.fieldName, "value": formattedDateTime, "jobID": this._job.id
         };
+        console.log('CallData: ' + callData);
 
         if (this._job.bulkJob) {
-            await this._dispatchData.updateBulkJobDetail(
-                this._job.id,
-                callData.field,
-                callData.value,
-                this._job.charge,
-                FirstName,
-                ContactID
-            );
+            await this._dispatchData.updateBulkJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID);
         } else {
-            await this._dispatchData.updateJobDetail(
-                this._job.id,
-                callData.field,
-                callData.value,
-                this._job.charge,
-                FirstName,
-                ContactID,
-                this._job.preBook
-            );
+            await this._dispatchData.updateJobDetail(this._job.id, callData.field, callData.value, this._job.charge, FirstName, ContactID, this._job.preBook);
         }
     }
 
     /**
-     * @method _updateJobField
      * @description Updates the corresponding field in the job object with the new date/time.
      * @param {Date} newDateTime - The new date and time to update.
+     *
      * @private
      */
     _updateJobField(newDateTime) {
@@ -196,20 +168,20 @@ class EditDateTimeDialogController {
     }
 
     /**
-     * @method _showMessageAndCloseDialog
      * @description Displays a success message and closes the dialog.
+     *
      * @private
      */
     _showMessageAndCloseDialog() {
         this._toastrService.showSuccessToast("Updated " + this.title);
-        this._$mdDialog.hide(this._job);
+        this._$mdDialog.hide();
     }
 
     /**
-     * @method _formatDateTime
      * @description Formats the date/time to the required string format.
      * @param {Date} dateTime - The date and time to format.
      * @returns {Date} The formatted date.
+     *
      * @private
      */
     _formatDateTime(dateTime) {
@@ -217,7 +189,6 @@ class EditDateTimeDialogController {
     }
 
     /**
-     * @method cancel
      * @description Cancels the dialog operation.
      */
     cancel() {
