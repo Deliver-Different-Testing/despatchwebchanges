@@ -112,6 +112,9 @@ class SelectDialogController {
                 this._job.notifiedName = selectedOption.text;
                 this._job.notifiedId = selectedOption.id;
                 break;
+            case "TrackingMethod":
+                this._job.trackingMethod = selectedOption.id;
+                break;
         }
     }
 
