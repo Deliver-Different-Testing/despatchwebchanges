@@ -91,7 +91,7 @@ angular.module('uDispatch')
         /**
          * Register additional themes for toasts
          */
-        $mdThemingProvider.theme('success-toast').extend('default');
-        $mdThemingProvider.theme('warning-toast').extend('default');
-        $mdThemingProvider.theme('error-toast').extend('default');
+        $mdThemingProvider.theme('success-toast').primaryPalette('green');
+        $mdThemingProvider.theme('warning-toast').primaryPalette('orange');
+        $mdThemingProvider.theme('error-toast').primaryPalette('red');
     }])

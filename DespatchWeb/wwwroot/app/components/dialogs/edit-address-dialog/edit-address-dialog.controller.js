@@ -3,10 +3,6 @@
  * @module EditAddressDialogController
  */
 
-/**
- * A controller which handles the GPS Form popup
- * @class
- */
 class EditAddressDialogController {
     /**
      * @type {string[]}
@@ -69,6 +65,8 @@ class EditAddressDialogController {
             this.addressDetails.lat = addressDetails.latitude;
             this.addressDetails.long = addressDetails.longitude;
             this.addressDetails.address = addressDetails.fullAddress;
+
+            this.UsStates = UsStatesService.getStates();
         }
 
         this._initializeMap($timeout, NgMap);
@@ -314,6 +312,8 @@ class EditAddressDialogController {
                 prebook: addressDetails.prebook || false,
                 country: this.useUsFormat ? 'US' : 'NZ'
             };
+
+            this._toastrService.showSuccessToast('Address updated successfully!');
 
             this.isLoading = false;
             this._$mdDialog.hide(result);
