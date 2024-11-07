@@ -392,10 +392,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
 
                 await $scope.getEventTypes();
-                await $scope.getData();
 
                 $timeout(() => sizeHeadings(), 1000);
-                $timeout(() => sizeHeadings(), 2000);
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
                 await initializeAreas();
@@ -2096,7 +2094,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.activateDrop();
 
                 $timeout(() => sizeHeadings(), 1000);
-                $timeout(() => sizeHeadings(), 2000);
 
             } catch (error) {
                 if (error === undefined) {
@@ -2685,67 +2682,42 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         /**
          * Creates and returns the context menu items for job events
          * @param {Event} $event - The triggering event object
-         * @param {Job} job - The job object associated with the menu
          * @returns {Promise<Array<Object>>} Array of menu items
          */
-        $scope.setEventsMenu = async ($event, job) => {
-            try {
-                $event.preventDefault();
-                $event.stopPropagation();
-
-                // Update current job before showing menu
-                $scope.currentJob = job;
-
-                return [{
-                    text: "Void Job",
-                    click: async () => {
-                        try {
-                            $event.stopPropagation();
-                            await $scope.voidJobForm(job.jobNo, job.id);
-                            console.log('Void Job completed successfully');
-                        } catch (error) {
-                            console.error('Error in Void Job:', error);
-                        }
-                    }
-                }, {
-                    text: "Add Event - Other",
-                    click: async () => {
-                        try {
-                            $event.stopPropagation();
-                            await $scope.otherEventForm($event, job);
-                        } catch (error) {
-                            console.error('Error in Add Event:', error);
-                        }
-                    }
-                }, {
-                    text: "Split Job",
-                    click: async () => {
-                        try {
-                            $event.stopPropagation();
-                            await $scope.splitJob($event, job);
-                            console.log('Split Job completed successfully');
-                        } catch (error) {
-                            console.error('Error in Split Job:', error);
-                        }
-                    },
-                    enabled: () => job.allowSplit
-                }, {
-                    text: "Set First Job",
-                    click: async () => {
-                        try {
-                            $event.stopPropagation();
-                            await $scope.setFirstJob(job);
-                            console.log('Set First Job completed successfully');
-                        } catch (error) {
-                            console.error('Error in Set First Job:', error);
-                        }
-                    }
-                }];
-            } catch (error) {
-                console.error('Error setting up context menu:', error);
-                return [];
+        $scope.setEventsMenu = $event => [{
+            text: "Void Job",
+            click: () => $scope.voidJobForm($scope.currentJob.jobNo, $scope.currentJob.id)
+                .then(() => {
+                    console.log('Void Job completed successfully');
+                })
+                .catch(error => {
+                    console.log('Error in Void Job:', error);
+                })
+        }, {
+            text: "Add Event - Other",
+            click: () => {
+                $scope.otherEventForm($event, $scope.currentJob);
             }
-        };
+        }, {
+            text: "Split Job",
+            click: () => $scope.splitJob($event, $scope.currentJob)
+                .then(() => {
+                    console.log('Split Job completed successfully');
+                })
+                .catch(error => {
+                    console.log('Error in Split Job:', error);
+                }),
+            enabled: $itemScope => $itemScope.job.allowSplit
+        }, {
+            text: "Set First Job",
+            click: () => $scope.setFirstJob($scope.currentJob)
+                .then(() => {
+                    console.log('Set First Job completed successfully');
+                })
+                .catch(error => {
+                    console.log('Error in Set First Job:', error);
+                })
+        }];
 
         $scope.setJobsMenu = async () => {
             const multiple = angular.element(".activeTable .active").length > 1;
@@ -2902,22 +2874,13 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             try {
                 // Set loading states
-                requestedTypes.forEach(type => {
-                    switch (type) {
-                        case $scope.jobDataType.NEW:
-                            $scope.jobListLoading = true;
-                            break;
-                        case $scope.jobDataType.DELIVERY:
-                            $scope.deliveryListLoading = true;
-                            break;
-                        case $scope.jobDataType.POD:
-                            $scope.podListLoading = true;
-                            break;
-                        case $scope.jobDataType.REPRICE:
-                            $scope.repriceListLoading = true;
-                            break;
-                    }
-                });
+                const loadingStates = {
+                    [$scope.jobDataType.NEW]: () => $scope.jobListLoading = true,
+                    [$scope.jobDataType.DELIVERY]: () => $scope.deliveryListLoading = true,
+                    [$scope.jobDataType.POD]: () => $scope.podListLoading = true,
+                    [$scope.jobDataType.REPRICE]: () => $scope.repriceListLoading = true
+                };
+                requestedTypes.forEach(type => loadingStates[type]?.());
 
                 // Define fetch functions for each type
                 const fetchMap = {
@@ -2984,7 +2947,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     fetchMap[type].updateScope(data);
                 });
 
-                $scope.$apply();
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
 
                 // Handle additional tasks for delivery data
                 if (requestedTypes.includes($scope.jobDataType.DELIVERY)) {
@@ -2993,7 +2958,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 // Run size headings if any data was fetched
                 if (results.length > 0) {
-                    $timeout(() => sizeHeadings(), 200);
                     $timeout(() => sizeHeadings(), 1000);
                 }
             } catch (error) {
@@ -3075,8 +3039,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }, 100);
 
                 $timeout(() => sizeHeadings(), 1000);
-                $timeout(() => sizeHeadings(), 2000);
-
             } catch (error) {
                 console.error("Error fetching supports:", error);
             }
@@ -3101,6 +3063,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.getData = async () => {
             angular.element("#box-jobsList").find(".loading").show();
 
+            // Clear data once
             $scope.jobList = [];
             $scope.jobListPOD = [];
             $scope.currentJob = false;

@@ -878,30 +878,93 @@ class DispatchData {
      * @param {boolean} preBook
      */
     async updateJobDetail(jobId, field, value, rate, despatcherName, staffId, preBook) {
+        console.log('Starting updateJobDetail:', {
+            jobId,
+            field,
+            initialValue: value,
+            rate,
+            despatcherName,
+            staffId,
+            preBook
+        });
+
+        let originalValue = value;
+
+        // Handle time fields
         if (field === 'Time' || field === 'CompletedTime') {
-            value = this._moment().format('YYYY-MM-DD') + ' ' + this._moment(value).format('HH:mm:ss');
-        }
-        if (field === 'FollowupTime') {
-            value = this._moment(value).format('YYYY-MM-DD') + ' ' + this._moment(value).format('HH:mm:ss');
-        }
-        if (field === 'Date' || field === 'StopDate' || field === 'RestartDate' || field === 'InActiveDate' || field === 'FirstDue' || field === 'LastDone' || field === 'NextDue') {
-            value = this._moment(value).format('YYYY-MM-DD');
-        }
-        if (field === 'DeliverToContact') {
-            field = 'ToContactName';
+            const currentDate = this._moment().format('YYYY-MM-DD');
+            const timeValue = this._moment(value).format('HH:mm:ss');
+            value = currentDate + ' ' + timeValue;
+            console.log('Formatted time field:', {field, originalValue, formattedValue: value});
         }
 
-        // Remove any symbols from rate
+        // Handle followup time
+        if (field === 'FollowupTime') {
+            const dateValue = this._moment(value).format('YYYY-MM-DD');
+            const timeValue = this._moment(value).format('HH:mm:ss');
+            value = dateValue + ' ' + timeValue;
+            console.log('Formatted followup time:', {field, originalValue, formattedValue: value});
+        }
+
+        // Handle date fields
+        const dateFields = ['Date', 'StopDate', 'RestartDate', 'InActiveDate', 'FirstDue', 'LastDone', 'NextDue'];
+        if (dateFields.includes(field)) {
+            value = this._moment(value).format('YYYY-MM-DD');
+            console.log('Formatted date field:', {field, originalValue, formattedValue: value});
+        }
+
+        // Handle contact field rename
+        if (field === 'DeliverToContact') {
+            const oldField = field;
+            field = 'ToContactName';
+            console.log('Renamed field:', {oldField, newField: field});
+        }
+
+        // Handle rate formatting
         if (rate && typeof rate === 'string') {
+            const originalRate = rate;
             rate = rate.replace(/[$]/g, '');
+            console.log('Formatted rate:', {originalRate, formattedRate: rate});
         }
 
         const method = preBook ? 'job/UpdateJobBooking' : 'job/UpdateJob';
-        const response = await this._$http.post(method + '?jobId=' + jobId + '&field=' + field + '&value=' + value + '&rate=' + rate + '&despatcherName=' + despatcherName + '&staffId=' + staffId);
+        const url = `${method}?jobId=${jobId}&field=${field}&value=${value}&rate=${rate}&despatcherName=${despatcherName}&staffId=${staffId}`;
 
-        return response.data;
+        console.log('Making API request:', {
+            method: 'POST',
+            url,
+            parameters: {
+                jobId,
+                field,
+                value,
+                rate,
+                despatcherName,
+                staffId
+            }
+        });
+
+        try {
+            const response = await this._$http.post(url);
+            console.log('API response received:', {
+                status: response.status,
+                data: response.data
+            });
+            return response.data;
+        } catch (error) {
+            console.error('API request failed:', {
+                error: error.message,
+                parameters: {
+                    jobId,
+                    field,
+                    value,
+                    rate,
+                    despatcherName,
+                    staffId
+                }
+            });
+            throw error;
+        }
     }
-
     /**
      * @param {number} bulkJobId
      * @param {string} field
@@ -944,6 +1007,38 @@ class DispatchData {
         });
 
         const response = await this._$http.get(`job?${params.toString()}`);
+        return response.data;
+    }
+
+    /**
+     * @param {JobQueryParams} queryParams
+     * @param {String[]} selectedClients
+     * @param {boolean} internal
+     * @param {Suggestion[]} selectedAreas
+     * @param {ClearListEnvelope} selectedClearList
+     */
+    async getClearListJobs(queryParams, selectedClients, internal, selectedAreas, selectedClearList) {
+        const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
+
+        const params = new URLSearchParams({
+            status: queryParams.status || 'all',
+            order: queryParams.order || 'time',
+            asc: queryParams.asc || 'asc',
+            isInternal: internal.toString(),
+            cid: ContactID,
+            clientIds: selectedClients.join(','),
+            minimumLatitude: selectedClearList.minimumLatitude,
+            maximumLatitude: selectedClearList.maximumLatitude,
+            minimumLongitude: selectedClearList.minimumLongitude,
+            maximumLongitude: selectedClearList.maximumLongitude
+        });
+
+        // Append each despatchViewId as a separate query parameter
+        despatchViewIds.forEach(id => {
+            params.append('despatchViewIds', id.toString());
+        });
+
+        const response = await this._$http.get(`job/GetJobsByClearListEnvelope?${params.toString()}`);
         return response.data;
     }
 

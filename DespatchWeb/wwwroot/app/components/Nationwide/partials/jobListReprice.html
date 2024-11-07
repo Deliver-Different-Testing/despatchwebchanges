@@ -37,7 +37,7 @@
 
                 <td>{{job.time | date: "HH:mm"}}</td>
                 <td ng-click="speedColumnClick($event)"
-                    ng-contextmenu="speedColumnClick($event)"
+                    context-menu="speedColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{job.speed}}
                     <i class="material-symbols-outlined job-table-icon"
@@ -45,20 +45,24 @@
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="(job.assignedAgent)">engineering</i>
                 </td>
-                <td ng-contextmenu="setEventsMenu($event)">{{job.jobNo}}</td>
+                <td context-menu="setEventsMenu($event)"
+                    ng-click="$event.stopPropagation()"
+                    ng-mousedown="$event.preventDefault(); $event.stopPropagation();">
+                    {{job.jobNo}}
+                </td>
                 <td ng-click="clientColumnClick($event)"
-                    ng-contextmenu="clientColumnClick($event)"
+                    context-menu="clientColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">{{job.client}}
                 </td>
                 <td class="address-cell"
                     ng-click="fromColumnClick($event)"
-                    ng-contextmenu="fromColumnClick($event)"
+                    context-menu="fromColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.pickupAddress.addressLine5 : job.from}}
                 </td>
                 <td class="address-cell"
                     ng-click="toColumnClick($event)"
-                    ng-contextmenu="toColumnClick($event)"
+                    context-menu="toColumnClick($event)"
                     ng-mousedown="$event.button === 2 && $event.preventDefault()">
                     {{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}
                 </td>

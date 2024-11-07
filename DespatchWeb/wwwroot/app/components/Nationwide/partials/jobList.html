@@ -45,7 +45,7 @@
                     <i class="material-symbols-outlined job-table-icon"
                        ng-if="(job.assignedAgent)">engineering</i>
                 </td>
-                <td context-menu="setEventsMenu($event, job)"
+                <td context-menu="setEventsMenu($event)"
                     ng-click="$event.stopPropagation()"
                     ng-mousedown="$event.preventDefault(); $event.stopPropagation();">
                     {{job.jobNo}}

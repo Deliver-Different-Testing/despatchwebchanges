@@ -31,7 +31,8 @@ public interface IJobRepository
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
     Task<List<JobViewModel>> JobListAsync(string status, string order,
-        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds);
+        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds,
+        ClearListEnvelopeViewModel? clearListEnvelope = null);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
     Task<TucEvent> GetSupportEventAsync(int id);

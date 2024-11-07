@@ -28,6 +28,7 @@ public class BaseJobRepository
         DispatchTime = j.UcjbDispTime,
         CreatedDate = j.UcjbDate,
         ScheduleName = j.ScheduleName,
+        FollowupTime = j.FollowupTime,
 
         PickupTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.PickupTime : null,
         DeliveryTime = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.DeliveryTime : null,
@@ -107,6 +108,9 @@ public class BaseJobRepository
         // Notes
         ClientNotes = j.UcjbClient != null ? j.UcjbClient.UcclNotes : null,
         InternalNotes = j.UcjbNotes,
+        ConNote = j.TucJobNationwides
+            .Select(nj => nj.UcnwConNote)
+            .FirstOrDefault(),
 
         // Suburb information
         From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
@@ -122,13 +126,20 @@ public class BaseJobRepository
         FromSuburbId = j.UcjbFromNavigation.UcsuId,
         ToSuburbId = j.UcjbToNavigation.UcsuId,
 
+        // Tracking info
+        TrackingMethod = j.TrackingMethod,
+        TrackingMobile = j.TrackingMobile,
+        TrackingEmail = j.TrackingEmail,
+
         // Delivery details
         PrivateRes = (j.DeliverToPrivateBusiness ?? 0) == 1,
         Return = j.UcjbReturn,
         SaturdayDelivery = j.SaturdayDelivery,
         Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
         CompletedTime = j.UcjbComplTime,
-
+        UdStatus = j.UndeliverableLocation.Name,
+        SigNotRequired = j.DeliverToLeave.Name,
+        DeliverToLeaveId = j.DeliverToLeaveId,
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,
@@ -278,7 +289,8 @@ public class BaseJobRepository
     // This function replaces the sql view "DESWEB_qryDespatch"
     public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
         string order, string ascending, bool isInternal, string clientIds,
-        List<string> viewFilters, NationwideWindowPanel? windowPane = null)
+        List<string> viewFilters, NationwideWindowPanel? windowPane = null,
+        ClearListEnvelopeViewModel? clearListEnvelope = null)
     {
         try
         {
@@ -288,6 +300,17 @@ public class BaseJobRepository
                             && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
                             && string.IsNullOrEmpty(j.UcjbPodname)
                             && (j.UcjbComplTime == null || j.UcjbComplTime < DateTime.Now));
+
+            // Apply clear list coordinates if provided
+            if (clearListEnvelope is not null)
+            {
+                query = query.Where(j =>
+                    j.DeliveryLatitude >= clearListEnvelope.MinimumLatitude &&
+                    j.DeliveryLatitude <= clearListEnvelope.MaximumLatitude &&
+                    j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude &&
+                    j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude
+                );
+            }
 
             switch (page)
             {
