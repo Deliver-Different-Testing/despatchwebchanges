@@ -544,10 +544,18 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 DeliveryAddressLine5 = j.DeliveryAddressLine5,
                 DeliveryAddressLine6 = j.DeliveryAddressLine6,
                 DeliveryAddressLine7 = j.DeliveryAddressLine7,
-                DeliveryAddressLine8 = j.DeliveryAddressLine8
+                DeliveryAddressLine8 = j.DeliveryAddressLine8,
+                ClientReferenceA = j.ClientReferenceA,
+                ClientReferenceB = j.ClientReferenceB,
+                ClientReferenceC = j.ClientReferenceC
             };
 
-        return await query.ToListAsync();
+        var result = await query.ToListAsync();
+
+        //Return single jobs and child jobs only, ignore parent of child jobs
+        return result
+            .Where(j => j.Id != (j.ParentId ?? j.Id) || !result.Any(x => x.Id != j.Id && x.ParentId == j.Id))
+            .ToList();
     }
 
     public async Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
