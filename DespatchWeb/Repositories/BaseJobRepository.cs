@@ -108,6 +108,9 @@ public class BaseJobRepository
         // Notes
         ClientNotes = j.UcjbClient != null ? j.UcjbClient.UcclNotes : null,
         InternalNotes = j.UcjbNotes,
+        ConNote = j.TucJobNationwides
+            .Select(nj => nj.UcnwConNote)
+            .FirstOrDefault(),
 
         // Suburb information
         From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",

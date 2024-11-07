@@ -696,14 +696,7 @@ class JobDetailService {
         });
 
         // Show feature in development dialog
-        await this._$mdDialog.show({
-            controller: 'FeatureInDevelopmentDialogController',
-            controllerAs: 'ctrl',
-            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
-            parent: angular.element(this._$document.body),
-            clickOutsideToClose: true,
-            bindToController: true
-        });
+        await this._showFeatureInDevelopment();
     }
 
     /**
@@ -877,29 +870,23 @@ class JobDetailService {
         }
 
         // Show feature in development dialog
-        return this._$mdDialog.show({
-            controller: 'FeatureInDevelopmentDialogController',
-            controllerAs: 'ctrl',
-            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
-            parent: angular.element(this._$document.body),
-            clickOutsideToClose: true,
-            bindToController: true
-        });
+        await this._showFeatureInDevelopment();
+
 
         // Todo: Update bulk job addresses here to US
-        const updateMethod = isDeliveryAddress ?
-            this._dispatchData.updateBulkDeliveryAddress :
-            this._dispatchData.updateBulkPickupAddress;
+        /*        const updateMethod = isDeliveryAddress ?
+                    this._dispatchData.updateBulkDeliveryAddress :
+                    this._dispatchData.updateBulkPickupAddress;
 
-        await updateMethod(
-            job.id,
-            addressDetails.addressLine5, // Assuming suburb is in addressLine5
-            addressDetails.addressLine6, // Assuming postcode is in addressLine6
-            addressDetails.fullAddress,
-            addressDetails.latitude,
-            addressDetails.longitude,
-            FirstName
-        );
+                await updateMethod(
+                    job.id,
+                    addressDetails.addressLine5, // Assuming suburb is in addressLine5
+                    addressDetails.addressLine6, // Assuming postcode is in addressLine6
+                    addressDetails.fullAddress,
+                    addressDetails.latitude,
+                    addressDetails.longitude,
+                    FirstName
+                );*/
     }
 
     /**
@@ -1536,6 +1523,18 @@ class JobDetailService {
      */
     editPallet(event, job, pallet) {
         return this.showPalletDialog(event, job, pallet);
+    }
+
+    async _showFeatureInDevelopment() {
+        // Show feature in development dialog
+        await this._$mdDialog.show({
+            controller: 'FeatureInDevelopmentDialogController',
+            controllerAs: 'ctrl',
+            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
+            parent: angular.element(this._$document.body),
+            clickOutsideToClose: true,
+            bindToController: true
+        });
     }
 }
 
