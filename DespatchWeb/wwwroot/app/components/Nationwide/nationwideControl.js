@@ -392,10 +392,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }
 
                 await $scope.getEventTypes();
-                await $scope.getData();
 
                 $timeout(() => sizeHeadings(), 1000);
-                $timeout(() => sizeHeadings(), 2000);
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
                 await initializeAreas();
@@ -2096,7 +2094,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.activateDrop();
 
                 $timeout(() => sizeHeadings(), 1000);
-                $timeout(() => sizeHeadings(), 2000);
 
             } catch (error) {
                 if (error === undefined) {
@@ -2877,22 +2874,13 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             try {
                 // Set loading states
-                requestedTypes.forEach(type => {
-                    switch (type) {
-                        case $scope.jobDataType.NEW:
-                            $scope.jobListLoading = true;
-                            break;
-                        case $scope.jobDataType.DELIVERY:
-                            $scope.deliveryListLoading = true;
-                            break;
-                        case $scope.jobDataType.POD:
-                            $scope.podListLoading = true;
-                            break;
-                        case $scope.jobDataType.REPRICE:
-                            $scope.repriceListLoading = true;
-                            break;
-                    }
-                });
+                const loadingStates = {
+                    [$scope.jobDataType.NEW]: () => $scope.jobListLoading = true,
+                    [$scope.jobDataType.DELIVERY]: () => $scope.deliveryListLoading = true,
+                    [$scope.jobDataType.POD]: () => $scope.podListLoading = true,
+                    [$scope.jobDataType.REPRICE]: () => $scope.repriceListLoading = true
+                };
+                requestedTypes.forEach(type => loadingStates[type]?.());
 
                 // Define fetch functions for each type
                 const fetchMap = {
@@ -2959,7 +2947,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     fetchMap[type].updateScope(data);
                 });
 
-                $scope.$apply();
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
 
                 // Handle additional tasks for delivery data
                 if (requestedTypes.includes($scope.jobDataType.DELIVERY)) {
@@ -2968,7 +2958,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
                 // Run size headings if any data was fetched
                 if (results.length > 0) {
-                    $timeout(() => sizeHeadings(), 200);
                     $timeout(() => sizeHeadings(), 1000);
                 }
             } catch (error) {
@@ -3050,8 +3039,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 }, 100);
 
                 $timeout(() => sizeHeadings(), 1000);
-                $timeout(() => sizeHeadings(), 2000);
-
             } catch (error) {
                 console.error("Error fetching supports:", error);
             }
@@ -3076,6 +3063,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         $scope.getData = async () => {
             angular.element("#box-jobsList").find(".loading").show();
 
+            // Clear data once
             $scope.jobList = [];
             $scope.jobListPOD = [];
             $scope.currentJob = false;

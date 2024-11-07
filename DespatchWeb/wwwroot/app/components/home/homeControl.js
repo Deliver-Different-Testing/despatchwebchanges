@@ -455,9 +455,6 @@ angular.module("uDispatch")
                     await initializeAreas();
                     await $scope.updateFilters("nda");
                     await fetchDriverLocations();
-
-                    // Single getData call
-                    await $scope.getData();
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
                     $scope.areas = [];
