@@ -741,22 +741,29 @@ angular.module("uDispatch")
             };
 
             /**
-             * @param {DriverDestination} driverDestination
+             * @param {DriverDestination} selectedClearlist
              */
-            $scope.selectClearList = async (driverDestination) => {
+            $scope.selectClearList = async (selectedClearlist) => {
                 try {
-                    const clearListId = driverDestination.id;
-                    const view = driverDestination.area;
+                    const clearListId = selectedClearlist.id;
 
                     let areaGroupButtons = angular.element("#area-group .btn");
                     areaGroupButtons.removeClass("topBarActive");
 
                     let driverLocationsActive = angular.element("#driverLocations .listActive");
                     if (driverLocationsActive.length <= 1) {
-                        await $scope.getClearListEnvelope(clearListId);
-                    }
+                        const envelope = await $scope.getClearListEnvelope(clearListId);
+                        console.log('Envelope:  ' + envelope);
 
-                    await setFilters({'clearList': view});
+                        const selectedClients = $scope.pickService.clients.map(a => a.id);
+                        $scope.jobList = await DispatchData.getClearListJobs(
+                            $scope.queryParams,
+                            selectedClients,
+                            $scope.isInternal,
+                            $scope.selectedAreas,
+                            envelope
+                        );
+                    }
                 } catch (error) {
                     console.log('Error in selectClearList:', error);
                 }
@@ -3077,6 +3084,8 @@ angular.module("uDispatch")
                         const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
                         updateMapBounds(data);
                         await $scope.getAvailableCourierLocation();
+
+                        return data;
                     } catch (error) {
                         console.error('Error getting clear list envelope:', error);
                     }

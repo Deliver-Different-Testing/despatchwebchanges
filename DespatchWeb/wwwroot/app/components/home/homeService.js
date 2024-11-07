@@ -1011,6 +1011,38 @@ class DispatchData {
     }
 
     /**
+     * @param {JobQueryParams} queryParams
+     * @param {String[]} selectedClients
+     * @param {boolean} internal
+     * @param {Suggestion[]} selectedAreas
+     * @param {ClearListEnvelope} selectedClearList
+     */
+    async getClearListJobs(queryParams, selectedClients, internal, selectedAreas, selectedClearList) {
+        const despatchViewIds = this._prepareViewIdsForRequest(selectedAreas);
+
+        const params = new URLSearchParams({
+            status: queryParams.status || 'all',
+            order: queryParams.order || 'time',
+            asc: queryParams.asc || 'asc',
+            isInternal: internal.toString(),
+            cid: ContactID,
+            clientIds: selectedClients.join(','),
+            minimumLatitude: selectedClearList.minimumLatitude,
+            maximumLatitude: selectedClearList.maximumLatitude,
+            minimumLongitude: selectedClearList.minimumLongitude,
+            maximumLongitude: selectedClearList.maximumLongitude
+        });
+
+        // Append each despatchViewId as a separate query parameter
+        despatchViewIds.forEach(id => {
+            params.append('despatchViewIds', id.toString());
+        });
+
+        const response = await this._$http.get(`job/GetJobsByClearListEnvelope?${params.toString()}`);
+        return response.data;
+    }
+
+    /**
      * Retrieves the auto-complete search results for the given address text from a geocoder service.
      *
      * @param {string} text - The search text for which auto-complete results are to be fetched.

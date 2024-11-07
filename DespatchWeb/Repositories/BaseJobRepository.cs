@@ -289,7 +289,8 @@ public class BaseJobRepository
     // This function replaces the sql view "DESWEB_qryDespatch"
     public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
         string order, string ascending, bool isInternal, string clientIds,
-        List<string> viewFilters, NationwideWindowPanel? windowPane = null)
+        List<string> viewFilters, NationwideWindowPanel? windowPane = null,
+        ClearListEnvelopeViewModel? clearListEnvelope = null)
     {
         try
         {
@@ -299,6 +300,17 @@ public class BaseJobRepository
                             && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
                             && string.IsNullOrEmpty(j.UcjbPodname)
                             && (j.UcjbComplTime == null || j.UcjbComplTime < DateTime.Now));
+
+            // Apply clear list coordinates if provided
+            if (clearListEnvelope is not null)
+            {
+                query = query.Where(j =>
+                    j.DeliveryLatitude >= clearListEnvelope.MinimumLatitude &&
+                    j.DeliveryLatitude <= clearListEnvelope.MaximumLatitude &&
+                    j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude &&
+                    j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude
+                );
+            }
 
             switch (page)
             {

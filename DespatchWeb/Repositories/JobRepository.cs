@@ -23,6 +23,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
     private readonly DespatchContext _context;
     private readonly ILogger<JobRepository> _logger;
     private readonly IMapper _mapper;
+    private IJobRepository _jobRepositoryImplementation;
 
     public JobRepository(DespatchContext context, IMapper mapper, ILogger<JobRepository> logger)
         : base(context, logger)
@@ -871,7 +872,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
     }
 
     public async Task<List<JobViewModel>> JobListAsync(string status, string order,
-        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds)
+        string ascending, bool isInternal, string clientIds, List<int> selectedViewIds,
+        ClearListEnvelopeViewModel? clearListEnvelope = null)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();
@@ -884,9 +886,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 .ToListAsync()
             : new List<string>();
 
-        return await DespatchQry(AppPage.Dispatch, status, order, ascending, isInternal, clientIds, viewFilters);
+        return await DespatchQry(AppPage.Dispatch, status, order, ascending, isInternal, clientIds, viewFilters, null,
+            clearListEnvelope);
     }
-
 
     public async Task<List<SupportViewModel>> SupportEvents(string channel)
     {

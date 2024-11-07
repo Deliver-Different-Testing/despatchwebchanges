@@ -322,14 +322,12 @@
                             </div>
                         </div>
 
-
                         <div class="field" ng-if="jdSvc.currentJob.assignedAgent">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Agent</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''"
                                  ng-click="courierClick($event, job)">{{jdSvc.currentJob.assignedAgent.agentName}}
                             </div>
                         </div>
-
 
                         <div class="field" ng-if="!jdSvc.currentJob.assignedAgent">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Courier</label>
