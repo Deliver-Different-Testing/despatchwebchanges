@@ -138,6 +138,8 @@ public class BaseJobRepository
         Remain = CalculateRemainTime(j, j.UcjbSpeedNavigation),
         CompletedTime = j.UcjbComplTime,
         UdStatus = j.UndeliverableLocation.Name,
+        SigNotRequired = j.DeliverToLeave.Name,
+        DeliverToLeaveId = j.DeliverToLeaveId,
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,

@@ -301,7 +301,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.leaveClick($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Leave Parcel</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.currentJob.sigNotRequired || "Signature Required"}}
+                                {{jdSvc.getSelectedLeaveParcel(jdSvc.currentJob.deliverToLeaveId)}}
                             </div>
                         </div>
                         <div class="field"

@@ -268,6 +268,16 @@ class JobDetailService {
     }
 
     /**
+     * @param {number} deliverToLeaveId
+     */
+    getSelectedLeaveParcel(deliverToLeaveId) {
+        console.log('DeliverToLeaveId: ' + deliverToLeaveId);
+        const selected = this.pickUndeliverableList.find(({id}) => id === deliverToLeaveId);
+        console.log('Selected: ' + selected);
+        return selected !== undefined ? selected.text : "";
+    }
+
+    /**
      * @param {number} is
      */
     getInternalStatus(is) {
