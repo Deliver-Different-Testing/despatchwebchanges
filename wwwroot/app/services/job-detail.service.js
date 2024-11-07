@@ -267,6 +267,16 @@ class JobDetailService {
     }
 
     /**
+     * @param {number} deliverToLeaveId
+     */
+    getSelectedLeaveParcel(deliverToLeaveId) {
+        console.log('DeliverToLeaveId: ' + deliverToLeaveId);
+        const selected = this.pickUndeliverableList.find(({id}) => id === deliverToLeaveId);
+        console.log('Selected: ' + selected);
+        return selected !== undefined ? selected.text : "";
+    }
+
+    /**
      * @param {number} is
      */
     getInternalStatus(is) {
@@ -470,36 +480,44 @@ class JobDetailService {
      * @param {Date} datetime
      * @param {string} id
      */
-    showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
-        return this._$mdDialog.show({
-            controller: 'EditDateTimeDialogController',
-            controllerAs: 'ctrl',
-            parent: angular.element(this._$document.body),
-            targetEvent: $event,
-            templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
-            clickOutsideToClose: false,
-            fullscreen: true,
-            locals: {
-                job,
-                title,
-                fieldName,
-                dateTime: datetime,
-                id,
-                showDate: true,
-                showTime: true
-            },
-            bindToController: true
-        }).then(_ => {
+    async showEditDateTimeDialog($event, job, title, fieldName, datetime, id = "editForm") {
+        try {
+            await this._$mdDialog.show({
+                controller: 'EditDateTimeDialogController',
+                controllerAs: 'ctrl',
+                parent: angular.element(this._$document.body),
+                targetEvent: $event,
+                templateUrl: this._versionUrl("app/components/dialogs/edit-date-time-dialog/edit-date-time-dialog.html"),
+                clickOutsideToClose: false,
+                fullscreen: true,
+                locals: {
+                    job,
+                    title,
+                    fieldName,
+                    dateTime: datetime,
+                    id,
+                    showDate: true,
+                    showTime: true
+                },
+                bindToController: true
+            });
+
             console.log('Dialog closed!');
-        });
+        } catch (error) {
+            if (error === undefined) {
+                console.log('Dialog canceled');
+            } else {
+                console.error('Dialog error:', error);
+            }
+        }
     }
 
     /**
      * @param {Object} $event
      * @param {Job} job
      */
-    editFollowUpTime($event, job) {
-        return this.showEditDateTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
+    async editFollowUpTime($event, job) {
+        await this.showEditDateTimeDialog($event, job, "Follow Up Time", "FollowupTime", job.followupTime);
     }
 
 
@@ -687,14 +705,7 @@ class JobDetailService {
         });
 
         // Show feature in development dialog
-        await this._$mdDialog.show({
-            controller: 'FeatureInDevelopmentDialogController',
-            controllerAs: 'ctrl',
-            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
-            parent: angular.element(this._$document.body),
-            clickOutsideToClose: true,
-            bindToController: true
-        });
+        await this._showFeatureInDevelopment();
     }
 
     /**
@@ -868,29 +879,23 @@ class JobDetailService {
         }
 
         // Show feature in development dialog
-        return this._$mdDialog.show({
-            controller: 'FeatureInDevelopmentDialogController',
-            controllerAs: 'ctrl',
-            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
-            parent: angular.element(this._$document.body),
-            clickOutsideToClose: true,
-            bindToController: true
-        });
+        await this._showFeatureInDevelopment();
+
 
         // Todo: Update bulk job addresses here to US
-        const updateMethod = isDeliveryAddress ?
-            this._dispatchData.updateBulkDeliveryAddress :
-            this._dispatchData.updateBulkPickupAddress;
+        /*        const updateMethod = isDeliveryAddress ?
+                    this._dispatchData.updateBulkDeliveryAddress :
+                    this._dispatchData.updateBulkPickupAddress;
 
-        await updateMethod(
-            job.id,
-            addressDetails.addressLine5, // Assuming suburb is in addressLine5
-            addressDetails.addressLine6, // Assuming postcode is in addressLine6
-            addressDetails.fullAddress,
-            addressDetails.latitude,
-            addressDetails.longitude,
-            FirstName
-        );
+                await updateMethod(
+                    job.id,
+                    addressDetails.addressLine5, // Assuming suburb is in addressLine5
+                    addressDetails.addressLine6, // Assuming postcode is in addressLine6
+                    addressDetails.fullAddress,
+                    addressDetails.latitude,
+                    addressDetails.longitude,
+                    FirstName
+                );*/
     }
 
     /**
@@ -1527,6 +1532,18 @@ class JobDetailService {
      */
     editPallet(event, job, pallet) {
         return this.showPalletDialog(event, job, pallet);
+    }
+
+    async _showFeatureInDevelopment() {
+        // Show feature in development dialog
+        await this._$mdDialog.show({
+            controller: 'FeatureInDevelopmentDialogController',
+            controllerAs: 'ctrl',
+            templateUrl: this._versionUrl('app/components/dialogs/feature-in-development-dialog/feature-in-development-dialog.html'),
+            parent: angular.element(this._$document.body),
+            clickOutsideToClose: true,
+            bindToController: true
+        });
     }
 }
 

@@ -194,6 +194,8 @@ public class JobViewModel
     public Suggestion AssignedCourier { get; set; }
 
     public ParcelDimensions ParcelDimensions { get; set; }
+
+    public int? DeliverToLeaveId { get; set; }
 }
 
 public class ParcelDimensions
