@@ -14,6 +14,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWebContextExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Serilog;
 using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
@@ -1663,7 +1664,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"An error occured updating the delivery address for job {request.JobId}");
+            Log.Error(e, $"An error occured updating the delivery address for job {request.JobId}");
             throw;
         }
     }
@@ -1699,7 +1700,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"An error occured updating the delivery address for job {request.JobId}");
+            Log.Error(e, $"An error occured updating the delivery address for job {request.JobId}");
             throw;
         }
     }
@@ -1734,7 +1735,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"An error occured updating the Pickup address for job {request.JobId}");
+            Log.Error(e, $"An error occured updating the Pickup address for job {request.JobId}");
             throw;
         }
     }
@@ -1770,7 +1771,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"An error occured updating the Pickup address for job {request.JobId}");
+            Log.Error(e, $"An error occured updating the Pickup address for job {request.JobId}");
             throw;
         }
     }

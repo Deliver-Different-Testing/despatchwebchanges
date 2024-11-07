@@ -730,12 +730,12 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             if (request is null)
                 return BadRequest("Request Address Data Not Provided");
 
-            await _jobRepo.UpdateDeliveryAddressNzAsync(request);
+            await jobRepository.UpdateDeliveryAddressNzAsync(request);
             return Json("OK");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"An error occured updating address for job {request.JobId}");
+            Log.Error(e, $"An error occured updating address for job {request.JobId}");
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
@@ -752,7 +752,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"An error occured updating address for job {request.JobId}");
+            Log.Error(e, $"An error occured updating address for job {request.JobId}");
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
@@ -783,12 +783,12 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             if (request is null)
                 return BadRequest("Request Address Data Not Provided");
 
-            await _jobRepo.UpdatePickupAddressNzAsync(request);
+            await jobRepository.UpdatePickupAddressNzAsync(request);
             return Json("OK");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"An error occured updating address for job {request.JobId}");
+            Log.Error(e, $"An error occured updating address for job {request.JobId}");
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
