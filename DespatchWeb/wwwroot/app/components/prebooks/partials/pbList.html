@@ -24,10 +24,12 @@
                 <td class="md-job-cell" md-cell>{{job.jobNo}}</td>
                 <td action="clientColumnClick(event)" md-cell right-click>{{job.client}}</td>
                 <td class="md-address-cell" context-menu="setCurrentWorkMenu" md-cell>
-                    <div title="{{job.fromAddress}}">{{job.fromAddress}}</div>
+                    <div title="{{job.fromAddress}}">
+                        {{isUsCustomer ? job.pickupAddress.addressLine5 : job.fromAddress}}
+                    </div>
                 </td>
                 <td class="md-address-cell" context-menu="setCurrentWorkMenu" md-cell>
-                    <div title="{{job.toAddress}}">{{job.toAddress}}</div>
+                    <div title="{{isUsCustomer ? job.deliveryAddress.addressLine5 : job.toAddress}}"></div>
                 </td>
                 <td class="md-client-cell" md-cell>{{job.courier}}</td>
                 <td class="md-speed-cell" md-cell ng-click="sendPrebookJob(job.id);">
