@@ -753,7 +753,16 @@ angular.module("uDispatch")
                     let driverLocationsActive = angular.element("#driverLocations .listActive");
                     if (driverLocationsActive.length <= 1) {
                         const envelope = await $scope.getClearListEnvelope(clearListId);
-                        console.log('Envelope:  ' + envelope);
+
+                        console.log('Envelope Coordinates:');
+                        console.log('Maximum Latitude:', envelope.maximumLatitude);
+                        console.log('Maximum Longitude:', envelope.maximumLongitude);
+                        console.log('Minimum Latitude:', envelope.minimumLatitude);
+                        console.log('Minimum Longitude:', envelope.minimumLongitude);
+
+                        await $timeout(() => {
+                            $scope.jobsLoading = true;
+                        });
 
                         const selectedClients = $scope.pickService.clients.map(a => a.id);
                         $scope.jobList = await DispatchData.getClearListJobs(
@@ -766,6 +775,10 @@ angular.module("uDispatch")
                     }
                 } catch (error) {
                     console.log('Error in selectClearList:', error);
+                } finally {
+                    await $timeout(() => {
+                        $scope.jobsLoading = false;
+                    });
                 }
             };
 

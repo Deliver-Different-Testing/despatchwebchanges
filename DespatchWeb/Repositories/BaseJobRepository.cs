@@ -252,7 +252,6 @@ public class BaseJobRepository
         _logger = logger;
     }
 
-    // Create
     public async Task<T> Add<T>(T entity) where T : class
     {
         var result = await _context.Set<T>().AddAsync(entity);
@@ -260,30 +259,9 @@ public class BaseJobRepository
         return result.Entity;
     }
 
-    // Read
     public async Task<T> Get<T>(int id) where T : class
     {
         return await _context.Set<T>().FindAsync(id);
-    }
-
-    // Update
-    public async Task<T> Update<T>(T entity) where T : class
-    {
-        _context.Set<T>().Update(entity);
-        await _context.SaveChangesAsync();
-        return entity;
-    }
-
-    // Delete
-    public async Task<T> Delete<T>(int id) where T : class
-    {
-        var entity = await Get<T>(id);
-        if (entity == null) return entity;
-
-        _context.Set<T>().Remove(entity);
-        await _context.SaveChangesAsync();
-
-        return entity;
     }
 
     // This function replaces the sql view "DESWEB_qryDespatch"
