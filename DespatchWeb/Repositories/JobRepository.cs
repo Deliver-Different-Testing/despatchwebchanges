@@ -23,7 +23,6 @@ public class JobRepository : BaseJobRepository, IJobRepository
     private readonly DespatchContext _context;
     private readonly ILogger<JobRepository> _logger;
     private readonly IMapper _mapper;
-    private IJobRepository _jobRepositoryImplementation;
 
     public JobRepository(DespatchContext context, IMapper mapper, ILogger<JobRepository> logger)
         : base(context, logger)

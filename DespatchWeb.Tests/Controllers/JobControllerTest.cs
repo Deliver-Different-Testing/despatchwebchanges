@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 
@@ -25,9 +26,10 @@ public class JobControllerTest
         _mockClientAccessValidator = new Mock<IClientAccessValidatorService>();
         _mockConfig = new Mock<IConfiguration>();
         _mockWebHostEnvironment = new Mock<IWebHostEnvironment>();
+        _mockLogger = new Mock<ILogger<JobController>>();
 
         _controller = new JobController(_mockJobRepo.Object, _mockCourierRepo.Object, _mockClientAccessValidator.Object,
-            _mockConfig.Object, _mockWebHostEnvironment.Object);
+            _mockConfig.Object, _mockWebHostEnvironment.Object, _mockLogger.Object);
     }
 
     private Mock<IJobRepository> _mockJobRepo;
@@ -35,6 +37,7 @@ public class JobControllerTest
     private Mock<IClientAccessValidatorService> _mockClientAccessValidator;
     private Mock<IConfiguration> _mockConfig;
     private Mock<IWebHostEnvironment> _mockWebHostEnvironment;
+    private Mock<ILogger<JobController>> _mockLogger;
     private JobController _controller;
 
     [Test]
