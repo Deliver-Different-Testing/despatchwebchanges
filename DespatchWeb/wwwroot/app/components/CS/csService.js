@@ -48,6 +48,15 @@ class CsService {
         return this._$http.get('/Job/PODSearchDownload?courierId=' + courierId + '&clientId=' + clientId + '&wild=' + wild + '&job=' + job + '&fromDate=' + fromDate.toISOString() + '&toDate=' + toDate.toISOString(), { responseType: "blob" });
     }
 
+    uploadJobList(file) {
+        var fd = new FormData();
+        fd.append('file', file);
+        return this._$http.post('/Job/Upload', fd, {
+            transformRequest: angular.identity,
+            headers: { 'Content-Type': undefined }
+        });
+    }
+
     /**
      * @param {number} courierId
      * @param {number} clientId
