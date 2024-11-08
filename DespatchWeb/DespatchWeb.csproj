@@ -1,10 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup Label="Globals">
+      <LangVersion>12</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+      <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
