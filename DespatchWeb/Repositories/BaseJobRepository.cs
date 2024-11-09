@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -242,8 +243,6 @@ public class BaseJobRepository
         }).ToList()
     };
 
-    private static readonly int[] sourceArray = new[] { 41, 42, 43, 51, 52 };
-
     private readonly DespatchContext _context;
     private readonly ILogger<BaseJobRepository> _logger;
 
@@ -280,8 +279,6 @@ public class BaseJobRepository
                             && string.IsNullOrEmpty(j.UcjbPodname)
                             && (j.UcjbComplTime == null || j.UcjbComplTime < DateTime.Now));
 
-            // Apply view filters
-
             // Apply clear list coordinates if provided
             if (clearListEnvelope is not null)
             {
@@ -296,11 +293,11 @@ public class BaseJobRepository
             switch (page)
             {
                 case AppPage.Dispatch:
-                    query = ApplyDashboardFilters(query, status);
+                    query = ApplyDashboardFilters(query, isInternal, viewFilters, status, clientIds);
                     query = ApplyDashboardOrdering(query, order, ascending);
                     break;
                 case AppPage.Domestic:
-                    query = ApplyNationwidePageFilters(query, isInternal, status, windowPane.Value, clientIds);
+                    query = ApplyNationwideFilters(query, isInternal, viewFilters, status, windowPane.Value, clientIds);
                     query = ApplyNationwideOrdering(query, order, ascending);
                     break;
                 default:
@@ -316,11 +313,61 @@ public class BaseJobRepository
         }
     }
 
-
     private IQueryable<TucJob> ApplyDashboardFilters(
         IQueryable<TucJob> query,
-        string status)
+        bool isInternal,
+        List<string> viewFilters,
+        string status,
+        string clientIds)
     {
+        switch (isInternal)
+        {
+            // Apply client filters for non-internal users
+            case false when !string.IsNullOrEmpty(clientIds):
+            {
+                var clientIdList = clientIds.Split(',')
+                    .Select(id => int.Parse(id.Trim()))
+                    .ToList();
+                query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
+                break;
+            }
+            // Apply internal view filters
+            case true when viewFilters?.Any() == true:
+            {
+                // Combine all view filters with OR logic
+                var parameter = Expression.Parameter(typeof(TucJob), "j");
+                Expression combinedFilter = null;
+
+                foreach (var filter in viewFilters)
+                {
+                    try
+                    {
+                        // Parse the filter string into an expression tree
+                        var parser = new DynamicLinqParser<TucJob>();
+                        var filterExpression = parser.ParseExpression(filter, parameter);
+
+                        // Combine filters with OR logic
+                        combinedFilter = combinedFilter == null
+                            ? filterExpression
+                            : Expression.OrElse(combinedFilter, filterExpression);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error parsing view filter: {Filter}", filter);
+                    }
+                }
+
+                // Apply the combined filter if any were successfully parsed
+                if (combinedFilter != null)
+                {
+                    var lambda = Expression.Lambda<Func<TucJob, bool>>(combinedFilter, parameter);
+                    query = query.Where(lambda);
+                }
+
+                break;
+            }
+        }
+
         // Apply status filters
         query = status?.ToLower() switch
         {
@@ -426,13 +473,48 @@ public class BaseJobRepository
         };
     }
 
-    private IQueryable<TucJob> ApplyNationwidePageFilters(
+    private IQueryable<TucJob> ApplyNationwideFilters(
         IQueryable<TucJob> query,
         bool isInternal,
+        List<string> viewFilters,
         string status,
         NationwideWindowPanel windowPane,
         string clientIds)
     {
+        // Handle internal viewFilters
+        if (isInternal && viewFilters != null && viewFilters.Any())
+        {
+            // Combine all view viewFilters with OR logic
+            var parameter = Expression.Parameter(typeof(TucJob), "j");
+            Expression combinedFilter = null;
+
+            foreach (var filter in viewFilters)
+            {
+                try
+                {
+                    // Parse the filter string into an expression tree
+                    var parser = new DynamicLinqParser<TucJob>();
+                    var filterExpression = parser.ParseExpression(filter, parameter);
+
+                    // Combine viewFilters with OR logic
+                    combinedFilter = combinedFilter == null
+                        ? filterExpression
+                        : Expression.OrElse(combinedFilter, filterExpression);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error parsing view filter: {Filter}", filter);
+                }
+            }
+
+            // Apply the combined filter if any were successfully parsed
+            if (combinedFilter != null)
+            {
+                var lambda = Expression.Lambda<Func<TucJob, bool>>(combinedFilter, parameter);
+                query = query.Where(lambda);
+            }
+        }
+
         // Apply status viewFilters
         if (!string.IsNullOrEmpty(status))
         {
@@ -492,6 +574,9 @@ public class BaseJobRepository
             .Select(id => int.Parse(id.Trim()))
             .ToList();
         query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
+
+        // Only get child jobs
+        query = query.Where(j => j.ParentId != null);
 
         return query;
     }
@@ -614,7 +699,7 @@ public class BaseJobRepository
         }
 
         // Handle Special Speeds (41,42,43,51,52) with Required Delivery Time
-        if (sourceArray != null && job.UcjbSpeed != null && sourceArray.Contains(job.UcjbSpeed.Value) &&
+        if (job.UcjbSpeed != null && new[] { 41, 42, 43, 51, 52 }.Contains(job.UcjbSpeed.Value) &&
             job.RequiredDeliveryTime.HasValue)
         {
             var requiredDeliveryDateTime = CombineDateAndTime(job.UcjbDate, job.RequiredDeliveryTime.Value);
