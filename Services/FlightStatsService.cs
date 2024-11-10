@@ -37,8 +37,9 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var uniqueWebhookId = Guid.NewGuid();
         var connectionString = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
         var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+        var timeZone =contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
         var userName = contextAccessor.HttpContext?.User.FindFirst( ClaimTypes.Name)?.Value;
-        var token = AuthenticationExtensions.CreateApiToken(userName, int.Parse(tenantId), connectionString);
+        var token = AuthenticationExtensions.CreateApiToken(userName, int.Parse(tenantId), connectionString,timeZone);
 
         var requestToken = new JwtSecurityTokenHandler().WriteToken(token);
 
@@ -66,7 +67,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
 
         var uri = uriBuilder.Uri;
         Log.Debug($"DeliverTo: {_webhookUrl}");
-        Log.Debug($"CreateFlightRuleRequest: {uri}");
+        Log.Debug($"r: {uri}");
         // Execute the request
         var response = await httpClient.GetAsync(uri);
 

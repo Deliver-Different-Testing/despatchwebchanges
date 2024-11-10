@@ -525,7 +525,7 @@ class DispatchData {
         };
 
         try {
-            const response = await this._$http.post(url, data, {headers: {'Content-Type': 'application/json'}});
+            const response = await this._$http.post(url, data, { headers: { 'Content-Type': 'application/json' } });
             return response.data;
         } catch (error) {
             console.error('Error in lateCall:', error);
@@ -660,7 +660,7 @@ class DispatchData {
         const url = 'job/AddClientItemsToJob'
 
         await this._$http({
-            method: 'POST', url: url + '?jobId=' + jobId, data: {serviceIds, totalCost}
+            method: 'POST', url: url + '?jobId=' + jobId, data: { serviceIds, totalCost }
         });
     }
 
@@ -895,7 +895,7 @@ class DispatchData {
             const currentDate = this._moment().format('YYYY-MM-DD');
             const timeValue = this._moment(value).format('HH:mm:ss');
             value = currentDate + ' ' + timeValue;
-            console.log('Formatted time field:', {field, originalValue, formattedValue: value});
+            console.log('Formatted time field:', { field, originalValue, formattedValue: value });
         }
 
         // Handle followup time
@@ -903,28 +903,28 @@ class DispatchData {
             const dateValue = this._moment(value).format('YYYY-MM-DD');
             const timeValue = this._moment(value).format('HH:mm:ss');
             value = dateValue + ' ' + timeValue;
-            console.log('Formatted followup time:', {field, originalValue, formattedValue: value});
+            console.log('Formatted followup time:', { field, originalValue, formattedValue: value });
         }
 
         // Handle date fields
         const dateFields = ['Date', 'StopDate', 'RestartDate', 'InActiveDate', 'FirstDue', 'LastDone', 'NextDue'];
         if (dateFields.includes(field)) {
             value = this._moment(value).format('YYYY-MM-DD');
-            console.log('Formatted date field:', {field, originalValue, formattedValue: value});
+            console.log('Formatted date field:', { field, originalValue, formattedValue: value });
         }
 
         // Handle contact field rename
         if (field === 'DeliverToContact') {
             const oldField = field;
             field = 'ToContactName';
-            console.log('Renamed field:', {oldField, newField: field});
+            console.log('Renamed field:', { oldField, newField: field });
         }
 
         // Handle rate formatting
         if (rate && typeof rate === 'string') {
             const originalRate = rate;
             rate = rate.replace(/[$]/g, '');
-            console.log('Formatted rate:', {originalRate, formattedRate: rate});
+            console.log('Formatted rate:', { originalRate, formattedRate: rate });
         }
 
         const method = preBook ? 'job/UpdateJobBooking' : 'job/UpdateJob';
@@ -1110,7 +1110,11 @@ class DispatchData {
      * @param {number} jobId
      */
     async isFilesAttachedToJob(jobId) {
-        const response = await this._$http.get(`job/IsFilesAttachedToJob/${jobId}`);
+        const response = await this._$http.get('job/IsFilesAttachedToJob', {
+            params: {
+                jobId: jobId
+            }
+        });
         return response.data;
     }
 

@@ -24,6 +24,7 @@ namespace DespatchWeb.Controllers
                 var connectionString = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
                 var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
                 var countryCode =HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
+
                 var usa = Country.Us.GetDescription();
                 
                 var isUsTenantFlag = countryCode?.ToUpper().Equals(usa);

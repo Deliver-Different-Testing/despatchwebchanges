@@ -3388,6 +3388,7 @@ angular.module("uDispatch")
              * @param {Job} job
              */
             $scope.openFileAttachmentDialog = async ($event, job) => {
+                console.log(job);
                 try {
                     await $mdDialog.show({
                         controller: 'JobFileUploadController',

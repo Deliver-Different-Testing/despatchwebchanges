@@ -14,7 +14,7 @@ namespace DespatchWeb
 {
     public static class AuthenticationExtensions
     {
-        public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection)
+        public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone)
         {
             
             var symmetricSecurityKey =
@@ -23,7 +23,8 @@ namespace DespatchWeb
             var sensitiveClaims = JsonSerializer.Serialize(new
             {
                 TenantId = tenantId.ToString(),
-                Connection = connection
+                Connection = connection,
+                TimeZone = timeZone
             });
             var encryptedClaims = EncryptClaims(sensitiveClaims, Environment.GetEnvironmentVariable("ClaimsKey"));
             var claims = new Claim[]

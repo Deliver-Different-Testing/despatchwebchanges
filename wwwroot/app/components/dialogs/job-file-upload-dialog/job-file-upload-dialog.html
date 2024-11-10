@@ -47,9 +47,9 @@
                     </thead>
                     <tbody md-body>
                     <tr md-row ng-repeat="file in ctrl.files">
-                        <td md-cell>{{file.Name}}</td>
-                        <td md-cell>{{file.Size | bytes}}</td>
-                        <td md-cell>{{file.LastModified | date:'medium'}}</td>
+                        <td md-cell>{{file.fileName}}</td>
+                        <td md-cell>{{file.size | bytes}}</td>
+                        <td md-cell>{{file.lastModified | date:'medium'}}</td>
                         <td md-cell>
                             <md-button class="md-icon-button" ng-click="ctrl.downloadFile(file)">
                                 <md-tooltip>Download</md-tooltip>

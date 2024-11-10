@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Serilog;
 using static Azure.Core.HttpHeader;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace DespatchWeb.Controllers;
 
@@ -231,7 +232,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             
             var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-            var key = $"{tenantId}-Jobs-{timestamp}";
+            var key = $"{tenantId}/Jobs-{timestamp}";
 
             using var ms = new MemoryStream(bytes);
             try
@@ -1105,18 +1106,100 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
     }
 
 
-
-
-    [HttpGet]
-    public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
+    private async Task<List<S3Object>> SearchFilesByPatternAsync(string bucketName, string pattern)
     {
-        return Json(false);
+        var request = new ListObjectsV2Request
+        {
+            BucketName = bucketName,
+            Prefix = pattern,
+            MaxKeys = 1000 // Adjust if needed, but 1000 is the maximum allowed
+        };
+
+        var result = new List<S3Object>();
+
+        try
+        {
+            ListObjectsV2Response response;
+            do
+            {
+                response = await s3Client.ListObjectsV2Async(request);
+                    
+                result.AddRange(response.S3Objects);
+                request.ContinuationToken = response.NextContinuationToken;
+            } while (response.IsTruncated);
+        }
+        catch (AmazonS3Exception e)
+        {
+
+            Log.Error(e, $"{nameof(UploadFile)} Error encountered. Message:'{e.Message}'");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, $"{nameof(UploadFile)} Error encountered. Message:'{e.Message}'");
+        }
+
+
+
+        return result;
     }
 
-    [HttpGet]
+
+    public async Task<IActionResult> IsFilesAttachedToJob(int jobId)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+        var key = $"{tenantId}/JobAttachments/{jobId}-";
+        Log.Debug($"Get S3 Object List for {key}");
+        var s3List = await SearchFilesByPatternAsync(bucketName, key);
+        Log.Debug($"Found {s3List.Count} objects for {key}");
+
+        return Json(s3List.Count > 0);
+    }
+
     public async Task<IActionResult> GetAttachedFiles(int jobId)
     {
-        return Json("OK");
+        var s3Files = new List<S3FileInfo>();
+        try
+        {
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+            var key = $"{tenantId}/JobAttachments/{jobId}-";
+            Log.Debug($"Get S3 Object List for {key}");
+            var s3List = await SearchFilesByPatternAsync(bucketName, key);
+            foreach (var s3Object in s3List)
+            {
+                var getObjectRequest = new GetObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = s3Object.Key
+                };
+                using var response = await s3Client.GetObjectAsync(getObjectRequest);
+                await using var responseStream = response.ResponseStream;
+                using var reader = new StreamReader(responseStream);
+                using var memoryStream = new MemoryStream();
+                await response.ResponseStream.CopyToAsync(memoryStream);
+                var fileName = response.Metadata["FileName"];
+                var s3FileInfo = new S3FileInfo()
+                {
+                    S3Key = s3Object.Key,
+                    FileName = fileName,
+                    LastModified = s3Object.LastModified,
+                    Size = s3Object.Size
+                };
+                s3Files.Add(s3FileInfo);
+
+            }
+        }
+
+             
+        
+        catch (Exception e)
+        {
+            Log.Error(e, $"Error {nameof(GetAttachedFiles)}: {e.Message}");
+            return StatusCode(500, new { message = "Error retrieving files", error = e.Message });
+        }
+
+        return Ok(s3Files);
     }
 
     [HttpPost]
@@ -1136,6 +1219,44 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             if (request.File.Length > 10 * 1024 * 1024)
                 return BadRequest("File size exceeds the limit of 10MB.");
 
+            using var memoryStream = new MemoryStream();
+            if (request.File != null)
+            {
+                await request.File.CopyToAsync(memoryStream);
+
+                var byteArray = memoryStream.ToArray();
+
+                var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+                var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+                var key = $"{tenantId}/JobAttachments/{request.JobId}-{timestamp}";
+
+                using var ms = new MemoryStream(byteArray);
+                try
+                {
+                    var putRequest = new PutObjectRequest
+                    {
+                        BucketName = Environment.GetEnvironmentVariable("S3BucketMars"),
+                        Key = key,
+                        ContentType = request.File.ContentType,
+                        InputStream = ms
+                    };
+                    putRequest.Metadata.Add("FileName", request.File.FileName);
+                    await s3Client.PutObjectAsync(putRequest);
+
+                }
+                catch (AmazonS3Exception e)
+                {
+                    Log.Error(e, $"{nameof(UploadFile)} Error encountered when writing job file upload object to S3: ");
+
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, $"{nameof(UploadFile)} Error encountered when writing file upload object to S3: ");
+
+                }
+            }
+
+
             return Ok(new { message = "File uploaded successfully", fileName = request.File.FileName });
         }
         catch (Exception ex)
@@ -1145,16 +1266,74 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         }
     }
 
-    [HttpGet]
-    public async Task<IActionResult> DownloadFile(int jobId, string fileName)
+    
+    public async Task<IActionResult> DownloadFile(int jobId, string key)
     {
-        return Json("OK");
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        try
+        {
+            var request = new GetObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            using var response = await s3Client.GetObjectAsync(request);
+            if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+            {
+                var originalFileName = response.Metadata["FileName"];
+                var contentType = response.Headers.ContentType;
+
+                // Read the stream into a memory stream to get the bytes
+                using var ms = new MemoryStream();
+                await response.ResponseStream.CopyToAsync(ms);
+                var fileBytes = ms.ToArray();
+
+                // Return file with proper headers
+                return File(
+                    fileContents: fileBytes,
+                    contentType: contentType,
+                    fileDownloadName: originalFileName
+                );
+            }
+            else
+            {
+                return NotFound($"File {key} not found.");
+            }
+        }
+        catch (AmazonS3Exception ex)
+        {
+            return ex.StatusCode == System.Net.HttpStatusCode.NotFound
+                ? NotFound($"File {key} not found in bucket")
+                : StatusCode(500, $"Error downloading file: {ex.Message}");
+        }
     }
 
-    [HttpDelete]
-    public async Task<IActionResult> DeleteFile(int jobId, string fileName)
+    
+    public async Task<IActionResult> DeleteFile(int jobId, string key)
     {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+
+        try
+        {
+            var deleteObjectRequest = new DeleteObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+            await s3Client.DeleteObjectAsync(deleteObjectRequest);
+        }
+        catch (AmazonS3Exception ex)
+        {
+            Log.Error(ex, $"{nameof(DeleteFile)} AWS S3 error occurred while deleting object {key} from bucket {bucketName}. StatusCode: {ex.StatusCode}, ErrorCode: {ex.ErrorCode}");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, $"{nameof(DeleteFile)} An unexpected error occurred while deleting object {key} from bucket {bucketName}");
+        }
+
         return Json("OK");
+
     }
 
     public class ClientItemsModel
