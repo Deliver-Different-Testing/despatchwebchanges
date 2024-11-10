@@ -846,6 +846,30 @@ angular.module('uDispatch').controller('CSControl', [
             }
         };
 
+         $scope.uploadJobList = async () => {
+            document.getElementById("jobListUpload").click();
+        };
+
+        $scope.onUploadJobList = function () {
+            var files = document.getElementById("jobListUpload").files;
+            if (!files || files.length !== 1) {
+                document.getElementById("jobListUpload").value = null;
+                return;
+            }
+            // Check right file extension
+            var file = files[0];
+            var index = file.name.lastIndexOf(".");
+            if (index < 1 || !['.xls', '.xlsx', '.csv'].includes(file.name.substring(index, file.name.length).toLowerCase())) {
+                document.getElementById("jobListUpload").value = null;
+                console.error("Please upload correct file type, file extension should be .xls, .xlsx or .csv");
+                return;
+            }
+            uCSData.uploadJobList(file)
+                .finally(() => {
+                    document.getElementById("jobListUpload").value = null;
+                });                ;
+        };
+
         /**
          * @param {number} lat
          * @param {number} lng

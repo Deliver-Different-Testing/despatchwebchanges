@@ -485,8 +485,9 @@ angular.module('uDispatch')
                         .ok('OK')
                 );
             } catch (error) {
-                if (error) {
-                    // An actual error occurred (not just user cancellation)
+                if (error === undefined) {
+                    console.log('User Canceled');
+                } else {
                     console.log('Error voiding prebook jobs:', error);
 
                     // Show an error dialog to the user
@@ -534,8 +535,9 @@ angular.module('uDispatch')
                         .ok('OK')
                 );
             } catch (error) {
-                if (error) {
-                    // An actual error occurred (not just user cancellation)
+                if (error === undefined) {
+                    console.log('User Canceled');
+                } else {
                     console.log('Error voiding prebook job:', error);
 
                     // Show an error dialog to the user
@@ -585,8 +587,9 @@ angular.module('uDispatch')
                         .ok('OK')
                 );
             } catch (error) {
-                if (error) {
-                    // An actual error occurred (not just user cancellation)
+                if (error === undefined) {
+                    console.log('User Canceled');
+                } else {
                     console.log('Error sending prebook jobs:', error);
 
                     // Show an error dialog to the user
@@ -597,7 +600,6 @@ angular.module('uDispatch')
                             .ok('OK')
                     );
                 }
-                // If error is falsy, it means the user clicked 'No', so we do nothing
             }
         };
 
@@ -633,8 +635,9 @@ angular.module('uDispatch')
                         .ok('OK')
                 );
             } catch (error) {
-                if (error) {
-                    // An actual error occurred (not just user cancellation)
+                if (error === undefined) {
+                    console.log('User Canceled');
+                } else {
                     console.log('Error sending prebook job:', error);
 
                     // Show an error dialog to the user
@@ -645,7 +648,6 @@ angular.module('uDispatch')
                             .ok('OK')
                     );
                 }
-                // If error is falsy, it means the user clicked 'No', so we do nothing
             }
         };
 
