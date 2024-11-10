@@ -286,7 +286,7 @@
     <PackageReference Include="Mindscape.Raygun4Net.AspNetCore" Version="6.6.6" />
     <PackageReference Include="RestSharp" Version="109.0.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.23" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.4.8"/>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

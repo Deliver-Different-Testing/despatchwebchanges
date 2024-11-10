@@ -245,14 +245,15 @@ public class BaseJobRepository
 
     private readonly DespatchContext _context;
     private readonly ILogger<BaseJobRepository> _logger;
+    private readonly DynamicQueryHelper _queryHelper;
 
     public BaseJobRepository(DespatchContext context, ILogger<BaseJobRepository> logger)
     {
         _context = context;
         _logger = logger;
+        _queryHelper = new DynamicQueryHelper(logger);
     }
 
-    // Create
     public async Task<T> Add<T>(T entity) where T : class
     {
         var result = await _context.Set<T>().AddAsync(entity);
@@ -260,30 +261,9 @@ public class BaseJobRepository
         return result.Entity;
     }
 
-    // Read
     public async Task<T> Get<T>(int id) where T : class
     {
         return await _context.Set<T>().FindAsync(id);
-    }
-
-    // Update
-    public async Task<T> Update<T>(T entity) where T : class
-    {
-        _context.Set<T>().Update(entity);
-        await _context.SaveChangesAsync();
-        return entity;
-    }
-
-    // Delete
-    public async Task<T> Delete<T>(int id) where T : class
-    {
-        var entity = await Get<T>(id);
-        if (entity == null) return entity;
-
-        _context.Set<T>().Remove(entity);
-        await _context.SaveChangesAsync();
-
-        return entity;
     }
 
     // This function replaces the sql view "DESWEB_qryDespatch"
@@ -301,6 +281,9 @@ public class BaseJobRepository
                             && string.IsNullOrEmpty(j.UcjbPodname)
                             && (j.UcjbComplTime == null || j.UcjbComplTime < DateTime.Now));
 
+            // Apply view clauses
+            query = ApplyViewWhereClauses(query, viewFilters);
+
             // Apply clear list coordinates if provided
             if (clearListEnvelope is not null)
             {
@@ -315,12 +298,12 @@ public class BaseJobRepository
             switch (page)
             {
                 case AppPage.Dispatch:
-                    query = ApplyDashboardFilters(query, isInternal, viewFilters, status, clientIds);
-                    query = ApplyDashboardOrdering(query, order, ascending);
+                    query = ApplyDashboardSpecificFilters(query, status);
+                    query = ApplyDashboardSpecificOrdering(query, order, ascending);
                     break;
                 case AppPage.Domestic:
-                    query = ApplyNationwideFilters(query, isInternal, viewFilters, status, windowPane.Value, clientIds);
-                    query = ApplyNationwideOrdering(query, order, ascending);
+                    query = ApplyNationwideSpecificFilters(query, isInternal, status, windowPane.Value, clientIds);
+                    query = ApplyNationwideSpecificOrdering(query, order, ascending);
                     break;
                 default:
                     return new List<JobViewModel>();
@@ -335,61 +318,26 @@ public class BaseJobRepository
         }
     }
 
-    private IQueryable<TucJob> ApplyDashboardFilters(
+    private IQueryable<TucJob> ApplyViewWhereClauses(
         IQueryable<TucJob> query,
-        bool isInternal,
-        List<string> viewFilters,
-        string status,
-        string clientIds)
+        List<string> viewFilters)
     {
-        switch (isInternal)
-        {
-            // Apply client filters for non-internal users
-            case false when !string.IsNullOrEmpty(clientIds):
-            {
-                var clientIdList = clientIds.Split(',')
-                    .Select(id => int.Parse(id.Trim()))
-                    .ToList();
-                query = query.Where(j => clientIdList.Contains((int)j.UcjbClientId));
-                break;
-            }
-            // Apply internal view filters
-            case true when viewFilters?.Any() == true:
-            {
-                // Combine all view filters with OR logic
-                var parameter = Expression.Parameter(typeof(TucJob), "j");
-                Expression combinedFilter = null;
+        if (query is null || viewFilters is null)
+            throw new ArgumentNullException(nameof(query));
 
-                foreach (var filter in viewFilters)
-                {
-                    try
-                    {
-                        // Parse the filter string into an expression tree
-                        var parser = new DynamicLinqParser<TucJob>();
-                        var filterExpression = parser.ParseExpression(filter, parameter);
+        query = viewFilters.Aggregate(query,
+            (current, sqlConditions) => _queryHelper.AddDynamicConditions(current, sqlConditions));
 
-                        // Combine filters with OR logic
-                        combinedFilter = combinedFilter == null
-                            ? filterExpression
-                            : Expression.OrElse(combinedFilter, filterExpression);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error parsing view filter: {Filter}", filter);
-                    }
-                }
+        var sql = query.ToQueryString();
+        _logger.LogInformation($"Generated SQL: {sql}");
 
-                // Apply the combined filter if any were successfully parsed
-                if (combinedFilter != null)
-                {
-                    var lambda = Expression.Lambda<Func<TucJob, bool>>(combinedFilter, parameter);
-                    query = query.Where(lambda);
-                }
+        return query;
+    }
 
-                break;
-            }
-        }
-
+    private static IQueryable<TucJob> ApplyDashboardSpecificFilters(
+        IQueryable<TucJob> query,
+        string status)
+    {
         // Apply status filters
         query = status?.ToLower() switch
         {
@@ -417,7 +365,8 @@ public class BaseJobRepository
     }
 
 
-    private static IQueryable<TucJob> ApplyDashboardOrdering(IQueryable<TucJob> query, string order, string ascending)
+    private static IQueryable<TucJob> ApplyDashboardSpecificOrdering(IQueryable<TucJob> query, string order,
+        string ascending)
     {
         if (string.IsNullOrEmpty(order))
             return query;
@@ -495,48 +444,13 @@ public class BaseJobRepository
         };
     }
 
-    private IQueryable<TucJob> ApplyNationwideFilters(
+    private static IQueryable<TucJob> ApplyNationwideSpecificFilters(
         IQueryable<TucJob> query,
         bool isInternal,
-        List<string> viewFilters,
         string status,
         NationwideWindowPanel windowPane,
         string clientIds)
     {
-        // Handle internal viewFilters
-        if (isInternal && viewFilters != null && viewFilters.Any())
-        {
-            // Combine all view viewFilters with OR logic
-            var parameter = Expression.Parameter(typeof(TucJob), "j");
-            Expression combinedFilter = null;
-
-            foreach (var filter in viewFilters)
-            {
-                try
-                {
-                    // Parse the filter string into an expression tree
-                    var parser = new DynamicLinqParser<TucJob>();
-                    var filterExpression = parser.ParseExpression(filter, parameter);
-
-                    // Combine viewFilters with OR logic
-                    combinedFilter = combinedFilter == null
-                        ? filterExpression
-                        : Expression.OrElse(combinedFilter, filterExpression);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error parsing view filter: {Filter}", filter);
-                }
-            }
-
-            // Apply the combined filter if any were successfully parsed
-            if (combinedFilter != null)
-            {
-                var lambda = Expression.Lambda<Func<TucJob, bool>>(combinedFilter, parameter);
-                query = query.Where(lambda);
-            }
-        }
-
         // Apply status viewFilters
         if (!string.IsNullOrEmpty(status))
         {
@@ -604,7 +518,8 @@ public class BaseJobRepository
     }
 
 
-    private static IQueryable<TucJob> ApplyNationwideOrdering(IQueryable<TucJob> query, string order, string ascending)
+    private static IQueryable<TucJob> ApplyNationwideSpecificOrdering(IQueryable<TucJob> query, string order,
+        string ascending)
     {
         if (string.IsNullOrEmpty(order))
             return query;

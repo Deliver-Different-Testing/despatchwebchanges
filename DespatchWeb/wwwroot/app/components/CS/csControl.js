@@ -832,26 +832,32 @@ angular.module('uDispatch').controller('CSControl', [
                     } else {
                         console.error("Error downloading");
                     }
-                })
-                //.success(function (data, status, headers) {
-                //    if (status === 200) {
-                //        var filename = headers()["content-disposition"]
-                //            ?.split(";")
-                //            ?.find(s => s.includes("filename=\""));
-                //        filename = filename
-                //            ?.substring(filename.indexOf("\"") + 1, filename.length - 1);
+                });
+        };
 
-                //        var objectUrl = (URL || webkitURL).createObjectURL(data);
-                //        var link = document.createElement("A");
-                //        link.href = objectUrl;
-                //        link.target = "_blank";
-                //        link.download = filename;
-                //        link.click();
-                //        setTimeout(() => (URL || webkitURL).revokeObjectURL(objectUrl), 100);
-                //    } else {
-                //        console.error("Error downloading");
-                //    }
-                //});
+        $scope.uploadJobList = async () => {
+            document.getElementById("jobListUpload").click();
+        };
+
+        $scope.onUploadJobList = function () {
+            var files = document.getElementById("jobListUpload").files;
+            if (!files || files.length !== 1) {
+                document.getElementById("jobListUpload").value = null;
+                return;
+            }
+            // Check right file extension
+            var file = files[0];
+            var index = file.name.lastIndexOf(".");
+            if (index < 1 || !['.xls', '.xlsx', '.csv'].includes(file.name.substring(index, file.name.length).toLowerCase())) {
+                document.getElementById("jobListUpload").value = null;
+                console.error("Please upload correct file type, file extension should be .xls, .xlsx or .csv");
+                return;
+            }
+
+            uCSData.uploadJobList(file)
+                .finally(() => {
+                    document.getElementById("jobListUpload").value = null;
+                });                ;
         };
 
         /**

@@ -80,12 +80,11 @@ public class NationwideJobRepositoryTest
         };
 
         // Act
-        var result = await _repository.AddJobNationwideAsync(1, flight, "webhook123");
+        await _repository.AddJobNationwideAsync(1, flight, "webhook123");
 
         // Assert
         Assert.Multiple(() =>
         {
-            Assert.That(result, Is.True);
             Assert.That(capturedNationwideJob, Is.Not.Null);
             Assert.That(capturedNationwideJob.UcnwJobId, Is.EqualTo(1));
             Assert.That(capturedNationwideJob.UcnwJobNumber, Is.EqualTo("TEST123"));
