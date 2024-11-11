@@ -12,7 +12,7 @@ public class JobDownloadModel
     public string JobNumber { get; set; }
     public DateTime BookDate { get; set; }
     public decimal? Amount { get; set; }
-    public decimal FuelSurcharge { get; set; }
+    public decimal Fuel { get; set; }
     public decimal? Ppd { get; set; }
     public decimal? CourierPayment { get; set; }
     public decimal? CourierFuel { get; set; }
