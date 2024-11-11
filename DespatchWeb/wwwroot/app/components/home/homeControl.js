@@ -66,21 +66,25 @@ angular.module("uDispatch")
                 $scope.boxes = {
                     "jobsList": {
                         "title": "Jobs List",
+                        "icon": "list_alt",
                         "templateUrl": versionUrl("app/components/home/partials/jobList.html"),
                         "showSearch": 1,
                         "showRefresh": 1
                     }, "jobDetail": {
                         "title": "Detail",
+                        "icon": "assignment",
                         "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
                         "showSearch": 0,
                         "showRefresh": 0,
                         "showDetailButtons": 1
                     }, "potentialCouriers": {
                         "title": "Potential Couriers",
+                        "icon": "groups",
                         "templateUrl": versionUrl("app/components/home/partials/potentialCouriers.html"),
                         "showSearch": 1
                     }, "currentWork": {
                         "title": "Current Work",
+                        "icon": "local_shipping",
                         "templateUrl": versionUrl("app/components/home/partials/currentWork.html"),
                         "showSearch": 1,
                         "showRefresh": 0
@@ -111,6 +115,7 @@ angular.module("uDispatch")
                         "showRefresh": 0
                     }, "supports": {
                         "title": "Supports",
+                        "icon": "support",
                         "templateUrl": versionUrl("app/components/home/partials/supports.html"),
                         "showSearch": 0,
                         "showRefresh": 0
@@ -121,11 +126,13 @@ angular.module("uDispatch")
                         "showRefresh": 0
                     }, "map": {
                         "title": "Google Map",
+                        "icon": "pin_drop",
                         "templateUrl": versionUrl("app/components/home/partials/map.html"),
                         "showSearch": 0,
                         "showRefresh": 1
                     }, "driverLocations": {
                         "title": "Driver Locations",
+                        "icon": "person_pin_circle",
                         "templateUrl": versionUrl("app/components/home/partials/driverLocations.html"),
                         "showSearch": 0,
                         "showRefresh": 0
