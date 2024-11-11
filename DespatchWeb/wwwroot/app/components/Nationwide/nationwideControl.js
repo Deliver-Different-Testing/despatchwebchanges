@@ -285,7 +285,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                     "showSearch": 0,
                     "showRefresh": 1
                 }, "flightAgentDataTable": {
-                    "title": "Assign",
+                    "title": "Available",
                     "icon": "docs_add_on",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/flightAgentDataTableBox.html"),
                     "showSearch": 0,
