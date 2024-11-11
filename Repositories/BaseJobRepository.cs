@@ -17,7 +17,7 @@ using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
-public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory):BaseRepository(contextFactory)
+public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory, DynamicQueryHelper queryHelper):BaseRepository(contextFactory)
 {
     private static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
     {
@@ -321,10 +321,10 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             throw new ArgumentNullException(nameof(query));
 
         query = viewFilters.Aggregate(query,
-            (current, sqlConditions) => _queryHelper.AddDynamicConditions(current, sqlConditions));
+            (current, sqlConditions) => queryHelper.AddDynamicConditions(current, sqlConditions));
 
         var sql = query.ToQueryString();
-        _logger.LogInformation($"Generated SQL: {sql}");
+        Log.Information($"Generated SQL: {sql}");
 
         return query;
     }

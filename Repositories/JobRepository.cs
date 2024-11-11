@@ -8,6 +8,7 @@ using AutoMapper;
 using DespatchWeb.Controllers;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -19,7 +20,7 @@ using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
-public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseJobRepository(contextFactory),  IJobRepository
+public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory, DynamicQueryHelper queryHelper) : BaseJobRepository(contextFactory, queryHelper),  IJobRepository
 {
     
     public async Task<JobViewModel> PreBookDetailAsync(int prebookId)

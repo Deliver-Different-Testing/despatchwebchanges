@@ -16,10 +16,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DespatchWeb.Helpers;
 using Vehicle = DespatchWeb.Models.Vehicle;
 namespace DespatchWeb.Repositories;
 
-public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseJobRepository(contextFactory), INationwideJobRepository
+public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory, DynamicQueryHelper queryHelper) : BaseJobRepository(contextFactory, queryHelper), INationwideJobRepository
 {
     
 

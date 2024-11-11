@@ -1,20 +1,19 @@
+using DespatchWeb.EntityClasses;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
-using DespatchWeb.EntityClasses;
-using Microsoft.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace DespatchWeb.Helpers;
 
 public class DynamicQueryHelper
 {
-    private readonly ILogger _logger;
     private readonly Dictionary<string, Type> _propertyTypes;
 
-    public DynamicQueryHelper(ILogger logger)
+    public DynamicQueryHelper()
     {
-        _logger = logger;
         _propertyTypes = typeof(TucJob)
             .GetProperties()
             .ToDictionary(p => p.Name, p => p.PropertyType);
@@ -25,12 +24,12 @@ public class DynamicQueryHelper
         try
         {
             var convertedCondition = ConvertSqlConditionToCSharp(sqlConditions);
-            _logger.LogDebug($"Converted SQL condition '{sqlConditions}' to '{convertedCondition}'");
+            Log.Debug($"Converted SQL condition '{sqlConditions}' to '{convertedCondition}'");
             return query.Where(convertedCondition);
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error applying dynamic conditions. Original: {sqlConditions}, Error: {ex.Message}");
+            Log.Error($"Error applying dynamic conditions. Original: {sqlConditions}, Error: {ex.Message}");
             throw;
         }
     }
