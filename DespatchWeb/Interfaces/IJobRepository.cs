@@ -24,6 +24,8 @@ public interface IJobRepository
     Task<List<JobDownloadModel>> PodSearchDownloadAsync(int? courierId, string wild, string job, DateTime fromDate,
         DateTime toDate, int? clientId);
 
+    Task UpdateManualPriceAsync(List<JobManualPriceModel> data);
+
     Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
         DateTime fromDate, DateTime toDate, int? clientId, int pageIndex, int pageSize);
 
