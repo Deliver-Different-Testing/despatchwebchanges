@@ -121,13 +121,6 @@ public class Event
     [JsonProperty("requested")] public string Requested { get; set; }
 }
 
-public class ExtendedOptions
-{
-    [JsonProperty("requested")] public string Requested { get; set; }
-
-    [JsonProperty("interpreted")] public string Interpreted { get; set; }
-}
-
 public class Name
 {
     [JsonProperty("interpreted")] public string Interpreted { get; set; }

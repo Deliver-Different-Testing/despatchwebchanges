@@ -1,217 +1,348 @@
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models.FlightStats;
 
-public class FlightSchedulesResponse
+public class FlightConnectionsResponse
 {
-    [JsonProperty("request")] public Request Request { get; set; }
+    [JsonPropertyName("request")] public Request Request { get; set; }
 
-    [JsonProperty("scheduledFlights")] public List<ScheduledFlight> ScheduledFlights { get; set; }
+    [JsonPropertyName("connections")] public List<Connection> Connections { get; set; }
 
-    [JsonProperty("appendix")] public Appendix Appendix { get; set; }
+    [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
 }
 
 public class Airline
 {
-    [JsonProperty("fs")] public string Fs { get; set; }
+    [JsonPropertyName("fs")] public string Fs { get; set; }
 
-    [JsonProperty("iata")] public string Iata { get; set; }
+    [JsonPropertyName("iata")] public string Iata { get; set; }
 
-    [JsonProperty("icao")] public string Icao { get; set; }
+    [JsonPropertyName("icao")] public string Icao { get; set; }
 
-    [JsonProperty("name")] public string Name { get; set; }
+    [JsonPropertyName("name")] public string Name { get; set; }
 
-    [JsonProperty("active")] public bool Active { get; set; }
+    [JsonPropertyName("active")] public bool Active { get; set; }
+
+    [JsonPropertyName("category")] public string Category { get; set; }
 }
 
 public class Airport
 {
-    [JsonProperty("fs")] public string Fs { get; set; }
+    [JsonPropertyName("fs")] public string Fs { get; set; }
 
-    [JsonProperty("iata")] public string Iata { get; set; }
+    [JsonPropertyName("iata")] public string Iata { get; set; }
 
-    [JsonProperty("icao")] public string Icao { get; set; }
+    [JsonPropertyName("icao")] public string Icao { get; set; }
 
-    [JsonProperty("faa")] public string Faa { get; set; }
+    [JsonPropertyName("faa")] public string Faa { get; set; }
 
-    [JsonProperty("name")] public string Name { get; set; }
+    [JsonPropertyName("name")] public string Name { get; set; }
 
-    [JsonProperty("street1")] public string Street1 { get; set; }
+    [JsonPropertyName("street1")] public string Street1 { get; set; }
 
-    [JsonProperty("city")] public string City { get; set; }
+    [JsonPropertyName("city")] public string City { get; set; }
 
-    [JsonProperty("cityCode")] public string CityCode { get; set; }
+    [JsonPropertyName("cityCode")] public string CityCode { get; set; }
 
-    [JsonProperty("stateCode")] public string StateCode { get; set; }
+    [JsonPropertyName("stateCode")] public string StateCode { get; set; }
 
-    [JsonProperty("postalCode")] public string PostalCode { get; set; }
+    [JsonPropertyName("postalCode")] public string PostalCode { get; set; }
 
-    [JsonProperty("countryCode")] public string CountryCode { get; set; }
+    [JsonPropertyName("countryCode")] public string CountryCode { get; set; }
 
-    [JsonProperty("countryName")] public string CountryName { get; set; }
+    [JsonPropertyName("countryName")] public string CountryName { get; set; }
 
-    [JsonProperty("regionName")] public string RegionName { get; set; }
+    [JsonPropertyName("regionName")] public string RegionName { get; set; }
 
-    [JsonProperty("timeZoneRegionName")] public string TimeZoneRegionName { get; set; }
+    [JsonPropertyName("regionIata")] public string RegionIata { get; set; }
 
-    [JsonProperty("weatherZone")] public string WeatherZone { get; set; }
+    [JsonPropertyName("timeZoneRegionName")]
+    public string TimeZoneRegionName { get; set; }
 
-    [JsonProperty("localTime")] public DateTime LocalTime { get; set; }
+    [JsonPropertyName("weatherZone")] public string WeatherZone { get; set; }
 
-    [JsonProperty("utcOffsetHours")] public double UtcOffsetHours { get; set; }
+    [JsonPropertyName("localTime")] public DateTime LocalTime { get; set; }
 
-    [JsonProperty("latitude")] public double Latitude { get; set; }
+    [JsonPropertyName("utcOffsetHours")] public double UtcOffsetHours { get; set; }
 
-    [JsonProperty("longitude")] public double Longitude { get; set; }
+    [JsonPropertyName("latitude")] public double Latitude { get; set; }
 
-    [JsonProperty("elevationFeet")] public int ElevationFeet { get; set; }
+    [JsonPropertyName("longitude")] public double Longitude { get; set; }
 
-    [JsonProperty("classification")] public int Classification { get; set; }
+    [JsonPropertyName("elevationFeet")] public int ElevationFeet { get; set; }
 
-    [JsonProperty("active")] public bool Active { get; set; }
+    [JsonPropertyName("classification")] public int Classification { get; set; }
+
+    [JsonPropertyName("active")] public bool Active { get; set; }
+
+    [JsonPropertyName("street2")] public string Street2 { get; set; }
+}
+
+public class AllowNearbyArrivals
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class AllowNearbyDepartures
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
 }
 
 public class Appendix
 {
-    [JsonProperty("airlines")] public List<Airline> Airlines { get; set; }
+    [JsonPropertyName("airlines")] public List<Airline> Airlines { get; set; }
 
-    [JsonProperty("airports")] public List<Airport> Airports { get; set; }
+    [JsonPropertyName("airports")] public List<Airport> Airports { get; set; }
 
-    [JsonProperty("equipments")] public List<Equipment> Equipments { get; set; }
+    [JsonPropertyName("equipments")] public List<Equipment> Equipments { get; set; }
 }
 
-public class ArrivalAirport
+public class Arrival
 {
-    [JsonProperty("requestedCode")] public string RequestedCode { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
 
-    [JsonProperty("fsCode")] public string FsCode { get; set; }
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
 }
 
-public class CodeShare
+public class Codeshare
 {
-    [JsonProperty("carrierFsCode")] public string CarrierFsCode { get; set; }
+    [JsonPropertyName("carrierFsCode")] public string CarrierFsCode { get; set; }
 
-    [JsonProperty("flightNumber")] public string FlightNumber { get; set; }
+    [JsonPropertyName("flightNumber")] public string FlightNumber { get; set; }
 
-    [JsonProperty("serviceType")] public string ServiceType { get; set; }
+    [JsonPropertyName("serviceType")] public string ServiceType { get; set; }
 
-    [JsonProperty("serviceClasses")] public List<string> ServiceClasses { get; set; }
+    [JsonPropertyName("serviceClasses")] public List<string> ServiceClasses { get; set; }
 
-    [JsonProperty("trafficRestrictions")] public List<string> TrafficRestrictions { get; set; }
+    [JsonPropertyName("trafficRestrictions")]
+    public List<string> TrafficRestrictions { get; set; }
+}
 
-    [JsonProperty("referenceCode")] public int ReferenceCode { get; set; }
+public class Connection
+{
+    [JsonPropertyName("elapsedTime")] public int ElapsedTime { get; set; }
+
+    [JsonPropertyName("score")] public int Score { get; set; }
+
+    [JsonPropertyName("scheduledFlight")] public List<ScheduledFlight> ScheduledFlight { get; set; }
 }
 
 public class Date
 {
-    [JsonProperty("year")] public string Year { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
 
-    [JsonProperty("month")] public string Month { get; set; }
-
-    [JsonProperty("day")] public string Day { get; set; }
-
-    [JsonProperty("interpreted")] public string Interpreted { get; set; }
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
 }
 
-public class DepartureAirport
+public class Departure
 {
-    [JsonProperty("requestedCode")] public string RequestedCode { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
 
-    [JsonProperty("fsCode")] public string FsCode { get; set; }
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
 }
 
 public class Equipment
 {
-    [JsonProperty("iata")] public string Iata { get; set; }
+    [JsonPropertyName("iata")] public string Iata { get; set; }
 
-    [JsonProperty("name")] public string Name { get; set; }
+    [JsonPropertyName("name")] public string Name { get; set; }
 
-    [JsonProperty("turboProp")] public bool TurboProp { get; set; }
+    [JsonPropertyName("turboProp")] public bool TurboProp { get; set; }
 
-    [JsonProperty("jet")] public bool Jet { get; set; }
+    [JsonPropertyName("jet")] public bool Jet { get; set; }
 
-    [JsonProperty("widebody")] public bool Widebody { get; set; }
+    [JsonPropertyName("widebody")] public bool Widebody { get; set; }
 
-    [JsonProperty("regional")] public bool Regional { get; set; }
+    [JsonPropertyName("regional")] public bool Regional { get; set; }
 }
 
-public class Operator
+public class ExcludeAirlines
 {
-    [JsonProperty("carrierFsCode")] public string CarrierFsCode { get; set; }
+    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+}
 
-    [JsonProperty("flightNumber")] public string FlightNumber { get; set; }
+public class ExcludeAirports
+{
+    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+}
 
-    [JsonProperty("serviceType")] public string ServiceType { get; set; }
+public class ExtendedOptions
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
 
-    [JsonProperty("serviceClasses")] public List<string> ServiceClasses { get; set; }
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
 
-    [JsonProperty("trafficRestrictions")] public List<object> TrafficRestrictions { get; set; }
+public class IncludeAirlines
+{
+    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+}
+
+public class IncludeAirports
+{
+    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+}
+
+public class IncludeCodeshares
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class IncludeMultipleCarriers
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class IncludeSurface
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class MaxConnections
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+}
+
+public class MaxResults
+{
+    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+}
+
+public class NumHours
+{
+    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+}
+
+public class PayloadType
+{
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
 }
 
 public class Request
 {
-    [JsonProperty("departing")] public bool Departing { get; set; }
+    [JsonPropertyName("endpoint")] public string Endpoint { get; set; }
 
-    [JsonProperty("url")] public string Url { get; set; }
+    [JsonPropertyName("departure")] public Departure Departure { get; set; }
 
-    [JsonProperty("departureAirport")] public DepartureAirport DepartureAirport { get; set; }
+    [JsonPropertyName("arrival")] public Arrival Arrival { get; set; }
 
-    [JsonProperty("arrivalAirport")] public ArrivalAirport ArrivalAirport { get; set; }
+    [JsonPropertyName("allowNearbyDepartures")]
+    public AllowNearbyDepartures AllowNearbyDepartures { get; set; }
 
-    [JsonProperty("date")] public Date Date { get; set; }
+    [JsonPropertyName("allowNearbyArrivals")]
+    public AllowNearbyArrivals AllowNearbyArrivals { get; set; }
+
+    [JsonPropertyName("includeAirports")] public IncludeAirports IncludeAirports { get; set; }
+
+    [JsonPropertyName("excludeAirports")] public ExcludeAirports ExcludeAirports { get; set; }
+
+    [JsonPropertyName("includeAirlines")] public IncludeAirlines IncludeAirlines { get; set; }
+
+    [JsonPropertyName("excludeAirlines")] public ExcludeAirlines ExcludeAirlines { get; set; }
+
+    [JsonPropertyName("numHours")] public NumHours NumHours { get; set; }
+
+    [JsonPropertyName("maxConnections")] public MaxConnections MaxConnections { get; set; }
+
+    [JsonPropertyName("includeSurface")] public IncludeSurface IncludeSurface { get; set; }
+
+    [JsonPropertyName("payloadType")] public PayloadType PayloadType { get; set; }
+
+    [JsonPropertyName("includeCodeshares")]
+    public IncludeCodeshares IncludeCodeshares { get; set; }
+
+    [JsonPropertyName("includeMultipleCarriers")]
+    public IncludeMultipleCarriers IncludeMultipleCarriers { get; set; }
+
+    [JsonPropertyName("maxResults")] public MaxResults MaxResults { get; set; }
+
+    [JsonPropertyName("date")] public Date Date { get; set; }
+
+    [JsonPropertyName("url")] public string Url { get; set; }
+
+    [JsonPropertyName("extendedOptions")] public ExtendedOptions ExtendedOptions { get; set; }
+
+    [JsonPropertyName("dateTime")] public DateTimeResponse DateTime { get; set; }
 }
 
 public class ScheduledFlight
 {
-    [JsonProperty("carrierFsCode")] public string CarrierFsCode { get; set; }
+    [JsonPropertyName("carrierFsCode")] public string CarrierFsCode { get; set; }
 
-    [JsonProperty("flightNumber")] public string FlightNumber { get; set; }
+    [JsonPropertyName("flightNumber")] public string FlightNumber { get; set; }
 
-    [JsonProperty("departureAirportFsCode")]
+    [JsonPropertyName("departureAirportFsCode")]
     public string DepartureAirportFsCode { get; set; }
 
-    [JsonProperty("arrivalAirportFsCode")] public string ArrivalAirportFsCode { get; set; }
+    [JsonPropertyName("arrivalAirportFsCode")]
+    public string ArrivalAirportFsCode { get; set; }
 
-    [JsonProperty("departureTime")] public DateTime DepartureTime { get; set; }
+    [JsonPropertyName("departureTime")] public DateTime DepartureTime { get; set; }
 
-    [JsonProperty("arrivalTime")] public DateTime ArrivalTime { get; set; }
+    [JsonPropertyName("arrivalTime")] public DateTime ArrivalTime { get; set; }
 
-    [JsonProperty("stops")] public int Stops { get; set; }
+    [JsonPropertyName("stops")] public int Stops { get; set; }
 
-    [JsonProperty("arrivalTerminal")] public string ArrivalTerminal { get; set; }
+    [JsonPropertyName("departureTerminal")]
+    public string DepartureTerminal { get; set; }
 
-    [JsonProperty("flightEquipmentIataCode")]
+    [JsonPropertyName("arrivalTerminal")] public string ArrivalTerminal { get; set; }
+
+    [JsonPropertyName("flightEquipmentIataCode")]
     public string FlightEquipmentIataCode { get; set; }
 
-    [JsonProperty("isCodeshare")] public bool IsCodeShare { get; set; }
+    [JsonPropertyName("isCodeshare")] public bool IsCodeshare { get; set; }
 
-    [JsonProperty("isWetlease")] public bool IsWetLease { get; set; }
+    [JsonPropertyName("isWetlease")] public bool IsWetlease { get; set; }
 
-    [JsonProperty("serviceType")] public string ServiceType { get; set; }
+    [JsonPropertyName("serviceType")] public string ServiceType { get; set; }
 
-    [JsonProperty("serviceClasses")] public List<string> ServiceClasses { get; set; }
+    [JsonPropertyName("serviceClasses")] public List<string> ServiceClasses { get; set; }
 
-    [JsonProperty("trafficRestrictions")] public List<string> TrafficRestrictions { get; set; }
+    [JsonPropertyName("trafficRestrictions")]
+    public List<string> TrafficRestrictions { get; set; }
 
-    [JsonProperty("codeshares")] public List<CodeShare> CodeShares { get; set; }
+    [JsonPropertyName("codeshares")] public List<Codeshare> Codeshares { get; set; }
 
-    [JsonProperty("referenceCode")] public string ReferenceCode { get; set; }
+    [JsonPropertyName("elapsedTime")] public int ElapsedTime { get; set; }
 
-    [JsonProperty("operator")] public Operator Operator { get; set; }
+    [JsonPropertyName("wetleaseOperatorFsCode")]
+    public string WetleaseOperatorFsCode { get; set; }
 }
 
 public class Carrier
 {
-    [JsonProperty("requestedCode")] public string RequestedCode { get; set; }
+    [JsonPropertyName("requestedCode")] public string RequestedCode { get; set; }
 
-    [JsonProperty("fsCode")] public string FsCode { get; set; }
+    [JsonPropertyName("fsCode")] public string FsCode { get; set; }
 }
 
 public class FlightNumber
 {
-    [JsonProperty("requested")] public string Requested { get; set; }
+    [JsonPropertyName("requested")] public string Requested { get; set; }
 
-    [JsonProperty("interpreted")] public string Interpreted { get; set; }
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
+public class FlightSchedulesResponse
+{
+    [JsonPropertyName("request")] public Request Request { get; set; }
+
+    [JsonPropertyName("scheduledFlights")] public List<ScheduledFlight> ScheduledFlights { get; set; }
+
+    [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
+}
+
+public class DateTimeResponse
+{
+    [JsonPropertyName("year")] public string Year { get; set; }
+    [JsonPropertyName("month")] public string Month { get; set; }
+    [JsonPropertyName("day")] public string Day { get; set; }
+    [JsonPropertyName("hour")] public string Hour { get; set; }
+    [JsonPropertyName("minute")] public string Minute { get; set; }
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
 }

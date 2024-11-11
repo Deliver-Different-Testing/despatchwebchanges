@@ -7,12 +7,13 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.Extensions.Configuration;
 using RestSharp;
+using DateTime = System.DateTime;
 
 namespace DespatchWeb.Services;
 
 public class FlightStatsService : IFlightStatsService
 {
-    private const string BaseUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
+    private const string ConnectionUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
     private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1/";
     private readonly string _appId;
     private readonly string _appKey;
@@ -24,7 +25,7 @@ public class FlightStatsService : IFlightStatsService
         _appId = configuration?["FlightStatusApiKeys:AppId"];
         _appKey = configuration?["FlightStatusApiKeys:AppKey"];
         _webhookUrl = configuration?["FlightStatusApiKeys:WebhookUrl"];
-        _client = new RestClient(BaseUrl);
+        _client = new RestClient(ConnectionUrl);
 
         if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey))
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
@@ -40,7 +41,7 @@ public class FlightStatsService : IFlightStatsService
         var alertClient = new RestClient(AlertUrl);
 
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
-        var (year, month, day) = SplitDate(departureTime);
+        var (year, month, day, _, _) = SplitDate(departureTime);
 
         var request =
             new RestRequest(
@@ -61,6 +62,101 @@ public class FlightStatsService : IFlightStatsService
             throw new Exception($"Failed to set up alert: {response.ErrorMessage}");
 
         return response.Data.Rule?.Id;
+    }
+
+    public async Task<List<FlightViewModel>> GetFlightsAsync(
+        string departureAirportCode,
+        string destinationAirportCode,
+        DateTime? departureDateTime = null,
+        DateTime? flightBuffer = null,
+        string codeType = null,
+        string[] extendedOptions = null)
+    {
+        if (string.IsNullOrEmpty(departureAirportCode))
+            throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
+                nameof(departureAirportCode));
+
+        if (string.IsNullOrEmpty(destinationAirportCode))
+            throw new ArgumentException("Arrival airport code is required and cannot be null or empty.",
+                nameof(destinationAirportCode));
+
+        // If no flight buffer provided, get flights from now
+        flightBuffer ??= DateTime.Now;
+        var (year, month, day, hour, minute) = SplitDate(flightBuffer.Value);
+
+        var request =
+            new RestRequest(
+                $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        if (!string.IsNullOrEmpty(codeType)) request.AddQueryParameter("codeType", codeType);
+
+        if (extendedOptions is { Length: > 0 })
+            foreach (var option in extendedOptions)
+                request.AddQueryParameter("extendedOptions", option);
+
+        // Execute the request
+        var response = await _client.ExecuteGetAsync<FlightConnectionsResponse>(request);
+
+        if (response.Data?.Connections == null)
+            return new List<FlightViewModel>();
+
+        var flightOptions = response.Data.Connections
+            .Where(conn => conn.ScheduledFlight.Any() && !conn.ScheduledFlight.First().IsCodeshare)
+            .Select(conn =>
+            {
+                var firstFlight = conn.ScheduledFlight.First();
+                var lastFlight = conn.ScheduledFlight.Last();
+
+                return new FlightViewModel
+                {
+                    Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
+                        ?.Name,
+                    FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
+                    DepartureTime = firstFlight.DepartureTime,
+                    ArrivalTime = lastFlight.ArrivalTime,
+                    DepartureAirport = firstFlight.DepartureAirportFsCode,
+                    ArrivalAirport = lastFlight.ArrivalAirportFsCode,
+                    Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
+                    Stops = conn.ScheduledFlight.Count - 1, // Number of connections equals number of flights minus 1
+                    Aircraft = response.Data.Appendix?.Equipments
+                        .FirstOrDefault(e => e.Iata == firstFlight.FlightEquipmentIataCode)
+                        ?.Name,
+                    ServiceClasses = firstFlight.ServiceClasses,
+                    IsCodeShare = firstFlight.IsCodeshare,
+                    CodeShareAirline = firstFlight.IsCodeshare ? firstFlight.CarrierFsCode : null
+                };
+            }).OrderBy(flight => flight.DepartureTime).ToList();
+
+        return flightOptions;
+    }
+
+    public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
+        DateTime departureTime)
+    {
+        if (string.IsNullOrEmpty(completeFlightNumber))
+            throw new ArgumentException("Flight number is required and cannot be null or empty.",
+                nameof(completeFlightNumber));
+
+        var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
+        var (year, month, day, _, _) = SplitDate(departureTime);
+
+        var request = new RestRequest($"json/flight/{carrierCode}/{flightNumber}/departing/{year}/{month}/{day}");
+
+        // Add query parameters
+        request.AddQueryParameter("appId", _appId);
+        request.AddQueryParameter("appKey", _appKey);
+
+        // Execute the request
+        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
+
+        if (!response.IsSuccessful)
+            throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
+
+        return response.Data.ScheduledFlights.FirstOrDefault();
     }
 
     public async Task<Rule> GetAlertSubscriptionByIdAsync(string alertId)
@@ -103,100 +199,9 @@ public class FlightStatsService : IFlightStatsService
         throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
     }
 
-    public async Task<List<FlightViewModel>> GetFlightsAsync(
-        string departureAirportCode,
-        string destinationAirportCode,
-        DateTime? departureDateTime = null,
-        DateTime? flightBuffer = null,
-        string codeType = null,
-        string[] extendedOptions = null)
-    {
-        if (string.IsNullOrEmpty(departureAirportCode))
-            throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
-                nameof(departureAirportCode));
-
-        if (string.IsNullOrEmpty(destinationAirportCode))
-            throw new ArgumentException("Arrival airport code is required and cannot be null or empty.",
-                nameof(destinationAirportCode));
-
-        // If no flight bugger provided, get flights from now
-        flightBuffer ??= DateTime.Now;
-
-        // If departureDateTime is not provided, use current date and time
-        var effectiveDateTime = departureDateTime ?? DateTime.Now;
-        var (year, month, day) = SplitDate(effectiveDateTime);
-
-        var request =
-            new RestRequest(
-                $"json/from/{departureAirportCode}/to/{destinationAirportCode}/departing/{year}/{month}/{day}");
-
-        // Add query parameters
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
-        request.AddQueryParameter("numHours", "24"); // Request 24 hours of flight data
-
-        if (!string.IsNullOrEmpty(codeType)) request.AddQueryParameter("codeType", codeType);
-
-        if (extendedOptions is { Length: > 0 })
-            foreach (var option in extendedOptions)
-                request.AddQueryParameter("extendedOptions", option);
-
-        // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
-
-        if (response.Data?.ScheduledFlights == null)
-            return new List<FlightViewModel>();
-
-        var flightOptions = response.Data.ScheduledFlights
-            .Where(flight => flight.DepartureTime > flightBuffer && !flight.IsCodeShare)
-            .Select(flight => new FlightViewModel
-            {
-                Airline = response.Data.Appendix?.Airlines.FirstOrDefault(a => a.Fs == flight.CarrierFsCode)?.Name,
-                FlightNumber = flight.CarrierFsCode + flight.FlightNumber,
-                DepartureTime = flight.DepartureTime,
-                ArrivalTime = flight.ArrivalTime,
-                DepartureAirport = flight.DepartureAirportFsCode,
-                ArrivalAirport = flight.ArrivalAirportFsCode,
-                Duration = flight.ArrivalTime - flight.DepartureTime,
-                Stops = flight.Stops,
-                Aircraft = response.Data.Appendix?.Equipments
-                    .FirstOrDefault(e => e.Iata == flight.FlightEquipmentIataCode)
-                    ?.Name,
-                ServiceClasses = flight.ServiceClasses,
-                IsCodeShare = flight.IsCodeShare,
-                CodeShareAirline = flight.IsCodeShare ? flight.Operator?.CarrierFsCode : null
-            }).OrderBy(flight => flight.DepartureTime).ToList();
-
-        return flightOptions;
-    }
-
-    public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
-        DateTime departureTime)
-    {
-        if (string.IsNullOrEmpty(completeFlightNumber))
-            throw new ArgumentException("Flight number is required and cannot be null or empty.",
-                nameof(completeFlightNumber));
-
-        var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
-        var (year, month, day) = SplitDate(departureTime);
-
-        var request = new RestRequest($"json/flight/{carrierCode}/{flightNumber}/departing/{year}/{month}/{day}");
-
-        // Add query parameters
-        request.AddQueryParameter("appId", _appId);
-        request.AddQueryParameter("appKey", _appKey);
-
-        // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
-
-        if (!response.IsSuccessful)
-            throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
-
-        return response.Data.ScheduledFlights.FirstOrDefault();
-    }
-
-    private static (int year, int month, int day) SplitDate(DateTime effectiveDateTime) =>
-        (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day);
+    private static (int year, int month, int day, int hour, int min) SplitDate(DateTime effectiveDateTime) =>
+        (effectiveDateTime.Year, effectiveDateTime.Month, effectiveDateTime.Day, effectiveDateTime.Hour,
+            effectiveDateTime.Minute);
 
     private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
         (completeFlightNumber?[..2], completeFlightNumber?[2..]);
