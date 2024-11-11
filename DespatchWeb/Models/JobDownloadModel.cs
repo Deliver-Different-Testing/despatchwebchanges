@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Newtonsoft.Json;
 
 namespace DespatchWeb.Models;
 
@@ -39,5 +36,4 @@ public class JobDownloadModel
     public string ClientReferenceA { get; set; }
     public string ClientReferenceB { get; set; }
     public string ClientReferenceC { get; set; }
-
 }

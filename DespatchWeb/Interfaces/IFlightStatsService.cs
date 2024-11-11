@@ -1,8 +1,8 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
+using DateTime = System.DateTime;
 
 namespace DespatchWeb.Interfaces;
 
@@ -21,8 +21,4 @@ public interface IFlightStatsService
 
     Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode);
-
-    Task<Rule> GetAlertSubscriptionByIdAsync(string alertId);
-
-    Task DeleteAlertByIdAsync(string alertId);
 }
