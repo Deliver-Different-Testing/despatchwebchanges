@@ -261,10 +261,7 @@ public class BaseJobRepository
         return result.Entity;
     }
 
-    public async Task<T> Get<T>(int id) where T : class
-    {
-        return await _context.Set<T>().FindAsync(id);
-    }
+    public async Task<T> Get<T>(int id) where T : class => await _context.Set<T>().FindAsync(id);
 
     // This function replaces the sql view "DESWEB_qryDespatch"
     public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
@@ -363,7 +360,6 @@ public class BaseJobRepository
         // Always exclude status 9
         return query.Where(j => j.UcjbStatus != 9);
     }
-
 
     private static IQueryable<TucJob> ApplyDashboardSpecificOrdering(IQueryable<TucJob> query, string order,
         string ascending)
