@@ -477,32 +477,36 @@ angular.module("uDispatch")
              */
             async function initializeViews() {
                 if ($scope.views && $scope.views.length > 0) {
-                    $scope.selectedViews.push($scope.views[0]);
+                    // Initialize selectedViews as an array
+                    $scope.selectedViews = [];
 
-                    if ($scope.views[0].hasOwnProperty('selected')) {
-                        $scope.views[0].selected = true;
-                    } else {
-                        $scope.views = $scope.views.map((view, index) => ({
-                            ...view,
-                            selected: index === 0
-                        }));
-                    }
+                    // Set selected property on each view, default first one to true
+                    $scope.views = $scope.views.map((view, index) => ({
+                        ...view,
+                        selected: index === 0  // First view is selected by default
+                    }));
+
+                    // Add first view to selectedViews
+                    $scope.selectedViews.push($scope.views[0]);
                 }
             }
 
-            $scope.toggleView = view => {
-                // Toggle the selected state
-                view.selected = !view.selected;
-
-                // Update selectedViews array
-                const index = $scope.selectedViews.indexOf(view);
-                if (view.selected && index === -1) {
-                    $scope.selectedViews.push(view);
-                } else if (!view.selected && index > -1) {
-                    $scope.selectedViews.splice(index, 1);
+            $scope.toggleView = function (view) {
+                if (view.selected) {
+                    // Add to selectedViews if not already present
+                    if (!$scope.selectedViews.some(v => v === view)) {
+                        $scope.selectedViews.push(view);
+                    }
+                } else {
+                    // Remove from selectedViews
+                    const index = $scope.selectedViews.findIndex(v => v === view);
+                    if (index > -1) {
+                        $scope.selectedViews.splice(index, 1);
+                    }
                 }
 
-                $scope.updateFilters();
+                // Update data with new view selection
+                $scope.getData();
             };
 
             /**
