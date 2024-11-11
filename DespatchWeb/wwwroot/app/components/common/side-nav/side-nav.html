@@ -1,7 +1,8 @@
 <md-sidenav class="md-sidenav-right" md-component-id="right">
     <md-toolbar>
         <h1 class="md-toolbar-tools">
-            Dispatch Manager
+            <span class="material-symbols-outlined">hub</span>
+            <span style="margin-left: 8px;">Dispatch Manager</span>
         </h1>
     </md-toolbar>
     <md-content>
@@ -21,7 +22,7 @@
                 <p>Dispatch</p>
             </md-list-item>
             <md-list-item ng-class="{'md-active': materialSidenavService.isActive('nw')}" ui-sref="nw">
-                <md-icon md-font-set="material-symbols-outlined">public</md-icon>
+                <md-icon md-font-set="material-symbols-outlined">local_shipping</md-icon>
                 <p ng-if="isUsCustomer">Domestic</p>
                 <p ng-if="!isUsCustomer">Nationwide</p>
             </md-list-item>
@@ -30,7 +31,7 @@
                 <p>Job Search</p>
             </md-list-item>
             <md-list-item ng-class="{'md-active': materialSidenavService.isActive('prebooks')}" ui-sref="prebooks">
-                <md-icon md-font-set="material-symbols-outlined">book</md-icon>
+                <md-icon md-font-set="material-symbols-outlined">event</md-icon>
                 <p>PreBooks</p>
             </md-list-item>
         </md-list>

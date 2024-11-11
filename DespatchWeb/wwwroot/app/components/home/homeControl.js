@@ -22,8 +22,10 @@ angular.module("uDispatch")
                 $scope.courierListFabIsOpen = false;
                 $scope.isCheckingAttachments = false;
                 $scope.hasAttachedFile = false;
-                $scope.areas = [];
-                $scope.selectedAreas = [];
+
+                $scope.views = [];
+                $scope.selectedViews = [];
+
                 $scope.filters = [
                     {value: 'new', label: 'New', active: false},
                     {value: 'nda', label: 'NDA', active: false},
@@ -449,16 +451,16 @@ angular.module("uDispatch")
              */
             async function loadPageViews() {
                 try {
-                    $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
+                    $scope.views = await DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
 
                     // Run functions sequentially to prevent race conditions
-                    await initializeAreas();
+                    await initializeViews();
                     await $scope.updateFilters("nda");
                     await fetchDriverLocations();
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
-                    $scope.areas = [];
-                    await initializeAreas();
+                    $scope.views = [];
+                    await initializeViews();
                 }
             }
 
@@ -466,12 +468,35 @@ angular.module("uDispatch")
              * Initializes areas and shows a dialog if no views are available.
              * @returns {Promise<void>}
              */
-            async function initializeAreas() {
-                if ($scope.areas && $scope.areas.length > 0) {
-                    $scope.selectedAreas.push($scope.areas[0]);
-                    $scope.$apply();
+            async function initializeViews() {
+                if ($scope.views && $scope.views.length > 0) {
+                    $scope.selectedViews.push($scope.views[0]);
+
+                    if ($scope.views[0].hasOwnProperty('selected')) {
+                        $scope.views[0].selected = true;
+                    } else {
+                        $scope.views = $scope.views.map((view, index) => ({
+                            ...view,
+                            selected: index === 0
+                        }));
+                    }
                 }
             }
+
+            $scope.toggleView = view => {
+                // Toggle the selected state
+                view.selected = !view.selected;
+
+                // Update selectedViews array
+                const index = $scope.selectedViews.indexOf(view);
+                if (view.selected && index === -1) {
+                    $scope.selectedViews.push(view);
+                } else if (!view.selected && index > -1) {
+                    $scope.selectedViews.splice(index, 1);
+                }
+
+                $scope.updateFilters();
+            };
 
             /**
              * Updates filters based on the selected filter option.
@@ -507,7 +532,7 @@ angular.module("uDispatch")
              * @param {Object} selectedArea - The area to set as active.
              */
             $scope.setActiveArea = selectedArea => {
-                $scope.driverLocations.areas.forEach(area => {
+                $scope.driverLocations.views.forEach(area => {
                     area.isActive = (area === selectedArea);
                 });
             };
@@ -769,7 +794,7 @@ angular.module("uDispatch")
                             $scope.queryParams,
                             selectedClients,
                             $scope.isInternal,
-                            $scope.selectedAreas,
+                            $scope.selectedViews,
                             envelope
                         );
                     }
@@ -2042,7 +2067,7 @@ angular.module("uDispatch")
             };
 
             function deactivateAllCouriers() {
-                angular.forEach($scope.driverLocations.areas, (area) => {
+                angular.forEach($scope.driverLocations.views, (area) => {
                     ['top', 'middle', 'bottom'].forEach((section) => {
                         angular.forEach(area[section], (c) => {
                             c.isActive = false;
@@ -2856,7 +2881,7 @@ angular.module("uDispatch")
                     return;
                 }
 
-                const areas = $scope.areas;
+                const areas = $scope.views;
                 const channels = [];
                 let trucks = false;
 
@@ -2926,7 +2951,7 @@ angular.module("uDispatch")
                         $scope.queryParams,
                         selectedClients,
                         $scope.isInternal,
-                        $scope.selectedAreas
+                        $scope.selectedViews
                     );
 
                     // Update scope with new data
@@ -3106,7 +3131,7 @@ angular.module("uDispatch")
 
                 $scope.getDriverLocationsData = async () => {
                     try {
-                        $scope.driverLocations = await DispatchData.getDriverLocations($scope.selectedAreas);
+                        $scope.driverLocations = await DispatchData.getDriverLocations($scope.selectedViews);
                         $timeout(() => {
                             angular.element("#driverLocations .loading").fadeOut();
                         }, 0);
