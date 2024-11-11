@@ -87,9 +87,9 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             /** @type {boolean} */
             $scope.courierListFabIsOpen = false;
             /** @type {Array} */
-            $scope.areas = [];
+            $scope.views = [];
             /** @type {Array} */
-            $scope.selectedAreas = [];
+            $scope.selectedViews = [];
 
             $scope.filters = [
                 {value: 'new', label: 'New', active: false},
@@ -383,8 +383,8 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
         async function loadPageViews() {
             try {
-                $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
-                await initializeAreas();
+                $scope.views = await DispatchData.getSelectedViews(ContactID, AppPages.Domestic);
+                await initializeViews();
                 await $scope.updateFilters();
 
                 if (!$scope.isInternal) {
@@ -396,17 +396,41 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $timeout(() => sizeHeadings(), 1000);
             } catch (error) {
                 console.error('Error fetching dispatch views:', error);
-                await initializeAreas();
+                await initializeViews();
                 console.log("Failed to load dispatch views. Please try refreshing the page.");
             }
         }
 
-        // Initialize areas
-        async function initializeAreas() {
-            if ($scope.areas && $scope.areas.length > 0) {
-                $scope.selectedAreas.push($scope.areas[0]);
+        // Initialize views
+        async function initializeViews() {
+            if ($scope.views && $scope.views.length > 0) {
+                $scope.selectedViews.push($scope.views[0]);
+
+                if ($scope.views[0].hasOwnProperty('selected')) {
+                    $scope.views[0].selected = true;
+                } else {
+                    $scope.views = $scope.views.map((view, index) => ({
+                        ...view,
+                        selected: index === 0
+                    }));
+                }
             }
         }
+
+        $scope.toggleView = view => {
+            // Toggle the selected state
+            view.selected = !view.selected;
+
+            // Update selectedViews array
+            const index = $scope.selectedViews.indexOf(view);
+            if (view.selected && index === -1) {
+                $scope.selectedViews.push(view);
+            } else if (!view.selected && index > -1) {
+                $scope.selectedViews.splice(index, 1);
+            }
+
+            $scope.updateFilters();
+        };
 
         /**
          * Updates filters based on the selected filter option.
@@ -476,7 +500,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         };
 
         $scope.setActiveArea = selectedArea => {
-            angular.forEach($scope.driverLocations.areas, area => {
+            angular.forEach($scope.driverLocations.views, area => {
                 area.isActive = (area === selectedArea);
             });
         };
@@ -2820,7 +2844,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 return;
             }
 
-            const areas = $scope.areas;
+            const areas = $scope.views;
             const channels = [];
             let trucks = false;
 
@@ -2889,7 +2913,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                             $scope.jobFilters,
                             selectedClients,
                             $scope.isInternal,
-                            $scope.selectedAreas
+                            $scope.selectedViews
                         ),
                         updateScope: (data) => {
                             $scope.jobList = data;
@@ -2901,7 +2925,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                             $scope.jobFilters,
                             selectedClients,
                             $scope.isInternal,
-                            $scope.selectedAreas
+                            $scope.selectedViews
                         ),
                         updateScope: (data) => {
                             $scope.jobListPOD = data;
@@ -2913,7 +2937,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                             $scope.jobFilters,
                             selectedClients,
                             $scope.isInternal,
-                            $scope.selectedAreas
+                            $scope.selectedViews
                         ),
                         updateScope: (data) => {
                             $scope.jobListReprice = data;
@@ -2925,7 +2949,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                             $scope.jobDeliveryFilters,
                             selectedClients,
                             $scope.isInternal,
-                            $scope.selectedAreas
+                            $scope.selectedViews
                         ),
                         updateScope: (data) => {
                             $scope.jobListDelivery = data;
