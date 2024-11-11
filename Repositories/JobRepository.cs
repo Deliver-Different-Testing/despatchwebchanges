@@ -458,6 +458,92 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return Tuple.Create(total, jobs);
     }
 
+    public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
+    {
+        if (data.Any(d =>
+        d.Id <= 0
+        ||
+        (d.Amount > 0 && (d.Ppd < 0 || d.Fuel < 0 || d.CourierPayment < 0 || d.CourierFuel < 0 || d.CourierBonus < 0 || d.Amount < (d.Ppd + d.Fuel) || d.Amount < (d.CourierPayment + d.CourierFuel + d.CourierBonus)))
+        ||
+        (d.Amount < 0 && (d.Ppd > 0 || d.Fuel > 0 || d.CourierPayment > 0 || d.CourierFuel > 0 || d.CourierBonus > 0 || d.Amount > (d.Ppd + d.Fuel) || d.Amount > (d.CourierPayment + d.CourierFuel + d.CourierBonus)))
+        ))
+            throw new ArgumentException("Invalid Values.");
+
+        var jobIds = data.Select(j => j.Id).Distinct().ToList();
+
+        if (!jobIds.Any())
+            return;
+
+        var idData = await _context.TblJobs
+            .Where(j => jobIds.Contains(j.JobId) || (j.ParentId.HasValue && jobIds.Contains(j.ParentId.Value)))
+            .Select(j => new { j.JobId, ParentId = j.ParentId ?? j.JobId })
+            .ToListAsync();
+
+        var ids = idData
+            .Select(j => j.JobId)
+            .Concat(idData.Select(j => j.ParentId))
+            .Distinct()
+            .ToList();
+
+        var dbData = await _context.TucJobs
+            .Where(j => ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
+            .ToListAsync();
+
+        var dbDataArchive = await _context.TucJobArchives
+            .Where(j => ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
+            .ToListAsync();
+
+        foreach (var d in data)
+        {
+            dynamic match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id) ?? (dynamic)dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+
+            if (match == null)
+                throw new ArgumentException("Id not found.", "Id");
+
+            match.UcjbAmount = Math.Round(d.Amount, 4, MidpointRounding.AwayFromZero);
+            match.FuelSurchargeAmount = Math.Round(d.Fuel, 4, MidpointRounding.AwayFromZero);
+            match.PpdexclusiveAmount = Math.Round(d.Ppd, 4, MidpointRounding.AwayFromZero);
+            match.CourierPercentage = null;
+            match.CourierPayment = Math.Round(d.CourierPayment, 4, MidpointRounding.AwayFromZero);
+            match.CourierFuel = Math.Round(d.CourierFuel, 4, MidpointRounding.AwayFromZero);
+            match.CourierBonus = Math.Round(d.CourierBonus, 4, MidpointRounding.AwayFromZero);
+            match.RawBaseAmount = match.UcjbAmount - match.FuelSurchargeAmount - match.PpdexclusiveAmount;
+        }
+
+        var parentJobs = dbData
+            .Select(j => new { j.UcjbId, ParentId = j.ParentId ?? j.UcjbId, j.UcjbAmount, j.FuelSurchargeAmount, j.PpdexclusiveAmount })
+            .Concat(dbDataArchive.Select(j => new { j.UcjbId, ParentId = j.ParentId ?? j.UcjbId, j.UcjbAmount, j.FuelSurchargeAmount, j.PpdexclusiveAmount }))
+            .GroupBy(j => j.ParentId)
+            .Where(x => x.Count() > 1)
+            .ToList();
+
+        foreach (var x in parentJobs)
+        {
+            dynamic parentJob = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key) ?? (dynamic)dbDataArchive.First(j => j.UcjbId == x.Key);
+            var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
+
+            if (!childJobs.Any())
+                continue;
+
+            parentJob.UcjbAmount = childJobs.Sum(j => j.UcjbAmount ?? 0);
+            parentJob.FuelSurchargeAmount = childJobs.Sum(j => j.FuelSurchargeAmount);
+            parentJob.PpdexclusiveAmount = childJobs.Sum(j => j.PpdexclusiveAmount ?? 0);
+            parentJob.RawBaseAmount = parentJob.UcjbAmount - parentJob.FuelSurchargeAmount - parentJob.PpdexclusiveAmount;
+        }
+
+        foreach (var d in dbData)
+        {
+            d.UcjbLocked = true;
+        }
+
+        foreach (var d in dbDataArchive)
+        {
+            d.UcjbLocked = 1;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(int? courierId, string wild, string job,
         DateTime fromDate,
         DateTime toDate, int? clientId)
@@ -512,7 +598,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 JobNumber = j.Number,
                 BookDate = DateTime.Parse($"{j.Date.Value.ToString("yyyy-MM-dd")} {j.Time.Value.ToString("HH:mm:ss")}"),
                 Amount = j.Amount,
-                FuelSurcharge = j.FuelSurchargeAmount,
+                Fuel = j.FuelSurchargeAmount,
                 Ppd = j.Ppdexclusiveamount,
                 CourierPayment = j.CourierPayment,
                 CourierFuel = j.CourierFuel,

@@ -22,8 +22,10 @@ angular.module("uDispatch")
                 $scope.courierListFabIsOpen = false;
                 $scope.isCheckingAttachments = false;
                 $scope.hasAttachedFile = false;
-                $scope.areas = [];
-                $scope.selectedAreas = [];
+
+                $scope.views = [];
+                $scope.selectedViews = [];
+
                 $scope.filters = [
                     {value: 'new', label: 'New', active: false},
                     {value: 'nda', label: 'NDA', active: false},
@@ -64,21 +66,25 @@ angular.module("uDispatch")
                 $scope.boxes = {
                     "jobsList": {
                         "title": "Jobs List",
+                        "icon": "list_alt",
                         "templateUrl": versionUrl("app/components/home/partials/jobList.html"),
                         "showSearch": 1,
                         "showRefresh": 1
                     }, "jobDetail": {
                         "title": "Detail",
+                        "icon": "assignment",
                         "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
                         "showSearch": 0,
                         "showRefresh": 0,
                         "showDetailButtons": 1
                     }, "potentialCouriers": {
                         "title": "Potential Couriers",
+                        "icon": "groups",
                         "templateUrl": versionUrl("app/components/home/partials/potentialCouriers.html"),
                         "showSearch": 1
                     }, "currentWork": {
                         "title": "Current Work",
+                        "icon": "local_shipping",
                         "templateUrl": versionUrl("app/components/home/partials/currentWork.html"),
                         "showSearch": 1,
                         "showRefresh": 0
@@ -109,6 +115,7 @@ angular.module("uDispatch")
                         "showRefresh": 0
                     }, "supports": {
                         "title": "Supports",
+                        "icon": "support",
                         "templateUrl": versionUrl("app/components/home/partials/supports.html"),
                         "showSearch": 0,
                         "showRefresh": 0
@@ -119,11 +126,13 @@ angular.module("uDispatch")
                         "showRefresh": 0
                     }, "map": {
                         "title": "Google Map",
+                        "icon": "pin_drop",
                         "templateUrl": versionUrl("app/components/home/partials/map.html"),
                         "showSearch": 0,
                         "showRefresh": 1
                     }, "driverLocations": {
                         "title": "Driver Locations",
+                        "icon": "person_pin_circle",
                         "templateUrl": versionUrl("app/components/home/partials/driverLocations.html"),
                         "showSearch": 0,
                         "showRefresh": 0
@@ -449,16 +458,16 @@ angular.module("uDispatch")
              */
             async function loadPageViews() {
                 try {
-                    $scope.areas = await DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
+                    $scope.views = await DispatchData.getSelectedViews(ContactID, AppPages.Dispatch);
 
                     // Run functions sequentially to prevent race conditions
-                    await initializeAreas();
+                    await initializeViews();
                     await $scope.updateFilters("nda");
                     await fetchDriverLocations();
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
-                    $scope.areas = [];
-                    await initializeAreas();
+                    $scope.views = [];
+                    await initializeViews();
                 }
             }
 
@@ -466,12 +475,39 @@ angular.module("uDispatch")
              * Initializes areas and shows a dialog if no views are available.
              * @returns {Promise<void>}
              */
-            async function initializeAreas() {
-                if ($scope.areas && $scope.areas.length > 0) {
-                    $scope.selectedAreas.push($scope.areas[0]);
-                    $scope.$apply();
+            async function initializeViews() {
+                if ($scope.views && $scope.views.length > 0) {
+                    // Initialize selectedViews as an array
+                    $scope.selectedViews = [];
+
+                    // Set selected property on each view, default first one to true
+                    $scope.views = $scope.views.map((view, index) => ({
+                        ...view,
+                        selected: index === 0  // First view is selected by default
+                    }));
+
+                    // Add first view to selectedViews
+                    $scope.selectedViews.push($scope.views[0]);
                 }
             }
+
+            $scope.toggleView = function (view) {
+                if (view.selected) {
+                    // Add to selectedViews if not already present
+                    if (!$scope.selectedViews.some(v => v === view)) {
+                        $scope.selectedViews.push(view);
+                    }
+                } else {
+                    // Remove from selectedViews
+                    const index = $scope.selectedViews.findIndex(v => v === view);
+                    if (index > -1) {
+                        $scope.selectedViews.splice(index, 1);
+                    }
+                }
+
+                // Update data with new view selection
+                $scope.getData();
+            };
 
             /**
              * Updates filters based on the selected filter option.
@@ -507,7 +543,7 @@ angular.module("uDispatch")
              * @param {Object} selectedArea - The area to set as active.
              */
             $scope.setActiveArea = selectedArea => {
-                $scope.driverLocations.areas.forEach(area => {
+                $scope.driverLocations.views.forEach(area => {
                     area.isActive = (area === selectedArea);
                 });
             };
@@ -769,7 +805,7 @@ angular.module("uDispatch")
                             $scope.queryParams,
                             selectedClients,
                             $scope.isInternal,
-                            $scope.selectedAreas,
+                            $scope.selectedViews,
                             envelope
                         );
                     }
@@ -2042,7 +2078,7 @@ angular.module("uDispatch")
             };
 
             function deactivateAllCouriers() {
-                angular.forEach($scope.driverLocations.areas, (area) => {
+                angular.forEach($scope.driverLocations.views, (area) => {
                     ['top', 'middle', 'bottom'].forEach((section) => {
                         angular.forEach(area[section], (c) => {
                             c.isActive = false;
@@ -2856,7 +2892,7 @@ angular.module("uDispatch")
                     return;
                 }
 
-                const areas = $scope.areas;
+                const areas = $scope.views;
                 const channels = [];
                 let trucks = false;
 
@@ -2926,7 +2962,7 @@ angular.module("uDispatch")
                         $scope.queryParams,
                         selectedClients,
                         $scope.isInternal,
-                        $scope.selectedAreas
+                        $scope.selectedViews
                     );
 
                     // Update scope with new data
@@ -3106,7 +3142,7 @@ angular.module("uDispatch")
 
                 $scope.getDriverLocationsData = async () => {
                     try {
-                        $scope.driverLocations = await DispatchData.getDriverLocations($scope.selectedAreas);
+                        $scope.driverLocations = await DispatchData.getDriverLocations($scope.selectedViews);
                         $timeout(() => {
                             angular.element("#driverLocations .loading").fadeOut();
                         }, 0);

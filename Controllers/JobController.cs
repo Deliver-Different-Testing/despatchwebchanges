@@ -18,6 +18,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using ExcelDataReader;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Serilog;
@@ -223,7 +224,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
                 foreach (var x in data)
                 {
                     await writer.WriteLineAsync(
-                        $"{x.Id},{formatField(x.JobNumber)},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.Amount},{x.FuelSurcharge},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)},{formatField(x.ClientReferenceA)},{formatField(x.ClientReferenceB)},{formatField(x.ClientReferenceC)}");
+                        $"{x.Id},{formatField(x.JobNumber)},{x.BookDate.ToString("yyyy-MM-dd HH:mm:ss")},{x.Amount},{x.Fuel},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)},{formatField(x.ClientReferenceA)},{formatField(x.ClientReferenceB)},{formatField(x.ClientReferenceC)}");
                 }
             }
 
@@ -268,6 +269,49 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> Upload(IFormFile file)
+    {
+        if (file == null || string.IsNullOrWhiteSpace(file.FileName) || !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim().Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
+            return BadRequest("Invalid file format.");
+
+        string folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["UploadDirectory"]);
+        folderPath = Path.Combine(folderPath, DateTime.Now.ToString("yyyyMM"));
+        // Create the folder if it doesn't exist
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+
+        string fileExtension = file.FileName.Trim().ToLower().Substring(file.FileName.Trim().LastIndexOf("."));
+        string filePath = Path.Combine(folderPath, $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}{fileExtension}");
+
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        string sResult = null;
+        using (FileStream stream = System.IO.File.Create(filePath))
+        {
+            await file.CopyToAsync(stream);
+            using (var reader = (fileExtension == ".csv" ? ExcelReaderFactory.CreateCsvReader(stream) : ExcelReaderFactory.CreateReader(stream)))
+            {
+                var output = reader.AsDataSet(new ExcelDataSetConfiguration()
+                {
+                    ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                    {
+                        UseHeaderRow = true
+                    }
+                }).Tables[0];  //Only ready from the first sheet
+
+                sResult = JsonConvert.SerializeObject(output);
+            }
+        }
+
+        var result = JsonConvert.DeserializeObject<List<JobManualPriceModel>>(sResult);
+
+        if (!result.Any())
+            return Ok();
+
+        await jobRepository.UpdateManualPriceAsync(result);
+
+        return Ok();
+    }
 
     public async Task<IActionResult> ValidateSwapPod(string job)
     {

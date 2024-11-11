@@ -851,11 +851,13 @@ jdSvc.currentJob.completedTime
             <div class="col-md-4">
                 <div class="row row-no-padding">
                     <div class="col-md-6">
-                        <!--   <div class="field" ng-click="jdSvc.contactClick($event, jdSvc.currentJob)"
+
+                        <div class="field" ng-click="jdSvc.contactClick($event, jdSvc.currentJob)"
                                 ng-if="!jdSvc.currentJob.bulkJob">
                                <label>Booked by Contact</label>
                                <div class="value">{{jdSvc.currentJob.contactName}}</div>
-                           </div>-->
+                        </div>
+
                         <div class="field">
                             <label ng-class="disabled">Logged-in Contact</label>
                             <div class="value" ng-class="disabled">{{jdSvc.currentJob.loggedInContactName}}</div>

@@ -27,18 +27,22 @@
                 </md-menu>
 
                 <md-menu ng-if="isInternal">
-                    <md-button aria-label="Open areas menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
-                        <md-icon md-font-set="material-symbols-outlined" ng-if="areas">view_list</md-icon>
+                    <md-button aria-label="Open views menu" class="md-icon-button" ng-click="$mdMenu.open($event)">
+                        <md-icon md-font-set="material-symbols-outlined" ng-if="views">view_list</md-icon>
                         <md-tooltip md-direction="bottom">Views</md-tooltip>
                         <md-progress-circular md-diameter="18" md-mode="indeterminate"
-                                              ng-if="!areas"></md-progress-circular>
+                                              ng-if="!views"></md-progress-circular>
                     </md-button>
                     <md-menu-content>
-                        <md-menu-item ng-if="areas && areas.length === 0">
-                            <p>No areas available.</p>
+                        <md-menu-item ng-if="views && views.length === 0">
+                            <p>No views available.</p>
                         </md-menu-item>
-                        <md-menu-item ng-if="areas && areas.length > 0" ng-repeat="area in areas">
-                            <md-checkbox ng-change="getData()" ng-model="selectedAreas[area.id]">{{area.name}}
+                        <md-menu-item ng-if="views && views.length > 0" ng-repeat="view in views">
+                            <md-checkbox
+                                    aria-label="{{view.name}}"
+                                    ng-change="toggleView(view)"
+                                    ng-model="view.selected">
+                                {{view.name}}
                             </md-checkbox>
                         </md-menu-item>
                     </md-menu-content>
@@ -107,7 +111,11 @@
                         <md-toolbar class="md-accent" layout="row" layout-align="center center">
                             <div class="md-toolbar-tools">
 
-                                <span class="md-headline-title" flex>
+                                <!--Icon-->
+                                <span class="material-symbols-outlined">{{boxes[box.name].icon}}</span>
+
+                                <span class="md-headline-title" flex flex style="margin-left: 8px;">
+
                                     {{boxes[box.name].title}}
                                     <span ng-if="box.name == 'jobDetail'">
                                         {{currentSelection}}

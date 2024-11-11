@@ -865,6 +865,12 @@ angular.module('uDispatch').controller('CSControl', [
                 return;
             }
             uCSData.uploadJobList(file)
+                .then(() => {
+                    toastrService.showSuccessToast("Job list uploaded successfully.");
+                })
+                .catch(() => {
+                    toastrService.showErrorToast("Job list uploaded unsuccessfully.");
+                })
                 .finally(() => {
                     document.getElementById("jobListUpload").value = null;
                 });                ;
