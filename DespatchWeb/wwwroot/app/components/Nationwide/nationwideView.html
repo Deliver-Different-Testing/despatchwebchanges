@@ -111,7 +111,11 @@
                         <md-toolbar class="md-accent" layout="row" layout-align="center center">
                             <div class="md-toolbar-tools">
 
-                                <span class="md-headline-title" flex>
+                                <!--Icon-->
+                                <span class="material-symbols-outlined">{{boxes[box.name].icon}}</span>
+
+                                <span class="md-headline-title" flex flex style="margin-left: 8px;">
+
                                     {{boxes[box.name].title}}
                                     <span ng-if="box.name == 'jobDetail'">{{currentSelection}}
                                     <md-icon md-font-set="material-symbols-outlined" ng-if="currentJob.assignedFlight">flight</md-icon>

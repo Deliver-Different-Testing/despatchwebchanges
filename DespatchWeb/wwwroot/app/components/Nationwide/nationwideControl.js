@@ -249,37 +249,44 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.boxes = {
                 "jobsList": {
                     "title": "New Jobs",
+                    "icon": "new_releases",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/jobList.html"),
                     "showSearch": 1,
                     "showRefresh": 1
                 }, "jobsListPOD": {
                     "title": "Awaiting POD",
+                    "icon": "pending_actions",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/jobListPOD.html"),
                     "showSearch": 1,
                     "showRefresh": 1
                 }, "jobsListDelivery": {
                     "title": "Action Required",
+                    "icon": "warning",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/jobListDelivery.html"),
                     "showSearch": 1,
                     "showRefresh": 1
                 }, "jobsListReprice": {
                     "title": "Reprice",
+                    "icon": "price_change",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/jobListReprice.html"),
                     "showSearch": 1,
                     "showRefresh": 1
                 }, "jobDetail": {
                     "title": "Detail",
+                    "icon": "assignment",
                     "templateUrl": versionUrl("app/components/common/partials/jobDetail.html"),
                     "showSearch": 0,
                     "showRefresh": 0,
                     "showDetailButtons": 1
                 }, "map": {
                     "title": "Google Map",
+                    "icon": "pin_drop",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/map.html"),
                     "showSearch": 0,
                     "showRefresh": 1
                 }, "flightAgentDataTable": {
-                    "title": "Available",
+                    "title": "Assign",
+                    "icon": "docs_add_on",
                     "templateUrl": versionUrl("app/components/Nationwide/partials/flightAgentDataTableBox.html"),
                     "showSearch": 0,
                     "showRefresh": 1
