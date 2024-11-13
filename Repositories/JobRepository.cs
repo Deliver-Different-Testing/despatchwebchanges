@@ -474,7 +474,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         if (!jobIds.Any())
             return;
 
-        var idData = await _context.TblJobs
+        var idData = await Context.TblJobs
             .Where(j => jobIds.Contains(j.JobId) || (j.ParentId.HasValue && jobIds.Contains(j.ParentId.Value)))
             .Select(j => new { j.JobId, ParentId = j.ParentId ?? j.JobId })
             .ToListAsync();
@@ -485,11 +485,11 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             .Distinct()
             .ToList();
 
-        var dbData = await _context.TucJobs
+        var dbData = await Context.TucJobs
             .Where(j => ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
             .ToListAsync();
 
-        var dbDataArchive = await _context.TucJobArchives
+        var dbDataArchive = await Context.TucJobArchives
             .Where(j => ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
             .ToListAsync();
 
@@ -541,7 +541,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             d.UcjbLocked = 1;
         }
 
-        await _context.SaveChangesAsync();
+        await Context.SaveChangesAsync();
     }
 
     public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(int? courierId, string wild, string job,

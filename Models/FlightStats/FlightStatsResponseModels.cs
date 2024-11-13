@@ -4,11 +4,11 @@ using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models.FlightStats;
 
-public class FlightSchedulesResponse
+public class FlightConnectionsResponse
 {
     [JsonPropertyName("request")] public Request Request { get; set; }
 
-    [JsonPropertyName("scheduledFlights")] public List<ScheduledFlight> ScheduledFlights { get; set; }
+    [JsonPropertyName("connections")] public List<Connection> Connections { get; set; }
 
     [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
 }
@@ -71,6 +71,75 @@ public class Airport
     [JsonPropertyName("classification")] public int Classification { get; set; }
 
     [JsonPropertyName("active")] public bool Active { get; set; }
+
+    [JsonPropertyName("street2")] public string Street2 { get; set; }
+}
+
+public class AllowNearbyArrivals
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class AllowNearbyDepartures
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class ExcludeAirlines
+{
+    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+}
+
+public class ExcludeAirports
+{
+    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+}
+
+public class IncludeAirlines
+{
+    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+}
+
+public class IncludeAirports
+{
+    [JsonPropertyName("interpreted")] public List<object> Interpreted { get; set; }
+}
+
+public class IncludeCodeshares
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class IncludeMultipleCarriers
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class IncludeSurface
+{
+    [JsonPropertyName("interpreted")] public bool Interpreted { get; set; }
+}
+
+public class MaxConnections
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+}
+
+public class MaxResults
+{
+    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+}
+
+public class NumHours
+{
+    [JsonPropertyName("interpreted")] public int Interpreted { get; set; }
+}
+
+public class PayloadType
+{
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
 }
 
 public class Appendix
@@ -152,16 +221,66 @@ public class Operator
 
 public class Request
 {
-    [JsonPropertyName("departing")] public bool Departing { get; set; }
+    [JsonPropertyName("endpoint")] public string Endpoint { get; set; }
 
-    [JsonPropertyName("url")] public string Url { get; set; }
+    [JsonPropertyName("departure")] public Departure Departure { get; set; }
 
-    [JsonPropertyName("departureAirport")] public DepartureAirport DepartureAirport { get; set; }
+    [JsonPropertyName("arrival")] public Arrival Arrival { get; set; }
 
-    [JsonPropertyName("arrivalAirport")] public ArrivalAirport ArrivalAirport { get; set; }
+    [JsonPropertyName("allowNearbyDepartures")]
+    public AllowNearbyDepartures AllowNearbyDepartures { get; set; }
 
-    [JsonPropertyName("date")] public Date Date { get; set; }
+    [JsonPropertyName("allowNearbyArrivals")]
+    public AllowNearbyArrivals AllowNearbyArrivals { get; set; }
+
+    [JsonPropertyName("includeAirports")] public IncludeAirports IncludeAirports { get; set; }
+
+    [JsonPropertyName("excludeAirports")] public ExcludeAirports ExcludeAirports { get; set; }
+
+    [JsonPropertyName("includeAirlines")] public IncludeAirlines IncludeAirlines { get; set; }
+
+    [JsonPropertyName("excludeAirlines")] public ExcludeAirlines ExcludeAirlines { get; set; }
+
+    [JsonPropertyName("numHours")] public NumHours NumHours { get; set; }
+
+    [JsonPropertyName("maxConnections")] public MaxConnections MaxConnections { get; set; }
+
+    [JsonPropertyName("includeSurface")] public IncludeSurface IncludeSurface { get; set; }
+
+    [JsonPropertyName("payloadType")] public PayloadType PayloadType { get; set; }
+
+    [JsonPropertyName("includeCodeshares")]
+    public IncludeCodeshares IncludeCodeshares { get; set; }
+
+    [JsonPropertyName("includeMultipleCarriers")]
+    public IncludeMultipleCarriers IncludeMultipleCarriers { get; set; }
+
+    [JsonPropertyName("maxResults")] public MaxResults MaxResults { get; set; }
 }
+
+public class Connection
+{
+    [JsonPropertyName("elapsedTime")] public int ElapsedTime { get; set; }
+
+    [JsonPropertyName("score")] public int Score { get; set; }
+
+    [JsonPropertyName("scheduledFlight")] public List<ScheduledFlight> ScheduledFlight { get; set; }
+}
+
+public class Departure
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
+public class Arrival
+{
+    [JsonPropertyName("requested")] public string Requested { get; set; }
+
+    [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
 
 public class ScheduledFlight
 {
@@ -214,4 +333,13 @@ public class FlightNumber
     [JsonPropertyName("requested")] public string Requested { get; set; }
 
     [JsonPropertyName("interpreted")] public string Interpreted { get; set; }
+}
+
+public class FlightSchedulesResponse
+{
+    [JsonPropertyName("request")] public Request Request { get; set; }
+
+    [JsonPropertyName("scheduledFlights")] public List<ScheduledFlight> ScheduledFlights { get; set; }
+
+    [JsonPropertyName("appendix")] public Appendix Appendix { get; set; }
 }

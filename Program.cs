@@ -23,10 +23,12 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Amazon;
 using DespatchWeb;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using DespatchWeb.Helpers;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,13 +88,19 @@ else
 
 
 builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
-
 builder.Services.AddSingleton<IAmazonS3>(serviceProvider =>
 {
+    var awsOptions = builder.Configuration.GetAWSOptions();
+    
+    Log.Information("AWS Region from config: {Region}", awsOptions.Region?.SystemName ?? "null");
+    
     var ssoCreds = LoadSsoCredentials("default");
-    return new AmazonS3Client(ssoCreds); 
+    return new AmazonS3Client(ssoCreds, new AmazonS3Config 
+    { 
+        RegionEndpoint = awsOptions.Region ?? RegionEndpoint.APSoutheast2 
+    });
 });
-builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+
 
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -11,6 +12,9 @@ using System.Net.Http;
 using System.Net.Mail;
 using System.Reflection;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -230,10 +234,9 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
 
             var bytes = stream.ToArray();
             var filename = $"Jobs {DateTime.Now:yyyyMMddHHmmssfff}.csv";
-            
-            var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+            var folder = DateTime.UtcNow.ToString("yyyyMM");
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-            var key = $"{tenantId}/Jobs-{timestamp}";
+            var key = $"Jobs/{folder}/Jobs-{timestamp}";
 
             using var ms = new MemoryStream(bytes);
             try
@@ -275,35 +278,103 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         if (file == null || string.IsNullOrWhiteSpace(file.FileName) || !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim().Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
             return BadRequest("Invalid file format.");
 
-        string folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["UploadDirectory"]);
-        folderPath = Path.Combine(folderPath, DateTime.Now.ToString("yyyyMM"));
-        // Create the folder if it doesn't exist
-        if (!Directory.Exists(folderPath))
-            Directory.CreateDirectory(folderPath);
+        var folder = DateTime.UtcNow.ToString("yyyyMM");
+        var fileExtension = file.FileName.Trim().ToLower().Substring(file.FileName.Trim().LastIndexOf("."));
 
-        string fileExtension = file.FileName.Trim().ToLower().Substring(file.FileName.Trim().LastIndexOf("."));
-        string filePath = Path.Combine(folderPath, $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}{fileExtension}");
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var byteArray = memoryStream.ToArray();
+
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        var key = $"Jobs/{folder}/Jobs-{timestamp}";
+
+        using var ms = new MemoryStream(byteArray);
+        try
+        {
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = Environment.GetEnvironmentVariable("S3Bucket").Replace("downloads", "uploads"),
+                Key = key,
+                ContentType = file.ContentType,
+                InputStream = ms
+            };
+            putRequest.Metadata.Add("FileName", file.FileName);
+            await s3Client.PutObjectAsync(putRequest);
+
+        }
+        catch (AmazonS3Exception e)
+        {
+            Log.Error(e, $"{nameof(UploadFile)} Error encountered when writing job file upload object to S3: ");
+
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, $"{nameof(UploadFile)} Error encountered when writing file upload object to S3: ");
+
+        }
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         string sResult = null;
-        using (FileStream stream = System.IO.File.Create(filePath))
-        {
-            await file.CopyToAsync(stream);
-            using (var reader = (fileExtension == ".csv" ? ExcelReaderFactory.CreateCsvReader(stream) : ExcelReaderFactory.CreateReader(stream)))
-            {
-                var output = reader.AsDataSet(new ExcelDataSetConfiguration()
-                {
-                    ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
-                    {
-                        UseHeaderRow = true
-                    }
-                }).Tables[0];  //Only ready from the first sheet
 
-                sResult = JsonConvert.SerializeObject(output);
+        using (var reader = (fileExtension == ".csv" ? ExcelReaderFactory.CreateCsvReader(memoryStream) : ExcelReaderFactory.CreateReader(memoryStream)))
+        {
+            var output = reader.AsDataSet(new ExcelDataSetConfiguration()
+            {
+                ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                {
+                    UseHeaderRow = true
+                }
+            }).Tables[0];  //Only ready from the first sheet
+
+            // Log the column names from the DataTable
+            Log.Debug("DataTable Columns: {@Columns}", output.Columns.Cast<DataColumn>().Select(c => c.ColumnName).ToList());
+
+
+            // Convert DataTable to a List of Dictionary
+            var rows = new List<Dictionary<string, object>>();
+            foreach (DataRow row in output.Rows)
+            {
+                var dict = new Dictionary<string, object>();
+                foreach (DataColumn col in output.Columns)
+                {
+                    // Handle DBNull conversion
+                    var value = row[col];
+                    dict[col.ColumnName] = value == DBNull.Value ? null : value;
+                }
+                rows.Add(dict);
             }
+
+            // Log the first row as a sample
+            if (rows.Any())
+            {
+                Log.Debug("Sample Row Data: {@FirstRow}", rows.First());
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            sResult = JsonSerializer.Serialize(rows, options);
+            Log.Debug("Serialized JSON (first 500 chars): {JsonSample}", sResult.Length > 500 ? sResult.Substring(0, 500) + "..." : sResult);
+
         }
 
-        var result = JsonConvert.DeserializeObject<List<JobManualPriceModel>>(sResult);
+
+        var deserializeOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        var result = JsonSerializer.Deserialize<List<JobManualPriceModel>>(sResult, deserializeOptions);
 
         if (!result.Any())
             return Ok();
@@ -1167,7 +1238,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             do
             {
                 response = await s3Client.ListObjectsV2Async(request);
-                    
+
                 result.AddRange(response.S3Objects);
                 request.ContinuationToken = response.NextContinuationToken;
             } while (response.IsTruncated);
@@ -1192,7 +1263,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
         var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
-        var key = $"{tenantId}/JobAttachments/{jobId}-";
+        var key = $"JobAttachments/{jobId}-";
         Log.Debug($"Get S3 Object List for {key}");
         var s3List = await SearchFilesByPatternAsync(bucketName, key);
         Log.Debug($"Found {s3List.Count} objects for {key}");
@@ -1207,7 +1278,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
             var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
-            var key = $"{tenantId}/JobAttachments/{jobId}-";
+            var key = $"JobAttachments/{jobId}-";
             Log.Debug($"Get S3 Object List for {key}");
             var s3List = await SearchFilesByPatternAsync(bucketName, key);
             foreach (var s3Object in s3List)
@@ -1235,8 +1306,8 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             }
         }
 
-             
-        
+
+
         catch (Exception e)
         {
             Log.Error(e, $"Error {nameof(GetAttachedFiles)}: {e.Message}");
@@ -1270,9 +1341,8 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
 
                 var byteArray = memoryStream.ToArray();
 
-                var tenantId = HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
                 var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-                var key = $"{tenantId}/JobAttachments/{request.JobId}-{timestamp}";
+                var key = $"JobAttachments/{request.JobId}-{timestamp}";
 
                 using var ms = new MemoryStream(byteArray);
                 try
@@ -1310,7 +1380,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         }
     }
 
-    
+
     public async Task<IActionResult> DownloadFile(int jobId, string key)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
@@ -1353,7 +1423,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         }
     }
 
-    
+
     public async Task<IActionResult> DeleteFile(int jobId, string key)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
