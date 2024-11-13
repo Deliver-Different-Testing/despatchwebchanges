@@ -62,6 +62,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 throw new ArgumentException("Flight carrier code and number must be provided.", nameof(flight));
 
             var job = await _context.TucJobs
+                .Include(j => j.Parent).ThenInclude(tucJob => tucJob.InverseParent)
                 .Where(j => j.UcjbId == jobId)
                 .FirstOrDefaultAsync();
 
@@ -81,6 +82,9 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
 
             // Move job to POD
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+            job.UcjbTime = flight.DepartureTime; // ToDo: Update this to the tenant timezone
+            job.Parent.InverseParent.Last().UcjbTime =
+                flight.ArrivalTime.AddMinutes(60); // ToDo: Update this to the tenant timezone
             await _context.SaveChangesAsync();
 
             await _context.TucJobNationwides.AddAsync(jobNationwide);

@@ -6,6 +6,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using RestSharp;
 using DateTime = System.DateTime;
 
@@ -13,33 +14,47 @@ namespace DespatchWeb.Services;
 
 public class FlightStatsService : IFlightStatsService
 {
+    private const string ScheduleUrl = "https://api.flightstats.com/flex/schedules/rest/v1";
     private const string ConnectionUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
     private const string AlertUrl = "https://api.flightstats.com/flex/alerts/rest/v1/";
     private readonly string _appId;
     private readonly string _appKey;
-    private readonly RestClient _client;
+    private readonly ILogger<FlightStatsService> _logger;
     private readonly string _webhookUrl;
 
-    public FlightStatsService(IConfiguration configuration)
+    public FlightStatsService(IConfiguration configuration, ILogger<FlightStatsService> logger)
     {
+        _logger = logger;
+        _logger.LogInformation("Initializing FlightStatsService");
+
         _appId = configuration?["FlightStatusApiKeys:AppId"];
         _appKey = configuration?["FlightStatusApiKeys:AppKey"];
         _webhookUrl = configuration?["FlightStatusApiKeys:WebhookUrl"];
-        _client = new RestClient(ConnectionUrl);
 
         if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey))
+        {
+            _logger.LogError(
+                "FlightStatsService initialization failed: AppId and/or AppKey missing from configuration");
             throw new ArgumentException("AppId and AppKey must be provided in the configuration.");
+        }
+
+        _logger.LogInformation("FlightStatsService initialized successfully");
     }
 
     public async Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTime departureTime,
         string departureAirportCode)
     {
+        _logger.LogInformation("Creating flight rule for flight {FlightNumber} departing from {Airport} at {Time}",
+            completeFlightNumber, departureAirportCode, departureTime);
+
         if (string.IsNullOrEmpty(departureAirportCode))
+        {
+            _logger.LogError("Cannot create flight rule: Departure airport code is null or empty");
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
+        }
 
         var alertClient = new RestClient(AlertUrl);
-
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day, _, _) = SplitDate(departureTime);
 
@@ -47,20 +62,22 @@ public class FlightStatsService : IFlightStatsService
             new RestRequest(
                 $"json/create/{carrierCode}/{flightNumber}/from/{departureAirportCode}/departing/{year}/{month}/{day}");
 
-        // Add query parameters
         request.AddQueryParameter("appId", _appId);
         request.AddQueryParameter("appKey", _appKey);
-
-        // Webhook specific
         request.AddQueryParameter("type", "JSON");
         request.AddQueryParameter("deliverTo", _webhookUrl);
 
-        // Execute the request
+        _logger.LogDebug("Sending alert creation request for carrier {Carrier}, flight {Flight}", carrierCode,
+            flightNumber);
         var response = await alertClient.ExecuteGetAsync<CreateAlertResponse>(request);
 
         if (!response.IsSuccessful || response.Data is null)
+        {
+            _logger.LogError("Failed to create flight rule: {ErrorMessage}", response.ErrorMessage);
             throw new Exception($"Failed to set up alert: {response.ErrorMessage}");
+        }
 
+        _logger.LogInformation("Successfully created flight rule with ID: {RuleId}", response.Data.Rule?.Id);
         return response.Data.Rule?.Id;
     }
 
@@ -72,15 +89,24 @@ public class FlightStatsService : IFlightStatsService
         string codeType = null,
         string[] extendedOptions = null)
     {
+        _logger.LogInformation("Retrieving flights from {DepartureAirport} to {ArrivalAirport}",
+            departureAirportCode, destinationAirportCode);
+
         if (string.IsNullOrEmpty(departureAirportCode))
+        {
+            _logger.LogError("Cannot retrieve flights: Departure airport code is null or empty");
             throw new ArgumentException("Departure airport code is required and cannot be null or empty.",
                 nameof(departureAirportCode));
+        }
 
         if (string.IsNullOrEmpty(destinationAirportCode))
+        {
+            _logger.LogError("Cannot retrieve flights: Destination airport code is null or empty");
             throw new ArgumentException("Arrival airport code is required and cannot be null or empty.",
                 nameof(destinationAirportCode));
+        }
 
-        // If no flight buffer provided, get flights from now
+        var connectionClient = new RestClient(ConnectionUrl);
         flightBuffer ??= DateTime.Now;
         var (year, month, day, hour, minute) = SplitDate(flightBuffer.Value);
 
@@ -88,21 +114,30 @@ public class FlightStatsService : IFlightStatsService
             new RestRequest(
                 $"json/firstflightout/{departureAirportCode}/to/{destinationAirportCode}/leaving_after/{year}/{month}/{day}/{hour}/{minute}");
 
-        // Add query parameters
         request.AddQueryParameter("appId", _appId);
         request.AddQueryParameter("appKey", _appKey);
 
-        if (!string.IsNullOrEmpty(codeType)) request.AddQueryParameter("codeType", codeType);
+        if (!string.IsNullOrEmpty(codeType))
+        {
+            _logger.LogDebug("Adding code type parameter: {CodeType}", codeType);
+            request.AddQueryParameter("codeType", codeType);
+        }
 
         if (extendedOptions is { Length: > 0 })
+        {
+            _logger.LogDebug("Adding extended options: {Options}", string.Join(", ", extendedOptions));
             foreach (var option in extendedOptions)
                 request.AddQueryParameter("extendedOptions", option);
+        }
 
-        // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightConnectionsResponse>(request);
+        _logger.LogDebug("Executing flight search request");
+        var response = await connectionClient.ExecuteGetAsync<FlightConnectionsResponse>(request);
 
         if (response.Data?.Connections == null)
+        {
+            _logger.LogWarning("No flights found for the specified route and time");
             return new List<FlightViewModel>();
+        }
 
         var flightOptions = response.Data.Connections
             .Where(conn => conn.ScheduledFlight.Any() && !conn.ScheduledFlight.First().IsCodeshare)
@@ -121,7 +156,7 @@ public class FlightStatsService : IFlightStatsService
                     DepartureAirport = firstFlight.DepartureAirportFsCode,
                     ArrivalAirport = lastFlight.ArrivalAirportFsCode,
                     Duration = lastFlight.ArrivalTime - firstFlight.DepartureTime,
-                    Stops = conn.ScheduledFlight.Count - 1, // Number of connections equals number of flights minus 1
+                    Stops = conn.ScheduledFlight.Count - 1,
                     Aircraft = response.Data.Appendix?.Equipments
                         .FirstOrDefault(e => e.Iata == firstFlight.FlightEquipmentIataCode)
                         ?.Name,
@@ -131,72 +166,88 @@ public class FlightStatsService : IFlightStatsService
                 };
             }).OrderBy(flight => flight.DepartureTime).ToList();
 
+        _logger.LogInformation("Retrieved {Count} flights for route {DepartureAirport} to {ArrivalAirport}",
+            flightOptions.Count, departureAirportCode, destinationAirportCode);
+
         return flightOptions;
     }
 
     public async Task<ScheduledFlight> GetFlightDetailsByFlightNumberAsync(string completeFlightNumber,
         DateTime departureTime)
     {
+        _logger.LogInformation("Retrieving details for flight {FlightNumber} departing at {Time}",
+            completeFlightNumber, departureTime);
+
         if (string.IsNullOrEmpty(completeFlightNumber))
+        {
+            _logger.LogError("Cannot retrieve flight details: Flight number is null or empty");
             throw new ArgumentException("Flight number is required and cannot be null or empty.",
                 nameof(completeFlightNumber));
+        }
 
+        var scheduleClient = new RestClient(ScheduleUrl);
         var (carrierCode, flightNumber) = SplitFlightCode(completeFlightNumber);
         var (year, month, day, _, _) = SplitDate(departureTime);
 
         var request = new RestRequest($"json/flight/{carrierCode}/{flightNumber}/departing/{year}/{month}/{day}");
-
-        // Add query parameters
         request.AddQueryParameter("appId", _appId);
         request.AddQueryParameter("appKey", _appKey);
 
-        // Execute the request
-        var response = await _client.ExecuteGetAsync<FlightSchedulesResponse>(request);
+        _logger.LogDebug("Executing flight details request for carrier {Carrier}, flight {Flight}",
+            carrierCode, flightNumber);
+        var response = await scheduleClient.ExecuteGetAsync<FlightSchedulesResponse>(request);
 
         if (!response.IsSuccessful)
+        {
+            _logger.LogError("Failed to retrieve flight details: {ErrorMessage}", response.ErrorMessage);
             throw new Exception($"Failed to retrieve flight information: {response.ErrorMessage}");
+        }
 
-        return response.Data.ScheduledFlights.FirstOrDefault();
+        var flight = response.Data.ScheduledFlights.FirstOrDefault();
+        _logger.LogInformation("Retrieved details for flight {FlightNumber}", completeFlightNumber);
+
+        return flight;
     }
 
     public async Task<Rule> GetAlertSubscriptionByIdAsync(string alertId)
     {
+        _logger.LogInformation("Retrieving alert subscription for ID: {AlertId}", alertId);
+
         var alertClient = new RestClient(AlertUrl);
-
-        var request =
-            new RestRequest($"json/get/{alertId}");
-
-        // Add query parameters
+        var request = new RestRequest($"json/get/{alertId}");
         request.AddQueryParameter("appId", _appId);
         request.AddQueryParameter("appKey", _appKey);
 
-        // Execute the request
         var response = await alertClient.ExecuteGetAsync<RetrieveAlertResponse>(request);
 
         if (!response.IsSuccessful || response.Data is null)
+        {
+            _logger.LogError("Failed to retrieve alert subscription: {ErrorMessage}", response.ErrorMessage);
             throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
+        }
 
+        _logger.LogInformation("Successfully retrieved alert subscription for ID: {AlertId}", alertId);
         return response.Data.Rule;
     }
 
     public async Task DeleteAlertByIdAsync(string alertId)
     {
+        _logger.LogInformation("Deleting alert with ID: {AlertId}", alertId);
+
         var alertClient = new RestClient(AlertUrl);
-
-        var request =
-            new RestRequest($"json/delete/{alertId}");
-
-        // Add query parameters
+        var request = new RestRequest($"json/delete/{alertId}");
         request.AddQueryParameter("appId", _appId);
         request.AddQueryParameter("appKey", _appKey);
 
-        // Execute the request
         var response = await alertClient.ExecuteGetAsync(request);
 
-        if (response.IsSuccessful)
-            return;
+        if (!response.IsSuccessful)
+        {
+            _logger.LogError("Failed to delete alert: {ErrorMessage}", response.ErrorMessage);
+            throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
+        }
 
-        throw new Exception($"Failed to retrieve alert information: {response.ErrorMessage}");
+        _logger.LogInformation("Successfully deleted alert with ID: {AlertId}", alertId);
     }
 
     private static (int year, int month, int day, int hour, int min) SplitDate(DateTime effectiveDateTime) =>
