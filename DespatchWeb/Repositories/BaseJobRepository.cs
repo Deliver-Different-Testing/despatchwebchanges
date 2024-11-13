@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
-using DespatchWeb.Helpers;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -245,13 +244,11 @@ public class BaseJobRepository
 
     private readonly DespatchContext _context;
     private readonly ILogger<BaseJobRepository> _logger;
-    private readonly DynamicQueryHelper _queryHelper;
 
     public BaseJobRepository(DespatchContext context, ILogger<BaseJobRepository> logger)
     {
         _context = context;
         _logger = logger;
-        _queryHelper = new DynamicQueryHelper(logger);
     }
 
     public async Task<T> Add<T>(T entity) where T : class
@@ -317,20 +314,6 @@ public class BaseJobRepository
             _logger.LogError(e, "Error occured getting jobs for dispatch page. Please see exception.");
             throw;
         }
-    }
-
-    private IQueryable<TucJob> ApplyViewWhereClauses(
-        IQueryable<TucJob> query,
-        List<string> viewFilters)
-    {
-        if (viewFilters is null || !viewFilters.Any())
-            return query;
-
-        // Apply filters
-        query = viewFilters.Aggregate(query,
-            (query, sqlConditions) => _queryHelper.AddSecureConditions(query, sqlConditions));
-
-        return query;
     }
 
     private static IQueryable<TucJob> ApplyDashboardSpecificFilters(
