@@ -119,7 +119,7 @@ public class JobViewModelMapperProfile : Profile
             .ForMember(dest => dest.RatedManually, opt => opt.MapFrom(src => src.RatedManually))
             .ForMember(dest => dest.Attention, opt => opt.MapFrom(src => src.UcjbAttention))
             .ForMember(dest => dest.Pedal, opt => opt.MapFrom(src => src.UcjbCbd))
-            .ForMember(dest => dest.Locked, opt => opt.MapFrom(src => src.Locked ?? false))
+            .ForMember(dest => dest.Locked, opt => opt.MapFrom(src => src.UcjbLocked ?? false))
             .ForMember(dest => dest.Invoiced, opt => opt.MapFrom(src => false))
             .ForMember(dest => dest.InternalStatusId, opt => opt.MapFrom(src => src.InternalStatus))
             .ForMember(dest => dest.Reprice, opt => opt.MapFrom(src => src.Reprice))

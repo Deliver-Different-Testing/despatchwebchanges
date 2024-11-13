@@ -22,6 +22,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime? LastModified { get; set; }
         public int? LocationId { get; set; }
 
+        public virtual TblBulkRegion Location { get; set; }
         public virtual ZoneGroup ZoneGroup { get; set; }
         public virtual ICollection<ZoneZip> ZoneZips { get; set; }
     }

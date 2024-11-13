@@ -272,6 +272,11 @@ public class BaseJobRepository
         try
         {
             var query = _context.TucJobs
+                .Include(j => j.TblBulkJobs)
+                .ThenInclude(b => b.Region)
+                .ThenInclude(r => r.ZoneNames)
+                .ThenInclude(za => za.ZoneGroup)
+                .ThenInclude(zg => zg.ClearListArea)
                 .Where(j => !j.UcjbVoid
                             && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
                             && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
@@ -306,6 +311,9 @@ public class BaseJobRepository
                     return new List<JobViewModel>();
             }
 
+            var sql = query.ToQueryString();
+            _logger.LogInformation($"Generated SQL: {sql}");
+
             return await query.Select(JobMapping).AsNoTracking().ToListAsync();
         }
         catch (Exception e)
@@ -324,9 +332,6 @@ public class BaseJobRepository
 
         query = viewFilters.Aggregate(query,
             (current, sqlConditions) => _queryHelper.AddDynamicConditions(current, sqlConditions));
-
-        var sql = query.ToQueryString();
-        _logger.LogInformation($"Generated SQL: {sql}");
 
         return query;
     }

@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucJob()
         {
             InverseParent = new HashSet<TucJob>();
+            TblBulkJobs = new HashSet<TblBulkJob>();
             TucEvents = new HashSet<TucEvent>();
             TucJobItems = new HashSet<TucJobItem>();
             TucJobNationwides = new HashSet<TucJobNationwide>();
@@ -246,6 +247,7 @@ namespace DespatchWeb.EntityClasses
         public virtual TucSuburb UcjbToNavigation { get; set; }
         public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
         public virtual ICollection<TucJob> InverseParent { get; set; }
+        public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
         public virtual ICollection<TucJobItem> TucJobItems { get; set; }
         public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }

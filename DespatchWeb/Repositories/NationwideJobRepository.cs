@@ -102,6 +102,7 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
                 ToAirport = j.ToAirport.AirportCode,
                 FromAirport = j.FromAirport.AirportCode
             })
+            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);

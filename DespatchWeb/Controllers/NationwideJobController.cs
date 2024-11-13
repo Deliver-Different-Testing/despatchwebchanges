@@ -144,8 +144,12 @@ public class NationwideJobController : Controller
                 flight = await _flightService.GetFlightDetailsByFlightNumberAsync(request.FlightNumber,
                     request.DepartureDate);
                 if (flight == null)
-                    return NotFound(
-                        $"Flight with number {request.FlightNumber} and departure date {request.DepartureDate:yyyy-MM-dd} not found.");
+                {
+                    var warning =
+                        $"Flight with number {request.FlightNumber} and departure date {request.DepartureDate:yyyy-MM-dd} not found.";
+                    _logger.LogInformation(warning);
+                    return StatusCode(500, warning);
+                }
             }
             catch (Exception ex)
             {

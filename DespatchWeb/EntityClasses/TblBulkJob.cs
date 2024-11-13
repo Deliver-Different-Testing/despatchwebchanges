@@ -113,6 +113,8 @@ namespace DespatchWeb.EntityClasses
         public string DeliveryAddressLine7 { get; set; }
         public string DeliveryAddressLine8 { get; set; }
 
+        public virtual TucJob Job { get; set; }
+        public virtual TblBulkRegion Region { get; set; }
         public virtual TucJobType SpeedNavigation { get; set; }
     }
 }

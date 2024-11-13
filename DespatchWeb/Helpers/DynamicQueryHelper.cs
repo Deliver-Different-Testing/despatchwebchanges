@@ -118,13 +118,11 @@ public class DynamicQueryHelper
             }
         }
 
-        if (propertyType == typeof(string))
-        {
-            return $"\"{value}\"";
-        }
-
-        // For numeric types, just return the value
-        return propertyType.IsValueType ? value : value;
+        return propertyType == typeof(string)
+            ? $"\"{value}\""
+            :
+            // For numeric types, just return the value
+            value;
     }
 
     private static bool IsComparisonOperator(string part) => part is "=" or ">" or "<" or ">=" or "<=" or "<>" or "!=";
