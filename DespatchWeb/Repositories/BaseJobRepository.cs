@@ -311,9 +311,11 @@ public class BaseJobRepository
     private async Task<List<int>> GetFilteredJobIds(List<string> viewFilters)
     {
         if (viewFilters?.Any() != true)
+        {
             return await _context.DeswebQryDespatchJobViewFilters
                 .Select(x => x.UcjbId)
                 .ToListAsync();
+        }
 
         var combinedFilters = string.Join(" AND ", viewFilters.Select(filter => $"({filter})"));
         return await _context.DeswebQryDespatchJobViewFilters
@@ -322,7 +324,7 @@ public class BaseJobRepository
             .ToListAsync();
     }
 
-    private IQueryable<TucJob> ApplyGeographicFilters(
+    private static IQueryable<TucJob> ApplyGeographicFilters(
         IQueryable<TucJob> query,
         ClearListEnvelopeViewModel clearListEnvelope)
     {
