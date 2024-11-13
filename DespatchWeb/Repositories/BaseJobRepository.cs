@@ -267,7 +267,7 @@ public class BaseJobRepository
     public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
         string order, string ascending, bool isInternal, string clientIds,
         List<string> viewFilters, NationwideWindowPanel? windowPane = null,
-        ClearListEnvelopeViewModel? clearListEnvelope = null)
+        ClearListEnvelopeViewModel clearListEnvelope = null)
     {
         try
         {
@@ -327,11 +327,12 @@ public class BaseJobRepository
         IQueryable<TucJob> query,
         List<string> viewFilters)
     {
-        if (query is null || viewFilters is null)
-            throw new ArgumentNullException(nameof(query));
+        if (viewFilters is null || !viewFilters.Any())
+            return query;
 
+        // Apply filters
         query = viewFilters.Aggregate(query,
-            (current, sqlConditions) => _queryHelper.AddDynamicConditions(current, sqlConditions));
+            (query, sqlConditions) => _queryHelper.AddSecureConditions(query, sqlConditions));
 
         return query;
     }
