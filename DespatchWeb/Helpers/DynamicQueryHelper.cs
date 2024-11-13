@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
 using Microsoft.Extensions.Logging;
 
@@ -9,23 +10,92 @@ namespace DespatchWeb.Helpers;
 
 public class DynamicQueryHelper
 {
-    private static readonly Dictionary<string, (string Path, Type Type)> AllowedFields = new()
-    {
-        { "BulkRegionId", ("TblBulkJobs.Any(Region.BulkRegionId", typeof(int)) },
-        { "UcclId", ("UcclId", typeof(int)) },
-        { "UcjtId", ("UcjtId", typeof(int)) },
-        { "IsParentJob", ("ParentId != null", typeof(bool)) },
-        { "ClearListAreaId", ("TblBulkJobs.Any(Region.ZoneNames.Any(ZoneGroup.ClearListAreaId", typeof(int)) },
-        { "ZoneGroupId", ("TblBulkJobs.Any(Region.ZoneNames.Any(ZoneGroupId", typeof(int)) },
-        { "RemoteJob", ("RemoteJob", typeof(bool)) },
-        { "VehicleSizeId", ("VehicleSizeId", typeof(int)) }
-    };
+    private static readonly Dictionary<string, (Expression<Func<TucJob, object>> Expression, Type Type)> AllowedFields =
+        new()
+        {
+            // Using FirstOrDefault() in dynamic LINQ requires different syntax
+            { "BulkRegionId", (j => j.TblBulkJobs.Select(b => b.RegionId).FirstOrDefault(), typeof(int)) },
+            { "ucclId", (j => j.UcjbClientId, typeof(int)) },
+            { "ucjsId", (j => j.UcjbStatus, typeof(int)) },
+            { "UcjtId", (j => j.UcjbSpeed, typeof(int)) },
+            { "IsParentJob", (j => j.ParentId != null, typeof(bool)) },
+            { "RemoteJob", (j => j.RemoteJob, typeof(bool)) },
+            { "VehicleSizeId", (j => j.UcjbSize, typeof(short)) },
+            {
+                "clearListAreaId",
+                (j => j.TblBulkJobs.Select(b => b.Region.ZoneNames.Select(z => z.ZoneGroup.ClearListAreaId).FirstOrDefault()).FirstOrDefault(),
+                    typeof(int))
+            }
+        };
 
     private readonly ILogger _logger;
 
     public DynamicQueryHelper(ILogger logger)
     {
         _logger = logger;
+    }
+
+    private static string GetPropertyPath<T>(Expression<Func<TucJob, T>> expression)
+    {
+        if (expression.Body is MethodCallExpression { Method.Name: "FirstOrDefault" } methodCallExpression)
+        {
+            // Handle FirstOrDefault calls
+            if (methodCallExpression.Arguments[0] is not MethodCallExpression selectExpression)
+                return GetExpressionPath(methodCallExpression.Arguments[0]);
+
+            var source = (methodCallExpression.Arguments[0] as MethodCallExpression)?.Arguments[0];
+            if (source == null) return GetExpressionPath(methodCallExpression.Arguments[0]);
+            var sourcePath = GetExpressionPath(source);
+            var selectPath = GetExpressionPath(selectExpression.Arguments[1]);
+            return $"{sourcePath}.Select({selectPath}).FirstOrDefault()";
+        }
+
+        var memberExpression = expression.Body as MemberExpression;
+        if (memberExpression != null) return GetMemberExpressionPath(memberExpression);
+
+        switch (expression.Body)
+        {
+            case UnaryExpression unaryExpression:
+                memberExpression = unaryExpression.Operand as MemberExpression;
+                break;
+            case BinaryExpression binaryExpression:
+                return expression.ToString().Split("=>")[1].Trim();
+        }
+
+        return GetMemberExpressionPath(memberExpression);
+    }
+
+    private static string GetExpressionPath(Expression expression)
+    {
+        return expression switch
+        {
+            MemberExpression memberExpression => GetMemberExpressionPath(memberExpression),
+            MethodCallExpression methodCallExpression => GetMethodCallPath(methodCallExpression),
+            LambdaExpression lambdaExpression => GetPropertyPath(lambdaExpression as Expression<Func<TucJob, object>>),
+            _ => expression.ToString()
+        };
+    }
+
+    private static string GetMethodCallPath(MethodCallExpression methodCall)
+    {
+        var methodName = methodCall.Method.Name;
+        var arguments = methodCall.Arguments.Select(GetExpressionPath);
+        return $"{GetExpressionPath(methodCall.Object)}.{methodName}({string.Join(", ", arguments)})";
+    }
+
+    private static string GetMemberExpressionPath(MemberExpression memberExpression)
+    {
+        var parts = new List<string>();
+        var current = memberExpression;
+
+        while (current != null)
+        {
+            parts.Add(current.Member.Name);
+            current = current.Expression as MemberExpression;
+        }
+
+        parts.Reverse();
+        return string.Join(".", parts);
     }
 
     public IQueryable<TucJob> AddSecureConditions(IQueryable<TucJob> query, string condition)
@@ -78,15 +148,13 @@ public class DynamicQueryHelper
 
             if (AllowedFields.TryGetValue(part, out var field))
             {
-                var (fieldPath, fieldType) = field;
+                var (expression, fieldType) = field;
                 var op = ParseOperator(parts[++i]);
                 var value = parts[++i];
 
-                var expression = fieldPath.Contains("Any(")
-                    ? BuildAnyExpression(fieldPath, op, value, fieldType)
-                    : BuildSimpleExpression(fieldPath, op, value, fieldType);
-
-                expressions.Add(expression);
+                var propertyPath = GetPropertyPath(expression);
+                string finalExpression = BuildExpression(propertyPath, op, value, fieldType);
+                expressions.Add(finalExpression);
             }
             else
             {
@@ -97,36 +165,21 @@ public class DynamicQueryHelper
         return string.Join(" ", expressions);
     }
 
-    private static string BuildAnyExpression(string fieldPath, AllowedOperator op, string value, Type fieldType)
-    {
-        var parsedValue = ParseValue(value, fieldType);
-        var operation = op switch
-        {
-            AllowedOperator.Equals => "==",
-            AllowedOperator.NotEquals => "!=",
-            _ => throw new ArgumentException($"Operator {op} not supported for collection fields")
-        };
-
-        // Extract the property path after Any(
-        var propertyPath = fieldPath[(fieldPath.IndexOf("Any(") + 4)..];
-        return $"{fieldPath.Split('.')[0]}.Any(x => x.{propertyPath} {operation} {parsedValue}))";
-    }
-
-    private static string BuildSimpleExpression(string fieldPath, AllowedOperator op, string value, Type fieldType)
+    private static string BuildExpression(string propertyPath, AllowedOperator op, string value, Type fieldType)
     {
         switch (op)
         {
             case AllowedOperator.IsNull:
-                return BuildNullCheck(fieldPath, true);
+                return $"{propertyPath} == null";
             case AllowedOperator.IsNotNull:
-                return BuildNullCheck(fieldPath, false);
+                return $"{propertyPath} != null";
             case AllowedOperator.In:
             case AllowedOperator.NotIn:
-                var values = ParseInValues(value);
-                return BuildInCondition(fieldPath, values, op == AllowedOperator.NotIn);
+                var values = ParseInValues(value, fieldType);
+                return BuildInCondition(propertyPath, values, op == AllowedOperator.NotIn);
             default:
                 var parsedValue = ParseValue(value, fieldType);
-                return BuildComparison(fieldPath, op, parsedValue);
+                return BuildComparison(propertyPath, op, parsedValue);
         }
     }
 
@@ -156,9 +209,6 @@ public class DynamicQueryHelper
         return $"{fieldPath} {operation} {value}";
     }
 
-    private static string BuildNullCheck(string fieldPath, bool isNull) =>
-        isNull ? $"{fieldPath} == null" : $"{fieldPath} != null";
-
     private static string BuildInCondition(string fieldPath, IEnumerable<string> values, bool notIn)
     {
         var valuesList = string.Join(", ", values);
@@ -180,19 +230,18 @@ public class DynamicQueryHelper
             };
         }
 
-        if (targetType != typeof(int)) return $"\"{value}\"";
-
+        if (targetType != typeof(int) && targetType != typeof(short)) return $"\"{value}\"";
         if (!int.TryParse(value, out _))
-            throw new ArgumentException($"Invalid integer value: {value}");
+            throw new ArgumentException($"Invalid numeric value: {value}");
         return value;
     }
 
-    private static List<string> ParseInValues(string values)
+    private static List<string> ParseInValues(string values, Type targetType)
     {
         values = values.Trim('(', ')');
         return values.Split(',')
             .Select(v => v.Trim())
-            .Select(v => ParseValue(v, typeof(int)))
+            .Select(v => ParseValue(v, targetType))
             .ToList();
     }
 

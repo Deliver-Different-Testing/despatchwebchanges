@@ -271,20 +271,16 @@ public class BaseJobRepository
     {
         try
         {
-            var query = _context.TucJobs
-                .Include(j => j.TblBulkJobs)
-                .ThenInclude(b => b.Region)
-                .ThenInclude(r => r.ZoneNames)
-                .ThenInclude(za => za.ZoneGroup)
-                .ThenInclude(zg => zg.ClearListArea)
-                .Where(j => !j.UcjbVoid
-                            && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
-                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
-                            && string.IsNullOrEmpty(j.UcjbPodname)
-                            && (j.UcjbComplTime == null || j.UcjbComplTime < DateTime.Now));
+            var combinedFilters = string.Join(" AND ", viewFilters.Select(x => $"({x})"));
+            var jobIds = await _context.DeswebQryDespatchJobViewFilters
+                .FromSqlRaw($"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}")
+                .Select(x => x.UcjbId)
+                .ToListAsync();
 
-            // Apply view clauses
-            query = ApplyViewWhereClauses(query, viewFilters);
+            if (!jobIds.Any()) return new List<JobViewModel>();
+
+            var query = _context.TucJobs
+                .Where(j => jobIds.Contains(j.UcjbId));
 
             // Apply clear list coordinates if provided
             if (clearListEnvelope is not null)

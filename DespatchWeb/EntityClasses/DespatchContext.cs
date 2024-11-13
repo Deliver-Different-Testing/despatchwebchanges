@@ -25,6 +25,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<DesQrySupportEventsCustomerAndCourier> DesQrySupportEventsCustomerAndCouriers { get; set; }
         public virtual DbSet<DespatchViewZoneGroup> DespatchViewZoneGroups { get; set; }
         public virtual DbSet<DeswebQryDespatch> DeswebQryDespatches { get; set; }
+        public virtual DbSet<DeswebQryDespatchJobViewFilter> DeswebQryDespatchJobViewFilters { get; set; }
         public virtual DbSet<Dfrntapp> Dfrntapps { get; set; }
         public virtual DbSet<DfrntappPage> DfrntappPages { get; set; }
         public virtual DbSet<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
@@ -708,6 +709,30 @@ namespace DespatchWeb.EntityClasses
                     .HasColumnName("UDStatus");
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
+            });
+
+            modelBuilder.Entity<DeswebQryDespatchJobViewFilter>(entity =>
+            {
+                entity.HasNoKey();
+
+                entity.ToView("DESWEB_qry_Despatch_Job_View_Filters");
+
+                entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+
+                entity.Property(e => e.ParentId).HasColumnName("ParentID");
+
+                entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
+
+                entity.Property(e => e.UcjbId).HasColumnName("ucjbID");
+
+                entity.Property(e => e.UcjbNumber)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasColumnName("ucjbNumber");
+
+                entity.Property(e => e.UcjsId).HasColumnName("ucjsId");
+
+                entity.Property(e => e.UcjtId).HasColumnName("ucjtId");
             });
 
             modelBuilder.Entity<Dfrntapp>(entity =>
