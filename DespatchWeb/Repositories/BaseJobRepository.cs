@@ -268,27 +268,10 @@ public class BaseJobRepository
     {
         try
         {
-            var combinedFilters = string.Join(" AND ", viewFilters.Select(x => $"({x})"));
-            var jobIds = await _context.DeswebQryDespatchJobViewFilters
-                .FromSqlRaw($"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}")
-                .Select(x => x.UcjbId)
-                .ToListAsync();
+            var query = await BuildBaseQuery(viewFilters);
+            if (query == null) return new List<JobViewModel>();
 
-            if (!jobIds.Any()) return new List<JobViewModel>();
-
-            var query = _context.TucJobs
-                .Where(j => jobIds.Contains(j.UcjbId));
-
-            // Apply clear list coordinates if provided
-            if (clearListEnvelope is not null)
-            {
-                query = query.Where(j =>
-                    j.DeliveryLatitude >= clearListEnvelope.MinimumLatitude &&
-                    j.DeliveryLatitude <= clearListEnvelope.MaximumLatitude &&
-                    j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude &&
-                    j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude
-                );
-            }
+            query = ApplyGeographicFilters(query, clearListEnvelope);
 
             switch (page)
             {
@@ -314,6 +297,43 @@ public class BaseJobRepository
             _logger.LogError(e, "Error occured getting jobs for dispatch page. Please see exception.");
             throw;
         }
+    }
+
+    private async Task<IQueryable<TucJob>> BuildBaseQuery(List<string> viewFilters)
+    {
+        var jobIds = await GetFilteredJobIds(viewFilters);
+        if (!jobIds.Any()) return null;
+
+        return _context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId));
+    }
+
+    private async Task<List<int>> GetFilteredJobIds(List<string> viewFilters)
+    {
+        if (viewFilters?.Any() != true)
+            return await _context.DeswebQryDespatchJobViewFilters
+                .Select(x => x.UcjbId)
+                .ToListAsync();
+
+        var combinedFilters = string.Join(" AND ", viewFilters.Select(filter => $"({filter})"));
+        return await _context.DeswebQryDespatchJobViewFilters
+            .FromSqlRaw($"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}")
+            .Select(x => x.UcjbId)
+            .ToListAsync();
+    }
+
+    private IQueryable<TucJob> ApplyGeographicFilters(
+        IQueryable<TucJob> query,
+        ClearListEnvelopeViewModel clearListEnvelope)
+    {
+        if (clearListEnvelope == null) return query;
+
+        return query.Where(j =>
+            j.DeliveryLatitude >= clearListEnvelope.MinimumLatitude &&
+            j.DeliveryLatitude <= clearListEnvelope.MaximumLatitude &&
+            j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude &&
+            j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude
+        );
     }
 
     private static IQueryable<TucJob> ApplyDashboardSpecificFilters(
