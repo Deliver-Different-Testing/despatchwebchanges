@@ -140,31 +140,7 @@
                                         {{isDeliveryJob() ? 'Agents' : 'Flights'}}
                                     </span>
                                 </span>
-                                <div ng-if="currentJob && box.name == 'jobDetail'">
-                                    <md-menu>
-                                        <md-button aria-label="internal stage" class="md-raised md-primary"
-                                                   ng-click="$mdMenu.open($event)">
-                                            <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
-                                            <span>{{getSelectedStatusText()}}
-                                            <md-icon md-font-set="material-symbols-outlined">swap_horiz</md-icon>
-                                            </span>
-                                        </md-button>
-                                        <md-menu-content class="md-dense">
-                                            <md-menu-item ng-repeat="status in internalStatusOptions">
-                                                <md-button ng-click="setInternalStatus(status.id, currentJob)">
-                                                    {{status.text}}
-                                                </md-button>
-                                            </md-menu-item>
-                                        </md-menu-content>
-                                    </md-menu>
 
-                                    <md-button class="md-icon-button md-raised md-primary" ng-click="!currentJob.locked && currentJob.internalStatusID !=1
-                             && currentJob.internalStatusID !=4
-                             && jdSvc.editFollowUpTime($event, currentJob)">
-                                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
-                                        <md-tooltip md-direction="bottom">Follow Up</md-tooltip>
-                                    </md-button>
-                                </div>
                                 <md-button class="md-icon-button md-primary" ng-click="getData()"
                                            ng-if="boxes[box.name].showRefresh">
                                     <md-icon md-font-set="material-symbols-outlined">refresh</md-icon>
@@ -377,6 +353,32 @@
                                             POD page.
                                         </md-not-found>
                                     </md-autocomplete>
+                                </div>
+
+                                <div ng-if="currentJob && box.name == 'jobDetail'">
+                                    <md-button class="md-icon-button md-raised md-primary" ng-click="!currentJob.locked && currentJob.internalStatusID !=1
+                             && currentJob.internalStatusID !=4
+                             && jdSvc.editFollowUpTime($event, currentJob)">
+                                        <md-icon md-font-set="material-symbols-outlined">schedule</md-icon>
+                                        <md-tooltip md-direction="bottom">Follow Up</md-tooltip>
+                                    </md-button>
+
+                                    <md-menu>
+                                        <md-button aria-label="internal stage" class="md-raised md-primary"
+                                                   ng-click="$mdMenu.open($event)">
+                                            <md-tooltip md-direction="bottom">Modify Status</md-tooltip>
+                                            <span>{{getSelectedStatusText()}}
+                                            <md-icon md-font-set="material-symbols-outlined">swap_horiz</md-icon>
+                                            </span>
+                                        </md-button>
+                                        <md-menu-content class="md-dense">
+                                            <md-menu-item ng-repeat="status in internalStatusOptions">
+                                                <md-button ng-click="setInternalStatus(status.id, currentJob)">
+                                                    {{status.text}}
+                                                </md-button>
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
                                 </div>
 
                                 <div class="box-handle md-icon-button">

@@ -40,8 +40,15 @@ class AddNotesDialogController {
         this._job = job;
         /** @type {string} */
         this._fieldName = fieldName;
-        /** @type {string} */
-        this.note = "";
+
+        // Notes field
+        if (this._fieldName === "Note") {
+            this.note = job.internalNotes;
+        } else if (this._fieldName === "ConNote") {
+            this.note = job.conNote;
+        } else {
+            this.note = "";
+        }
     }
 
     /**
@@ -52,8 +59,12 @@ class AddNotesDialogController {
     async submit(note) {
         try {
             this.isLoading = true;
-            if (this._fieldName === "Notes") {
+            if (this._fieldName === "Note") {
                 await this.addJobNote(this._job.id, note, FirstName, this._job.preBook, this._job.bulkJob);
+                this._job.internalNotes = note;
+            } else if (this._fieldName === "ConNote") {
+                await this._dispatchData.addConNote(this._job.id, note);
+                this._job.conNote = note;
             } else {
                 // Other type of notes
                 const callData = {
@@ -64,10 +75,10 @@ class AddNotesDialogController {
                 };
 
                 await this.updateJobDetail(this._job.bulkJob, callData.jobID, callData.field, callData.value, this._job.charge, FirstName, ContactID, this._job.preBook);
+                this._job[this._fieldName] = note;
             }
 
-            this._job[this._fieldName] = note + '\n' + this._job[this._fieldName];
-            this._toastrService.showSuccessToast("Added Note To Job");
+            this._toastrService.showSuccessToast("Note saved");
             this._$mdDialog.hide(this._job);
         } catch (error) {
             this._toastrService.showErrorToast(error.message);

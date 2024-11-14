@@ -161,20 +161,18 @@
                             <div class="disabled value">{{jdSvc.currentJob.statusName}}</div>
                         </div>
 
-                        <!--  <div class="field" ng-disabled="true"
-                               ng-click="!jdSvc.currentJob.locked && jdSvc.contactClick($event, jdSvc.currentJob)"
-                               ng-if="!jdSvc.currentJob.bulkJob" ng-disabled="true">
+                        <div class="field" ng-if="!jdSvc.currentJob.bulkJob">
                               <label ng-class="disabled">Booked
-                                  by Contact</label>&nbsp; <i class="material-symbols-outlined job-table-icon"
+                                  by Contact</label>&nbsp;
+                            <i class="material-symbols-outlined job-table-icon"
                                                               ng-class="disabled"
-                                                              title="Show Client Contact List"
-                                                              ng-click="!jdSvc.currentJob.locked && jdSvc.getClientContactDetail($event, jdSvc.currentJob)"
-                                                              ng-disabled="true">info</i>
-                              <div class="value" ng-class="disabled"
-                                   ng-disabled="true">
+                               title="Show Client Contact List">
+                                info
+                            </i>
+                            <div class="value" ng-class="disabled">
                                   {{jdSvc.currentJob.contactName}}
                               </div>
-                          </div>-->
+                        </div>
 
                         <div class="field">
                             <label ng-class="disabled">Logged-in Contact</label>

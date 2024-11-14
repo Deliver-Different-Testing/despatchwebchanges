@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
-using DespatchWeb.Helpers;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -112,9 +111,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         // Notes
         ClientNotes = j.UcjbClient != null ? j.UcjbClient.UcclNotes : null,
         InternalNotes = j.UcjbNotes,
-        ConNote = j.TucJobNationwides
-            .Select(nj => nj.UcnwConNote)
-            .FirstOrDefault(),
+        ConNote = j.Connote,
 
         // Suburb information
         From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
@@ -262,30 +259,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
         string order, string ascending, bool isInternal, string clientIds,
         List<string> viewFilters, NationwideWindowPanel? windowPane = null,
-        ClearListEnvelopeViewModel? clearListEnvelope = null)
+        ClearListEnvelopeViewModel clearListEnvelope = null)
     {
         try
         {
-            var query = Context.TucJobs
-                .Where(j => !j.UcjbVoid
-                            && (j.JobRelationshipType.DisplayDespatch == true || j.JobRelationshipTypeId == 10)
-                            && (j.DisplayInDespatch == null || j.DisplayInDespatch == true)
-                            && string.IsNullOrEmpty(j.UcjbPodname)
-                            && (j.UcjbComplTime == null || j.UcjbComplTime < DateTime.Now));
+            var query = await BuildBaseQuery(viewFilters);
+            if (query == null) return new List<JobViewModel>();
 
-            // Apply view clauses
-            query = ApplyViewWhereClauses(query, viewFilters);
-
-            // Apply clear list coordinates if provided
-            if (clearListEnvelope is not null)
-            {
-                query = query.Where(j =>
-                    j.DeliveryLatitude >= clearListEnvelope.MinimumLatitude &&
-                    j.DeliveryLatitude <= clearListEnvelope.MaximumLatitude &&
-                    j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude &&
-                    j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude
-                );
-            }
+            query = ApplyGeographicFilters(query, clearListEnvelope);
 
             switch (page)
             {
@@ -301,6 +282,9 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                     return new List<JobViewModel>();
             }
 
+            var sql = query.ToQueryString();
+            _logger.LogInformation($"Generated SQL: {sql}");
+
             return await query.Select(JobMapping).AsNoTracking().ToListAsync();
         }
         catch (Exception e)
@@ -310,20 +294,43 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         }
     }
 
-    private IQueryable<TucJob> ApplyViewWhereClauses(
-        IQueryable<TucJob> query,
-        List<string> viewFilters)
+    private async Task<IQueryable<TucJob>> BuildBaseQuery(List<string> viewFilters)
     {
-        if (query is null || viewFilters is null)
-            throw new ArgumentNullException(nameof(query));
+        var jobIds = await GetFilteredJobIds(viewFilters);
+        if (!jobIds.Any()) return null;
 
-        query = viewFilters.Aggregate(query,
-            (current, sqlConditions) => queryHelper.AddDynamicConditions(current, sqlConditions));
+        return Context.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId));
+    }
 
-        var sql = query.ToQueryString();
-        Log.Information($"Generated SQL: {sql}");
+    private async Task<List<int>> GetFilteredJobIds(List<string> viewFilters)
+    {
+        if (viewFilters?.Any() != true)
+        {
+            return await Context.DeswebQryDespatchJobViewFilters
+                .Select(x => x.UcjbId)
+                .ToListAsync();
+        }
 
-        return query;
+        var combinedFilters = string.Join(" AND ", viewFilters.Select(filter => $"({filter})"));
+        return await Context.DeswebQryDespatchJobViewFilters
+            .FromSqlRaw($"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}")
+            .Select(x => x.UcjbId)
+            .ToListAsync();
+    }
+
+    private static IQueryable<TucJob> ApplyGeographicFilters(
+        IQueryable<TucJob> query,
+        ClearListEnvelopeViewModel clearListEnvelope)
+    {
+        if (clearListEnvelope == null) return query;
+
+        return query.Where(j =>
+            j.DeliveryLatitude >= clearListEnvelope.MinimumLatitude &&
+            j.DeliveryLatitude <= clearListEnvelope.MaximumLatitude &&
+            j.DeliveryLongitude >= clearListEnvelope.MinimumLongitude &&
+            j.DeliveryLongitude <= clearListEnvelope.MaximumLongitude
+        );
     }
 
     private static IQueryable<TucJob> ApplyDashboardSpecificFilters(
@@ -667,6 +674,100 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
         catch (Exception e)
         {
             Log.Error(e, "Error occurred getting job {JobId}. Please see exception.", jobId);
+            throw;
+        }
+    }
+
+    public async Task UpdateJobNoteAsync(int jobId, string note)
+    {
+        try
+        {
+            _logger.LogInformation("Starting note update for job {JobId}", jobId);
+
+            var job = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .FirstOrDefaultAsync();
+
+            if (job == null)
+            {
+                _logger.LogWarning("Job {JobId} not found", jobId);
+                throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            }
+
+            _logger.LogDebug("Updating note for job {JobId}. Previous note length: {PreviousLength}",
+                jobId,
+                job.InternalNotes?.Length ?? 0);
+
+            job.UcjbNotes = note;
+
+            await Context.SaveChangesAsync();
+            _logger.LogInformation("Successfully updated note for job {JobId}. New note length: {NewLength}",
+                jobId,
+                note?.Length ?? 0);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogError(ex, "Job not found when updating note for job {JobId}", jobId);
+            throw;
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Database error occurred while updating note for job {JobId}", jobId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error updating note for job {JobId}", jobId);
+            throw;
+        }
+    }
+
+    public async Task UpdateJobConnoteAsync(int jobId, string conNote)
+    {
+        try
+        {
+            _logger.LogInformation("Starting connote update for job {JobId} with value {Connote}", jobId, conNote);
+
+            // Get both the job and its possible children in one query
+            var jobFamily = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId || j.ParentId == jobId)
+                .ToListAsync();
+
+            var mainJob = jobFamily.FirstOrDefault(j => j.UcjbId == jobId);
+
+            if (mainJob == null)
+            {
+                _logger.LogWarning("Job {JobId} not found", jobId);
+                throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            }
+
+            // If this is a child job, get the whole family using parent's ID
+            if (mainJob.ParentId.HasValue)
+            {
+                _logger.LogInformation("Job {JobId} is a child job. Using parent job {ParentId}", jobId,
+                    mainJob.ParentId);
+
+                jobFamily = await Context.TucJobs
+                    .Where(j => j.UcjbId == mainJob.ParentId || j.ParentId == mainJob.ParentId)
+                    .ToListAsync();
+            }
+
+            // Update all jobs in the family
+            foreach (var job in jobFamily)
+            {
+                job.Connote = conNote;
+            }
+
+            _logger.LogInformation("Updating connote for job family. Parent: {ParentId}, Total Jobs: {TotalJobs}",
+                mainJob.ParentId ?? jobId,
+                jobFamily.Count);
+
+            await Context.SaveChangesAsync();
+            _logger.LogInformation("Successfully completed connote update for job family {JobId}", jobId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating connote for job {JobId}", jobId);
             throw;
         }
     }

@@ -461,12 +461,16 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
     {
         if (data.Any(d =>
-        d.Id <= 0
-        ||
-        (d.Amount > 0 && (d.Ppd < 0 || d.Fuel < 0 || d.CourierPayment < 0 || d.CourierFuel < 0 || d.CourierBonus < 0 || d.Amount < (d.Ppd + d.Fuel) || d.Amount < (d.CourierPayment + d.CourierFuel + d.CourierBonus)))
-        ||
-        (d.Amount < 0 && (d.Ppd > 0 || d.Fuel > 0 || d.CourierPayment > 0 || d.CourierFuel > 0 || d.CourierBonus > 0 || d.Amount > (d.Ppd + d.Fuel) || d.Amount > (d.CourierPayment + d.CourierFuel + d.CourierBonus)))
-        ))
+                d.Id <= 0
+                ||
+                (d.Amount > 0 && (d.Ppd < 0 || d.Fuel < 0 || d.CourierPayment < 0 || d.CourierFuel < 0 ||
+                                  d.CourierBonus < 0 || d.Amount < (d.Ppd + d.Fuel) ||
+                                  d.Amount < (d.CourierPayment + d.CourierFuel + d.CourierBonus)))
+                ||
+                (d.Amount < 0 && (d.Ppd > 0 || d.Fuel > 0 || d.CourierPayment > 0 || d.CourierFuel > 0 ||
+                                  d.CourierBonus > 0 || d.Amount > (d.Ppd + d.Fuel) ||
+                                  d.Amount > (d.CourierPayment + d.CourierFuel + d.CourierBonus)))
+            ))
             throw new ArgumentException("Invalid Values.");
 
         var jobIds = data.Select(j => j.Id).Distinct().ToList();
@@ -495,7 +499,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
         foreach (var d in data)
         {
-            dynamic match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id) ?? (dynamic)dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+            dynamic match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id) ??
+                            (dynamic)dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
 
             if (match == null)
                 throw new ArgumentException("Id not found.", "Id");
@@ -511,15 +516,22 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
 
         var parentJobs = dbData
-            .Select(j => new { j.UcjbId, ParentId = j.ParentId ?? j.UcjbId, j.UcjbAmount, j.FuelSurchargeAmount, j.PpdexclusiveAmount })
-            .Concat(dbDataArchive.Select(j => new { j.UcjbId, ParentId = j.ParentId ?? j.UcjbId, j.UcjbAmount, j.FuelSurchargeAmount, j.PpdexclusiveAmount }))
+            .Select(j => new
+            {
+                j.UcjbId, ParentId = j.ParentId ?? j.UcjbId, j.UcjbAmount, j.FuelSurchargeAmount, j.PpdexclusiveAmount
+            })
+            .Concat(dbDataArchive.Select(j => new
+            {
+                j.UcjbId, ParentId = j.ParentId ?? j.UcjbId, j.UcjbAmount, j.FuelSurchargeAmount, j.PpdexclusiveAmount
+            }))
             .GroupBy(j => j.ParentId)
             .Where(x => x.Count() > 1)
             .ToList();
 
         foreach (var x in parentJobs)
         {
-            dynamic parentJob = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key) ?? (dynamic)dbDataArchive.First(j => j.UcjbId == x.Key);
+            dynamic parentJob = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key) ??
+                                (dynamic)dbDataArchive.First(j => j.UcjbId == x.Key);
             var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
 
             if (!childJobs.Any())
@@ -528,7 +540,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             parentJob.UcjbAmount = childJobs.Sum(j => j.UcjbAmount ?? 0);
             parentJob.FuelSurchargeAmount = childJobs.Sum(j => j.FuelSurchargeAmount);
             parentJob.PpdexclusiveAmount = childJobs.Sum(j => j.PpdexclusiveAmount ?? 0);
-            parentJob.RawBaseAmount = parentJob.UcjbAmount - parentJob.FuelSurchargeAmount - parentJob.PpdexclusiveAmount;
+            parentJob.RawBaseAmount =
+                parentJob.UcjbAmount - parentJob.FuelSurchargeAmount - parentJob.PpdexclusiveAmount;
         }
 
         foreach (var d in dbData)

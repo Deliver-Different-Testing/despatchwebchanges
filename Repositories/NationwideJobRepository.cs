@@ -60,6 +60,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 throw new ArgumentException("Flight carrier code and number must be provided.", nameof(flight));
 
             var job = await Context.TucJobs
+                .Include(j => j.Parent).ThenInclude(tucJob => tucJob.InverseParent)
                 .Where(j => j.UcjbId == jobId)
                 .FirstOrDefaultAsync();
 
@@ -79,12 +80,13 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 
             // First operation - Update job status
             job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+            job.UcjbTime = flight.DepartureTime; // ToDo: Update this to the tenant timezone
+            job.Parent.InverseParent.Last().UcjbTime =
+                flight.ArrivalTime.AddMinutes(60); // ToDo: Update this to the tenant timezone
             await Context.SaveChangesAsync();
 
-            // Second operation - Add nationwide job
             await Context.TucJobNationwides.AddAsync(jobNationwide);
             await Context.SaveChangesAsync();
-            
         }
         catch (Exception e)
         {
@@ -102,6 +104,7 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
                 ToAirport = j.ToAirport.AirportCode,
                 FromAirport = j.FromAirport.AirportCode
             })
+            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return (airportCodes?.ToAirport, airportCodes?.FromAirport);

@@ -2438,7 +2438,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 console.log('Assigning to job');
 
                 // Store the previous internal status ID before updating
-                const previousInternalStatusId = job.internalStatusId;
+                const previousInternalStatusId = job.internalStatusId ?? 1;
 
                 // Determine which lists need to be refreshed based on previous status
                 const listsToRefresh = new Set([$scope.jobDataType.POD]); // Always refresh POD list
