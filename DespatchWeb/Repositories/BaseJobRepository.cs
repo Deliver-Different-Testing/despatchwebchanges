@@ -681,7 +681,7 @@ public class BaseJobRepository
         }
     }
 
-    public async Task UpdateJobNote(int jobId, string note)
+    public async Task UpdateJobNoteAsync(int jobId, string note)
     {
         try
         {
@@ -701,7 +701,7 @@ public class BaseJobRepository
                 jobId,
                 job.InternalNotes?.Length ?? 0);
 
-            job.InternalNotes = note;
+            job.UcjbNotes = note;
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Successfully updated note for job {JobId}. New note length: {NewLength}",
