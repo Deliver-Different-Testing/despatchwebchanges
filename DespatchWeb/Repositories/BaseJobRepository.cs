@@ -107,9 +107,7 @@ public class BaseJobRepository
         // Notes
         ClientNotes = j.UcjbClient != null ? j.UcjbClient.UcclNotes : null,
         InternalNotes = j.UcjbNotes,
-        ConNote = j.TucJobNationwides
-            .Select(nj => nj.UcnwConNote)
-            .FirstOrDefault(),
+        ConNote = j.Connote,
 
         // Suburb information
         From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
@@ -683,44 +681,96 @@ public class BaseJobRepository
         }
     }
 
-    public async Task UpdateJobConnoteAsync(int parentJobId, string newConnote)
+    public async Task UpdateJobNote(int jobId, string note)
     {
         try
         {
-            _logger.LogInformation("Starting connote update for job {JobId} with value {Connote}", parentJobId,
-                newConnote);
+            _logger.LogInformation("Starting note update for job {JobId}", jobId);
 
-            // Update the main job
-            var mainJob = await _context.TucJobs
-                .FirstOrDefaultAsync(j => j.UcjbId == parentJobId);
+            var job = await _context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .FirstOrDefaultAsync();
 
-            if (mainJob == null)
+            if (job == null)
             {
-                _logger.LogWarning("Job {JobId} not found", parentJobId);
-                throw new KeyNotFoundException($"Job with ID {parentJobId} not found");
+                _logger.LogWarning("Job {JobId} not found", jobId);
+                throw new KeyNotFoundException($"Job with ID {jobId} not found");
             }
 
-            mainJob.Connote = newConnote;
-            _logger.LogDebug("Updated main job {JobId} connote", parentJobId);
+            _logger.LogDebug("Updating note for job {JobId}. Previous note length: {PreviousLength}",
+                jobId,
+                job.InternalNotes?.Length ?? 0);
 
-            // Update all child jobs
-            var childJobs = await _context.TucJobs
-                .Where(j => j.ParentId == parentJobId)
-                .ToListAsync();
-
-            foreach (var childJob in childJobs)
-            {
-                childJob.Connote = newConnote;
-            }
-
-            _logger.LogInformation("Updated {ChildCount} child jobs for parent {JobId}", childJobs.Count, parentJobId);
+            job.InternalNotes = note;
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Successfully completed connote update for job family {JobId}", parentJobId);
+            _logger.LogInformation("Successfully updated note for job {JobId}. New note length: {NewLength}",
+                jobId,
+                note?.Length ?? 0);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogError(ex, "Job not found when updating note for job {JobId}", jobId);
+            throw;
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Database error occurred while updating note for job {JobId}", jobId);
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating connote for job {JobId}", parentJobId);
+            _logger.LogError(ex, "Unexpected error updating note for job {JobId}", jobId);
+            throw;
+        }
+    }
+
+    public async Task UpdateJobConnoteAsync(int jobId, string conNote)
+    {
+        try
+        {
+            _logger.LogInformation("Starting connote update for job {JobId} with value {Connote}", jobId, conNote);
+
+            // Get both the job and its possible children in one query
+            var jobFamily = await _context.TucJobs
+                .Where(j => j.UcjbId == jobId || j.ParentId == jobId)
+                .ToListAsync();
+
+            var mainJob = jobFamily.FirstOrDefault(j => j.UcjbId == jobId);
+
+            if (mainJob == null)
+            {
+                _logger.LogWarning("Job {JobId} not found", jobId);
+                throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            }
+
+            // If this is a child job, get the whole family using parent's ID
+            if (mainJob.ParentId.HasValue)
+            {
+                _logger.LogInformation("Job {JobId} is a child job. Using parent job {ParentId}", jobId,
+                    mainJob.ParentId);
+
+                jobFamily = await _context.TucJobs
+                    .Where(j => j.UcjbId == mainJob.ParentId || j.ParentId == mainJob.ParentId)
+                    .ToListAsync();
+            }
+
+            // Update all jobs in the family
+            foreach (var job in jobFamily)
+            {
+                job.Connote = conNote;
+            }
+
+            _logger.LogInformation("Updating connote for job family. Parent: {ParentId}, Total Jobs: {TotalJobs}",
+                mainJob.ParentId ?? jobId,
+                jobFamily.Count);
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Successfully completed connote update for job family {JobId}", jobId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating connote for job {JobId}", jobId);
             throw;
         }
     }

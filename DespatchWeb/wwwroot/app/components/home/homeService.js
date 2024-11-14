@@ -21,8 +21,16 @@ class DispatchData {
      * @param {boolean} preBook
      */
     async addNote(jobId, note, despatcherName, preBook) {
-        const method = preBook ? 'job/AddJobBookingNote' : 'job/AddNote';
-        await this._$http.post(method + '?jobId=' + jobId + '&note=' + note + '&despatcher=' + despatcherName);
+        const method = preBook ? 'job/AddJobBookingNote' : 'job/UpdateNote';
+        await this._$http.post(method + '?jobId=' + jobId + '&note=' + note);
+    }
+
+    /**
+     * @param {number} jobId
+     * @param {string} conNote
+     */
+    async addConNote(jobId, conNote) {
+        await this._$http.post('job/UpdateConnote?jobId= ' + jobId + '&conNote=' + conNote);
     }
 
     /**

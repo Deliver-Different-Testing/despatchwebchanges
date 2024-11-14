@@ -155,5 +155,6 @@ public interface IJobRepository
 
     Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
 
-    Task UpdateJobConnoteAsync(int parentJobId, string newConnote);
+    Task UpdateJobConnoteAsync(int jobId, string conNote);
+    Task UpdateJobNoteAsync(int jobId, string note);
 }
