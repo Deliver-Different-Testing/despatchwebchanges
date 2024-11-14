@@ -1,6 +1,7 @@
 <md-dialog aria-label="{{ ctrl.title }}" id="{{ ctrl.id }}">
     <md-toolbar>
         <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">edit_note</md-icon>
             <h2>Add {{ ctrl.title }}</h2>
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
@@ -19,8 +20,8 @@
                 <!-- Text Area -->
                 <md-input-container class="md-block" flex-gt-sm>
                     <label for="notes">{{ ctrl.title }}</label>
-                    <textarea id="notes" md-maxlength="150" md-min-length="1" md-select-on-focus ng-model="ctrl.note"
-                              rows="5"></textarea>
+                    <textarea id="notes" md-min-length="1" md-select-on-focus ng-model="ctrl.note"
+                              rows="6"></textarea>
                 </md-input-container>
 
             </form>

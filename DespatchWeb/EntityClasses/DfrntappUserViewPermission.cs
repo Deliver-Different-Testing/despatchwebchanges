@@ -7,11 +7,11 @@ namespace DespatchWeb.EntityClasses
 {
     public partial class DfrntappUserViewPermission
     {
-        public int UserViewPermissionId { get; set; }
         public int? UserId { get; set; }
         public int? ViewId { get; set; }
         public bool? IsVisible { get; set; }
         public int? SortOrder { get; set; }
+        public int UserViewPermissionId { get; set; }
 
         public virtual TucStaff User { get; set; }
         public virtual TblDespatchView View { get; set; }

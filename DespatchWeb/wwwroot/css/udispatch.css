@@ -1824,4 +1824,8 @@ md-list-item:not(.selected):hover {
     padding: 16px;
   }
 }
+
+.popup-icon {
+    margin-right: 8px;
+}
 /*# sourceMappingURL=udispatch.css.map */

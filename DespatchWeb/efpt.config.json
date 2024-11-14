@@ -47,10 +47,10 @@
          "ObjectType": 0
       },
       {
-        "Name": "[dbo].[DFRNTUserPageLayouts]",
-        "ObjectType": 0
+         "Name": "[dbo].[DFRNTUserPageLayouts]",
+         "ObjectType": 0
       },
-     {
+      {
          "Name": "[dbo].[GlobalAddressMapping]",
          "ObjectType": 0
       },
@@ -60,6 +60,10 @@
       },
       {
          "Name": "[dbo].[tblBulkJob]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblBulkRegion]",
          "ObjectType": 0
       },
       {
@@ -239,6 +243,10 @@
          "ObjectType": 3
       },
       {
+        "Name": "[dbo].[DESWEB_qry_Despatch_Job_View_Filters]",
+        "ObjectType": 3
+      },
+     {
          "Name": "[dbo].[DESWEB_qryDespatch]",
          "ObjectType": 3
       },

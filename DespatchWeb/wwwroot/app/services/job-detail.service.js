@@ -376,7 +376,6 @@ class JobDetailService {
         });
     }
 
-
     /**
      * Shows a dialog for editing a date
      * @param {Object} $event - The triggering event

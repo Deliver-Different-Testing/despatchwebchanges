@@ -274,7 +274,9 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> Upload(IFormFile file)
     {
-        if (file == null || string.IsNullOrWhiteSpace(file.FileName) || !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim().Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
+        if (file == null || string.IsNullOrWhiteSpace(file.FileName) ||
+            !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim()
+                .Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
             return BadRequest("Invalid file format.");
 
         string folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["UploadDirectory"]);
@@ -291,7 +293,9 @@ public class JobController : Controller
         using (FileStream stream = System.IO.File.Create(filePath))
         {
             await file.CopyToAsync(stream);
-            using (var reader = (fileExtension == ".csv" ? ExcelReaderFactory.CreateCsvReader(stream) : ExcelReaderFactory.CreateReader(stream)))
+            using (var reader = (fileExtension == ".csv"
+                       ? ExcelReaderFactory.CreateCsvReader(stream)
+                       : ExcelReaderFactory.CreateReader(stream)))
             {
                 var output = reader.AsDataSet(new ExcelDataSetConfiguration()
                 {
@@ -299,7 +303,7 @@ public class JobController : Controller
                     {
                         UseHeaderRow = true
                     }
-                }).Tables[0];  //Only ready from the first sheet
+                }).Tables[0]; //Only ready from the first sheet
 
                 sResult = JsonConvert.SerializeObject(output);
             }
@@ -1205,6 +1209,77 @@ public class JobController : Controller
     public async Task<IActionResult> DeleteFile(int jobId, string fileName)
     {
         return Json("OK");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateNote(int jobId, string note)
+    {
+        _logger.LogInformation("Request received to update note for job {JobId}", jobId);
+
+        if (jobId <= 0)
+        {
+            _logger.LogWarning("Invalid jobId received: {JobId}", jobId);
+            return BadRequest(new { message = "Invalid job ID" });
+        }
+
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            _logger.LogWarning("Empty note value received for job {JobId}", jobId);
+            return BadRequest(new { message = "Note cannot be empty" });
+        }
+
+        try
+        {
+            await _jobRepo.UpdateJobNoteAsync(jobId, note);
+            _logger.LogInformation("Successfully updated note for job {JobId}", jobId);
+            return Ok(new { message = "Note updated successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogError(ex, "Job not found for ID {JobId}", jobId);
+            return StatusCode(500, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating note for job {JobId}. Error: {ErrorMessage}", jobId, ex.Message);
+            return StatusCode(500, new { message = "An unexpected error occurred while updating the note" });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateConnote(int jobId, string conNote)
+    {
+        _logger.LogInformation("Request received to update connote for job {JobId} with value {NewConnote}", jobId,
+            conNote);
+
+        if (jobId <= 0)
+        {
+            _logger.LogWarning("Invalid jobId received: {JobId}", jobId);
+            return BadRequest(new { message = "Invalid job ID" });
+        }
+
+        if (string.IsNullOrWhiteSpace(conNote))
+        {
+            _logger.LogWarning("Empty connote value received for job {JobId}", jobId);
+            return BadRequest(new { message = "Connote value cannot be empty" });
+        }
+
+        try
+        {
+            await _jobRepo.UpdateJobConnoteAsync(jobId, conNote);
+            _logger.LogInformation("Successfully updated connote for job {JobId}", jobId);
+            return Ok(new { message = "Connote updated successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogError(ex, "Job not found for ID {JobId}", jobId);
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating connote for job {JobId}. Error: {ErrorMessage}", jobId, ex.Message);
+            return StatusCode(500, new { message = "An unexpected error occurred while updating the connote" });
+        }
     }
 
     public class ClientItemsModel

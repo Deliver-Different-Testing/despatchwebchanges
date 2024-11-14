@@ -154,4 +154,7 @@ public interface IJobRepository
     Task<PagedList<ClientItemsViewModel>> GetClientItemsBySpeedAsync(int clientId, int speedId, int jobId);
 
     Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
+
+    Task UpdateJobConnoteAsync(int jobId, string conNote);
+    Task UpdateJobNoteAsync(int jobId, string note);
 }
