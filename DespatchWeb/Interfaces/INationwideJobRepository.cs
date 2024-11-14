@@ -19,4 +19,6 @@ public interface INationwideJobRepository
     Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
 
     Task<bool> AddAgentToJobAsync(int agentId, int jobId);
+
+    Task UpdateJobConnoteAsync(int parentJobId, string newConnote);
 }

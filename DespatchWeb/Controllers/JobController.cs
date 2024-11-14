@@ -274,7 +274,9 @@ public class JobController : Controller
     [HttpPost]
     public async Task<IActionResult> Upload(IFormFile file)
     {
-        if (file == null || string.IsNullOrWhiteSpace(file.FileName) || !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim().Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
+        if (file == null || string.IsNullOrWhiteSpace(file.FileName) ||
+            !new[] { ".xls", ".xlsx", ".csv" }.Contains(file.FileName.Trim()
+                .Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
             return BadRequest("Invalid file format.");
 
         string folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["UploadDirectory"]);
@@ -291,7 +293,9 @@ public class JobController : Controller
         using (FileStream stream = System.IO.File.Create(filePath))
         {
             await file.CopyToAsync(stream);
-            using (var reader = (fileExtension == ".csv" ? ExcelReaderFactory.CreateCsvReader(stream) : ExcelReaderFactory.CreateReader(stream)))
+            using (var reader = (fileExtension == ".csv"
+                       ? ExcelReaderFactory.CreateCsvReader(stream)
+                       : ExcelReaderFactory.CreateReader(stream)))
             {
                 var output = reader.AsDataSet(new ExcelDataSetConfiguration()
                 {
@@ -299,7 +303,7 @@ public class JobController : Controller
                     {
                         UseHeaderRow = true
                     }
-                }).Tables[0];  //Only ready from the first sheet
+                }).Tables[0]; //Only ready from the first sheet
 
                 sResult = JsonConvert.SerializeObject(output);
             }

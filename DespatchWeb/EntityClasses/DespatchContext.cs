@@ -4990,6 +4990,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.ClosestCourierId).HasColumnName("ClosestCourierID");
 
+                entity.Property(e => e.Connote).IsUnicode(false);
+
                 entity.Property(e => e.ContactId).HasColumnName("ContactID");
 
                 entity.Property(e => e.CourierBonus).HasColumnType("money");

@@ -225,6 +225,7 @@ namespace DespatchWeb.EntityClasses
         public decimal? DryIceWeight { get; set; }
         public DateTime? DeliverByTime { get; set; }
         public int? AgentId { get; set; }
+        public string Connote { get; set; }
 
         public virtual TucJobType AcceptedJobType { get; set; }
         public virtual TucAgent Agent { get; set; }

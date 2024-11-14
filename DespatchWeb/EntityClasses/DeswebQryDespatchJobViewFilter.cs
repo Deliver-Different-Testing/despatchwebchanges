@@ -12,7 +12,7 @@ namespace DespatchWeb.EntityClasses
         public bool RemoteJob { get; set; }
         public int? ParentId { get; set; }
         public int IsParentJob { get; set; }
-        public int? VehicleSizeId { get; set; }
+        public short? VehicleSizeId { get; set; }
         public int? UcjbClientId { get; set; }
         public int? UcjtId { get; set; }
         public int? UcjsId { get; set; }

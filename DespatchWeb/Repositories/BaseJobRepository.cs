@@ -682,4 +682,46 @@ public class BaseJobRepository
             throw;
         }
     }
+
+    public async Task UpdateJobConnoteAsync(int parentJobId, string newConnote)
+    {
+        try
+        {
+            _logger.LogInformation("Starting connote update for job {JobId} with value {Connote}", parentJobId,
+                newConnote);
+
+            // Update the main job
+            var mainJob = await _context.TucJobs
+                .FirstOrDefaultAsync(j => j.UcjbId == parentJobId);
+
+            if (mainJob == null)
+            {
+                _logger.LogWarning("Job {JobId} not found", parentJobId);
+                throw new KeyNotFoundException($"Job with ID {parentJobId} not found");
+            }
+
+            mainJob.Connote = newConnote;
+            _logger.LogDebug("Updated main job {JobId} connote", parentJobId);
+
+            // Update all child jobs
+            var childJobs = await _context.TucJobs
+                .Where(j => j.ParentId == parentJobId)
+                .ToListAsync();
+
+            foreach (var childJob in childJobs)
+            {
+                childJob.Connote = newConnote;
+            }
+
+            _logger.LogInformation("Updated {ChildCount} child jobs for parent {JobId}", childJobs.Count, parentJobId);
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Successfully completed connote update for job family {JobId}", parentJobId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating connote for job {JobId}", parentJobId);
+            throw;
+        }
+    }
 }
