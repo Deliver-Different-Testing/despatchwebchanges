@@ -119,6 +119,8 @@ class SelectDialogController {
                 this._job.sigNotRequired = selectedOption.text;
                 this._job.deliverToLeaveId = selectedOption.id;
                 break;
+            case "UndeliverableLocationID":
+                this._job.udStatus = selectedOption.text;
         }
     }
 
