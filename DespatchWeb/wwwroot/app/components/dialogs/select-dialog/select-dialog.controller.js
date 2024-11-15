@@ -115,6 +115,10 @@ class SelectDialogController {
             case "TrackingMethod":
                 this._job.trackingMethod = selectedOption.id;
                 break;
+            case "DeliverToLeaveID":
+                this._job.sigNotRequired = selectedOption.text;
+                this._job.deliverToLeaveId = selectedOption.id;
+                break;
         }
     }
 
