@@ -28,6 +28,7 @@ using Microsoft.AspNetCore.Http;
 using Serilog;
 using static Azure.Core.HttpHeader;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Threading;
 
 namespace DespatchWeb.Controllers;
 
@@ -150,11 +151,117 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         return Json(result > 0);
     }
 
+    private async Task<List<S3Object>> SearchDeliveryFilesByPatternAsync(string bucketName, string pattern, int year, int month)
+    {
+        var allResults = new List<S3Object>();
+        // Calculate next month and year (handling December rollover)
+        var nextMonth = month == 12 ? 1 : month + 1;
+        var nextYear = month == 12 ? year + 1 : year;
+        try
+        {
+
+            var monthPrefixes = new[]
+            {
+                $"{year}/{month:D2}/",
+                $"{nextYear}/{nextMonth:D2}/"
+            };
+
+
+            var folders = new[] { "DeliverySignatures", "DeliveryPhotos" };
+
+            foreach (var folder in folders)
+            {
+                foreach (var monthPrefix in monthPrefixes)
+                {
+                    var request = new ListObjectsV2Request
+                    {
+                        BucketName = bucketName,
+                        Prefix = $"{folder}/{monthPrefix}{pattern}",
+                        MaxKeys = 1000
+                    };
+
+                    var response = await s3Client.ListObjectsV2Async(request);
+                    allResults.AddRange(response.S3Objects);
+                    if (allResults.Count > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+
+
+
+        }
+        catch (AmazonS3Exception e)
+        {
+
+            Log.Error(e, $"Error encountered on server. Message:'{e.Message}' when writing an object");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, $"Unknown encountered on server. Message:'{e.Message}' when writing an object");
+        }
+
+
+
+        return allResults;
+    }
+
+    public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(int jobId, int year, int month)
+    {
+
+        var all = new List<byte[]>();
+        try
+        {
+
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+            var key = $"{jobId}-";
+            Log.Debug($"Get S3 Object List for {key}");
+            var s3List = await SearchDeliveryFilesByPatternAsync(bucketName, key, year, month);
+            Log.Debug($"Found {s3List.Count} objects for {key}");
+            foreach (var s3Object in s3List)
+            {
+                var getObjectRequest = new GetObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = s3Object.Key
+                };
+                using var response = await s3Client.GetObjectAsync(getObjectRequest);
+                await using var responseStream = response.ResponseStream;
+                using var reader = new StreamReader(responseStream);
+                using var memoryStream = new MemoryStream();
+                await response.ResponseStream.CopyToAsync(memoryStream);
+                all.Add(memoryStream.ToArray());
+
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, $"{nameof(GetJobDeliveryPhotosAndSignature)} Error: ");
+        }
+
+        return Json(all);
+    }
+
+
     public async Task<IActionResult> Detail(int jobId)
     {
-        var result = await jobRepository.GetJobByIdAsync(jobId);
+        try
+        {
+            var job = await jobRepository.GetJobByIdAsync(jobId);
 
-        return Json(result);
+            return Json(job);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(408); // Request Timeout
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An unexpected error occured");
+            return StatusCode(500, "An error occurred while processing your request.");
+        }
     }
 
     [HttpGet]

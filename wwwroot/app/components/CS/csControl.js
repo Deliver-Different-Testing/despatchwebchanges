@@ -969,6 +969,13 @@ angular.module('uDispatch').controller('CSControl', [
                     scanListLoading.fadeOut();
                 }, 200);
 
+                if ($scope.currentJob.completedTime) {
+                    const cmpltd = moment($scope.currentJob.completedTime);
+                    const month = cmpltd.month() + 1;
+                    const podData = await uCSData.getJobDeliveryPhotosAndSignature(jobId, cmpltd.year(), month);
+                    $scope.currentJob.podPhotos = podData;
+                }
+
                 if ($scope.currentJob.courier && $scope.currentJob.completedTime) {
                     mapLoading.show();
                     const routeData = await uCSData.getCourierRoute(
