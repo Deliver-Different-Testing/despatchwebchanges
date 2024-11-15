@@ -515,6 +515,9 @@ public class BaseJobRepository
         // Only get child jobs
         query = query.Where(j => j.ParentId != null);
 
+        // Block out completed jobs from the domestic/nationwide page
+        query = query.Where(j => j.UcjbComplTime != null || j.UcjbComplTime < DateTime.Now);
+
         return query;
     }
 
