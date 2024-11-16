@@ -293,9 +293,9 @@ public class JobController : Controller
         using (FileStream stream = System.IO.File.Create(filePath))
         {
             await file.CopyToAsync(stream);
-            using (var reader = (fileExtension == ".csv"
+            using (var reader = fileExtension == ".csv"
                        ? ExcelReaderFactory.CreateCsvReader(stream)
-                       : ExcelReaderFactory.CreateReader(stream)))
+                       : ExcelReaderFactory.CreateReader(stream))
             {
                 var output = reader.AsDataSet(new ExcelDataSetConfiguration()
                 {
@@ -723,8 +723,8 @@ public class JobController : Controller
         var description = await _jobRepo.RateTruckJobDescription(clientId, fromId, toId, weight, size, speed, qty,
             bookedDate, pickUp,
             dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours);
-        description += ($"\rTotal = {rate:C}");
-        description += ($"\rTotal (+GST) = {rate * (1 + gstRate):C}");
+        description += $"\rTotal = {rate:C}";
+        description += $"\rTotal (+GST) = {rate * (1 + gstRate):C}";
         return Json(description);
     }
 
@@ -748,7 +748,9 @@ public class JobController : Controller
             size,
             includeFuelSurcharge, direct, acceptedJobTypeId,
             ourRef, refA, refB, quantity, booked);
+
         var finalDescription = direct ? "DIRECT PRICE\r" : currentRateAmount != amount ? "NORMAL PRICE\r" : "";
+
         var description = await _jobRepo.RateJobDescription(clientId, fromId, toId, speed, pedal, van, returnJob,
             weight, size,
             includeFuelSurcharge, direct, acceptedJobTypeId,
@@ -763,9 +765,9 @@ public class JobController : Controller
             ? await _jobRepo.FuelSurchargeInclusiveAmount(clientId, amount, fromId, toId, booked, size)
             : 0;
         var ppd = includeFuelSurcharge ? await _jobRepo.PpdInclusiveAmount(clientId, amount) : 0;
-        finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}");
+        finalDescription += $"\rSPECIAL PRICE = {amount - fs - ppd:C}";
         if (fs <= 0) return Json(finalDescription);
-        //strDescription = strDescription & vbCrLf & "Plus fuel surcharge = $" & Format(curFuelSurcharge, "0.00")
+
         finalDescription += $"\rPlus fuel surcharge = {fs:C}";
         finalDescription += $"\rPlus PPD = {ppd:C}";
         finalDescription += $"\rTOTAL = {amount:C}";
