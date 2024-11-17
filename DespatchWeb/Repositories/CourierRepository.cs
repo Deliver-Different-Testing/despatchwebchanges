@@ -247,52 +247,6 @@ public class CourierRepository : ICourierRepository
         }
     }
 
-    public async Task<string> GetAirportCodeByIdAsync(int airportId)
-    {
-        try
-        {
-            _logger.LogInformation("Looking up airport code for ID: {AirportId}", airportId);
-
-            var airportCode = await _context.TblAirports
-                .Where(a => a.AirportId == airportId)
-                .Select(a => a.AirportCode)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            if (airportCode != null)
-            {
-                _logger.LogInformation("Found airport code {AirportCode} for ID {AirportId}", airportCode, airportId);
-            }
-            else
-            {
-                _logger.LogWarning("No airport found for ID {AirportId}", airportId);
-            }
-
-            return airportCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error looking up airport code for ID {AirportId}", airportId);
-            throw;
-        }
-    }
-
-    public async Task<int> ClearListTotalRemainingAsync(string area)
-    {
-        var filter =
-            _context.TblDespatchViews.FirstOrDefault(v =>
-                (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
-
-        if (string.IsNullOrEmpty(filter))
-            return 0;
-
-        filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
-        var query =
-            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
-        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(query).ToListAsync();
-        return jobs.Count;
-    }
-
     public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
         int clearListAreaId,
         Country country,
@@ -351,6 +305,60 @@ public class CourierRepository : ICourierRepository
                 despatchViewIds);
             throw;
         }
+    }
+
+    public async Task<List<Suggestion>> GetVehicleSizesAsync()
+    {
+        return await _context.VehicleSizes.Select(v => new Suggestion
+        {
+            Id = v.VehicleSizeId, Text = v.VehicleName
+        }).ToListAsync();
+    }
+
+    public async Task<string> GetAirportCodeByIdAsync(int airportId)
+    {
+        try
+        {
+            _logger.LogInformation("Looking up airport code for ID: {AirportId}", airportId);
+
+            var airportCode = await _context.TblAirports
+                .Where(a => a.AirportId == airportId)
+                .Select(a => a.AirportCode)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (airportCode != null)
+            {
+                _logger.LogInformation("Found airport code {AirportCode} for ID {AirportId}", airportCode, airportId);
+            }
+            else
+            {
+                _logger.LogWarning("No airport found for ID {AirportId}", airportId);
+            }
+
+            return airportCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error looking up airport code for ID {AirportId}", airportId);
+            throw;
+        }
+    }
+
+    public async Task<int> ClearListTotalRemainingAsync(string area)
+    {
+        var filter =
+            _context.TblDespatchViews.FirstOrDefault(v =>
+                (v.ShowOnAssistDespatch ?? false) == true && v.Name == area)?.WhereCondition;
+
+        if (string.IsNullOrEmpty(filter))
+            return 0;
+
+        filter += " AND (ucjbStatus <> 9 AND ucjbCourierId is null)";
+        var query =
+            $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
+        var jobs = await _context.DeswebQryDespatches.FromSqlRaw(query).ToListAsync();
+        return jobs.Count;
     }
 
     private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeUsAsync(int clearListAreaId,

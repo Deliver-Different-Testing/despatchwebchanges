@@ -184,7 +184,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.sizeClick($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Size</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.currentJob.size.label}}
+                                {{jdSvc.currentJob.vehicle.label}}
                             </div>
                         </div>
                         <div class="field"
@@ -849,7 +849,7 @@
                         <div class="field"
                              ng-click="jdSvc.sizeClick($event, jdSvc.currentJob)">
                             <label>Size</label>
-                            <div class="value">{{jdSvc.currentJob.size.label}}</div>
+                            <div class="value">{{jdSvc.currentJob.vehicle.label}}</div>
                         </div>
                         <div class="field"
                              ng-click="jdSvc.editItems($event, jdSvc.currentJob)">

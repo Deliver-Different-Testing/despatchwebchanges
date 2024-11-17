@@ -8,7 +8,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
@@ -204,16 +203,10 @@ public class BaseJobRepository
         InternalStatusId = j.InternalStatus,
 
         // Size
-        Size = new Vehicle
+        Vehicle = new Suggestion
         {
-            Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-            Label = j.UcjbVan ? "Van" :
-                j.UcjbSize == 1 ? "Bike" :
-                j.UcjbSize == 2 ? "Car" :
-                j.UcjbSize == 3 ? "Van" :
-                j.UcjbSize == 4 ? "Truck" :
-                j.UcjbSize == 5 ? "Scooter" :
-                "Car" // Default case
+            Id = j.VehicleSize.VehicleSizeId,
+            Text = j.VehicleSize.VehicleName
         },
 
         // Job items
@@ -233,10 +226,10 @@ public class BaseJobRepository
         }).ToList(),
 
         // Related jobs
-        RelatedJobs = j.Parent.InverseParent.Select(p => new Size
+        RelatedJobs = j.Parent.InverseParent.Select(p => new Suggestion
         {
             Id = p.UcjbId,
-            Label = p.UcjbNumber
+            Text = p.UcjbNumber
         }).ToList()
     };
 

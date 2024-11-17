@@ -226,7 +226,14 @@ namespace DespatchWeb.EntityClasses
         public int? AgentId { get; set; }
 
         public virtual TucAgent Agent { get; set; }
+        public virtual TucClientContact Contact { get; set; }
+        public virtual TblJobLeaveNotHome DeliverToLeave { get; set; }
         public virtual TblAirport FromAirport { get; set; }
+        public virtual TucJobInternalStatus InternalStatusNavigation { get; set; }
+        public virtual TucJobType NotifiedJobType { get; set; }
         public virtual TblAirport ToAirport { get; set; }
+        public virtual TucClient UcjbClient { get; set; }
+        public virtual TucJobType UcjbSpeedNavigation { get; set; }
+        public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
     }
 }

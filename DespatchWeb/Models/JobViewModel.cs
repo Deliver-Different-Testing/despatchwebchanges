@@ -35,7 +35,7 @@ public class JobViewModel
     [JsonProperty("speedID")] public int? SpeedId { get; set; }
 
     public string Notify { get; set; }
-    public Vehicle Vehicle { get; set; }
+    public Suggestion Vehicle { get; set; }
 
     [JsonProperty("clientID")] public int? ClientId { get; set; }
 
@@ -109,7 +109,7 @@ public class JobViewModel
     public string SpeedAccepted { get; set; }
     public int? AcceptedJobTypeId { get; set; }
     public int? NotifiedJobTypeId { get; set; }
-    public Vehicle Size { get; set; }
+    public Suggestion Size { get; set; }
     public double? Weight { get; set; }
     public short? Items { get; set; }
     public string RefA { get; set; }
@@ -142,7 +142,7 @@ public class JobViewModel
     public decimal? DeliveryLatitude { get; set; }
 
     public List<PalletInfo> PalletInfo { get; set; }
-    public List<Size> RelatedJobs { get; set; }
+    public List<Suggestion> RelatedJobs { get; set; }
     public decimal? CourierLatitude { get; set; }
     public decimal? CourierLongitude { get; set; }
     public int? RunOrder { get; set; }
@@ -228,18 +228,6 @@ public class AssignedFlight
     public DateTime? ExpectedDeparture { get; set; }
     public DateTime? ExpectedArrival { get; set; }
     public string Notes { get; set; }
-}
-
-public class Vehicle
-{
-    public short? Id { get; set; }
-    public string Label { get; set; }
-}
-
-public class Size
-{
-    public int Id { get; set; }
-    public string Label { get; set; }
 }
 
 public class PalletInfo

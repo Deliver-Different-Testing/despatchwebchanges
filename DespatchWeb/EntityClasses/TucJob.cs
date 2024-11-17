@@ -226,6 +226,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime? DeliverByTime { get; set; }
         public int? AgentId { get; set; }
         public string Connote { get; set; }
+        public int? VehicleSizeId { get; set; }
 
         public virtual TucJobType AcceptedJobType { get; set; }
         public virtual TucAgent Agent { get; set; }
@@ -247,6 +248,7 @@ namespace DespatchWeb.EntityClasses
         public virtual TucJobStatus UcjbStatusNavigation { get; set; }
         public virtual TucSuburb UcjbToNavigation { get; set; }
         public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
+        public virtual VehicleSize VehicleSize { get; set; }
         public virtual ICollection<TucJob> InverseParent { get; set; }
         public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }

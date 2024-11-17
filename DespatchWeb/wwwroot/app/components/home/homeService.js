@@ -1122,6 +1122,11 @@ class DispatchData {
         return response.data;
     }
 
+    async getVehicleSizes() {
+        const response = await this._$http.get(`courier/GetVehicleSizes}`);
+        return response.data;
+    }
+
     /**
      * @param {Suggestion[]} selectedAreas
      * @returns {Array}

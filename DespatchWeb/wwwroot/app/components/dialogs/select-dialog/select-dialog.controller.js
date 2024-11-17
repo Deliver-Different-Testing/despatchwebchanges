@@ -96,9 +96,8 @@ class SelectDialogController {
     _updateJobFields(selectedOption) {
         switch (this._fieldName) {
             case "Size":
-                this._job.size.label = selectedOption.text;
-                this._job.size.id = selectedOption.id;
-                this._job.van = true;
+                this._job.vehicle.label = selectedOption.text;
+                this._job.vehicle.id = selectedOption.id;
                 break;
             case "SpeedID":
                 this._job.speedName = selectedOption.text;
