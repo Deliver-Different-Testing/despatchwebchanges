@@ -203,11 +203,13 @@ public class BaseJobRepository
         InternalStatusId = j.InternalStatus,
 
         // Size
-        Vehicle = new Suggestion
-        {
-            Id = j.VehicleSize.VehicleSizeId,
-            Text = j.VehicleSize.VehicleName
-        },
+        Size = j.VehicleSize != null
+            ? new Suggestion
+            {
+                Id = j.VehicleSize.VehicleSizeId,
+                Text = j.VehicleSize.VehicleName
+            }
+            : null,
 
         // Job items
         PalletInfo = j.TucJobItems.Select(i => new PalletInfo
