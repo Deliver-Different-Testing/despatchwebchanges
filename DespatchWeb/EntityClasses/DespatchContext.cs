@@ -61,6 +61,7 @@ namespace DespatchWeb.EntityClasses
         public virtual DbSet<TucClient> TucClients { get; set; }
         public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
         public virtual DbSet<TucClientItem> TucClientItems { get; set; }
+        public virtual DbSet<TucContact> TucContacts { get; set; }
         public virtual DbSet<TucCourier> TucCouriers { get; set; }
         public virtual DbSet<TucEvent> TucEvents { get; set; }
         public virtual DbSet<TucEventType> TucEventTypes { get; set; }
@@ -4389,6 +4390,32 @@ namespace DespatchWeb.EntityClasses
                     .HasConstraintName("FK__tucClient__Clien__5D21AF45");
             });
 
+            modelBuilder.Entity<TucContact>(entity =>
+            {
+                entity.HasKey(e => e.UccoId)
+                    .IsClustered(false);
+
+                entity.ToTable("tucContact");
+
+                entity.HasIndex(e => e.UccoClientId, "uccoClientID")
+                    .IsClustered()
+                    .HasFillFactor(80);
+
+                entity.Property(e => e.UccoId).HasColumnName("uccoID");
+
+                entity.Property(e => e.UccoClientId).HasColumnName("uccoClientID");
+
+                entity.Property(e => e.UccoName)
+                    .HasMaxLength(15)
+                    .IsUnicode(false)
+                    .HasColumnName("uccoName");
+
+                entity.HasOne(d => d.UccoClient)
+                    .WithMany(p => p.TucContacts)
+                    .HasForeignKey(d => d.UccoClientId)
+                    .HasConstraintName("FK_tucContact_tucClient");
+            });
+
             modelBuilder.Entity<TucCourier>(entity =>
             {
                 entity.HasKey(e => e.UccrId)
@@ -6040,6 +6067,8 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
 
+                entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
+
                 entity.Property(e => e.WhenItemNotReadyNotificationSent).HasColumnType("datetime");
 
                 entity.Property(e => e.WhenJobTrackingNotificationSent).HasColumnType("datetime");
@@ -6103,6 +6132,11 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobArchives)
                     .HasForeignKey(d => d.UndeliverableLocationId)
                     .HasConstraintName("FK_tucJobArchive_tblUndeliverableLocation");
+
+                entity.HasOne(d => d.VehicleSize)
+                    .WithMany(p => p.TucJobArchives)
+                    .HasForeignKey(d => d.VehicleSizeId)
+                    .HasConstraintName("FK_tucJobArchive_VehicleSize");
             });
 
             modelBuilder.Entity<TucJobBooking>(entity =>
@@ -6522,6 +6556,13 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
 
+                entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
+
+                entity.HasOne(d => d.Courier)
+                    .WithMany(p => p.TucJobBookings)
+                    .HasForeignKey(d => d.CourierId)
+                    .HasConstraintName("FK_tucJobBooking_tucCourier");
+
                 entity.HasOne(d => d.FromAirport)
                     .WithMany(p => p.TucJobBookingFromAirports)
                     .HasForeignKey(d => d.FromAirportId)
@@ -6532,10 +6573,35 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.JobRelationshipTypeId)
                     .HasConstraintName("FK_tucJobBooking_tblJobRelationshipType");
 
+                entity.HasOne(d => d.LoggedInContact)
+                    .WithMany(p => p.TucJobBookings)
+                    .HasForeignKey(d => d.LoggedInContactId)
+                    .HasConstraintName("FK_TucJobBooking_tucContact");
+
+                entity.HasOne(d => d.Source)
+                    .WithMany(p => p.TucJobBookings)
+                    .HasForeignKey(d => d.SourceId)
+                    .HasConstraintName("FK_TucJobBooking_TucSource");
+
                 entity.HasOne(d => d.ToAirport)
                     .WithMany(p => p.TucJobBookingToAirports)
                     .HasForeignKey(d => d.ToAirportId)
                     .HasConstraintName("FK__tucJobBoo__ToAir__6AA692EC");
+
+                entity.HasOne(d => d.UcbkClient)
+                    .WithMany(p => p.TucJobBookings)
+                    .HasForeignKey(d => d.UcbkClientId)
+                    .HasConstraintName("FK_TucJobBooking_tucClient");
+
+                entity.HasOne(d => d.UcbkSpeedNavigation)
+                    .WithMany(p => p.TucJobBookings)
+                    .HasForeignKey(d => d.UcbkSpeed)
+                    .HasConstraintName("FK_TucJobBooking_TucJobTypes");
+
+                entity.HasOne(d => d.VehicleSize)
+                    .WithMany(p => p.TucJobBookings)
+                    .HasForeignKey(d => d.VehicleSizeId)
+                    .HasConstraintName("FK_tucJobBooking_VehicleSize");
             });
 
             modelBuilder.Entity<TucJobBookingItem>(entity =>

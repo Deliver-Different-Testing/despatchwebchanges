@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucCourier()
         {
             TucEvents = new HashSet<TucEvent>();
+            TucJobBookings = new HashSet<TucJobBooking>();
             TucJobFdcouriers = new HashSet<TucJob>();
             TucJobUcjbCouriers = new HashSet<TucJob>();
         }
@@ -134,6 +135,7 @@ namespace DespatchWeb.EntityClasses
         public virtual TblCourierGp CourierGps { get; set; }
         public virtual TblCourierLogInOut CourierLogInOut { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
+        public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
         public virtual ICollection<TucJob> TucJobFdcouriers { get; set; }
         public virtual ICollection<TucJob> TucJobUcjbCouriers { get; set; }
     }

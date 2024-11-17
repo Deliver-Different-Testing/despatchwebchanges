@@ -155,6 +155,10 @@
          "ObjectType": 0
       },
       {
+        "Name": "[dbo].[tucContact]",
+        "ObjectType": 0
+      },
+     {
          "Name": "[dbo].[tucCourier]",
          "ObjectType": 0
       },

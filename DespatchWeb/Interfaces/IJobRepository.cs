@@ -37,7 +37,7 @@ public interface IJobRepository
         ClearListEnvelopeViewModel? clearListEnvelope = null);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
-    Task<TucEvent> GetSupportEventAsync(int id);
+    Task<TucEvent> GetSupportEventAsync(int eventId);
     Task<int> UpdateSupportEventAsync(TucEvent supportEvent);
     Task CloseSupportEvent(int supportId, int staffId);
     Task DispatchSelectedJobs(int courierId, int dispId, string jobIds);

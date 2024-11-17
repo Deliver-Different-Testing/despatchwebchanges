@@ -35,7 +35,7 @@ public class JobViewModel
     [JsonProperty("speedID")] public int? SpeedId { get; set; }
 
     public string Notify { get; set; }
-    public Suggestion Vehicle { get; set; }
+    public Vehicle Vehicle { get; set; }
 
     [JsonProperty("clientID")] public int? ClientId { get; set; }
 
@@ -197,6 +197,18 @@ public class JobViewModel
     public ParcelDimensions ParcelDimensions { get; set; }
 
     public int? DeliverToLeaveId { get; set; }
+}
+
+public class Vehicle
+{
+    public short? Id { get; set; }
+    public string Label { get; set; }
+}
+
+public class Size
+{
+    public int Id { get; set; }
+    public string Label { get; set; }
 }
 
 public class ParcelDimensions
