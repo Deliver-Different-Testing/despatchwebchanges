@@ -48,7 +48,6 @@ namespace DespatchWeb.EntityClasses
             modelBuilder.Entity<DESWeb_qryCourierComboResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWEB_qryPotentialCouriersResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<DESWEB_stpMapEnvelopeResult>().HasNoKey().ToView(null);
-            modelBuilder.Entity<DESWEB_stpUpdateJobResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<INT_stpIsValidLogin_DespatchResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<MAP_stpClearListArea_EnvelopeResult>().HasNoKey().ToView(null);
             modelBuilder.Entity<MAP_stpCourierGPS_LastPositionTodayResult>().HasNoKey().ToView(null);
@@ -1583,7 +1582,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DESWEB_stpUpdateJobResult>> DESWEB_stpUpdateJobAsync(int? JobID, string PropertyName, string Value, decimal? Rate, string Username, int? StaffID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DESWEB_stpUpdateJobAsync(int? JobID, string PropertyName, string Value, decimal? Rate, string Username, int? StaffID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1637,7 +1636,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DESWEB_stpUpdateJobResult>("EXEC @returnValue = [dbo].[DESWEB_stpUpdateJob] @JobID = @JobID, @PropertyName = @PropertyName, @Value = @Value, @Rate = @Rate, @Username = @Username, @StaffID = @StaffID", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpUpdateJob] @JobID = @JobID, @PropertyName = @PropertyName, @Value = @Value, @Rate = @Rate, @Username = @Username, @StaffID = @StaffID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

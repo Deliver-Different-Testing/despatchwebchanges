@@ -193,7 +193,7 @@ public class BaseJobRepository
         // References and amounts
         RefA = j.UcjbClientRefa,
         RefB = j.UcjbClientRefb,
-        Charge = $"{j.UcjbAmount:C}",
+        Charge = $"{j.PricingBreakdowns.Sum(p => p.ChargeAmount):C}",
         OurRef = j.UcjbOurRef,
 
         // Status
