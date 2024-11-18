@@ -10,8 +10,6 @@ namespace DespatchWeb.EntityClasses
         public VehicleSize()
         {
             AgentVehicles = new HashSet<AgentVehicle>();
-            TucJobArchives = new HashSet<TucJobArchive>();
-            TucJobBookings = new HashSet<TucJobBooking>();
             TucJobs = new HashSet<TucJob>();
         }
 
@@ -28,8 +26,6 @@ namespace DespatchWeb.EntityClasses
         public int? VehicleTypeId { get; set; }
 
         public virtual ICollection<AgentVehicle> AgentVehicles { get; set; }
-        public virtual ICollection<TucJobArchive> TucJobArchives { get; set; }
-        public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

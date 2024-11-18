@@ -33,16 +33,8 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();
 
-        // Get view specific filters
-        var viewFilters = selectedViewIds != null && selectedViewIds.Any()
-            ? await _context.TblDespatchViews
-                .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
-                .Select(dv => dv.WhereCondition)
-                .ToListAsync()
-            : new List<string>();
-
         return await DespatchQry(AppPage.Domestic, status, order, ascending, isInternal, clientIds,
-            viewFilters, windowPane);
+            selectedViewIds, windowPane);
     }
 
     public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)

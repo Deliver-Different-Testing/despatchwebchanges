@@ -1254,7 +1254,7 @@ class JobDetailService {
      * @param {Job} job
      */
     sizeClick($event, job) {
-        this.showSelectDialog($event, job, this.pickVehicleSizes, "Size", "Size", job.vehicle.id);
+        this.showSelectDialog($event, job, this.pickVehicleSizes, "Size", "Size", job.size.text);
     }
 
     /**

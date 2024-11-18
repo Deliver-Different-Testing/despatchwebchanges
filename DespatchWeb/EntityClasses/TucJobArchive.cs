@@ -224,7 +224,6 @@ namespace DespatchWeb.EntityClasses
         public decimal? DryIceWeight { get; set; }
         public DateTime? DeliverByTime { get; set; }
         public int? AgentId { get; set; }
-        public int? VehicleSizeId { get; set; }
 
         public virtual TucAgent Agent { get; set; }
         public virtual TucClientContact Contact { get; set; }
@@ -236,6 +235,5 @@ namespace DespatchWeb.EntityClasses
         public virtual TucClient UcjbClient { get; set; }
         public virtual TucJobType UcjbSpeedNavigation { get; set; }
         public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
-        public virtual VehicleSize VehicleSize { get; set; }
     }
 }

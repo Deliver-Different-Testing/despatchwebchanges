@@ -179,7 +179,6 @@ namespace DespatchWeb.EntityClasses
         public int? FromAirportId { get; set; }
         public int? ToAirportId { get; set; }
         public DateTime? DeliverByTime { get; set; }
-        public int? VehicleSizeId { get; set; }
 
         public virtual TucCourier Courier { get; set; }
         public virtual TblAirport FromAirport { get; set; }
@@ -189,7 +188,6 @@ namespace DespatchWeb.EntityClasses
         public virtual TblAirport ToAirport { get; set; }
         public virtual TucClient UcbkClient { get; set; }
         public virtual TucJobType UcbkSpeedNavigation { get; set; }
-        public virtual VehicleSize VehicleSize { get; set; }
         public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; }
         public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }
     }

@@ -203,11 +203,11 @@ public class BaseJobRepository
         InternalStatusId = j.InternalStatus,
 
         // Size
-        Size = j.VehicleSize != null
+        Size = j.UcjbSizeNavigation != null
             ? new Suggestion
             {
-                Id = j.VehicleSize.VehicleSizeId,
-                Text = j.VehicleSize.VehicleName
+                Id = j.UcjbSizeNavigation.VehicleSizeId,
+                Text = j.UcjbSizeNavigation.VehicleName
             }
             : null,
 
@@ -256,12 +256,12 @@ public class BaseJobRepository
     // This function replaces the sql view "DESWEB_qryDespatch"
     public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
         string order, string ascending, bool isInternal, string clientIds,
-        List<string> viewFilters, NationwideWindowPanel? windowPane = null,
+        List<int> selectedViewIds, NationwideWindowPanel? windowPane = null,
         ClearListEnvelopeViewModel clearListEnvelope = null)
     {
         try
         {
-            var query = await BuildBaseQuery(viewFilters);
+            var query = await BuildBaseQuery(selectedViewIds);
             if (query == null) return new List<JobViewModel>();
 
             query = ApplyGeographicFilters(query, clearListEnvelope);
@@ -292,23 +292,30 @@ public class BaseJobRepository
         }
     }
 
-    private async Task<IQueryable<TucJob>> BuildBaseQuery(List<string> viewFilters)
+    private async Task<IQueryable<TucJob>> BuildBaseQuery(List<int> selectedViews)
     {
-        var jobIds = await GetFilteredJobIds(viewFilters);
+        var jobIds = await GetFilteredJobIds(selectedViews);
         if (!jobIds.Any()) return null;
 
         return _context.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId));
     }
 
-    private async Task<List<int>> GetFilteredJobIds(List<string> viewFilters)
+    private async Task<List<int>> GetFilteredJobIds(List<int> selectedViewIds)
     {
-        if (viewFilters?.Any() != true)
+        if (selectedViewIds?.Any() != true)
         {
             return await _context.DeswebQryDespatchJobViewFilters
                 .Select(x => x.UcjbId)
                 .ToListAsync();
         }
+
+        var viewFilters = selectedViewIds != null && selectedViewIds.Any()
+            ? await _context.TblDespatchViews
+                .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
+                .Select(dv => dv.WhereCondition)
+                .ToListAsync()
+            : new List<string>();
 
         var combinedFilters = string.Join(" AND ", viewFilters.Select(filter => $"({filter})"));
         return await _context.DeswebQryDespatchJobViewFilters

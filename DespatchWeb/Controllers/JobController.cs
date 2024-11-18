@@ -50,13 +50,39 @@ public class JobController : Controller
     public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        // Validate Client Access
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        _logger.LogInformation("Index endpoint called with params: {@QueryParams}, IsInternal: {IsInternal}, " +
+                               "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
+            queryParams, isInternal, cid, clientIds, despatchViewIds);
 
-        // Get jobs
-        var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
-            queryParams.Asc, isInternal, clientIds, despatchViewIds);
-        return Json(result);
+        try
+        {
+            // Validate Client Access
+            if (!isInternal)
+            {
+                _logger.LogDebug("Validating client access for cid: {ClientId}", cid);
+                await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+            }
+
+            // Get jobs
+            _logger.LogDebug("Retrieving jobs with status: {Status}, order: {Order}, ascending: {Ascending}",
+                queryParams.Status, queryParams.Order, queryParams.Asc);
+
+            var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, despatchViewIds);
+
+            _logger.LogInformation("Successfully retrieved {Count} jobs", result.Count);
+            return Json(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access attempt for client {ClientId}", cid);
+            return StatusCode(StatusCodes.Status401Unauthorized, $"Unauthorized access attempt for client {cid}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing job list request");
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
     }
 
     [HttpGet]

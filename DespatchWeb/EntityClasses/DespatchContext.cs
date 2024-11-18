@@ -5416,8 +5416,6 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
 
-                entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
-
                 entity.Property(e => e.WhenColsolidateMarsInformation).HasColumnType("datetime");
 
                 entity.Property(e => e.WhenItemNotReadyNotificationSent).HasColumnType("datetime");
@@ -5511,6 +5509,10 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.UcjbFrom)
                     .HasConstraintName("FK_tucJob_FromSuburb");
 
+                entity.HasOne(d => d.UcjbSizeNavigation)
+                    .WithMany(p => p.TucJobs)
+                    .HasForeignKey(d => d.UcjbSize);
+
                 entity.HasOne(d => d.UcjbSpeedNavigation)
                     .WithMany(p => p.TucJobUcjbSpeedNavigations)
                     .HasForeignKey(d => d.UcjbSpeed)
@@ -5530,11 +5532,6 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobs)
                     .HasForeignKey(d => d.UndeliverableLocationId)
                     .HasConstraintName("FK_tucJob_tblUndeliverableLocation");
-
-                entity.HasOne(d => d.VehicleSize)
-                    .WithMany(p => p.TucJobs)
-                    .HasForeignKey(d => d.VehicleSizeId)
-                    .HasConstraintName("FK_tucJob_VehicleSize");
             });
 
             modelBuilder.Entity<TucJobArchive>(entity =>
@@ -6067,8 +6064,6 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
 
-                entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
-
                 entity.Property(e => e.WhenItemNotReadyNotificationSent).HasColumnType("datetime");
 
                 entity.Property(e => e.WhenJobTrackingNotificationSent).HasColumnType("datetime");
@@ -6132,11 +6127,6 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobArchives)
                     .HasForeignKey(d => d.UndeliverableLocationId)
                     .HasConstraintName("FK_tucJobArchive_tblUndeliverableLocation");
-
-                entity.HasOne(d => d.VehicleSize)
-                    .WithMany(p => p.TucJobArchives)
-                    .HasForeignKey(d => d.VehicleSizeId)
-                    .HasConstraintName("FK_tucJobArchive_VehicleSize");
             });
 
             modelBuilder.Entity<TucJobBooking>(entity =>
@@ -6556,8 +6546,6 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.VanOk).HasColumnName("VanOK");
 
-                entity.Property(e => e.VehicleSizeId).HasColumnName("VehicleSizeID");
-
                 entity.HasOne(d => d.Courier)
                     .WithMany(p => p.TucJobBookings)
                     .HasForeignKey(d => d.CourierId)
@@ -6597,11 +6585,6 @@ namespace DespatchWeb.EntityClasses
                     .WithMany(p => p.TucJobBookings)
                     .HasForeignKey(d => d.UcbkSpeed)
                     .HasConstraintName("FK_TucJobBooking_TucJobTypes");
-
-                entity.HasOne(d => d.VehicleSize)
-                    .WithMany(p => p.TucJobBookings)
-                    .HasForeignKey(d => d.VehicleSizeId)
-                    .HasConstraintName("FK_tucJobBooking_VehicleSize");
             });
 
             modelBuilder.Entity<TucJobBookingItem>(entity =>

@@ -42,7 +42,6 @@ class SelectDialogController {
         this.options = options;
         this.selectedOption = null;
 
-
         /** @type {boolean} */
         this.checkboxValue = false;
 
@@ -96,8 +95,8 @@ class SelectDialogController {
     _updateJobFields(selectedOption) {
         switch (this._fieldName) {
             case "Size":
-                this._job.vehicle.label = selectedOption.text;
-                this._job.vehicle.id = selectedOption.id;
+                this._job.size.text = selectedOption.text;
+                this._job.size.id = selectedOption.id;
                 break;
             case "SpeedID":
                 this._job.speedName = selectedOption.text;

@@ -666,17 +666,44 @@ angular.module("uDispatch")
              * @param {Job} job
              */
             $scope.attention = job => {
-                let temp = "";
-                if (job.direct) temp += "DIRECT ";
-                if (job.van) temp = "VAN ";
-                if (job.truck || job.speedID === 45) temp += "TRUCK ";
-                if (job.return) temp += "RTN ";
-                if (job.size.id === 2 && !job.van && !job.truck && job.speedID !== 45) temp = "CAR " + temp;
-                if (job.size.id === 5) temp = "Scoot " + temp;
-                if (job.childNotes !== null && job.childNotes.length > 0) temp += job.childNotes;
-                if (job.pickupFrom === 1) temp += "R "; else if (job.pickupFrom === 2) temp += "D ";
-                if (job.saturdayDelivery) temp += "Sat Del";
-                return temp.trim();
+                const components = [];
+
+                // Add DIRECT if applicable
+                if (job.direct) {
+                    components.push('DIRECT');
+                }
+
+                // Size label is always included (capitalized) if present
+                if (job.size?.label) {
+                    components.push(job.size.label.toUpperCase());
+                }
+
+                // Add RTN for return jobs
+                if (job.return) {
+                    components.push('RTN');
+                }
+
+                // Add child notes if present
+                if (job.childNotes?.length > 0) {
+                    components.push(job.childNotes);
+                }
+
+                // Add pickup location indicator
+                const pickupMap = {
+                    1: 'R',
+                    2: 'D'
+                };
+                if (pickupMap[job.pickupFrom]) {
+                    components.push(pickupMap[job.pickupFrom]);
+                }
+
+                // Add Saturday delivery indicator
+                if (job.saturdayDelivery) {
+                    components.push('Sat Del');
+                }
+
+                // Join all components with spaces and trim
+                return components.join(' ').trim();
             };
 
             $scope.sortableOptions = {

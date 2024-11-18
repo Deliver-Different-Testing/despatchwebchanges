@@ -1123,7 +1123,7 @@ class DispatchData {
     }
 
     async getVehicleSizes() {
-        const response = await this._$http.get(`courier/GetVehicleSizes}`);
+        const response = await this._$http.get(`courier/GetVehicleSizes`);
         return response.data;
     }
 

@@ -899,11 +899,11 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 InternalStatusId = j.InternalStatus,
 
                 // Size
-                Size = j.VehicleSize != null
+                Size = j.UcjbSizeNavigation != null
                     ? new Suggestion
                     {
-                        Id = j.VehicleSize.VehicleSizeId,
-                        Text = j.VehicleSize.VehicleName
+                        Id = j.UcjbSizeNavigation.VehicleSizeId,
+                        Text = j.UcjbSizeNavigation.VehicleName
                     }
                     : null,
 
@@ -932,15 +932,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();
 
-        // Get view specific filters
-        var viewFilters = selectedViewIds != null && selectedViewIds.Any()
-            ? await _context.TblDespatchViews
-                .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
-                .Select(dv => dv.WhereCondition)
-                .ToListAsync()
-            : new List<string>();
-
-        return await DespatchQry(AppPage.Dispatch, status, order, ascending, isInternal, clientIds, viewFilters, null,
+        return await DespatchQry(AppPage.Dispatch, status, order, ascending, isInternal, clientIds, selectedViewIds,
+            null,
             clearListEnvelope);
     }
 
