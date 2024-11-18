@@ -3,20 +3,29 @@
 using System;
 using System.Collections.Generic;
 
-namespace DespatchWeb.EntityClasses
+namespace DespatchWeb.EntityClasses;
+
+public partial class DeswebQryDespatchJobViewFilter
 {
-    public partial class DeswebQryDespatchJobViewFilter
-    {
-        public int UcjbId { get; set; }
-        public string UcjbNumber { get; set; }
-        public bool RemoteJob { get; set; }
-        public int? ParentId { get; set; }
-        public int IsParentJob { get; set; }
-        public short? VehicleSizeId { get; set; }
-        public int? UcjbClientId { get; set; }
-        public int? UcjtId { get; set; }
-        public int? UcjsId { get; set; }
-        public int? BulkRegionId { get; set; }
-        public int? ClearListAreaId { get; set; }
-    }
+    public int UcjbId { get; set; }
+
+    public string UcjbNumber { get; set; }
+
+    public bool RemoteJob { get; set; }
+
+    public int? ParentId { get; set; }
+
+    public int IsParentJob { get; set; }
+
+    public short? VehicleSizeId { get; set; }
+
+    public int? UcjbClientId { get; set; }
+
+    public int? UcjtId { get; set; }
+
+    public int? UcjsId { get; set; }
+
+    public int? BulkRegionId { get; set; }
+
+    public int? ClearListAreaId { get; set; }
 }

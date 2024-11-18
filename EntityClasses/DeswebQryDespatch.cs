@@ -25,6 +25,10 @@ public partial class DeswebQryDespatch
 
     public string CourierName { get; set; }
 
+    public string CourierMobile { get; set; }
+
+    public string CourierSurname { get; set; }
+
     public string SuburbFrom { get; set; }
 
     public string SuburbTo { get; set; }
@@ -83,6 +87,8 @@ public partial class DeswebQryDespatch
 
     public string SigNotRequired { get; set; }
 
+    public int? LeaveNotHomeId { get; set; }
+
     public string ClientNotes { get; set; }
 
     public string InternalNotes { get; set; }
@@ -124,6 +130,8 @@ public partial class DeswebQryDespatch
     public string ToSuburbName { get; set; }
 
     public string ClientName { get; set; }
+
+    public string ClientCode { get; set; }
 
     public string PickupRemain { get; set; }
 
@@ -261,7 +269,7 @@ public partial class DeswebQryDespatch
 
     public bool UcjbCbd { get; set; }
 
-    public bool? Locked { get; set; }
+    public bool? UcjbLocked { get; set; }
 
     public decimal? Gstrate { get; set; }
 
@@ -271,25 +279,27 @@ public partial class DeswebQryDespatch
 
     public string ToPostCode { get; set; }
 
-    public string ConNote { get; set; }
-
-    public bool? AirportOnly { get; set; }
-
     public string SpeedName { get; set; }
 
     public string NotifiedName { get; set; }
 
     public string OriginalName { get; set; }
 
-    public int? HasNationwide { get; set; }
-
     public string LoggedInContactName { get; set; }
 
     public string StatusName { get; set; }
 
+    public string StatusCode { get; set; }
+
     public string ToCity { get; set; }
 
     public string ClientItemIds { get; set; }
+
+    public bool? DisplayDespatch { get; set; }
+
+    public bool? DisplayInDespatch { get; set; }
+
+    public string AcceptedName { get; set; }
 
     public string PickupAddressLine1 { get; set; }
 
@@ -326,4 +336,24 @@ public partial class DeswebQryDespatch
     public int? ToAirportId { get; set; }
 
     public int? FromAirportId { get; set; }
+
+    public int? HasNationwide { get; set; }
+
+    public DateTime? ExpectedArrival { get; set; }
+
+    public DateTime? ExpectedDeparture { get; set; }
+
+    public string FlightNumber { get; set; }
+
+    public string FlightNotes { get; set; }
+
+    public int? AgentId { get; set; }
+
+    public string AgentName { get; set; }
+
+    public string AgentRankingName { get; set; }
+
+    public int? BulkRegionId { get; set; }
+
+    public int? ClearListAreaId { get; set; }
 }

@@ -20,7 +20,7 @@ using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
-public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory, DynamicQueryHelper queryHelper) : BaseJobRepository(contextFactory, queryHelper),  IJobRepository
+public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> contextFactory) : BaseJobRepository(contextFactory),  IJobRepository
 {
     
     public async Task<JobViewModel> PreBookDetailAsync(int prebookId)

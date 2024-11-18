@@ -339,6 +339,10 @@ public partial class TucJobBooking
 
     public DateTime? DeliverByTime { get; set; }
 
+    public decimal? CourierPayment { get; set; }
+
+    public decimal? CourierFuel { get; set; }
+
     public virtual TblAirport FromAirport { get; set; }
 
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }

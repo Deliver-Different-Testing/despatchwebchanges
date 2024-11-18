@@ -425,6 +425,8 @@ public partial class TucJob
 
     public int? AgentId { get; set; }
 
+    public string Connote { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual TucAgent Agent { get; set; }

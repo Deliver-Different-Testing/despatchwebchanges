@@ -25,6 +25,8 @@ public partial class ZoneName
 
     public int? LocationId { get; set; }
 
+    public virtual TblBulkRegion Location { get; set; }
+
     public virtual ZoneGroup ZoneGroup { get; set; }
 
     public virtual ICollection<ZoneZip> ZoneZips { get; set; } = new List<ZoneZip>();

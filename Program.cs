@@ -128,7 +128,6 @@ builder.Services.Configure<KestrelServerOptions>(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddScoped<DynamicQueryHelper>();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<INationwideJobRepository, NationwideJobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();

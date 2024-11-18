@@ -16,7 +16,7 @@ using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
-public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory, DynamicQueryHelper queryHelper):BaseRepository(contextFactory)
+public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory):BaseRepository(contextFactory)
 {
     private static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
     {
@@ -283,7 +283,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
             }
 
             var sql = query.ToQueryString();
-            _logger.LogInformation($"Generated SQL: {sql}");
+            Log.Information($"Generated SQL: {sql}");
 
             return await query.Select(JobMapping).AsNoTracking().ToListAsync();
         }
@@ -682,7 +682,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            _logger.LogInformation("Starting note update for job {JobId}", jobId);
+            Log.Information("Starting note update for job {JobId}", jobId);
 
             var job = await Context.TucJobs
                 .Where(j => j.UcjbId == jobId)
@@ -690,34 +690,34 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             if (job == null)
             {
-                _logger.LogWarning("Job {JobId} not found", jobId);
+                Log.Warning("Job {JobId} not found", jobId);
                 throw new KeyNotFoundException($"Job with ID {jobId} not found");
             }
 
-            _logger.LogDebug("Updating note for job {JobId}. Previous note length: {PreviousLength}",
+            Log.Debug("Updating note for job {JobId}. Previous note length: {PreviousLength}",
                 jobId,
                 job.InternalNotes?.Length ?? 0);
 
             job.UcjbNotes = note;
 
             await Context.SaveChangesAsync();
-            _logger.LogInformation("Successfully updated note for job {JobId}. New note length: {NewLength}",
+            Log.Information("Successfully updated note for job {JobId}. New note length: {NewLength}",
                 jobId,
                 note?.Length ?? 0);
         }
         catch (KeyNotFoundException ex)
         {
-            _logger.LogError(ex, "Job not found when updating note for job {JobId}", jobId);
+            Log.Error(ex, "Job not found when updating note for job {JobId}", jobId);
             throw;
         }
         catch (DbUpdateException ex)
         {
-            _logger.LogError(ex, "Database error occurred while updating note for job {JobId}", jobId);
+            Log.Error(ex, "Database error occurred while updating note for job {JobId}", jobId);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error updating note for job {JobId}", jobId);
+            Log.Error(ex, "Unexpected error updating note for job {JobId}", jobId);
             throw;
         }
     }
@@ -726,7 +726,7 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
     {
         try
         {
-            _logger.LogInformation("Starting connote update for job {JobId} with value {Connote}", jobId, conNote);
+            Log.Information("Starting connote update for job {JobId} with value {Connote}", jobId, conNote);
 
             // Get both the job and its possible children in one query
             var jobFamily = await Context.TucJobs
@@ -737,14 +737,14 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
 
             if (mainJob == null)
             {
-                _logger.LogWarning("Job {JobId} not found", jobId);
+                Log.Warning("Job {JobId} not found", jobId);
                 throw new KeyNotFoundException($"Job with ID {jobId} not found");
             }
 
             // If this is a child job, get the whole family using parent's ID
             if (mainJob.ParentId.HasValue)
             {
-                _logger.LogInformation("Job {JobId} is a child job. Using parent job {ParentId}", jobId,
+                Log.Information("Job {JobId} is a child job. Using parent job {ParentId}", jobId,
                     mainJob.ParentId);
 
                 jobFamily = await Context.TucJobs
@@ -758,16 +758,16 @@ public class BaseJobRepository(IDbContextFactory<DespatchContext> contextFactory
                 job.Connote = conNote;
             }
 
-            _logger.LogInformation("Updating connote for job family. Parent: {ParentId}, Total Jobs: {TotalJobs}",
+            Log.Information("Updating connote for job family. Parent: {ParentId}, Total Jobs: {TotalJobs}",
                 mainJob.ParentId ?? jobId,
                 jobFamily.Count);
 
             await Context.SaveChangesAsync();
-            _logger.LogInformation("Successfully completed connote update for job family {JobId}", jobId);
+            Log.Information("Successfully completed connote update for job family {JobId}", jobId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating connote for job {JobId}", jobId);
+            Log.Error(ex, "Error updating connote for job {JobId}", jobId);
             throw;
         }
     }

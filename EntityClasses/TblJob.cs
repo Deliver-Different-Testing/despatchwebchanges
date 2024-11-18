@@ -358,4 +358,6 @@ public partial class TblJob
     public DateTime? DeliverByTime { get; set; }
 
     public int? AgentId { get; set; }
+
+    public DateTime? OutForDelivery { get; set; }
 }

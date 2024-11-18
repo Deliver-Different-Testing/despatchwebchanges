@@ -20,7 +20,7 @@ using DespatchWeb.Helpers;
 using Vehicle = DespatchWeb.Models.Vehicle;
 namespace DespatchWeb.Repositories;
 
-public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory, DynamicQueryHelper queryHelper) : BaseJobRepository(contextFactory, queryHelper), INationwideJobRepository
+public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextFactory) : BaseJobRepository(contextFactory), INationwideJobRepository
 {
     
 

@@ -137,7 +137,7 @@ public class NationwideJobController(
                 {
                     var warning =
                         $"Flight with number {request.FlightNumber} and departure date {request.DepartureDate:yyyy-MM-dd} not found.";
-                    _logger.LogInformation(warning);
+                    Log.Information(warning);
                     return StatusCode(500, warning);
                 }
             }
@@ -179,6 +179,7 @@ public class NationwideJobController(
             // Add job
             try
             {
+
                 await repository.AddJobNationwideAsync(request.JobId, flight, webhookId);
             }
             catch (DbUpdateException ex)
