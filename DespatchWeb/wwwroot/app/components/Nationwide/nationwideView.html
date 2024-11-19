@@ -16,7 +16,7 @@
                         <md-menu-item ng-repeat="filter in filters">
                             <md-button ng-click="updateFilters(filter.value)">
                                 <md-icon md-font-set="material-symbols-outlined">
-                                    tune
+                                    {{filter.icon}}
                                 </md-icon>
                                 <span ng-style="filter.active ? {'font-weight':'bold'} : {}">
                     {{filter.label}}
