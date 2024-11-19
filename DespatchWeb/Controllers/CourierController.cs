@@ -24,9 +24,6 @@ public class CourierController : Controller
     {
         try
         {
-            if (despatchViewIds is { Count: 0 })
-                despatchViewIds.Add(49);
-
             var result = await _courierRepo.GetClearListsAsync(despatchViewIds);
             return Json(result);
         }

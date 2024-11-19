@@ -531,27 +531,27 @@ angular.module("uDispatch")
                 }
             }
 
-            $scope.toggleView = async function (view) {
+            $scope.toggleView = async view => {
                 if (view.selected) {
-                    // Add to selectedViews if not already present
-                    if (!$scope.selectedViews.some(v => v === view)) {
+                    if (!$scope.selectedViews.some(v => v.id === view.id)) {
                         $scope.selectedViews.push(view);
                     }
                 } else {
-                    // Remove from selectedViews
-                    const index = $scope.selectedViews.findIndex(v => v === view);
+                    const index = $scope.selectedViews.findIndex(v => v.id === view.id);
                     if (index > -1) {
                         $scope.selectedViews.splice(index, 1);
                     }
                 }
 
-                // Save selected views to storage
+                // Save filtered views
                 saveViewsToStorage($scope.selectedViews);
 
-                // Update data with new view selection
-                await $scope.getData();
+                // Run both promises in parallel with filtered views
+                await Promise.all([
+                    fetchDriverLocations(),
+                    $scope.getData()
+                ]);
             };
-
 
             $scope.updateFilters = async (selectedFilter) => {
                 try {
@@ -858,7 +858,7 @@ angular.module("uDispatch")
 
                     let driverLocationsActive = angular.element("#driverLocations .listActive");
                     if (driverLocationsActive.length <= 1) {
-                        const envelope = await $scope.getClearListEnvelope(clearListId);
+                        const envelope = await getClearListEnvelope(clearListId);
 
                         console.log('Envelope Coordinates:');
                         console.log('Maximum Latitude:', envelope.maximumLatitude);
@@ -887,6 +887,38 @@ angular.module("uDispatch")
                     });
                 }
             };
+
+            /**
+             * Gets envelope coordinates for a clear list
+             * @param {number} clearListId - ID of the clear list
+             * @param {Object} scope - The controller scope
+             * @returns {Promise<Object>} Envelope coordinates
+             */
+            async function getClearListEnvelope(clearListId, scope) {
+                try {
+                    const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
+
+                    if (data) {
+                        // Update map bounds with envelope data
+                        if (scope.map) {
+                            const swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
+                            const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
+                            scope.map.fitBounds(new google.maps.LatLngBounds(swll, nell));
+                            scope.map.setZoom(13);
+                        }
+
+                        // Update available courier locations if method exists
+                        if (scope.getAvailableCourierLocation) {
+                            await scope.getAvailableCourierLocation();
+                        }
+                    }
+
+                    return data;
+                } catch (error) {
+                    console.error('Error getting clear list envelope:', error);
+                    throw error;
+                }
+            }
 
             /**
              * Handles keyboard input for dispatch field
@@ -2962,30 +2994,8 @@ angular.module("uDispatch")
                     return;
                 }
 
-                const areas = $scope.views;
                 const channels = [];
                 let trucks = false;
-
-                areas.forEach(area => {
-                    switch (area) {
-                        case "main1":
-                        case "main2":
-                            if (!channels.includes(1)) {
-                                channels.push(1);
-                            }
-                            break;
-                        case "city":
-                            if (!channels.includes(2)) {
-                                channels.push(2);
-                            }
-                            break;
-                        case "truck":
-                            trucks = true;
-                            break;
-                        default:
-                            console.log("Default case reached");
-                    }
-                });
 
                 if (map && map.getBounds()) {
                     const bounds = map.getBounds();
@@ -3203,7 +3213,6 @@ angular.module("uDispatch")
                         const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
                         updateMapBounds(data);
                         await $scope.getAvailableCourierLocation();
-
                         return data;
                     } catch (error) {
                         console.error('Error getting clear list envelope:', error);
@@ -3212,11 +3221,19 @@ angular.module("uDispatch")
 
                 $scope.getDriverLocationsData = async () => {
                     try {
-                        $scope.driverLocations = await DispatchData.getDriverLocations($scope.selectedViews);
+                        // Filter views to only include selected ones
+                        const selectedViews = $scope.views.filter(view => view.selected);
+
+                        // Pass only selected views to the backend
+                        const data = await DispatchData.getDriverLocations(selectedViews);
+
+                        $scope.driverLocations = data;
+
                         $timeout(() => {
                             angular.element("#driverLocations .loading").fadeOut();
                         }, 0);
-                        console.log("Driver Locations: " + $scope.driverLocations);
+
+                        console.log("Driver Locations: ", $scope.driverLocations);
                         await $scope.activateDrop();
                     } catch (error) {
                         console.error('Error getting clear lists data:', error);
@@ -3225,7 +3242,9 @@ angular.module("uDispatch")
 
                 await $scope.getDriverLocationsData();
                 $scope.driverLocationsLoading = false;
-                $scope.$apply();
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
             }
 
             /**
@@ -3236,12 +3255,6 @@ angular.module("uDispatch")
                 const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
                 map.fitBounds(new google.maps.LatLngBounds(swll, nell));
                 map.setZoom(13);
-            }
-
-            async function fetchCouriers() {
-                const [activeCouriers, allCouriers] = await Promise.all([DispatchData.getActiveCouriers(), DispatchData.getAllCouriers()]);
-                $scope.pickCouriers = activeCouriers;
-                $scope.pickAllCouriers = allCouriers;
             }
 
             if (!$scope.isInternal) {

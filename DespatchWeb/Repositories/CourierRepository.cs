@@ -268,22 +268,24 @@ public class CourierRepository : ICourierRepository
 
     public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
     {
-        // Early validation
-        if (despatchViewIds == null || !despatchViewIds.Any())
-            return new ClearListViewModel { Areas = new List<AreaClearList>() };
-
         try
         {
             // Get all required data upfront
             var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
-            var clearLists = await _context.TblDespatchViews
-                .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-                .SelectMany(dv => dv.DespatchViewZoneGroups)
+            var query = _context.TblDespatchViews.AsQueryable();
+
+            // If view(s) provided, filter to these
+            if (despatchViewIds.Any())
+            {
+                query = query.Where(dv => despatchViewIds.Contains(dv.DespatchViewId));
+            }
+
+            // Get the results
+            var clearLists = await query.SelectMany(dv => dv.DespatchViewZoneGroups)
                 .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
                 .Where(cla => cla != null)
                 .Distinct()
                 .Select(cl => new { cl.ClearListAreaId, cl.Name, cl.Order })
-                .AsNoTracking()
                 .ToListAsync();
 
             // Process each clear list sequentially to avoid DbContext threading issues
@@ -345,7 +347,7 @@ public class CourierRepository : ICourierRepository
         }
     }
 
-    public async Task<int> ClearListTotalRemainingAsync(string area)
+    private async Task<int> ClearListTotalRemainingAsync(string area)
     {
         var filter =
             _context.TblDespatchViews.FirstOrDefault(v =>
