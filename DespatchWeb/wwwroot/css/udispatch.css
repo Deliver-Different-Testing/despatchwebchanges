@@ -1,6 +1,6 @@
 body {
   overflow: hidden;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 md-dialog {
   min-width: 400px;
@@ -1824,8 +1824,7 @@ md-list-item:not(.selected):hover {
     padding: 16px;
   }
 }
-
 .popup-icon {
-    margin-right: 8px;
+  margin-right: 8px;
 }
 /*# sourceMappingURL=udispatch.css.map */

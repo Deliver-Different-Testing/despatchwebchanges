@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public VehicleSize()
         {
             AgentVehicles = new HashSet<AgentVehicle>();
+            TucJobs = new HashSet<TucJob>();
         }
 
         public int VehicleSizeId { get; set; }
@@ -25,5 +26,6 @@ namespace DespatchWeb.EntityClasses
         public int? VehicleTypeId { get; set; }
 
         public virtual ICollection<AgentVehicle> AgentVehicles { get; set; }
+        public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

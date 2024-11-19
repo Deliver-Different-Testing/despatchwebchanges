@@ -27,14 +27,17 @@ angular.module("uDispatch")
                 $scope.selectedViews = [];
 
                 $scope.filters = [
-                    {value: 'new', label: 'New', active: false},
-                    {value: 'nda', label: 'NDA', active: false},
-                    {value: 'active', label: 'Active', active: false},
-                    {value: 'done', label: 'Done', active: false},
-                    {value: 'all', label: 'All', active: true}  // default active filter
+                    {value: 1, label: 'New', icon: 'fiber_new', active: false},
+                    {value: 2, label: 'NDA', icon: 'local_shipping', active: false},
+                    {value: 3, label: 'Active', icon: 'sync', active: false},
+                    {value: 4, label: 'Done', icon: 'task_alt', active: false},
+                    {value: 5, label: 'All', icon: 'list_alt', active: true}
                 ];
 
-                $scope.selectedFilter = 'all'; // default value
+                $scope.selectedFilter = loadFilterFromStorage();
+                $scope.filters.forEach(filter => {
+                    filter.active = filter.value === $scope.selectedFilter;
+                });
 
                 $scope.pickAllCouriers = [];
                 $scope.selected = [];
@@ -409,6 +412,39 @@ angular.module("uDispatch")
                 }, true);
             }
 
+            function saveFilterToStorage(filter) {
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(`selectedFilter-${ContactID}`, filter);
+                }
+            }
+
+            function loadFilterFromStorage() {
+                if (Modernizr.localstorage) {
+                    const savedFilter = localStorage.getItem(`selectedFilter-${ContactID}`);
+                    return savedFilter ? parseInt(savedFilter) : 2; // Default to 2 if not found
+                }
+                return 2; // Default value if localStorage not available
+            }
+
+            function saveViewsToStorage(views) {
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(`selectedViews-${ContactID}`, JSON.stringify(views));
+                }
+            }
+
+            function loadViewsFromStorage() {
+                if (Modernizr.localstorage) {
+                    try {
+                        const savedViews = JSON.parse(localStorage.getItem(`selectedViews-${ContactID}`));
+                        return savedViews || [];
+                    } catch (error) {
+                        console.error('Error loading views from storage:', error);
+                        return [];
+                    }
+                }
+                return [];
+            }
+
             /**
              * Object containing helper functions for the application.
              * @type {Object}
@@ -462,7 +498,7 @@ angular.module("uDispatch")
 
                     // Run functions sequentially to prevent race conditions
                     await initializeViews();
-                    await $scope.updateFilters("nda");
+                    await $scope.updateFilters($scope.selectedFilter);
                     await fetchDriverLocations();
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
@@ -477,43 +513,46 @@ angular.module("uDispatch")
              */
             async function initializeViews() {
                 if ($scope.views && $scope.views.length > 0) {
-                    // Initialize selectedViews as an array
-                    $scope.selectedViews = [];
+                    // Load saved views or initialize empty array
+                    $scope.selectedViews = loadViewsFromStorage();
 
-                    // Set selected property on each view, default first one to true
-                    $scope.views = $scope.views.map((view, index) => ({
+                    // Set selected property on each view
+                    $scope.views = $scope.views.map(view => ({
                         ...view,
-                        selected: index === 0  // First view is selected by default
+                        selected: $scope.selectedViews.some(v => v.id === view.id)
                     }));
 
-                    // Add first view to selectedViews
-                    $scope.selectedViews.push($scope.views[0]);
+                    // If no views are selected, select the first one by default
+                    if ($scope.selectedViews.length === 0) {
+                        $scope.views[0].selected = true;
+                        $scope.selectedViews.push($scope.views[0]);
+                        saveViewsToStorage($scope.selectedViews);
+                    }
                 }
             }
 
-            $scope.toggleView = function (view) {
+            $scope.toggleView = async view => {
                 if (view.selected) {
-                    // Add to selectedViews if not already present
-                    if (!$scope.selectedViews.some(v => v === view)) {
+                    if (!$scope.selectedViews.some(v => v.id === view.id)) {
                         $scope.selectedViews.push(view);
                     }
                 } else {
-                    // Remove from selectedViews
-                    const index = $scope.selectedViews.findIndex(v => v === view);
+                    const index = $scope.selectedViews.findIndex(v => v.id === view.id);
                     if (index > -1) {
                         $scope.selectedViews.splice(index, 1);
                     }
                 }
 
-                // Update data with new view selection
-                $scope.getData();
+                // Save filtered views
+                saveViewsToStorage($scope.selectedViews);
+
+                // Run both promises in parallel with filtered views
+                await Promise.all([
+                    fetchDriverLocations(),
+                    $scope.getData()
+                ]);
             };
 
-            /**
-             * Updates filters based on the selected filter option.
-             * @param {string} selectedFilter - The selected filter option.
-             * @returns {Promise<void>}
-             */
             $scope.updateFilters = async (selectedFilter) => {
                 try {
                     // Set all filters to inactive
@@ -527,6 +566,10 @@ angular.module("uDispatch")
                         selectedFilterObj.active = true;
                     }
 
+                    // Save the selected filter
+                    saveFilterToStorage(selectedFilter);
+
+                    // Pass the numeric value directly to setFilters
                     await setFilters({'status': selectedFilter});
 
                     // Ensure Angular updates the UI
@@ -666,17 +709,44 @@ angular.module("uDispatch")
              * @param {Job} job
              */
             $scope.attention = job => {
-                let temp = "";
-                if (job.direct) temp += "DIRECT ";
-                if (job.van) temp = "VAN ";
-                if (job.truck || job.speedID === 45) temp += "TRUCK ";
-                if (job.return) temp += "RTN ";
-                if (job.size.id === 2 && !job.van && !job.truck && job.speedID !== 45) temp = "CAR " + temp;
-                if (job.size.id === 5) temp = "Scoot " + temp;
-                if (job.childNotes !== null && job.childNotes.length > 0) temp += job.childNotes;
-                if (job.pickupFrom === 1) temp += "R "; else if (job.pickupFrom === 2) temp += "D ";
-                if (job.saturdayDelivery) temp += "Sat Del";
-                return temp.trim();
+                const components = [];
+
+                // Add DIRECT if applicable
+                if (job.direct) {
+                    components.push('DIRECT');
+                }
+
+                // Size label is always included (capitalized) if present
+                if (job.size?.label) {
+                    components.push(job.size.label.toUpperCase());
+                }
+
+                // Add RTN for return jobs
+                if (job.return) {
+                    components.push('RTN');
+                }
+
+                // Add child notes if present
+                if (job.childNotes?.length > 0) {
+                    components.push(job.childNotes);
+                }
+
+                // Add pickup location indicator
+                const pickupMap = {
+                    1: 'R',
+                    2: 'D'
+                };
+                if (pickupMap[job.pickupFrom]) {
+                    components.push(pickupMap[job.pickupFrom]);
+                }
+
+                // Add Saturday delivery indicator
+                if (job.saturdayDelivery) {
+                    components.push('Sat Del');
+                }
+
+                // Join all components with spaces and trim
+                return components.join(' ').trim();
             };
 
             $scope.sortableOptions = {
@@ -788,7 +858,7 @@ angular.module("uDispatch")
 
                     let driverLocationsActive = angular.element("#driverLocations .listActive");
                     if (driverLocationsActive.length <= 1) {
-                        const envelope = await $scope.getClearListEnvelope(clearListId);
+                        const envelope = await getClearListEnvelope(clearListId);
 
                         console.log('Envelope Coordinates:');
                         console.log('Maximum Latitude:', envelope.maximumLatitude);
@@ -817,6 +887,38 @@ angular.module("uDispatch")
                     });
                 }
             };
+
+            /**
+             * Gets envelope coordinates for a clear list
+             * @param {number} clearListId - ID of the clear list
+             * @param {Object} scope - The controller scope
+             * @returns {Promise<Object>} Envelope coordinates
+             */
+            async function getClearListEnvelope(clearListId, scope) {
+                try {
+                    const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
+
+                    if (data) {
+                        // Update map bounds with envelope data
+                        if (scope.map) {
+                            const swll = new google.maps.LatLng(data.minimumLatitude, data.minimumLongitude);
+                            const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
+                            scope.map.fitBounds(new google.maps.LatLngBounds(swll, nell));
+                            scope.map.setZoom(13);
+                        }
+
+                        // Update available courier locations if method exists
+                        if (scope.getAvailableCourierLocation) {
+                            await scope.getAvailableCourierLocation();
+                        }
+                    }
+
+                    return data;
+                } catch (error) {
+                    console.error('Error getting clear list envelope:', error);
+                    throw error;
+                }
+            }
 
             /**
              * Handles keyboard input for dispatch field
@@ -2294,13 +2396,10 @@ angular.module("uDispatch")
                 }
             }
 
-            /**
-             * @param {*} data
-             */
             async function setFilters(data) {
                 await $timeout(async () => {
                     if (data.status) {
-                        $scope.queryParams.status = data.status;
+                        $scope.queryParams.status = data.status; // Now passing numeric value
                     } else {
                         const selectedStatus = Object.entries($scope.filters)
                             .filter(([key, value]) => value && key !== 'all')
@@ -2309,7 +2408,7 @@ angular.module("uDispatch")
                         if (selectedStatus.length > 0) {
                             $scope.queryParams.status = selectedStatus.join(',');
                         } else if ($scope.filters.all) {
-                            $scope.queryParams.status = 'all';
+                            $scope.queryParams.status = 5; // Use numeric value for 'all'
                         } else {
                             delete $scope.queryParams.status;
                         }
@@ -2341,6 +2440,9 @@ angular.module("uDispatch")
                 }, 300);
             }
 
+            /**
+             * @param {Job} job
+             */
             $scope.selectJobDetail = async (job) => {
                 $scope.currentJob = job;
                 $scope.currentSupport = null;
@@ -2892,30 +2994,8 @@ angular.module("uDispatch")
                     return;
                 }
 
-                const areas = $scope.views;
                 const channels = [];
                 let trucks = false;
-
-                areas.forEach(area => {
-                    switch (area) {
-                        case "main1":
-                        case "main2":
-                            if (!channels.includes(1)) {
-                                channels.push(1);
-                            }
-                            break;
-                        case "city":
-                            if (!channels.includes(2)) {
-                                channels.push(2);
-                            }
-                            break;
-                        case "truck":
-                            trucks = true;
-                            break;
-                        default:
-                            console.log("Default case reached");
-                    }
-                });
 
                 if (map && map.getBounds()) {
                     const bounds = map.getBounds();
@@ -3133,7 +3213,6 @@ angular.module("uDispatch")
                         const data = await DispatchData.getDriverDestinationEnvelope(clearListId);
                         updateMapBounds(data);
                         await $scope.getAvailableCourierLocation();
-
                         return data;
                     } catch (error) {
                         console.error('Error getting clear list envelope:', error);
@@ -3142,11 +3221,19 @@ angular.module("uDispatch")
 
                 $scope.getDriverLocationsData = async () => {
                     try {
-                        $scope.driverLocations = await DispatchData.getDriverLocations($scope.selectedViews);
+                        // Filter views to only include selected ones
+                        const selectedViews = $scope.views.filter(view => view.selected);
+
+                        // Pass only selected views to the backend
+                        const data = await DispatchData.getDriverLocations(selectedViews);
+
+                        $scope.driverLocations = data;
+
                         $timeout(() => {
                             angular.element("#driverLocations .loading").fadeOut();
                         }, 0);
-                        console.log("Driver Locations: " + $scope.driverLocations);
+
+                        console.log("Driver Locations: ", $scope.driverLocations);
                         await $scope.activateDrop();
                     } catch (error) {
                         console.error('Error getting clear lists data:', error);
@@ -3155,7 +3242,9 @@ angular.module("uDispatch")
 
                 await $scope.getDriverLocationsData();
                 $scope.driverLocationsLoading = false;
-                $scope.$apply();
+                if (!$scope.$$phase) {
+                    $scope.$apply();
+                }
             }
 
             /**
@@ -3166,12 +3255,6 @@ angular.module("uDispatch")
                 const nell = new google.maps.LatLng(data.maximumLatitude, data.maximumLongitude);
                 map.fitBounds(new google.maps.LatLngBounds(swll, nell));
                 map.setZoom(13);
-            }
-
-            async function fetchCouriers() {
-                const [activeCouriers, allCouriers] = await Promise.all([DispatchData.getActiveCouriers(), DispatchData.getAllCouriers()]);
-                $scope.pickCouriers = activeCouriers;
-                $scope.pickAllCouriers = allCouriers;
             }
 
             if (!$scope.isInternal) {

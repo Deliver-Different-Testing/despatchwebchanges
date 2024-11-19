@@ -361,7 +361,10 @@ class DispatchData {
      * @param {Suggestion[]} selectedViews
      */
     async getDriverLocations(selectedViews) {
-        const despatchViewIds = this._prepareViewIdsForRequest(selectedViews);
+        // Make sure we only get the selected views
+        const filteredViews = selectedViews.filter(view => view.selected);
+        const despatchViewIds = this._prepareViewIdsForRequest(filteredViews);
+
         const params = new URLSearchParams();
 
         // Append each despatchViewId as a separate query parameter
@@ -1119,6 +1122,11 @@ class DispatchData {
      */
     async isFilesAttachedToJob(jobId) {
         const response = await this._$http.get(`job/IsFilesAttachedToJob/${jobId}`);
+        return response.data;
+    }
+
+    async getVehicleSizes() {
+        const response = await this._$http.get(`courier/GetVehicleSizes`);
         return response.data;
     }
 

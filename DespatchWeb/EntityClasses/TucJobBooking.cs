@@ -9,6 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public TucJobBooking()
         {
+            PricingBreakdowns = new HashSet<PricingBreakdown>();
             TucJobBookingItems = new HashSet<TucJobBookingItem>();
             TucJobNationwides = new HashSet<TucJobNationwide>();
         }
@@ -180,9 +181,15 @@ namespace DespatchWeb.EntityClasses
         public int? ToAirportId { get; set; }
         public DateTime? DeliverByTime { get; set; }
 
+        public virtual TucCourier Courier { get; set; }
         public virtual TblAirport FromAirport { get; set; }
         public virtual TblJobRelationshipType JobRelationshipType { get; set; }
+        public virtual TucContact LoggedInContact { get; set; }
+        public virtual TucSource Source { get; set; }
         public virtual TblAirport ToAirport { get; set; }
+        public virtual TucClient UcbkClient { get; set; }
+        public virtual TucJobType UcbkSpeedNavigation { get; set; }
+        public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; }
         public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; }
         public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; }
     }

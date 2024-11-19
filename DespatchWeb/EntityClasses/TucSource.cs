@@ -9,6 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public TucSource()
         {
+            TucJobBookings = new HashSet<TucJobBooking>();
             TucJobs = new HashSet<TucJob>();
         }
 
@@ -19,6 +20,7 @@ namespace DespatchWeb.EntityClasses
         public DateTime LastModified { get; set; }
         public string LastModifiedBy { get; set; }
 
+        public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

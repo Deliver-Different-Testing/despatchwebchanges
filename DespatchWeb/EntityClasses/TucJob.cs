@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucJob()
         {
             InverseParent = new HashSet<TucJob>();
+            PricingBreakdowns = new HashSet<PricingBreakdown>();
             TblBulkJobs = new HashSet<TblBulkJob>();
             TucEvents = new HashSet<TucEvent>();
             TucJobItems = new HashSet<TucJobItem>();
@@ -31,7 +32,7 @@ namespace DespatchWeb.EntityClasses
         public int? UcjbTo { get; set; }
         public string UcjbToSpecial { get; set; }
         public string UcjbToAddr { get; set; }
-        public short? UcjbSize { get; set; }
+        public int? UcjbSize { get; set; }
         public short? UcjbQty { get; set; }
         public bool UcjbCbd { get; set; }
         public double? UcjbKm { get; set; }
@@ -243,11 +244,13 @@ namespace DespatchWeb.EntityClasses
         public virtual TucCourier UcjbCourier { get; set; }
         public virtual TucStaff UcjbDisp { get; set; }
         public virtual TucSuburb UcjbFromNavigation { get; set; }
+        public virtual VehicleSize UcjbSizeNavigation { get; set; }
         public virtual TucJobType UcjbSpeedNavigation { get; set; }
         public virtual TucJobStatus UcjbStatusNavigation { get; set; }
         public virtual TucSuburb UcjbToNavigation { get; set; }
         public virtual TblUndeliverableLocation UndeliverableLocation { get; set; }
         public virtual ICollection<TucJob> InverseParent { get; set; }
+        public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; }
         public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; }
         public virtual ICollection<TucEvent> TucEvents { get; set; }
         public virtual ICollection<TucJobItem> TucJobItems { get; set; }

@@ -24,9 +24,6 @@ public class CourierController : Controller
     {
         try
         {
-            if (despatchViewIds is { Count: 0 })
-                despatchViewIds.Add(49);
-
             var result = await _courierRepo.GetClearListsAsync(despatchViewIds);
             return Json(result);
         }
@@ -186,6 +183,21 @@ public class CourierController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding followup event");
+            return StatusCode(500);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetVehicleSizes()
+    {
+        try
+        {
+            var vehicleSizes = await _courierRepo.GetVehicleSizesAsync();
+            return Json(vehicleSizes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting vehicle sizes");
             return StatusCode(500);
         }
     }

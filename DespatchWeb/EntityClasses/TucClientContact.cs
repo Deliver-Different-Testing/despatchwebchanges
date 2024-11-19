@@ -10,6 +10,7 @@ namespace DespatchWeb.EntityClasses
         public TucClientContact()
         {
             TblClientContacts = new HashSet<TblClientContact>();
+            TucJobArchives = new HashSet<TucJobArchive>();
             TucJobs = new HashSet<TucJob>();
         }
 
@@ -55,6 +56,7 @@ namespace DespatchWeb.EntityClasses
 
         public virtual TucClient UcctClient { get; set; }
         public virtual ICollection<TblClientContact> TblClientContacts { get; set; }
+        public virtual ICollection<TucJobArchive> TucJobArchives { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

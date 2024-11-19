@@ -7,6 +7,7 @@ using System.Net.Mail;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -50,13 +51,40 @@ public class JobController : Controller
     public async Task<IActionResult> Index([FromQuery] JobQueryParams queryParams, bool isInternal,
         int cid, string clientIds, [FromQuery] List<int> despatchViewIds)
     {
-        // Validate Client Access
-        if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+        _logger.LogInformation("Index endpoint called with params: {@QueryParams}, IsInternal: {IsInternal}, " +
+                               "ClientId: {ClientId}, ClientIds: {ClientIds}, DespatchViewIds: {@DespatchViewIds}",
+            queryParams, isInternal, cid, clientIds, despatchViewIds);
 
-        // Get jobs
-        var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
-            queryParams.Asc, isInternal, clientIds, despatchViewIds);
-        return Json(result);
+        try
+        {
+            // Validate Client Access
+            if (!isInternal)
+            {
+                _logger.LogDebug("Validating client access for cid: {ClientId}", cid);
+                await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+            }
+
+            // Get jobs
+            _logger.LogDebug("Retrieving jobs with status: {Status}, order: {Order}, ascending: {Ascending}",
+                queryParams.Status, queryParams.Order, queryParams.Asc);
+
+            var status = (DispatchStatus)queryParams.Status;
+            var result = await _jobRepo.JobListAsync(queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, despatchViewIds, null, status);
+
+            _logger.LogInformation("Successfully retrieved {Count} jobs", result.Count);
+            return Json(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access attempt for client {ClientId}", cid);
+            return StatusCode(StatusCodes.Status401Unauthorized, $"Unauthorized access attempt for client {cid}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing job list request");
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
     }
 
     [HttpGet]
@@ -70,8 +98,10 @@ public class JobController : Controller
             if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             // Get jobs
-            var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds, clearListEnvelopeViewModel);
+            var status = (DispatchStatus)queryParams.Status;
+            var result = await _jobRepo.JobListAsync(queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, despatchViewIds, clearListEnvelopeViewModel, status);
+
             return Json(result);
         }
         catch (Exception e)
@@ -293,9 +323,9 @@ public class JobController : Controller
         using (FileStream stream = System.IO.File.Create(filePath))
         {
             await file.CopyToAsync(stream);
-            using (var reader = (fileExtension == ".csv"
+            using (var reader = fileExtension == ".csv"
                        ? ExcelReaderFactory.CreateCsvReader(stream)
-                       : ExcelReaderFactory.CreateReader(stream)))
+                       : ExcelReaderFactory.CreateReader(stream))
             {
                 var output = reader.AsDataSet(new ExcelDataSetConfiguration()
                 {
@@ -723,8 +753,8 @@ public class JobController : Controller
         var description = await _jobRepo.RateTruckJobDescription(clientId, fromId, toId, weight, size, speed, qty,
             bookedDate, pickUp,
             dropOff, privateRes, oversizeItems, overWeightItems, dGClass, truckStartTime, truckHours);
-        description += ($"\rTotal = {rate:C}");
-        description += ($"\rTotal (+GST) = {rate * (1 + gstRate):C}");
+        description += $"\rTotal = {rate:C}";
+        description += $"\rTotal (+GST) = {rate * (1 + gstRate):C}";
         return Json(description);
     }
 
@@ -748,7 +778,9 @@ public class JobController : Controller
             size,
             includeFuelSurcharge, direct, acceptedJobTypeId,
             ourRef, refA, refB, quantity, booked);
+
         var finalDescription = direct ? "DIRECT PRICE\r" : currentRateAmount != amount ? "NORMAL PRICE\r" : "";
+
         var description = await _jobRepo.RateJobDescription(clientId, fromId, toId, speed, pedal, van, returnJob,
             weight, size,
             includeFuelSurcharge, direct, acceptedJobTypeId,
@@ -763,9 +795,9 @@ public class JobController : Controller
             ? await _jobRepo.FuelSurchargeInclusiveAmount(clientId, amount, fromId, toId, booked, size)
             : 0;
         var ppd = includeFuelSurcharge ? await _jobRepo.PpdInclusiveAmount(clientId, amount) : 0;
-        finalDescription += ($"\rSPECIAL PRICE = {(amount - fs - ppd):C}");
+        finalDescription += $"\rSPECIAL PRICE = {amount - fs - ppd:C}";
         if (fs <= 0) return Json(finalDescription);
-        //strDescription = strDescription & vbCrLf & "Plus fuel surcharge = $" & Format(curFuelSurcharge, "0.00")
+
         finalDescription += $"\rPlus fuel surcharge = {fs:C}";
         finalDescription += $"\rPlus PPD = {ppd:C}";
         finalDescription += $"\rTOTAL = {amount:C}";

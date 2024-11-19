@@ -247,6 +247,76 @@ public class CourierRepository : ICourierRepository
         }
     }
 
+    public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
+        int clearListAreaId,
+        Country country,
+        bool includeCouriers = false)
+    {
+        if (clearListAreaId <= 0)
+            throw new ArgumentException("Invalid clearListAreaId", nameof(clearListAreaId));
+
+        if (!Enum.IsDefined(typeof(Country), country))
+            throw new ArgumentException("Invalid country", nameof(country));
+
+        return country switch
+        {
+            Country.Nz => await GetClearListEnvelopeNzAsync(clearListAreaId, includeCouriers),
+            Country.Us => await GetClearListEnvelopeUsAsync(clearListAreaId, includeCouriers),
+            _ => throw new ArgumentOutOfRangeException(nameof(country), country, null)
+        };
+    }
+
+    public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
+    {
+        try
+        {
+            // Get all required data upfront
+            var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
+            var query = _context.TblDespatchViews.AsQueryable();
+
+            // If view(s) provided, filter to these
+            if (despatchViewIds.Any())
+            {
+                query = query.Where(dv => despatchViewIds.Contains(dv.DespatchViewId));
+            }
+
+            // Get the results
+            var clearLists = await query.SelectMany(dv => dv.DespatchViewZoneGroups)
+                .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
+                .Where(cla => cla != null)
+                .Distinct()
+                .Select(cl => new { cl.ClearListAreaId, cl.Name, cl.Order })
+                .ToListAsync();
+
+            // Process each clear list sequentially to avoid DbContext threading issues
+            var areas = new List<AreaClearList>();
+            foreach (var clearList in clearLists)
+            {
+                var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
+                if (areaClearList == null) continue;
+
+                areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearList.Name?.ToLower());
+                areas.Add(areaClearList);
+            }
+
+            return new ClearListViewModel { Areas = areas };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GetClearListsAsync for despatchViewIds: {@DespatchViewIds}",
+                despatchViewIds);
+            throw;
+        }
+    }
+
+    public async Task<List<Suggestion>> GetVehicleSizesAsync()
+    {
+        return await _context.VehicleSizes.Select(v => new Suggestion
+        {
+            Id = v.VehicleSizeId, Text = v.VehicleName
+        }).ToListAsync();
+    }
+
     public async Task<string> GetAirportCodeByIdAsync(int airportId)
     {
         try
@@ -277,7 +347,7 @@ public class CourierRepository : ICourierRepository
         }
     }
 
-    public async Task<int> ClearListTotalRemainingAsync(string area)
+    private async Task<int> ClearListTotalRemainingAsync(string area)
     {
         var filter =
             _context.TblDespatchViews.FirstOrDefault(v =>
@@ -291,66 +361,6 @@ public class CourierRepository : ICourierRepository
             $"select *, null as CourierLatitude, null as CourierLongitude from DESWEB_qryDespatch where {filter}";
         var jobs = await _context.DeswebQryDespatches.FromSqlRaw(query).ToListAsync();
         return jobs.Count;
-    }
-
-    public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
-        int clearListAreaId,
-        Country country,
-        bool includeCouriers = false)
-    {
-        if (clearListAreaId <= 0)
-            throw new ArgumentException("Invalid clearListAreaId", nameof(clearListAreaId));
-
-        if (!Enum.IsDefined(typeof(Country), country))
-            throw new ArgumentException("Invalid country", nameof(country));
-
-        return country switch
-        {
-            Country.Nz => await GetClearListEnvelopeNzAsync(clearListAreaId, includeCouriers),
-            Country.Us => await GetClearListEnvelopeUsAsync(clearListAreaId, includeCouriers),
-            _ => throw new ArgumentOutOfRangeException(nameof(country), country, null)
-        };
-    }
-
-    public async Task<ClearListViewModel> GetClearListsAsync(List<int> despatchViewIds)
-    {
-        // Early validation
-        if (despatchViewIds == null || !despatchViewIds.Any())
-            return new ClearListViewModel { Areas = new List<AreaClearList>() };
-
-        try
-        {
-            // Get all required data upfront
-            var activeCouriers = await _context.Procedures.DES_qryCourierCombo_ActiveAsync();
-            var clearLists = await _context.TblDespatchViews
-                .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-                .SelectMany(dv => dv.DespatchViewZoneGroups)
-                .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
-                .Where(cla => cla != null)
-                .Distinct()
-                .Select(cl => new { cl.ClearListAreaId, cl.Name, cl.Order })
-                .AsNoTracking()
-                .ToListAsync();
-
-            // Process each clear list sequentially to avoid DbContext threading issues
-            var areas = new List<AreaClearList>();
-            foreach (var clearList in clearLists)
-            {
-                var areaClearList = await BuildClearListViewModel(activeCouriers, clearList, 33);
-                if (areaClearList == null) continue;
-
-                areaClearList.TotalRemaining = await ClearListTotalRemainingAsync(clearList.Name?.ToLower());
-                areas.Add(areaClearList);
-            }
-
-            return new ClearListViewModel { Areas = areas };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in GetClearListsAsync for despatchViewIds: {@DespatchViewIds}",
-                despatchViewIds);
-            throw;
-        }
     }
 
     private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeUsAsync(int clearListAreaId,

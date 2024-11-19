@@ -1,6 +1,6 @@
 namespace DespatchWeb.Enums;
 
-public enum NationwideWindowPanel
+public enum NationwideWidget
 {
     JobList = 1,
     Pod = 2,

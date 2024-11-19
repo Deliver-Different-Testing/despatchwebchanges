@@ -8,7 +8,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Vehicle = DespatchWeb.Models.Vehicle;
 
 namespace DespatchWeb.Repositories;
 
@@ -194,27 +193,23 @@ public class BaseJobRepository
         // References and amounts
         RefA = j.UcjbClientRefa,
         RefB = j.UcjbClientRefb,
-        Charge = $"{j.UcjbAmount:C}",
+        Charge = $"{j.PricingBreakdowns.Sum(p => p.ChargeAmount):C}",
         OurRef = j.UcjbOurRef,
 
         // Status
-        StatusId = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsId : 0,
+        StatusId = j.UcjbStatus,
         Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
         StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
         InternalStatusId = j.InternalStatus,
 
         // Size
-        Size = new Vehicle
-        {
-            Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-            Label = j.UcjbVan ? "Van" :
-                j.UcjbSize == 1 ? "Bike" :
-                j.UcjbSize == 2 ? "Car" :
-                j.UcjbSize == 3 ? "Van" :
-                j.UcjbSize == 4 ? "Truck" :
-                j.UcjbSize == 5 ? "Scooter" :
-                "Car" // Default case
-        },
+        Size = j.UcjbSizeNavigation != null
+            ? new Suggestion
+            {
+                Id = j.UcjbSizeNavigation.VehicleSizeId,
+                Text = j.UcjbSizeNavigation.VehicleName
+            }
+            : null,
 
         // Job items
         PalletInfo = j.TucJobItems.Select(i => new PalletInfo
@@ -233,17 +228,17 @@ public class BaseJobRepository
         }).ToList(),
 
         // Related jobs
-        RelatedJobs = j.Parent.InverseParent.Select(p => new Size
+        RelatedJobs = j.Parent.InverseParent.Select(p => new Suggestion
         {
             Id = p.UcjbId,
-            Label = p.UcjbNumber
+            Text = p.UcjbNumber
         }).ToList()
     };
 
     private readonly DespatchContext _context;
     private readonly ILogger<BaseJobRepository> _logger;
 
-    public BaseJobRepository(DespatchContext context, ILogger<BaseJobRepository> logger)
+    protected BaseJobRepository(DespatchContext context, ILogger<BaseJobRepository> logger)
     {
         _context = context;
         _logger = logger;
@@ -256,17 +251,17 @@ public class BaseJobRepository
         return result.Entity;
     }
 
-    public async Task<T> Get<T>(int id) where T : class => await _context.Set<T>().FindAsync(id);
+    protected async Task<T> Get<T>(int id) where T : class => await _context.Set<T>().FindAsync(id);
 
     // This function replaces the sql view "DESWEB_qryDespatch"
-    public async Task<List<JobViewModel>> DespatchQry(AppPage page, string status,
+    protected async Task<List<JobViewModel>> DespatchQry(AppPage page, DispatchStatus status,
         string order, string ascending, bool isInternal, string clientIds,
-        List<string> viewFilters, NationwideWindowPanel? windowPane = null,
+        List<int> selectedViewIds, NationwideWidget? windowPane = null,
         ClearListEnvelopeViewModel clearListEnvelope = null)
     {
         try
         {
-            var query = await BuildBaseQuery(viewFilters);
+            var query = await BuildBaseQuery(selectedViewIds);
             if (query == null) return new List<JobViewModel>();
 
             query = ApplyGeographicFilters(query, clearListEnvelope);
@@ -297,25 +292,32 @@ public class BaseJobRepository
         }
     }
 
-    private async Task<IQueryable<TucJob>> BuildBaseQuery(List<string> viewFilters)
+    private async Task<IQueryable<TucJob>> BuildBaseQuery(List<int> selectedViews)
     {
-        var jobIds = await GetFilteredJobIds(viewFilters);
+        var jobIds = await GetFilteredJobIds(selectedViews);
         if (!jobIds.Any()) return null;
 
         return _context.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId));
     }
 
-    private async Task<List<int>> GetFilteredJobIds(List<string> viewFilters)
+    private async Task<List<int>> GetFilteredJobIds(List<int> selectedViewIds)
     {
-        if (viewFilters?.Any() != true)
+        if (selectedViewIds?.Any() != true)
         {
             return await _context.DeswebQryDespatchJobViewFilters
                 .Select(x => x.UcjbId)
                 .ToListAsync();
         }
 
-        var combinedFilters = string.Join(" AND ", viewFilters.Select(filter => $"({filter})"));
+        var viewFilters = selectedViewIds.Any()
+            ? await _context.TblDespatchViews
+                .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
+                .Select(dv => dv.WhereCondition)
+                .ToListAsync()
+            : new List<string>();
+
+        var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
         return await _context.DeswebQryDespatchJobViewFilters
             .FromSqlRaw($"select * from DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}")
             .Select(x => x.UcjbId)
@@ -338,26 +340,28 @@ public class BaseJobRepository
 
     private static IQueryable<TucJob> ApplyDashboardSpecificFilters(
         IQueryable<TucJob> query,
-        string status)
+        DispatchStatus status)
     {
         // Apply status filters
-        query = status?.ToLower() switch
+        query = status switch
         {
-            "new" => query.Where(j => j.UcjbStatusNavigation != null && (j.UcjbCourierId == null ||
-                                                                         j.UcjbStatusNavigation.UcjsCode == "D" ||
-                                                                         j.UcjbStatusNavigation.UcjsCode == "N")),
+            DispatchStatus.New => query.Where(j => j.UcjbStatusNavigation != null && (j.UcjbCourierId == null ||
+                j.UcjbStatus == (int)JobStatus.Dispatched ||
+                j.UcjbStatus == (int)JobStatus.New)),
 
-            "nda" => query.Where(j => j.UcjbCourierId == null ||
-                                      j.UcjbStatusNavigation.UcjsCode == "N" ||
-                                      j.UcjbStatusNavigation.UcjsCode == "D" ||
-                                      j.UcjbStatusNavigation.UcjsCode == "A" ||
-                                      j.UcjbStatusNavigation.UcjsCode == "LP"),
+            DispatchStatus.Nda => query.Where(j => j.UcjbCourierId == null ||
+                                                   j.UcjbStatus == (int)JobStatus.New ||
+                                                   j.UcjbStatus == (int)JobStatus.Dispatched ||
+                                                   j.UcjbStatus == (int)JobStatus.AwaitingPod ||
+                                                   j.UcjbStatus == (int)JobStatus.LatePickup),
 
-            "active" => query.Where(j => !j.UcjbJobDone),
+            DispatchStatus.Active => query.Where(j => !j.UcjbJobDone ||
+                                                      j.UcjbStatus != (int)JobStatus.Completed),
 
-            "done" => query.Where(j => j.UcjbJobDone),
+            DispatchStatus.Done => query.Where(j => j.UcjbJobDone ||
+                                                    j.UcjbStatus == (int)JobStatus.Completed),
 
-            "all" => query,
+            DispatchStatus.All => query,
 
             _ => query
         };
@@ -448,56 +452,53 @@ public class BaseJobRepository
     private static IQueryable<TucJob> ApplyNationwideSpecificFilters(
         IQueryable<TucJob> query,
         bool isInternal,
-        string status,
-        NationwideWindowPanel windowPane,
+        DispatchStatus status,
+        NationwideWidget windowPane,
         string clientIds)
     {
         // Apply status viewFilters
-        if (!string.IsNullOrEmpty(status))
+        query = status switch
         {
-            query = status switch
+            DispatchStatus.All => windowPane == NationwideWidget.Reprice
+                ? query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice)
+                : query.Where(j => !j.UcjbJobDone),
+
+            DispatchStatus.Active => windowPane switch
             {
-                "all" => windowPane == NationwideWindowPanel.Reprice
-                    ? query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice)
-                    : query.Where(j => !j.UcjbJobDone),
+                NationwideWidget.JobList =>
+                    query.Where(j => !j.UcjbJobDone),
 
-                "active" => windowPane switch
-                {
-                    NationwideWindowPanel.JobList =>
-                        query.Where(j => !j.UcjbJobDone),
+                NationwideWidget.Pod or NationwideWidget.ActionRequired =>
+                    query.Where(j => !j.UcjbJobDone && j.FollowupTime < DateTime.Now),
 
-                    NationwideWindowPanel.Pod or NationwideWindowPanel.ActionRequired =>
-                        query.Where(j => !j.UcjbJobDone && j.FollowupTime < DateTime.Now),
-
-                    NationwideWindowPanel.Reprice =>
-                        query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice),
-
-                    _ => query
-                },
-
-                "done" => windowPane == NationwideWindowPanel.Reprice
-                    ? query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice)
-                    : query.Where(j => j.UcjbJobDone),
+                NationwideWidget.Reprice =>
+                    query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice),
 
                 _ => query
-            };
-        }
+            },
+
+            DispatchStatus.Done => windowPane == NationwideWidget.Reprice
+                ? query.Where(j => j.Reprice == true || j.InternalStatus == (int)InternalJobStatus.Reprice)
+                : query.Where(j => j.UcjbJobDone),
+
+            _ => query
+        };
 
         // Apply window pane viewFilters
         query = windowPane switch
         {
-            NationwideWindowPanel.JobList =>
+            NationwideWidget.JobList =>
                 query.Where(j => j.InternalStatus == (int)InternalJobStatus.NewJobs ||
                                  (j.InternalStatus == null && j.UcjbStatus != 9)),
 
-            NationwideWindowPanel.Pod =>
+            NationwideWidget.Pod =>
                 query.Where(j => j.InternalStatus == (int)InternalJobStatus.AwaitingPod ||
                                  j.UcjbStatus == 9),
 
-            NationwideWindowPanel.ActionRequired =>
+            NationwideWidget.ActionRequired =>
                 query.Where(j => j.InternalStatus == (int)InternalJobStatus.ActionRequired),
 
-            NationwideWindowPanel.Reprice =>
+            NationwideWidget.Reprice =>
                 query.Where(j => j.InternalStatus == (int)InternalJobStatus.Reprice ||
                                  j.Reprice == true),
 
@@ -514,6 +515,9 @@ public class BaseJobRepository
 
         // Only get child jobs
         query = query.Where(j => j.ParentId != null);
+
+        // Block out completed jobs from the domestic/nationwide page
+        query = query.Where(j => j.UcjbComplTime != null || j.UcjbComplTime < DateTime.Now);
 
         return query;
     }

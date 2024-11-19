@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using DespatchWeb.Models.FlightStats;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Moq;
 using NUnit.Framework;
 
 namespace DespatchWeb.Tests.Services;
@@ -20,11 +22,13 @@ public class FlightStatsServiceTest
             .AddJsonFile("appsettings.json")
             ?.Build();
 
-        _service = new FlightStatsService(_configuration);
+        _logger = new Mock<ILogger<FlightStatsService>>();
+        _service = new FlightStatsService(_configuration, _logger.Object);
     }
 
     private IConfiguration _configuration;
     private FlightStatsService _service;
+    private IMock<ILogger<FlightStatsService>> _logger;
 
     [Test]
     [Category("Integration")]
@@ -115,10 +119,8 @@ public class FlightStatsServiceTest
 
     [Test]
     [Category("Unit")]
-    public void Constructor_WithValidConfiguration_InitializesService()
-    {
-        Assert.DoesNotThrow(() => new FlightStatsService(_configuration));
-    }
+    public void Constructor_WithValidConfiguration_InitializesService() =>
+        Assert.DoesNotThrow(() => new FlightStatsService(_configuration, _logger.Object));
 
     [Test]
     [Category("Integration")]
