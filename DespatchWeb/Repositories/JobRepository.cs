@@ -160,7 +160,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
             {
                 Id = j.UcjbId,
                 Label = j.UcjbNumber
-            }).ToListAsync();
+            }).AsNoTracking().ToListAsync();
     }
 
     /* Bulk Job Detail*/
@@ -925,9 +925,9 @@ public class JobRepository : BaseJobRepository, IJobRepository
             }).AsNoTracking().ToListAsync();
     }
 
-    public async Task<List<JobViewModel>> JobListAsync(string status, string order,
+    public async Task<List<JobViewModel>> JobListAsync(string order,
         string ascending, bool isInternal, string clientIds, List<int> selectedViewIds,
-        ClearListEnvelopeViewModel? clearListEnvelope = null)
+        ClearListEnvelopeViewModel clearListEnvelope = null, DispatchStatus status = DispatchStatus.Nda)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();
@@ -1567,45 +1567,26 @@ public class JobRepository : BaseJobRepository, IJobRepository
         return curAmount.Value ?? 0;
     }
 
-    public async Task<string> RateJobDescription(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
-        bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
-        string ourRef, string refA, string refB, int quantity, DateTime booked)
+    public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId)
     {
-        DbParameter outputDescriptionParam = null;
-        DbParameter outputCourierParam = null;
-
-        await _context.LoadStoredProc("sp_RateJob_Described")
-            .WithSqlParam("@intClientID", clientId)
-            .WithSqlParam("@intFromID", fromId)
-            .WithSqlParam("@intToID", toId)
-            .WithSqlParam("@intSpeed", direct ? acceptedJobTypeId : speed)
-            .WithSqlParam("@bolPedal", pedal)
-            .WithSqlParam("@bolVan", van)
-            .WithSqlParam("@bolReturn", returnJob)
-            .WithSqlParam("@intWeight", weight)
-            .WithSqlParam("@strDescription", (dbParam) =>
+        return await _context.PricingBreakdowns
+            .Where(p => p.JobId == jobId)
+            .Select(p => new ChargeViewModel
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.String;
-                dbParam.Size = 1000;
-                outputDescriptionParam = dbParam;
-            })
-            .WithSqlParam("@Size", size)
-            .WithSqlParam("@IncludeFuelSurcharge", includeFuelSurcharge)
-            .WithSqlParam("@OurRef", ourRef)
-            .WithSqlParam("@ClientRefA", refA)
-            .WithSqlParam("@ClientRefB", refB)
-            .WithSqlParam("@Quantity", quantity)
-            .WithSqlParam("@Booked", booked)
-            .WithSqlParam("@CourierID", (dbParam) =>
-            {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Int32;
-                outputCourierParam = dbParam;
-            })
-            .ExecuteStoredNonQueryAsync();
+                ChargeId = p.PricingBreakdownId,
+                Amount = p.ChargeAmount,
+                Name = p.ChargeName
+            }).AsNoTracking().ToListAsync();
+    }
 
-        return (string)(outputDescriptionParam.Value == DBNull.Value ? "" : outputDescriptionParam.Value);
+    /// <inheritdoc />
+    public Task<string> RateJobDescription(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
+        bool returnJob, int weight,
+        int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId, string ourRef, string refA,
+        string refB,
+        int quantity, DateTime booked)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<DirectToASAPViewModel> DirectToAsap(int jobId)
@@ -1984,14 +1965,49 @@ public class JobRepository : BaseJobRepository, IJobRepository
 
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
     {
-        await _context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
-            viewModel?.FromCourierId,
-            viewModel?.ToCourierId,
-            viewModel?.Amount,
-            viewModel?.Reference,
-            viewModel?.StaffId
-        );
+        try
+        {
+            var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
+            var currentTime = DateTime.Now;
+
+            var fromJobNumber = new OutputParameter<string>();
+            await _context.Procedures.NET_stpJob_Insert_JobNumberAsync(viewModel.StaffId, 1, fromJobNumber);
+            var toJobNumber = new OutputParameter<string>();
+            await _context.Procedures.NET_stpJob_Insert_JobNumberAsync(viewModel.StaffId, 1, toJobNumber);
+
+            var fromJob = CreateJobEntry(
+                jobNumber: fromJobNumber.Value,
+                courierId: viewModel.FromCourierId,
+                amount: viewModel.Amount,
+                reference: viewModel.Reference,
+                clientRefB: $"To # {viewModel.ToCourierId}",
+                ourRef: "ICC",
+                note: note,
+                currentTime: currentTime,
+                staffId: viewModel.StaffId);
+            await _context.TucJobs.AddAsync(fromJob);
+
+            var toJob = CreateJobEntry(
+                jobNumber: toJobNumber.Value,
+                courierId: viewModel.ToCourierId,
+                amount: viewModel.Amount,
+                reference: viewModel.Reference,
+                clientRefB: $"From # {viewModel.FromCourierId}",
+                ourRef: "",
+                note: note,
+                currentTime: currentTime,
+                staffId: viewModel.StaffId);
+            await _context.TucJobs.AddAsync(toJob);
+
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occured adding a new inter-courier job");
+            throw;
+        }
     }
+
 
     public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
     {
@@ -2121,5 +2137,58 @@ public class JobRepository : BaseJobRepository, IJobRepository
         );
 
         return outputParam.Value ?? 0m;
+    }
+
+    private TucJob CreateJobEntry(string jobNumber, int courierId, decimal amount, string reference, string clientRefB,
+        string ourRef,
+        string note, DateTime currentTime, int staffId)
+    {
+        return new TucJob
+        {
+            UcjbNumber = jobNumber,
+            UcjbDate = currentTime,
+            UcjbTime = currentTime,
+            UcjbType = 1,
+            UcjbClientId = 911,
+            UcjbContact = $"Courier {courierId}",
+            UcjbChargeType = 3,
+            UcjbAmount = amount,
+            UcjbSpeed = 1,
+            UcjbFrom = 1,
+            UcjbFromAddr = note,
+            UcjbTo = 1,
+            UcjbToAddr = "ToSP",
+            UcjbSize = 1,
+            UcjbQty = 1,
+            UcjbCbd = false,
+            UcjbKm = 0,
+            UcjbFlightDetails = "FD",
+            UcjbWeight = 1,
+            UcjbCourierId = courierId,
+            UcjbClientRefa = reference,
+            UcjbClientRefb = clientRefB,
+            UcjbOurRef = ourRef,
+            UcjbOpId = staffId,
+            UcjbVan = false,
+            Truck = false,
+            UcjbReturn = false,
+            UcjbVoid = false,
+            UcjbAttention = false,
+            UcjbPickUpFrom = 0,
+            UcjbPaged = true,
+            UcjbClientCode = "ZZZ!!",
+            UcjbRefJobId = 0,
+            UcjbNotes = "",
+            UcjbStatus = 6,
+            UcjbComplTime = currentTime,
+            UcjbPodname = $"Courier {courierId}",
+            UcjbJobDone = true,
+            ProofOfDelivery = 0,
+            SourceId = 13,
+            Reprice = false,
+            FuelSurchargeAmount = 0,
+            DeliverToPrivateBusiness = 0,
+            UcjbDispTime = currentTime
+        };
     }
 }

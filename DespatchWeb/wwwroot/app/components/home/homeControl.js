@@ -462,7 +462,7 @@ angular.module("uDispatch")
 
                     // Run functions sequentially to prevent race conditions
                     await initializeViews();
-                    await $scope.updateFilters("nda");
+                    await $scope.updateFilters($scope.selectedFilter);
                     await fetchDriverLocations();
                 } catch (error) {
                     console.error('Error fetching dispatch views:', error);
@@ -509,11 +509,7 @@ angular.module("uDispatch")
                 $scope.getData();
             };
 
-            /**
-             * Updates filters based on the selected filter option.
-             * @param {string} selectedFilter - The selected filter option.
-             * @returns {Promise<void>}
-             */
+
             $scope.updateFilters = async (selectedFilter) => {
                 try {
                     // Set all filters to inactive
@@ -527,18 +523,8 @@ angular.module("uDispatch")
                         selectedFilterObj.active = true;
                     }
 
-                    // Map the numeric values to the expected status strings
-                    const statusMap = {
-                        1: 'new',
-                        2: 'nda',
-                        3: 'active',
-                        4: 'done',
-                        5: 'all'
-                    };
-
-                    // Use the mapped status value when calling setFilters
-                    const statusValue = statusMap[selectedFilter] || 'all';
-                    await setFilters({'status': statusValue});
+                    // Pass the numeric value directly to setFilters
+                    await setFilters({'status': selectedFilter});
 
                     // Ensure Angular updates the UI
                     if (!$scope.$$phase) {
@@ -548,6 +534,7 @@ angular.module("uDispatch")
                     console.error('Error updating filters:', error);
                 }
             };
+
 
             /**
              * Sets the active area in the driverLocations.
@@ -2332,13 +2319,10 @@ angular.module("uDispatch")
                 }
             }
 
-            /**
-             * @param {*} data
-             */
             async function setFilters(data) {
                 await $timeout(async () => {
                     if (data.status) {
-                        $scope.queryParams.status = data.status;
+                        $scope.queryParams.status = data.status; // Now passing numeric value
                     } else {
                         const selectedStatus = Object.entries($scope.filters)
                             .filter(([key, value]) => value && key !== 'all')
@@ -2347,7 +2331,7 @@ angular.module("uDispatch")
                         if (selectedStatus.length > 0) {
                             $scope.queryParams.status = selectedStatus.join(',');
                         } else if ($scope.filters.all) {
-                            $scope.queryParams.status = 'all';
+                            $scope.queryParams.status = 5; // Use numeric value for 'all'
                         } else {
                             delete $scope.queryParams.status;
                         }
