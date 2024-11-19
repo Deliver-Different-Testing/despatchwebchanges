@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 
@@ -32,12 +33,12 @@ public interface IJobRepository
     Task<List<JobViewModel>> PreBookJobList();
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
-    Task<List<JobViewModel>> JobListAsync(string status, string order,
+    Task<List<JobViewModel>> JobListAsync(string order,
         string ascending, bool isInternal, string clientIds, List<int> selectedViewIds,
-        ClearListEnvelopeViewModel? clearListEnvelope = null);
+        ClearListEnvelopeViewModel clearListEnvelope = null, DispatchStatus status = DispatchStatus.Nda);
 
     Task<List<SupportViewModel>> SupportEvents(string channel);
-    Task<TucEvent> GetSupportEventAsync(int id);
+    Task<TucEvent> GetSupportEventAsync(int eventId);
     Task<int> UpdateSupportEventAsync(TucEvent supportEvent);
     Task CloseSupportEvent(int supportId, int staffId);
     Task DispatchSelectedJobs(int courierId, int dispId, string jobIds);
@@ -98,6 +99,8 @@ public interface IJobRepository
     Task<decimal> RateJobAsync(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
         bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
         string ourRef, string refA, string refB, int quantity, DateTime booked);
+
+    Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId);
 
     Task<string> RateJobDescription(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
         bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,

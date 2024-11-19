@@ -8,9 +8,9 @@ namespace DespatchWeb.Interfaces;
 
 public interface INationwideJobRepository
 {
-    Task<List<JobViewModel>> NationwideJobListAsync(string status,
-        string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
-        List<int> selectedViewIds);
+    Task<List<JobViewModel>> NationwideJobListAsync(string order, string ascending, bool isInternal, string clientIds,
+        NationwideWidget windowPane,
+        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All);
 
     Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId);
 

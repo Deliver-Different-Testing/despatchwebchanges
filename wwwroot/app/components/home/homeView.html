@@ -16,11 +16,11 @@
                         <md-menu-item ng-repeat="filter in filters">
                             <md-button ng-click="updateFilters(filter.value)">
                                 <md-icon md-font-set="material-symbols-outlined">
-                                    tune
+                                    {{filter.icon}}
                                 </md-icon>
                                 <span ng-style="filter.active ? {'font-weight':'bold'} : {}">
-                    {{filter.label}}
-                </span>
+                {{filter.label}}
+            </span>
                             </md-button>
                         </md-menu-item>
                     </md-menu-content>
@@ -121,7 +121,7 @@
                                   ng-if="box.name == 'jobDetail' && currentJob.relatedJobs.length > 1">&nbsp;<span
                                     ng-click="loadRelatedJobDetail(jo.id, jo.label)"
                                     ng-style="currentJob.id == jo.id ? {'font-weight':'bold', 'color':'#fddd00'} : {'font-weight':'normal'}"
-                                    style="cursor:pointer;text-decoration:underline;">{{jo.label}}</span>
+                                    style="cursor:pointer;text-decoration:underline;">{{jo.text}}</span>
                                     </span>
                                 </span>
 

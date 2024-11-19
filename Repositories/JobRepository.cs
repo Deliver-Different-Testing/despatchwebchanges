@@ -25,162 +25,134 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     
     public async Task<JobViewModel> PreBookDetailAsync(int prebookId)
     {
-        var pallets = await Context.TucJobBookingItems.Where(x => x.BookingId == prebookId).ToListAsync();
-        var jobQuery = from jobBooking in Context.TucJobBookings
-            join c in Context.TblCouriers on jobBooking.CourierId equals c.CourierId into courierJoin
-            from courier in courierJoin.DefaultIfEmpty()
-            join y in Context.TucSuburbs on jobBooking.UcbkFrom equals y.UcsuId into fromJoin
-            from yo in fromJoin.DefaultIfEmpty()
-            join z in Context.TucSuburbs on jobBooking.UcbkTo equals z.UcsuId into toJoin
-            from zo in toJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on jobBooking.UcbkSpeed.Value equals t.UcjtId into speedJoin
-            from to in speedJoin.DefaultIfEmpty()
-            join cl in Context.TblClients on jobBooking.UcbkClientId equals cl.ClientId into clientJoin
-            from client in clientJoin.DefaultIfEmpty()
-            join con in Context.TblContacts on jobBooking.LoggedInContactId equals con.ContactId into contactJoin
-            from contact in contactJoin.DefaultIfEmpty()
-            join sou in Context.TucSources on jobBooking.SourceId equals sou.SourceId into sourceJoin
-            from source in sourceJoin.DefaultIfEmpty()
-            where jobBooking.UcbkId == prebookId
-            select new JobViewModel
+        return await Context.TucJobBookings
+            .Where(jb => jb.UcbkId == prebookId)
+            .Select(jb => new JobViewModel
             {
-                Id = jobBooking.UcbkId,
-                Time = jobBooking.UcbkTime,
-                BookedDate = jobBooking.UcbkDate,
-                Direct = jobBooking.Direct,
-                SizeId = jobBooking.UcbkSize,
-                Van = jobBooking.UcbkVan,
-                VanOk = jobBooking.VanOk,
-                Truck = jobBooking.Truck,
-                SaturdayDelivery = jobBooking.SaturdayDelivery,
-                Return = jobBooking.UcbkReturn,
-                Attention = jobBooking.UcbkAttention,
-                Done = jobBooking.UcbkDone,
-                PickupFrom = (short?)jobBooking.UcbkPickUpFrom,
-                JobNo = jobBooking.UcbkJobNumber,
-                Speed = to.ShortName,
-                SpeedName = to.UcjtName,
-                SpeedId = jobBooking.UcbkSpeed,
-                AcceptedJobTypeId = jobBooking.AcceptedJobTypeId,
-                NotifiedJobTypeId = jobBooking.NotifiedJobTypeId,
-                Source = source.Name,
-                Client = jobBooking.UcbkClientCode,
-                ClientId = jobBooking.UcbkClientId,
-                ClientName = client.Name,
-                JobType = (int)jobBooking.UcbkType,
+                Id = jb.UcbkId,
+                Time = jb.UcbkTime,
+                BookedDate = jb.UcbkDate,
+                Date = jb.UcbkDate != null ? jb.UcbkDate.Value.ToString("dd/MM/yyyy") : null,
+                Booked = jb.UcbkDate != null && jb.UcbkTime != null
+                    ? DateTime.Parse(jb.UcbkDate.Value.ToString("yyyy-MM-dd") + " " +
+                                     jb.UcbkTime.Value.ToString("HH:mm:ss"))
+                    : DateTime.MinValue,
+                Direct = jb.Direct,
+                SizeId = jb.UcbkSize,
+                Van = jb.UcbkVan,
+                VanOk = jb.VanOk,
+                Truck = jb.Truck,
+                SaturdayDelivery = jb.SaturdayDelivery,
+                Return = jb.UcbkReturn,
+                Attention = jb.UcbkAttention,
+                Done = jb.UcbkDone,
+                PickupFrom = (short?)jb.UcbkPickUpFrom,
+                JobNo = jb.UcbkJobNumber,
+                Speed = jb.UcbkSpeedNavigation != null ? jb.UcbkSpeedNavigation.ShortName : null,
+                SpeedName = jb.UcbkSpeedNavigation != null ? jb.UcbkSpeedNavigation.UcjtName : null,
+                SpeedId = jb.UcbkSpeed,
+                AcceptedJobTypeId = jb.AcceptedJobTypeId,
+                NotifiedJobTypeId = jb.NotifiedJobTypeId,
+                Source = jb.Source != null ? jb.Source.Name : null,
+                Client = jb.UcbkClientCode,
+                ClientId = jb.UcbkClientId,
+                ClientName = jb.UcbkClient != null ? jb.UcbkClient.UcclName : null,
+                JobType = (int)jb.UcbkType,
                 PickupAddress = new AddressViewModel
                 {
-                    AddressLine1 = jobBooking.PickupAddressLine1,
-                    AddressLine2 = jobBooking.PickupAddressLine2,
-                    AddressLine3 = jobBooking.PickupAddressLine3,
-                    AddressLine4 = jobBooking.PickupAddressLine4,
-                    AddressLine5 = jobBooking.PickupAddressLine5,
-                    AddressLine6 = jobBooking.PickupAddressLine6,
-                    AddressLine7 = jobBooking.PickupAddressLine7,
-                    AddressLine8 = jobBooking.PickupAddressLine8,
-                    Latitude = jobBooking.PickUpLatitude,
-                    Longitude = jobBooking.PickUpLongitude,
+                    AddressLine1 = jb.PickupAddressLine1,
+                    AddressLine2 = jb.PickupAddressLine2,
+                    AddressLine3 = jb.PickupAddressLine3,
+                    AddressLine4 = jb.PickupAddressLine4,
+                    AddressLine5 = jb.PickupAddressLine5,
+                    AddressLine6 = jb.PickupAddressLine6,
+                    AddressLine7 = jb.PickupAddressLine7,
+                    AddressLine8 = jb.PickupAddressLine8,
+                    Latitude = jb.PickUpLatitude,
+                    Longitude = jb.PickUpLongitude,
                 },
                 DeliveryAddress = new AddressViewModel
                 {
-                    AddressLine1 = jobBooking.DeliveryAddressLine1,
-                    AddressLine2 = jobBooking.DeliveryAddressLine2,
-                    AddressLine3 = jobBooking.DeliveryAddressLine3,
-                    AddressLine4 = jobBooking.DeliveryAddressLine4,
-                    AddressLine5 = jobBooking.DeliveryAddressLine5,
-                    AddressLine6 = jobBooking.DeliveryAddressLine6,
-                    AddressLine7 = jobBooking.DeliveryAddressLine7,
-                    AddressLine8 = jobBooking.DeliveryAddressLine8,
-                    Latitude = jobBooking.DeliveryLatitude,
-                    Longitude = jobBooking.DeliveryLongitude,
+                    AddressLine1 = jb.DeliveryAddressLine1,
+                    AddressLine2 = jb.DeliveryAddressLine2,
+                    AddressLine3 = jb.DeliveryAddressLine3,
+                    AddressLine4 = jb.DeliveryAddressLine4,
+                    AddressLine5 = jb.DeliveryAddressLine5,
+                    AddressLine6 = jb.DeliveryAddressLine6,
+                    AddressLine7 = jb.DeliveryAddressLine7,
+                    AddressLine8 = jb.DeliveryAddressLine8,
+                    Latitude = jb.DeliveryLatitude,
+                    Longitude = jb.DeliveryLongitude,
                 },
-                FromContactName = jobBooking.PickupFromContact,
-                FromContactNumber = jobBooking.PickupFromPhone,
-                Courier = courier.Code,
-                ContactName = jobBooking.UcbkContact,
-                Phone = jobBooking.DeliverToPhone,
-                Weight = jobBooking.UcbkWeight,
-                Items = jobBooking.Quantity,
-                RefA = jobBooking.UcbkClientRefa,
-                RefB = jobBooking.UcbkClientRefb,
-                OurRef = jobBooking.UcbkOurRef,
-                Charge = $"{jobBooking.UcbkAmount:C}",
-                ClientNotes = client.UcclNotes,
-                InternalNotes = jobBooking.UcbkNotes,
-
+                FromContactName = jb.PickupFromContact,
+                FromContactNumber = jb.PickupFromPhone,
+                Courier = jb.Courier != null ? jb.Courier.Code : null,
+                ContactName = jb.UcbkContact,
+                Phone = jb.DeliverToPhone,
+                Weight = jb.UcbkWeight,
+                Items = jb.Quantity,
+                RefA = jb.UcbkClientRefa,
+                RefB = jb.UcbkClientRefb,
+                OurRef = jb.UcbkOurRef,
+                Charge = jb.UcbkAmount != null ? $"{jb.UcbkAmount:C}" : null,
+                ClientNotes = jb.UcbkClient != null ? jb.UcbkClient.UcclNotes : null,
+                InternalNotes = jb.UcbkNotes,
                 CourierData = new CourierData
                 {
-                    Courier = courier.Code + " " + courier.FirstName + " " + courier.Surname,
-                    CourierId = courier.CourierId
+                    Courier = jb.Courier != null
+                        ? jb.Courier.Code + " " + jb.Courier.UccrName + " " + jb.Courier.UccrSurname
+                        : null,
+                    CourierId = jb.Courier != null ? jb.Courier.UccrId : null
                 },
-                DgClass = jobBooking.Dgclass,
-                DgDocumentation = jobBooking.Dgdocument,
-                DeliverToContact = jobBooking.DeliverToContact,
-                TrackingMethod = jobBooking.TrackingMethod,
-                TrackingMobile = jobBooking.TrackingMobile,
-                TrackingEmail = jobBooking.TrackingEmail,
-                RatedManually = jobBooking.RatedManually,
-                OneOff = jobBooking.UcbkOneOff,
-                Active = jobBooking.UcbkActive,
-                InActiveBy = jobBooking.UcbkInActiveBy,
-                InActiveDate = jobBooking.UcbkInActiveDate,
-                FirstDue = jobBooking.UcbkFirstDue,
-                NextDue = jobBooking.UcbkNextDue,
-                LastDone = jobBooking.UcbkDateDone,
-                RestartDate = jobBooking.RestartDate,
-                StopDate = jobBooking.StopDate,
-                Days = jobBooking.UcbkDays,
+                DgClass = jb.Dgclass,
+                DgDocumentation = jb.Dgdocument,
+                DeliverToContact = jb.DeliverToContact,
+                TrackingMethod = jb.TrackingMethod,
+                TrackingMobile = jb.TrackingMobile,
+                TrackingEmail = jb.TrackingEmail,
+                RatedManually = jb.RatedManually,
+                OneOff = jb.UcbkOneOff,
+                Active = jb.UcbkActive,
+                InActiveBy = jb.UcbkInActiveBy,
+                InActiveDate = jb.UcbkInActiveDate,
+                FirstDue = jb.UcbkFirstDue,
+                NextDue = jb.UcbkNextDue,
+                LastDone = jb.UcbkDateDone,
+                RestartDate = jb.RestartDate,
+                StopDate = jb.StopDate,
+                Days = jb.UcbkDays,
                 PreBook = true,
-                Pedal = jobBooking.UcbkCbd,
-                Reprice = jobBooking.Reprice,
-                LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}",
-                PalletInfo = (
-                    from pa in pallets
-                    select new PalletInfo
-                    {
-                        Id = pa.BookingId,
-                        Quantity = pa.Items,
-                        ItemId = pa.ItemId,
-                        Weight = pa.Weight,
-                        Length = pa.Length,
-                        Depth = pa.Depth,
-                        Height = pa.Height,
-                        Pu = pa.Pu,
-                        Do = pa.Do,
-                        DgClass = pa.Dgclass,
-                        Notes = pa.Notes
-                    }).ToList(),
-            };
-
-        var job = await jobQuery.FirstOrDefaultAsync();
-        if (job == null) return job;
-        job.Vehicle = new Vehicle
-        {
-            Id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeId,
-            Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? 2)
-        };
-        job.Size = job.Vehicle;
-        job.Date = job.BookedDate?.ToString("dd/MM/yyyy");
-        job.Booked = DateTime.Parse(job.BookedDate?.ToString("yyyy-MM-dd") + " " +
-                                    job.Time?.ToString("HH:mm:ss"));
-
-        return job;
+                Pedal = jb.UcbkCbd,
+                Reprice = jb.Reprice,
+                LoggedInContactName = jb.LoggedInContact.UccoName,
+                PalletInfo = jb.TucJobBookingItems.Select(i => new PalletInfo
+                {
+                    Id = i.BookingId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length,
+                    Depth = i.Depth,
+                    Height = i.Height,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }).ToList()
+            }).FirstOrDefaultAsync();
     }
-
 
     public async Task<List<Size>> RelatedJobs(int parentId, int clientId)
     {
-        var relatedJobs = await (
-            from j in Context.TblJobs
-            where j.RootParentId == parentId && j.ClientId == clientId
-            orderby j.Date, j.Time
-            select new Size
+        return await Context.TucJobs
+            .Where(j => j.ParentId == parentId && j.UcjbClientId == clientId)
+            .OrderBy(j => j.UcjbDate)
+            .ThenBy(j => j.UcjbTime)
+            .Select(j => new Size
             {
-                Id = j.JobId,
-                Label = j.Number
-            }
-        ).ToListAsync();
-        return relatedJobs;
+                Id = j.UcjbId,
+                Label = j.UcjbNumber
+            }).AsNoTracking().ToListAsync();
     }
 
     /* Bulk Job Detail*/
@@ -188,7 +160,8 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
     public async Task<JobViewModel> BulkJobDetail(int bulkJobId)
     {
         var today = DateTime.Today.ResetTimeToStartOfDay();
-        var jobQuery = from j in Context.TblBulkJobs
+
+        return await (from j in Context.TblBulkJobs
             join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
             from co in courierJoin.DefaultIfEmpty()
             join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
@@ -212,7 +185,10 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 JobRelationshipTypeId = j.JobRelationshipTypeId,
                 Time = j.BookTime,
                 BookedDate = j.BookDate,
-                SizeId = j.Size,
+                Date = j.BookDate.ToString("dd/MM/yyyy"),
+                Booked =
+                    DateTime.Parse(j.BookDate.ToString("yyyy-MM-dd") + " " +
+                                   j.BookDate.ToString("HH:mm:ss")),
                 Void = j.Void,
                 JobNo = j.JobNumber,
                 Speed = to.ShortName,
@@ -265,22 +241,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 LoggedInContactName = $"{contact.Firstname} {contact.Surname ?? ""}",
                 Source = source.Name,
                 StatusName = status.UcjsName
-            };
-        var jobList = await jobQuery.ToListAsync();
-        var job = jobList.FirstOrDefault();
-
-        if (job == null) return job;
-        job.Vehicle = new Vehicle
-        {
-            Id = job.Van ? (short?)Enums.Vehicle.Van : job.SizeId,
-            Label = job.Van ? "Van" : Enum.GetName(typeof(Enums.Vehicle), job.SizeId ?? 2)
-        };
-        job.Size = job.Vehicle;
-        job.Date = job.BookedDate.Value.ToString("dd/MM/yyyy");
-        job.Booked = DateTime.Parse(job.BookedDate.Value.ToString("yyyy-MM-dd") + " " +
-                                    job.Time.Value.ToString("HH:mm:ss"));
-
-        return job;
+            }).FirstOrDefaultAsync();
     }
 
     public async Task<Tuple<int, List<JobViewModel>>> BulkSearchAsync(int? courierId, string job, string wild,
@@ -930,17 +891,13 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
                 InternalStatusId = j.InternalStatus,
 
                 // Size
-                Size = new Vehicle
-                {
-                    Id = j.UcjbVan ? (short?)Enums.Vehicle.Van : j.UcjbSize,
-                    Label = j.UcjbVan ? "Van" :
-                        j.UcjbSize == 1 ? "Bike" :
-                        j.UcjbSize == 2 ? "Car" :
-                        j.UcjbSize == 3 ? "Van" :
-                        j.UcjbSize == 4 ? "Truck" :
-                        j.UcjbSize == 5 ? "Scooter" :
-                        "Car" // Default case
-                },
+                Size = j.UcjbSizeNavigation != null
+                    ? new Suggestion
+                    {
+                        Id = j.UcjbSizeNavigation.VehicleSizeId,
+                        Text = j.UcjbSizeNavigation.VehicleName
+                    }
+                    : null,
 
                 // Job items
                 PalletInfo = j.TucJobItems.Select(i => new PalletInfo
@@ -960,22 +917,15 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
             }).AsNoTracking().ToListAsync();
     }
 
-    public async Task<List<JobViewModel>> JobListAsync(string status, string order,
+    public async Task<List<JobViewModel>> JobListAsync(string order,
         string ascending, bool isInternal, string clientIds, List<int> selectedViewIds,
-        ClearListEnvelopeViewModel? clearListEnvelope = null)
+        ClearListEnvelopeViewModel clearListEnvelope = null, DispatchStatus status = DispatchStatus.Nda)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();
 
-        // Get view specific filters
-        var viewFilters = selectedViewIds != null && selectedViewIds.Any()
-            ? await Context.TblDespatchViews
-                .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
-                .Select(dv => dv.WhereCondition)
-                .ToListAsync()
-            : new List<string>();
-
-        return await DespatchQry(AppPage.Dispatch, status, order, ascending, isInternal, clientIds, viewFilters, null,
+        return await DespatchQry(AppPage.Dispatch, status, order, ascending, isInternal, clientIds, selectedViewIds,
+            null,
             clearListEnvelope);
     }
 
@@ -1064,11 +1014,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return evm;
     }
 
-    public async Task<TucEvent> GetSupportEventAsync(int id)
-    {
-        var support = await Context.TucEvents.FindAsync(id);
-        return support;
-    }
+    public async Task<TucEvent> GetSupportEventAsync(int eventId) => await Get<TucEvent>(eventId);
 
     public async Task<int> UpdateSupportEventAsync(TucEvent supportEvent)
     {
@@ -1613,45 +1559,26 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         return curAmount.Value ?? 0;
     }
 
-    public async Task<string> RateJobDescription(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
-        bool returnJob, int weight, int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId,
-        string ourRef, string refA, string refB, int quantity, DateTime booked)
+    public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId)
     {
-        DbParameter outputDescriptionParam = null;
-        DbParameter outputCourierParam = null;
-
-        await Context.LoadStoredProc("sp_RateJob_Described")
-            .WithSqlParam("@intClientID", clientId)
-            .WithSqlParam("@intFromID", fromId)
-            .WithSqlParam("@intToID", toId)
-            .WithSqlParam("@intSpeed", direct ? acceptedJobTypeId : speed)
-            .WithSqlParam("@bolPedal", pedal)
-            .WithSqlParam("@bolVan", van)
-            .WithSqlParam("@bolReturn", returnJob)
-            .WithSqlParam("@intWeight", weight)
-            .WithSqlParam("@strDescription", (dbParam) =>
+        return await Context.PricingBreakdowns
+            .Where(p => p.JobId == jobId)
+            .Select(p => new ChargeViewModel
             {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.String;
-                dbParam.Size = 1000;
-                outputDescriptionParam = dbParam;
-            })
-            .WithSqlParam("@Size", size)
-            .WithSqlParam("@IncludeFuelSurcharge", includeFuelSurcharge)
-            .WithSqlParam("@OurRef", ourRef)
-            .WithSqlParam("@ClientRefA", refA)
-            .WithSqlParam("@ClientRefB", refB)
-            .WithSqlParam("@Quantity", quantity)
-            .WithSqlParam("@Booked", booked)
-            .WithSqlParam("@CourierID", (dbParam) =>
-            {
-                dbParam.Direction = System.Data.ParameterDirection.Output;
-                dbParam.DbType = System.Data.DbType.Int32;
-                outputCourierParam = dbParam;
-            })
-            .ExecuteStoredNonQueryAsync();
+                ChargeId = p.PricingBreakdownId,
+                Amount = p.ChargeAmount,
+                Name = p.ChargeName
+            }).AsNoTracking().ToListAsync();
+    }
 
-        return (string)(outputDescriptionParam.Value == DBNull.Value ? "" : outputDescriptionParam.Value);
+    /// <inheritdoc />
+    public Task<string> RateJobDescription(int clientId, int fromId, int toId, int speed, bool pedal, bool van,
+        bool returnJob, int weight,
+        int size, bool includeFuelSurcharge, bool direct, int acceptedJobTypeId, string ourRef, string refA,
+        string refB,
+        int quantity, DateTime booked)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<DirectToASAPViewModel> DirectToAsap(int jobId)
@@ -2030,14 +1957,49 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
 
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
     {
-        await Context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
-            viewModel?.FromCourierId,
-            viewModel?.ToCourierId,
-            viewModel?.Amount,
-            viewModel?.Reference,
-            viewModel?.StaffId
-        );
+        try
+        {
+            var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
+            var currentTime = DateTime.Now;
+
+            var fromJobNumber = new OutputParameter<string>();
+            await Context.Procedures.NET_stpJob_Insert_JobNumberAsync(viewModel.StaffId, 1, fromJobNumber);
+            var toJobNumber = new OutputParameter<string>();
+            await Context.Procedures.NET_stpJob_Insert_JobNumberAsync(viewModel.StaffId, 1, toJobNumber);
+
+            var fromJob = CreateJobEntry(
+                jobNumber: fromJobNumber.Value,
+                courierId: viewModel.FromCourierId,
+                amount: viewModel.Amount,
+                reference: viewModel.Reference,
+                clientRefB: $"To # {viewModel.ToCourierId}",
+                ourRef: "ICC",
+                note: note,
+                currentTime: currentTime,
+                staffId: viewModel.StaffId);
+            await Context.TucJobs.AddAsync(fromJob);
+
+            var toJob = CreateJobEntry(
+                jobNumber: toJobNumber.Value,
+                courierId: viewModel.ToCourierId,
+                amount: viewModel.Amount,
+                reference: viewModel.Reference,
+                clientRefB: $"From # {viewModel.FromCourierId}",
+                ourRef: "",
+                note: note,
+                currentTime: currentTime,
+                staffId: viewModel.StaffId);
+            await Context.TucJobs.AddAsync(toJob);
+
+            await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occured adding a new inter-courier job");
+            throw;
+        }
     }
+
 
     public async Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId)
     {
@@ -2167,5 +2129,58 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         );
 
         return outputParam.Value ?? 0m;
+    }
+
+    private TucJob CreateJobEntry(string jobNumber, int courierId, decimal amount, string reference, string clientRefB,
+        string ourRef,
+        string note, DateTime currentTime, int staffId)
+    {
+        return new TucJob
+        {
+            UcjbNumber = jobNumber,
+            UcjbDate = currentTime,
+            UcjbTime = currentTime,
+            UcjbType = 1,
+            UcjbClientId = 911,
+            UcjbContact = $"Courier {courierId}",
+            UcjbChargeType = 3,
+            UcjbAmount = amount,
+            UcjbSpeed = 1,
+            UcjbFrom = 1,
+            UcjbFromAddr = note,
+            UcjbTo = 1,
+            UcjbToAddr = "ToSP",
+            UcjbSize = 1,
+            UcjbQty = 1,
+            UcjbCbd = false,
+            UcjbKm = 0,
+            UcjbFlightDetails = "FD",
+            UcjbWeight = 1,
+            UcjbCourierId = courierId,
+            UcjbClientRefa = reference,
+            UcjbClientRefb = clientRefB,
+            UcjbOurRef = ourRef,
+            UcjbOpId = staffId,
+            UcjbVan = false,
+            Truck = false,
+            UcjbReturn = false,
+            UcjbVoid = false,
+            UcjbAttention = false,
+            UcjbPickUpFrom = 0,
+            UcjbPaged = true,
+            UcjbClientCode = "ZZZ!!",
+            UcjbRefJobId = 0,
+            UcjbNotes = "",
+            UcjbStatus = 6,
+            UcjbComplTime = currentTime,
+            UcjbPodname = $"Courier {courierId}",
+            UcjbJobDone = true,
+            ProofOfDelivery = 0,
+            SourceId = 13,
+            Reprice = false,
+            FuelSurchargeAmount = 0,
+            DeliverToPrivateBusiness = 0,
+            UcjbDispTime = currentTime
+        };
     }
 }

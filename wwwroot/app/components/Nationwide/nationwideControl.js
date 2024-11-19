@@ -92,14 +92,18 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             $scope.selectedViews = [];
 
             $scope.filters = [
-                {value: 'new', label: 'New', active: false},
-                {value: 'nda', label: 'NDA', active: false},
-                {value: 'active', label: 'Active', active: false},
-                {value: 'done', label: 'Done', active: false},
-                {value: 'all', label: 'All', active: true}  // default active filter
+                {value: 3, label: 'Active', icon: 'sync', active: false},
+                {value: 4, label: 'Done', icon: 'task_alt', active: false},
+                {value: 5, label: 'All', icon: 'list_alt', active: true}
             ];
 
-            $scope.selectedFilter = 'all'; // default value
+// Load saved filter or use default
+            $scope.selectedFilter = loadFilterFromStorage();
+
+// Set active state based on loaded filter
+            $scope.filters.forEach(filter => {
+                filter.active = filter.value === $scope.selectedFilter;
+            });
 
             $scope.showInput = {};
             $scope.inputWidth = {};
@@ -130,14 +134,6 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 {key: 'pod', label: 'POD'},
                 {key: 'remain', label: 'Remain'},
                 {key: 'status', label: 'S'}
-            ];
-
-            $scope.filters = [
-                {value: 'new', label: 'New', active: false},
-                {value: 'nda', label: 'NDA', active: false},
-                {value: 'active', label: 'Active', active: false},
-                {value: 'done', label: 'Done', active: false},
-                {value: 'all', label: 'All', active: true}  // default active filter
             ];
 
             $scope.jobFilters = {
@@ -411,20 +407,25 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         // Initialize views
         async function initializeViews() {
             if ($scope.views && $scope.views.length > 0) {
-                $scope.selectedViews.push($scope.views[0]);
+                // Load saved views or initialize empty array
+                $scope.selectedViews = loadViewsFromStorage();
 
-                if ($scope.views[0].hasOwnProperty('selected')) {
+                // Set selected property on each view
+                $scope.views = $scope.views.map(view => ({
+                    ...view,
+                    selected: $scope.selectedViews.some(v => v.id === view.id)
+                }));
+
+                // If no views are selected, select the first one by default
+                if ($scope.selectedViews.length === 0) {
                     $scope.views[0].selected = true;
-                } else {
-                    $scope.views = $scope.views.map((view, index) => ({
-                        ...view,
-                        selected: index === 0
-                    }));
+                    $scope.selectedViews.push($scope.views[0]);
+                    saveViewsToStorage($scope.selectedViews);
                 }
             }
         }
 
-        $scope.toggleView = view => {
+        $scope.toggleView = async view => {
             // Toggle the selected state
             view.selected = !view.selected;
 
@@ -436,16 +437,18 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 $scope.selectedViews.splice(index, 1);
             }
 
-            $scope.updateFilters();
+            // Save to storage
+            saveViewsToStorage($scope.selectedViews);
+
+            // Update data
+           await $scope.updateFilters();
         };
 
-        /**
-         * Updates filters based on the selected filter option.
-         * @param {string} selectedFilter - The selected filter option.
-         * @returns {Promise<void>}
-         */
         $scope.updateFilters = async (selectedFilter) => {
             try {
+                // If no filter provided, use current selectedFilter
+                selectedFilter = selectedFilter || $scope.selectedFilter;
+
                 // Set all filters to inactive
                 $scope.filters.forEach(filter => {
                     filter.active = false;
@@ -455,9 +458,14 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
                 const selectedFilterObj = $scope.filters.find(filter => filter.value === selectedFilter);
                 if (selectedFilterObj) {
                     selectedFilterObj.active = true;
+                    $scope.selectedFilter = selectedFilter; // Update selected filter
                 }
 
-                await $scope.setFilters({'status': selectedFilter});
+                // Save the selected filter
+                saveFilterToStorage(selectedFilter);
+
+                // Pass the numeric value directly to setFilters
+                await setFilters({ 'status': selectedFilter });
 
                 // Ensure Angular updates the UI
                 if (!$scope.$$phase) {
@@ -468,43 +476,52 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
-        /**
-         * @param {*} data
-         */
-        $scope.setFilters = async (data) => {
+        async function setFilters(data) {
             await $timeout(async () => {
-                if (data.status) {
-                    $scope.jobFilters.status = data.status;
-                } else {
-                    const selectedStatus = Object.entries($scope.filters)
-                        .filter(([key, value]) => value && key !== 'all')
-                        .map(([key]) => key);
+                // Ensure data is an object
+                data = data || {};
 
-                    if (selectedStatus.length > 0) {
-                        $scope.jobFilters.status = selectedStatus.join(',');
-                    } else if ($scope.filters.all) {
-                        $scope.jobFilters.status = 'all';
-                    } else {
-                        delete $scope.jobFilters.status;
-                    }
+                if (data.status) {
+                    // Set numeric status directly
+                    $scope.queryParams.status = data.status;
+                } else {
+                    // Use current selectedFilter if no status provided
+                    $scope.queryParams.status = $scope.selectedFilter || 3; // Default to 3 (Active)
                 }
 
                 if (data.area) {
                     let selected = angular.element("#area-group > .btn.topBarActive").length;
                     if (selected > 1) {
-                        $scope.jobFilters.area += "," + data.area;
+                        $scope.queryParams.area += "," + data.area;
                     } else {
-                        $scope.jobFilters.area = data.area;
+                        $scope.queryParams.area = data.area;
+                    }
+                }
+
+                if (data.clearList) {
+                    let clSelected = angular.element("#driverLocations").find('.listActive').length;
+                    if (clSelected > 1) {
+                        $scope.queryParams.area += "," + data.clearList;
+                    } else {
+                        $scope.queryParams.area = data.clearList;
                     }
                 }
 
                 if (data.order) {
-                    $scope.jobFilters.order = data.order;
+                    $scope.queryParams.order = data.order;
+                }
+
+                // Save filters to storage if available
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(
+                        `nw-filters-${ContactID}`,
+                        JSON.stringify($scope.queryParams)
+                    );
                 }
 
                 await $scope.getData();
             }, 300);
-        };
+        }
 
         $scope.setActiveArea = selectedArea => {
             angular.forEach($scope.driverLocations.views, area => {
@@ -695,6 +712,40 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
             }
         };
 
+        function saveFilterToStorage(filter) {
+            if (Modernizr.localstorage) {
+                localStorage.setItem(`selectedFilter-NW-${ContactID}`, filter);
+            }
+        }
+
+        function loadFilterFromStorage() {
+            if (Modernizr.localstorage) {
+                const savedFilter = localStorage.getItem(`selectedFilter-NW-${ContactID}`);
+                return savedFilter ? parseInt(savedFilter) : 3; // Default to 3 (Active) if not found
+            }
+            return 3; // Default value if localStorage not available
+        }
+
+        function saveViewsToStorage(views) {
+            if (Modernizr.localstorage) {
+                localStorage.setItem(`selectedViews-NW-${ContactID}`, JSON.stringify(views));
+            }
+        }
+
+        function loadViewsFromStorage() {
+            if (Modernizr.localstorage) {
+                try {
+                    const savedViews = JSON.parse(localStorage.getItem(`selectedViews-NW-${ContactID}`));
+                    return savedViews || [];
+                } catch (error) {
+                    console.error('Error loading views from storage:', error);
+                    return [];
+                }
+            }
+            return [];
+        }
+
+
         $scope.getSelectedStatusText = () => {
             if (!$scope.internalStatusOptions || !$scope.currentJob) {
                 return 'Status';
@@ -856,7 +907,7 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
 
             // Handle server-side sorting
             if (serverOrder) {
-                await $scope.setFilters(list, {"order": prop});
+                await setFilters(list, {"order": prop});
                 return;
             }
 

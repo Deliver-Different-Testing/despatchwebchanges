@@ -426,6 +426,10 @@
          "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
          "ObjectType": 1
       },
+     {
+       "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
+       "ObjectType": 1
+      },
       {
          "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
          "ObjectType": 1

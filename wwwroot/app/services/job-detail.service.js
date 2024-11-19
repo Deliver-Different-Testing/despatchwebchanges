@@ -74,9 +74,13 @@ class JobDetailService {
             this.pickSpeeds = data;
         });
 
-        this._dispatchData.getSuburbList().then(data => {
+        DispatchData.getSuburbList().then(data => {
             this.pickSuburbs = data;
         });
+
+        DispatchData.getVehicleSizes().then(data => {
+            this.pickVehicleSizes = data;
+        })
 
         this.pickHolidays = [{
             "id": "0", "label": "Don't Book"
@@ -169,42 +173,7 @@ class JobDetailService {
             return this.substring(0, index) + replacement + this.substring(index + replacement.length);
         };
 
-        //////////////////////////////
-        //  PALLET CONTROLS //
-        /////////////////////////////
-        let self = this;
-        this.palletMenu = [// NEW IMPLEMENTATION
-            {
-                text: "Delete",
-                click: ($itemScope, $event, modelValue, text, $li) => self._dispatchData.deletePallet($itemScope.pallet, self.currentJob.preBook, FirstName).then(response => {
-
-                    console.log(response);
-
-                    if (response === "OK") {
-                        const index = $itemScope.currentJob.palletInfo.indexOf($itemScope.pallet);
-                        $itemScope.currentJob.palletInfo.splice(index, 1);
-
-                        return self._rateJobService.rateJob(this.currentJob).then(rate => {
-                            console.log(rate);
-                            if (rate !== self.currentJob.charge) {
-                                return self._dispatchData
-                                    .updateJobDetail(self.currentJob.id, "rate", Number(rate.replace(/[^0-9.-]+/g, "")), Number(rate.replace(/[^0-9.-]+/g, "")), FirstName, ContactID, self.currentJob.preBook).then(response => {
-                                        self.selectJobDetail(self.currentJob.id);
-                                        return response;
-                                    });
-                            }
-
-                        });
-                    } else {
-                        console.log("Critical Error Add Pallet");
-                    }
-                })
-            }];
-
-
-        this.currentPallet = "";
-
-        return self;
+        return this;
     }
 
     /**
@@ -271,7 +240,7 @@ class JobDetailService {
      */
     getSelectedLeaveParcel(deliverToLeaveId) {
         console.log('DeliverToLeaveId: ' + deliverToLeaveId);
-        const selected = this.pickUndeliverableList.find(({id}) => id === deliverToLeaveId);
+        const selected = this.pickLeaveList.find(({id}) => id === deliverToLeaveId);
         console.log('Selected: ' + selected);
         return selected !== undefined ? selected.text : "";
     }
@@ -1281,17 +1250,11 @@ class JobDetailService {
     }
 
     /**
-     * @param {Object} event
+     * @param {Object} $event
      * @param {Job} job
      */
-    sizeClick(event, job) {
-        const sizeArray = this.options.detail.size.map(item => {
-            return {
-                id: item.id, text: item.label
-            };
-        });
-
-        this.showSelectDialog(event, job, sizeArray, "Size", "Size", job.size.label);
+    sizeClick($event, job) {
+        this.showSelectDialog($event, job, this.pickVehicleSizes, "Size", "Size", job.size.text);
     }
 
     /**

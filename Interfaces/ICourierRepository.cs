@@ -18,24 +18,12 @@ public interface ICourierRepository
     List<AvailableCourierPosition> GetAvailableCouriers(decimal minLng, decimal minLat, decimal maxLng, decimal maxLat);
     Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
 
-    /// <summary>
-    /// filters by active, sms setting and logged in
-    /// </summary>
-    /// <returns></returns>
     Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync();
 
-    /// <summary>
-    /// All active couriers regardless of logged in or not via search
-    /// </summary>
-    /// <returns></returns>
     Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm);
 
     Task<List<CourierPosition>> GetCourierRouteAsync(string code, DateTime? start, DateTime? end);
 
-    /// <summary>
-    /// All active couriers regardless of logged in or not
-    /// </summary>
-    /// <returns></returns>
     Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync();
 
     CourierLocation Location(string code);
@@ -43,4 +31,6 @@ public interface ICourierRepository
 
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(int clearListAreaId,
         Country country, bool includeCouriers = false);
+
+    Task<List<Suggestion>> GetVehicleSizesAsync();
 }

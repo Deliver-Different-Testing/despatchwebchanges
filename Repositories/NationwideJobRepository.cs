@@ -24,23 +24,15 @@ public class NationwideJobRepository(IDbContextFactory<DespatchContext> contextF
 {
     
 
-    public async Task<List<JobViewModel>> NationwideJobListAsync(string status,
-        string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
-        List<int> selectedViewIds)
+    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string ascending, bool isInternal,
+        string clientIds, NationwideWidget windowPane,
+        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();
 
-        // Get view specific filters
-        var viewFilters = selectedViewIds != null && selectedViewIds.Any()
-            ? await Context.TblDespatchViews
-                .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
-                .Select(dv => dv.WhereCondition)
-                .ToListAsync()
-            : new List<string>();
-
         return await DespatchQry(AppPage.Domestic, status, order, ascending, isInternal, clientIds,
-            viewFilters, windowPane);
+            selectedViewIds, windowPane);
     }
 
     public async Task AddJobNationwideAsync(int jobId, ScheduledFlight flight, string webhookAlertId)

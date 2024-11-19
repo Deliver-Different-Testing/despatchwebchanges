@@ -113,7 +113,7 @@
                     <md-button aria-label="add note" class="md-fab md-raised md-mini" style="float: right;"
                                ng-if="jdSvc.currentJob"
                                ng-click="jdSvc.showNotesDialog($event, jdSvc.currentJob, 'Notes','Note')">
-                        <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">edit_note</md-icon>
                         <md-tooltip md-direction="bottom">Add Note</md-tooltip>
                     </md-button>
                     <div class="value">
@@ -144,7 +144,7 @@
                     <md-button aria-label="add note" class="md-fab md-raised md-mini" ng-click="!jdSvc.currentJob.locked && jdSvc.showNotesDialog($event, jdSvc.currentJob, 'Consignment Note / AWB','ConNote')"
                                ng-if="jdSvc.currentJob"
                                style="float: right;">
-                        <md-icon md-font-set="material-symbols-outlined">inventory</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">description</md-icon>
                         <md-tooltip md-direction="bottom">Add Consignment / AWB</md-tooltip>
                     </md-button>
                     <div class="value">
@@ -186,7 +186,7 @@
                              ng-click="!jdSvc.currentJob.locked && jdSvc.sizeClick($event, jdSvc.currentJob)">
                             <label ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">Size</label>
                             <div class="value" ng-class="jdSvc.currentJob.locked ? 'disabled' : ''">
-                                {{jdSvc.currentJob.size.label}}
+                                {{jdSvc.currentJob.size.text}}
                             </div>
                         </div>
                         <div class="field"
@@ -838,7 +838,7 @@ jdSvc.currentJob.completedTime
                     <md-button aria-label="add note" class="md-fab md-raised md-mini"
                                ng-click="jdSvc.showNotesDialog($event, jdSvc.currentJob, 'Notes','Note')"
                                style="float: right;">
-                        <md-icon md-font-set="material-symbols-outlined">add_notes</md-icon>
+                        <md-icon md-font-set="material-symbols-outlined">edit_note</md-icon>
                         <md-tooltip md-direction="bottom">Add New Note</md-tooltip>
                     </md-button>
                     <div class="value">
