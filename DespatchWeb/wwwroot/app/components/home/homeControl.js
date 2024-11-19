@@ -34,7 +34,10 @@ angular.module("uDispatch")
                     {value: 5, label: 'All', icon: 'list_alt', active: true}
                 ];
 
-                $scope.selectedFilter = 2; // default value
+                $scope.selectedFilter = loadFilterFromStorage();
+                $scope.filters.forEach(filter => {
+                    filter.active = filter.value === $scope.selectedFilter;
+                });
 
                 $scope.pickAllCouriers = [];
                 $scope.selected = [];
@@ -409,6 +412,39 @@ angular.module("uDispatch")
                 }, true);
             }
 
+            function saveFilterToStorage(filter) {
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(`selectedFilter-${ContactID}`, filter);
+                }
+            }
+
+            function loadFilterFromStorage() {
+                if (Modernizr.localstorage) {
+                    const savedFilter = localStorage.getItem(`selectedFilter-${ContactID}`);
+                    return savedFilter ? parseInt(savedFilter) : 2; // Default to 2 if not found
+                }
+                return 2; // Default value if localStorage not available
+            }
+
+            function saveViewsToStorage(views) {
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(`selectedViews-${ContactID}`, JSON.stringify(views));
+                }
+            }
+
+            function loadViewsFromStorage() {
+                if (Modernizr.localstorage) {
+                    try {
+                        const savedViews = JSON.parse(localStorage.getItem(`selectedViews-${ContactID}`));
+                        return savedViews || [];
+                    } catch (error) {
+                        console.error('Error loading views from storage:', error);
+                        return [];
+                    }
+                }
+                return [];
+            }
+
             /**
              * Object containing helper functions for the application.
              * @type {Object}
@@ -477,21 +513,25 @@ angular.module("uDispatch")
              */
             async function initializeViews() {
                 if ($scope.views && $scope.views.length > 0) {
-                    // Initialize selectedViews as an array
-                    $scope.selectedViews = [];
+                    // Load saved views or initialize empty array
+                    $scope.selectedViews = loadViewsFromStorage();
 
-                    // Set selected property on each view, default first one to true
-                    $scope.views = $scope.views.map((view, index) => ({
+                    // Set selected property on each view
+                    $scope.views = $scope.views.map(view => ({
                         ...view,
-                        selected: index === 0  // First view is selected by default
+                        selected: $scope.selectedViews.some(v => v.id === view.id)
                     }));
 
-                    // Add first view to selectedViews
-                    $scope.selectedViews.push($scope.views[0]);
+                    // If no views are selected, select the first one by default
+                    if ($scope.selectedViews.length === 0) {
+                        $scope.views[0].selected = true;
+                        $scope.selectedViews.push($scope.views[0]);
+                        saveViewsToStorage($scope.selectedViews);
+                    }
                 }
             }
 
-            $scope.toggleView = function (view) {
+            $scope.toggleView = async function (view) {
                 if (view.selected) {
                     // Add to selectedViews if not already present
                     if (!$scope.selectedViews.some(v => v === view)) {
@@ -505,8 +545,11 @@ angular.module("uDispatch")
                     }
                 }
 
+                // Save selected views to storage
+                saveViewsToStorage($scope.selectedViews);
+
                 // Update data with new view selection
-                $scope.getData();
+                await $scope.getData();
             };
 
 
@@ -523,6 +566,9 @@ angular.module("uDispatch")
                         selectedFilterObj.active = true;
                     }
 
+                    // Save the selected filter
+                    saveFilterToStorage(selectedFilter);
+
                     // Pass the numeric value directly to setFilters
                     await setFilters({'status': selectedFilter});
 
@@ -534,7 +580,6 @@ angular.module("uDispatch")
                     console.error('Error updating filters:', error);
                 }
             };
-
 
             /**
              * Sets the active area in the driverLocations.
