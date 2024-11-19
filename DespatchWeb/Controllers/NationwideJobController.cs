@@ -38,8 +38,10 @@ public class NationwideJobController : Controller
         {
             if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-                queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.JobList, despatchViewIds);
+            var status = (DispatchStatus)queryParams.Status;
+            var result = await _repository.NationwideJobListAsync(queryParams?.Order,
+                queryParams?.Asc, isInternal, clientIds, NationwideWidget.JobList, despatchViewIds, status);
+
             return Json(result);
         }
         catch (Exception e)
@@ -57,8 +59,10 @@ public class NationwideJobController : Controller
         {
             if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-                queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Pod, despatchViewIds);
+            var status = (DispatchStatus)queryParams.Status;
+            var result = await _repository.NationwideJobListAsync(queryParams?.Order,
+                queryParams?.Asc, isInternal, clientIds, NationwideWidget.Pod, despatchViewIds, status);
+
             return Json(result);
         }
         catch (Exception e)
@@ -77,8 +81,10 @@ public class NationwideJobController : Controller
         {
             if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-                queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.ActionRequired, despatchViewIds);
+            var status = (DispatchStatus)queryParams.Status;
+            var result = await _repository.NationwideJobListAsync(queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, NationwideWidget.ActionRequired, despatchViewIds, status);
+
             return Json(result);
         }
         catch (Exception e)
@@ -96,8 +102,10 @@ public class NationwideJobController : Controller
         {
             if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
-            var result = await _repository.NationwideJobListAsync(queryParams?.Status, queryParams?.Order,
-                queryParams?.Asc, isInternal, clientIds, NationwideWindowPanel.Reprice, despatchViewIds);
+            var status = (DispatchStatus)queryParams.Status;
+            var result = await _repository.NationwideJobListAsync(queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, NationwideWidget.Reprice, despatchViewIds, status);
+
             return Json(result);
         }
         catch (Exception e)

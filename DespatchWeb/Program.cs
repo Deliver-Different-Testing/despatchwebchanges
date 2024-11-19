@@ -59,8 +59,7 @@ builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorS
 
 
 // Automapper
-builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile),
-    typeof(GenericMapperProfiles));
+builder.Services.AddAutoMapper(typeof(GenericMapperProfiles));
 
 
 var connectionString = builder.Configuration.GetConnectionString("Connection");

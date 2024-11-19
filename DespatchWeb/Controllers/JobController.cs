@@ -7,6 +7,7 @@ using System.Net.Mail;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -67,8 +68,9 @@ public class JobController : Controller
             _logger.LogDebug("Retrieving jobs with status: {Status}, order: {Order}, ascending: {Ascending}",
                 queryParams.Status, queryParams.Order, queryParams.Asc);
 
-            var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds);
+            var status = (DispatchStatus)queryParams.Status;
+            var result = await _jobRepo.JobListAsync(queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, despatchViewIds, null, status);
 
             _logger.LogInformation("Successfully retrieved {Count} jobs", result.Count);
             return Json(result);
@@ -96,8 +98,10 @@ public class JobController : Controller
             if (!isInternal) await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             // Get jobs
-            var result = await _jobRepo.JobListAsync(queryParams.Status, queryParams.Order,
-                queryParams.Asc, isInternal, clientIds, despatchViewIds, clearListEnvelopeViewModel);
+            var status = (DispatchStatus)queryParams.Status;
+            var result = await _jobRepo.JobListAsync(queryParams.Order,
+                queryParams.Asc, isInternal, clientIds, despatchViewIds, clearListEnvelopeViewModel, status);
+
             return Json(result);
         }
         catch (Exception e)

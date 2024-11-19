@@ -27,14 +27,14 @@ angular.module("uDispatch")
                 $scope.selectedViews = [];
 
                 $scope.filters = [
-                    {value: 'new', label: 'New', active: false},
-                    {value: 'nda', label: 'NDA', active: false},
-                    {value: 'active', label: 'Active', active: false},
-                    {value: 'done', label: 'Done', active: false},
-                    {value: 'all', label: 'All', active: true}  // default active filter
+                    {value: 1, label: 'New', icon: 'fiber_new', active: false},
+                    {value: 2, label: 'NDA', icon: 'local_shipping', active: false},
+                    {value: 3, label: 'Active', icon: 'sync', active: false},
+                    {value: 4, label: 'Done', icon: 'task_alt', active: false},
+                    {value: 5, label: 'All', icon: 'list_alt', active: true}
                 ];
 
-                $scope.selectedFilter = 'all'; // default value
+                $scope.selectedFilter = 2; // default value
 
                 $scope.pickAllCouriers = [];
                 $scope.selected = [];
@@ -527,7 +527,18 @@ angular.module("uDispatch")
                         selectedFilterObj.active = true;
                     }
 
-                    await setFilters({'status': selectedFilter});
+                    // Map the numeric values to the expected status strings
+                    const statusMap = {
+                        1: 'new',
+                        2: 'nda',
+                        3: 'active',
+                        4: 'done',
+                        5: 'all'
+                    };
+
+                    // Use the mapped status value when calling setFilters
+                    const statusValue = statusMap[selectedFilter] || 'all';
+                    await setFilters({'status': statusValue});
 
                     // Ensure Angular updates the UI
                     if (!$scope.$$phase) {
@@ -2368,6 +2379,9 @@ angular.module("uDispatch")
                 }, 300);
             }
 
+            /**
+             * @param {Job} job
+             */
             $scope.selectJobDetail = async (job) => {
                 $scope.currentJob = job;
                 $scope.currentSupport = null;

@@ -26,9 +26,9 @@ public class NationwideJobRepository : BaseJobRepository, INationwideJobReposito
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<List<JobViewModel>> NationwideJobListAsync(string status,
-        string order, string ascending, bool isInternal, string clientIds, NationwideWindowPanel windowPane,
-        List<int> selectedViewIds)
+    public async Task<List<JobViewModel>> NationwideJobListAsync(string order, string ascending, bool isInternal,
+        string clientIds, NationwideWidget windowPane,
+        List<int> selectedViewIds, DispatchStatus status = DispatchStatus.All)
     {
         if (isInternal == false && string.IsNullOrEmpty(clientIds))
             return new List<JobViewModel>();

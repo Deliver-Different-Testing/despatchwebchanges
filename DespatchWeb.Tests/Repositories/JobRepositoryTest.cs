@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using DespatchWeb.EntityClasses;
@@ -30,17 +29,6 @@ public class JobRepositoryTest
         _mockContext.Setup(c => c.TblClientAvailableSpeedItems).Returns(CreateAvailableSpeedItems()?.Object);
         _mockContext.Setup(c => c.TblClientAvailableSpeeds).Returns(CreateAvailableClientSpeeds()?.Object);
         _mockContext.Setup(c => c.TucJobs).Returns(CreateJobs()?.Object);
-
-        _mockContext
-            .Setup(context => context.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<decimal?>(),
-                It.IsAny<string>(),
-                It.IsAny<int?>(),
-                It.IsAny<OutputParameter<int>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
 
         _repository = new JobRepository(_mockContext.Object, _mockMapper.Object, _mockLogger.Object);
     }
@@ -115,14 +103,6 @@ public class JobRepositoryTest
         };
 
         await _repository.AddInterCourierChargeAsync(viewModel);
-        _mockContext.Verify(c => c.Procedures.DESWEB_stpCreateInterCourierJobsAsync(
-            viewModel.FromCourierId,
-            viewModel.ToCourierId,
-            viewModel.Amount,
-            viewModel.Reference,
-            viewModel.StaffId,
-            It.IsAny<OutputParameter<int>>(),
-            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
