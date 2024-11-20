@@ -106,7 +106,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         // If no flight buffer provided, get flights from now (using tenant time zone)
         var tenantTimeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
         var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone);
-        var utcDateTime = DateTime.Now;
+        var utcDateTime = DateTime.UtcNow;
         var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
         flightBuffer ??= tenantTime;
 
