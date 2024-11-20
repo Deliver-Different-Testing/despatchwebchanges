@@ -2375,6 +2375,27 @@ angular.module("uDispatch").controller("NationwideControl", ["$scope", 'JobDetai
         }
 
         /**
+         * Choose flight icon based on stage
+         * @param {string} jobNumber
+         */
+        $scope.getFlightIcon = function (jobNumber) {
+            if (!jobNumber) return '';
+
+            const lastChar = jobNumber.toString().slice(-1);
+
+            switch (lastChar) {
+                case '1':
+                    return 'flight_takeoff';
+                case '2':
+                    return 'local_airport';
+                case '3':
+                    return 'flight_land';
+                default:
+                    return '';
+            }
+        };
+
+        /**
          * @async
          * @private
          * Get and process agent options for table
