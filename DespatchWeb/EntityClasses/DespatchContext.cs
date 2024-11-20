@@ -721,7 +721,15 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
 
+                entity.Property(e => e.DeliveryAddressLine5).HasMaxLength(255);
+
+                entity.Property(e => e.DeliveryAddressLine6).HasMaxLength(255);
+
                 entity.Property(e => e.ParentId).HasColumnName("ParentID");
+
+                entity.Property(e => e.PickupAddressLine5).HasMaxLength(255);
+
+                entity.Property(e => e.PickupAddressLine6).HasMaxLength(255);
 
                 entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
 
@@ -6112,6 +6120,10 @@ namespace DespatchWeb.EntityClasses
 
                 entity.Property(e => e.WhenSpeedChangeNotificationSent).HasColumnType("datetime");
 
+                entity.HasOne(d => d.AcceptedJobType)
+                    .WithMany(p => p.TucJobArchiveAcceptedJobTypes)
+                    .HasForeignKey(d => d.AcceptedJobTypeId);
+
                 entity.HasOne(d => d.Agent)
                     .WithMany(p => p.TucJobArchives)
                     .HasForeignKey(d => d.AgentId)
@@ -6127,6 +6139,10 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.DeliverToLeaveId)
                     .HasConstraintName("FK_tucJobArchive_tblJobLeaveNotHome");
 
+                entity.HasOne(d => d.DesiredJobType)
+                    .WithMany(p => p.TucJobArchiveDesiredJobTypes)
+                    .HasForeignKey(d => d.DesiredJobTypeId);
+
                 entity.HasOne(d => d.FromAirport)
                     .WithMany(p => p.TucJobArchiveFromAirports)
                     .HasForeignKey(d => d.FromAirportId)
@@ -6137,10 +6153,25 @@ namespace DespatchWeb.EntityClasses
                     .HasForeignKey(d => d.InternalStatus)
                     .HasConstraintName("FK_tucJobArchive_tucJobInternalStatus");
 
+                entity.HasOne(d => d.JobRelationshipType)
+                    .WithMany(p => p.TucJobArchives)
+                    .HasForeignKey(d => d.JobRelationshipTypeId)
+                    .HasConstraintName("FK_tucJobArchive_tblJobRelationshipType");
+
                 entity.HasOne(d => d.NotifiedJobType)
                     .WithMany(p => p.TucJobArchiveNotifiedJobTypes)
                     .HasForeignKey(d => d.NotifiedJobTypeId)
                     .HasConstraintName("FK_tucJobArchive_tucJobType_Notified");
+
+                entity.HasOne(d => d.Parent)
+                    .WithMany(p => p.InverseParent)
+                    .HasForeignKey(d => d.ParentId)
+                    .HasConstraintName("FK_tucJobArchive_ParentID");
+
+                entity.HasOne(d => d.Source)
+                    .WithMany(p => p.TucJobArchives)
+                    .HasForeignKey(d => d.SourceId)
+                    .HasConstraintName("FK_tucJobArchive_Source");
 
                 entity.HasOne(d => d.ToAirport)
                     .WithMany(p => p.TucJobArchiveToAirports)
@@ -6150,12 +6181,37 @@ namespace DespatchWeb.EntityClasses
                 entity.HasOne(d => d.UcjbClient)
                     .WithMany(p => p.TucJobArchives)
                     .HasForeignKey(d => d.UcjbClientId)
-                    .HasConstraintName("FK_tucJobArchive_tblClient");
+                    .HasConstraintName("FK_tucJobArchive_Client");
+
+                entity.HasOne(d => d.UcjbCourier)
+                    .WithMany(p => p.TucJobArchives)
+                    .HasForeignKey(d => d.UcjbCourierId)
+                    .HasConstraintName("FK_tucJobArchive_Courier");
+
+                entity.HasOne(d => d.UcjbDisp)
+                    .WithMany(p => p.TucJobArchives)
+                    .HasForeignKey(d => d.UcjbDispId)
+                    .HasConstraintName("FK_tucJobArchive_Dispatcher");
+
+                entity.HasOne(d => d.UcjbFromNavigation)
+                    .WithMany(p => p.TucJobArchiveUcjbFromNavigations)
+                    .HasForeignKey(d => d.UcjbFrom)
+                    .HasConstraintName("FK_tucJobArchive_FromSuburb");
 
                 entity.HasOne(d => d.UcjbSpeedNavigation)
                     .WithMany(p => p.TucJobArchiveUcjbSpeedNavigations)
                     .HasForeignKey(d => d.UcjbSpeed)
-                    .HasConstraintName("FK_tucJobArchive_tucJobType_Speed");
+                    .HasConstraintName("FK_tucJobArchive_tucJobType");
+
+                entity.HasOne(d => d.UcjbStatusNavigation)
+                    .WithMany(p => p.TucJobArchives)
+                    .HasForeignKey(d => d.UcjbStatus)
+                    .HasConstraintName("FK_tucJobArchive_tucJobStatus");
+
+                entity.HasOne(d => d.UcjbToNavigation)
+                    .WithMany(p => p.TucJobArchiveUcjbToNavigations)
+                    .HasForeignKey(d => d.UcjbTo)
+                    .HasConstraintName("FK_tucJobArchive_ToSuburb");
 
                 entity.HasOne(d => d.UndeliverableLocation)
                     .WithMany(p => p.TucJobArchives)

@@ -431,6 +431,10 @@
        "ObjectType": 1
       },
       {
+         "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[qry_tucJobItems]",
          "ObjectType": 1
       },

@@ -9,6 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public TucJobStatus()
         {
+            TucJobArchives = new HashSet<TucJobArchive>();
             TucJobs = new HashSet<TucJob>();
         }
 
@@ -18,6 +19,7 @@ namespace DespatchWeb.EntityClasses
         public string UcjsCode { get; set; }
         public int? JobStatusNotificationId { get; set; }
 
+        public virtual ICollection<TucJobArchive> TucJobArchives { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }
