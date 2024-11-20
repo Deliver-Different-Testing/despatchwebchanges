@@ -1088,8 +1088,59 @@ class JobDetailService {
      * Toggles the Reprice status of a job
      * @param {Job} job - The job to update
      */
-    repriceClick(job) {
-        return this.toggleJobProperty(job, 'reprice');
+    async repriceClick(job) {
+        try {
+            // Store previous status before update
+            const previousStatus = job.internalStatusId;
+
+            // Prepare the call data for updating the reprice status
+            const callData = {
+                "call": "updateDetailField",
+                "field": 'Reprice',
+                "value": !job.reprice,
+                "jobID": job.id
+            };
+
+            // Update the job
+            await this.updateField(false, job, callData);
+
+            // If job moves to reprice status, update internal status
+            if (this.currentJob.reprice) {
+                const repriceStatusId = 4; // Assuming 4 is the ID for reprice status
+                await this._dispatchData.updateJobDetail(
+                    job.id,
+                    "InternalStatusID",
+                    repriceStatusId,
+                    job.charge,
+                    FirstName,
+                    ContactID,
+                    job.preBook
+                );
+            }
+
+            // If job moves out of reprice status, restore previous status
+            if (!this.currentJob.reprice && previousStatus) {
+                await this._dispatchData.updateJobDetail(
+                    job.id,
+                    "InternalStatusID",
+                    previousStatus,
+                    job.charge,
+                    FirstName,
+                    ContactID,
+                    job.preBook
+                );
+            }
+
+            // Trigger refresh of job lists through callback
+            if (this.selectJobDetail) {
+                await this.selectJobDetail(job.id);
+            }
+
+        } catch (error) {
+            console.error('Error in repriceClick:', error);
+            this._toastrService.showErrorToast('Failed to update reprice status. Please try again.');
+            throw error;
+        }
     }
 
     /**

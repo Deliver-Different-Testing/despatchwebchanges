@@ -13,7 +13,7 @@ namespace DespatchWeb.Repositories;
 
 public class BaseJobRepository
 {
-    private static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
+    protected static readonly Expression<Func<TucJob, JobViewModel>> JobMapping = j => new JobViewModel
     {
         ClientId = j.UcjbClientId,
         Id = j.UcjbId,
@@ -201,6 +201,9 @@ public class BaseJobRepository
         Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
         StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
         InternalStatusId = j.InternalStatus,
+
+        // Checkboxes
+        Reprice = j.InternalStatus == (int)InternalJobStatus.Reprice,
 
         // Size
         Size = j.UcjbSizeNavigation != null
@@ -625,7 +628,7 @@ public class BaseJobRepository
         };
     }
 
-    public static int? CalculateRemainTime(TucJob job, TucJobType jobType)
+    protected static int? CalculateRemainTime(TucJob job, TucJobType jobType)
     {
         if (job == null)
             return null;
