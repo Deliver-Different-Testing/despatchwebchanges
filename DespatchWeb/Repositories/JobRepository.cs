@@ -496,8 +496,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
 
         foreach (var d in data)
         {
-            dynamic match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id) ??
-                            (dynamic)dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
+            var match = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == d.Id) ??
+                        dbDataArchive.FirstOrDefault(j => j.UcjbId == d.Id);
 
             if (match == null)
                 throw new ArgumentException("Id not found.", "Id");
@@ -527,8 +527,8 @@ public class JobRepository : BaseJobRepository, IJobRepository
 
         foreach (var x in parentJobs)
         {
-            dynamic parentJob = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key) ??
-                                (dynamic)dbDataArchive.First(j => j.UcjbId == x.Key);
+            var parentJob = (dynamic)dbData.FirstOrDefault(j => j.UcjbId == x.Key) ??
+                            dbDataArchive.First(j => j.UcjbId == x.Key);
             var childJobs = x.Where(j => j.UcjbId != parentJob.UcjbId).ToList();
 
             if (!childJobs.Any())
@@ -595,7 +595,7 @@ public class JobRepository : BaseJobRepository, IJobRepository
 
         ids = ids.Distinct().ToList();
 
-        if (ids == null || !ids.Any())
+        if (!ids.Any())
             return new List<JobDownloadModel>();
 
         var query = from j in _context.TblJobs

@@ -132,6 +132,21 @@ public class JobController : Controller
         return Ok("OK");
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetPricingBreakdown(int jobId)
+    {
+        try
+        {
+            _logger.LogInformation("Getting price breakdown for job {JobId}", jobId);
+            var priceComponents = await _jobRepo.GetJobPriceBreakdownAsync(jobId);
+            return Json(priceComponents);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting price breakdown for job {JobId}", jobId);
+            return StatusCode(500, "An error occurred while retrieving the pricing breakdown");
+        }
+    }
 
     public async Task<IActionResult> SendPrebookJob(int jobId)
     {
@@ -245,60 +260,51 @@ public class JobController : Controller
         DateTime fromDate,
         DateTime toDate)
     {
-        try
+        var data = await _jobRepo.PodSearchDownloadAsync(courierId, wild ?? "", job ?? "",
+            fromDate.ResetTimeToStartOfDay(),
+            toDate.ResetTimeToEndOfDay(), clientId);
+
+        var formatField = (object x) =>
         {
-            var data = await _jobRepo.PodSearchDownloadAsync(courierId, wild ?? "", job ?? "",
-                fromDate.ResetTimeToStartOfDay(),
-                toDate.ResetTimeToEndOfDay(), clientId);
+            var formatted = x
+                                ?.ToString()
+                                ?.Replace("\"", "\"\"")
+                                .Replace("\n", "\\n")
+                            ?? string.Empty;
 
-            var formatField = (object x) =>
+            return formatted.Contains("\"") || formatted.Contains(',')
+                ? $"\"{formatted}\""
+                : formatted;
+        };
+
+        var folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["DownloadDirectory"]);
+        folderPath = Path.Combine(folderPath, DateTime.Now.ToString("yyyyMM"));
+        // Create the folder if it doesn't exist
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+
+        var filename = $"Jobs {DateTime.Now:yyyyMMddHHmmssfff}.csv";
+        var filePath = Path.Combine(folderPath, filename);
+
+
+        using var stream = new MemoryStream();
+        await using (var writer = new StreamWriter(stream, Encoding.UTF8))
+        {
+            await writer.WriteLineAsync(
+                "Id,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,Quantity,Weight,Size,PickupAddressLine1,PickupAddressLine2,PickupAddressLine3,PickupAddressLine4,PickupAddressLine5,PickupAddressLine6,PickupAddressLine7,PickupAddressLine8,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8,ClientReferenceA,ClientReferenceB,ClientReferenceC");
+            foreach (var x in data)
             {
-                string formatted = x
-                                       ?.ToString()
-                                       ?.Replace("\"", "\"\"")
-                                       ?.Replace("\n", "\\n")
-                                   ?? string.Empty;
-
-                return formatted.Contains("\"") || formatted.Contains(",")
-                    ? $"\"{formatted}\""
-                    : formatted;
-            };
-
-            string folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["DownloadDirectory"]);
-            folderPath = Path.Combine(folderPath, DateTime.Now.ToString("yyyyMM"));
-            // Create the folder if it doesn't exist
-            if (!Directory.Exists(folderPath))
-                Directory.CreateDirectory(folderPath);
-
-            var filename = $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}.csv";
-            string filePath = Path.Combine(folderPath, filename);
-
-
-            using (var stream = new MemoryStream())
-            {
-                using (var writer = new StreamWriter(stream, Encoding.UTF8))
-                {
-                    writer.WriteLine(
-                        "Id,JobNumber,BookDate,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,Quantity,Weight,Size,PickupAddressLine1,PickupAddressLine2,PickupAddressLine3,PickupAddressLine4,PickupAddressLine5,PickupAddressLine6,PickupAddressLine7,PickupAddressLine8,DeliveryAddressLine1,DeliveryAddressLine2,DeliveryAddressLine3,DeliveryAddressLine4,DeliveryAddressLine5,DeliveryAddressLine6,DeliveryAddressLine7,DeliveryAddressLine8,ClientReferenceA,ClientReferenceB,ClientReferenceC");
-                    foreach (var x in data)
-                    {
-                        writer.WriteLine(
-                            $"{x.Id},{formatField(x.JobNumber)},{x.BookDate.ToString("yyyy-MM-dd HH:mm:ss")},{x.Amount},{x.Fuel},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)},{formatField(x.ClientReferenceA)},{formatField(x.ClientReferenceB)},{formatField(x.ClientReferenceC)}");
-                    }
-                }
-
-                var bytes = stream.ToArray();
-                //stream.Position = 0;
-                System.IO.File.WriteAllBytes(filePath, bytes);
-
-                //stream.Position = 0;
-                return File(bytes, "text/csv", filename);
+                await writer.WriteLineAsync(
+                    $"{x.Id},{formatField(x.JobNumber)},{x.BookDate:yyyy-MM-dd HH:mm:ss},{x.Amount},{x.Fuel},{x.Ppd},{x.CourierPayment},{x.CourierFuel},{x.CourierBonus},{x.Quantity},{x.Weight},{x.Size},{formatField(x.PickupAddressLine1)},{formatField(x.PickupAddressLine2)},{formatField(x.PickupAddressLine3)},{formatField(x.PickupAddressLine4)},{formatField(x.PickupAddressLine5)},{formatField(x.PickupAddressLine6)},{formatField(x.PickupAddressLine7)},{formatField(x.PickupAddressLine8)},{formatField(x.DeliveryAddressLine1)},{formatField(x.DeliveryAddressLine2)},{formatField(x.DeliveryAddressLine3)},{formatField(x.DeliveryAddressLine4)},{formatField(x.DeliveryAddressLine5)},{formatField(x.DeliveryAddressLine6)},{formatField(x.DeliveryAddressLine7)},{formatField(x.DeliveryAddressLine8)},{formatField(x.ClientReferenceA)},{formatField(x.ClientReferenceB)},{formatField(x.ClientReferenceC)}");
             }
         }
-        catch (Exception e)
-        {
-            throw;
-        }
+
+        var bytes = stream.ToArray();
+        //stream.Position = 0;
+        await System.IO.File.WriteAllBytesAsync(filePath, bytes);
+
+        //stream.Position = 0;
+        return File(bytes, "text/csv", filename);
     }
 
     [HttpPost]
@@ -309,18 +315,18 @@ public class JobController : Controller
                 .Substring(file.FileName.Trim().LastIndexOf(".")).Trim().ToLower()))
             return BadRequest("Invalid file format.");
 
-        string folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["UploadDirectory"]);
+        var folderPath = Path.Combine(_hostingEnvironment.ContentRootPath, _configuration["UploadDirectory"]);
         folderPath = Path.Combine(folderPath, DateTime.Now.ToString("yyyyMM"));
         // Create the folder if it doesn't exist
         if (!Directory.Exists(folderPath))
             Directory.CreateDirectory(folderPath);
 
-        string fileExtension = file.FileName.Trim().ToLower().Substring(file.FileName.Trim().LastIndexOf("."));
-        string filePath = Path.Combine(folderPath, $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}{fileExtension}");
+        var fileExtension = file.FileName.Trim().ToLower().Substring(file.FileName.Trim().LastIndexOf("."));
+        var filePath = Path.Combine(folderPath, $"Jobs {DateTime.Now.ToString("yyyyMMddHHmmssfff")}{fileExtension}");
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         string sResult = null;
-        using (FileStream stream = System.IO.File.Create(filePath))
+        await using (var stream = System.IO.File.Create(filePath))
         {
             await file.CopyToAsync(stream);
             using (var reader = fileExtension == ".csv"
