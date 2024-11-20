@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
@@ -102,8 +103,12 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
             throw new ArgumentException("Arrival airport code is required and cannot be null or empty.",
                 nameof(destinationAirportCode));
 
-        // If no flight buffer provided, get flights from now
-        flightBuffer ??= DateTime.Now;
+        // If no flight buffer provided, get flights from now (using tenant time zone)
+        var tenantTimeZone = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+        var tenantTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone);
+        var utcDateTime = DateTime.Now;
+        var tenantTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tenantTimeZoneInfo);
+        flightBuffer ??= tenantTime;
 
         // If departureDateTime is not provided, use current date and time
         var (year, month, day, hour, minute) = SplitDate(flightBuffer.Value);
@@ -115,6 +120,7 @@ public class FlightStatsService(HttpClient httpClient, IHttpContextAccessor cont
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
         query["appKey"] = _appKey;
+        query["numHours"] = "24";
 
         if (!string.IsNullOrEmpty(codeType))
             query["codeType"] = codeType;
