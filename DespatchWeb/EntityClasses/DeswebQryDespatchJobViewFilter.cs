@@ -12,11 +12,15 @@ namespace DespatchWeb.EntityClasses
         public bool RemoteJob { get; set; }
         public int? ParentId { get; set; }
         public int IsParentJob { get; set; }
-        public short? VehicleSizeId { get; set; }
+        public int? VehicleSizeId { get; set; }
         public int? UcjbClientId { get; set; }
         public int? UcjtId { get; set; }
         public int? UcjsId { get; set; }
         public int? BulkRegionId { get; set; }
         public int? ClearListAreaId { get; set; }
+        public string PickupAddressLine6 { get; set; }
+        public string DeliveryAddressLine6 { get; set; }
+        public string PickupAddressLine5 { get; set; }
+        public string DeliveryAddressLine5 { get; set; }
     }
 }

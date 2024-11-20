@@ -45,7 +45,7 @@ namespace DespatchWeb.EntityClasses
         public string ClientReferenceA { get; set; }
         public string ClientReferenceB { get; set; }
         public string Recipient { get; set; }
-        public short? Size { get; set; }
+        public int? Size { get; set; }
         public string ClientNotes { get; set; }
         public string InternalNotes { get; set; }
         public int? OperatorId { get; set; }
@@ -183,5 +183,6 @@ namespace DespatchWeb.EntityClasses
         public decimal? DryIceWeight { get; set; }
         public DateTime? DeliverByTime { get; set; }
         public int? AgentId { get; set; }
+        public string Connote { get; set; }
     }
 }

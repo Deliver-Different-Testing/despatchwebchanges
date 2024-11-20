@@ -11,6 +11,7 @@ namespace DespatchWeb.EntityClasses
         {
             DfrntappUserViewPermissions = new HashSet<DfrntappUserViewPermission>();
             DfrntuserPageLayouts = new HashSet<DfrntuserPageLayout>();
+            TucJobArchives = new HashSet<TucJobArchive>();
             TucJobs = new HashSet<TucJob>();
         }
 
@@ -63,6 +64,7 @@ namespace DespatchWeb.EntityClasses
         public virtual TucSuburb UcstSuburb { get; set; }
         public virtual ICollection<DfrntappUserViewPermission> DfrntappUserViewPermissions { get; set; }
         public virtual ICollection<DfrntuserPageLayout> DfrntuserPageLayouts { get; set; }
+        public virtual ICollection<TucJobArchive> TucJobArchives { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }
 }

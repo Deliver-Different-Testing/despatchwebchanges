@@ -9,6 +9,7 @@ namespace DespatchWeb.EntityClasses
     {
         public TblJobRelationshipType()
         {
+            TucJobArchives = new HashSet<TucJobArchive>();
             TucJobBookings = new HashSet<TucJobBooking>();
             TucJobs = new HashSet<TucJob>();
         }
@@ -35,6 +36,7 @@ namespace DespatchWeb.EntityClasses
         public bool AutoVoid { get; set; }
         public bool PostToClientXero { get; set; }
 
+        public virtual ICollection<TucJobArchive> TucJobArchives { get; set; }
         public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
         public virtual ICollection<TucJob> TucJobs { get; set; }
     }

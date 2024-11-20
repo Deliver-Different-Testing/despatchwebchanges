@@ -367,52 +367,80 @@ public class JobRepository : BaseJobRepository, IJobRepository
         var jobParam = $"%{job}%";
         var wildParam = $"%{wild}%";
 
-        var jobsQuery = from x in _context.TblJobs
-            join c in _context.TblCouriers on x.CourierId equals c.CourierId into courierJoin
+        var jobsQuery = from j in _context.TblJobs
+            join c in _context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
             from co in courierJoin.DefaultIfEmpty()
-            join y in _context.TucSuburbs on x.FromSuburbId equals y.UcsuId into fromJoin
-            from yo in fromJoin.DefaultIfEmpty()
-            join z in _context.TucSuburbs on x.ToSuburbId equals z.UcsuId into toJoin
-            from zo in toJoin.DefaultIfEmpty()
-            join t in _context.TucJobTypes on x.Speed equals t.UcjtId into speedJoin
-            from to in speedJoin.DefaultIfEmpty()
-            join s in _context.TucJobStatuses on x.Status equals s.UcjsId into statusJoin
+            join y in _context.TucSuburbs on j.FromSuburbId equals y.UcsuId into fromJoin
+            from fs in fromJoin.DefaultIfEmpty()
+            join z in _context.TucSuburbs on j.ToSuburbId equals z.UcsuId into toJoin
+            from ts in toJoin.DefaultIfEmpty()
+            join t in _context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+            from speed in speedJoin.DefaultIfEmpty()
+            join s in _context.TucJobStatuses on j.Status equals s.UcjsId into statusJoin
             from status in statusJoin.DefaultIfEmpty()
-            join nw in _context.TucJobNationwides on x.JobId equals nw.UcnwJobId into nationwideJoin
+            join nw in _context.TucJobNationwides on j.JobId equals nw.UcnwJobId into nationwideJoin
             from nationwide in nationwideJoin.DefaultIfEmpty()
-            where x.Date >= fromDate && x.Date <= toDate && (!clientSet || x.ClientId == clientId) &&
-                  (!courierSet || x.CourierId == courierId) &&
-                  (job == "" || EF.Functions.Like(x.Number.ToLower(), jobParam)) &&
-                  (wild == "" || EF.Functions.Like(nationwide.UcnwConNote, wildParam) || EF.Functions.Like(
-                      x.FromAddress + " " + x.PickupFromContact + " " + yo.UcsuName + " " + x.ToAddress + " " +
-                      x.DeliverToContact + " " + zo.UcsuName + " " + (x.ClientReferenceA ?? "") + " " +
-                      (x.ClientReferenceB ?? "") + " " + (x.OurRef ?? "") + " " + x.Number.ToLower(), wildParam))
+            where j.Date >= fromDate && j.Date <= toDate &&
+                  (!clientSet || j.ClientId == clientId) &&
+                  (!courierSet || j.CourierId == courierId) &&
+                  (job == "" || EF.Functions.Like(j.Number.ToLower(), jobParam)) &&
+                  (wild == "" || EF.Functions.Like(nationwide.UcnwFlightNo, wildParam) || EF.Functions.Like(
+                      j.FromAddress + " " + j.PickupFromContact + " " + fs.UcsuName + " " + j.ToAddress + " " +
+                      j.DeliverToContact + " " + ts.UcsuName + " " + (j.ClientReferenceA ?? "") + " " +
+                      j.Connote.ToLower() + " " +
+                      (j.ClientReferenceB ?? "") + " " + (j.OurRef ?? "") + " " + j.Number.ToLower(), wildParam))
             select new JobViewModel
             {
-                Id = x.JobId,
-                Time = x.Time,
-                ClientId = x.ClientId,
-                Client = x.ClientCode,
-                From = yo.UcsuName,
-                FromSuburbId = x.FromSuburbId,
-                To = zo.UcsuName,
-                ToSuburbId = x.ToSuburbId,
-                JobNo = x.Number,
-                FromAddress = x.FromAddress,
-                ToAddress = x.ToAddress,
+                Id = j.JobId,
+                Time = j.Time,
+                ClientId = j.ClientId,
+                Client = j.ClientCode,
+                From = fs.UcsuName,
+                FromSuburbId = j.FromSuburbId,
+                To = ts.UcsuName,
+                ToSuburbId = j.ToSuburbId,
+                JobNo = j.Number,
+                FromAddress = j.FromAddress,
+                ToAddress = j.ToAddress,
+                PickupAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8,
+                    Latitude = j.PickUpLatitude,
+                    Longitude = j.PickUpLongitude
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8,
+                    Latitude = j.DeliveryLatitude,
+                    Longitude = j.DeliveryLongitude
+                },
                 Courier = co.Code,
-                StatusId = x.Status,
+                StatusId = j.Status,
                 Status = status.UcjsCode,
-                Speed = to.ShortName,
-                SpeedId = x.Speed,
+                Speed = speed.ShortName,
+                SpeedId = j.Speed,
                 PreBook = false,
-                PickUpLatitude = x.PickUpLatitude,
-                PickUpLongitude = x.PickUpLongitude,
-                DeliveryLatitude = x.DeliveryLatitude,
-                DeliveryLongitude = x.DeliveryLongitude,
-                BookedDate = x.Date,
-                Booked = DateTime.Parse(x.Date.Value.ToString("yyyy-MM-dd") + " " +
-                                        x.Time.Value.ToString("HH:mm:ss"))
+                PickUpLatitude = j.PickUpLatitude,
+                PickUpLongitude = j.PickUpLongitude,
+                DeliveryLatitude = j.DeliveryLatitude,
+                DeliveryLongitude = j.DeliveryLongitude,
+                BookedDate = j.Date,
+                Booked = DateTime.Parse(j.Date.Value.ToString("yyyy-MM-dd") + " " +
+                                        j.Time.Value.ToString("HH:mm:ss"))
             };
 
         var orderedQuery = jobsQuery.OrderBy(a => a.BookedDate).ThenBy(v => v.Time);
@@ -433,12 +461,12 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 d.Id <= 0
                 ||
                 (d.Amount > 0 && (d.Ppd < 0 || d.Fuel < 0 || d.CourierPayment < 0 || d.CourierFuel < 0 ||
-                                  d.CourierBonus < 0 || d.Amount < (d.Ppd + d.Fuel) ||
-                                  d.Amount < (d.CourierPayment + d.CourierFuel + d.CourierBonus)))
+                                  d.CourierBonus < 0 || d.Amount < d.Ppd + d.Fuel ||
+                                  d.Amount < d.CourierPayment + d.CourierFuel + d.CourierBonus))
                 ||
                 (d.Amount < 0 && (d.Ppd > 0 || d.Fuel > 0 || d.CourierPayment > 0 || d.CourierFuel > 0 ||
-                                  d.CourierBonus > 0 || d.Amount > (d.Ppd + d.Fuel) ||
-                                  d.Amount > (d.CourierPayment + d.CourierFuel + d.CourierBonus)))
+                                  d.CourierBonus > 0 || d.Amount > d.Ppd + d.Fuel ||
+                                  d.Amount > d.CourierPayment + d.CourierFuel + d.CourierBonus))
             ))
             throw new ArgumentException("Invalid Values.");
 
