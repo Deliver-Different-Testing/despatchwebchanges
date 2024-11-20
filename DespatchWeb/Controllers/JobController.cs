@@ -241,7 +241,7 @@ public class JobController : Controller
 
     public async Task<IActionResult> PreBookJobs()
     {
-        var result = await _jobRepo.PreBookJobList();
+        var result = await _jobRepo.PreBookJobListAsync();
         return Json(result);
     }
 

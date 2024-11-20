@@ -724,14 +724,13 @@ public class JobRepository : BaseJobRepository, IJobRepository
         return Tuple.Create(total, jobList);
     }
 
-    public async Task<List<JobViewModel>> PreBookJobList()
+    public async Task<List<PrebookListViewModel>> PreBookJobListAsync()
     {
-        var jobs = await _context.UvwBookingTodays
-            .FromSqlRaw(
-                "SELECT * FROM uvwBookingToday WHERE ucbkDone=0  ORDER BY CONVERT(nvarchar(10), ucbkTime, 108), ucbkJobNumber")
-            .ToListAsync();
-        var jobList = (from j in jobs
-            select new JobViewModel
+        var prebooks = await _context.TucJobBookings
+            .Where(j => j.UcbkDate.Value.Date <= DateTime.Today && j.UcbkDone == false)
+            .OrderBy(j => j.UcbkTime)
+            .ThenBy(j => j.UcbkJobNumber)
+            .Select(j => new PrebookListViewModel
             {
                 Id = j.UcbkId,
                 Booked = DateTime.Parse(j.UcbkNextDue.Value.ToString("yyyy-MM-dd") + " " +
@@ -741,10 +740,37 @@ public class JobRepository : BaseJobRepository, IJobRepository
                 ToAddress = j.UcbkToAddr,
                 JobNo = j.UcbkJobNumber,
                 ClientId = j.UcbkClientId,
-                Courier = j.Code,
-                Speed = j.UcjtName
-            }).ToList();
-        return jobList;
+                Courier = j.Courier.Code,
+                Speed = j.UcbkSpeedNavigation.UcjtName,
+                PickupAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.PickupAddressLine1,
+                    AddressLine2 = j.PickupAddressLine2,
+                    AddressLine3 = j.PickupAddressLine3,
+                    AddressLine4 = j.PickupAddressLine4,
+                    AddressLine5 = j.PickupAddressLine5,
+                    AddressLine6 = j.PickupAddressLine6,
+                    AddressLine7 = j.PickupAddressLine7,
+                    AddressLine8 = j.PickupAddressLine8,
+                    Latitude = j.PickUpLatitude,
+                    Longitude = j.PickUpLongitude,
+                },
+                DeliveryAddress = new AddressViewModel
+                {
+                    AddressLine1 = j.DeliveryAddressLine1,
+                    AddressLine2 = j.DeliveryAddressLine2,
+                    AddressLine3 = j.DeliveryAddressLine3,
+                    AddressLine4 = j.DeliveryAddressLine4,
+                    AddressLine5 = j.DeliveryAddressLine5,
+                    AddressLine6 = j.DeliveryAddressLine6,
+                    AddressLine7 = j.DeliveryAddressLine7,
+                    AddressLine8 = j.DeliveryAddressLine8,
+                    Latitude = j.DeliveryLatitude,
+                    Longitude = j.DeliveryLongitude,
+                },
+            }).AsNoTracking().ToListAsync();
+
+        return prebooks;
     }
 
     public async Task<List<JobViewModel>> CurrentJobList(int courierId, bool done)
