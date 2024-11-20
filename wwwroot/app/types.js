@@ -419,6 +419,16 @@
  */
 
 /**
+ * Represents a view model for an the price breakdown.
+ *
+ * @typedef {Object} PriceBreakdown
+ *
+ * @property {number} chargeId
+ * @property {string} name
+ * @property {number} amount
+ */
+
+/**
  * @typedef {Object} JobDataType
  * @readonly
  * @description Enum-like object defining the different types of job data that can be fetched.

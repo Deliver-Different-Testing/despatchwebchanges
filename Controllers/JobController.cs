@@ -120,6 +120,21 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         return Ok("OK");
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetPricingBreakdown(int jobId)
+    {
+        try
+        {
+            _logger.LogInformation("Getting price breakdown for job {JobId}", jobId);
+            var priceComponents = await _jobRepo.GetJobPriceBreakdownAsync(jobId);
+            return Json(priceComponents);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting price breakdown for job {JobId}", jobId);
+            return StatusCode(500, "An error occurred while retrieving the pricing breakdown");
+        }
+    }
 
     public async Task<IActionResult> SendPrebookJob(int jobId)
     {
@@ -320,7 +335,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
 
     public async Task<IActionResult> PreBookJobs()
     {
-        var result = await jobRepository.PreBookJobList();
+        var result = await jobRepository.PreBookJobListAsync();
         return Json(result);
     }
 
@@ -339,22 +354,22 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
         DateTime fromDate,
         DateTime toDate)
     {
-        try
+        var data = await _jobRepo.PodSearchDownloadAsync(courierId, wild ?? "", job ?? "",
+            fromDate.ResetTimeToStartOfDay(),
+            toDate.ResetTimeToEndOfDay(), clientId);
+
+        var formatField = (object x) =>
         {
-            var data = await jobRepository.PodSearchDownloadAsync(courierId, wild ?? "", job ?? "",
-                fromDate.ResetTimeToStartOfDay(),
-                toDate.ResetTimeToEndOfDay(), clientId);
+            var formatted = x
+                                ?.ToString()
+                                ?.Replace("\"", "\"\"")
+                                .Replace("\n", "\\n")
+                            ?? string.Empty;
 
-            static string formatField(object x)
-            {
-                var formatted = x?.ToString()
-                    ?.Replace("\"", "\"\"")
-                    ?.Replace("\n", "\\n") ?? string.Empty;
-
-                return formatted.Contains("\"") || formatted.Contains(',')
-                    ? $"\"{formatted}\""
-                    : formatted;
-            }
+            return formatted.Contains("\"") || formatted.Contains(',')
+                ? $"\"{formatted}\""
+                : formatted;
+        };
 
             using var stream = new MemoryStream();
             await using (var writer = new StreamWriter(stream, Encoding.UTF8))

@@ -94,11 +94,15 @@
                         </th>
                         <th ng-click="orderList('flightList', 'departureTime')" scope="col">
                             <i class="material-symbols-outlined" ng-if="sort.flightList == 'departureTime'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-departureTime'">arrow_drop_up</i>Departure
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-departureTime'">arrow_drop_up</i>Date
+                        </th>
+                        <th ng-click="orderList('flightList', 'departureTime')" scope="col">
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'departureTime'">arrow_drop_down</i>
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-departureTime'">arrow_drop_up</i>D
                         </th>
                         <th ng-click="orderList('flightList','arrivalTime')" scope="col">
                             <i class="material-symbols-outlined" ng-if="sort.flightList == 'arrivalTime'">arrow_drop_down</i>
-                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-arrivalTime'">arrow_drop_up</i>Arrival
+                            <i class="material-symbols-outlined" ng-if="sort.flightList == 'd-arrivalTime'">arrow_drop_up</i>A
                         </th>
                         <th ng-click="orderList('flightList','duration')" scope="col">
                             <i class="material-symbols-outlined"
@@ -130,6 +134,7 @@
                     ng-repeat="flight in flightOptions | filter: box.searchBox">
                     <td>{{flight.airline}}</td>
                     <td>{{flight.flightNumber}}</td>
+                    <td>{{flight.departureTime | date: "MM/dd/yyyy"}}</td>
                     <td>{{flight.departureTime | date: "HH:mm"}}</td>
                     <td>{{flight.arrivalTime | date: "HH:mm"}}</td>
                     <td>{{flight.duration | date: "H:mm"}}</td>

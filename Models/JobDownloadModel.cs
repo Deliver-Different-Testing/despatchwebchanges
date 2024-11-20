@@ -16,7 +16,7 @@ public class JobDownloadModel
     public decimal? CourierBonus { get; set; }
     public short? Quantity { get; set; }
     public double? Weight { get; set; }
-    public short? Size { get; set; }
+    public int? Size { get; set; }
     public string PickupAddressLine1 { get; set; }
     public string PickupAddressLine2 { get; set; }
     public string PickupAddressLine3 { get; set; }

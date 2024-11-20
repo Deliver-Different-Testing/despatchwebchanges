@@ -269,55 +269,60 @@ class JobDetailService {
      * @param {Job} job
      */
     async displayPriceBreakdown($event, job) {
+        console.log('Starting displayPriceBreakdown for job:', job.id);
         $event.stopPropagation();
-        console.log(job);
 
-        const pedal = (job.fromSuburbId === 1 && job.toSuburbID === 1) ||
-            (job.fromSuburbId === 112 && job.toSuburbID === 112) ||
-            (job.fromSuburbId === 480 && job.toSuburbID === 480);
-
-        const isTruckJob = job.size.id === 4 && [41, 42, 43, 44, 46, 51, 52].includes(job.speedID);
-
+        /**
+         * @param {string} description
+         */
         const showDialog = async (description) => {
+            console.log('Opening price breakdown dialog');
             return this._$mdDialog.show(
                 this._$mdDialog.alert()
                     .parent(angular.element(this._$document.body))
                     .clickOutsideToClose(true)
                     .title('Charge Information')
-                    .textContent(description)
+                    .htmlContent(description)  // Changed from textContent to htmlContent
                     .ariaLabel('Alert Dialog')
                     .ok('OK')
             );
         };
 
         try {
-            let priceBreakdown;
+            console.log('Fetching price breakdown data for job:', job.id);
+            const data = await this._dispatchData.getPriceBreakdown(job.id);
+            console.log('Received price breakdown data:', data);
 
-            if (isTruckJob) {
-                const itemSummary = await this._dispatchData.getTruckItemsSummary(job.id, job.truckWeightLimit);
-                priceBreakdown = await this._dispatchData.truckJobAmountBreakdown(
-                    job.clientId, job.fromSuburbID, job.toSuburbID, itemSummary.weight,
-                    job.size.id, job.speedID, itemSummary.quantity, job.booked,
-                    itemSummary.pickUp, itemSummary.dropOff, job.privateRes,
-                    itemSummary.overSize, itemSummary.overWeight, itemSummary.dgClass,
-                    job.truckStartTime || this._moment().format("YYYY-MM-DDThh:mm:ss"),
-                    job.truckHours || 2, job.gstRate
-                );
-            } else {
-                priceBreakdown = await this._dispatchData.jobAmountBreakdown(
-                    job.clientId, job.fromSuburbID, job.toSuburbID, job.speedID, pedal,
-                    job.van, job.return, job.weight, job.size.id, true, job.direct,
-                    job.acceptedJobTypeID, job.ourRef || '', job.refA || '', job.refB || '',
-                    job.items, job.booked, job.gstRate, job.charge.replace("$", "")
-                );
-            }
+            console.log('Formatting price breakdown');
+            const formattedBreakdown = this.formatPriceBreakDown(data);
+            console.log('Formatted breakdown:', formattedBreakdown);
 
-            await showDialog(priceBreakdown);
+            console.log('Showing dialog with formatted breakdown');
+            await showDialog(formattedBreakdown);
+            console.log('Dialog closed successfully');
         } catch (error) {
-            console.log('Error fetching price breakdown:', error);
+            console.error('Error in displayPriceBreakdown:', error);
+            console.log('Showing error dialog to user');
             await showDialog('An error occurred while fetching the price breakdown. Please try again.');
         }
     }
+
+    /**
+     * @param {PriceBreakdown[]} data - Array of price breakdown items
+     * @returns {string} Formatted price breakdown string with HTML line breaks
+     */
+    formatPriceBreakDown(data) {
+        let breakdownString = '';
+        let total = 0;
+
+        data.forEach(item => {
+            breakdownString += `${item.name}: $${item.amount.toFixed(2)}<br>`;
+            total += item.amount;
+        });
+
+        breakdownString += `<br>Total: $${total.toFixed(2)}`;
+        return breakdownString;
+    };
 
     /**
      * @param {Object} $event
@@ -1083,8 +1088,59 @@ class JobDetailService {
      * Toggles the Reprice status of a job
      * @param {Job} job - The job to update
      */
-    repriceClick(job) {
-        return this.toggleJobProperty(job, 'reprice');
+    async repriceClick(job) {
+        try {
+            // Store previous status before update
+            const previousStatus = job.internalStatusId;
+
+            // Prepare the call data for updating the reprice status
+            const callData = {
+                "call": "updateDetailField",
+                "field": 'Reprice',
+                "value": !job.reprice,
+                "jobID": job.id
+            };
+
+            // Update the job
+            await this.updateField(false, job, callData);
+
+            // If job moves to reprice status, update internal status
+            if (this.currentJob.reprice) {
+                const repriceStatusId = 4; // Assuming 4 is the ID for reprice status
+                await this._dispatchData.updateJobDetail(
+                    job.id,
+                    "InternalStatusID",
+                    repriceStatusId,
+                    job.charge,
+                    FirstName,
+                    ContactID,
+                    job.preBook
+                );
+            }
+
+            // If job moves out of reprice status, restore previous status
+            if (!this.currentJob.reprice && previousStatus) {
+                await this._dispatchData.updateJobDetail(
+                    job.id,
+                    "InternalStatusID",
+                    previousStatus,
+                    job.charge,
+                    FirstName,
+                    ContactID,
+                    job.preBook
+                );
+            }
+
+            // Trigger refresh of job lists through callback
+            if (this.selectJobDetail) {
+                await this.selectJobDetail(job.id);
+            }
+
+        } catch (error) {
+            console.error('Error in repriceClick:', error);
+            this._toastrService.showErrorToast('Failed to update reprice status. Please try again.');
+            throw error;
+        }
     }
 
     /**

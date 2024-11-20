@@ -30,7 +30,7 @@ public interface IJobRepository
     Task<Tuple<int, List<JobViewModel>>> PreBookSearchAsync(int? courierId, string wild, string job,
         DateTime fromDate, DateTime toDate, int? clientId, int pageIndex, int pageSize);
 
-    Task<List<JobViewModel>> PreBookJobList();
+    Task<List<PrebookListViewModel>> PreBookJobListAsync();
     Task<List<JobViewModel>> CurrentJobList(int courierId, bool done);
 
     Task<List<JobViewModel>> JobListAsync(string order,

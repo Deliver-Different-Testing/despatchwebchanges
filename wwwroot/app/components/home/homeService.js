@@ -1135,6 +1135,17 @@ class DispatchData {
     }
 
     /**
+     * Returns a list of the individual components that make up the price
+     *
+     * @param {number} jobId
+     * @returns {Promise<PriceBreakdown[]>} The detailed price breakdown for the job
+     */
+    async getPriceBreakdown(jobId) {
+        const response = await this._$http.get(`job/GetPricingBreakdown?jobId=${jobId}`);
+        return response.data;
+    }
+
+    /**
      * @param {Suggestion[]} selectedAreas
      * @returns {Array}
      * @private
