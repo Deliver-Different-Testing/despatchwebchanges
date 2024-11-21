@@ -115,7 +115,7 @@
                             <thead md-head md-on-reorder="ctrl.onOrderChange" md-order="ctrl.query.order">
                             <tr md-row>
                                 <th md-column></th>
-                                <th md-column md-order-by="jobName">Job Name</th>
+                                <th md-column md-order-by="jobName">Job Number</th>
                                 <th md-column md-order-by="status">Status</th>
                                 <th md-column md-order-by="completion">Completion</th>
                                 <th md-column md-order-by="pickup">Pickup</th>
@@ -144,7 +144,11 @@
                                     </md-chip>
                                 </td>
                                 <td md-cell>
-                                    <md-progress-linear md-mode="determinate" value="{{delivery.completion}}">
+                                    <md-progress-linear
+                                            class="progress-status"
+                                            md-mode="determinate"
+                                            ng-class="ctrl.getProgressClass(delivery.completion)"
+                                            value="{{delivery.completion}}">
                                     </md-progress-linear>
                                 </td>
                                 <td md-cell>{{delivery.pickup}}</td>
@@ -162,7 +166,11 @@
                                         <md-chip class="status-chip" ng-class="childJob.status">
                                             {{childJob.status}}
                                         </md-chip>
-                                        <md-progress-linear md-mode="determinate" value="{{childJob.completion}}">
+                                        <md-progress-linear
+                                                class="progress-status"
+                                                md-mode="determinate"
+                                                ng-class="ctrl.getProgressClass(childJob.completion)"
+                                                value="{{childJob.completion}}">
                                         </md-progress-linear>
                                         <span>{{childJob.pickup}}</span>
                                         <span>{{childJob.delivery}}</span>

@@ -121,6 +121,14 @@ class OverviewController {
         this.materialSidenavService.toggle();
     }
 
+    getProgressClass(completion) {
+        if (completion < 34) {
+            return 'md-warn';
+        } else if (completion < 67) {
+            return 'md-accent';
+        }
+        return 'md-primary';
+    }
 }
 
 angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', ($mdDialog, materialSidenavService, overviewService) => new OverviewController($mdDialog, materialSidenavService, overviewService)]);
