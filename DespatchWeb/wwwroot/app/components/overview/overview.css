@@ -1,0 +1,44 @@
+.dashboard-container {
+    padding: 20px;
+}
+
+.search-container {
+    padding: 0 16px;
+}
+
+.filters-card {
+    margin-bottom: 20px;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.status-on-track {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-completed {
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.status-in-progress {
+    background-color: #fff3e0;
+    color: #ef6c00;
+}
+
+.status-delayed {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.completion-progress {
+    height: 4px;
+}
+
+/*# sourceMappingURL=overview.css.map */

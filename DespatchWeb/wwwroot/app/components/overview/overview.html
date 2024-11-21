@@ -1,0 +1,133 @@
+<link href="app/components/overview/overview.css" rel="stylesheet">
+
+<div ng-cloak ng-controller="deliveryOverview as ctrl">
+    <div>
+        <md-toolbar class="md-hue-2">
+            <div class="md-toolbar-tools">
+                <h2>DFRNT</h2>
+
+                <span flex></span>
+
+                <md-button aria-label="Menu" class="md-icon-button" ng-click="ctrl.toggleSidenav()"
+                           ng-mouseover="ctrl.toggleSidenav()">
+                    <md-icon md-font-set="material-symbols-outlined">menu</md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <material-sidenav></material-sidenav>
+    </div>
+
+    <div class="delivery-dashboard md-padding" layout="column">
+        <!-- Tabs -->
+        <md-tabs md-border-bottom md-dynamic-height md-selected="ctrl.activeTab">
+            <md-tab ng-repeat="tab in ctrl.tabs">
+                <md-tab-label>{{tab}}</md-tab-label>
+            </md-tab>
+        </md-tabs>
+
+        <div layout="row" layout-xs="column">
+            <!-- Filters Panel -->
+            <md-card class="md-card-m3 elevated" flex="20">
+                <md-toolbar class="md-accent">
+                    <div class="md-toolbar-tools-m3">
+                        <div class="section section-start">
+                            <span class="material-symbols-outlined">tune</span>
+                            <span class="md-headline-title" flex flex style="margin-left: 8px;">Quick Filters</span>
+                        </div>
+                    </div>
+                </md-toolbar>
+
+                <div class="md-padding">
+                    <div class="filter-section">
+                        <h4>Regions</h4>
+                        <md-checkbox
+                                ng-change="ctrl.toggleRegion(region)"
+                                ng-model="region.selected"
+                                ng-repeat="region in ctrl.regions">
+                            {{region.name}}
+                        </md-checkbox>
+                    </div>
+
+                    <div class="filter-section">
+                        <h4>Statistics</h4>
+                        <div>Active: {{ctrl.statistics.active}}</div>
+                        <div>Inactive: {{ctrl.statistics.inactive}}</div>
+                        <div>Completed: {{ctrl.statistics.completed}}</div>
+                    </div>
+                </div>
+            </md-card>
+
+            <!-- Main Content -->
+            <md-card class="md-card-m3 elevated">
+                <div class="md-padding" flex layout="column">
+                    <!-- Search and Date Range -->
+                    <div layout="row" layout-align="end center">
+                        <md-input-container class="md-block" flex>
+                            <label for="search">Search deliveries...</label>
+                            <input id="search" ng-model="ctrl.search">
+                        </md-input-container>
+
+                        <md-button class="md-icon-button md-raised">
+                            <md-icon md-font-set="material-symbols-outlined">date_range</md-icon>
+                            <md-tooltip md-direction="bottom">Date Range</md-tooltip>
+                        </md-button>
+                    </div>
+
+                    <!-- Data Table -->
+                    <md-table-container>
+                        <table md-row-select md-table multiple ng-model="ctrl.selected">
+                            <thead md-head md-order="ctrl.query.order">
+                            <tr md-row>
+                                <th md-column md-order-by="jobName">Job Name</th>
+                                <th md-column md-order-by="status">Status</th>
+                                <th md-column md-order-by="completion">Completion</th>
+                                <th md-column md-order-by="pickup">Pickup</th>
+                                <th md-column md-order-by="delivery">Delivery</th>
+                                <th md-column md-order-by="driver">Driver</th>
+                                <th md-column md-order-by="region">Region</th>
+                            </tr>
+                            </thead>
+                            <tbody md-body>
+                            <tr md-row md-select="delivery" md-select-id="jobName"
+                                ng-repeat="delivery in ctrl.deliveries | filter: ctrl.search | orderBy: ctrl.query.order">
+                                <td md-cell>{{delivery.jobName}}</td>
+                                <td md-cell>
+                                    <md-chip class="status-chip" ng-class="delivery.status">
+                                        {{delivery.status}}
+                                    </md-chip>
+                                </td>
+                                <td md-cell>
+                                    <md-progress-linear md-mode="determinate"
+                                                        value="{{delivery.completion}}">
+                                    </md-progress-linear>
+                                </td>
+                                <td md-cell>{{delivery.pickup}}</td>
+                                <td md-cell>{{delivery.delivery}}</td>
+                                <td md-cell>{{delivery.driver}}</td>
+                                <td md-cell>{{delivery.region}}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </md-table-container>
+
+                    <md-table-pagination md-limit="ctrl.query.limit"
+                                         md-limit-options="[5, 10, 15]"
+                                         md-on-paginate="ctrl.onPaginate"
+                                         md-page="ctrl.query.page"
+                                         md-total="{{ctrl.deliveries.length}}">
+                    </md-table-pagination>
+
+                    <!-- Navigation Buttons -->
+                    <div layout="row" layout-align="space-between center">
+                        <div>
+                            <md-button class="md-button-m3 md-raised">Previous</md-button>
+                            <md-button class="md-button-m3 md-raised">Next</md-button>
+                        </div>
+                        <md-button class="md-button-m3 md-raised">Export</md-button>
+                    </div>
+                </div>
+            </md-card>
+        </div>
+    </div>
+</div>
