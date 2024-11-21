@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -21,16 +22,24 @@ public class OverviewController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index([FromQuery] int statusGroup = 1)
     {
         try
         {
-            var jobs = await _jobRepository.GetJobsForOverviewPage();
+            // Convert int to enum
+            if (!Enum.IsDefined(typeof(JobStatusGroup), statusGroup))
+                return BadRequest($"Invalid status group: {statusGroup}");
+
+            var statusEnum = (JobStatusGroup)statusGroup;
+
+            // Get jobs filtered by status group
+            var jobs = await _jobRepository.GetJobsForOverviewPageAsync(statusEnum);
             return Json(jobs);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting jobs");
+            _logger.LogError(ex, "Error getting jobs for status group {StatusGroup}: {Error}",
+                statusGroup, ex.Message);
             return StatusCode(500);
         }
     }
@@ -46,6 +55,21 @@ public class OverviewController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting regions");
+            return StatusCode(500);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetStats()
+    {
+        try
+        {
+            var stats = await _jobRepository.GetOverviewStatsAsync();
+            return Json(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting overview stats");
             return StatusCode(500);
         }
     }

@@ -161,5 +161,6 @@ public interface IJobRepository
     Task UpdateJobConnoteAsync(int jobId, string conNote);
     Task UpdateJobNoteAsync(int jobId, string note);
 
-    Task<List<DeliveryJob>> GetJobsForOverviewPage();
+    Task<List<DeliveryJob>> GetJobsForOverviewPageAsync(JobStatusGroup statusGroup);
+    Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 }

@@ -20,9 +20,15 @@
 
     <div class="delivery-dashboard md-padding" layout="column">
         <!-- Tabs -->
-        <md-tabs md-border-bottom md-dynamic-height md-selected="ctrl.activeTab">
+        <md-tabs md-border-bottom md-dynamic-height md-on-select="ctrl.onTabSelected($index)"
+                 md-selected="ctrl.activeTab">
             <md-tab ng-repeat="tab in ctrl.tabs">
-                <md-tab-label>{{tab}}</md-tab-label>
+                <md-tab-label>
+                    {{tab}}
+                    <span class="tab-count" ng-if="tab === 'Active'">({{ctrl.statistics.active}})</span>
+                    <span class="tab-count" ng-if="tab === 'Inactive'">({{ctrl.statistics.inactive}})</span>
+                    <span class="tab-count" ng-if="tab === 'Completed'">({{ctrl.statistics.completed}})</span>
+                </md-tab-label>
             </md-tab>
         </md-tabs>
 
@@ -126,8 +132,7 @@
                             </thead>
                             <tbody md-body>
                             <!-- Parent row -->
-                            <tr md-row
-                                ng-repeat-start="delivery in ctrl.deliveries | filter: ctrl.search | orderBy: ctrl.query.order">
+                            <tr md-row ng-repeat-start="delivery in ctrl.filteredData">
                                 <td md-cell>
                                     <md-button class="md-icon-button"
                                                ng-click="delivery.expanded = !delivery.expanded"
@@ -192,7 +197,7 @@
 
                     <!-- Navigation Buttons -->
                     <div layout="row" layout-align="end end">
-                        <md-button class="md-raised">
+                        <md-button class="md-raised" ng-click="ctrl.exportJobs()">
                             <md-icon md-font-set="material-symbols-outlined">download</md-icon>
                             Export
                         </md-button>

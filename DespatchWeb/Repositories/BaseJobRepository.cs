@@ -782,10 +782,58 @@ public class BaseJobRepository
         }
     }
 
-    public async Task<List<DeliveryJob>> GetJobsForOverviewPage()
+    public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
     {
-        var jobs = await _context.TucJobs
-            .Where(j => j.InverseParent.Any())
+        // Define status groups only once
+        var activeStatus = new[] { JobStatus.Dispatched, JobStatus.New, JobStatus.AwaitingPod };
+        var completedStatus = new[]
+            { JobStatus.Completed, JobStatus.Undeliverable, JobStatus.Rejected, JobStatus.AssumingCompleted };
+
+        // Base query for parent jobs
+        var baseQuery = _context.TucJobs.Where(j => j.InverseParent.Any());
+
+        // Get counts for each status group in a single query
+        var stats = await baseQuery
+            .GroupBy(j => true) // Group all records together
+            .Select(g => new OverviewStatsViewModel
+            {
+                Active = g.Count(j => activeStatus.Contains((JobStatus)j.UcjbStatus)),
+                Completed = g.Count(j => completedStatus.Contains((JobStatus)j.UcjbStatus)),
+                Inactive = g.Count(j => !activeStatus.Contains((JobStatus)j.UcjbStatus)
+                                        && !completedStatus.Contains((JobStatus)j.UcjbStatus))
+            })
+            .FirstOrDefaultAsync();
+
+        // If no records found, return empty stats
+        return stats ?? new OverviewStatsViewModel
+        {
+            Active = 0,
+            Inactive = 0,
+            Completed = 0
+        };
+    }
+
+    public async Task<List<DeliveryJob>> GetJobsForOverviewPageAsync(JobStatusGroup statusGroup)
+    {
+        // Base query
+        var query = _context.TucJobs
+            .Where(j => j.InverseParent.Any());
+
+        // Apply status group
+        switch (statusGroup)
+        {
+            case JobStatusGroup.Active:
+                var activeStatus = new[] { JobStatus.Dispatched, JobStatus.New, JobStatus.AwaitingPod };
+                query = query.Where(j => activeStatus.Contains((JobStatus)j.UcjbStatus));
+                break;
+            case JobStatusGroup.Completed:
+                var completedStatus = new[]
+                    { JobStatus.Completed, JobStatus.Undeliverable, JobStatus.Rejected, JobStatus.AssumingCompleted };
+                query = query.Where(j => completedStatus.Contains((JobStatus)j.UcjbStatus));
+                break;
+        }
+
+        var jobs = await query
             .Select(j => new DeliveryJob
             {
                 JobName = j.UcjbNumber,
