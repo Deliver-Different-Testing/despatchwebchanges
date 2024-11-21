@@ -317,6 +317,18 @@ public class CourierRepository : ICourierRepository
         }).ToListAsync();
     }
 
+    public async Task<List<Suggestion>> GetAllRegionsAsync()
+    {
+        var regions = await _context.TblBulkRegions
+            .Select(r => new Suggestion
+            {
+                Id = r.BulkRegionId,
+                Text = r.Name
+            }).AsNoTracking().ToListAsync();
+
+        return regions;
+    }
+
     public async Task<string> GetAirportCodeByIdAsync(int airportId)
     {
         try

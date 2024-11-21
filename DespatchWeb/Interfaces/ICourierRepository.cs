@@ -33,4 +33,6 @@ public interface ICourierRepository
         Country country, bool includeCouriers = false);
 
     Task<List<Suggestion>> GetVehicleSizesAsync();
+
+    Task<List<Suggestion>> GetAllRegionsAsync();
 }

@@ -1,44 +1,48 @@
-.dashboard-container {
-    padding: 20px;
+.delivery-dashboard md-card {
+  margin: 8px;
 }
-
-.search-container {
-    padding: 0 16px;
+.filter-section {
+  margin-bottom: 24px;
 }
-
-.filters-card {
-    margin-bottom: 20px;
+.status-chip {
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 12px;
+  text-transform: capitalize;
 }
-
-.status-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    text-transform: uppercase;
+.status-chip.on-track {
+  background-color: #4CAF50;
+  color: white;
 }
-
-.status-on-track {
-    background-color: #e8f5e9;
-    color: #2e7d32;
+.status-chip.delayed {
+  background-color: #F44336;
+  color: white;
 }
-
-.status-completed {
-    background-color: #e3f2fd;
-    color: #1565c0;
+md-progress-linear {
+  margin: 8px 0;
 }
-
-.status-in-progress {
-    background-color: #fff3e0;
-    color: #ef6c00;
+.child-job-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.02);
+  padding: 8px 16px;
+  margin: 4px 0;
+  border-radius: 4px;
 }
-
-.status-delayed {
-    background-color: #ffebee;
-    color: #c62828;
+.empty-state {
+  padding: 24px;
+  text-align: center;
 }
-
-.completion-progress {
-    height: 4px;
+.empty-state .empty-icon {
+  font-size: 42px;
+  height: 42px;
+  width: 42px;
+  color: #9e9e9e;
 }
-
+.empty-state .empty-text {
+  margin: 8px 0 0;
+  color: #757575;
+}
 /*# sourceMappingURL=overview.css.map */

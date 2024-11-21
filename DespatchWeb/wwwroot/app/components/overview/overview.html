@@ -41,13 +41,38 @@
                 <div class="md-padding">
                     <div class="filter-section">
                         <h4>Regions</h4>
-                        <md-checkbox
-                                ng-change="ctrl.toggleRegion(region)"
-                                ng-model="region.selected"
-                                ng-repeat="region in ctrl.regions">
-                            {{region.name}}
-                        </md-checkbox>
+                        <div class="loader-container"
+                             ng-if="ctrl.regionsLoading">
+                            <div class="full-height" layout="row" layout-align="center center">
+                                <div class="material-icon-loader">
+                                    <md-progress-circular md-diameter="60"
+                                                          md-mode="indeterminate"></md-progress-circular>
+                                    <md-icon class="loader-icon" md-font-set="material-symbols-outlined">public_off
+                                    </md-icon>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div ng-if="!ctrl.regionsLoading">
+                            <div class="empty-state" layout="column" layout-align="center center"
+                                 ng-if="!ctrl.regions.length">
+                                <md-icon class="empty-icon" md-font-set="material-symbols-outlined">public_off</md-icon>
+                                <p class="empty-text">No regions found</p>
+                            </div>
+
+                            <div layout="row" layout-wrap ng-if="ctrl.regions.length">
+                                <div flex="50" ng-repeat="region in ctrl.regions">
+                                    <md-checkbox
+                                            ng-change="ctrl.toggleRegion(region)"
+                                            ng-model="region.selected">
+                                        {{region.name}}
+                                    </md-checkbox>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <md-divider></md-divider>
 
                     <div class="filter-section">
                         <h4>Statistics</h4>
@@ -72,7 +97,8 @@
                 <div class="md-padding" flex layout="column">
                     <!-- Search and Date Range -->
                     <div layout="row" layout-align="end center">
-                        <md-input-container class="md-block" flex>
+                        <md-input-container class="md-icon-float md-block" flex>
+                            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
                             <label for="search">Search deliveries...</label>
                             <input id="search" ng-model="ctrl.search">
                         </md-input-container>
@@ -85,9 +111,10 @@
 
                     <!-- Data Table -->
                     <md-table-container>
-                        <table md-row-select md-table multiple ng-model="ctrl.selected">
-                            <thead md-head md-order="ctrl.query.order">
+                        <table md-progress="ctrl.promise" md-table ng-model="ctrl.selected">
+                            <thead md-head md-on-reorder="ctrl.onOrderChange" md-order="ctrl.query.order">
                             <tr md-row>
+                                <th md-column></th>
                                 <th md-column md-order-by="jobName">Job Name</th>
                                 <th md-column md-order-by="status">Status</th>
                                 <th md-column md-order-by="completion">Completion</th>
@@ -98,8 +125,18 @@
                             </tr>
                             </thead>
                             <tbody md-body>
-                            <tr md-row md-select="delivery" md-select-id="jobName"
-                                ng-repeat="delivery in ctrl.deliveries | filter: ctrl.search | orderBy: ctrl.query.order">
+                            <!-- Parent row -->
+                            <tr md-row
+                                ng-repeat-start="delivery in ctrl.deliveries | filter: ctrl.search | orderBy: ctrl.query.order">
+                                <td md-cell>
+                                    <md-button class="md-icon-button"
+                                               ng-click="delivery.expanded = !delivery.expanded"
+                                               ng-if="delivery.childJobs && delivery.childJobs.length > 0">
+                                        <md-icon md-font-set="material-symbols-outlined">
+                                            {{delivery.expanded ? 'expand_more' : 'chevron_right'}}
+                                        </md-icon>
+                                    </md-button>
+                                </td>
                                 <td md-cell>{{delivery.jobName}}</td>
                                 <td md-cell>
                                     <md-chip class="status-chip" ng-class="delivery.status">
@@ -107,14 +144,32 @@
                                     </md-chip>
                                 </td>
                                 <td md-cell>
-                                    <md-progress-linear md-mode="determinate"
-                                                        value="{{delivery.completion}}">
+                                    <md-progress-linear md-mode="determinate" value="{{delivery.completion}}">
                                     </md-progress-linear>
                                 </td>
                                 <td md-cell>{{delivery.pickup}}</td>
                                 <td md-cell>{{delivery.delivery}}</td>
                                 <td md-cell>{{delivery.driver}}</td>
                                 <td md-cell>{{delivery.region}}</td>
+                            </tr>
+                            <!-- Child rows -->
+                            <tr md-row ng-if="delivery.expanded" ng-repeat="childJob in delivery.childJobs"
+                                ng-repeat-end>
+                                <td md-cell></td>
+                                <td colspan="7" md-cell>
+                                    <div class="child-job-row">
+                                        <span>{{childJob.jobName}}</span>
+                                        <md-chip class="status-chip" ng-class="childJob.status">
+                                            {{childJob.status}}
+                                        </md-chip>
+                                        <md-progress-linear md-mode="determinate" value="{{childJob.completion}}">
+                                        </md-progress-linear>
+                                        <span>{{childJob.pickup}}</span>
+                                        <span>{{childJob.delivery}}</span>
+                                        <span>{{childJob.driver}}</span>
+                                        <span>{{childJob.region}}</span>
+                                    </div>
+                                </td>
                             </tr>
                             </tbody>
                         </table>
@@ -128,12 +183,11 @@
                     </md-table-pagination>
 
                     <!-- Navigation Buttons -->
-                    <div layout="row" layout-align="space-between center">
-                        <div>
-                            <md-button class="md-button-m3 md-raised">Previous</md-button>
-                            <md-button class="md-button-m3 md-raised">Next</md-button>
-                        </div>
-                        <md-button class="md-button-m3 md-raised">Export</md-button>
+                    <div layout="row" layout-align="end end">
+                        <md-button class="md-raised">
+                            <md-icon md-font-set="material-symbols-outlined">download</md-icon>
+                            Export
+                        </md-button>
                     </div>
                 </div>
             </md-card>

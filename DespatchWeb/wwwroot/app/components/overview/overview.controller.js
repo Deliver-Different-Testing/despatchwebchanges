@@ -3,16 +3,26 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, materialSidenavService) {
+    constructor($mdDialog, materialSidenavService, overviewService) {
         this.$mdDialog = $mdDialog;
         this.materialSidenavService = materialSidenavService;
+        this.overviewService = overviewService;
 
         this.selected = [];
         this.query = {
             order: 'jobName',
-            limit: 5,
+            limit: 20,
             page: 1
         };
+
+        // Loaders
+        this.regionsLoading = false;
+
+        // Initialize data containers
+        this.deliveries = [];
+        this.filteredData = [];
+        this.regions = [];
+        this.promise = null;
 
         this.dateRange = {
             start: null,
@@ -22,10 +32,6 @@ class OverviewController {
         this.activeTab = 0;
         this.tabs = ['Active', 'Inactive', 'Completed'];
 
-        this.regions = [
-            {name: 'West Coast', selected: false},
-            {name: 'Midwest', selected: false}
-        ];
 
         this.statistics = {
             active: 15,
@@ -33,26 +39,77 @@ class OverviewController {
             completed: 28
         };
 
-        this.deliveries = [
-            {
-                jobName: 'Cross-Country Delivery',
-                status: 'on-track',
-                completion: 75,
-                pickup: 'New York, NY',
-                delivery: 'Los Angeles, CA',
-                driver: 'John Smith',
-                region: 'West Coast'
-            },
-            {
-                jobName: 'Regional Distribution',
-                status: 'delayed',
-                completion: 45,
-                pickup: 'Chicago, IL',
-                delivery: 'Detroit, MI',
-                driver: 'Sarah Johnson',
-                region: 'Midwest'
-            }
-        ];
+        // Initial data load
+        this.refreshData();
+    }
+
+    /**
+     * Refresh data with loading state
+     */
+    refreshData() {
+        // Set promise to trigger loading state in md-table
+        this.promise = this.overviewService.getAllJobs()
+            .then(data => {
+                this.deliveries = data;
+                this.updateTable();
+                return this.deliveries;
+            })
+            .catch(error => {
+                console.error('Error loading deliveries:', error);
+                // Show error dialog
+                this.$mdDialog.show(
+                    this.$mdDialog.alert()
+                        .title('Error')
+                        .textContent('Failed to load deliveries. Please try again.')
+                        .ok('OK')
+                );
+                return [];
+            });
+    }
+
+    /**
+     * Update table with current filters and pagination
+     */
+    updateTable() {
+        // Apply search filter if exists
+        this.filteredData = this.search ?
+            this.deliveries.filter(delivery =>
+                delivery.jobName.toLowerCase().includes(this.search.toLowerCase())
+            ) :
+            this.deliveries;
+
+        // Apply sorting
+        if (this.query.order) {
+            const reverse = this.query.order.startsWith('-');
+            const orderBy = reverse ? this.query.order.slice(1) : this.query.order;
+            this.filteredData = [...this.filteredData].sort((a, b) => {
+                return reverse ?
+                    b[orderBy].localeCompare(a[orderBy]) :
+                    a[orderBy].localeCompare(b[orderBy]);
+            });
+        }
+    }
+
+    async getRegions() {
+        try {
+            this.regionsLoading = true;
+            this.regions = await this.overviewService.getAllRegions();
+        } catch (error) {
+            console.error('An error occured getting regions.');
+        } finally {
+            this.regionsLoading = false;
+        }
+    }
+
+    /**
+     * Handle pagination changes
+     * @param {number} page
+     * @param {number} limit
+     */
+    onPaginate(page, limit) {
+        this.query.page = page;
+        this.query.limit = limit;
+        this.updateTable();
     }
 
     toggleRegion(region) {
@@ -66,4 +123,4 @@ class OverviewController {
 
 }
 
-angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', ($mdDialog, materialSidenavService) => new OverviewController($mdDialog, materialSidenavService)]);
+angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', ($mdDialog, materialSidenavService, overviewService) => new OverviewController($mdDialog, materialSidenavService, overviewService)]);

@@ -781,4 +781,41 @@ public class BaseJobRepository
             throw;
         }
     }
+
+    public async Task<List<DeliveryJob>> GetJobsForOverviewPage()
+    {
+        var jobs = await _context.TucJobs
+            .Where(j => j.InverseParent.Any())
+            .Select(j => new DeliveryJob
+            {
+                JobName = j.UcjbNumber,
+                Status = j.UcjbStatusNavigation.UcjsName,
+                Region =
+                    j.TblBulkJobs.FirstOrDefault() != null ? j.TblBulkJobs.FirstOrDefault().Region.Name : null,
+                Pickup = j.PickupAddressLine5 + ", " + j.PickupAddressLine6,
+                Delivery = j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6,
+                Driver = j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null,
+                Completion = j.InverseParent.Any()
+                    ? (int)Math.Round(
+                        (double)j.InverseParent.Count(c => c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed) /
+                        j.InverseParent.Count * 100)
+                    : 0,
+                ChildJobs = j.InverseParent.Select(c => new ChildDeliveryJob
+                {
+                    JobName = c.UcjbNumber,
+                    Status = c.UcjbStatusNavigation.UcjsName,
+                    Region = c.TblBulkJobs.FirstOrDefault() != null
+                        ? c.TblBulkJobs.FirstOrDefault().Region.Name
+                        : null,
+                    Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
+                    Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
+                    Driver = c.UcjbCourier != null
+                        ? c.UcjbCourier.UccrName + " " + c.UcjbCourier.UccrSurname
+                        : null,
+                    Completion = c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
+                }).ToList()
+            }).ToListAsync();
+
+        return jobs;
+    }
 }
