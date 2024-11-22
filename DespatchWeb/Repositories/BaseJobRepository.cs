@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
@@ -784,27 +785,20 @@ public class BaseJobRepository
 
     public async Task<OverviewStatsViewModel> GetOverviewStatsAsync()
     {
-        // Define status groups only once
-        var activeStatus = new[] { JobStatus.Dispatched, JobStatus.New, JobStatus.AwaitingPod };
-        var completedStatus = new[]
-            { JobStatus.Completed, JobStatus.Undeliverable, JobStatus.Rejected, JobStatus.AssumingCompleted };
-
-        // Base query for parent jobs
         var baseQuery = _context.TucJobs.Where(j => j.InverseParent.Any());
 
-        // Get counts for each status group in a single query
         var stats = await baseQuery
             .GroupBy(j => true) // Group all records together
             .Select(g => new OverviewStatsViewModel
             {
-                Active = g.Count(j => activeStatus.Contains((JobStatus)j.UcjbStatus)),
-                Completed = g.Count(j => completedStatus.Contains((JobStatus)j.UcjbStatus)),
-                Inactive = g.Count(j => !activeStatus.Contains((JobStatus)j.UcjbStatus)
-                                        && !completedStatus.Contains((JobStatus)j.UcjbStatus))
+                Active = g.Count(j =>
+                    j.UcjbStatus.HasValue && JobStatusGroups.Active.Contains(j.UcjbStatus.Value) && !j.UcjbVoid),
+                Completed = g.Count(j =>
+                    j.UcjbStatus.HasValue && JobStatusGroups.Completed.Contains(j.UcjbStatus.Value) && !j.UcjbVoid),
+                Inactive = g.Count(j => j.UcjbVoid)
             })
             .FirstOrDefaultAsync();
 
-        // If no records found, return empty stats
         return stats ?? new OverviewStatsViewModel
         {
             Active = 0,
@@ -820,19 +814,18 @@ public class BaseJobRepository
             .Where(j => j.InverseParent.Any());
 
         // Apply status group
-        switch (statusGroup)
+        query = statusGroup switch
         {
-            case JobStatusGroup.Active:
-                var activeStatus = new[] { JobStatus.Dispatched, JobStatus.New, JobStatus.AwaitingPod };
-                query = query.Where(j => activeStatus.Contains((JobStatus)j.UcjbStatus));
-                break;
-            case JobStatusGroup.Completed:
-                var completedStatus = new[]
-                    { JobStatus.Completed, JobStatus.Undeliverable, JobStatus.Rejected, JobStatus.AssumingCompleted };
-                query = query.Where(j => completedStatus.Contains((JobStatus)j.UcjbStatus));
-                break;
-        }
+            JobStatusGroup.Active => query.Where(j =>
+                j.UcjbStatus.HasValue && JobStatusGroups.Active.Contains(j.UcjbStatus.Value) && !j.UcjbVoid),
 
+            JobStatusGroup.Completed => query.Where(j =>
+                j.UcjbStatus.HasValue && JobStatusGroups.Completed.Contains(j.UcjbStatus.Value) && !j.UcjbVoid),
+
+            JobStatusGroup.Inactive => query.Where(j => j.UcjbVoid),
+
+            _ => query
+        };
         var jobs = await query
             .Select(j => new DeliveryJob
             {
@@ -845,7 +838,9 @@ public class BaseJobRepository
                 Driver = j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null,
                 Completion = j.InverseParent.Any()
                     ? (int)Math.Round(
-                        (double)j.InverseParent.Count(c => c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed) /
+                        (double)j.InverseParent.Count(c =>
+                            c.UcjbJobDone || (c.UcjbStatus.HasValue &&
+                                              JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))) /
                         j.InverseParent.Count * 100)
                     : 0,
                 ChildJobs = j.InverseParent.Select(c => new ChildDeliveryJob
