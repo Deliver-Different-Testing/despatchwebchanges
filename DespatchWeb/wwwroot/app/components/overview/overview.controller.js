@@ -70,7 +70,7 @@ class OverviewController {
      * @param {number} tabIndex
      */
     async onTabSelected(tabIndex) {
-        console.log('Tab selected:', tabIndex + 1); // Debug log
+        console.log('Tab selected:', tabIndex + 1);
         this.activeTab = tabIndex;
         await this.refreshData();
     }
@@ -96,12 +96,11 @@ class OverviewController {
             return this.filteredData;
         } catch (error) {
             console.error('Error loading deliveries:', error);
-            this.$mdDialog.show(
-                this.$mdDialog.alert()
-                    .title('Error')
-                    .textContent('Failed to load deliveries. Please try again.')
-                    .ok('OK')
-            );
+            const dialog = this.$mdDialog.alert()
+                .title('Error')
+                .textContent('Failed to load deliveries. Please try again.')
+                .ok('OK');
+            await this.$mdDialog.show(dialog);
             return [];
         }
     }

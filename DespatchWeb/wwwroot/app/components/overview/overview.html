@@ -24,28 +24,25 @@
             <md-tab ng-repeat="tab in ctrl.tabs">
                 <md-tab-label>
                     {{tab}}
-                    <span class="tab-count" ng-if="tab === 'Active'">({{ctrl.statistics.active}})</span>
-                    <span class="tab-count" ng-if="tab === 'Inactive'">({{ctrl.statistics.inactive}})</span>
-                    <span class="tab-count" ng-if="tab === 'Completed'">({{ctrl.statistics.completed}})</span>
                 </md-tab-label>
             </md-tab>
         </md-tabs>
 
         <div layout="row" layout-xs="column">
             <!-- Filters Panel -->
-            <md-card class="md-card-m3 elevated" flex="20">
+            <md-card flex="20">
                 <md-toolbar class="md-accent">
-                    <div class="md-toolbar-tools-m3">
-                        <div class="section section-start">
+                    <div class="md-toolbar-tools">
                             <span class="material-symbols-outlined">tune</span>
                             <span class="md-headline-title" flex flex style="margin-left: 8px;">Quick Filters</span>
-                        </div>
                     </div>
                 </md-toolbar>
 
                 <div class="md-padding">
                     <div class="filter-section">
-                        <h4>Regions</h4>
+                        <div class="statistics-header">
+                            <h4>Regions</h4>
+                        </div>
                         <div class="loader-container"
                              ng-if="ctrl.regionsLoading">
                             <div class="full-height" layout="row" layout-align="center center">
@@ -79,39 +76,71 @@
 
                     <md-divider></md-divider>
 
-                    <div class="filter-section">
-                        <h4>Statistics</h4>
-                        <div>Active: {{ctrl.statistics.active}}</div>
-                        <div>Inactive: {{ctrl.statistics.inactive}}</div>
-                        <div>Completed: {{ctrl.statistics.completed}}</div>
+                    <div class="filter-section statistics-container">
+                        <div class="statistics-header">
+                            <h4>Statistics</h4>
+                        </div>
+
+                        <div class="statistics-grid" layout="column">
+                            <div class="stat-item" layout="row" layout-align="space-between center">
+                                <div class="stat-label" layout="row" layout-align="start center">
+                                    <md-icon md-font-set="material-symbols-outlined">cycle</md-icon>
+                                    <span>Active</span>
+                                </div>
+                                <span class="stat-value active">{{ctrl.statistics.active}}</span>
+                            </div>
+
+                            <md-divider></md-divider>
+
+                            <div class="stat-item" layout="row" layout-align="space-between center">
+                                <div class="stat-label" layout="row" layout-align="start center">
+                                    <md-icon md-font-set="material-symbols-outlined">pause_circle</md-icon>
+                                    <span>Inactive</span>
+                                </div>
+                                <span class="stat-value inactive">{{ctrl.statistics.inactive}}</span>
+                            </div>
+
+                            <md-divider></md-divider>
+
+                            <div class="stat-item" layout="row" layout-align="space-between center">
+                                <div class="stat-label" layout="row" layout-align="start center">
+                                    <md-icon md-font-set="material-symbols-outlined">task_alt</md-icon>
+                                    <span>Completed</span>
+                                </div>
+                                <span class="stat-value completed">{{ctrl.statistics.completed}}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </md-card>
 
             <!-- Main Content -->
-            <md-card class="md-card-m3 elevated" flex="80">
+            <md-card flex="80">
                 <md-toolbar class="md-accent">
-                    <div class="md-toolbar-tools-m3">
-                        <div class="section section-start">
+                    <div class="md-toolbar-tools">
                             <span class="material-symbols-outlined">overview</span>
                             <span class="md-headline-title" flex flex style="margin-left: 8px;">Overview</span>
-                        </div>
                     </div>
                 </md-toolbar>
 
                 <div class="md-padding" flex layout="column">
                     <!-- Search and Date Range -->
-                    <div layout="row" layout-align="end center">
-                        <md-input-container class="md-icon-float md-block" flex>
-                            <md-icon md-font-set="material-symbols-outlined">search</md-icon>
-                            <label for="search">Search deliveries...</label>
-                            <input id="search" ng-model="ctrl.search">
-                        </md-input-container>
+                    <div class="search-section" layout="row" layout-align="end end">
+                        <div class="search-container" flex>
+                            <md-input-container class="md-block" md-no-float>
+                                <md-icon class="search-icon" md-font-set="material-symbols-outlined">search</md-icon>
+                                <input class="search-input"
+                                       ng-model="ctrl.search"
+                                       placeholder="Search deliveries...">
+                            </md-input-container>
+                        </div>
 
-                        <md-button class="md-icon-button md-raised">
-                            <md-icon md-font-set="material-symbols-outlined">date_range</md-icon>
-                            <md-tooltip md-direction="bottom">Date Range</md-tooltip>
-                        </md-button>
+                        <div class="actions-container" layout="row" layout-align="end center">
+                            <md-button aria-label="Select date range" class="md-fab md-mini date-button">
+                                <md-icon md-font-set="material-symbols-outlined">date_range</md-icon>
+                                <md-tooltip md-direction="bottom">Select Date Range</md-tooltip>
+                            </md-button>
+                        </div>
                     </div>
 
                     <!-- Data Table -->
