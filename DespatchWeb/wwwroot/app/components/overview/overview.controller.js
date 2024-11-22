@@ -3,21 +3,18 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, toastrService) {
+    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document) {
         this.$mdDialog = $mdDialog;
         this.materialSidenavService = materialSidenavService;
         this.overviewService = overviewService;
         this.versionUrl = versionUrl;
         this.$document = $document;
-        this.toastrService = toastrService;
 
         this.selected = [];
         this.query = {
-            order: 'jobName',  // default ordering
+            order: 'jobName',
             limit: 20,
-            page: 1,
-            search: '',
-            regions: []
+            page: 1
         };
 
         // Loaders
@@ -25,6 +22,7 @@ class OverviewController {
 
         // Initialize data containers
         this.deliveries = [];
+        this.filteredData = [];
         this.regions = [];
         this.promise = null;
         this.search = '';
@@ -39,8 +37,8 @@ class OverviewController {
 
 
         // Initial data load
-        this.loadStats().then(r => console.log('Load stats completed'));
-        this.refreshData().then(r => console.log('Refresh data completed'));
+        this.loadStats();
+        this.refreshData();
     }
 
     async loadStats() {
@@ -63,23 +61,10 @@ class OverviewController {
      * Handle tab selection
      * @param {number} tabIndex
      */
-    async onTabSelected(tabIndex) {
-        console.log('Tab selected:', tabIndex + 1);
+    onTabSelected(tabIndex) {
+        console.log('Tab selected:', tabIndex + 1); // Debug log
         this.activeTab = tabIndex;
-        // Reset pagination when changing tabs
-        this.query.page = 1;
-        await this.refreshData();
-    }
-
-    /**
-     * Handle order change from md-table
-     * @param {string} order - The order string from md-table
-     */
-    async onReorder(order) {
-        if (!order) return;  // Don't proceed if order is undefined
-
-        this.query.order = order;
-        await this.refreshData();
+        this.refreshData();
     }
 
     /**
@@ -88,32 +73,49 @@ class OverviewController {
     async refreshData() {
         try {
             const statusGroup = this.getStatusGroup();
-            console.log('Fetching jobs for status group:', statusGroup);
-
-            const params = {
-                statusGroup,
-                page: this.query.page,
-                limit: this.query.limit,
-                order: this.query.order,
-                search: this.query.search,
-                regions: this.query.regions,
-                dateStart: this.dateRange.start,
-                dateEnd: this.dateRange.end
-            };
+            console.log('Fetching jobs for status group:', statusGroup); // Debug log
 
             // Set promise to trigger loading state in md-table
-            this.promise = this.overviewService.getAllJobs(params);
-            const response = await this.promise;
+            this.promise = this.overviewService.getAllJobs(statusGroup);
 
-            // Assuming the API returns { data: [...], total: number }
-            this.deliveries = response.data;
-            this.totalItems = response.total;
+            this.deliveries = await this.promise;
+            this.updateTable();
 
-            return this.deliveries;
+            return this.filteredData;
         } catch (error) {
             console.error('Error loading deliveries:', error);
-            this.toastrService.showErrorToast("An unexpected error occured loading deliveries");
+            this.$mdDialog.show(
+                this.$mdDialog.alert()
+                    .title('Error')
+                    .textContent('Failed to load deliveries. Please try again.')
+                    .ok('OK')
+            );
             return [];
+        }
+    }
+
+    /**
+     * Update table with current filters and pagination
+     */
+    updateTable() {
+        // Apply search filter if exists
+        this.filteredData = this.search ?
+            this.deliveries.filter(delivery =>
+                delivery.jobName.toLowerCase().includes(this.search.toLowerCase())
+            ) :
+            [...this.deliveries];
+
+        // Apply sorting
+        if (this.query.order) {
+            const reverse = this.query.order.startsWith('-');
+            const orderBy = reverse ? this.query.order.slice(1) : this.query.order;
+            this.filteredData.sort((a, b) => {
+                const aVal = a[orderBy] || '';
+                const bVal = b[orderBy] || '';
+                return reverse ?
+                    bVal.localeCompare(aVal) :
+                    aVal.localeCompare(bVal);
+            });
         }
     }
 
@@ -129,48 +131,18 @@ class OverviewController {
     }
 
     /**
-     * @param {string} searchText
-     */
-    async onSearch(searchText) {
-        this.query.search = searchText;
-        this.query.page = 1; // Reset to first page when searching
-        await this.refreshData();
-    }
-
-    /**
+     * Handle pagination changes
      * @param {number} page
      * @param {number} limit
      */
-    async onPaginate(page, limit) {
+    onPaginate(page, limit) {
         this.query.page = page;
         this.query.limit = limit;
-        await this.refreshData();
+        this.updateTable();
     }
 
-    /**
-     * @param {string} order
-     */
-    async onOrderChange(order) {
-        this.query.order = order;
-        await this.refreshData();
-    }
-
-    async toggleRegion(region) {
+    toggleRegion(region) {
         region.selected = !region.selected;
-        this.query.regions = this.regions
-            .filter(r => r.selected)
-            .map(r => r.id);
-        await this.refreshData();
-    }
-
-    /**
-     * @param {Date} start
-     * @param {Date} end
-     */
-    async onDateRangeChange(start, end) {
-        this.dateRange.start = start;
-        this.dateRange.end = end;
-        await this.refreshData();
     }
 
     toggleSidenav() {

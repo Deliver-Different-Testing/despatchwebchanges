@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -23,24 +22,24 @@ public class OverviewController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index([FromQuery] OverviewGetJobsRequest queryParams)
+    public async Task<IActionResult> Index([FromQuery] int statusGroup = 1)
     {
         try
         {
-            // Validate status group
-            if (!Enum.IsDefined(typeof(JobStatusGroup), queryParams.StatusGroup))
-                return BadRequest($"Invalid status group: {queryParams.StatusGroup}");
+            // Convert int to enum
+            if (!Enum.IsDefined(typeof(JobStatusGroup), statusGroup))
+                return BadRequest($"Invalid status group: {statusGroup}");
 
-            var statusEnum = (JobStatusGroup)queryParams.StatusGroup;
+            var statusEnum = (JobStatusGroup)statusGroup;
 
-            // Get jobs with filtering and pagination
-            var response = await _jobRepository.GetJobsForOverviewPageAsync(queryParams);
-            return Json(response);
+            // Get jobs filtered by status group
+            var jobs = await _jobRepository.GetJobsForOverviewPageAsync(statusEnum);
+            return Json(jobs);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting jobs with params {@QueryParams}: {Error}",
-                queryParams, ex.Message);
+            _logger.LogError(ex, "Error getting jobs for status group {StatusGroup}: {Error}",
+                statusGroup, ex.Message);
             return StatusCode(500);
         }
     }

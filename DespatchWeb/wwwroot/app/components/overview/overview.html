@@ -118,7 +118,7 @@
                     <!-- Data Table -->
                     <md-table-container>
                         <table md-progress="ctrl.promise" md-table ng-model="ctrl.selected">
-                            <thead md-head md-on-reorder="ctrl.onReorder(ctrl.query.order)" md-order="ctrl.query.order">
+                            <thead md-head md-on-reorder="ctrl.onOrderChange" md-order="ctrl.query.order">
                             <tr md-row>
                                 <th md-column></th>
                                 <th md-column md-order-by="jobName">Job Number</th>
@@ -132,7 +132,7 @@
                             </thead>
                             <tbody md-body>
                             <!-- Parent row -->
-                            <tr md-row ng-repeat-start="delivery in ctrl.deliveries">
+                            <tr md-row ng-repeat-start="delivery in ctrl.filteredData">
                                 <td md-cell>
                                     <md-button class="md-icon-button"
                                                ng-click="delivery.expanded = !delivery.expanded"
@@ -189,10 +189,10 @@
                     </md-table-container>
 
                     <md-table-pagination md-limit="ctrl.query.limit"
-                                         md-limit-options="[15, 20, 50]"
+                                         md-limit-options="[5, 10, 15]"
                                          md-on-paginate="ctrl.onPaginate"
                                          md-page="ctrl.query.page"
-                                         md-total="{{ctrl.totalItems}}">
+                                         md-total="{{ctrl.deliveries.length}}">
                     </md-table-pagination>
 
                     <!-- Navigation Buttons -->

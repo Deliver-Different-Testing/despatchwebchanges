@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
-using DespatchWeb.Models.RequestModels;
-using DespatchWeb.Models.ResponseModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -815,119 +813,57 @@ public class BaseJobRepository
         };
     }
 
-    public async Task<OverviewJobsResponse> GetJobsForOverviewPageAsync(OverviewGetJobsRequest queryParams)
+    public async Task<List<DeliveryJob>> GetJobsForOverviewPageAsync(JobStatusGroup statusGroup)
     {
         // Base query
         var query = _context.TucJobs
             .Where(j => j.InverseParent.Any());
 
-        // Apply status group filter
-        query = queryParams.StatusGroup switch
+        // Apply status group
+        switch (statusGroup)
         {
-            (int)JobStatusGroup.Active => query.Where(j => new[]
-                    { JobStatus.Dispatched, JobStatus.New, JobStatus.AwaitingPod }
-                .Contains((JobStatus)j.UcjbStatus)),
-
-            (int)JobStatusGroup.Completed => query.Where(j => new[]
-                    { JobStatus.Completed, JobStatus.Undeliverable, JobStatus.Rejected, JobStatus.AssumingCompleted }
-                .Contains((JobStatus)j.UcjbStatus)),
-
-            _ => query
-        };
-
-        // Apply search filter
-        if (!string.IsNullOrEmpty(queryParams.Search))
-        {
-            var searchLower = queryParams.Search.ToLower();
-            query = query.Where(j =>
-                j.UcjbNumber.ToLower().Contains(searchLower) ||
-                (j.UcjbCourier != null && (
-                    j.UcjbCourier.UccrName.ToLower().Contains(searchLower) ||
-                    j.UcjbCourier.UccrSurname.ToLower().Contains(searchLower)
-                ))
-            );
+            case JobStatusGroup.Active:
+                var activeStatus = new[] { JobStatus.Dispatched, JobStatus.New, JobStatus.AwaitingPod };
+                query = query.Where(j => activeStatus.Contains((JobStatus)j.UcjbStatus));
+                break;
+            case JobStatusGroup.Completed:
+                var completedStatus = new[]
+                    { JobStatus.Completed, JobStatus.Undeliverable, JobStatus.Rejected, JobStatus.AssumingCompleted };
+                query = query.Where(j => completedStatus.Contains((JobStatus)j.UcjbStatus));
+                break;
         }
 
-        // Apply region filter
-        if (queryParams.Regions != null && queryParams.Regions.Any())
-        {
-            query = query.Where(j => j.TblBulkJobs
-                .Any(b => b.Region != null && queryParams.Regions.Contains(b.Region.Name)));
-        }
-
-        // Apply date range filter
-        if (queryParams.DateStart.HasValue)
-        {
-            query = query.Where(j => j.UcjbDate >= queryParams.DateStart.Value);
-        }
-
-        if (queryParams.DateEnd.HasValue)
-        {
-            query = query.Where(j => j.UcjbDate <= queryParams.DateEnd.Value);
-        }
-
-        // Get total count before pagination
-        var total = await query.CountAsync();
-
-        // Apply sorting
-        if (!string.IsNullOrEmpty(queryParams.Order))
-        {
-            var isDescending = queryParams.Order.StartsWith("-");
-            var orderProperty = isDescending ? queryParams.Order[1..] : queryParams.Order;
-
-            query = orderProperty.ToLower() switch
-            {
-                "jobname" => isDescending
-                    ? query.OrderByDescending(j => j.UcjbNumber)
-                    : query.OrderBy(j => j.UcjbNumber),
-                "status" => isDescending
-                    ? query.OrderByDescending(j => j.UcjbStatusNavigation.UcjsName)
-                    : query.OrderBy(j => j.UcjbStatusNavigation.UcjsName),
-                "region" => isDescending
-                    ? query.OrderByDescending(j => j.TblBulkJobs.FirstOrDefault().Region.Name)
-                    : query.OrderBy(j => j.TblBulkJobs.FirstOrDefault().Region.Name),
-                "driver" => isDescending
-                    ? query.OrderByDescending(j => j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname)
-                    : query.OrderBy(j => j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname),
-                _ => query.OrderBy(j => j.UcjbNumber)
-            };
-        }
-
-        // Apply pagination
-        query = query.Skip((queryParams.Page - 1) * queryParams.Limit).Take(queryParams.Limit);
-
-        // Final projection
         var jobs = await query
             .Select(j => new DeliveryJob
             {
                 JobName = j.UcjbNumber,
                 Status = j.UcjbStatusNavigation.UcjsName,
-                Region = j.TblBulkJobs.FirstOrDefault().Region.Name,
+                Region =
+                    j.TblBulkJobs.FirstOrDefault() != null ? j.TblBulkJobs.FirstOrDefault().Region.Name : null,
                 Pickup = j.PickupAddressLine5 + ", " + j.PickupAddressLine6,
                 Delivery = j.DeliveryAddressLine5 + ", " + j.DeliveryAddressLine6,
                 Driver = j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null,
                 Completion = j.InverseParent.Any()
-                    ? (int)Math.Round((double)j.InverseParent.Count(c =>
-                            c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed) /
+                    ? (int)Math.Round(
+                        (double)j.InverseParent.Count(c => c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed) /
                         j.InverseParent.Count * 100)
                     : 0,
                 ChildJobs = j.InverseParent.Select(c => new ChildDeliveryJob
                 {
                     JobName = c.UcjbNumber,
                     Status = c.UcjbStatusNavigation.UcjsName,
-                    Region = c.TblBulkJobs.FirstOrDefault().Region.Name,
+                    Region = c.TblBulkJobs.FirstOrDefault() != null
+                        ? c.TblBulkJobs.FirstOrDefault().Region.Name
+                        : null,
                     Pickup = c.PickupAddressLine5 + ", " + c.PickupAddressLine6,
                     Delivery = c.DeliveryAddressLine5 + ", " + c.DeliveryAddressLine6,
-                    Driver = c.UcjbCourier != null ? c.UcjbCourier.UccrName + " " + c.UcjbCourier.UccrSurname : null,
+                    Driver = c.UcjbCourier != null
+                        ? c.UcjbCourier.UccrName + " " + c.UcjbCourier.UccrSurname
+                        : null,
                     Completion = c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
                 }).ToList()
-            })
-            .ToListAsync();
+            }).ToListAsync();
 
-        return new OverviewJobsResponse
-        {
-            Jobs = jobs,
-            Total = total
-        };
+        return jobs;
     }
 }
