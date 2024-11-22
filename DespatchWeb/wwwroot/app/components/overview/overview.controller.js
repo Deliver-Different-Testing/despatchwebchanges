@@ -148,6 +148,30 @@ class OverviewController {
         return 'md-primary';
     }
 
+    async showDateRangeDialog($event) {
+        try {
+            this.dateRange = await this.$mdDialog.show({
+                controller: 'DateRangeDialogController',
+                controllerAs: 'ctrl',
+                targetEvent: $event,
+                templateUrl: this.versionUrl('app/components/dialogs/date-range-dialog/date-range-dialog.html'),
+                parent: angular.element(this.$document.body),
+                clickOutsideToClose: true,
+                fullscreen: false,
+                bindToController: true,
+                locals: {
+                    dateRange: this.dateRange
+                }
+            });
+            await this.refreshData();
+        } catch (error) {
+            // Dialog was cancelled
+            if (error !== undefined) {
+                console.error('Error selecting date range:', error);
+            }
+        }
+    }
+
     async exportJobs() {
         // Show feature in development dialog
         await this.$mdDialog.show({
