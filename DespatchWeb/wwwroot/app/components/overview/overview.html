@@ -160,7 +160,7 @@
                             </thead>
                             <tbody md-body>
                             <!-- Parent row -->
-                            <tr md-row ng-repeat-start="delivery in ctrl.filteredData">
+                            <tr md-row ng-repeat-start="delivery in ctrl.deliveries">
                                 <td md-cell>
                                     <md-button class="md-icon-button"
                                                ng-click="delivery.expanded = !delivery.expanded"
@@ -216,11 +216,14 @@
                         </table>
                     </md-table-container>
 
-                    <md-table-pagination md-limit="ctrl.query.limit"
-                                         md-limit-options="[5, 10, 15]"
-                                         md-on-paginate="ctrl.onPaginate"
-                                         md-page="ctrl.query.page"
-                                         md-total="{{ctrl.deliveries.length}}">
+                    <!-- Pagination -->
+                    <md-table-pagination
+                            md-limit="ctrl.query.limit"
+                            md-limit-options="[10, 20, 30, 50]"
+                            md-on-paginate="ctrl.onPaginate"
+                            md-page="ctrl.query.pages"
+                            md-page-select
+                            md-total="{{ctrl.query.total}}">
                     </md-table-pagination>
 
                     <!-- Navigation Buttons -->

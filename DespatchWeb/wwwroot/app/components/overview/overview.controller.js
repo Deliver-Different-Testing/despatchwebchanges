@@ -13,8 +13,9 @@ class OverviewController {
         this.selected = [];
         this.query = {
             order: 'jobName',
-            limit: 20,
-            page: 1
+            total: 0,
+            pages: 0,
+            limit: 20
         };
 
         // Loaders
@@ -22,7 +23,6 @@ class OverviewController {
 
         // Initialize data containers
         this.deliveries = [];
-        this.filteredData = [];
         this.regions = [];
         this.promise = null;
         this.search = '';
@@ -34,7 +34,6 @@ class OverviewController {
 
         this.activeTab = 0;
         this.tabs = ['Active', 'Inactive', 'Completed'];
-
 
         // Watch for tab changes
         $scope.$watch(() => this.activeTab, (newValue, oldValue) => {
@@ -84,16 +83,19 @@ class OverviewController {
             console.log('Fetching jobs for status group:', statusGroup);
 
             // Set promise to trigger loading state in md-table
-            this.promise = this.overviewService.getAllJobs(statusGroup);
-            this.deliveries = await this.promise;
+            this.promise = this.overviewService.getAllJobs(
+                statusGroup,
+                this.query.page,
+                this.query.limit
+            );
 
-            // Reset page to 1 when switching tabs
-            this.query.page = 1;
+            const response = await this.promise;
 
-            // Set filtered data to all deliveries
-            this.filteredData = [...this.deliveries];
+            // Update the deliveries and query metadata
+            this.deliveries = response.items;
+            this.query.total = response.total;
+            this.query.pages = response.pages;
 
-            return this.filteredData;
         } catch (error) {
             console.error('Error loading deliveries:', error);
             const dialog = this.$mdDialog.alert()
@@ -101,8 +103,18 @@ class OverviewController {
                 .textContent('Failed to load deliveries. Please try again.')
                 .ok('OK');
             await this.$mdDialog.show(dialog);
-            return [];
         }
+    }
+
+    /**
+     * Handle pagination changes
+     * @param {number} page
+     * @param {number} limit
+     */
+    async onPaginate(page, limit) {
+        this.query.page = page;
+        this.query.limit = limit;
+        await this.refreshData();
     }
 
     async getRegions() {
@@ -116,16 +128,6 @@ class OverviewController {
         }
     }
 
-    /**
-     * Handle pagination changes
-     * @param {number} page
-     * @param {number} limit
-     */
-    onPaginate(page, limit) {
-        this.query.page = page;
-        this.query.limit = limit;
-    }
-
     toggleRegion(region) {
         region.selected = !region.selected;
     }
@@ -134,6 +136,9 @@ class OverviewController {
         this.materialSidenavService.toggle();
     }
 
+    /**
+     * @param {number} completion
+     */
     getProgressClass(completion) {
         if (completion < 34) {
             return 'md-warn';

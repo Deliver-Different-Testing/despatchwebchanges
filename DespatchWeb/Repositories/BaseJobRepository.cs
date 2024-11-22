@@ -7,6 +7,7 @@ using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -807,7 +808,10 @@ public class BaseJobRepository
         };
     }
 
-    public async Task<List<DeliveryJob>> GetJobsForOverviewPageAsync(JobStatusGroup statusGroup)
+    public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
+        JobStatusGroup statusGroup,
+        int page,
+        int limit)
     {
         // Base query
         var query = _context.TucJobs
@@ -826,7 +830,14 @@ public class BaseJobRepository
 
             _ => query
         };
+
+        // Get total count for pagination
+        var total = await query.CountAsync();
+        var pages = (int)Math.Ceiling(total / (double)limit);
+
         var jobs = await query
+            .Skip((page - 1) * limit)
+            .Take(limit)
             .Select(j => new DeliveryJob
             {
                 JobName = j.UcjbNumber,
@@ -859,6 +870,12 @@ public class BaseJobRepository
                 }).ToList()
             }).ToListAsync();
 
-        return jobs;
+        return new PaginatedResponse<DeliveryJob>
+        {
+            Items = jobs,
+            Total = total,
+            Page = page,
+            Pages = pages
+        };
     }
 }

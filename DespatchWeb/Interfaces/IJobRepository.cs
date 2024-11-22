@@ -5,6 +5,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 
 namespace DespatchWeb.Interfaces;
 
@@ -161,6 +162,10 @@ public interface IJobRepository
     Task UpdateJobConnoteAsync(int jobId, string conNote);
     Task UpdateJobNoteAsync(int jobId, string note);
 
-    Task<List<DeliveryJob>> GetJobsForOverviewPageAsync(JobStatusGroup statusGroup);
+    Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
+        JobStatusGroup statusGroup,
+        int page,
+        int limit);
+
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 }
