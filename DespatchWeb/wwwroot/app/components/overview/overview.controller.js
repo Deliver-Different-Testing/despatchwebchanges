@@ -3,7 +3,7 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document) {
+    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope) {
         this.$mdDialog = $mdDialog;
         this.materialSidenavService = materialSidenavService;
         this.overviewService = overviewService;
@@ -36,6 +36,14 @@ class OverviewController {
         this.tabs = ['Active', 'Inactive', 'Completed'];
 
 
+        // Watch for tab changes
+        $scope.$watch(() => this.activeTab, (newValue, oldValue) => {
+            if (newValue !== oldValue) {
+                console.log('Tab changed to:', newValue + 1);
+                this.refreshData();
+            }
+        });
+
         // Initial data load
         this.loadStats();
         this.refreshData();
@@ -61,10 +69,10 @@ class OverviewController {
      * Handle tab selection
      * @param {number} tabIndex
      */
-    onTabSelected(tabIndex) {
+    async onTabSelected(tabIndex) {
         console.log('Tab selected:', tabIndex + 1); // Debug log
         this.activeTab = tabIndex;
-        this.refreshData();
+        await this.refreshData();
     }
 
     /**
@@ -73,13 +81,17 @@ class OverviewController {
     async refreshData() {
         try {
             const statusGroup = this.getStatusGroup();
-            console.log('Fetching jobs for status group:', statusGroup); // Debug log
+            console.log('Fetching jobs for status group:', statusGroup);
 
             // Set promise to trigger loading state in md-table
             this.promise = this.overviewService.getAllJobs(statusGroup);
-
             this.deliveries = await this.promise;
-            this.updateTable();
+
+            // Reset page to 1 when switching tabs
+            this.query.page = 1;
+
+            // Set filtered data to all deliveries
+            this.filteredData = [...this.deliveries];
 
             return this.filteredData;
         } catch (error) {
@@ -91,31 +103,6 @@ class OverviewController {
                     .ok('OK')
             );
             return [];
-        }
-    }
-
-    /**
-     * Update table with current filters and pagination
-     */
-    updateTable() {
-        // Apply search filter if exists
-        this.filteredData = this.search ?
-            this.deliveries.filter(delivery =>
-                delivery.jobName.toLowerCase().includes(this.search.toLowerCase())
-            ) :
-            [...this.deliveries];
-
-        // Apply sorting
-        if (this.query.order) {
-            const reverse = this.query.order.startsWith('-');
-            const orderBy = reverse ? this.query.order.slice(1) : this.query.order;
-            this.filteredData.sort((a, b) => {
-                const aVal = a[orderBy] || '';
-                const bVal = b[orderBy] || '';
-                return reverse ?
-                    bVal.localeCompare(aVal) :
-                    aVal.localeCompare(bVal);
-            });
         }
     }
 
@@ -138,7 +125,6 @@ class OverviewController {
     onPaginate(page, limit) {
         this.query.page = page;
         this.query.limit = limit;
-        this.updateTable();
     }
 
     toggleRegion(region) {
@@ -171,4 +157,13 @@ class OverviewController {
     }
 }
 
-angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', 'versionUrl', '$document', ($mdDialog, materialSidenavService, overviewService, versionUrl, $document) => new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document)]);
+angular.module('uDispatch').controller('deliveryOverview', [
+    '$mdDialog',
+    'materialSidenavService',
+    'overviewService',
+    'versionUrl',
+    '$document',
+    '$scope',
+    ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope) =>
+        new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope)
+]);
