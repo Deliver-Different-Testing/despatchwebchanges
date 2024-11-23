@@ -165,7 +165,10 @@ public interface IJobRepository
     Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
         int page,
-        int limit);
+        int limit,
+        string search = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null);
 
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 }

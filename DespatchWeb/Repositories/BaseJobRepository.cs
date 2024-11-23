@@ -811,7 +811,10 @@ public class BaseJobRepository
     public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
         int page,
-        int limit)
+        int limit,
+        string search = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null)
     {
         // Base query
         var query = _context.TucJobs
@@ -831,10 +834,43 @@ public class BaseJobRepository
             _ => query
         };
 
+        // Apply search filter if provided
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.ToLower().Trim();
+            query = query.Where(j =>
+                EF.Functions.Like(j.UcjbNumber.ToLower(), $"%{search}%") ||
+                EF.Functions.Like(j.UcjbStatusNavigation.UcjsName.ToLower(), $"%{search}%") ||
+                j.TblBulkJobs.Any(b => EF.Functions.Like(b.Region.Name.ToLower(), $"%{search}%")) ||
+                EF.Functions.Like(j.PickupAddressLine5.ToLower(), $"%{search}%") ||
+                EF.Functions.Like(j.PickupAddressLine6.ToLower(), $"%{search}%") ||
+                EF.Functions.Like(j.DeliveryAddressLine5.ToLower(), $"%{search}%") ||
+                EF.Functions.Like(j.DeliveryAddressLine6.ToLower(), $"%{search}%") ||
+                (j.UcjbCourier != null && (
+                    EF.Functions.Like(j.UcjbCourier.UccrName.ToLower(), $"%{search}%") ||
+                    EF.Functions.Like(j.UcjbCourier.UccrSurname.ToLower(), $"%{search}%")
+                ))
+            );
+        }
+
+        // Apply date range filter
+        if (startDate.HasValue)
+        {
+            var startDateUtc = startDate.Value.Date.ToUniversalTime();
+            query = query.Where(j => j.UcjbDate >= startDateUtc);
+        }
+
+        if (endDate.HasValue)
+        {
+            var endDateUtc = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+            query = query.Where(j => j.UcjbDate <= endDateUtc);
+        }
+
         // Get total count for pagination
         var total = await query.CountAsync();
         var pages = (int)Math.Ceiling(total / (double)limit);
 
+        // Apply pagination
         var jobs = await query
             .Skip((page - 1) * limit)
             .Take(limit)

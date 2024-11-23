@@ -3,12 +3,13 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope) {
+    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout) {
         this.$mdDialog = $mdDialog;
         this.materialSidenavService = materialSidenavService;
         this.overviewService = overviewService;
         this.versionUrl = versionUrl;
         this.$document = $document;
+        this.$timeout = $timeout;
 
         this.selected = [];
         this.query = {
@@ -25,7 +26,11 @@ class OverviewController {
         this.deliveries = [];
         this.regions = [];
         this.promise = null;
+
+        // Search properties
         this.search = '';
+        this.searchTimeout = null;
+        this.isSearching = false;
 
         this.dateRange = {
             start: null,
@@ -36,10 +41,17 @@ class OverviewController {
         this.tabs = ['Active', 'Inactive', 'Completed'];
 
         // Watch for tab changes
-        $scope.$watch(() => this.activeTab, (newValue, oldValue) => {
+        $scope.$watch(() => this.activeTab, async (newValue, oldValue) => {
             if (newValue !== oldValue) {
                 console.log('Tab changed to:', newValue + 1);
-                this.refreshData();
+                await this.refreshData();
+            }
+        });
+
+        // Watch for search changes with debounce
+        $scope.$watch(() => this.search, (newValue, oldValue) => {
+            if (newValue !== oldValue) {
+                this.handleSearchChange();
             }
         });
 
@@ -75,19 +87,21 @@ class OverviewController {
     }
 
     /**
-     * Refresh data with loading state and status filter
+     * Refresh data with loading state and filters
      */
     async refreshData() {
         try {
             const statusGroup = this.getStatusGroup();
-            console.log('Fetching jobs for status group:', statusGroup);
 
             // Set promise to trigger loading state in md-table
-            this.promise = this.overviewService.getAllJobs(
+            this.promise = this.overviewService.getAllJobs({
                 statusGroup,
-                this.query.page,
-                this.query.limit
-            );
+                page: this.query.page,
+                limit: this.query.limit,
+                search: this.search,
+                startDate: this.dateRange.start,
+                endDate: this.dateRange.end
+            });
 
             const response = await this.promise;
 
@@ -104,6 +118,22 @@ class OverviewController {
                 .ok('OK');
             await this.$mdDialog.show(dialog);
         }
+    }
+
+    /**
+     * Handle search input changes with debounce
+     */
+    handleSearchChange() {
+        // Cancel any pending timeout
+        if (this.searchTimeout) {
+            this.$timeout.cancel(this.searchTimeout);
+        }
+
+        // Set new timeout
+        this.searchTimeout = this.$timeout(async () => {
+            this.query.page = 1; // Reset to first page on new search
+            await this.refreshData();
+        }, 300); // 300ms debounce
     }
 
     /**
@@ -192,6 +222,7 @@ angular.module('uDispatch').controller('deliveryOverview', [
     'versionUrl',
     '$document',
     '$scope',
-    ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope) =>
-        new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope)
+    '$timeout',
+    ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout) =>
+        new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout)
 ]);

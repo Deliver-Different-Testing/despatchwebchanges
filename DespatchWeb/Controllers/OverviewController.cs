@@ -37,7 +37,10 @@ public class OverviewController : Controller
             var paginatedJobs = await _jobRepository.GetJobsForOverviewPageAsync(
                 statusEnum,
                 parameters.Page,
-                parameters.Limit
+                parameters.Limit,
+                parameters.Search,
+                parameters.StartDate,
+                parameters.EndDate
             );
 
             return Json(paginatedJobs);
