@@ -202,6 +202,56 @@ class OverviewController {
         }
     }
 
+    /**
+     * Check if date filter is active
+     * @returns {boolean}
+     */
+    hasDateFilter() {
+        return this.dateRange.start !== null || this.dateRange.end !== null;
+    }
+
+    /**
+     * Get formatted date range display
+     * @returns {string}
+     */
+    getDateRangeDisplay() {
+        if (!this.hasDateFilter()) return '';
+
+        if (this.dateRange.start && this.dateRange.end) {
+            return `${this.formatDate(this.dateRange.start)} - ${this.formatDate(this.dateRange.end)}`;
+        } else if (this.dateRange.start) {
+            return `From ${this.formatDate(this.dateRange.start)}`;
+        } else {
+            return `Until ${this.formatDate(this.dateRange.end)}`;
+        }
+    }
+
+    /**
+     * Format date for display
+     * @param {Date} date
+     * @returns {string}
+     */
+    formatDate(date) {
+        return date ? moment(date).format('MMM D, YYYY') : '';
+    }
+
+    /**
+     * Clear date range filter
+     * @param {Event} $event
+     */
+    async clearDateRange($event) {
+        if ($event) {
+            $event.stopPropagation();
+        }
+
+        this.dateRange = {
+            start: null,
+            end: null
+        };
+
+        await this.refreshData();
+    }
+
     async exportJobs() {
         // Show feature in development dialog
         await this.$mdDialog.show({

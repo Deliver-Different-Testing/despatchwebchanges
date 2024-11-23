@@ -125,7 +125,9 @@
 
                 <div class="md-padding" flex layout="column">
                     <!-- Search and Date Range -->
-                    <div class="search-section" layout="row" layout-align="end end">
+                    <!-- Update the search section in your HTML -->
+                    <div class="search-section" layout="row" layout-align="space-between center">
+                        <!-- Search input -->
                         <div class="search-container" flex>
                             <md-input-container class="md-block" md-no-float>
                                 <md-icon class="search-icon" md-font-set="material-symbols-outlined">search</md-icon>
@@ -135,9 +137,20 @@
                             </md-input-container>
                         </div>
 
-                        <div class="actions-container" layout="row" layout-align="end center">
-                            <md-button class="md-icon-button" ng-click="ctrl.showDateRangeDialog($event)">
-                                <md-icon md-font-set="material-symbols-outlined">date_range</md-icon>
+                        <!-- Active Filters -->
+                        <div class="filter-indicators" layout="row" layout-align="end center">
+                            <!-- Date Range Indicator -->
+                            <md-button class="date-range-chip"
+                                       ng-class="{'active': ctrl.hasDateFilter()}"
+                                       ng-click="ctrl.showDateRangeDialog($event)">
+                                <md-icon md-font-set="material-symbols-outlined">
+                                    {{ctrl.hasDateFilter() ? 'calendar_month' : 'date_range'}}
+                                </md-icon>
+                                <span ng-if="!ctrl.hasDateFilter()">Select Dates</span>
+                                <span ng-if="ctrl.hasDateFilter()">{{ctrl.getDateRangeDisplay()}}</span>
+                                <md-icon class="clear-icon" md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.clearDateRange($event)" ng-if="ctrl.hasDateFilter()">close
+                                </md-icon>
                             </md-button>
                         </div>
                     </div>

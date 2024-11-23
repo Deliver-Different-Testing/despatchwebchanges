@@ -1,3 +1,7 @@
+/**
+ * @class OverviewService
+ * @description Service to handle api calls for Overview dashboard
+ */
 class OverviewService {
     constructor($http) {
         this._http = $http;
