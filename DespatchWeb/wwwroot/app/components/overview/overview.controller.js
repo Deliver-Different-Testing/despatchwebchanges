@@ -172,15 +172,17 @@ class OverviewController {
     }
 
     /**
+     * Get progress bar class based on completion percentage
      * @param {number} completion
+     * @returns {string} md-class for progress bar
      */
     getProgressClass(completion) {
-        if (completion < 34) {
-            return 'md-warn';
-        } else if (completion < 67) {
-            return 'md-accent';
+        if (completion < 30) {
+            return 'md-warn';      // Red for low progress
+        } else if (completion < 70) {
+            return 'md-accent';    // Blue for medium progress
         }
-        return 'md-primary';
+        return 'md-primary';       // Green for high progress
     }
 
     async showDateRangeDialog($event) {

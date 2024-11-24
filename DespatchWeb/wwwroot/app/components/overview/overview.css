@@ -41,6 +41,21 @@
   background-color: #9CA3AF;
   color: white;
 }
+.delivery-dashboard md-progress-linear {
+  margin: 8px 0;
+}
+.delivery-dashboard md-progress-linear.md-warn .md-bar {
+  background-color: #FCA5A5 !important;
+}
+.delivery-dashboard md-progress-linear.md-accent .md-bar {
+  background-color: #BFDBFE !important;
+}
+.delivery-dashboard md-progress-linear.md-primary .md-bar {
+  background-color: #86EFAC !important;
+}
+.delivery-dashboard md-progress-linear .md-container {
+  background-color: rgba(0, 0, 0, 0.05);
+}
 .delivery-dashboard .search-section {
   margin: 8px 0 24px 0;
   position: relative;

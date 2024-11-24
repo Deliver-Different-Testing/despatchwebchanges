@@ -76,6 +76,28 @@
     }
   }
 
+  // Update progress bar styles
+  md-progress-linear {
+    margin: 8px 0;
+
+    &.md-warn .md-bar {
+      background-color: @status-red-light !important;
+    }
+
+    &.md-accent .md-bar {
+      background-color: @status-blue !important;
+    }
+
+    &.md-primary .md-bar {
+      background-color: @status-green-dark !important;
+    }
+
+    // Make the background track slightly transparent version of the bar color
+    .md-container {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+  }
+
   // Search Section Styles
   .search-section {
     margin: 8px 0 24px 0;
