@@ -856,17 +856,8 @@ public class BaseJobRepository
         }
 
         // Apply date range filter
-        if (startDate.HasValue)
-        {
-            var startDateUtc = startDate.Value.Date.ToUniversalTime();
-            query = query.Where(j => j.UcjbDate >= startDateUtc);
-        }
-
-        if (endDate.HasValue)
-        {
-            var endDateUtc = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
-            query = query.Where(j => j.UcjbDate <= endDateUtc);
-        }
+        if (startDate.HasValue) query = query.Where(j => j.UcjbDate >= startDate);
+        if (endDate.HasValue) query = query.Where(j => j.UcjbDate <= endDate);
 
         // Apply sorting
         query = ApplySorting(query, orderBy, orderDirection);
@@ -881,6 +872,7 @@ public class BaseJobRepository
             .Take(limit)
             .Select(j => new DeliveryJob
             {
+                JobId = j.UcjbId,
                 JobName = j.UcjbNumber,
                 Status = j.UcjbStatusNavigation.UcjsName,
                 Region =
@@ -897,6 +889,7 @@ public class BaseJobRepository
                     : 0,
                 ChildJobs = j.InverseParent.Select(c => new ChildDeliveryJob
                 {
+                    JobId = c.UcjbId,
                     JobName = c.UcjbNumber,
                     Status = c.UcjbStatusNavigation.UcjsName,
                     Region = c.TblBulkJobs.FirstOrDefault() != null

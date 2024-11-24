@@ -4,6 +4,7 @@ namespace DespatchWeb.Models;
 
 public class DeliveryJob
 {
+    public int JobId { get; set; }
     public string JobName { get; set; }
     public string Status { get; set; }
     public int Completion { get; set; }
@@ -16,6 +17,7 @@ public class DeliveryJob
 
 public class ChildDeliveryJob
 {
+    public int JobId { get; set; }
     public string JobName { get; set; }
     public string Status { get; set; }
     public int Completion { get; set; }
