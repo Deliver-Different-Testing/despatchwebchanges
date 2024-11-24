@@ -3,20 +3,23 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout) {
+    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService) {
         this.$mdDialog = $mdDialog;
         this.materialSidenavService = materialSidenavService;
         this.overviewService = overviewService;
         this.versionUrl = versionUrl;
         this.$document = $document;
         this.$timeout = $timeout;
+        this.toastrService = toastrService;
 
         this.selected = [];
         this.query = {
-            order: 'jobName',
-            total: 0,
-            pages: 0,
-            limit: 20
+            order: 'jobName',    // Default sort field
+            direction: 'asc',    // Default sort direction
+            page: 1,            // Current page
+            limit: 20,          // Items per page
+            total: 0,           // Total items
+            pages: 0            // Total pages
         };
 
         // Loaders
@@ -40,11 +43,19 @@ class OverviewController {
         this.activeTab = 0;
         this.tabs = ['Active', 'Inactive', 'Completed'];
 
+        // Bind class methods to maintain 'this' context
+        this.onReorder = this.onReorder.bind(this);
+        this.onPaginate = this.onPaginate.bind(this);
+        this.refreshData = this.refreshData.bind(this);
+        this.handleSearchChange = this.handleSearchChange.bind(this);
+        this.showDateRangeDialog = this.showDateRangeDialog.bind(this);
+        this.clearDateRange = this.clearDateRange.bind(this);
+
         // Watch for tab changes
-        $scope.$watch(() => this.activeTab, async (newValue, oldValue) => {
+        $scope.$watch(() => this.activeTab, (newValue, oldValue) => {
             if (newValue !== oldValue) {
                 console.log('Tab changed to:', newValue + 1);
-                await this.refreshData();
+                this.refreshData();
             }
         });
 
@@ -87,37 +98,17 @@ class OverviewController {
     }
 
     /**
-     * Refresh data with loading state and filters
+     * Handle sort order change
+     * @param {string} order The new sort order
      */
-    async refreshData() {
-        try {
-            const statusGroup = this.getStatusGroup();
-
-            // Set promise to trigger loading state in md-table
-            this.promise = this.overviewService.getAllJobs({
-                statusGroup,
-                page: this.query.page,
-                limit: this.query.limit,
-                search: this.search,
-                startDate: this.dateRange.start,
-                endDate: this.dateRange.end
-            });
-
-            const response = await this.promise;
-
-            // Update the deliveries and query metadata
-            this.deliveries = response.items;
-            this.query.total = response.total;
-            this.query.pages = response.pages;
-
-        } catch (error) {
-            console.error('Error loading deliveries:', error);
-            const dialog = this.$mdDialog.alert()
-                .title('Error')
-                .textContent('Failed to load deliveries. Please try again.')
-                .ok('OK');
-            await this.$mdDialog.show(dialog);
+    async onReorder(order) {
+        if (!this.query) {
+            this.query = {};
         }
+
+        this.query.order = order;
+        this.query.page = 1;
+        await this.refreshData();
     }
 
     /**
@@ -142,6 +133,10 @@ class OverviewController {
      * @param {number} limit
      */
     async onPaginate(page, limit) {
+        if (!this.query) {
+            this.query = {};
+        }
+
         this.query.page = page;
         this.query.limit = limit;
         await this.refreshData();
@@ -263,6 +258,42 @@ class OverviewController {
             bindToController: true
         });
     }
+
+    async refreshData() {
+        try {
+            const statusGroup = this.getStatusGroup();
+
+            // Parse sort order
+            let orderBy = this.query.order || 'jobName';
+            let orderDirection = 'asc';
+
+            if (orderBy.startsWith('-')) {
+                orderBy = orderBy.substring(1);
+                orderDirection = 'desc';
+            }
+
+            // Set promise to trigger loading state in md-table
+            this.promise = this.overviewService.getAllJobs({
+                statusGroup,
+                page: this.query.page || 1,
+                limit: this.query.limit || 20,
+                search: this.search,
+                startDate: this.dateRange.start,
+                endDate: this.dateRange.end,
+                orderBy,
+                orderDirection
+            });
+
+            const response = await this.promise;
+
+            // Update the deliveries and query metadata
+            this.deliveries = response.items;
+            this.query.total = response.total;
+        } catch (error) {
+            console.error('Error loading deliveries:', error);
+            this.toastrService.showErrorToast("An unexpected error occured. Please try again.")
+        }
+    }
 }
 
 angular.module('uDispatch').controller('deliveryOverview', [
@@ -273,6 +304,7 @@ angular.module('uDispatch').controller('deliveryOverview', [
     '$document',
     '$scope',
     '$timeout',
-    ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout) =>
-        new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout)
+    'toastrService',
+    ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService) =>
+        new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService)
 ]);

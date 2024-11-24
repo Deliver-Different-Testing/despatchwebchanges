@@ -8,7 +8,7 @@ class OverviewService {
     }
 
     /**
-     * Get paginated jobs with filters
+     * Get paginated jobs with filters and sorting
      * @param {Object} params - Query parameters
      * @param {number} params.statusGroup - The status group enum value
      * @param {number} params.page - Current page number (1-based)
@@ -16,6 +16,8 @@ class OverviewService {
      * @param {string} [params.search] - Search term
      * @param {Date} [params.startDate] - Start date filter
      * @param {Date} [params.endDate] - End date filter
+     * @param {string} [params.orderBy] - Field to sort by
+     * @param {string} [params.orderDirection] - Sort direction ('asc' or 'desc')
      * @returns {Promise<Object>} Object containing jobs array and pagination metadata
      */
     async getAllJobs(params) {
@@ -26,7 +28,9 @@ class OverviewService {
                 limit: params.limit,
                 search: params.search,
                 startDate: params.startDate ? params.startDate.toISOString() : null,
-                endDate: params.endDate ? params.endDate.toISOString() : null
+                endDate: params.endDate ? params.endDate.toISOString() : null,
+                orderBy: params.orderBy || 'jobName',
+                orderDirection: params.orderDirection
             }
         });
 

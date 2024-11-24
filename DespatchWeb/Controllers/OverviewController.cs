@@ -40,7 +40,9 @@ public class OverviewController : Controller
                 parameters.Limit,
                 parameters.Search,
                 parameters.StartDate,
-                parameters.EndDate
+                parameters.EndDate,
+                parameters.OrderBy,
+                parameters.OrderDirection
             );
 
             return Json(paginatedJobs);

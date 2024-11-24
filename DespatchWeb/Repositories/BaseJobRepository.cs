@@ -814,7 +814,9 @@ public class BaseJobRepository
         int limit,
         string search = null,
         DateTime? startDate = null,
-        DateTime? endDate = null)
+        DateTime? endDate = null,
+        string orderBy = "jobName",
+        string orderDirection = "asc")
     {
         // Base query
         var query = _context.TucJobs
@@ -866,6 +868,9 @@ public class BaseJobRepository
             query = query.Where(j => j.UcjbDate <= endDateUtc);
         }
 
+        // Apply sorting
+        query = ApplySorting(query, orderBy, orderDirection);
+
         // Get total count for pagination
         var total = await query.CountAsync();
         var pages = (int)Math.Ceiling(total / (double)limit);
@@ -913,5 +918,51 @@ public class BaseJobRepository
             Page = page,
             Pages = pages
         };
+    }
+
+    private static IQueryable<TucJob> ApplySorting(IQueryable<TucJob> query, string orderBy, string orderDirection)
+    {
+        var isAscending = orderDirection.ToLower() != "desc";
+
+        query = orderBy?.ToLower() switch
+        {
+            "jobname" => isAscending
+                ? query.OrderBy(j => j.UcjbNumber)
+                : query.OrderByDescending(j => j.UcjbNumber),
+
+            "status" => isAscending
+                ? query.OrderBy(j => j.UcjbStatusNavigation.UcjsName)
+                : query.OrderByDescending(j => j.UcjbStatusNavigation.UcjsName),
+
+            "completion" => isAscending
+                ? query.OrderBy(j => j.InverseParent.Count(c =>
+                        c.UcjbJobDone || (c.UcjbStatus.HasValue &&
+                                          JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))) /
+                    (double)j.InverseParent.Count * 100)
+                : query.OrderByDescending(j => j.InverseParent.Count(c =>
+                        c.UcjbJobDone || (c.UcjbStatus.HasValue &&
+                                          JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))) /
+                    (double)j.InverseParent.Count * 100),
+
+            "pickup" => isAscending
+                ? query.OrderBy(j => j.PickupAddressLine5)
+                : query.OrderByDescending(j => j.PickupAddressLine5),
+
+            "delivery" => isAscending
+                ? query.OrderBy(j => j.DeliveryAddressLine5)
+                : query.OrderByDescending(j => j.DeliveryAddressLine5),
+
+            "driver" => isAscending
+                ? query.OrderBy(j => j.UcjbCourier.UccrName)
+                : query.OrderByDescending(j => j.UcjbCourier.UccrName),
+
+            "region" => isAscending
+                ? query.OrderBy(j => j.TblBulkJobs.FirstOrDefault().Region.Name)
+                : query.OrderByDescending(j => j.TblBulkJobs.FirstOrDefault().Region.Name),
+
+            _ => query.OrderBy(j => j.UcjbNumber) // Default sort
+        };
+
+        return query;
     }
 }

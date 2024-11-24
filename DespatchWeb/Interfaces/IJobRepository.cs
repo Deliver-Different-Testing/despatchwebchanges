@@ -168,7 +168,9 @@ public interface IJobRepository
         int limit,
         string search = null,
         DateTime? startDate = null,
-        DateTime? endDate = null);
+        DateTime? endDate = null,
+        string orderBy = "jobName",
+        string orderDirection = "asc");
 
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 }
