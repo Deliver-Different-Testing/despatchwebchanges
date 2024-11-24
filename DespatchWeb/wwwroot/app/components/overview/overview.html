@@ -1,4 +1,4 @@
-<link href="app/components/overview/overview.css" rel="stylesheet">
+<link href="app/components/overview/overview.min.css" rel="stylesheet">
 
 <div ng-cloak ng-controller="deliveryOverview as ctrl">
     <div>
@@ -33,8 +33,8 @@
             <md-card flex="20">
                 <md-toolbar class="md-accent">
                     <div class="md-toolbar-tools">
-                            <span class="material-symbols-outlined">tune</span>
-                            <span class="md-headline-title" flex flex style="margin-left: 8px;">Quick Filters</span>
+                        <span class="material-symbols-outlined">tune</span>
+                        <span class="md-headline-title" flex flex style="margin-left: 8px;">Quick Filters</span>
                     </div>
                 </md-toolbar>
 
@@ -118,8 +118,8 @@
             <md-card flex="80">
                 <md-toolbar class="md-accent">
                     <div class="md-toolbar-tools">
-                            <span class="material-symbols-outlined">overview</span>
-                            <span class="md-headline-title" flex flex style="margin-left: 8px;">Overview</span>
+                        <span class="material-symbols-outlined">overview</span>
+                        <span class="md-headline-title" flex flex style="margin-left: 8px;">Overview</span>
                     </div>
                 </md-toolbar>
 
@@ -168,6 +168,7 @@
                                 <th md-column md-order-by="delivery">Delivery</th>
                                 <th md-column md-order-by="driver">Driver</th>
                                 <th md-column md-order-by="region">Region</th>
+                                <th md-column>Actions</th>
                                 <th md-column></th>
                             </tr>
                             </thead>
@@ -201,6 +202,13 @@
                                 <td md-cell>{{delivery.delivery}}</td>
                                 <td md-cell>{{delivery.driver}}</td>
                                 <td md-cell>{{delivery.region}}</td>
+                                <td md-cell>
+                                    <md-button aria-label="Show on map" class="md-icon-button"
+                                               ng-click="ctrl.showMap(delivery)">
+                                        <md-icon md-font-set="material-symbols-outlined">map</md-icon>
+                                        <md-tooltip md-direction="bottom">Open Map</md-tooltip>
+                                    </md-button>
+                                </td>
                             </tr>
                             <!-- Child rows -->
                             <tr md-row ng-if="delivery.expanded" ng-repeat="childJob in delivery.childJobs"

@@ -192,16 +192,16 @@
   padding: 4px 12px;
 }
 .delivery-dashboard .filter-section.statistics-container .stat-value.active {
-  background-color: #E8F5E9;
-    color: #86EFAC;
+  background-color: #86EFAC;
+  color: black;
 }
 .delivery-dashboard .filter-section.statistics-container .stat-value.inactive {
-  background-color: #FFF3E0;
-    color: #EF4444;
+  background-color: #EF4444;
+  color: white;
 }
 .delivery-dashboard .filter-section.statistics-container .stat-value.completed {
-  background-color: #E3F2FD;
-    color: #9CA3AF;
+  background-color: #9CA3AF;
+  color: white;
 }
 .delivery-dashboard .filter-section.statistics-container md-divider {
   margin: 4px 0;
