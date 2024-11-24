@@ -19,7 +19,6 @@ class OverviewController {
             page: 1,            // Current page
             limit: 20,          // Items per page
             total: 0,           // Total items
-            pages: 0            // Total pages
         };
 
         // Loaders

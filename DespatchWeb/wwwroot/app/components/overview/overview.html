@@ -168,6 +168,7 @@
                                 <th md-column md-order-by="delivery">Delivery</th>
                                 <th md-column md-order-by="driver">Driver</th>
                                 <th md-column md-order-by="region">Region</th>
+                                <th md-column></th>
                             </tr>
                             </thead>
                             <tbody md-body>
@@ -233,7 +234,7 @@
                             md-limit="ctrl.query.limit"
                             md-limit-options="[10, 20, 30, 50]"
                             md-on-paginate="ctrl.onPaginate"
-                            md-page="ctrl.query.pages"
+                            md-page="ctrl.query.page"
                             md-page-select
                             md-total="{{ctrl.query.total}}">
                     </md-table-pagination>
