@@ -1,13 +1,80 @@
+// Status color variables
+@status-blue: #BFDBFE; // New, Preassigned
+@status-green: #BBF7D0; // Despatched, Accepted
+@status-green-dark: #86EFAC; // Picked up, In Transit, Out for Delivery
+@status-red-light: #FCA5A5; // Rejected, Late Pickup, Late Delivery, Warning
+@status-red: #EF4444; // Undeliverable
+@status-gray: #9CA3AF; // Completed, Awaiting POD, Assuming Completed
+
+// Text colors
+@text-dark: black;
+@text-light: white;
+
+// Your existing chip colors...
+@chip-height: 32px;
+@chip-background: rgba(0, 0, 0, 0.08);
+@chip-active-background: #E3F2FD;
+@chip-active-color: #1976D2;
+@transition-duration: 0.2s;
+
+
 .delivery-dashboard {
   md-card {
     margin: 8px;
   }
 
-  @chip-height: 32px;
-  @chip-background: rgba(0, 0, 0, 0.08);
-  @chip-active-background: #E3F2FD;
-  @chip-active-color: #1976D2;
-  @transition-duration: 0.2s;
+  .status-chip {
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 12px;
+    text-transform: capitalize;
+    font-weight: 500;
+
+    // Blue status chips - black text
+    &.NEW,
+    &.PREASSIGNED {
+      background-color: @status-blue;
+      color: @text-dark;
+    }
+
+    // Light green status chips - black text
+    &.DESPATCHED,
+    &.ACCEPTED {
+      background-color: @status-green;
+      color: @text-dark;
+    }
+
+    // Dark green status chips - black text
+    &.PICKED_UP,
+    &.IN_TRANSIT,
+    &.OUT_FOR_DELIVERY {
+      background-color: @status-green-dark;
+      color: @text-dark;
+    }
+
+    // Light red status chips - black text
+    &.REJECTED,
+    &.LATE_PICKUP,
+    &.LATE_DELIVERY,
+    &.WARNING {
+      background-color: @status-red-light;
+      color: @text-dark;
+    }
+
+    // Red status chips - white text
+    &.UNDELIVERABLE {
+      background-color: @status-red;
+      color: @text-light;
+    }
+
+    // Gray status chips - white text
+    &.COMPLETED,
+    &.AWAITING_POD,
+    &.ASSUMING_COMPLETED {
+      background-color: @status-gray;
+      color: @text-light;
+    }
+  }
 
   // Search Section Styles
   .search-section {

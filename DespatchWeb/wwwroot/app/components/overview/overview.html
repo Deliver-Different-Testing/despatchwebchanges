@@ -184,7 +184,7 @@
                                 </td>
                                 <td md-cell>{{delivery.jobName}}</td>
                                 <td md-cell>
-                                    <md-chip class="status-chip" ng-class="delivery.status">
+                                    <md-chip class="status-chip {{delivery.status}}">
                                         {{delivery.status}}
                                     </md-chip>
                                 </td>
@@ -208,7 +208,7 @@
                                 <td colspan="7" md-cell>
                                     <div class="child-job-row">
                                         <span>{{childJob.jobName}}</span>
-                                        <md-chip class="status-chip" ng-class="childJob.status">
+                                        <md-chip class="status-chip {{childJob.status}}">
                                             {{childJob.status}}
                                         </md-chip>
                                         <md-progress-linear

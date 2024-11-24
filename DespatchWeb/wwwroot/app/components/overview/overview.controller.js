@@ -36,8 +36,7 @@ class OverviewController {
         this.isSearching = false;
 
         this.dateRange = {
-            start: null,
-            end: null
+            start: null, end: null
         };
 
         this.activeTab = 0;
@@ -161,6 +160,17 @@ class OverviewController {
         this.materialSidenavService.toggle();
     }
 
+
+    /**
+     * Transform raw status to valid CSS class
+     * @param {string} status
+     * @returns {string}
+     */
+    transformStatus(status) {
+        // Remove spaces and special characters, convert to uppercase
+        return status.toUpperCase().replace(/[\s-]/g, '_');
+    }
+
     /**
      * @param {number} completion
      */
@@ -240,8 +250,7 @@ class OverviewController {
         }
 
         this.dateRange = {
-            start: null,
-            end: null
+            start: null, end: null
         };
 
         await this.refreshData();
@@ -286,25 +295,22 @@ class OverviewController {
 
             const response = await this.promise;
 
-            // Update the deliveries and query metadata
-            this.deliveries = response.items;
+            // Transform status for each delivery and child job
+            this.deliveries = response.items.map(delivery => ({
+                ...delivery,
+                status: this.transformStatus(delivery.status),
+                childJobs: Array.isArray(delivery.childJobs) ? delivery.childJobs.map(childJob => ({
+                    ...childJob, status: this.transformStatus(childJob.status)
+                })) : []
+            }));
+
+            // Update query metadata
             this.query.total = response.total;
         } catch (error) {
             console.error('Error loading deliveries:', error);
-            this.toastrService.showErrorToast("An unexpected error occured. Please try again.")
+            this.toastrService.showErrorToast("An unexpected error occurred. Please try again.");
         }
     }
 }
 
-angular.module('uDispatch').controller('deliveryOverview', [
-    '$mdDialog',
-    'materialSidenavService',
-    'overviewService',
-    'versionUrl',
-    '$document',
-    '$scope',
-    '$timeout',
-    'toastrService',
-    ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService) =>
-        new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService)
-]);
+angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService) => new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService)]);

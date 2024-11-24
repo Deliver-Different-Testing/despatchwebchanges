@@ -1,6 +1,46 @@
 .delivery-dashboard md-card {
   margin: 8px;
 }
+.delivery-dashboard .status-chip {
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 12px;
+  text-transform: capitalize;
+  font-weight: 500;
+}
+.delivery-dashboard .status-chip.NEW,
+.delivery-dashboard .status-chip.PREASSIGNED {
+  background-color: #BFDBFE;
+  color: black;
+}
+.delivery-dashboard .status-chip.DESPATCHED,
+.delivery-dashboard .status-chip.ACCEPTED {
+  background-color: #BBF7D0;
+  color: black;
+}
+.delivery-dashboard .status-chip.PICKED_UP,
+.delivery-dashboard .status-chip.IN_TRANSIT,
+.delivery-dashboard .status-chip.OUT_FOR_DELIVERY {
+  background-color: #86EFAC;
+  color: black;
+}
+.delivery-dashboard .status-chip.REJECTED,
+.delivery-dashboard .status-chip.LATE_PICKUP,
+.delivery-dashboard .status-chip.LATE_DELIVERY,
+.delivery-dashboard .status-chip.WARNING {
+  background-color: #FCA5A5;
+  color: black;
+}
+.delivery-dashboard .status-chip.UNDELIVERABLE {
+  background-color: #EF4444;
+  color: white;
+}
+.delivery-dashboard .status-chip.COMPLETED,
+.delivery-dashboard .status-chip.AWAITING_POD,
+.delivery-dashboard .status-chip.ASSUMING_COMPLETED {
+  background-color: #9CA3AF;
+  color: white;
+}
 .delivery-dashboard .search-section {
   margin: 8px 0 24px 0;
   position: relative;
