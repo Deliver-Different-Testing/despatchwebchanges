@@ -1,0 +1,18 @@
+.date-time-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.date-time-field {
+    margin: 16px 0;
+}
+
+.date-time-divider {
+    width: 80%;
+    margin: 16px 0;
+}
+
+/*# sourceMappingURL=edit-date-time-dialog.css.map */
