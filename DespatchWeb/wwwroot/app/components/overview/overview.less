@@ -17,7 +17,6 @@
 @chip-active-color: #1976D2;
 @transition-duration: 0.2s;
 
-
 .delivery-dashboard {
   md-card {
     margin: 8px;
@@ -261,17 +260,17 @@
 
         &.active {
           background-color: #E8F5E9;
-          color: #2E7D32;
+          color: @status-green-dark;
         }
 
         &.inactive {
           background-color: #FFF3E0;
-          color: #EF6C00;
+          color: @status-red;
         }
 
         &.completed {
           background-color: #E3F2FD;
-          color: #1976D2;
+          color: @status-gray;
         }
       }
 

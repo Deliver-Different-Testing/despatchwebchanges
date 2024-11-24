@@ -193,15 +193,15 @@
 }
 .delivery-dashboard .filter-section.statistics-container .stat-value.active {
   background-color: #E8F5E9;
-  color: #2E7D32;
+    color: #86EFAC;
 }
 .delivery-dashboard .filter-section.statistics-container .stat-value.inactive {
   background-color: #FFF3E0;
-  color: #EF6C00;
+    color: #EF4444;
 }
 .delivery-dashboard .filter-section.statistics-container .stat-value.completed {
   background-color: #E3F2FD;
-  color: #1976D2;
+    color: #9CA3AF;
 }
 .delivery-dashboard .filter-section.statistics-container md-divider {
   margin: 4px 0;
