@@ -1,0 +1,34 @@
+<md-dialog aria-label="Select Date Range" class="date-range-dialog">
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <md-icon class="popup-icon" md-font-set="material-symbols-outlined">map</md-icon>
+            <h2>{{ctrl.title}}</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="ctrl.cancel()">
+                <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+            </md-button>
+        </div>
+    </md-toolbar>
+
+    <md-dialog-content>
+        <div class="md-dialog-content">
+            <!-- Loading Indicator -->
+            <div layout="row" layout-align="center center" ng-if="ctrl.loading" style="min-height: 400px;">
+                <md-progress-circular
+                        md-diameter="70"
+                        md-mode="indeterminate">
+                </md-progress-circular>
+            </div>
+
+            <!-- Map (shown when not loading) -->
+            <div ng-if="!ctrl.loading">
+                <here-map-tracking
+                        config="ctrl.mapConfig"
+                        credentials="ctrl.hereCredentials"
+                        map-id="mapContainer"
+                        on-map-ready="">
+                </here-map-tracking>
+            </div>
+        </div>
+    </md-dialog-content>
+</md-dialog>

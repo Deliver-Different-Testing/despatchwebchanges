@@ -269,6 +269,22 @@ class OverviewController {
         });
     }
 
+    async showMap(delivery) {
+        // Show feature in development dialog
+        await this.$mdDialog.show({
+            controller: 'MapDialogController',
+            controllerAs: 'ctrl',
+            templateUrl: this.versionUrl('app/components/dialogs/map-dialog/map-dialog.html'),
+            parent: angular.element(this.$document.body),
+            clickOutsideToClose: true,
+            fullscreen: true,
+            locals: {
+                delivery
+            },
+            bindToController: true
+        });
+    }
+
     async refreshData() {
         try {
             const statusGroup = this.getStatusGroup();

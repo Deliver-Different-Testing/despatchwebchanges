@@ -902,7 +902,7 @@ public class BaseJobRepository
                         : null,
                     Completion = c.UcjbJobDone || c.UcjbStatus == (int)JobStatus.Completed ? 100 : 0
                 }).ToList()
-            }).ToListAsync();
+            }).AsNoTracking().ToListAsync();
 
         return new PaginatedResponse<DeliveryJob>
         {
@@ -957,5 +957,64 @@ public class BaseJobRepository
         };
 
         return query;
+    }
+
+    public async Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId)
+    {
+        var locations = await _context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new OverviewDeliveryMapResponse
+            {
+                Center = new Coordinates
+                {
+                    // Calculate center point between pickup and delivery locations
+                    Lat = j.PickUpLatitude != null && j.DeliveryLatitude != null
+                        ? (j.PickUpLatitude.Value + j.DeliveryLatitude.Value) / 2
+                        : j.PickUpLatitude ?? j.DeliveryLatitude ?? 0,
+                    Lng = j.PickUpLongitude != null && j.DeliveryLongitude != null
+                        ? (j.PickUpLongitude.Value + j.DeliveryLongitude.Value) / 2
+                        : j.PickUpLongitude ?? j.DeliveryLongitude ?? 0
+                },
+                Zoom = 5,
+                Job = new OverviewJobLocation
+                {
+                    Id = j.UcjbId,
+                    Pickup = new Coordinates
+                    {
+                        Lat = j.PickUpLatitude != null ? j.PickUpLatitude.Value : 0,
+                        Lng = j.PickUpLongitude != null ? j.PickUpLongitude.Value : 0,
+                    },
+                    Delivery = new Coordinates
+                    {
+                        Lat = j.DeliveryLatitude != null ? j.DeliveryLatitude.Value : 0,
+                        Lng = j.DeliveryLongitude != null ? j.DeliveryLongitude.Value : 0,
+                    },
+                    ChildJobs = j.InverseParent.Select(c => new OverviewChildJobLocation
+                    {
+                        Id = c.UcjbId,
+                        Pickup = new Coordinates
+                        {
+                            Lat = c.PickUpLatitude != null ? c.PickUpLatitude.Value : 0,
+                            Lng = c.PickUpLongitude != null ? c.PickUpLongitude.Value : 0,
+                        },
+                        Delivery = new Coordinates
+                        {
+                            Lat = c.DeliveryLatitude != null ? c.DeliveryLatitude.Value : 0,
+                            Lng = c.DeliveryLongitude != null ? c.DeliveryLongitude.Value : 0,
+                        },
+                        Flight = j.TucJobNationwides.FirstOrDefault() != null
+                    }).ToList(),
+                    SelectedJobIndex = 1,
+                    CourierLocation = j.UcjbCourier != null
+                        ? new Coordinates
+                        {
+                            Lat = 0, // ToDo: Update for AWS Courier GPS
+                            Lng = 0 // ToDo: Update for AWS Courier GPS
+                        }
+                        : null
+                }
+            }).AsNoTracking().FirstOrDefaultAsync();
+
+        return locations;
     }
 }

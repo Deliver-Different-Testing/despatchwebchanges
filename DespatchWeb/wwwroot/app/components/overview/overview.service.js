@@ -55,6 +55,16 @@ class OverviewService {
         const response = await this._http.get('/overview/GetStats');
         return response.data;
     }
+
+    /**
+     * Get coordinate info for parent and child jobs to display on heremaps
+     * @param {number} jobId - Id of the parent job
+     * @returns {Promise<Object>} Object containing jobs array and pagination metadata
+     */
+    async getParentJobMap(jobId) {
+        const response = await this._http.get('/overview/GetParentJobMap?jobId=' + jobId);
+        return response.data;
+    }
 }
 
 angular.module('uDispatch').service('overviewService', ['$http', $http => new OverviewService($http)]);

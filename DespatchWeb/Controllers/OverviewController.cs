@@ -84,4 +84,19 @@ public class OverviewController : Controller
             return StatusCode(500);
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetParentJobMap(int jobId)
+    {
+        try
+        {
+            var locations = await _jobRepository.GetOverviewLocationDataAsync(jobId);
+            return Json(locations);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error getting map coordinates for JobId: {jobId}");
+            return StatusCode(500);
+        }
+    }
 }

@@ -333,9 +333,9 @@ public class JobController : Controller
                        ? ExcelReaderFactory.CreateCsvReader(stream)
                        : ExcelReaderFactory.CreateReader(stream))
             {
-                var output = reader.AsDataSet(new ExcelDataSetConfiguration()
+                var output = reader.AsDataSet(new ExcelDataSetConfiguration
                 {
-                    ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                    ConfigureDataTable = (_) => new ExcelDataTableConfiguration
                     {
                         UseHeaderRow = true
                     }
@@ -671,11 +671,11 @@ public class JobController : Controller
         var pw = _configuration["ExsalerateAPIPW"];
 
 
-        var rco = new RestClientOptions()
+        var rco = new RestClientOptions
             { Authenticator = new HttpBasicAuthenticator(un, pw), BaseUrl = new Uri(baseUrl) };
         var client = new RestClient(rco);
 
-        var body = new ExsalerateActivity()
+        var body = new ExsalerateActivity
         {
             SiteOwnerID = 11,
             CustomerRefCode = clientId.ToString(),

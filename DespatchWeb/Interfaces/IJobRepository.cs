@@ -173,4 +173,6 @@ public interface IJobRepository
         string orderDirection = "asc");
 
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
+
+    Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId);
 }
