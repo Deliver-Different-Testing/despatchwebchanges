@@ -1,4 +1,4 @@
-<link href="app/components/dialogs/map-dialog/map-dialog.css" rel="stylesheet">
+<link href="app/components/dialogs/map-dialog/map-dialog.min.css" rel="stylesheet">
 
 <md-dialog aria-label="Map">
     <md-toolbar>
@@ -8,6 +8,7 @@
             <span flex></span>
             <md-button class="md-icon-button" ng-click="ctrl.cancel()">
                 <md-icon md-font-set="material-symbols-outlined">close</md-icon>
+                <md-tooltip md-direction="bottom">Close</md-tooltip>
             </md-button>
         </div>
     </md-toolbar>
@@ -33,7 +34,7 @@
 
                 <div class="job-timeline" layout="row" layout-align="center center" ng-if="!ctrl.loading">
                     <div class="timeline-container" layout="row" layout-align="center center">
-                        <div layout="row" layout-align="center center" ng-repeat="job in ctrl.childJobs">
+                        <div layout="row" layout-align="center center" ng-repeat="job in ctrl.delivery.childJobs">
                             <!-- Job Step Circle -->
                             <div class="timeline-step"
                                  ng-class="{'active': ctrl.selectedJobIndex === $index}"
@@ -42,7 +43,7 @@
                                      md-colors="{background: ctrl.selectedJobIndex === $index ? 'primary' : 'background-400'}">
                                     {{$index + 1}}
                                 </div>
-                                <div class="step-label" ng-bind="job.name || 'Job ' + ($index + 1)"></div>
+                                <div class="step-label" ng-bind="job.jobName"></div>
                             </div>
                             <!-- Connector Line (don't show after last item) -->
                             <div class="timeline-connector"
