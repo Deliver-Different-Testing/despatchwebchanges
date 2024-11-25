@@ -37,7 +37,7 @@ public partial class TucJob
 
     public string UcjbToAddr { get; set; }
 
-    public short? UcjbSize { get; set; }
+    public int? UcjbSize { get; set; }
 
     public short? UcjbQty { get; set; }
 
@@ -449,6 +449,8 @@ public partial class TucJob
 
     public virtual TucJob Parent { get; set; }
 
+    public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; } = new List<PricingBreakdown>();
+
     public virtual TucSource Source { get; set; }
 
     public virtual TblAirport ToAirport { get; set; }
@@ -466,6 +468,8 @@ public partial class TucJob
     public virtual TucStaff UcjbDisp { get; set; }
 
     public virtual TucSuburb UcjbFromNavigation { get; set; }
+
+    public virtual VehicleSize UcjbSizeNavigation { get; set; }
 
     public virtual TucJobType UcjbSpeedNavigation { get; set; }
 

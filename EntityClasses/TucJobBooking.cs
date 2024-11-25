@@ -87,7 +87,7 @@ public partial class TucJobBooking
 
     public int? UcbkWeight { get; set; }
 
-    public short? UcbkSize { get; set; }
+    public int? UcbkSize { get; set; }
 
     public string UcbkUpdateBy { get; set; }
 
@@ -343,13 +343,27 @@ public partial class TucJobBooking
 
     public decimal? CourierFuel { get; set; }
 
+    public virtual TucCourier Courier { get; set; }
+
     public virtual TblAirport FromAirport { get; set; }
 
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
+
+    public virtual TucContact LoggedInContact { get; set; }
+
+    public virtual ICollection<PricingBreakdown> PricingBreakdowns { get; set; } = new List<PricingBreakdown>();
+
+    public virtual TucSource Source { get; set; }
 
     public virtual TblAirport ToAirport { get; set; }
 
     public virtual ICollection<TucJobBookingItem> TucJobBookingItems { get; set; } = new List<TucJobBookingItem>();
 
     public virtual ICollection<TucJobNationwide> TucJobNationwides { get; set; } = new List<TucJobNationwide>();
+
+    public virtual TucClient UcbkClient { get; set; }
+
+    public virtual VehicleSize UcbkSizeNavigation { get; set; }
+
+    public virtual TucJobType UcbkSpeedNavigation { get; set; }
 }

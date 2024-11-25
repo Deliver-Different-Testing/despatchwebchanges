@@ -95,6 +95,8 @@ public partial class TucJobType
 
     public virtual ICollection<TucJob> TucJobAcceptedJobTypes { get; set; } = new List<TucJob>();
 
+    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
+
     public virtual ICollection<TucJob> TucJobDesiredJobTypes { get; set; } = new List<TucJob>();
 
     public virtual ICollection<TucJob> TucJobNotifiedJobTypes { get; set; } = new List<TucJob>();

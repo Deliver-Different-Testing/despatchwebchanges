@@ -231,7 +231,7 @@ public partial class TucCourier
 
     public bool? CommercialInsurance { get; set; }
 
-    public int? OpenForceNumber { get; set; }
+    public string OpenForceNumber { get; set; }
 
     public string VehicleVinnumber { get; set; }
 
@@ -244,6 +244,8 @@ public partial class TucCourier
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
+
+    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
 
     public virtual ICollection<TucJob> TucJobFdcouriers { get; set; } = new List<TucJob>();
 

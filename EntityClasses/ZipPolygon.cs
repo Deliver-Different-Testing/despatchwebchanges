@@ -22,4 +22,6 @@ public partial class ZipPolygon
     public string Wkt { get; set; }
 
     public virtual ICollection<TblClearListAreaPolygon> TblClearListAreaPolygons { get; set; } = new List<TblClearListAreaPolygon>();
+
+    public virtual ICollection<TblCourierGp> TblCourierGps { get; set; } = new List<TblCourierGp>();
 }

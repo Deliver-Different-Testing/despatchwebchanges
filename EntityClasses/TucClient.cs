@@ -571,7 +571,11 @@ public partial class TucClient
 
     public virtual ICollection<TucClientItem> TucClientItems { get; set; } = new List<TucClientItem>();
 
+    public virtual ICollection<TucContact> TucContacts { get; set; } = new List<TucContact>();
+
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
+
+    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
 
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 

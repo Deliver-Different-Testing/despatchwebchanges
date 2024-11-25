@@ -19,5 +19,7 @@ public partial class TucSource
 
     public string LastModifiedBy { get; set; }
 
+    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
+
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

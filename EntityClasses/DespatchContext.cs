@@ -41,6 +41,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<GlobalAddressMapping> GlobalAddressMappings { get; set; }
 
+    public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
+
     public virtual DbSet<TblAirport> TblAirports { get; set; }
 
     public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
@@ -98,6 +100,8 @@ public partial class DespatchContext : DbContext
     public virtual DbSet<TucClientContact> TucClientContacts { get; set; }
 
     public virtual DbSet<TucClientItem> TucClientItems { get; set; }
+
+    public virtual DbSet<TucContact> TucContacts { get; set; }
 
     public virtual DbSet<TucCourier> TucCouriers { get; set; }
 
@@ -577,7 +581,11 @@ public partial class DespatchContext : DbContext
                 .ToView("DESWEB_qry_Despatch_Job_View_Filters");
 
             entity.Property(e => e.ClearListAreaId).HasColumnName("ClearListAreaID");
+            entity.Property(e => e.DeliveryAddressLine5).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine6).HasMaxLength(255);
             entity.Property(e => e.ParentId).HasColumnName("ParentID");
+            entity.Property(e => e.PickupAddressLine5).HasMaxLength(255);
+            entity.Property(e => e.PickupAddressLine6).HasMaxLength(255);
             entity.Property(e => e.UcjbClientId).HasColumnName("ucjbClientID");
             entity.Property(e => e.UcjbId).HasColumnName("ucjbID");
             entity.Property(e => e.UcjbNumber)
@@ -733,6 +741,32 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<PricingBreakdown>(entity =>
+        {
+            entity.HasKey(e => e.PricingBreakdownId).HasName("PK__PricingB__BC8C3D8BE9445FEE");
+
+            entity.ToTable("PricingBreakdown");
+
+            entity.Property(e => e.PricingBreakdownId).HasColumnName("PricingBreakdownID");
+            entity.Property(e => e.ChargeAmount).HasColumnType("money");
+            entity.Property(e => e.ChargeName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.Charged).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.Included).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.PrebookJobId).HasColumnName("PrebookJobID");
+            entity.Property(e => e.Total).HasColumnType("decimal(18, 4)");
+
+            entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdowns)
+                .HasForeignKey(d => d.JobId)
+                .HasConstraintName("FK__PricingBr__JobID__1B69C5D8");
+
+            entity.HasOne(d => d.PrebookJob).WithMany(p => p.PricingBreakdowns)
+                .HasForeignKey(d => d.PrebookJobId)
+                .HasConstraintName("FK__PricingBr__Prebo__1C5DEA11");
         });
 
         modelBuilder.Entity<TblAirport>(entity =>
@@ -1947,10 +1981,15 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.RawData)
                 .IsRequired()
                 .HasMaxLength(500);
+            entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
 
             entity.HasOne(d => d.Polygon).WithMany(p => p.TblCourierGps)
                 .HasForeignKey(d => d.PolygonId)
                 .HasConstraintName("FK_tblCourierGPS_tblPolygon");
+
+            entity.HasOne(d => d.ZipPolygon).WithMany(p => p.TblCourierGps)
+                .HasForeignKey(d => d.ZipPolygonId)
+                .HasConstraintName("FK_tblCourierGPS_ZipPolygon");
         });
 
         modelBuilder.Entity<TblCourierLogInOut>(entity =>
@@ -3006,6 +3045,28 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK__tucClient__Clien__5D21AF45");
         });
 
+        modelBuilder.Entity<TucContact>(entity =>
+        {
+            entity.HasKey(e => e.UccoId).IsClustered(false);
+
+            entity.ToTable("tucContact");
+
+            entity.HasIndex(e => e.UccoClientId, "uccoClientID")
+                .IsClustered()
+                .HasFillFactor(80);
+
+            entity.Property(e => e.UccoId).HasColumnName("uccoID");
+            entity.Property(e => e.UccoClientId).HasColumnName("uccoClientID");
+            entity.Property(e => e.UccoName)
+                .HasMaxLength(15)
+                .IsUnicode(false)
+                .HasColumnName("uccoName");
+
+            entity.HasOne(d => d.UccoClient).WithMany(p => p.TucContacts)
+                .HasForeignKey(d => d.UccoClientId)
+                .HasConstraintName("FK_tucContact_tucClient");
+        });
+
         modelBuilder.Entity<TucCourier>(entity =>
         {
             entity.HasKey(e => e.UccrId).IsClustered(false);
@@ -3087,6 +3148,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.MobileRental)
                 .HasDefaultValue(0.00m)
                 .HasColumnType("money");
+            entity.Property(e => e.OpenForceNumber).HasMaxLength(50);
             entity.Property(e => e.PaydayFileRegistration).HasDefaultValue(false);
             entity.Property(e => e.PersonalMobile).HasMaxLength(50);
             entity.Property(e => e.Podreqd)
@@ -3798,6 +3860,8 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.UcjbFrom)
                 .HasConstraintName("FK_tucJob_FromSuburb");
 
+            entity.HasOne(d => d.UcjbSizeNavigation).WithMany(p => p.TucJobs).HasForeignKey(d => d.UcjbSize);
+
             entity.HasOne(d => d.UcjbSpeedNavigation).WithMany(p => p.TucJobUcjbSpeedNavigations)
                 .HasForeignKey(d => d.UcjbSpeed)
                 .HasConstraintName("FK_tucJob_tucJobType");
@@ -4199,6 +4263,8 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobArchiveToAirports)
                 .HasForeignKey(d => d.ToAirportId)
                 .HasConstraintName("FK_tucJobArchive_ToAirport");
+
+            entity.HasOne(d => d.UcjbSizeNavigation).WithMany(p => p.TucJobArchives).HasForeignKey(d => d.UcjbSize);
         });
 
         modelBuilder.Entity<TucJobBooking>(entity =>
@@ -4452,9 +4518,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcbkRefClientId).HasColumnName("ucbkRefClientID");
             entity.Property(e => e.UcbkReturn).HasColumnName("ucbkReturn");
             entity.Property(e => e.UcbkScreen).HasColumnName("ucbkScreen");
-            entity.Property(e => e.UcbkSize)
-                .HasDefaultValue((short)0)
-                .HasColumnName("ucbkSize");
+            entity.Property(e => e.UcbkSize).HasColumnName("ucbkSize");
             entity.Property(e => e.UcbkSpeed).HasColumnName("ucbkSpeed");
             entity.Property(e => e.UcbkTime)
                 .HasColumnType("datetime")
@@ -4478,6 +4542,10 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucbkWeight");
             entity.Property(e => e.VanOk).HasColumnName("VanOK");
 
+            entity.HasOne(d => d.Courier).WithMany(p => p.TucJobBookings)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK_tucJobBooking_tucCourier");
+
             entity.HasOne(d => d.FromAirport).WithMany(p => p.TucJobBookingFromAirports)
                 .HasForeignKey(d => d.FromAirportId)
                 .HasConstraintName("FK__tucJobBoo__FromA__69B26EB3");
@@ -4486,9 +4554,27 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.JobRelationshipTypeId)
                 .HasConstraintName("FK_tucJobBooking_tblJobRelationshipType");
 
+            entity.HasOne(d => d.LoggedInContact).WithMany(p => p.TucJobBookings)
+                .HasForeignKey(d => d.LoggedInContactId)
+                .HasConstraintName("FK_TucJobBooking_tucContact");
+
+            entity.HasOne(d => d.Source).WithMany(p => p.TucJobBookings)
+                .HasForeignKey(d => d.SourceId)
+                .HasConstraintName("FK_TucJobBooking_TucSource");
+
             entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobBookingToAirports)
                 .HasForeignKey(d => d.ToAirportId)
                 .HasConstraintName("FK__tucJobBoo__ToAir__6AA692EC");
+
+            entity.HasOne(d => d.UcbkClient).WithMany(p => p.TucJobBookings)
+                .HasForeignKey(d => d.UcbkClientId)
+                .HasConstraintName("FK_TucJobBooking_tucClient");
+
+            entity.HasOne(d => d.UcbkSizeNavigation).WithMany(p => p.TucJobBookings).HasForeignKey(d => d.UcbkSize);
+
+            entity.HasOne(d => d.UcbkSpeedNavigation).WithMany(p => p.TucJobBookings)
+                .HasForeignKey(d => d.UcbkSpeed)
+                .HasConstraintName("FK_TucJobBooking_TucJobTypes");
         });
 
         modelBuilder.Entity<TucJobBookingItem>(entity =>
@@ -5038,6 +5124,8 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.ZipPolygonId).HasName("PK__ZipPolyg__6A8AEEE3127F7A1C");
 
             entity.ToTable("ZipPolygon");
+
+            entity.HasIndex(e => e.Zip, "IX_ZipPolygon_Zip");
 
             entity.Property(e => e.ZipPolygonId).HasColumnName("ZipPolygonID");
             entity.Property(e => e.Latitude).HasColumnType("decimal(18, 8)");

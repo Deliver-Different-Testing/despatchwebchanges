@@ -28,4 +28,12 @@ public partial class DeswebQryDespatchJobViewFilter
     public int? BulkRegionId { get; set; }
 
     public int? ClearListAreaId { get; set; }
+
+    public string PickupAddressLine6 { get; set; }
+
+    public string DeliveryAddressLine6 { get; set; }
+
+    public string PickupAddressLine5 { get; set; }
+
+    public string DeliveryAddressLine5 { get; set; }
 }

@@ -701,59 +701,6 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DESWEB_stpCreateInterCourierJobsAsync(int? fromCourierId, int? toCourierId, decimal? Amount, string Reference, int? StaffId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
-        {
-            var parameterreturnValue = new SqlParameter
-            {
-                ParameterName = "returnValue",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Int,
-            };
-
-            var sqlParameters = new []
-            {
-                new SqlParameter
-                {
-                    ParameterName = "fromCourierId",
-                    Value = fromCourierId ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "toCourierId",
-                    Value = toCourierId ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "Amount",
-                    Precision = 18,
-                    Scale = 2,
-                    Value = Amount ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Decimal,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "Reference",
-                    Size = 255,
-                    Value = Reference ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.VarChar,
-                },
-                new SqlParameter
-                {
-                    ParameterName = "StaffId",
-                    Value = StaffId ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Int,
-                },
-                parameterreturnValue,
-            };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DESWEB_stpCreateInterCourierJobs] @fromCourierId = @fromCourierId, @toCourierId = @toCourierId, @Amount = @Amount, @Reference = @Reference, @StaffId = @StaffId", sqlParameters, cancellationToken);
-
-            returnValue?.SetValue(parameterreturnValue.Value);
-
-            return _;
-        }
-
         public virtual async Task<int> DESWEB_stpJob_AddNotesAsync(int? JobID, string Notes, string Username, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
@@ -2048,6 +1995,48 @@ namespace DespatchWeb.EntityClasses
             };
             var _ = await _context.SqlQueryAsync<MAP_stpCourierGPS_LastPositionTodayResult>("EXEC @returnValue = [dbo].[MAP_stpCourierGPS_LastPositionToday] @CourierCode = @CourierCode", sqlParameters, cancellationToken);
 
+            returnValue?.SetValue(parameterreturnValue.Value);
+
+            return _;
+        }
+
+        public virtual async Task<int> NET_stpJob_Insert_JobNumberAsync(int? StaffID, int? JobTypeID, OutputParameter<string> JobNumber, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        {
+            var parameterJobNumber = new SqlParameter
+            {
+                ParameterName = "JobNumber",
+                Size = 50,
+                Direction = System.Data.ParameterDirection.InputOutput,
+                Value = JobNumber?._value ?? Convert.DBNull,
+                SqlDbType = System.Data.SqlDbType.VarChar,
+            };
+            var parameterreturnValue = new SqlParameter
+            {
+                ParameterName = "returnValue",
+                Direction = System.Data.ParameterDirection.Output,
+                SqlDbType = System.Data.SqlDbType.Int,
+            };
+
+            var sqlParameters = new []
+            {
+                new SqlParameter
+                {
+                    ParameterName = "StaffID",
+                    Value = StaffID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "JobTypeID",
+                    Value = JobTypeID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                parameterJobNumber,
+                parameterreturnValue,
+            };
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[NET_stpJob_Insert_JobNumber] @StaffID = @StaffID, @JobTypeID = @JobTypeID, @JobNumber = @JobNumber OUTPUT", sqlParameters, cancellationToken);
+
+            JobNumber.SetValue(parameterJobNumber.Value);
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;

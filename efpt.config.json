@@ -55,6 +55,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[PricingBreakdown]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblAirport]",
          "ObjectType": 0
       },
@@ -152,6 +156,10 @@
       },
       {
          "Name": "[dbo].[tucClientItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucContact]",
          "ObjectType": 0
       },
       {
@@ -343,10 +351,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DESWEB_stpCreateInterCourierJobs]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DESWEB_stpJob_AddNotes]",
          "ObjectType": 1
       },
@@ -420,6 +424,10 @@
       },
       {
          "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
          "ObjectType": 1
       },
       {

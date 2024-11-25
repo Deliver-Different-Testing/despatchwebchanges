@@ -30,4 +30,10 @@ public partial class VehicleSize
     public int? VehicleTypeId { get; set; }
 
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
+
+    public virtual ICollection<TucJobArchive> TucJobArchives { get; set; } = new List<TucJobArchive>();
+
+    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
+
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }
