@@ -149,6 +149,76 @@
 .delivery-dashboard .filter-section {
   margin-bottom: 24px;
 }
+
+.delivery-dashboard .filter-section.statistics-container {
+  margin: 16px 0;
+}
+
+.delivery-dashboard .filter-section.statistics-container .statistics-header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.delivery-dashboard .filter-section.statistics-container .statistics-header h4 {
+  margin: 0 0 0 8px;
+  font-weight: 500;
+}
+
+.delivery-dashboard .filter-section.statistics-container .statistics-header md-icon {
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.delivery-dashboard .filter-section.statistics-container .statistics-grid {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.delivery-dashboard .filter-section.statistics-container .stat-item {
+  padding: 12px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delivery-dashboard .filter-section.statistics-container .stat-label {
+  color: rgba(0, 0, 0, 0.87);
+  display: flex;
+  align-items: center;
+}
+
+.delivery-dashboard .filter-section.statistics-container .stat-label md-icon {
+  margin-right: 8px;
+  font-size: 20px;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.delivery-dashboard .filter-section.statistics-container .stat-value {
+  font-weight: 500;
+  font-size: 16px;
+  border-radius: 16px;
+  padding: 4px 12px;
+}
+
+.delivery-dashboard .filter-section.statistics-container .stat-value.active {
+  background-color: #86EFAC;
+  color: black;
+}
+
+.delivery-dashboard .filter-section.statistics-container .stat-value.inactive {
+  background-color: #EF4444;
+  color: white;
+}
+
+.delivery-dashboard .filter-section.statistics-container .stat-value.completed {
+  background-color: #9CA3AF;
+  color: white;
+}
+
+.delivery-dashboard .filter-section.statistics-container md-divider {
+  margin: 4px 0;
+}
 .delivery-dashboard .status-chip {
   padding: 4px 8px;
   border-radius: 16px;
@@ -189,130 +259,5 @@
 .delivery-dashboard .empty-state .empty-text {
   margin: 8px 0 0;
   color: #757575;
-}
-.stats-tabs-container {
-  background: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  padding: 8px 0;
-}
-.stats-tabs {
-  max-width: 600px;
-  margin: 0 auto;
-  position: relative;
-}
-.stat-tab {
-  flex: 1;
-  min-width: 120px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 8px;
-  cursor: pointer;
-  position: relative;
-  transition: background-color 0.2s ease;
-}
-.stat-tab:hover {
-  background-color: rgba(0, 150, 136, 0.04);
-}
-.stat-tab.active {
-  background-color: rgba(0, 150, 136, 0.12);
-}
-.stat-tab.active .stat-circle {
-  background-color: #3EAFC2;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-.stat-tab.active .stat-circle .stat-value {
-  color: white;
-}
-.stat-tab.active .stat-icon {
-  background-color: #3EAFC2;
-  color: white;
-  border: 2px solid white;
-}
-.stat-tab.active .stat-label {
-  color: #3EAFC2;
-  font-weight: 500;
-}
-.stat-tab.active .tab-indicator {
-  opacity: 1;
-  transform: scaleX(1);
-}
-.stat-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
-  background-color: rgba(0, 0, 0, 0.04);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.stat-circle .stat-value {
-  font-size: 20px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.87);
-  transition: color 0.2s ease;
-}
-.stat-icon {
-  position: absolute;
-  right: -4px;
-  bottom: -4px;
-  width: 24px;
-  height: 24px;
-  font-size: 16px;
-  padding: 4px;
-  background: white;
-  border-radius: 50%;
-  color: rgba(0, 0, 0, 0.54);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  border: 2px solid transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  z-index: 1;
-}
-.stat-label {
-  font-size: 13px;
-  font-weight: 400;
-  color: rgba(0, 0, 0, 0.64);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: color 0.2s ease;
-}
-.tab-indicator {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: #3EAFC2;
-  transform-origin: left;
-  transform: scaleX(0);
-  opacity: 0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-@media screen and (max-width: 599px) {
-  .stat-tab {
-    min-width: 100px;
-    padding: 12px 4px;
-  }
-  .stat-circle {
-    width: 48px;
-    height: 48px;
-  }
-  .stat-circle .stat-value {
-    font-size: 18px;
-  }
-  .stat-icon {
-    width: 20px;
-    height: 20px;
-    font-size: 14px;
-  }
-  .stat-label {
-    font-size: 12px;
-  }
 }
 /*# sourceMappingURL=overview.css.map */

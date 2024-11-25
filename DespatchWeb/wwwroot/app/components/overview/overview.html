@@ -61,6 +61,33 @@
                 </md-toolbar>
 
                 <div class="md-padding">
+                    <!-- Date Range Filter -->
+                    <div class="filter-section">
+                        <div class="statistics-header">
+                            <h4>Date Range</h4>
+                        </div>
+                        <md-button class="date-range-button"
+                                   ng-class="{'active': ctrl.hasDateFilter()}"
+                                   ng-click="ctrl.showDateRangeDialog($event)">
+                            <div layout="row" layout-align="space-between center">
+                                <div layout="row" layout-align="start center">
+                                    <md-icon md-font-set="material-symbols-outlined">
+                                        {{ctrl.hasDateFilter() ? 'calendar_month' : 'date_range'}}
+                                    </md-icon>
+                                    <span class="date-label" ng-if="!ctrl.hasDateFilter()">Select Dates</span>
+                                    <span class="date-label"
+                                          ng-if="ctrl.hasDateFilter()">{{ctrl.getDateRangeDisplay()}}</span>
+                                </div>
+                                <md-icon class="clear-icon" md-font-set="material-symbols-outlined"
+                                         ng-click="ctrl.clearDateRange($event)"
+                                         ng-if="ctrl.hasDateFilter()">close
+                                </md-icon>
+                            </div>
+                        </md-button>
+                    </div>
+
+                    <md-divider></md-divider>
+
                     <div class="filter-section">
                         <div class="statistics-header">
                             <h4>Regions</h4>
@@ -123,23 +150,6 @@
                                        ng-model="ctrl.search"
                                        placeholder="Search deliveries...">
                             </md-input-container>
-                        </div>
-
-                        <!-- Active Filters -->
-                        <div class="filter-indicators" layout="row" layout-align="end center">
-                            <!-- Date Range Indicator -->
-                            <md-button class="date-range-chip"
-                                       ng-class="{'active': ctrl.hasDateFilter()}"
-                                       ng-click="ctrl.showDateRangeDialog($event)">
-                                <md-icon md-font-set="material-symbols-outlined">
-                                    {{ctrl.hasDateFilter() ? 'calendar_month' : 'date_range'}}
-                                </md-icon>
-                                <span ng-if="!ctrl.hasDateFilter()">Select Dates</span>
-                                <span ng-if="ctrl.hasDateFilter()">{{ctrl.getDateRangeDisplay()}}</span>
-                                <md-icon class="clear-icon" md-font-set="material-symbols-outlined"
-                                         ng-click="ctrl.clearDateRange($event)" ng-if="ctrl.hasDateFilter()">close
-                                </md-icon>
-                            </md-button>
                         </div>
                     </div>
 
@@ -234,14 +244,6 @@
                             md-page-select
                             md-total="{{ctrl.query.total}}">
                     </md-table-pagination>
-
-                    <!-- Navigation Buttons -->
-                    <div layout="row" layout-align="end end">
-                        <md-button class="md-raised" ng-click="ctrl.exportJobs()">
-                            <md-icon md-font-set="material-symbols-outlined">download</md-icon>
-                            Export
-                        </md-button>
-                    </div>
                 </div>
             </md-card>
         </div>
