@@ -15,12 +15,16 @@ class MapDialogController {
         this.overviewService = overviewService;
         this.delivery = delivery;
 
-        this.title = "Map for Job: " + delivery.jobName;
-        this.mapConfig = [];
+        this.title = `${delivery.jobName} Map`;
         this.loading = true;
 
         this.hereCredentials = {
             apiKey: 'KedIcK-HWes4X4mqtK64i4jrxTkD7tAWfJdLCXwGPD8'
+        };
+        this.mapConfig = {
+            center: {lat: 39.8097343, lng: -98.5556199},
+            zoom: 5,
+            job: null,
         };
 
         // Set up config data
@@ -32,12 +36,22 @@ class MapDialogController {
         })
     }
 
+
     /**
      * @param {number} jobId
      */
     async getJob(jobId) {
         return await this.overviewService.getParentJobMap(jobId);
     }
+
+    /**
+     * @param {number} index
+     */
+    selectJob(index) {
+        this.selectedJobIndex = index;
+        this.mapConfig.selectedIJobIndex = index + 1;
+    }
+
 
     /**
      * Closes the dialog

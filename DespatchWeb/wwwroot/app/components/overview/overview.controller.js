@@ -3,7 +3,7 @@
  * @description Controller for delivery overview page
  */
 class OverviewController {
-    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService) {
+    constructor($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment) {
         this.$mdDialog = $mdDialog;
         this.materialSidenavService = materialSidenavService;
         this.overviewService = overviewService;
@@ -11,6 +11,7 @@ class OverviewController {
         this.$document = $document;
         this.$timeout = $timeout;
         this.toastrService = toastrService;
+        this.moment = moment;
 
         this.selected = [];
         this.query = {
@@ -238,7 +239,7 @@ class OverviewController {
      * @returns {string}
      */
     formatDate(date) {
-        return date ? moment(date).format('MMM D, YYYY') : '';
+        return date ? this.moment(date).format('MMM D, YYYY') : '';
     }
 
     /**
@@ -330,4 +331,4 @@ class OverviewController {
     }
 }
 
-angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService) => new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService)]);
+angular.module('uDispatch').controller('deliveryOverview', ['$mdDialog', 'materialSidenavService', 'overviewService', 'versionUrl', '$document', '$scope', '$timeout', 'toastrService', 'moment', ($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment) => new OverviewController($mdDialog, materialSidenavService, overviewService, versionUrl, $document, $scope, $timeout, toastrService, moment)]);

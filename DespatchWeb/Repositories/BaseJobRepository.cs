@@ -968,12 +968,8 @@ public class BaseJobRepository
                 Center = new Coordinates
                 {
                     // Calculate center point between pickup and delivery locations
-                    Lat = j.PickUpLatitude != null && j.DeliveryLatitude != null
-                        ? (j.PickUpLatitude.Value + j.DeliveryLatitude.Value) / 2
-                        : j.PickUpLatitude ?? j.DeliveryLatitude ?? 0,
-                    Lng = j.PickUpLongitude != null && j.DeliveryLongitude != null
-                        ? (j.PickUpLongitude.Value + j.DeliveryLongitude.Value) / 2
-                        : j.PickUpLongitude ?? j.DeliveryLongitude ?? 0
+                    Lat = (decimal)39.8097343,
+                    Lng = (decimal)-98.5556199
                 },
                 Zoom = 5,
                 Job = new OverviewJobLocation
@@ -1004,14 +1000,7 @@ public class BaseJobRepository
                         },
                         Flight = j.TucJobNationwides.FirstOrDefault() != null
                     }).ToList(),
-                    SelectedJobIndex = 1,
-                    CourierLocation = j.UcjbCourier != null
-                        ? new Coordinates
-                        {
-                            Lat = 0, // ToDo: Update for AWS Courier GPS
-                            Lng = 0 // ToDo: Update for AWS Courier GPS
-                        }
-                        : null
+                    SelectedJobIndex = 1
                 }
             }).AsNoTracking().FirstOrDefaultAsync();
 

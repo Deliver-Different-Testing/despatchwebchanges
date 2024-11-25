@@ -1,4 +1,6 @@
-<md-dialog aria-label="Select Date Range" class="date-range-dialog">
+<link href="app/components/dialogs/map-dialog/map-dialog.css" rel="stylesheet">
+
+<md-dialog aria-label="Map">
     <md-toolbar>
         <div class="md-toolbar-tools">
             <md-icon class="popup-icon" md-font-set="material-symbols-outlined">map</md-icon>
@@ -28,6 +30,29 @@
                         map-id="mapContainer"
                         on-map-ready="">
                 </here-map-tracking>
+
+                <div class="job-timeline" layout="row" layout-align="center center" ng-if="!ctrl.loading">
+                    <div class="timeline-container" layout="row" layout-align="center center">
+                        <div layout="row" layout-align="center center" ng-repeat="job in ctrl.childJobs">
+                            <!-- Job Step Circle -->
+                            <div class="timeline-step"
+                                 ng-class="{'active': ctrl.selectedJobIndex === $index}"
+                                 ng-click="ctrl.selectJob($index)">
+                                <div class="step-circle"
+                                     md-colors="{background: ctrl.selectedJobIndex === $index ? 'primary' : 'background-400'}">
+                                    {{$index + 1}}
+                                </div>
+                                <div class="step-label" ng-bind="job.name || 'Job ' + ($index + 1)"></div>
+                            </div>
+                            <!-- Connector Line (don't show after last item) -->
+                            <div class="timeline-connector"
+                                 md-colors="{background: 'background-400'}"
+                                 ng-if="!$last">
+                                <md-icon md-font-set="material-symbols-outlined">arrow_forward</md-icon>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </md-dialog-content>
