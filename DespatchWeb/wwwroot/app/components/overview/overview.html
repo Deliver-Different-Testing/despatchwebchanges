@@ -19,14 +19,36 @@
 
     <div class="delivery-dashboard md-padding" layout="column">
         <!-- Tabs -->
-        <md-tabs md-border-bottom md-center-tabs md-on-select="ctrl.onTabSelected($selectedIndex)"
-                 md-selected="ctrl.activeTab">
-            <md-tab ng-repeat="tab in ctrl.tabs">
-                <md-tab-label>
-                    {{tab}}
-                </md-tab-label>
-            </md-tab>
-        </md-tabs>
+        <div class="stats-tabs-container">
+            <div class="stats-tabs" layout="row" layout-align="center center">
+                <div class="stat-tab" ng-class="{active: ctrl.activeTab === 0}" ng-click="ctrl.setTab(0)">
+                    <div class="stat-circle">
+                        <span class="stat-value">4</span>
+                        <md-icon class="stat-icon" md-font-set="material-symbols-outlined">cycle</md-icon>
+                    </div>
+                    <span class="stat-label">Active</span>
+                    <div class="tab-indicator"></div>
+                </div>
+
+                <div class="stat-tab" ng-class="{active: ctrl.activeTab === 1}" ng-click="ctrl.setTab(1)">
+                    <div class="stat-circle">
+                        <span class="stat-value">0</span>
+                        <md-icon class="stat-icon" md-font-set="material-symbols-outlined">pause_circle</md-icon>
+                    </div>
+                    <span class="stat-label">Inactive</span>
+                    <div class="tab-indicator"></div>
+                </div>
+
+                <div class="stat-tab" ng-class="{active: ctrl.activeTab === 2}" ng-click="ctrl.setTab(2)">
+                    <div class="stat-circle">
+                        <span class="stat-value">2</span>
+                        <md-icon class="stat-icon" md-font-set="material-symbols-outlined">task_alt</md-icon>
+                    </div>
+                    <span class="stat-label">Completed</span>
+                    <div class="tab-indicator"></div>
+                </div>
+            </div>
+        </div>
 
         <div layout="row" layout-xs="column">
             <!-- Filters Panel -->
@@ -76,41 +98,7 @@
 
                     <md-divider></md-divider>
 
-                    <div class="filter-section statistics-container">
-                        <div class="statistics-header">
-                            <h4>Statistics</h4>
-                        </div>
-
-                        <div class="statistics-grid" layout="column">
-                            <div class="stat-item" layout="row" layout-align="space-between center">
-                                <div class="stat-label" layout="row" layout-align="start center">
-                                    <md-icon md-font-set="material-symbols-outlined">cycle</md-icon>
-                                    <span>Active</span>
-                                </div>
-                                <span class="stat-value active">{{ctrl.statistics.active}}</span>
-                            </div>
-
-                            <md-divider></md-divider>
-
-                            <div class="stat-item" layout="row" layout-align="space-between center">
-                                <div class="stat-label" layout="row" layout-align="start center">
-                                    <md-icon md-font-set="material-symbols-outlined">pause_circle</md-icon>
-                                    <span>Inactive</span>
-                                </div>
-                                <span class="stat-value inactive">{{ctrl.statistics.inactive}}</span>
-                            </div>
-
-                            <md-divider></md-divider>
-
-                            <div class="stat-item" layout="row" layout-align="space-between center">
-                                <div class="stat-label" layout="row" layout-align="start center">
-                                    <md-icon md-font-set="material-symbols-outlined">task_alt</md-icon>
-                                    <span>Completed</span>
-                                </div>
-                                <span class="stat-value completed">{{ctrl.statistics.completed}}</span>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Speeds go here-->
                 </div>
             </md-card>
 

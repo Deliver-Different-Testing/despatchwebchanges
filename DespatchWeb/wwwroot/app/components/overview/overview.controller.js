@@ -13,6 +13,12 @@ class OverviewController {
         this.toastrService = toastrService;
         this.moment = moment;
 
+        this.statistics = {
+            active: 0,
+            inactive: 0,
+            completed: 0
+        };
+
         this.selected = [];
         this.query = {
             order: 'jobName',    // Default sort field
@@ -40,9 +46,11 @@ class OverviewController {
         };
 
         this.activeTab = 0;
-        this.tabs = ['Active', 'Inactive', 'Completed'];
 
         // Bind class methods to maintain 'this' context
+        this.setTab = this.setTab.bind(this);
+        this.getStatusLabel = this.getStatusLabel.bind(this);
+        this.getStatusIcon = this.getStatusIcon.bind(this);
         this.onReorder = this.onReorder.bind(this);
         this.onPaginate = this.onPaginate.bind(this);
         this.refreshData = this.refreshData.bind(this);
@@ -50,10 +58,18 @@ class OverviewController {
         this.showDateRangeDialog = this.showDateRangeDialog.bind(this);
         this.clearDateRange = this.clearDateRange.bind(this);
 
+        // Initialize data and set up watchers
+        this.initializeData($scope);
+    }
+
+    /**
+     * Initialize data and set up watchers
+     * @param {object} $scope Angular scope object
+     */
+    initializeData($scope) {
         // Watch for tab changes
         $scope.$watch(() => this.activeTab, (newValue, oldValue) => {
             if (newValue !== oldValue) {
-                console.log('Tab changed to:', newValue + 1);
                 this.refreshData();
             }
         });
@@ -70,12 +86,62 @@ class OverviewController {
         this.refreshData();
     }
 
+    /**
+     * Load statistics data
+     */
     async loadStats() {
         try {
-            this.statistics = await this.overviewService.getStats();
+            const stats = await this.overviewService.getStats();
+            this.statistics = {
+                active: stats.active || 0,
+                inactive: stats.inactive || 0,
+                completed: stats.completed || 0
+            };
         } catch (error) {
             console.error('Error loading statistics:', error);
+            this.statistics = {active: 0, inactive: 0, completed: 0};
         }
+    }
+
+    /**
+     * Set active tab and trigger refresh
+     * @param {number} tabIndex The tab index to set active
+     */
+    async setTab(tabIndex) {
+        if (this.activeTab !== tabIndex) {
+            this.activeTab = tabIndex;
+            await this.refreshData();
+        }
+    }
+
+    /**
+     * Get the status label for a tab
+     * @param {number} tabIndex The tab index
+     * @returns {string} The status label
+     */
+    getStatusLabel(tabIndex) {
+        const labels = ['Active', 'Inactive', 'Completed'];
+        return labels[tabIndex] || '';
+    }
+
+    /**
+     * Get the status icon for a tab
+     * @param {number} tabIndex The tab index
+     * @returns {string} The material icon name
+     */
+    getStatusIcon(tabIndex) {
+        const icons = ['cycle', 'pause_circle', 'task_alt'];
+        return icons[tabIndex] || '';
+    }
+
+    /**
+     * Get the value for a statistics tab
+     * @param {number} tabIndex The tab index
+     * @returns {number} The statistics value
+     */
+    getStatValue(tabIndex) {
+        const statKeys = ['active', 'inactive', 'completed'];
+        return this.statistics[statKeys[tabIndex]] || 0;
     }
 
     /**
@@ -84,16 +150,6 @@ class OverviewController {
      */
     getStatusGroup() {
         return this.activeTab + 1; // Maps to JobStatusGroup enum (1-based)
-    }
-
-    /**
-     * Handle tab selection
-     * @param {number} tabIndex
-     */
-    async onTabSelected(tabIndex) {
-        console.log('Tab selected:', tabIndex + 1);
-        this.activeTab = tabIndex;
-        await this.refreshData();
     }
 
     /**
@@ -286,9 +342,15 @@ class OverviewController {
         });
     }
 
+    /**
+     * Refresh data when tab changes
+     */
     async refreshData() {
         try {
             const statusGroup = this.getStatusGroup();
+
+            // Show loading state
+            this.isLoading = true;
 
             // Parse sort order
             let orderBy = this.query.order || 'jobName';
@@ -318,15 +380,21 @@ class OverviewController {
                 ...delivery,
                 status: this.transformStatus(delivery.status),
                 childJobs: Array.isArray(delivery.childJobs) ? delivery.childJobs.map(childJob => ({
-                    ...childJob, status: this.transformStatus(childJob.status)
+                    ...childJob,
+                    status: this.transformStatus(childJob.status)
                 })) : []
             }));
 
             // Update query metadata
             this.query.total = response.total;
+
+            // Refresh statistics after data load
+            await this.loadStats();
         } catch (error) {
             console.error('Error loading deliveries:', error);
             this.toastrService.showErrorToast("An unexpected error occurred. Please try again.");
+        } finally {
+            this.isLoading = false;
         }
     }
 }
