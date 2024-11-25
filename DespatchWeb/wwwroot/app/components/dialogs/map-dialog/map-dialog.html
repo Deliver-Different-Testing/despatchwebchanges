@@ -16,12 +16,20 @@
     <md-dialog-content>
         <div class="md-dialog-content">
             <!-- Loading Indicator -->
-            <div layout="row" layout-align="center center" ng-if="ctrl.loading" style="min-height: 400px;">
-                <md-progress-circular
-                        md-diameter="70"
-                        md-mode="indeterminate">
-                </md-progress-circular>
+            <div layout="row" layout-align="center center" ng-if="ctrl.loading" style="min-height: 300px;">
+                <div style="position: relative;">
+                    <md-progress-circular
+                            md-diameter="70"
+                            md-mode="indeterminate">
+                    </md-progress-circular>
+                    <md-icon
+                            md-font-set="material-symbols-outlined"
+                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px;">
+                        map
+                    </md-icon>
+                </div>
             </div>
+
 
             <!-- Map (shown when not loading) -->
             <div ng-if="!ctrl.loading">
@@ -38,7 +46,7 @@
                             <!-- Job Step Circle -->
                             <div class="timeline-step"
                                  ng-class="{'active': ctrl.selectedJobIndex === $index}"
-                                 ng-click="ctrl.selectJob($index)">
+                                 ng-click="ctrl.switchMapJob($index)">
                                 <div class="step-circle"
                                      md-colors="{background: ctrl.selectedJobIndex === $index ? 'primary' : 'background-400'}">
                                     {{$index + 1}}

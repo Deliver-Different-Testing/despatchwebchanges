@@ -35,12 +35,13 @@ class MapDialogController {
             job: null,
         };
 
+        this.loading = false;
+
         // Set up config data
         this.getJob(delivery.jobId).then(data => {
             console.log(data);
 
             this.mapConfig = data;
-            this.loading = false;
         })
     }
 
@@ -54,7 +55,7 @@ class MapDialogController {
     /**
      * @param {number} index
      */
-    selectJob(index) {
+    switchMapJob(index) {
         console.log('Setting child job on map to ' + (index + 1));
         this.selectedJobIndex = index;
         this.mapConfig.job.selectedJobIndex = index + 1;
