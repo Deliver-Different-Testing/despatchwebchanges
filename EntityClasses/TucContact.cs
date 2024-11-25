@@ -5,18 +5,14 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.EntityClasses;
 
-    public partial class TucContact
-    {
+public partial class TucContact
+{
     public int UccoId { get; set; }
 
-        public int UccoId { get; set; }
-        public string UccoName { get; set; }
+    public string UccoName { get; set; }
 
-        public int? UccoClientId { get; set; }
+    public int? UccoClientId { get; set; }
 
-    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
-
-        public virtual TucClient UccoClient { get; set; }
-        public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
-    }
+    public virtual TucClient UccoClient { get; set; }
+    public virtual ICollection<TucJobBooking> TucJobBookings { get; set; }
 }

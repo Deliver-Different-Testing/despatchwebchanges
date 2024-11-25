@@ -138,8 +138,7 @@ builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 
 // Automapper
-builder.Services.AddAutoMapper(typeof(JobViewModelMapperProfile),
-    typeof(GenericMapperProfiles));
+builder.Services.AddAutoMapper(typeof(GenericMapperProfiles));
 
 
 // Register DespatchContext with a dummy connection string

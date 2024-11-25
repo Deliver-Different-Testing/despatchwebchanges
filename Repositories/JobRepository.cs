@@ -1995,7 +1995,7 @@ public class JobRepository(IMapper mapper, IDbContextFactory<DespatchContext> co
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occured adding a new inter-courier job");
+            Log.Error(e, "An error occured adding a new inter-courier job");
             throw;
         }
     }

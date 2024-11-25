@@ -315,7 +315,7 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
     {
         try
         {
-            _logger.LogInformation("Looking up airport code for ID: {AirportId}", airportId);
+            Log.Information("Looking up airport code for ID: {AirportId}", airportId);
 
             var airportCode = await Context.TblAirports
                 .Where(a => a.AirportId == airportId)
@@ -325,18 +325,18 @@ public class CourierRepository(IMapper mapper, IDbContextFactory<DespatchContext
 
             if (airportCode != null)
             {
-                _logger.LogInformation("Found airport code {AirportCode} for ID {AirportId}", airportCode, airportId);
+                Log.Information("Found airport code {AirportCode} for ID {AirportId}", airportCode, airportId);
             }
             else
             {
-                _logger.LogWarning("No airport found for ID {AirportId}", airportId);
+                Log.Warning("No airport found for ID {AirportId}", airportId);
             }
 
             return airportCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error looking up airport code for ID {AirportId}", airportId);
+            Log.Error(ex, "Error looking up airport code for ID {AirportId}", airportId);
             throw;
         }
     }

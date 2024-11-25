@@ -49,7 +49,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
             if (!isInternal)
             {
                 Log.Debug("Validating client access for cid: {ClientId}", cid);
-                await _clientAccessValidator.ValidateClientAccess(cid, clientIds);
+                await clientAccessValidator.ValidateClientAccess(cid, clientIds);
             }
 
             // Get jobs
@@ -57,7 +57,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
                 queryParams.Status, queryParams.Order, queryParams.Asc);
 
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _jobRepository.JobListAsync(queryParams.Order,
+            var result = await jobRepository.JobListAsync(queryParams.Order,
                 queryParams.Asc, isInternal, clientIds, despatchViewIds, null, status);
 
             Log.Information("Successfully retrieved {Count} jobs", result.Count);
@@ -87,7 +87,7 @@ public class JobController(IJobRepository jobRepository, ICourierRepository cour
 
             // Get jobs
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _jobRepository.JobListAsync(queryParams.Order,
+            var result = await jobRepository.JobListAsync(queryParams.Order,
                 queryParams.Asc, isInternal, clientIds, despatchViewIds, clearListEnvelopeViewModel, status);
 
             return Json(result);

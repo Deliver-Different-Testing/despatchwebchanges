@@ -29,7 +29,7 @@ public class NationwideJobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _repository.NationwideJobListAsync(queryParams?.Order,
+            var result = await repository.NationwideJobListAsync(queryParams?.Order,
                 queryParams?.Asc, isInternal, clientIds, NationwideWidget.JobList, despatchViewIds, status);
 
             return Json(result);
@@ -50,7 +50,7 @@ public class NationwideJobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _repository.NationwideJobListAsync(queryParams?.Order,
+            var result = await repository.NationwideJobListAsync(queryParams?.Order,
                 queryParams?.Asc, isInternal, clientIds, NationwideWidget.Pod, despatchViewIds, status);
 
             return Json(result);
@@ -72,7 +72,7 @@ public class NationwideJobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _repository.NationwideJobListAsync(queryParams.Order,
+            var result = await repository.NationwideJobListAsync(queryParams.Order,
                 queryParams.Asc, isInternal, clientIds, NationwideWidget.ActionRequired, despatchViewIds, status);
 
             return Json(result);
@@ -93,7 +93,7 @@ public class NationwideJobController(
             if (!isInternal) await clientAccessValidator.ValidateClientAccess(cid, clientIds);
 
             var status = (DispatchStatus)queryParams.Status;
-            var result = await _repository.NationwideJobListAsync(queryParams.Order,
+            var result = await repository.NationwideJobListAsync(queryParams.Order,
                 queryParams.Asc, isInternal, clientIds, NationwideWidget.Reprice, despatchViewIds, status);
 
             return Json(result);

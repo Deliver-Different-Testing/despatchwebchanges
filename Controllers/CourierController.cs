@@ -181,5 +181,20 @@ namespace DespatchWeb.Controllers
                 return StatusCode(500);
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetVehicleSizes()
+        {
+            try
+            {
+                var vehicleSizes = await courierRepository.GetVehicleSizesAsync();
+                return Json(vehicleSizes);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error getting vehicle sizes");
+                return StatusCode(500);
+            }
+        }
     }
 }

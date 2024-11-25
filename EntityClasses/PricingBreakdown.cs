@@ -5,26 +5,25 @@ using System.Collections.Generic;
 
 namespace DespatchWeb.EntityClasses;
 
-    public partial class PricingBreakdown
-    {
-        public int PricingBreakdownId { get; set; }
+public partial class PricingBreakdown
+{
+    public int PricingBreakdownId { get; set; }
 
-        public int? JobId { get; set; }
+    public int? JobId { get; set; }
 
-        public int? PrebookJobId { get; set; }
+    public int? PrebookJobId { get; set; }
 
-        public string ChargeName { get; set; }
+    public string ChargeName { get; set; }
 
-        public decimal ChargeAmount { get; set; }
+    public decimal ChargeAmount { get; set; }
 
-        public decimal? Total { get; set; }
+    public decimal? Total { get; set; }
 
-        public decimal? Included { get; set; }
+    public decimal? Included { get; set; }
 
-        public decimal? Charged { get; set; }
+    public decimal? Charged { get; set; }
 
-        public virtual TucJob Job { get; set; }
+    public virtual TucJob Job { get; set; }
 
-        public virtual TucJobBooking PrebookJob { get; set; }
-    }
+    public virtual TucJobBooking PrebookJob { get; set; }
 }

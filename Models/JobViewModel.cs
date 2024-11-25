@@ -159,7 +159,7 @@ public class JobViewModel
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
     public bool? RatedManually { get; set; }
-    public short? SizeId { get; set; }
+    public int? SizeId { get; set; }
     public bool? Active { get; set; }
     public bool? OneOff { get; set; }
     public string InActiveBy { get; set; }
