@@ -41,7 +41,6 @@ class OverviewController {
         // Search properties
         this.search = '';
         this.searchTimeout = null;
-        this.isSearching = false;
 
         // Filters
         this.dateRange = {
@@ -88,6 +87,22 @@ class OverviewController {
             }
         });
 
+        // Watch for changes to query limit
+        $scope.$watch(() => this.query.limit, (newValue, oldValue) => {
+            if (newValue !== oldValue) {
+                if (Modernizr.localstorage) {
+                    localStorage.setItem(`overviewJobLimitDisplay`, this.query.limit);
+                }
+            }
+        });
+
+        // Local settings
+        const savedLimit = localStorage.getItem(`overviewJobLimitDisplay`);
+        console.log('Saved limit is: ' + savedLimit);
+        if (savedLimit) {
+            this.query.limit = savedLimit;
+        }
+
         // Initial data load
         Promise.all([
             this.loadStats(),
@@ -101,6 +116,7 @@ class OverviewController {
             .catch(error => {
                 console.error('Error loading data:', error);
             });
+
     }
 
     /**
