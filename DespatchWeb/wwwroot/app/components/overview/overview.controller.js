@@ -43,9 +43,13 @@ class OverviewController {
         this.searchTimeout = null;
         this.isSearching = false;
 
+        // Filters
         this.dateRange = {
             start: null, end: null
         };
+        this.selectedRegions = [];
+        this.allRegionsSelected = false;
+        this.selectedSpeeds = [];
 
         this.activeTab = 0;
 
@@ -221,7 +225,31 @@ class OverviewController {
     }
 
     toggleRegion(region) {
-        region.selected = !region.selected;
+        const idx = this.selectedRegions.indexOf(region);
+
+        if (region.selected && idx === -1) {
+            this.selectedRegions.push(region);
+        } else if (!region.selected && idx !== -1) {
+            this.selectedRegions.splice(idx, 1);
+        }
+
+        // Update allRegionsSelected state
+        this.allRegionsSelected = this.regions.length === this.selectedRegions.length;
+        console.log('All regions selected is ' + this.allRegionsSelected);
+        console.log('Selected regions: ' + this.selectedRegions);
+    }
+
+    toggleAllRegions() {
+        // Use arrow function to preserve 'this' context
+        this.regions.forEach((region) => {
+            region.selected = this.allRegionsSelected;
+        });
+
+        if (this.allRegionsSelected) {
+            this.selectedRegions = this.regions.slice(); // Copy all regions
+        } else {
+            this.selectedRegions = []; // Clear selections
+        }
     }
 
     async getSpeeds() {
